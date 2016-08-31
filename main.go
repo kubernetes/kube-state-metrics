@@ -168,30 +168,6 @@ func createKubeClient(clientConfig clientcmd.ClientConfig) (kubeClient clientset
 }
 
 func initializeMetrics() {
-	metrics.deploymentReplicas = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "deployment_replicas",
-		Help: "Number of replicas per deployment",
-	},
-		[]string{
-			// The name of the relevant deployment
-			"name",
-			// The namespace of the relevant deployment
-			"namespace",
-		},
-	)
-
-	metrics.deploymentReplicasAvailable = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "deployment_replicas_available",
-		Help: "Number of available replicas per deployment",
-	},
-		[]string{
-			// The name of the relevant deployment
-			"name",
-			// The namespace of the relevant deployment
-			"namespace",
-		},
-	)
-
 	metrics.nodes = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "nodes",
 		Help: "Number of nodes",
@@ -216,8 +192,6 @@ func initializeMetrics() {
 		},
 	)
 
-	prometheus.MustRegister(metrics.deploymentReplicas)
-	prometheus.MustRegister(metrics.deploymentReplicasAvailable)
 	prometheus.MustRegister(metrics.nodes)
 	prometheus.MustRegister(metrics.containerRestarts)
 }
@@ -270,8 +244,6 @@ func metricsServer() {
 type metricsRegistry interface {
 	setReadyNodes(float64)
 	setUnreadyNodes(float64)
-	setDeploymentReplicas(string, string, float64)
-	setDeploymentReplicasAvailable(string, string, float64)
 	setContainerRestarts(string, string, string, float64)
 }
 
@@ -283,18 +255,6 @@ func (mr *metricsRegistryImpl) setReadyNodes(count float64) {
 
 func (mr *metricsRegistryImpl) setUnreadyNodes(count float64) {
 	metrics.nodes.With(prometheus.Labels{"ready": "false"}).Set(count)
-}
-
-func (mr *metricsRegistryImpl) setDeploymentReplicas(name, namespace string, count float64) {
-	metrics.deploymentReplicas.With(prometheus.Labels{
-		"name": name, "namespace": namespace,
-	}).Set(count)
-}
-
-func (mr *metricsRegistryImpl) setDeploymentReplicasAvailable(name, namespace string, count float64) {
-	metrics.deploymentReplicasAvailable.With(prometheus.Labels{
-		"name": name, "namespace": namespace,
-	}).Set(count)
 }
 
 func (mr *metricsRegistryImpl) setContainerRestarts(name, namespace, podName string, count float64) {
@@ -317,9 +277,7 @@ type metricsController struct {
 
 // sync all services with the loadbalancer.
 func (mc *metricsController) updateMetrics(r metricsRegistry) error {
-	if !mc.podController.HasSynced() ||
-		!mc.dplController.HasSynced() ||
-		!mc.nodeController.HasSynced() {
+	if !mc.podController.HasSynced() || !mc.nodeController.HasSynced() {
 		time.Sleep(100 * time.Millisecond)
 		return errDeferredSync
 	}
@@ -329,12 +287,6 @@ func (mc *metricsController) updateMetrics(r metricsRegistry) error {
 		return err
 	}
 	registerNodeMetrics(r, nodes.Items)
-
-	dpls, err := mc.dplStore.List()
-	if err != nil {
-		return err
-	}
-	registerDeploymentMetrics(r, dpls)
 
 	pods, err := mc.podStore.List(labels.Everything())
 	if err != nil {
@@ -364,13 +316,6 @@ func registerNodeMetrics(r metricsRegistry, nodes []api.Node) {
 	r.setUnreadyNodes(unreadyNodes)
 }
 
-func registerDeploymentMetrics(r metricsRegistry, dpls []extensions.Deployment) {
-	for _, d := range dpls {
-		r.setDeploymentReplicas(d.Name, d.Namespace, float64(d.Status.Replicas))
-		r.setDeploymentReplicasAvailable(d.Name, d.Namespace, float64(d.Status.AvailableReplicas))
-	}
-}
-
 func registerPodMetrics(r metricsRegistry, pods []*api.Pod) {
 	for _, p := range pods {
 		for _, cs := range p.Status.ContainerStatuses {
@@ -379,7 +324,7 @@ func registerPodMetrics(r metricsRegistry, pods []*api.Pod) {
 	}
 }
 
-// newLoadBalancerController creates a new controller from the given config.
+// newMetricsController creates a new controller from the given config.
 func newMetricsController(kubeClient clientset.Interface) *metricsController {
 	mc := &metricsController{
 		client: kubeClient,
@@ -418,6 +363,15 @@ func newMetricsController(kubeClient clientset.Interface) *metricsController {
 	go mc.dplController.Run(wait.NeverStop)
 	go mc.podController.Run(wait.NeverStop)
 	go mc.nodeController.Run(wait.NeverStop)
+
+	go func() {
+		for !mc.dplController.HasSynced() {
+			time.Sleep(100 * time.Millisecond)
+		}
+		prometheus.MustRegister(&deploymentCollector{
+			store: &mc.dplStore,
+		})
+	}()
 
 	return mc
 }

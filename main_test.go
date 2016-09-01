@@ -21,15 +21,12 @@ import (
 	"testing"
 
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/extensions"
 )
 
 type metricsRegistryMock struct {
-	readyNodes                  float64
-	unreadyNodes                float64
-	deploymentReplicas          map[string]float64
-	deploymentReplicasAvailable map[string]float64
-	containerRestarts           map[string]float64
+	readyNodes        float64
+	unreadyNodes      float64
+	containerRestarts map[string]float64
 }
 
 func (mr *metricsRegistryMock) setReadyNodes(count float64) {
@@ -38,20 +35,6 @@ func (mr *metricsRegistryMock) setReadyNodes(count float64) {
 
 func (mr *metricsRegistryMock) setUnreadyNodes(count float64) {
 	mr.unreadyNodes = count
-}
-
-func (mr *metricsRegistryMock) setDeploymentReplicas(name, namespace string, count float64) {
-	if mr.deploymentReplicas == nil {
-		mr.deploymentReplicas = map[string]float64{}
-	}
-	mr.deploymentReplicas[name+"-"+namespace] = count
-}
-
-func (mr *metricsRegistryMock) setDeploymentReplicasAvailable(name, namespace string, count float64) {
-	if mr.deploymentReplicasAvailable == nil {
-		mr.deploymentReplicasAvailable = map[string]float64{}
-	}
-	mr.deploymentReplicasAvailable[name+"-"+namespace] = count
 }
 
 func (mr *metricsRegistryMock) setContainerRestarts(name, namespace, podName string, count float64) {
@@ -70,19 +53,6 @@ func getNode(condition api.ConditionStatus) api.Node {
 					Status: condition,
 				},
 			},
-		},
-	}
-}
-
-func getDeployment(name, namespace string, replicas, replicasAvailable int) extensions.Deployment {
-	return extensions.Deployment{
-		ObjectMeta: api.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Status: extensions.DeploymentStatus{
-			Replicas:          int32(replicas),
-			AvailableReplicas: int32(replicasAvailable),
 		},
 	}
 }
@@ -134,41 +104,6 @@ func TestRegisterNodeMetrics(t *testing.T) {
 		registerNodeMetrics(r, c.nodes)
 		if !reflect.DeepEqual(r, c.registry) {
 			t.Errorf("error in case \"%s\": actual %v does not equal expected %v", c.desc, r, c.registry)
-		}
-	}
-}
-
-func TestRegisterDeploymentMetrics(t *testing.T) {
-	cases := []struct {
-		dpls     []extensions.Deployment
-		registry *metricsRegistryMock
-	}{
-		{
-			dpls: []extensions.Deployment{
-				getDeployment("dpl1", "ns1", 2, 0),
-				getDeployment("dpl2", "ns2", 1, 1),
-				getDeployment("dpl3", "ns3", 0, 2),
-			},
-			registry: &metricsRegistryMock{
-				deploymentReplicas: map[string]float64{
-					"dpl1-ns1": 2,
-					"dpl2-ns2": 1,
-					"dpl3-ns3": 0,
-				},
-				deploymentReplicasAvailable: map[string]float64{
-					"dpl1-ns1": 0,
-					"dpl2-ns2": 1,
-					"dpl3-ns3": 2,
-				},
-			},
-		},
-	}
-
-	for i, c := range cases {
-		r := &metricsRegistryMock{}
-		registerDeploymentMetrics(r, c.dpls)
-		if !reflect.DeepEqual(r, c.registry) {
-			t.Errorf("error in case %d: actual %v does not equal expected %v", i, r, c.registry)
 		}
 	}
 }

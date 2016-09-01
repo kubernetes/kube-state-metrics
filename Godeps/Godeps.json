@@ -1,6 +1,7 @@
 {
 	"ImportPath": "gitenterprise.inside-box.net/skynet/kube-metrics-server",
 	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -195,8 +196,8 @@
 		},
 		{
 			"ImportPath": "github.com/prometheus/client_golang/prometheus",
-			"Comment": "0.7.0-39-g3b78d7a",
-			"Rev": "3b78d7a77f51ccbc364d4bc170920153022cfd08"
+			"Comment": "0.7.0-119-gea6e1db",
+			"Rev": "ea6e1db4cb8127eeb0b6954f7320363e5451820f"
 		},
 		{
 			"ImportPath": "github.com/prometheus/client_model/go",

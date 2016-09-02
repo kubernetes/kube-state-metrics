@@ -65,7 +65,7 @@ func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (dc *deploymentCollector) collectDeployment(d extensions.Deployment) (res []prometheus.Metric) {
+func (dc *deploymentCollector) collectDeployment(d extensions.Deployment) []prometheus.Metric {
 	return []prometheus.Metric{
 		prometheus.MustNewConstMetric(
 			descDeploymentReplicas, prometheus.GaugeValue, float64(d.Status.Replicas),

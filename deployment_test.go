@@ -90,7 +90,7 @@ func TestDeploymentCollector(t *testing.T) {
 				deployment_replicas_available{namespace="ns2",deployment="depl2"} 5
 				deployment_replicas_available{namespace="ns1",deployment="depl1"} 10
 				deployment_replicas_available{namespace="ns2",deployment="depl3"} 0
-            `,
+			`,
 		},
 	}
 	for _, c := range cases {

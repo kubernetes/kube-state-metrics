@@ -35,7 +35,6 @@ import (
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/kubernetes/pkg/controller/framework"
 	kubectl_util "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/watch"
@@ -53,7 +52,6 @@ type metricsContainer struct {
 	deploymentReplicas          *prometheus.GaugeVec
 	deploymentReplicasAvailable *prometheus.GaugeVec
 	nodes                       *prometheus.GaugeVec
-	containerRestarts           *prometheus.GaugeVec
 }
 
 var (
@@ -178,22 +176,7 @@ func initializeMetrics() {
 		},
 	)
 
-	metrics.containerRestarts = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "container_restarts",
-		Help: "Number of container restarts per container",
-	},
-		[]string{
-			// Name of the container
-			"name",
-			// Name of the pod the container is in
-			"pod_name",
-			// Namespace of the container/pod
-			"namespace",
-		},
-	)
-
 	prometheus.MustRegister(metrics.nodes)
-	prometheus.MustRegister(metrics.containerRestarts)
 }
 
 // Dumps a call to /metrics to stdout. For development/testing.
@@ -244,7 +227,6 @@ func metricsServer() {
 type metricsRegistry interface {
 	setReadyNodes(float64)
 	setUnreadyNodes(float64)
-	setContainerRestarts(string, string, string, float64)
 }
 
 type metricsRegistryImpl struct{}
@@ -255,12 +237,6 @@ func (mr *metricsRegistryImpl) setReadyNodes(count float64) {
 
 func (mr *metricsRegistryImpl) setUnreadyNodes(count float64) {
 	metrics.nodes.With(prometheus.Labels{"ready": "false"}).Set(count)
-}
-
-func (mr *metricsRegistryImpl) setContainerRestarts(name, namespace, podName string, count float64) {
-	metrics.containerRestarts.With(prometheus.Labels{
-		"name": name, "namespace": namespace, "pod_name": podName,
-	}).Set(count)
 }
 
 // metricsController watches the kubernetes api and adds/removes services
@@ -277,7 +253,7 @@ type metricsController struct {
 
 // sync all services with the loadbalancer.
 func (mc *metricsController) updateMetrics(r metricsRegistry) error {
-	if !mc.podController.HasSynced() || !mc.nodeController.HasSynced() {
+	if !mc.nodeController.HasSynced() {
 		time.Sleep(100 * time.Millisecond)
 		return errDeferredSync
 	}
@@ -287,12 +263,6 @@ func (mc *metricsController) updateMetrics(r metricsRegistry) error {
 		return err
 	}
 	registerNodeMetrics(r, nodes.Items)
-
-	pods, err := mc.podStore.List(labels.Everything())
-	if err != nil {
-		return err
-	}
-	registerPodMetrics(r, pods)
 
 	return nil
 }
@@ -314,14 +284,6 @@ func registerNodeMetrics(r metricsRegistry, nodes []api.Node) {
 	}
 	r.setReadyNodes(readyNodes)
 	r.setUnreadyNodes(unreadyNodes)
-}
-
-func registerPodMetrics(r metricsRegistry, pods []*api.Pod) {
-	for _, p := range pods {
-		for _, cs := range p.Status.ContainerStatuses {
-			r.setContainerRestarts(cs.Name, p.Namespace, p.Name, float64(cs.RestartCount))
-		}
-	}
 }
 
 // newMetricsController creates a new controller from the given config.
@@ -370,6 +332,15 @@ func newMetricsController(kubeClient clientset.Interface) *metricsController {
 		}
 		prometheus.MustRegister(&deploymentCollector{
 			store: &mc.dplStore,
+		})
+	}()
+
+	go func() {
+		for !mc.podController.HasSynced() {
+			time.Sleep(100 * time.Millisecond)
+		}
+		prometheus.MustRegister(&podCollector{
+			store: &mc.podStore,
 		})
 	}()
 

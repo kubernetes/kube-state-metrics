@@ -24,12 +24,13 @@ additional metrics!
 
 ### WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
 
-| Metric name | Labels/tags |
-| ------------- | ------------- |
-| nodes | ready=&lt;true\|false&gt; |
-| deployment_replicas | name=&lt;deployment-name&gt; namespace=&lt;deployment-namespace&gt; |
-| deployment_replicas_available | name=&lt;deployment-name&gt; namespace=&lt;deployment-namespace&gt; |
-| container_restarts | name=&lt;container-name&gt; namespace=&lt;pod-namespace&gt; pod_name=&lt;pod-name&gt; |
+| Metric name| Metric type | Labels/tags |
+| ---------- | ----------- | ----------- |
+| node_info | Gauge | `node`=&lt;node-address&gt; <br> `kernel_version`=&lt;kernel-version&gt; <br> `os_image`=&lt;os-image-name&gt; <br> `container_runtime_version`=&lt;container-runtime-and-version-combination&gt; <br> `kubelet_version`=&lt;kubelet-version&gt; <br> `kubeproxy_version`=&lt;kubeproxy-version&gt; |
+| node_status_ready| Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
+| deployment_replicas | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
+| deployment_replicas_available | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
+| pod_container_restarts | Counter | `container`=&lt;container-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `pod`=&lt;pod-name&gt; |
 
 ## kube-state-metrics vs. Heapster
 

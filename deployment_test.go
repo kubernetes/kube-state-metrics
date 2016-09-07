@@ -125,14 +125,20 @@ func gatherAndCompare(c prometheus.Collector, expected string) error {
 		return fmt.Errorf("parsing expected metrics failed: %s", err)
 	}
 
-	// Compare the sorted gathering result with the parsed expected result.
-	// Apply the same normalization to the expected output as the client library
-	// does to the gathering output.
 	if !reflect.DeepEqual(metrics, normalizeMetricFamilies(expectedMetrics)) {
 		// Encode the gathered output to the readbale text format for comparison.
-		var buf bytes.Buffer
-		enc := expfmt.NewEncoder(&buf, expfmt.FmtText)
+		var buf1 bytes.Buffer
+		enc := expfmt.NewEncoder(&buf1, expfmt.FmtText)
 		for _, mf := range metrics {
+			if err := enc.Encode(mf); err != nil {
+				return fmt.Errorf("encoding result failed: %s", err)
+			}
+		}
+		// Encode normalized expected metrics again to generate them in the same ordering
+		// the registry does to spot differences more easily.
+		var buf2 bytes.Buffer
+		enc = expfmt.NewEncoder(&buf2, expfmt.FmtText)
+		for _, mf := range normalizeMetricFamilies(expectedMetrics) {
 			if err := enc.Encode(mf); err != nil {
 				return fmt.Errorf("encoding result failed: %s", err)
 			}
@@ -145,8 +151,8 @@ metric output does not match expectation; want:
 
 got:
 
-%s         
-`, expected, buf.String())
+%s       
+`, buf2.String(), buf1.String())
 	}
 	return nil
 }
@@ -187,9 +193,13 @@ func (s metricSorter) Swap(i, j int) {
 }
 
 func (s metricSorter) Less(i, j int) bool {
+	sort.Sort(prometheus.LabelPairSorter(s[i].Label))
+	sort.Sort(prometheus.LabelPairSorter(s[j].Label))
+
 	if len(s[i].Label) != len(s[j].Label) {
 		return len(s[i].Label) < len(s[j].Label)
 	}
+
 	for n, lp := range s[i].Label {
 		vi := lp.GetValue()
 		vj := s[j].Label[n].GetValue()
@@ -218,9 +228,6 @@ func normalizeMetricFamilies(metricFamiliesByName map[string]*dto.MetricFamily) 
 	for name, mf := range metricFamiliesByName {
 		if len(mf.Metric) > 0 {
 			names = append(names, name)
-			for _, m := range mf.Metric {
-				sort.Sort(prometheus.LabelPairSorter(m.Label))
-			}
 		}
 	}
 	sort.Strings(names)

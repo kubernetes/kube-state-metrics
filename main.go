@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -68,9 +67,6 @@ var (
 	apiserver = flags.String("apiserver", "", `The URL of the apiserver to use as a master`)
 
 	port = flags.Int("port", 80, `Port to expose metrics on.`)
-
-	dryRun = flags.Bool("dry-run", false, `if set, a single dry run of configuration
-		parsing is executed. Results written to stdout.`)
 )
 
 func main() {
@@ -90,35 +86,8 @@ func main() {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
-	initializeMetrics()
-
-	// Run metrics server.
-	go metricsServer()
-
-	r := &metricsRegistryImpl{}
-
-	mc := newMetricsController(kubeClient)
-	if *dryRun {
-		// Wait for the initial informer sync.
-		time.Sleep(100 * time.Millisecond)
-		mc.updateMetrics(r)
-		err := dumpMetrics()
-		if err != nil {
-			glog.Fatalf("%v", err)
-		}
-	} else {
-		// Update metrics every 10 seconds.
-		wait.Until(func() {
-			err := mc.updateMetrics(r)
-			if err != nil {
-				if err == errDeferredSync {
-					glog.Infof("%v", err)
-				} else {
-					glog.Fatalf("%v", err)
-				}
-			}
-		}, 10*time.Second, wait.NeverStop)
-	}
+	runMetricsController(kubeClient)
+	metricsServer()
 }
 
 func createKubeClient(clientConfig clientcmd.ClientConfig) (kubeClient clientset.Interface, err error) {
@@ -165,35 +134,6 @@ func createKubeClient(clientConfig clientcmd.ClientConfig) (kubeClient clientset
 	return kubeClient, nil
 }
 
-func initializeMetrics() {
-	metrics.nodes = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "nodes",
-		Help: "Number of nodes",
-	},
-		[]string{
-			// Whether they are reporting ready status
-			"ready",
-		},
-	)
-
-	prometheus.MustRegister(metrics.nodes)
-}
-
-// Dumps a call to /metrics to stdout. For development/testing.
-func dumpMetrics() error {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", *port))
-	if err != nil {
-		glog.Fatalf("%v", err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		glog.Fatalf("%v", err)
-	}
-	glog.Infof("%s", body)
-	return nil
-}
-
 func metricsServer() {
 	// Address to listen on for web interface and telemetry
 	listenAddress := fmt.Sprintf(":%d", *port)
@@ -222,23 +162,6 @@ func metricsServer() {
 	log.Fatal(http.ListenAndServe(listenAddress, nil))
 }
 
-// All this machinery is for mocking out the prometheus interface for testing
-// because promtheus won't let us fetch a metric value after we set it.
-type metricsRegistry interface {
-	setReadyNodes(float64)
-	setUnreadyNodes(float64)
-}
-
-type metricsRegistryImpl struct{}
-
-func (mr *metricsRegistryImpl) setReadyNodes(count float64) {
-	metrics.nodes.With(prometheus.Labels{"ready": "true"}).Set(count)
-}
-
-func (mr *metricsRegistryImpl) setUnreadyNodes(count float64) {
-	metrics.nodes.With(prometheus.Labels{"ready": "false"}).Set(count)
-}
-
 // metricsController watches the kubernetes api and adds/removes services
 // from the loadbalancer, via loadBalancerConfig.
 type metricsController struct {
@@ -251,43 +174,8 @@ type metricsController struct {
 	nodeStore      cache.StoreToNodeLister
 }
 
-// sync all services with the loadbalancer.
-func (mc *metricsController) updateMetrics(r metricsRegistry) error {
-	if !mc.nodeController.HasSynced() {
-		time.Sleep(100 * time.Millisecond)
-		return errDeferredSync
-	}
-
-	nodes, err := mc.nodeStore.List()
-	if err != nil {
-		return err
-	}
-	registerNodeMetrics(r, nodes.Items)
-
-	return nil
-}
-
-func registerNodeMetrics(r metricsRegistry, nodes []api.Node) {
-	var readyNodes float64
-	var unreadyNodes float64
-	for _, n := range nodes {
-		for _, c := range n.Status.Conditions {
-			if c.Type == api.NodeReady {
-				if c.Status == api.ConditionTrue {
-					readyNodes += 1
-				} else {
-					// Even if status is unknown, call it unready.
-					unreadyNodes += 1
-				}
-			}
-		}
-	}
-	r.setReadyNodes(readyNodes)
-	r.setUnreadyNodes(unreadyNodes)
-}
-
-// newMetricsController creates a new controller from the given config.
-func newMetricsController(kubeClient clientset.Interface) *metricsController {
+// runMetricsController creates a new controller from the given config.
+func runMetricsController(kubeClient clientset.Interface) *metricsController {
 	mc := &metricsController{
 		client: kubeClient,
 	}
@@ -341,6 +229,14 @@ func newMetricsController(kubeClient clientset.Interface) *metricsController {
 		}
 		prometheus.MustRegister(&podCollector{
 			store: &mc.podStore,
+		})
+	}()
+	go func() {
+		for !mc.nodeController.HasSynced() {
+			time.Sleep(100 * time.Millisecond)
+		}
+		prometheus.MustRegister(&nodeCollector{
+			store: &mc.nodeStore,
 		})
 	}()
 

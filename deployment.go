@@ -23,15 +23,42 @@ import (
 )
 
 var (
-	descDeploymentReplicas = prometheus.NewDesc(
-		"deployment_replicas",
+	descDeploymentStatusReplicas = prometheus.NewDesc(
+		"deployment_status_replicas",
 		"The number of replicas per deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
-
-	descDeploymentReplicasAvailable = prometheus.NewDesc(
-		"deployment_replicas_available",
+	descDeploymentStatusReplicasAvailable = prometheus.NewDesc(
+		"deployment_status_replicas_available",
 		"The number of available replicas per deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+	descDeploymentStatusReplicasUnavailable = prometheus.NewDesc(
+		"deployment_status_replicas_unavailable",
+		"The number of unavailable replicas per deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+	descDeploymentStatusReplicasUpdated = prometheus.NewDesc(
+		"deployment_status_replicas_updated",
+		"The number of updated replicas per deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
+	descDeploymentStatusObservedGeneration = prometheus.NewDesc(
+		"deployment_status_observed_generation",
+		"The generation observed by the deployment controller.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
+	descDeploymentSpecReplicas = prometheus.NewDesc(
+		"deployment_spec_replicas",
+		"Number of desired pods for a deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
+	descDeploymentSpecPaused = prometheus.NewDesc(
+		"deployment_spec_paused",
+		"Whether the deployment is paused and will not be processed by the deployment controller.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 )
@@ -47,8 +74,13 @@ type deploymentCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descDeploymentReplicas
-	ch <- descDeploymentReplicasAvailable
+	ch <- descDeploymentStatusReplicas
+	ch <- descDeploymentStatusReplicasAvailable
+	ch <- descDeploymentStatusReplicasUnavailable
+	ch <- descDeploymentStatusReplicasUpdated
+	ch <- descDeploymentStatusObservedGeneration
+	ch <- descDeploymentSpecPaused
+	ch <- descDeploymentSpecReplicas
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -59,21 +91,20 @@ func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 	for _, d := range dpls {
-		for _, m := range dc.collectDeployment(d) {
-			ch <- m
-		}
+		dc.collectDeployment(ch, d)
 	}
 }
 
-func (dc *deploymentCollector) collectDeployment(d extensions.Deployment) []prometheus.Metric {
-	return []prometheus.Metric{
-		prometheus.MustNewConstMetric(
-			descDeploymentReplicas, prometheus.GaugeValue, float64(d.Status.Replicas),
-			d.Namespace, d.Name,
-		),
-		prometheus.MustNewConstMetric(
-			descDeploymentReplicasAvailable, prometheus.GaugeValue, float64(d.Status.AvailableReplicas),
-			d.Namespace, d.Name,
-		),
+func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d extensions.Deployment) {
+	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
+		lv = append([]string{d.Namespace, d.Name}, lv...)
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	addGauge(descDeploymentStatusReplicas, float64(d.Status.Replicas))
+	addGauge(descDeploymentStatusReplicasAvailable, float64(d.Status.AvailableReplicas))
+	addGauge(descDeploymentStatusReplicasUnavailable, float64(d.Status.UnavailableReplicas))
+	addGauge(descDeploymentStatusReplicasUpdated, float64(d.Status.UpdatedReplicas))
+	addGauge(descDeploymentStatusObservedGeneration, float64(d.Status.ObservedGeneration))
+	addGauge(descDeploymentSpecPaused, boolFloat64(d.Spec.Paused))
+	addGauge(descDeploymentSpecReplicas, float64(d.Spec.Replicas))
 }

@@ -44,10 +44,20 @@ func TestDeploymentCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP deployment_replicas The number of replicas per deployment.
-		# TYPE deployment_replicas gauge
-		# HELP deployment_replicas_available The number of available replicas per deployment.
-		# TYPE deployment_replicas_available gauge
+		# HELP deployment_spec_paused Whether the deployment is paused and will not be processed by the deployment controller.
+		# TYPE deployment_spec_paused gauge
+		# HELP deployment_spec_replicas Number of desired pods for a deployment.
+		# TYPE deployment_spec_replicas gauge
+		# HELP deployment_status_replicas The number of replicas per deployment.
+		# TYPE deployment_status_replicas gauge
+		# HELP deployment_status_replicas_available The number of available replicas per deployment.
+		# TYPE deployment_status_replicas_available gauge
+		# HELP deployment_status_replicas_unavailable The number of unavailable replicas per deployment.
+		# TYPE deployment_status_replicas_unavailable gauge
+		# HELP deployment_status_replicas_updated The number of updated replicas per deployment.
+		# TYPE deployment_status_replicas_updated gauge
+		# HELP deployment_status_observed_generation The generation observed by the deployment controller.
+		# TYPE deployment_status_observed_generation gauge
 	`
 	cases := []struct {
 		depls []extensions.Deployment
@@ -61,8 +71,14 @@ func TestDeploymentCollector(t *testing.T) {
 						Namespace: "ns1",
 					},
 					Status: extensions.DeploymentStatus{
-						Replicas:          15,
-						AvailableReplicas: 10,
+						Replicas:            15,
+						AvailableReplicas:   10,
+						UnavailableReplicas: 5,
+						UpdatedReplicas:     2,
+						ObservedGeneration:  111,
+					},
+					Spec: extensions.DeploymentSpec{
+						Replicas: 200,
 					},
 				}, {
 					ObjectMeta: api.ObjectMeta{
@@ -70,27 +86,33 @@ func TestDeploymentCollector(t *testing.T) {
 						Namespace: "ns2",
 					},
 					Status: extensions.DeploymentStatus{
-						Replicas:          10,
-						AvailableReplicas: 5,
+						Replicas:            10,
+						AvailableReplicas:   5,
+						UnavailableReplicas: 0,
+						UpdatedReplicas:     1,
+						ObservedGeneration:  1111,
 					},
-				}, {
-					ObjectMeta: api.ObjectMeta{
-						Name:      "depl3",
-						Namespace: "ns2",
-					},
-					Status: extensions.DeploymentStatus{
-						Replicas:          1,
-						AvailableReplicas: 0,
+					Spec: extensions.DeploymentSpec{
+						Paused:   true,
+						Replicas: 5,
 					},
 				},
 			},
 			want: metadata + `
-				deployment_replicas{namespace="ns1",deployment="depl1"} 15
-				deployment_replicas{namespace="ns2",deployment="depl2"} 10
-				deployment_replicas{namespace="ns2",deployment="depl3"} 1
-				deployment_replicas_available{namespace="ns2",deployment="depl2"} 5
-				deployment_replicas_available{namespace="ns1",deployment="depl1"} 10
-				deployment_replicas_available{namespace="ns2",deployment="depl3"} 0
+				deployment_spec_paused{namespace="ns1",deployment="depl1"} 0
+				deployment_spec_paused{namespace="ns2",deployment="depl2"} 1
+				deployment_spec_replicas{namespace="ns1",deployment="depl1"} 200
+				deployment_spec_replicas{namespace="ns2",deployment="depl2"} 5
+				deployment_status_replicas{namespace="ns1",deployment="depl1"} 15
+				deployment_status_replicas{namespace="ns2",deployment="depl2"} 10
+				deployment_status_replicas_available{namespace="ns1",deployment="depl1"} 10
+				deployment_status_replicas_available{namespace="ns2",deployment="depl2"} 5
+				deployment_status_replicas_unavailable{namespace="ns1",deployment="depl1"} 5
+				deployment_status_replicas_unavailable{namespace="ns2",deployment="depl2"} 0
+				deployment_status_replicas_updated{namespace="ns1",deployment="depl1"} 2
+				deployment_status_replicas_updated{namespace="ns2",deployment="depl2"} 1
+				deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
+				deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111
 			`,
 		},
 	}

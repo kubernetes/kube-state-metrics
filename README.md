@@ -28,6 +28,14 @@ additional metrics!
 | ---------- | ----------- | ----------- |
 | node_info | Gauge | `node`=&lt;node-address&gt; <br> `kernel_version`=&lt;kernel-version&gt; <br> `os_image`=&lt;os-image-name&gt; <br> `container_runtime_version`=&lt;container-runtime-and-version-combination&gt; <br> `kubelet_version`=&lt;kubelet-version&gt; <br> `kubeproxy_version`=&lt;kubeproxy-version&gt; |
 | node_status_ready| Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
+| node_status_out_of_disk | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
+| node_status_phase| Gauge | `node`=&lt;node-address&gt; <br> `phase`=&lt;Pending|Running|Terminated&gt; |
+| node_status_capacity_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
+| node_status_capacity_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
+| node_status_capacity_pods | Gauge | `node`=&lt;node-address&gt;|
+| node_status_allocateable_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
+| node_status_allocateable_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
+| node_status_allocateable_pods | Gauge | `node`=&lt;node-address&gt;|
 | deployment_replicas | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
 | deployment_replicas_available | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
 | deployment_replicas_unavailable | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |

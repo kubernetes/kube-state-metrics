@@ -41,6 +41,48 @@ var (
 		"The ready status of a cluster node.",
 		[]string{"node", "condition"}, nil,
 	)
+	descNodeStatusOutOfDisk = prometheus.NewDesc(
+		"node_status_out_of_disk",
+		"Whether the node is out of disk space",
+		[]string{"node", "condition"}, nil,
+	)
+	descNodeStatusPhase = prometheus.NewDesc(
+		"node_status_phase",
+		"The phase the node is currently in.",
+		[]string{"node", "phase"}, nil,
+	)
+
+	descNodeStatusCapacityPods = prometheus.NewDesc(
+		"node_status_capacity_pods",
+		"The total pod resources of the node.",
+		[]string{"node"}, nil,
+	)
+	descNodeStatusCapacityCPU = prometheus.NewDesc(
+		"node_status_capacity_cpu_cores",
+		"The total CPU resources of the node.",
+		[]string{"node"}, nil,
+	)
+	descNodeStatusCapacityMemory = prometheus.NewDesc(
+		"node_status_capacity_memory_bytes",
+		"The total memory resources of the node.",
+		[]string{"node"}, nil,
+	)
+
+	descNodeStatusAllocateablePods = prometheus.NewDesc(
+		"node_status_allocateable_pods",
+		"The pod resources of a node that are available for scheduling.",
+		[]string{"node"}, nil,
+	)
+	descNodeStatusAllocateableCPU = prometheus.NewDesc(
+		"node_status_allocateable_cpu_cores",
+		"The CPU resources of a node that are available for scheduling.",
+		[]string{"node"}, nil,
+	)
+	descNodeStatusAllocateableMemory = prometheus.NewDesc(
+		"node_status_allocateable_memory_bytes",
+		"The memory resources of a node that are available for scheduling.",
+		[]string{"node"}, nil,
+	)
 )
 
 type nodeStore interface {
@@ -56,6 +98,14 @@ type nodeCollector struct {
 func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeInfo
 	ch <- descNodeStatusReady
+	ch <- descNodeStatusOutOfDisk
+	ch <- descNodeStatusPhase
+	ch <- descNodeStatusCapacityCPU
+	ch <- descNodeStatusCapacityMemory
+	ch <- descNodeStatusCapacityPods
+	ch <- descNodeStatusAllocateableCPU
+	ch <- descNodeStatusAllocateableMemory
+	ch <- descNodeStatusAllocateablePods
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -71,30 +121,55 @@ func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n api.Node) {
-	// Collect node conditions and while default to false.
-	// TODO(fabxc): add remaining conditions: NodeOutOfDisk, NodeMemoryPressure,  NodeDiskPressure, NodeNetworkUnavailable
-	for _, c := range n.Status.Conditions {
-		switch c.Type {
-		case api.NodeReady:
-			nodeStatusMetrics(ch, descNodeStatusReady, n.Name, c.Status)
-		}
+	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
+		lv = append([]string{n.Name}, lv...)
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
-
 	// NOTE: the instrumentation API requires providing label values in order of declaration
 	// in the metric descriptor. Be careful when making modifications.
-	ch <- prometheus.MustNewConstMetric(
-		descNodeInfo, prometheus.GaugeValue, 1,
-		n.Name,
+	addGauge(descNodeInfo, 1,
 		n.Status.NodeInfo.KernelVersion,
 		n.Status.NodeInfo.OSImage,
 		n.Status.NodeInfo.ContainerRuntimeVersion,
 		n.Status.NodeInfo.KubeletVersion,
 		n.Status.NodeInfo.KubeProxyVersion,
 	)
+
+	// Collect node conditions and while default to false.
+	// TODO(fabxc): add remaining conditions: NodeMemoryPressure,  NodeDiskPressure, NodeNetworkUnavailable
+	for _, c := range n.Status.Conditions {
+		switch c.Type {
+		case api.NodeReady:
+			nodeConditionMetrics(ch, descNodeStatusReady, n.Name, c.Status)
+		case api.NodeOutOfDisk:
+			nodeConditionMetrics(ch, descNodeStatusOutOfDisk, n.Name, c.Status)
+		}
+	}
+
+	// Set current phase to 1, others to 0 if it is set.
+	if p := n.Status.Phase; p != "" {
+		addGauge(descNodeStatusPhase, boolFloat64(p == api.NodePending), string(api.NodePending))
+		addGauge(descNodeStatusPhase, boolFloat64(p == api.NodeRunning), string(api.NodeRunning))
+		addGauge(descNodeStatusPhase, boolFloat64(p == api.NodeTerminated), string(api.NodeTerminated))
+	}
+
+	// Add capacity and allocateable resources if they are set.
+	addResource := func(d *prometheus.Desc, res api.ResourceList, n api.ResourceName) {
+		if v, ok := res[n]; ok {
+			addGauge(d, float64(v.Value()))
+		}
+	}
+	addResource(descNodeStatusCapacityCPU, n.Status.Capacity, api.ResourceCPU)
+	addResource(descNodeStatusCapacityMemory, n.Status.Capacity, api.ResourceMemory)
+	addResource(descNodeStatusCapacityPods, n.Status.Capacity, api.ResourcePods)
+
+	addResource(descNodeStatusAllocateableCPU, n.Status.Allocatable, api.ResourceCPU)
+	addResource(descNodeStatusAllocateableMemory, n.Status.Allocatable, api.ResourceMemory)
+	addResource(descNodeStatusAllocateablePods, n.Status.Allocatable, api.ResourcePods)
 }
 
-// nodeStatusMetrics generates one metric for each possible node condition status.
-func nodeStatusMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, name string, cs api.ConditionStatus) {
+// nodeConditionMetrics generates one metric for each possible node condition status.
+func nodeConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, name string, cs api.ConditionStatus) {
 	ch <- prometheus.MustNewConstMetric(
 		desc, prometheus.GaugeValue, boolFloat64(cs == api.ConditionTrue),
 		name, "true",

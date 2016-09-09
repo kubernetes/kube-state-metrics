@@ -122,7 +122,7 @@ func TestDeploymentCollector(t *testing.T) {
 				f: func() ([]extensions.Deployment, error) { return c.depls, nil },
 			},
 		}
-		if err := gatherAndCompare(dc, c.want); err != nil {
+		if err := gatherAndCompare(dc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}
@@ -130,7 +130,8 @@ func TestDeploymentCollector(t *testing.T) {
 
 // gatherAndCompare retrieves all metrics exposed by a collector and compares it
 // to an expected output in the Prometheus text exposition format.
-func gatherAndCompare(c prometheus.Collector, expected string) error {
+// metricNames allows only comparing the given metrics. All are compared if it's nil.
+func gatherAndCompare(c prometheus.Collector, expected string, metricNames []string) error {
 	expected = removeUnusedWhitespace(expected)
 
 	reg := prometheus.NewPedanticRegistry()
@@ -140,6 +141,9 @@ func gatherAndCompare(c prometheus.Collector, expected string) error {
 	metrics, err := reg.Gather()
 	if err != nil {
 		return fmt.Errorf("gathering metrics failed: %s", err)
+	}
+	if metricNames != nil {
+		metrics = filterMetrics(metrics, metricNames)
 	}
 	var tp expfmt.TextParser
 	expectedMetrics, err := tp.TextToMetricFamilies(bytes.NewReader([]byte(expected)))
@@ -179,11 +183,28 @@ got:
 	return nil
 }
 
+func filterMetrics(metrics []*dto.MetricFamily, names []string) []*dto.MetricFamily {
+	var filtered []*dto.MetricFamily
+	for _, m := range metrics {
+		drop := true
+		for _, name := range names {
+			if m.GetName() == name {
+				drop = false
+				break
+			}
+		}
+		if !drop {
+			filtered = append(filtered, m)
+		}
+	}
+	return filtered
+}
+
 func removeUnusedWhitespace(s string) string {
 	var (
 		trimmedLine  string
 		trimmedLines []string
-		lines        []string = strings.Split(s, "\n")
+		lines        = strings.Split(s, "\n")
 	)
 
 	for _, l := range lines {

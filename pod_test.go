@@ -89,7 +89,7 @@ func TestPodCollector(t *testing.T) {
 				f: func() ([]*api.Pod, error) { return c.pods, nil },
 			},
 		}
-		if err := gatherAndCompare(pc, c.want); err != nil {
+		if err := gatherAndCompare(pc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

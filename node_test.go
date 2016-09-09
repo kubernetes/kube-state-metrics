@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/resource"
 )
 
 type mockNodeStore struct {
@@ -38,12 +39,27 @@ func TestNodeCollector(t *testing.T) {
 		# TYPE node_info gauge
 		# HELP node_status_ready The ready status of a cluster node.
 		# TYPE node_status_ready gauge
+		# TYPE node_status_phase gauge
+		# HELP node_status_phase The phase the node is currently in.
+		# TYPE node_status_capacity_pods gauge
+		# HELP node_status_capacity_pods The total pod resources of the node.
+		# TYPE node_status_capacity_cpu_cores gauge
+		# HELP node_status_capacity_cpu_cores The total CPU resources of the node.
+		# TYPE node_status_capacity_memory_bytes gauge
+		# HELP node_status_capacity_memory_bytes The total memory resources of the node.
+		# TYPE node_status_allocateable_pods gauge
+		# HELP node_status_allocateable_pods The pod resources of a node that are available for scheduling.
+		# TYPE node_status_allocateable_cpu_cores gauge
+		# HELP node_status_allocateable_cpu_cores The CPU resources of a node that are available for scheduling.
+		# TYPE node_status_allocateable_memory_bytes gauge
+		# HELP node_status_allocateable_memory_bytes The memory resources of a node that are available for scheduling.
 	`
 	cases := []struct {
-		nodes []api.Node
-		want  string
+		nodes   []api.Node
+		metrics []string // which metrics should be checked
+		want    string
 	}{
-		// Verify populating of node_info metric.
+		// Verify populating base metrics and that metrics for unset fields are skipped.
 		{
 			nodes: []api.Node{
 				{
@@ -65,7 +81,45 @@ func TestNodeCollector(t *testing.T) {
 				node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
 			`,
 		},
-		// Verify condition mappings to 1, 0, and NaN.
+		// Verify resource metrics.
+		{
+			nodes: []api.Node{
+				{
+					ObjectMeta: api.ObjectMeta{
+						Name: "127.0.0.1",
+					},
+					Status: api.NodeStatus{
+						NodeInfo: api.NodeSystemInfo{
+							KernelVersion:           "kernel",
+							KubeletVersion:          "kubelet",
+							KubeProxyVersion:        "kubeproxy",
+							OSImage:                 "osimage",
+							ContainerRuntimeVersion: "rkt",
+						},
+						Capacity: api.ResourceList{
+							api.ResourceCPU:    resource.MustParse("4"),
+							api.ResourceMemory: resource.MustParse("2G"),
+							api.ResourcePods:   resource.MustParse("1000"),
+						},
+						Allocatable: api.ResourceList{
+							api.ResourceCPU:    resource.MustParse("3"),
+							api.ResourceMemory: resource.MustParse("1G"),
+							api.ResourcePods:   resource.MustParse("555"),
+						},
+					},
+				},
+			},
+			want: metadata + `
+				node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
+				node_status_capacity_cpu_cores{node="127.0.0.1"} 4
+				node_status_capacity_memory_bytes{node="127.0.0.1"} 2e9
+				node_status_capacity_pods{node="127.0.0.1"} 1000
+				node_status_allocateable_cpu_cores{node="127.0.0.1"} 3
+				node_status_allocateable_memory_bytes{node="127.0.0.1"} 1e9
+				node_status_allocateable_pods{node="127.0.0.1"} 555
+			`,
+		},
+		// Verify condition enumerations.
 		{
 			nodes: []api.Node{
 				{
@@ -109,10 +163,49 @@ func TestNodeCollector(t *testing.T) {
 				node_status_ready{node="127.0.0.3",condition="true"} 0
 				node_status_ready{node="127.0.0.3",condition="false"} 1
 				node_status_ready{node="127.0.0.3",condition="unknown"} 0
-				node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="",node="127.0.0.1",os_image=""} 1
-				node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="",node="127.0.0.2",os_image=""} 1
-				node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="",node="127.0.0.3",os_image=""} 1
 			`,
+			metrics: []string{"node_status_ready"},
+		},
+		// Verify phase enumerations.
+		{
+			nodes: []api.Node{
+				{
+					ObjectMeta: api.ObjectMeta{
+						Name: "127.0.0.1",
+					},
+					Status: api.NodeStatus{
+						Phase: api.NodeRunning,
+					},
+				},
+				{
+					ObjectMeta: api.ObjectMeta{
+						Name: "127.0.0.2",
+					},
+					Status: api.NodeStatus{
+						Phase: api.NodePending,
+					},
+				},
+				{
+					ObjectMeta: api.ObjectMeta{
+						Name: "127.0.0.3",
+					},
+					Status: api.NodeStatus{
+						Phase: api.NodeTerminated,
+					},
+				},
+			},
+			want: metadata + `
+				node_status_phase{node="127.0.0.1",phase="Terminated"} 0
+				node_status_phase{node="127.0.0.1",phase="Running"} 1
+				node_status_phase{node="127.0.0.1",phase="Pending"} 0
+				node_status_phase{node="127.0.0.2",phase="Terminated"} 0
+				node_status_phase{node="127.0.0.2",phase="Running"} 0
+				node_status_phase{node="127.0.0.2",phase="Pending"} 1
+				node_status_phase{node="127.0.0.3",phase="Terminated"} 1
+				node_status_phase{node="127.0.0.3",phase="Running"} 0
+				node_status_phase{node="127.0.0.3",phase="Pending"} 0
+			`,
+			metrics: []string{"node_status_phase"},
 		},
 	}
 	for _, c := range cases {
@@ -123,7 +216,7 @@ func TestNodeCollector(t *testing.T) {
 				},
 			},
 		}
-		if err := gatherAndCompare(dc, c.want); err != nil {
+		if err := gatherAndCompare(dc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

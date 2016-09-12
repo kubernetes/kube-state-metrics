@@ -24,8 +24,48 @@ import (
 )
 
 var (
-	descContainerRestarts = prometheus.NewDesc(
-		"pod_container_restarts",
+	descPodInfo = prometheus.NewDesc(
+		"pod_info",
+		"Information about pod.",
+		[]string{"namespace", "pod", "host_ip", "pod_ip"}, nil,
+	)
+	descPodStatusPhase = prometheus.NewDesc(
+		"pod_status_phase",
+		"The pods current phase.",
+		[]string{"namespace", "pod", "phase"}, nil,
+	)
+	descPodStatusReady = prometheus.NewDesc(
+		"pod_status_ready",
+		"Describes whether the pod is ready to serve requests.",
+		[]string{"namespace", "pod", "condition"}, nil,
+	)
+	descPodContainerInfo = prometheus.NewDesc(
+		"pod_container_info",
+		"Information about a container in a pod.",
+		[]string{"namespace", "pod", "container", "image", "image_id", "container_id"}, nil,
+	)
+	descPodContainerStatusWaiting = prometheus.NewDesc(
+		"pod_container_status_waiting",
+		"Describes whether the container is currently in waiting state.",
+		[]string{"namespace", "pod", "container"}, nil,
+	)
+	descPodContainerStatusRunning = prometheus.NewDesc(
+		"pod_container_status_running",
+		"Describes whether the container is currently in running state.",
+		[]string{"namespace", "pod", "container"}, nil,
+	)
+	descPodContainerStatusTerminated = prometheus.NewDesc(
+		"pod_container_status_terminated",
+		"Describes whether the container is currently in terminated state.",
+		[]string{"namespace", "pod", "container"}, nil,
+	)
+	descPodContainerStatusReady = prometheus.NewDesc(
+		"pod_container_status_ready",
+		"Describes whether the containers readiness check succeeded.",
+		[]string{"namespace", "pod", "container"}, nil,
+	)
+	descPodContainerStatusRestarts = prometheus.NewDesc(
+		"pod_container_status_restarts",
 		"The number of container restarts per container.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
@@ -42,7 +82,15 @@ type podCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descContainerRestarts
+	ch <- descPodInfo
+	ch <- descPodStatusPhase
+	ch <- descPodStatusReady
+	ch <- descPodContainerInfo
+	ch <- descPodContainerStatusWaiting
+	ch <- descPodContainerStatusRunning
+	ch <- descPodContainerStatusTerminated
+	ch <- descPodContainerStatusReady
+	ch <- descPodContainerStatusRestarts
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -53,19 +101,40 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 	for _, p := range pods {
-		for _, m := range pc.collectPod(p) {
-			ch <- m
-		}
+		pc.collectPod(ch, p)
 	}
 }
 
-func (pc *podCollector) collectPod(p *api.Pod) (res []prometheus.Metric) {
-	for _, cs := range p.Status.ContainerStatuses {
-		res = append(res, prometheus.MustNewConstMetric(
-			descContainerRestarts, prometheus.CounterValue, float64(cs.RestartCount),
-			p.Namespace, p.Name, cs.Name,
-		))
+func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p *api.Pod) {
+	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
+		lv = append([]string{p.Namespace, p.Name}, lv...)
+		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
+	}
+	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
+		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
+	}
+	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
+		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	return
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP)
+	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
+
+	for _, c := range p.Status.Conditions {
+		switch c.Type {
+		case api.PodReady:
+			addConditionMetrics(ch, descPodStatusReady, c.Status, p.Namespace, p.Name)
+		}
+	}
+
+	for _, cs := range p.Status.ContainerStatuses {
+		addGauge(descPodContainerInfo, 1,
+			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
+		)
+		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name)
+		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
+		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
+		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
+		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
+	}
 }

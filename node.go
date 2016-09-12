@@ -140,9 +140,9 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n api.Node) {
 	for _, c := range n.Status.Conditions {
 		switch c.Type {
 		case api.NodeReady:
-			nodeConditionMetrics(ch, descNodeStatusReady, n.Name, c.Status)
+			addConditionMetrics(ch, descNodeStatusReady, c.Status, n.Name)
 		case api.NodeOutOfDisk:
-			nodeConditionMetrics(ch, descNodeStatusOutOfDisk, n.Name, c.Status)
+			addConditionMetrics(ch, descNodeStatusOutOfDisk, c.Status, n.Name)
 		}
 	}
 
@@ -168,19 +168,21 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n api.Node) {
 	addResource(descNodeStatusAllocateablePods, n.Status.Allocatable, api.ResourcePods)
 }
 
-// nodeConditionMetrics generates one metric for each possible node condition status.
-func nodeConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, name string, cs api.ConditionStatus) {
+// addConditionMetrics generates one metric for each possible node condition
+// status. For this function to work properly, the last label in the metric
+// description must be the condition.
+func addConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, cs api.ConditionStatus, lv ...string) {
 	ch <- prometheus.MustNewConstMetric(
 		desc, prometheus.GaugeValue, boolFloat64(cs == api.ConditionTrue),
-		name, "true",
+		append(lv, "true")...,
 	)
 	ch <- prometheus.MustNewConstMetric(
 		desc, prometheus.GaugeValue, boolFloat64(cs == api.ConditionFalse),
-		name, "false",
+		append(lv, "false")...,
 	)
 	ch <- prometheus.MustNewConstMetric(
 		desc, prometheus.GaugeValue, boolFloat64(cs == api.ConditionUnknown),
-		name, "unknown",
+		append(lv, "unknown")...,
 	)
 }
 

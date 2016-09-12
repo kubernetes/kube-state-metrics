@@ -37,24 +37,24 @@ func TestPodCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP pod_container_info Information about a container in a pod.
-		# TYPE pod_container_info gauge
-		# HELP pod_container_status_ready Describes whether the containers readiness check succeeded.
-		# TYPE pod_container_status_ready gauge
-		# HELP pod_container_status_restarts The number of container restarts per container.
-		# TYPE pod_container_status_restarts counter
-		# HELP pod_container_status_running Describes whether the container is currently in running state.
-		# TYPE pod_container_status_running gauge
-		# HELP pod_container_status_terminated Describes whether the container is currently in terminated state.
-		# TYPE pod_container_status_terminated gauge
-		# HELP pod_container_status_waiting Describes whether the container is currently in waiting state.
-		# TYPE pod_container_status_waiting gauge
-		# HELP pod_info Information about pod.
-		# TYPE pod_info gauge
-		# HELP pod_status_phase The pods current phase.
-		# TYPE pod_status_phase gauge
-		# HELP pod_status_ready Describes whether the pod is ready to serve requests.
-		# TYPE pod_status_ready gauge
+		# HELP kube_pod_container_info Information about a container in a pod.
+		# TYPE kube_pod_container_info gauge
+		# HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
+		# TYPE kube_pod_container_status_ready gauge
+		# HELP kube_pod_container_status_restarts The number of container restarts per container.
+		# TYPE kube_pod_container_status_restarts counter
+		# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+		# TYPE kube_pod_container_status_running gauge
+		# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+		# TYPE kube_pod_container_status_terminated gauge
+		# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+		# TYPE kube_pod_container_status_waiting gauge
+		# HELP kube_pod_info Information about pod.
+		# TYPE kube_pod_info gauge
+		# HELP kube_pod_status_phase The pods current phase.
+		# TYPE kube_pod_status_phase gauge
+		# HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
+		# TYPE kube_pod_status_ready gauge
 	`
 	cases := []struct {
 		pods    []*api.Pod
@@ -102,11 +102,11 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				pod_container_info{container="container1",container_id="docker://ab123",image="gcr.io/google_containers/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1
-				pod_container_info{container="container2",container_id="docker://cd456",image="gcr.io/google_containers/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
-				pod_container_info{container="container3",container_id="docker://ef789",image="gcr.io/google_containers/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_info{container="container1",container_id="docker://ab123",image="gcr.io/google_containers/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1
+				kube_pod_container_info{container="container2",container_id="docker://cd456",image="gcr.io/google_containers/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_info{container="container3",container_id="docker://ef789",image="gcr.io/google_containers/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
 				`,
-			metrics: []string{"pod_container_info"},
+			metrics: []string{"kube_pod_container_info"},
 		}, {
 			pods: []*api.Pod{
 				{
@@ -142,11 +142,11 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1
-				pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
-				pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1
+				kube_pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
 				`,
-			metrics: []string{"pod_container_status_ready"},
+			metrics: []string{"kube_pod_container_status_ready"},
 		}, {
 			pods: []*api.Pod{
 				{
@@ -182,11 +182,11 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				pod_container_status_restarts{container="container1",namespace="ns1",pod="pod1"} 0
-				pod_container_status_restarts{container="container2",namespace="ns2",pod="pod2"} 0
-				pod_container_status_restarts{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_restarts{container="container1",namespace="ns1",pod="pod1"} 0
+				kube_pod_container_status_restarts{container="container2",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_restarts{container="container3",namespace="ns2",pod="pod2"} 1
 				`,
-			metrics: []string{"pod_container_status_restarts"},
+			metrics: []string{"kube_pod_container_status_restarts"},
 		}, {
 			pods: []*api.Pod{
 				{
@@ -228,20 +228,20 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
-				pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
-				pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
-				pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
-				pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
-				pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
-				pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
-				pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
-				pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
+				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
+				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
+				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
 				`,
 			metrics: []string{
-				"pod_container_status_running",
-				"pod_container_status_waiting",
-				"pod_container_status_terminated",
+				"kube_pod_container_status_running",
+				"kube_pod_container_status_waiting",
+				"kube_pod_container_status_terminated",
 			},
 		}, {
 			pods: []*api.Pod{
@@ -266,10 +266,10 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				pod_info{host_ip="1.1.1.1",namespace="ns1",pod="pod1",pod_ip="1.2.3.4"} 1
-				pod_info{host_ip="1.1.1.1",namespace="ns2",pod="pod2",pod_ip="2.3.4.5"} 1
+				kube_pod_info{host_ip="1.1.1.1",namespace="ns1",pod="pod1",pod_ip="1.2.3.4"} 1
+				kube_pod_info{host_ip="1.1.1.1",namespace="ns2",pod="pod2",pod_ip="2.3.4.5"} 1
 				`,
-			metrics: []string{"pod_info"},
+			metrics: []string{"kube_pod_info"},
 		}, {
 			pods: []*api.Pod{
 				{
@@ -291,10 +291,10 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				pod_status_phase{namespace="ns1",phase="Running",pod="pod1"} 1
-				pod_status_phase{namespace="ns2",phase="Pending",pod="pod2"} 1
+				kube_pod_status_phase{namespace="ns1",phase="Running",pod="pod1"} 1
+				kube_pod_status_phase{namespace="ns2",phase="Pending",pod="pod2"} 1
 				`,
-			metrics: []string{"pod_status_phase"},
+			metrics: []string{"kube_pod_status_phase"},
 		}, {
 			pods: []*api.Pod{
 				{
@@ -326,14 +326,14 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				pod_status_ready{condition="false",namespace="ns1",pod="pod1"} 0
-				pod_status_ready{condition="false",namespace="ns2",pod="pod2"} 1
-				pod_status_ready{condition="true",namespace="ns1",pod="pod1"} 1
-				pod_status_ready{condition="true",namespace="ns2",pod="pod2"} 0
-				pod_status_ready{condition="unknown",namespace="ns1",pod="pod1"} 0
-				pod_status_ready{condition="unknown",namespace="ns2",pod="pod2"} 0
+				kube_pod_status_ready{condition="false",namespace="ns1",pod="pod1"} 0
+				kube_pod_status_ready{condition="false",namespace="ns2",pod="pod2"} 1
+				kube_pod_status_ready{condition="true",namespace="ns1",pod="pod1"} 1
+				kube_pod_status_ready{condition="true",namespace="ns2",pod="pod2"} 0
+				kube_pod_status_ready{condition="unknown",namespace="ns1",pod="pod1"} 0
+				kube_pod_status_ready{condition="unknown",namespace="ns2",pod="pod2"} 0
 			`,
-			metrics: []string{"pod_status_ready"},
+			metrics: []string{"kube_pod_status_ready"},
 		},
 	}
 	for _, c := range cases {

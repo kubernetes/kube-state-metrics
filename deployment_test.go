@@ -44,20 +44,20 @@ func TestDeploymentCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP deployment_spec_paused Whether the deployment is paused and will not be processed by the deployment controller.
-		# TYPE deployment_spec_paused gauge
-		# HELP deployment_spec_replicas Number of desired pods for a deployment.
-		# TYPE deployment_spec_replicas gauge
-		# HELP deployment_status_replicas The number of replicas per deployment.
-		# TYPE deployment_status_replicas gauge
-		# HELP deployment_status_replicas_available The number of available replicas per deployment.
-		# TYPE deployment_status_replicas_available gauge
-		# HELP deployment_status_replicas_unavailable The number of unavailable replicas per deployment.
-		# TYPE deployment_status_replicas_unavailable gauge
-		# HELP deployment_status_replicas_updated The number of updated replicas per deployment.
-		# TYPE deployment_status_replicas_updated gauge
-		# HELP deployment_status_observed_generation The generation observed by the deployment controller.
-		# TYPE deployment_status_observed_generation gauge
+		# HELP kube_deployment_spec_paused Whether the deployment is paused and will not be processed by the deployment controller.
+		# TYPE kube_deployment_spec_paused gauge
+		# HELP kube_deployment_spec_replicas Number of desired pods for a deployment.
+		# TYPE kube_deployment_spec_replicas gauge
+		# HELP kube_deployment_status_replicas The number of replicas per deployment.
+		# TYPE kube_deployment_status_replicas gauge
+		# HELP kube_deployment_status_replicas_available The number of available replicas per deployment.
+		# TYPE kube_deployment_status_replicas_available gauge
+		# HELP kube_deployment_status_replicas_unavailable The number of unavailable replicas per deployment.
+		# TYPE kube_deployment_status_replicas_unavailable gauge
+		# HELP kube_deployment_status_replicas_updated The number of updated replicas per deployment.
+		# TYPE kube_deployment_status_replicas_updated gauge
+		# HELP kube_deployment_status_observed_generation The generation observed by the deployment controller.
+		# TYPE kube_deployment_status_observed_generation gauge
 	`
 	cases := []struct {
 		depls []extensions.Deployment
@@ -99,20 +99,20 @@ func TestDeploymentCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				deployment_spec_paused{namespace="ns1",deployment="depl1"} 0
-				deployment_spec_paused{namespace="ns2",deployment="depl2"} 1
-				deployment_spec_replicas{namespace="ns1",deployment="depl1"} 200
-				deployment_spec_replicas{namespace="ns2",deployment="depl2"} 5
-				deployment_status_replicas{namespace="ns1",deployment="depl1"} 15
-				deployment_status_replicas{namespace="ns2",deployment="depl2"} 10
-				deployment_status_replicas_available{namespace="ns1",deployment="depl1"} 10
-				deployment_status_replicas_available{namespace="ns2",deployment="depl2"} 5
-				deployment_status_replicas_unavailable{namespace="ns1",deployment="depl1"} 5
-				deployment_status_replicas_unavailable{namespace="ns2",deployment="depl2"} 0
-				deployment_status_replicas_updated{namespace="ns1",deployment="depl1"} 2
-				deployment_status_replicas_updated{namespace="ns2",deployment="depl2"} 1
-				deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
-				deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111
+				kube_deployment_spec_paused{namespace="ns1",deployment="depl1"} 0
+				kube_deployment_spec_paused{namespace="ns2",deployment="depl2"} 1
+				kube_deployment_spec_replicas{namespace="ns1",deployment="depl1"} 200
+				kube_deployment_spec_replicas{namespace="ns2",deployment="depl2"} 5
+				kube_deployment_status_replicas{namespace="ns1",deployment="depl1"} 15
+				kube_deployment_status_replicas{namespace="ns2",deployment="depl2"} 10
+				kube_deployment_status_replicas_available{namespace="ns1",deployment="depl1"} 10
+				kube_deployment_status_replicas_available{namespace="ns2",deployment="depl2"} 5
+				kube_deployment_status_replicas_unavailable{namespace="ns1",deployment="depl1"} 5
+				kube_deployment_status_replicas_unavailable{namespace="ns2",deployment="depl2"} 0
+				kube_deployment_status_replicas_updated{namespace="ns1",deployment="depl1"} 2
+				kube_deployment_status_replicas_updated{namespace="ns2",deployment="depl2"} 1
+				kube_deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
+				kube_deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111
 			`,
 		},
 	}

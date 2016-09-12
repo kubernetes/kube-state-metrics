@@ -24,7 +24,7 @@ import (
 
 var (
 	descNodeInfo = prometheus.NewDesc(
-		"node_info",
+		"kube_node_info",
 		"Information about a cluster node.",
 		[]string{
 			"node",
@@ -37,49 +37,49 @@ var (
 	)
 
 	descNodeStatusReady = prometheus.NewDesc(
-		"node_status_ready",
+		"kube_node_status_ready",
 		"The ready status of a cluster node.",
 		[]string{"node", "condition"}, nil,
 	)
 	descNodeStatusOutOfDisk = prometheus.NewDesc(
-		"node_status_out_of_disk",
+		"kube_node_status_out_of_disk",
 		"Whether the node is out of disk space",
 		[]string{"node", "condition"}, nil,
 	)
 	descNodeStatusPhase = prometheus.NewDesc(
-		"node_status_phase",
+		"kube_node_status_phase",
 		"The phase the node is currently in.",
 		[]string{"node", "phase"}, nil,
 	)
 
 	descNodeStatusCapacityPods = prometheus.NewDesc(
-		"node_status_capacity_pods",
+		"kube_node_status_capacity_pods",
 		"The total pod resources of the node.",
 		[]string{"node"}, nil,
 	)
 	descNodeStatusCapacityCPU = prometheus.NewDesc(
-		"node_status_capacity_cpu_cores",
+		"kube_node_status_capacity_cpu_cores",
 		"The total CPU resources of the node.",
 		[]string{"node"}, nil,
 	)
 	descNodeStatusCapacityMemory = prometheus.NewDesc(
-		"node_status_capacity_memory_bytes",
+		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
 		[]string{"node"}, nil,
 	)
 
 	descNodeStatusAllocateablePods = prometheus.NewDesc(
-		"node_status_allocateable_pods",
+		"kube_node_status_allocateable_pods",
 		"The pod resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
 	descNodeStatusAllocateableCPU = prometheus.NewDesc(
-		"node_status_allocateable_cpu_cores",
+		"kube_node_status_allocateable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
 	descNodeStatusAllocateableMemory = prometheus.NewDesc(
-		"node_status_allocateable_memory_bytes",
+		"kube_node_status_allocateable_memory_bytes",
 		"The memory resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)

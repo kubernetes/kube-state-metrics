@@ -25,47 +25,47 @@ import (
 
 var (
 	descPodInfo = prometheus.NewDesc(
-		"pod_info",
+		"kube_pod_info",
 		"Information about pod.",
 		[]string{"namespace", "pod", "host_ip", "pod_ip"}, nil,
 	)
 	descPodStatusPhase = prometheus.NewDesc(
-		"pod_status_phase",
+		"kube_pod_status_phase",
 		"The pods current phase.",
 		[]string{"namespace", "pod", "phase"}, nil,
 	)
 	descPodStatusReady = prometheus.NewDesc(
-		"pod_status_ready",
+		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
 		[]string{"namespace", "pod", "condition"}, nil,
 	)
 	descPodContainerInfo = prometheus.NewDesc(
-		"pod_container_info",
+		"kube_pod_container_info",
 		"Information about a container in a pod.",
 		[]string{"namespace", "pod", "container", "image", "image_id", "container_id"}, nil,
 	)
 	descPodContainerStatusWaiting = prometheus.NewDesc(
-		"pod_container_status_waiting",
+		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
 	descPodContainerStatusRunning = prometheus.NewDesc(
-		"pod_container_status_running",
+		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
 	descPodContainerStatusTerminated = prometheus.NewDesc(
-		"pod_container_status_terminated",
+		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
 	descPodContainerStatusReady = prometheus.NewDesc(
-		"pod_container_status_ready",
+		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
 	descPodContainerStatusRestarts = prometheus.NewDesc(
-		"pod_container_status_restarts",
+		"kube_pod_container_status_restarts",
 		"The number of container restarts per container.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)

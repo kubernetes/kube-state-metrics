@@ -24,40 +24,40 @@ import (
 
 var (
 	descDeploymentStatusReplicas = prometheus.NewDesc(
-		"deployment_status_replicas",
+		"kube_deployment_status_replicas",
 		"The number of replicas per deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 	descDeploymentStatusReplicasAvailable = prometheus.NewDesc(
-		"deployment_status_replicas_available",
+		"kube_deployment_status_replicas_available",
 		"The number of available replicas per deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 	descDeploymentStatusReplicasUnavailable = prometheus.NewDesc(
-		"deployment_status_replicas_unavailable",
+		"kube_deployment_status_replicas_unavailable",
 		"The number of unavailable replicas per deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 	descDeploymentStatusReplicasUpdated = prometheus.NewDesc(
-		"deployment_status_replicas_updated",
+		"kube_deployment_status_replicas_updated",
 		"The number of updated replicas per deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 
 	descDeploymentStatusObservedGeneration = prometheus.NewDesc(
-		"deployment_status_observed_generation",
+		"kube_deployment_status_observed_generation",
 		"The generation observed by the deployment controller.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 
 	descDeploymentSpecReplicas = prometheus.NewDesc(
-		"deployment_spec_replicas",
+		"kube_deployment_spec_replicas",
 		"Number of desired pods for a deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 
 	descDeploymentSpecPaused = prometheus.NewDesc(
-		"deployment_spec_paused",
+		"kube_deployment_spec_paused",
 		"Whether the deployment is paused and will not be processed by the deployment controller.",
 		[]string{"namespace", "deployment"}, nil,
 	)

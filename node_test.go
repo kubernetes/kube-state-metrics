@@ -35,24 +35,24 @@ func TestNodeCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP node_info Information about a cluster node.
-		# TYPE node_info gauge
-		# HELP node_status_ready The ready status of a cluster node.
-		# TYPE node_status_ready gauge
-		# TYPE node_status_phase gauge
-		# HELP node_status_phase The phase the node is currently in.
-		# TYPE node_status_capacity_pods gauge
-		# HELP node_status_capacity_pods The total pod resources of the node.
-		# TYPE node_status_capacity_cpu_cores gauge
-		# HELP node_status_capacity_cpu_cores The total CPU resources of the node.
-		# TYPE node_status_capacity_memory_bytes gauge
-		# HELP node_status_capacity_memory_bytes The total memory resources of the node.
-		# TYPE node_status_allocateable_pods gauge
-		# HELP node_status_allocateable_pods The pod resources of a node that are available for scheduling.
-		# TYPE node_status_allocateable_cpu_cores gauge
-		# HELP node_status_allocateable_cpu_cores The CPU resources of a node that are available for scheduling.
-		# TYPE node_status_allocateable_memory_bytes gauge
-		# HELP node_status_allocateable_memory_bytes The memory resources of a node that are available for scheduling.
+		# HELP kube_node_info Information about a cluster node.
+		# TYPE kube_node_info gauge
+		# HELP kube_node_status_ready The ready status of a cluster node.
+		# TYPE kube_node_status_ready gauge
+		# TYPE kube_node_status_phase gauge
+		# HELP kube_node_status_phase The phase the node is currently in.
+		# TYPE kube_node_status_capacity_pods gauge
+		# HELP kube_node_status_capacity_pods The total pod resources of the node.
+		# TYPE kube_node_status_capacity_cpu_cores gauge
+		# HELP kube_node_status_capacity_cpu_cores The total CPU resources of the node.
+		# TYPE kube_node_status_capacity_memory_bytes gauge
+		# HELP kube_node_status_capacity_memory_bytes The total memory resources of the node.
+		# TYPE kube_node_status_allocateable_pods gauge
+		# HELP kube_node_status_allocateable_pods The pod resources of a node that are available for scheduling.
+		# TYPE kube_node_status_allocateable_cpu_cores gauge
+		# HELP kube_node_status_allocateable_cpu_cores The CPU resources of a node that are available for scheduling.
+		# TYPE kube_node_status_allocateable_memory_bytes gauge
+		# HELP kube_node_status_allocateable_memory_bytes The memory resources of a node that are available for scheduling.
 	`
 	cases := []struct {
 		nodes   []api.Node
@@ -78,7 +78,7 @@ func TestNodeCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
+				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
 			`,
 		},
 		// Verify resource metrics.
@@ -110,13 +110,13 @@ func TestNodeCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
-				node_status_capacity_cpu_cores{node="127.0.0.1"} 4
-				node_status_capacity_memory_bytes{node="127.0.0.1"} 2e9
-				node_status_capacity_pods{node="127.0.0.1"} 1000
-				node_status_allocateable_cpu_cores{node="127.0.0.1"} 3
-				node_status_allocateable_memory_bytes{node="127.0.0.1"} 1e9
-				node_status_allocateable_pods{node="127.0.0.1"} 555
+				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
+				kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4
+				kube_node_status_capacity_memory_bytes{node="127.0.0.1"} 2e9
+				kube_node_status_capacity_pods{node="127.0.0.1"} 1000
+				kube_node_status_allocateable_cpu_cores{node="127.0.0.1"} 3
+				kube_node_status_allocateable_memory_bytes{node="127.0.0.1"} 1e9
+				kube_node_status_allocateable_pods{node="127.0.0.1"} 555
 			`,
 		},
 		// Verify condition enumerations.
@@ -154,17 +154,17 @@ func TestNodeCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				node_status_ready{node="127.0.0.1",condition="true"} 1
-				node_status_ready{node="127.0.0.1",condition="false"} 0
-				node_status_ready{node="127.0.0.1",condition="unknown"} 0
-				node_status_ready{node="127.0.0.2",condition="true"} 0
-				node_status_ready{node="127.0.0.2",condition="false"} 0
-				node_status_ready{node="127.0.0.2",condition="unknown"} 1
-				node_status_ready{node="127.0.0.3",condition="true"} 0
-				node_status_ready{node="127.0.0.3",condition="false"} 1
-				node_status_ready{node="127.0.0.3",condition="unknown"} 0
+				kube_node_status_ready{node="127.0.0.1",condition="true"} 1
+				kube_node_status_ready{node="127.0.0.1",condition="false"} 0
+				kube_node_status_ready{node="127.0.0.1",condition="unknown"} 0
+				kube_node_status_ready{node="127.0.0.2",condition="true"} 0
+				kube_node_status_ready{node="127.0.0.2",condition="false"} 0
+				kube_node_status_ready{node="127.0.0.2",condition="unknown"} 1
+				kube_node_status_ready{node="127.0.0.3",condition="true"} 0
+				kube_node_status_ready{node="127.0.0.3",condition="false"} 1
+				kube_node_status_ready{node="127.0.0.3",condition="unknown"} 0
 			`,
-			metrics: []string{"node_status_ready"},
+			metrics: []string{"kube_node_status_ready"},
 		},
 		// Verify phase enumerations.
 		{
@@ -195,17 +195,17 @@ func TestNodeCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				node_status_phase{node="127.0.0.1",phase="Terminated"} 0
-				node_status_phase{node="127.0.0.1",phase="Running"} 1
-				node_status_phase{node="127.0.0.1",phase="Pending"} 0
-				node_status_phase{node="127.0.0.2",phase="Terminated"} 0
-				node_status_phase{node="127.0.0.2",phase="Running"} 0
-				node_status_phase{node="127.0.0.2",phase="Pending"} 1
-				node_status_phase{node="127.0.0.3",phase="Terminated"} 1
-				node_status_phase{node="127.0.0.3",phase="Running"} 0
-				node_status_phase{node="127.0.0.3",phase="Pending"} 0
+				kube_node_status_phase{node="127.0.0.1",phase="Terminated"} 0
+				kube_node_status_phase{node="127.0.0.1",phase="Running"} 1
+				kube_node_status_phase{node="127.0.0.1",phase="Pending"} 0
+				kube_node_status_phase{node="127.0.0.2",phase="Terminated"} 0
+				kube_node_status_phase{node="127.0.0.2",phase="Running"} 0
+				kube_node_status_phase{node="127.0.0.2",phase="Pending"} 1
+				kube_node_status_phase{node="127.0.0.3",phase="Terminated"} 1
+				kube_node_status_phase{node="127.0.0.3",phase="Running"} 0
+				kube_node_status_phase{node="127.0.0.3",phase="Pending"} 0
 			`,
-			metrics: []string{"node_status_phase"},
+			metrics: []string{"kube_node_status_phase"},
 		},
 	}
 	for _, c := range cases {

@@ -99,6 +99,9 @@ service account token that has read-only access to the Kubernetes cluster.
 
 When developing, test a metric dump against your local Kubernetes cluster by running:
 
-```
-go run main.go --apiserver=<APISERVER-HERE> --in-cluster=false --port=<APISERVER-PORT> --dry-run
-```
+	go install
+	kube-state-metrics --apiserver=<APISERVER-HERE> --in-cluster=false --port=8080
+
+Then curl the metrics endpoint
+
+	curl localhost:8080/metrics

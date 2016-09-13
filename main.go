@@ -47,18 +47,7 @@ const (
 	healthzPath  = "/healthz"
 )
 
-type metricsContainer struct {
-	deploymentReplicas          *prometheus.GaugeVec
-	deploymentReplicasAvailable *prometheus.GaugeVec
-	nodes                       *prometheus.GaugeVec
-}
-
 var (
-	metrics metricsContainer
-
-	// Error used to indicate that a sync is deferred because the controller isn't ready yet
-	errDeferredSync = fmt.Errorf("Deferring sync until all controllers have synced.")
-
 	flags = flag.NewFlagSet("", flag.ContinueOnError)
 
 	inCluster = flags.Bool("in-cluster", true, `If true, use the built in kubernetes

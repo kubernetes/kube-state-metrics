@@ -19,7 +19,7 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
 )
 
 var (
@@ -64,7 +64,7 @@ var (
 )
 
 type deploymentStore interface {
-	List() (deployments []extensions.Deployment, err error)
+	List() (deployments []v1beta1.Deployment, err error)
 }
 
 // deploymentCollector collects metrics about all deployments in the cluster.
@@ -95,7 +95,7 @@ func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d extensions.Deployment) {
+func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d v1beta1.Deployment) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
@@ -106,5 +106,5 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 	addGauge(descDeploymentStatusReplicasUpdated, float64(d.Status.UpdatedReplicas))
 	addGauge(descDeploymentStatusObservedGeneration, float64(d.Status.ObservedGeneration))
 	addGauge(descDeploymentSpecPaused, boolFloat64(d.Spec.Paused))
-	addGauge(descDeploymentSpecReplicas, float64(d.Spec.Replicas))
+	addGauge(descDeploymentSpecReplicas, float64(*d.Spec.Replicas))
 }

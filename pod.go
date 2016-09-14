@@ -19,8 +19,7 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/labels"
+	"k8s.io/client-go/1.4/pkg/api/v1"
 )
 
 var (
@@ -72,7 +71,7 @@ var (
 )
 
 type podStore interface {
-	List(selector labels.Selector) (pods []*api.Pod, err error)
+	List() (pods []v1.Pod, err error)
 }
 
 // podCollector collects metrics about all pods in the cluster.
@@ -95,7 +94,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
-	pods, err := pc.store.List(labels.Everything())
+	pods, err := pc.store.List()
 	if err != nil {
 		glog.Errorf("listing pods failed: %s", err)
 		return
@@ -105,7 +104,7 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p *api.Pod) {
+func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
 		lv = append([]string{p.Namespace, p.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
@@ -120,9 +119,10 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p *api.Pod) {
 	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP)
 	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
 
+	// TODO(brancz): add remaining conditions: PodScheduled
 	for _, c := range p.Status.Conditions {
 		switch c.Type {
-		case api.PodReady:
+		case v1.PodReady:
 			addConditionMetrics(ch, descPodStatusReady, c.Status, p.Namespace, p.Name)
 		}
 	}

@@ -26,17 +26,15 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift/origin/pkg/util/proc"
 	flag "github.com/spf13/pflag"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/client/cache"
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/client/restclient"
-	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
-	"k8s.io/kubernetes/pkg/controller/framework"
-	kubectl_util "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/util/wait"
-	"k8s.io/kubernetes/pkg/watch"
+	clientset "k8s.io/client-go/1.4/kubernetes"
+	"k8s.io/client-go/1.4/pkg/api"
+	"k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/1.4/pkg/runtime"
+	"k8s.io/client-go/1.4/pkg/watch"
+	restclient "k8s.io/client-go/1.4/rest"
+	"k8s.io/client-go/1.4/tools/cache"
+	"k8s.io/client-go/1.4/tools/clientcmd"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -55,12 +53,12 @@ var (
 
 	apiserver = flags.String("apiserver", "", `The URL of the apiserver to use as a master`)
 
+	kubeconfig = flags.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
+
 	port = flags.Int("port", 80, `Port to expose metrics on.`)
 )
 
 func main() {
-	// Create kubernetes client.
-	clientConfig := kubectl_util.DefaultClientConfig(flags)
 	flags.Parse(os.Args)
 
 	if *apiserver == "" && !(*inCluster) {
@@ -70,16 +68,16 @@ func main() {
 
 	proc.StartReaper()
 
-	kubeClient, err := createKubeClient(clientConfig)
+	kubeClient, err := createKubeClient()
 	if err != nil {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
-	runMetricsController(kubeClient)
+	initializeMetrics(kubeClient)
 	metricsServer()
 }
 
-func createKubeClient(clientConfig clientcmd.ClientConfig) (kubeClient clientset.Interface, err error) {
+func createKubeClient() (kubeClient clientset.Interface, err error) {
 	glog.Infof("Creating client")
 	if *inCluster {
 		config, err := restclient.InClusterConfig()
@@ -101,7 +99,14 @@ func createKubeClient(clientConfig clientcmd.ClientConfig) (kubeClient clientset
 			return nil, err
 		}
 	} else {
-		config, err := clientConfig.ClientConfig()
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		// if you want to change the loading rules (which files in which order), you can do so here
+		configOverrides := &clientcmd.ConfigOverrides{}
+		// if you want to change override values or bind them to flags, there are methods to help you
+		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+		config, err := kubeConfig.ClientConfig()
+		//config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		//config, err := clientcmd.DefaultClientConfig.ClientConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -151,83 +156,78 @@ func metricsServer() {
 	log.Fatal(http.ListenAndServe(listenAddress, nil))
 }
 
-// metricsController watches the kubernetes api and adds/removes services
-// from the loadbalancer, via loadBalancerConfig.
-type metricsController struct {
-	client         clientset.Interface
-	dplController  *framework.Controller
-	dplStore       cache.StoreToDeploymentLister
-	podController  *framework.Controller
-	podStore       cache.StoreToPodLister
-	nodeController *framework.Controller
-	nodeStore      cache.StoreToNodeLister
+type DeploymentLister func() ([]v1beta1.Deployment, error)
+
+func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
+	return l()
 }
 
-// runMetricsController creates a new controller from the given config.
-func runMetricsController(kubeClient clientset.Interface) *metricsController {
-	mc := &metricsController{
-		client: kubeClient,
-	}
+type PodLister func() ([]v1.Pod, error)
 
-	mc.dplStore.Store, mc.dplController = framework.NewInformer(
+func (l PodLister) List() ([]v1.Pod, error) {
+	return l()
+}
+
+type NodeLister func() (v1.NodeList, error)
+
+func (l NodeLister) List() (v1.NodeList, error) {
+	return l()
+}
+
+// initializeMetrics creates a new controller from the given config.
+func initializeMetrics(kubeClient clientset.Interface) {
+	dplStore, dplController := cache.NewNamespaceKeyedIndexerAndReflector(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return mc.client.Extensions().Deployments(api.NamespaceAll).List(options)
+				return kubeClient.Extensions().Deployments(api.NamespaceAll).List(options)
 			},
 			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return mc.client.Extensions().Deployments(api.NamespaceAll).Watch(options)
+				return kubeClient.Extensions().Deployments(api.NamespaceAll).Watch(options)
 			},
-		}, &extensions.Deployment{}, resyncPeriod, framework.ResourceEventHandlerFuncs{})
+		}, &v1beta1.Deployment{}, resyncPeriod)
 
-	mc.podStore.Store, mc.podController = framework.NewInformer(
-		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return mc.client.Core().Pods(api.NamespaceAll).List(options)
-			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return mc.client.Core().Pods(api.NamespaceAll).Watch(options)
-			},
-		}, &api.Pod{}, resyncPeriod, framework.ResourceEventHandlerFuncs{})
+	podStore, podController := cache.NewNamespaceKeyedIndexerAndReflector(
+		cache.NewListWatchFromClient(
+			kubeClient.Core().GetRESTClient(),
+			"pods",
+			api.NamespaceAll,
+			nil,
+		), &v1.Pod{}, resyncPeriod)
 
-	mc.nodeStore.Store, mc.nodeController = framework.NewInformer(
-		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return mc.client.Core().Nodes().List(options)
-			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return mc.client.Core().Nodes().Watch(options)
-			},
-		}, &api.Node{}, resyncPeriod, framework.ResourceEventHandlerFuncs{})
+	nodeStore, nodeController := cache.NewNamespaceKeyedIndexerAndReflector(
+		cache.NewListWatchFromClient(
+			kubeClient.Core().GetRESTClient(),
+			"nodes",
+			api.NamespaceAll,
+			nil,
+		), &v1.Node{}, resyncPeriod)
 
-	go mc.dplController.Run(wait.NeverStop)
-	go mc.podController.Run(wait.NeverStop)
-	go mc.nodeController.Run(wait.NeverStop)
+	go dplController.Run()
+	go podController.Run()
+	go nodeController.Run()
 
-	go func() {
-		for !mc.dplController.HasSynced() {
-			time.Sleep(100 * time.Millisecond)
+	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
+		for _, c := range dplStore.List() {
+			deployments = append(deployments, *(c.(*v1beta1.Deployment)))
 		}
-		prometheus.MustRegister(&deploymentCollector{
-			store: &mc.dplStore,
-		})
-	}()
+		return deployments, nil
+	})
 
-	go func() {
-		for !mc.podController.HasSynced() {
-			time.Sleep(100 * time.Millisecond)
+	podLister := PodLister(func() (pods []v1.Pod, err error) {
+		for _, m := range podStore.List() {
+			pods = append(pods, *m.(*v1.Pod))
 		}
-		prometheus.MustRegister(&podCollector{
-			store: &mc.podStore,
-		})
-	}()
-	go func() {
-		for !mc.nodeController.HasSynced() {
-			time.Sleep(100 * time.Millisecond)
-		}
-		prometheus.MustRegister(&nodeCollector{
-			store: &mc.nodeStore,
-		})
-	}()
+		return pods, nil
+	})
 
-	return mc
+	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
+		for _, m := range nodeStore.List() {
+			machines.Items = append(machines.Items, *(m.(*v1.Node)))
+		}
+		return machines, nil
+	})
+
+	prometheus.MustRegister(&deploymentCollector{store: dplLister})
+	prometheus.MustRegister(&podCollector{store: podLister})
+	prometheus.MustRegister(&nodeCollector{store: nodeLister})
 }

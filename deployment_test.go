@@ -28,15 +28,20 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
+)
+
+var (
+	depl1Replicas int32 = 200
+	depl2Replicas int32 = 5
 )
 
 type mockDeploymentStore struct {
-	f func() ([]extensions.Deployment, error)
+	f func() ([]v1beta1.Deployment, error)
 }
 
-func (ds mockDeploymentStore) List() (deployments []extensions.Deployment, err error) {
+func (ds mockDeploymentStore) List() (deployments []v1beta1.Deployment, err error) {
 	return ds.f()
 }
 
@@ -60,41 +65,41 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_status_observed_generation gauge
 	`
 	cases := []struct {
-		depls []extensions.Deployment
+		depls []v1beta1.Deployment
 		want  string
 	}{
 		{
-			depls: []extensions.Deployment{
+			depls: []v1beta1.Deployment{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "depl1",
 						Namespace: "ns1",
 					},
-					Status: extensions.DeploymentStatus{
+					Status: v1beta1.DeploymentStatus{
 						Replicas:            15,
 						AvailableReplicas:   10,
 						UnavailableReplicas: 5,
 						UpdatedReplicas:     2,
 						ObservedGeneration:  111,
 					},
-					Spec: extensions.DeploymentSpec{
-						Replicas: 200,
+					Spec: v1beta1.DeploymentSpec{
+						Replicas: &depl1Replicas,
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "depl2",
 						Namespace: "ns2",
 					},
-					Status: extensions.DeploymentStatus{
+					Status: v1beta1.DeploymentStatus{
 						Replicas:            10,
 						AvailableReplicas:   5,
 						UnavailableReplicas: 0,
 						UpdatedReplicas:     1,
 						ObservedGeneration:  1111,
 					},
-					Spec: extensions.DeploymentSpec{
+					Spec: v1beta1.DeploymentSpec{
 						Paused:   true,
-						Replicas: 5,
+						Replicas: &depl2Replicas,
 					},
 				},
 			},
@@ -119,7 +124,7 @@ func TestDeploymentCollector(t *testing.T) {
 	for _, c := range cases {
 		dc := &deploymentCollector{
 			store: mockDeploymentStore{
-				f: func() ([]extensions.Deployment, error) { return c.depls, nil },
+				f: func() ([]v1beta1.Deployment, error) { return c.depls, nil },
 			},
 		}
 		if err := gatherAndCompare(dc, c.want, nil); err != nil {

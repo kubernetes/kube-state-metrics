@@ -19,17 +19,14 @@ package main
 import (
 	"testing"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/labels"
+	"k8s.io/client-go/1.4/pkg/api/v1"
 )
 
-var ()
-
 type mockPodStore struct {
-	f func() ([]*api.Pod, error)
+	f func() ([]v1.Pod, error)
 }
 
-func (ds mockPodStore) List(selector labels.Selector) (pods []*api.Pod, err error) {
+func (ds mockPodStore) List() (pods []v1.Pod, err error) {
 	return ds.f()
 }
 
@@ -57,20 +54,20 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_status_ready gauge
 	`
 	cases := []struct {
-		pods    []*api.Pod
+		pods    []v1.Pod
 		metrics []string
 		want    string
 	}{
 		{
-			pods: []*api.Pod{
+			pods: []v1.Pod{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name:        "container1",
 								Image:       "gcr.io/google_containers/hyperkube1",
 								ImageID:     "docker://sha256:aaa",
@@ -79,19 +76,19 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name:        "container2",
 								Image:       "gcr.io/google_containers/hyperkube2",
 								ImageID:     "docker://sha256:bbb",
 								ContainerID: "docker://cd456",
 							},
-							api.ContainerStatus{
+							v1.ContainerStatus{
 								Name:        "container3",
 								Image:       "gcr.io/google_containers/hyperkube3",
 								ImageID:     "docker://sha256:ccc",
@@ -108,32 +105,32 @@ func TestPodCollector(t *testing.T) {
 				`,
 			metrics: []string{"kube_pod_container_info"},
 		}, {
-			pods: []*api.Pod{
+			pods: []v1.Pod{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name:  "container1",
 								Ready: true,
 							},
 						},
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name:  "container2",
 								Ready: true,
 							},
-							api.ContainerStatus{
+							v1.ContainerStatus{
 								Name:  "container3",
 								Ready: false,
 							},
@@ -148,32 +145,32 @@ func TestPodCollector(t *testing.T) {
 				`,
 			metrics: []string{"kube_pod_container_status_ready"},
 		}, {
-			pods: []*api.Pod{
+			pods: []v1.Pod{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name:         "container1",
 								RestartCount: 0,
 							},
 						},
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name:         "container2",
 								RestartCount: 0,
 							},
-							api.ContainerStatus{
+							v1.ContainerStatus{
 								Name:         "container3",
 								RestartCount: 1,
 							},
@@ -188,39 +185,39 @@ func TestPodCollector(t *testing.T) {
 				`,
 			metrics: []string{"kube_pod_container_status_restarts"},
 		}, {
-			pods: []*api.Pod{
+			pods: []v1.Pod{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name: "container1",
-								State: api.ContainerState{
-									Running: &api.ContainerStateRunning{},
+								State: v1.ContainerState{
+									Running: &v1.ContainerStateRunning{},
 								},
 							},
 						},
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
-					Status: api.PodStatus{
-						ContainerStatuses: []api.ContainerStatus{
-							api.ContainerStatus{
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
 								Name: "container2",
-								State: api.ContainerState{
-									Terminated: &api.ContainerStateTerminated{},
+								State: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{},
 								},
 							},
-							api.ContainerStatus{
+							v1.ContainerStatus{
 								Name: "container3",
-								State: api.ContainerState{
-									Waiting: &api.ContainerStateWaiting{},
+								State: v1.ContainerState{
+									Waiting: &v1.ContainerStateWaiting{},
 								},
 							},
 						},
@@ -244,22 +241,22 @@ func TestPodCollector(t *testing.T) {
 				"kube_pod_container_status_terminated",
 			},
 		}, {
-			pods: []*api.Pod{
+			pods: []v1.Pod{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
-					Status: api.PodStatus{
+					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "1.2.3.4",
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
-					Status: api.PodStatus{
+					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "2.3.4.5",
 					},
@@ -271,21 +268,21 @@ func TestPodCollector(t *testing.T) {
 				`,
 			metrics: []string{"kube_pod_info"},
 		}, {
-			pods: []*api.Pod{
+			pods: []v1.Pod{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
-					Status: api.PodStatus{
+					Status: v1.PodStatus{
 						Phase: "Running",
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
-					Status: api.PodStatus{
+					Status: v1.PodStatus{
 						Phase: "Pending",
 					},
 				},
@@ -296,30 +293,30 @@ func TestPodCollector(t *testing.T) {
 				`,
 			metrics: []string{"kube_pod_status_phase"},
 		}, {
-			pods: []*api.Pod{
+			pods: []v1.Pod{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
-					Status: api.PodStatus{
-						Conditions: []api.PodCondition{
-							api.PodCondition{
-								Type:   api.PodReady,
-								Status: api.ConditionTrue,
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							v1.PodCondition{
+								Type:   v1.PodReady,
+								Status: v1.ConditionTrue,
 							},
 						},
 					},
 				}, {
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
-					Status: api.PodStatus{
-						Conditions: []api.PodCondition{
-							api.PodCondition{
-								Type:   api.PodReady,
-								Status: api.ConditionFalse,
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							v1.PodCondition{
+								Type:   v1.PodReady,
+								Status: v1.ConditionFalse,
 							},
 						},
 					},
@@ -339,7 +336,7 @@ func TestPodCollector(t *testing.T) {
 	for _, c := range cases {
 		pc := &podCollector{
 			store: mockPodStore{
-				f: func() ([]*api.Pod, error) { return c.pods, nil },
+				f: func() ([]v1.Pod, error) { return c.pods, nil },
 			},
 		}
 		if err := gatherAndCompare(pc, c.want, c.metrics); err != nil {

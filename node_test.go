@@ -19,15 +19,15 @@ package main
 import (
 	"testing"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/resource"
+	"k8s.io/client-go/1.4/pkg/api/resource"
+	"k8s.io/client-go/1.4/pkg/api/v1"
 )
 
 type mockNodeStore struct {
-	list func() (api.NodeList, error)
+	list func() (v1.NodeList, error)
 }
 
-func (ns mockNodeStore) List() (api.NodeList, error) {
+func (ns mockNodeStore) List() (v1.NodeList, error) {
 	return ns.list()
 }
 
@@ -55,19 +55,19 @@ func TestNodeCollector(t *testing.T) {
 		# HELP kube_node_status_allocateable_memory_bytes The memory resources of a node that are available for scheduling.
 	`
 	cases := []struct {
-		nodes   []api.Node
+		nodes   []v1.Node
 		metrics []string // which metrics should be checked
 		want    string
 	}{
 		// Verify populating base metrics and that metrics for unset fields are skipped.
 		{
-			nodes: []api.Node{
+			nodes: []v1.Node{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
-					Status: api.NodeStatus{
-						NodeInfo: api.NodeSystemInfo{
+					Status: v1.NodeStatus{
+						NodeInfo: v1.NodeSystemInfo{
 							KernelVersion:           "kernel",
 							KubeletVersion:          "kubelet",
 							KubeProxyVersion:        "kubeproxy",
@@ -83,28 +83,28 @@ func TestNodeCollector(t *testing.T) {
 		},
 		// Verify resource metrics.
 		{
-			nodes: []api.Node{
+			nodes: []v1.Node{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
-					Status: api.NodeStatus{
-						NodeInfo: api.NodeSystemInfo{
+					Status: v1.NodeStatus{
+						NodeInfo: v1.NodeSystemInfo{
 							KernelVersion:           "kernel",
 							KubeletVersion:          "kubelet",
 							KubeProxyVersion:        "kubeproxy",
 							OSImage:                 "osimage",
 							ContainerRuntimeVersion: "rkt",
 						},
-						Capacity: api.ResourceList{
-							api.ResourceCPU:    resource.MustParse("4"),
-							api.ResourceMemory: resource.MustParse("2G"),
-							api.ResourcePods:   resource.MustParse("1000"),
+						Capacity: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse("4"),
+							v1.ResourceMemory: resource.MustParse("2G"),
+							v1.ResourcePods:   resource.MustParse("1000"),
 						},
-						Allocatable: api.ResourceList{
-							api.ResourceCPU:    resource.MustParse("3"),
-							api.ResourceMemory: resource.MustParse("1G"),
-							api.ResourcePods:   resource.MustParse("555"),
+						Allocatable: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse("3"),
+							v1.ResourceMemory: resource.MustParse("1G"),
+							v1.ResourcePods:   resource.MustParse("555"),
 						},
 					},
 				},
@@ -121,34 +121,34 @@ func TestNodeCollector(t *testing.T) {
 		},
 		// Verify condition enumerations.
 		{
-			nodes: []api.Node{
+			nodes: []v1.Node{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
-					Status: api.NodeStatus{
-						Conditions: []api.NodeCondition{
-							{Type: api.NodeReady, Status: api.ConditionTrue},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeReady, Status: v1.ConditionTrue},
 						},
 					},
 				},
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.2",
 					},
-					Status: api.NodeStatus{
-						Conditions: []api.NodeCondition{
-							{Type: api.NodeReady, Status: api.ConditionUnknown},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeReady, Status: v1.ConditionUnknown},
 						},
 					},
 				},
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.3",
 					},
-					Status: api.NodeStatus{
-						Conditions: []api.NodeCondition{
-							{Type: api.NodeReady, Status: api.ConditionFalse},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeReady, Status: v1.ConditionFalse},
 						},
 					},
 				},
@@ -168,29 +168,29 @@ func TestNodeCollector(t *testing.T) {
 		},
 		// Verify phase enumerations.
 		{
-			nodes: []api.Node{
+			nodes: []v1.Node{
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
-					Status: api.NodeStatus{
-						Phase: api.NodeRunning,
+					Status: v1.NodeStatus{
+						Phase: v1.NodeRunning,
 					},
 				},
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.2",
 					},
-					Status: api.NodeStatus{
-						Phase: api.NodePending,
+					Status: v1.NodeStatus{
+						Phase: v1.NodePending,
 					},
 				},
 				{
-					ObjectMeta: api.ObjectMeta{
+					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.3",
 					},
-					Status: api.NodeStatus{
-						Phase: api.NodeTerminated,
+					Status: v1.NodeStatus{
+						Phase: v1.NodeTerminated,
 					},
 				},
 			},
@@ -211,8 +211,8 @@ func TestNodeCollector(t *testing.T) {
 	for _, c := range cases {
 		dc := &nodeCollector{
 			store: &mockNodeStore{
-				list: func() (api.NodeList, error) {
-					return api.NodeList{Items: c.nodes}, nil
+				list: func() (v1.NodeList, error) {
+					return v1.NodeList{Items: c.nodes}, nil
 				},
 			},
 		}

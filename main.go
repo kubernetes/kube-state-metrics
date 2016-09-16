@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/1.4/tools/clientcmd"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -56,6 +57,8 @@ var (
 	kubeconfig = flags.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
 
 	port = flags.Int("port", 80, `Port to expose metrics on.`)
+
+	prefix = flag.String("prefix", "kube_", "A prefix appended to the start of all kubernetes metric names")
 )
 
 func main() {
@@ -226,6 +229,11 @@ func initializeMetrics(kubeClient clientset.Interface) {
 		}
 		return machines, nil
 	})
+
+	_ = promhttp.Handler()
+	// FixMe: This change line is only there for the go compiler not to compile.
+	// We first wanted to set the godeps correctly to include the promhttp in the
+	// vendor directory. In the following changes I will actually use the promhttp
 
 	prometheus.MustRegister(&deploymentCollector{store: dplLister})
 	prometheus.MustRegister(&podCollector{store: podLister})

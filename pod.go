@@ -76,6 +76,7 @@ type podStore interface {
 
 // podCollector collects metrics about all pods in the cluster.
 type podCollector struct {
+   prefix string 
 	store podStore
 }
 

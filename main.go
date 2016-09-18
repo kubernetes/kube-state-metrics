@@ -57,8 +57,6 @@ var (
 	kubeconfig = flags.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
 
 	port = flags.Int("port", 80, `Port to expose metrics on.`)
-
-	prefix = flag.String("prefix", "kube_", "A prefix appended to the start of all kubernetes metric names")
 )
 
 func main() {

@@ -8,10 +8,10 @@ spec:
     metadata:
       labels:
         app: kube-state-metrics
-        version: "0.2"
+        version: "v0.2.0"
     spec:
       containers:
       - name: kube-state-metrics
-        image: quay.io/w0mbat/kube-state-metrics:0.2
+        image: quay.io/w0mbat/kube-state-metrics:v0.2.0
         ports:
         - containerPort: 8080

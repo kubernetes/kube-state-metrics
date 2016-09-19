@@ -38,6 +38,11 @@ var (
 		"Describes whether the pod is ready to serve requests.",
 		[]string{"namespace", "pod", "condition"}, nil,
 	)
+	descPodStatusScheduled = prometheus.NewDesc(
+		"kube_pod_status_scheduled",
+		"Describes the status of the scheduling process for the pod.",
+		[]string{"namespace", "pod", "condition"}, nil,
+	)
 	descPodContainerInfo = prometheus.NewDesc(
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
@@ -84,6 +89,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodInfo
 	ch <- descPodStatusPhase
 	ch <- descPodStatusReady
+	ch <- descPodStatusScheduled
 	ch <- descPodContainerInfo
 	ch <- descPodContainerStatusWaiting
 	ch <- descPodContainerStatusRunning
@@ -119,11 +125,12 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP)
 	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
 
-	// TODO(brancz): add remaining conditions: PodScheduled
 	for _, c := range p.Status.Conditions {
 		switch c.Type {
 		case v1.PodReady:
 			addConditionMetrics(ch, descPodStatusReady, c.Status, p.Namespace, p.Name)
+		case v1.PodScheduled:
+			addConditionMetrics(ch, descPodStatusScheduled, c.Status, p.Namespace, p.Name)
 		}
 	}
 

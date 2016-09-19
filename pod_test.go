@@ -52,6 +52,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_status_phase gauge
 		# HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
 		# TYPE kube_pod_status_ready gauge
+		# HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
+		# TYPE kube_pod_status_scheduled gauge
 	`
 	cases := []struct {
 		pods    []v1.Pod
@@ -331,6 +333,45 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_status_ready{condition="unknown",namespace="ns2",pod="pod2"} 0
 			`,
 			metrics: []string{"kube_pod_status_ready"},
+		}, {
+			pods: []v1.Pod{
+				{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							v1.PodCondition{
+								Type:   v1.PodScheduled,
+								Status: v1.ConditionTrue,
+							},
+						},
+					},
+				}, {
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							v1.PodCondition{
+								Type:   v1.PodScheduled,
+								Status: v1.ConditionFalse,
+							},
+						},
+					},
+				},
+			},
+			want: metadata + `
+				kube_pod_status_scheduled{condition="false",namespace="ns1",pod="pod1"} 0
+				kube_pod_status_scheduled{condition="false",namespace="ns2",pod="pod2"} 1
+				kube_pod_status_scheduled{condition="true",namespace="ns1",pod="pod1"} 1
+				kube_pod_status_scheduled{condition="true",namespace="ns2",pod="pod2"} 0
+				kube_pod_status_scheduled{condition="unknown",namespace="ns1",pod="pod1"} 0
+				kube_pod_status_scheduled{condition="unknown",namespace="ns2",pod="pod2"} 0
+			`,
+			metrics: []string{"kube_pod_status_scheduled"},
 		},
 	}
 	for _, c := range cases {

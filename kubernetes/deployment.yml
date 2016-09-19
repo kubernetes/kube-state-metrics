@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kube-state-metrics-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kube-state-metrics
+        version: "0.2"
+    spec:
+      containers:
+      - name: kube-state-metrics
+        image: quay.io/w0mbat/kube-state-metrics:0.2
+        ports:
+        - containerPort: 8080

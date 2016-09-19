@@ -90,10 +90,23 @@ for metric collection at all and instead implement their own. Having
 kube-state-metrics as a separate project enables access to these metrics from
 those monitoring systems.
 
+# Building the Docker container
+Simple run the following command in this root folder, which will create a self-contained, statically-linked binary and build a Docker image:
+```
+docker run --rm \
+  -v "$(pwd):/src" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  centurylink/golang-builder \
+  kube-state-metrics
+```
+
 # Usage
 
 Simply build and run kube-state-metrics inside a Kubernetes pod which has a
 service account token that has read-only access to the Kubernetes cluster.
+
+## Kubernetes Deployment
+To deploy this project, you can simply run `kubectl apply -f kubernetes` and a Kubernetes service and deployment will be created. The service already has a `prometheus.io/scrape: 'true'` annotation and if you added the recommended Prometheus service-endpoint scraping configuration, Prometheus will pick it up automatically and you can start using the generated metrics right away.
 
 # Development
 

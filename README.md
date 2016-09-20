@@ -95,11 +95,7 @@ those monitoring systems.
 Simple run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
 ```
-docker run --rm \
-  -v "$(pwd):/src" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  centurylink/golang-builder \
-  kube-state-metrics
+make container
 ```
 
 # Usage

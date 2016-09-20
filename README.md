@@ -91,7 +91,8 @@ kube-state-metrics as a separate project enables access to these metrics from
 those monitoring systems.
 
 # Building the Docker container
-Simple run the following command in this root folder, which will create a self-contained, statically-linked binary and build a Docker image:
+Simple run the following command in this root folder, which will create a
+self-contained, statically-linked binary and build a Docker image:
 ```
 docker run --rm \
   -v "$(pwd):/src" \
@@ -107,13 +108,20 @@ service account token that has read-only access to the Kubernetes cluster.
 
 ## Kubernetes Deployment
 
-DISCLAIMER: At the moment the Docker image is hosted under a private account until we managed to push it to an official google-containers repo and integrate it with the release chain.
+DISCLAIMER: At the moment the Docker image is hosted under a private account
+until we managed to push it to an official google-containers repo and integrate
+it with the release chain.
 
-To deploy this project, you can simply run `kubectl apply -f kubernetes` and a Kubernetes service and deployment will be created. The service already has a `prometheus.io/scrape: 'true'` annotation and if you added the recommended Prometheus service-endpoint scraping [configuration](https://raw.githubusercontent.com/prometheus/prometheus/master/documentation/examples/prometheus-kubernetes.yml), Prometheus will pick it up automatically and you can start using the generated metrics right away.
+To deploy this project, you can simply run `kubectl apply -f kubernetes` and a
+Kubernetes service and deployment will be created. The service already has a
+`prometheus.io/scrape: 'true'` annotation and if you added the recommended
+Prometheus service-endpoint scraping [configuration](https://raw.githubusercontent.com/prometheus/prometheus/master/documentation/examples/prometheus-kubernetes.yml), Prometheus will pick it up automatically and you can start using the generated
+metrics right away.
 
 # Development
 
-When developing, test a metric dump against your local Kubernetes cluster by running:
+When developing, test a metric dump against your local Kubernetes cluster by
+running:
 
 	go install
 	kube-state-metrics --apiserver=<APISERVER-HERE> --in-cluster=false --port=8080

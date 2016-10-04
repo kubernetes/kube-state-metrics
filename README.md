@@ -105,10 +105,6 @@ service account token that has read-only access to the Kubernetes cluster.
 
 ## Kubernetes Deployment
 
-DISCLAIMER: At the moment the Docker image is hosted under a private account
-until we managed to push it to an official google-containers repo and integrate
-it with the release chain.
-
 To deploy this project, you can simply run `kubectl apply -f kubernetes` and a
 Kubernetes service and deployment will be created. The service already has a
 `prometheus.io/scrape: 'true'` annotation and if you added the recommended

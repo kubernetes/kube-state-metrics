@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/1.4/tools/clientcmd"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -73,8 +74,11 @@ func main() {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
-	initializeMetrics(kubeClient)
-	metricsServer()
+	// The speficic prometheus registry for the metrics
+	reg := prometheus.NewRegistry()
+
+	initializeMetrics(kubeClient, reg)
+	metricsServer(reg)
 }
 
 func createKubeClient() (kubeClient clientset.Interface, err error) {
@@ -128,13 +132,15 @@ func createKubeClient() (kubeClient clientset.Interface, err error) {
 	return kubeClient, nil
 }
 
-func metricsServer() {
+func metricsServer(reg prometheus.Gatherer) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := fmt.Sprintf(":%d", *port)
 
 	glog.Infof("Starting metrics server: %s", listenAddress)
+
 	// Add metricsPath
-	http.Handle(metricsPath, prometheus.UninstrumentedHandler())
+	http.Handle(metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+
 	// Add healthzPath
 	http.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -175,7 +181,7 @@ func (l NodeLister) List() (v1.NodeList, error) {
 }
 
 // initializeMetrics creates a new controller from the given config.
-func initializeMetrics(kubeClient clientset.Interface) {
+func initializeMetrics(kubeClient clientset.Interface, reg prometheus.Registerer) {
 	dplStore, dplController := cache.NewNamespaceKeyedIndexerAndReflector(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
@@ -227,7 +233,7 @@ func initializeMetrics(kubeClient clientset.Interface) {
 		return machines, nil
 	})
 
-	prometheus.MustRegister(&deploymentCollector{store: dplLister})
-	prometheus.MustRegister(&podCollector{store: podLister})
-	prometheus.MustRegister(&nodeCollector{store: nodeLister})
+	reg.MustRegister(&deploymentCollector{store: dplLister})
+	reg.MustRegister(&podCollector{store: podLister})
+	reg.MustRegister(&nodeCollector{store: nodeLister})
 }

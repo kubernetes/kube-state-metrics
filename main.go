@@ -230,4 +230,5 @@ func initializeMetrics(kubeClient clientset.Interface) {
 	prometheus.MustRegister(&deploymentCollector{store: dplLister})
 	prometheus.MustRegister(&podCollector{store: podLister})
 	prometheus.MustRegister(&nodeCollector{store: nodeLister})
+	prometheus.MustRegister(&nodePodCollector{ns: nodeLister, ps: podLister})
 }

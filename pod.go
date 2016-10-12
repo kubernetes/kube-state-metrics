@@ -76,13 +76,13 @@ var (
 
 	descPodContainerRequestedCpuMilliCores = prometheus.NewDesc(
 		"kube_pod_container_requested_cpu_millicores",
-		"The number of requested cpu millicores by a container",
+		"The number of requested cpu millicores by a container.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 
 	descPodContainerRequestedMemoryBytes = prometheus.NewDesc(
 		"kube_pod_container_requested_memory_bytes",
-		"The number of requested memory bytes  by a container",
+		"The number of requested memory bytes  by a container.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 )
@@ -162,12 +162,14 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	nodeName := p.Spec.NodeName
 	for _, c := range p.Spec.Containers {
 		req := c.Resources.Requests
-		cpu := req[v1.ResourceCPU]
-		mem := req[v1.ResourceMemory]
+		if cpu, ok := req[v1.ResourceCPU]; ok {
+			addGauge(descPodContainerRequestedCpuMilliCores, float64(cpu.MilliValue()),
+				c.Name, nodeName)
+		}
+		if mem, ok := req[v1.ResourceMemory]; ok {
+			addGauge(descPodContainerRequestedMemoryBytes, float64(mem.Value()),
+				c.Name, nodeName)
+		}
 
-		addGauge(descPodContainerRequestedCpuMilliCores, float64(cpu.MilliValue()),
-			c.Name, nodeName)
-		addGauge(descPodContainerRequestedMemoryBytes, float64(mem.Value()),
-			c.Name, nodeName)
 	}
 }

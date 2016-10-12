@@ -55,9 +55,9 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_status_ready gauge
 		# HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 		# TYPE kube_pod_status_scheduled gauge
-		# HELP kube_pod_container_requested_cpu_millicores The number of requested cpu millicores by a container
+		# HELP kube_pod_container_requested_cpu_millicores The number of requested cpu millicores by a container.
 		# TYPE kube_pod_container_requested_cpu_millicores gauge
-		# HELP kube_pod_container_requested_memory_bytes The number of requested memory bytes  by a container
+		# HELP kube_pod_container_requested_memory_bytes The number of requested memory bytes  by a container.
 		# TYPE kube_pod_container_requested_memory_bytes gauge
 	`
 	cases := []struct {
@@ -432,6 +432,10 @@ func TestPodCollector(t *testing.T) {
 										v1.ResourceMemory: *resource.NewQuantity(400000000, resource.DecimalSI),
 									},
 								},
+							},
+							// A container without a resource specicication. No metrics will be emitted for that.
+							v1.Container{
+								Name: "pod2_con3",
 							},
 						},
 					},

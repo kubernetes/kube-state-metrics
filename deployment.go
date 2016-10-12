@@ -61,6 +61,12 @@ var (
 		"Whether the deployment is paused and will not be processed by the deployment controller.",
 		[]string{"namespace", "deployment"}, nil,
 	)
+
+	descDeploymentMetadataGeneration = prometheus.NewDesc(
+		"kube_deployment_metadata_generation",
+		"Sequence number representing a specific generation of the desired state.",
+		[]string{"namespace", "deployment"}, nil,
+	)
 )
 
 type deploymentStore interface {
@@ -81,6 +87,7 @@ func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDeploymentStatusObservedGeneration
 	ch <- descDeploymentSpecPaused
 	ch <- descDeploymentSpecReplicas
+	ch <- descDeploymentMetadataGeneration
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -107,4 +114,5 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 	addGauge(descDeploymentStatusObservedGeneration, float64(d.Status.ObservedGeneration))
 	addGauge(descDeploymentSpecPaused, boolFloat64(d.Spec.Paused))
 	addGauge(descDeploymentSpecReplicas, float64(*d.Spec.Replicas))
+	addGauge(descDeploymentMetadataGeneration, float64(d.ObjectMeta.Generation))
 }

@@ -49,6 +49,8 @@ func TestDeploymentCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_deployment_metadata_generation Sequence number representing a specific generation of the desired state.
+		# TYPE kube_deployment_metadata_generation gauge
 		# HELP kube_deployment_spec_paused Whether the deployment is paused and will not be processed by the deployment controller.
 		# TYPE kube_deployment_spec_paused gauge
 		# HELP kube_deployment_spec_replicas Number of desired pods for a deployment.
@@ -72,8 +74,9 @@ func TestDeploymentCollector(t *testing.T) {
 			depls: []v1beta1.Deployment{
 				{
 					ObjectMeta: v1.ObjectMeta{
-						Name:      "depl1",
-						Namespace: "ns1",
+						Name:       "depl1",
+						Namespace:  "ns1",
+						Generation: 21,
 					},
 					Status: v1beta1.DeploymentStatus{
 						Replicas:            15,
@@ -87,8 +90,9 @@ func TestDeploymentCollector(t *testing.T) {
 					},
 				}, {
 					ObjectMeta: v1.ObjectMeta{
-						Name:      "depl2",
-						Namespace: "ns2",
+						Name:       "depl2",
+						Namespace:  "ns2",
+						Generation: 14,
 					},
 					Status: v1beta1.DeploymentStatus{
 						Replicas:            10,
@@ -104,6 +108,8 @@ func TestDeploymentCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_deployment_metadata_generation{namespace="ns1",deployment="depl1"} 21
+				kube_deployment_metadata_generation{namespace="ns2",deployment="depl2"} 14
 				kube_deployment_spec_paused{namespace="ns1",deployment="depl1"} 0
 				kube_deployment_spec_paused{namespace="ns2",deployment="depl2"} 1
 				kube_deployment_spec_replicas{namespace="ns1",deployment="depl1"} 200
@@ -182,7 +188,7 @@ metric output does not match expectation; want:
 
 got:
 
-%s       
+%s
 `, buf2.String(), buf1.String())
 	}
 	return nil

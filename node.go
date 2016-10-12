@@ -36,6 +36,12 @@ var (
 		}, nil,
 	)
 
+	descNodeSpecUnschedulable = prometheus.NewDesc(
+		"kube_node_spec_unschedulable",
+		"Whether a node can schedule new pods.",
+		[]string{"node"}, nil,
+	)
+
 	descNodeStatusReady = prometheus.NewDesc(
 		"kube_node_status_ready",
 		"The ready status of a cluster node.",
@@ -97,6 +103,7 @@ type nodeCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeInfo
+	ch <- descNodeSpecUnschedulable
 	ch <- descNodeStatusReady
 	ch <- descNodeStatusOutOfDisk
 	ch <- descNodeStatusPhase
@@ -134,6 +141,8 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		n.Status.NodeInfo.KubeletVersion,
 		n.Status.NodeInfo.KubeProxyVersion,
 	)
+
+	addGauge(descNodeSpecUnschedulable, boolFloat64(n.Spec.Unschedulable))
 
 	// Collect node conditions and while default to false.
 	// TODO(fabxc): add remaining conditions: NodeMemoryPressure,  NodeDiskPressure, NodeNetworkUnavailable

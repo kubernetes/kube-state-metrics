@@ -19,6 +19,7 @@ package main
 import (
 	"testing"
 
+	"k8s.io/client-go/1.4/pkg/api/resource"
 	"k8s.io/client-go/1.4/pkg/api/v1"
 )
 
@@ -54,6 +55,10 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_status_ready gauge
 		# HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 		# TYPE kube_pod_status_scheduled gauge
+		# HELP kube_pod_container_requested_cpu_millicores The number of requested cpu millicores by a container.
+		# TYPE kube_pod_container_requested_cpu_millicores gauge
+		# HELP kube_pod_container_requested_memory_bytes The number of requested memory bytes  by a container.
+		# TYPE kube_pod_container_requested_memory_bytes gauge
 	`
 	cases := []struct {
 		pods    []v1.Pod
@@ -372,6 +377,84 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_status_scheduled{condition="unknown",namespace="ns2",pod="pod2"} 0
 			`,
 			metrics: []string{"kube_pod_status_scheduled"},
+		}, {
+			pods: []v1.Pod{
+				{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+						Containers: []v1.Container{
+							v1.Container{
+								Name: "pod1_con1",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    *resource.NewMilliQuantity(int64(200), resource.DecimalSI),
+										v1.ResourceMemory: *resource.NewQuantity(100000000, resource.DecimalSI),
+									},
+								},
+							},
+							v1.Container{
+								Name: "pod1_con2",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    *resource.NewMilliQuantity(int64(300), resource.DecimalSI),
+										v1.ResourceMemory: *resource.NewQuantity(200000000, resource.DecimalSI),
+									},
+								},
+							},
+						},
+					},
+				}, {
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+						Containers: []v1.Container{
+							v1.Container{
+								Name: "pod2_con1",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    *resource.NewMilliQuantity(int64(400), resource.DecimalSI),
+										v1.ResourceMemory: *resource.NewQuantity(300000000, resource.DecimalSI),
+									},
+								},
+							},
+							v1.Container{
+								Name: "pod2_con2",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    *resource.NewMilliQuantity(int64(500), resource.DecimalSI),
+										v1.ResourceMemory: *resource.NewQuantity(400000000, resource.DecimalSI),
+									},
+								},
+							},
+							// A container without a resource specicication. No metrics will be emitted for that.
+							v1.Container{
+								Name: "pod2_con3",
+							},
+						},
+					},
+				},
+			},
+			want: metadata + `
+		kube_pod_container_requested_cpu_millicores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 200
+		kube_pod_container_requested_cpu_millicores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 300
+		kube_pod_container_requested_cpu_millicores{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 400
+		kube_pod_container_requested_cpu_millicores{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 500
+		kube_pod_container_requested_memory_bytes{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 1e+08
+		kube_pod_container_requested_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
+		kube_pod_container_requested_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
+		kube_pod_container_requested_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
+		`,
+			metrics: []string{
+				"kube_pod_container_requested_cpu_millicores",
+				"kube_pod_container_requested_memory_bytes",
+			},
 		},
 	}
 	for _, c := range cases {

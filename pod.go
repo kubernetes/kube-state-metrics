@@ -73,6 +73,18 @@ var (
 		"The number of container restarts per container.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
+
+	descPodContainerRequestedCpuMilliCores = prometheus.NewDesc(
+		"kube_pod_container_requested_cpu_millicores",
+		"The number of requested cpu millicores by a container.",
+		[]string{"namespace", "pod", "container", "node"}, nil,
+	)
+
+	descPodContainerRequestedMemoryBytes = prometheus.NewDesc(
+		"kube_pod_container_requested_memory_bytes",
+		"The number of requested memory bytes  by a container.",
+		[]string{"namespace", "pod", "container", "node"}, nil,
+	)
 )
 
 type podStore interface {
@@ -96,6 +108,8 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusTerminated
 	ch <- descPodContainerStatusReady
 	ch <- descPodContainerStatusRestarts
+	ch <- descPodContainerRequestedCpuMilliCores
+	ch <- descPodContainerRequestedMemoryBytes
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -143,5 +157,19 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
+	}
+
+	nodeName := p.Spec.NodeName
+	for _, c := range p.Spec.Containers {
+		req := c.Resources.Requests
+		if cpu, ok := req[v1.ResourceCPU]; ok {
+			addGauge(descPodContainerRequestedCpuMilliCores, float64(cpu.MilliValue()),
+				c.Name, nodeName)
+		}
+		if mem, ok := req[v1.ResourceMemory]; ok {
+			addGauge(descPodContainerRequestedMemoryBytes, float64(mem.Value()),
+				c.Name, nodeName)
+		}
+
 	}
 }

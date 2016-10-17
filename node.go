@@ -165,7 +165,7 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 	// Add capacity and allocateable resources if they are set.
 	addResource := func(d *prometheus.Desc, res v1.ResourceList, n v1.ResourceName) {
 		if v, ok := res[n]; ok {
-			addGauge(d, float64(v.Value()))
+			addGauge(d, float64(v.MilliValue())/1000)
 		}
 	}
 	addResource(descNodeStatusCapacityCPU, n.Status.Capacity, v1.ResourceCPU)

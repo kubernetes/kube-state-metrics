@@ -46,20 +46,34 @@ const (
 )
 
 var (
-	flags = flag.NewFlagSet("", flag.ContinueOnError)
+	flags = flag.NewFlagSet("", flag.ExitOnError)
 
-	inCluster = flags.Bool("in-cluster", true, `If true, use the built in kubernetes
-		cluster for creating the client`)
+	inCluster = flags.Bool("in-cluster", true, `If true, use the built in kubernetes cluster for creating the client`)
 
 	apiserver = flags.String("apiserver", "", `The URL of the apiserver to use as a master`)
 
 	kubeconfig = flags.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
 
+	help = flags.BoolP("help", "h", false, "Print help text")
+
 	port = flags.Int("port", 80, `Port to expose metrics on.`)
 )
 
 func main() {
-	flags.Parse(os.Args)
+	flags.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flags.PrintDefaults()
+	}
+
+	err := flags.Parse(os.Args)
+	if err != nil {
+		glog.Fatalf("Error: %s", err)
+	}
+
+	if *help {
+		flags.Usage()
+		os.Exit(0)
+	}
 
 	if *apiserver == "" && !(*inCluster) {
 		glog.Fatalf("--apiserver not set and --in-cluster is false; apiserver must be set to a valid URL")

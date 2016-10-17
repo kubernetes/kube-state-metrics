@@ -103,7 +103,7 @@ func TestNodeCollector(t *testing.T) {
 							ContainerRuntimeVersion: "rkt",
 						},
 						Capacity: v1.ResourceList{
-							v1.ResourceCPU:    resource.MustParse("4"),
+							v1.ResourceCPU:    resource.MustParse("4.3"),
 							v1.ResourceMemory: resource.MustParse("2G"),
 							v1.ResourcePods:   resource.MustParse("1000"),
 						},
@@ -118,7 +118,7 @@ func TestNodeCollector(t *testing.T) {
 			want: metadata + `
 				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 1
-				kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4
+				kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4.3
 				kube_node_status_capacity_memory_bytes{node="127.0.0.1"} 2e9
 				kube_node_status_capacity_pods{node="127.0.0.1"} 1000
 				kube_node_status_allocateable_cpu_cores{node="127.0.0.1"} 3

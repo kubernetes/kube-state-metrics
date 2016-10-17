@@ -49,12 +49,12 @@ func TestNodeCollector(t *testing.T) {
 		# HELP kube_node_status_capacity_cpu_cores The total CPU resources of the node.
 		# TYPE kube_node_status_capacity_memory_bytes gauge
 		# HELP kube_node_status_capacity_memory_bytes The total memory resources of the node.
-		# TYPE kube_node_status_allocateable_pods gauge
-		# HELP kube_node_status_allocateable_pods The pod resources of a node that are available for scheduling.
-		# TYPE kube_node_status_allocateable_cpu_cores gauge
-		# HELP kube_node_status_allocateable_cpu_cores The CPU resources of a node that are available for scheduling.
-		# TYPE kube_node_status_allocateable_memory_bytes gauge
-		# HELP kube_node_status_allocateable_memory_bytes The memory resources of a node that are available for scheduling.
+		# TYPE kube_node_status_allocatable_pods gauge
+		# HELP kube_node_status_allocatable_pods The pod resources of a node that are available for scheduling.
+		# TYPE kube_node_status_allocatable_cpu_cores gauge
+		# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
+		# TYPE kube_node_status_allocatable_memory_bytes gauge
+		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
 	`
 	cases := []struct {
 		nodes   []v1.Node
@@ -121,9 +121,9 @@ func TestNodeCollector(t *testing.T) {
 				kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4
 				kube_node_status_capacity_memory_bytes{node="127.0.0.1"} 2e9
 				kube_node_status_capacity_pods{node="127.0.0.1"} 1000
-				kube_node_status_allocateable_cpu_cores{node="127.0.0.1"} 3
-				kube_node_status_allocateable_memory_bytes{node="127.0.0.1"} 1e9
-				kube_node_status_allocateable_pods{node="127.0.0.1"} 555
+				kube_node_status_allocatable_cpu_cores{node="127.0.0.1"} 3
+				kube_node_status_allocatable_memory_bytes{node="127.0.0.1"} 1e9
+				kube_node_status_allocatable_pods{node="127.0.0.1"} 555
 			`,
 		},
 		// Verify condition enumerations.

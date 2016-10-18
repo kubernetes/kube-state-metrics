@@ -36,9 +36,9 @@ additional metrics!
 | kube_node_status_capacity_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
 | kube_node_status_capacity_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
 | kube_node_status_capacity_pods | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_allocateable_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_allocateable_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_allocateable_pods | Gauge | `node`=&lt;node-address&gt;|
+| kube_node_status_allocatable_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
+| kube_node_status_allocatable_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
+| kube_node_status_allocatable_pods | Gauge | `node`=&lt;node-address&gt;|
 
 ### Deployment Metrics
 

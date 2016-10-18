@@ -74,18 +74,18 @@ var (
 		[]string{"node"}, nil,
 	)
 
-	descNodeStatusAllocateablePods = prometheus.NewDesc(
-		"kube_node_status_allocateable_pods",
+	descNodeStatusAllocatablePods = prometheus.NewDesc(
+		"kube_node_status_allocatable_pods",
 		"The pod resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
-	descNodeStatusAllocateableCPU = prometheus.NewDesc(
-		"kube_node_status_allocateable_cpu_cores",
+	descNodeStatusAllocatableCPU = prometheus.NewDesc(
+		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
-	descNodeStatusAllocateableMemory = prometheus.NewDesc(
-		"kube_node_status_allocateable_memory_bytes",
+	descNodeStatusAllocatableMemory = prometheus.NewDesc(
+		"kube_node_status_allocatable_memory_bytes",
 		"The memory resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
@@ -110,9 +110,9 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeStatusCapacityCPU
 	ch <- descNodeStatusCapacityMemory
 	ch <- descNodeStatusCapacityPods
-	ch <- descNodeStatusAllocateableCPU
-	ch <- descNodeStatusAllocateableMemory
-	ch <- descNodeStatusAllocateablePods
+	ch <- descNodeStatusAllocatableCPU
+	ch <- descNodeStatusAllocatableMemory
+	ch <- descNodeStatusAllocatablePods
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -162,7 +162,7 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		addGauge(descNodeStatusPhase, boolFloat64(p == v1.NodeTerminated), string(v1.NodeTerminated))
 	}
 
-	// Add capacity and allocateable resources if they are set.
+	// Add capacity and allocatable resources if they are set.
 	addResource := func(d *prometheus.Desc, res v1.ResourceList, n v1.ResourceName) {
 		if v, ok := res[n]; ok {
 			addGauge(d, float64(v.MilliValue())/1000)
@@ -172,9 +172,9 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 	addResource(descNodeStatusCapacityMemory, n.Status.Capacity, v1.ResourceMemory)
 	addResource(descNodeStatusCapacityPods, n.Status.Capacity, v1.ResourcePods)
 
-	addResource(descNodeStatusAllocateableCPU, n.Status.Allocatable, v1.ResourceCPU)
-	addResource(descNodeStatusAllocateableMemory, n.Status.Allocatable, v1.ResourceMemory)
-	addResource(descNodeStatusAllocateablePods, n.Status.Allocatable, v1.ResourcePods)
+	addResource(descNodeStatusAllocatableCPU, n.Status.Allocatable, v1.ResourceCPU)
+	addResource(descNodeStatusAllocatableMemory, n.Status.Allocatable, v1.ResourceMemory)
+	addResource(descNodeStatusAllocatablePods, n.Status.Allocatable, v1.ResourcePods)
 }
 
 // addConditionMetrics generates one metric for each possible node condition

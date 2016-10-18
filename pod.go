@@ -19,7 +19,7 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.5/pkg/api/v1"
 )
 
 var (

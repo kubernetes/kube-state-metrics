@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/1.5/pkg/api"
 	"k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/client-go/1.5/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/1.5/pkg/fields"
 	restclient "k8s.io/client-go/1.5/rest"
 	"k8s.io/client-go/1.5/tools/cache"
 	"k8s.io/client-go/1.5/tools/clientcmd"
@@ -181,6 +182,12 @@ func (l PodLister) List() ([]v1.Pod, error) {
 	return l()
 }
 
+type EventLister func() ([]v1.Event, error)
+
+func (l EventLister) List() ([]v1.Event, error) {
+	return l()
+}
+
 type NodeLister func() (v1.NodeList, error)
 
 func (l NodeLister) List() (v1.NodeList, error) {
@@ -195,10 +202,14 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 
 	dlw := cache.NewListWatchFromClient(eclient, "deployments", api.NamespaceAll, nil)
 	plw := cache.NewListWatchFromClient(cclient, "pods", api.NamespaceAll, nil)
+	// early filtering corresponding to the metrics reported
+	esel, _ := fields.ParseSelector("involvedObject.kind=Pod")
+	elw := cache.NewListWatchFromClient(cclient, "events", api.NamespaceAll, esel)
 	nlw := cache.NewListWatchFromClient(cclient, "nodes", api.NamespaceAll, nil)
 
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
+	einf := cache.NewSharedInformer(elw, &v1.Event{}, resyncPeriod)
 	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
 
 	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
@@ -215,6 +226,13 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 		return pods, nil
 	})
 
+	eventLister := EventLister(func() (events []v1.Event, err error) {
+		for _, e := range einf.GetStore().List() {
+			events = append(events, *e.(*v1.Event))
+		}
+		return events, nil
+	})
+
 	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
 		for _, m := range ninf.GetStore().List() {
 			machines.Items = append(machines.Items, *(m.(*v1.Node)))
@@ -224,9 +242,11 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 
 	prometheus.MustRegister(&deploymentCollector{store: dplLister})
 	prometheus.MustRegister(&podCollector{store: podLister})
+	prometheus.MustRegister(&eventCollector{store: eventLister})
 	prometheus.MustRegister(&nodeCollector{store: nodeLister})
 
 	go dinf.Run(context.Background().Done())
 	go pinf.Run(context.Background().Done())
+	go einf.Run(context.Background().Done())
 	go ninf.Run(context.Background().Done())
 }

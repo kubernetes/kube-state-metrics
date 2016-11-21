@@ -86,15 +86,15 @@ var (
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 
-	descPodContainerLimitedCpuCores = prometheus.NewDesc(
-		"kube_pod_container_limited_cpu_cores",
-		"The number of limited cpu cores by a container.",
+	descPodContainerLimitsCpuCores = prometheus.NewDesc(
+		"kube_pod_container_limits_cpu_cores",
+		"The number of limits on cpu cores by a container.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 
-	descPodContainerLimitedMemoryBytes = prometheus.NewDesc(
-		"kube_pod_container_limited_memory_bytes",
-		"The number of limited memory bytes  by a container.",
+	descPodContainerLimitsMemoryBytes = prometheus.NewDesc(
+		"kube_pod_container_limits_memory_bytes",
+		"The number of limits on memory bytes by a container.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 )
@@ -122,8 +122,8 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusRestarts
 	ch <- descPodContainerRequestedCpuCores
 	ch <- descPodContainerRequestedMemoryBytes
-	ch <- descPodContainerLimitedCpuCores
-	ch <- descPodContainerLimitedMemoryBytes
+	ch <- descPodContainerLimitsCpuCores
+	ch <- descPodContainerLimitsMemoryBytes
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -188,11 +188,11 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		}
 
 		if cpu, ok := lim[v1.ResourceCPU]; ok {
-			addGauge(descPodContainerLimitedCpuCores, float64(cpu.MilliValue())/1000,
+			addGauge(descPodContainerLimitsCpuCores, float64(cpu.MilliValue())/1000,
 				c.Name, nodeName)
 		}
 		if mem, ok := lim[v1.ResourceMemory]; ok {
-			addGauge(descPodContainerLimitedMemoryBytes, float64(mem.Value()),
+			addGauge(descPodContainerLimitsMemoryBytes, float64(mem.Value()),
 				c.Name, nodeName)
 		}
 	}

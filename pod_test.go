@@ -59,10 +59,10 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_requested_cpu_cores gauge
 		# HELP kube_pod_container_requested_memory_bytes The number of requested memory bytes  by a container.
 		# TYPE kube_pod_container_requested_memory_bytes gauge
-		# HELP kube_pod_container_limited_cpu_cores The number of limited cpu cores by a container.
-		# TYPE kube_pod_container_limited_cpu_cores gauge
-		# HELP kube_pod_container_limited_memory_bytes The number of limited memory bytes  by a container.
-		# TYPE kube_pod_container_limited_memory_bytes gauge
+		# HELP kube_pod_container_limits_cpu_cores The number of limits on cpu cores by a container.
+		# TYPE kube_pod_container_limits_cpu_cores gauge
+		# HELP kube_pod_container_limits_memory_bytes The number of limits on memory bytes by a container.
+		# TYPE kube_pod_container_limits_memory_bytes gauge
 	`
 	cases := []struct {
 		pods    []v1.Pod
@@ -470,20 +470,20 @@ func TestPodCollector(t *testing.T) {
 		kube_pod_container_requested_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
 		kube_pod_container_requested_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
 		kube_pod_container_requested_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
-		kube_pod_container_limited_cpu_cores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 0.2
-		kube_pod_container_limited_cpu_cores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 0.3
-		kube_pod_container_limited_cpu_cores{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 0.4
-		kube_pod_container_limited_cpu_cores{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 0.5
-		kube_pod_container_limited_memory_bytes{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 1e+08
-		kube_pod_container_limited_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
-		kube_pod_container_limited_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
-		kube_pod_container_limited_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
+		kube_pod_container_limits_cpu_cores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 0.2
+		kube_pod_container_limits_cpu_cores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 0.3
+		kube_pod_container_limits_cpu_cores{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 0.4
+		kube_pod_container_limits_cpu_cores{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 0.5
+		kube_pod_container_limits_memory_bytes{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 1e+08
+		kube_pod_container_limits_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
+		kube_pod_container_limits_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
+		kube_pod_container_limits_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
 		`,
 			metrics: []string{
 				"kube_pod_container_requested_cpu_cores",
 				"kube_pod_container_requested_memory_bytes",
-				"kube_pod_container_limited_cpu_cores",
-				"kube_pod_container_limited_memory_bytes",
+				"kube_pod_container_limits_cpu_cores",
+				"kube_pod_container_limits_memory_bytes",
 			},
 		},
 	}

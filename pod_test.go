@@ -59,9 +59,9 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_requested_cpu_cores gauge
 		# HELP kube_pod_container_requested_memory_bytes The number of requested memory bytes  by a container.
 		# TYPE kube_pod_container_requested_memory_bytes gauge
-		# HELP kube_pod_container_limits_cpu_cores The number of limits on cpu cores by a container.
+		# HELP kube_pod_container_limits_cpu_cores The limit on cpu cores to be used by a container.
 		# TYPE kube_pod_container_limits_cpu_cores gauge
-		# HELP kube_pod_container_limits_memory_bytes The number of limits on memory bytes by a container.
+		# HELP kube_pod_container_limits_memory_bytes The limit on memory to be used by a container in bytes.
 		# TYPE kube_pod_container_limits_memory_bytes gauge
 	`
 	cases := []struct {

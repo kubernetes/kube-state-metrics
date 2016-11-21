@@ -88,13 +88,13 @@ var (
 
 	descPodContainerLimitsCpuCores = prometheus.NewDesc(
 		"kube_pod_container_limits_cpu_cores",
-		"The number of limits on cpu cores by a container.",
+		"The limit on cpu cores to be used by a container.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 
 	descPodContainerLimitsMemoryBytes = prometheus.NewDesc(
 		"kube_pod_container_limits_memory_bytes",
-		"The number of limits on memory bytes by a container.",
+		"The limit on memory to be used by a container in bytes.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 )

@@ -85,6 +85,18 @@ var (
 		"The number of requested memory bytes  by a container.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
+
+	descPodContainerLimitsCpuCores = prometheus.NewDesc(
+		"kube_pod_container_limits_cpu_cores",
+		"The limit on cpu cores to be used by a container.",
+		[]string{"namespace", "pod", "container", "node"}, nil,
+	)
+
+	descPodContainerLimitsMemoryBytes = prometheus.NewDesc(
+		"kube_pod_container_limits_memory_bytes",
+		"The limit on memory to be used by a container in bytes.",
+		[]string{"namespace", "pod", "container", "node"}, nil,
+	)
 )
 
 type podStore interface {
@@ -110,6 +122,8 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusRestarts
 	ch <- descPodContainerRequestedCpuCores
 	ch <- descPodContainerRequestedMemoryBytes
+	ch <- descPodContainerLimitsCpuCores
+	ch <- descPodContainerLimitsMemoryBytes
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -162,6 +176,8 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	nodeName := p.Spec.NodeName
 	for _, c := range p.Spec.Containers {
 		req := c.Resources.Requests
+		lim := c.Resources.Limits
+
 		if cpu, ok := req[v1.ResourceCPU]; ok {
 			addGauge(descPodContainerRequestedCpuCores, float64(cpu.MilliValue())/1000,
 				c.Name, nodeName)
@@ -171,5 +187,13 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 				c.Name, nodeName)
 		}
 
+		if cpu, ok := lim[v1.ResourceCPU]; ok {
+			addGauge(descPodContainerLimitsCpuCores, float64(cpu.MilliValue())/1000,
+				c.Name, nodeName)
+		}
+		if mem, ok := lim[v1.ResourceMemory]; ok {
+			addGauge(descPodContainerLimitsMemoryBytes, float64(mem.Value()),
+				c.Name, nodeName)
+		}
 	}
 }

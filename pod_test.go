@@ -76,6 +76,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
 							v1.ContainerStatus{
@@ -90,6 +93,9 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
 					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
@@ -110,9 +116,9 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_info{container="container1",container_id="docker://ab123",image="gcr.io/google_containers/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_info{container="container2",container_id="docker://cd456",image="gcr.io/google_containers/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_info{container="container3",container_id="docker://ef789",image="gcr.io/google_containers/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_info{container="container1",container_id="docker://ab123",image="gcr.io/google_containers/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",node="node1",pod="pod1"} 1
+				kube_pod_container_info{container="container2",container_id="docker://cd456",image="gcr.io/google_containers/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",node="node2",pod="pod2"} 1
+				kube_pod_container_info{container="container3",container_id="docker://ef789",image="gcr.io/google_containers/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",node="node2",pod="pod2"} 1
 				`,
 			metrics: []string{"kube_pod_container_info"},
 		}, {
@@ -121,6 +127,9 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
 					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
@@ -134,6 +143,9 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
 					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
@@ -150,9 +162,9 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_ready{container="container1",namespace="ns1",node="node1",pod="pod1"} 1
+				kube_pod_container_status_ready{container="container2",namespace="ns2",node="node2",pod="pod2"} 1
+				kube_pod_container_status_ready{container="container3",namespace="ns2",node="node2",pod="pod2"} 0
 				`,
 			metrics: []string{"kube_pod_container_status_ready"},
 		}, {
@@ -161,6 +173,9 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
 					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
@@ -174,6 +189,9 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
 					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
@@ -190,9 +208,9 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_status_restarts{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_restarts{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_restarts{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_restarts{container="container1",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_container_status_restarts{container="container2",namespace="ns2",node="node2",pod="pod2"} 0
+				kube_pod_container_status_restarts{container="container3",namespace="ns2",node="node2",pod="pod2"} 1
 				`,
 			metrics: []string{"kube_pod_container_status_restarts"},
 		}, {
@@ -201,6 +219,9 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
 					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
@@ -216,6 +237,9 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
 					},
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
@@ -236,15 +260,15 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_running{container="container1",namespace="ns1",node="node1",pod="pod1"} 1
+				kube_pod_container_status_running{container="container2",namespace="ns2",node="node2",pod="pod2"} 0
+				kube_pod_container_status_running{container="container3",namespace="ns2",node="node2",pod="pod2"} 0
+				kube_pod_container_status_terminated{container="container1",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_container_status_terminated{container="container2",namespace="ns2",node="node2",pod="pod2"} 1
+				kube_pod_container_status_terminated{container="container3",namespace="ns2",node="node2",pod="pod2"} 0
+				kube_pod_container_status_waiting{container="container1",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_container_status_waiting{container="container2",namespace="ns2",node="node2",pod="pod2"} 0
+				kube_pod_container_status_waiting{container="container3",namespace="ns2",node="node2",pod="pod2"} 1
 				`,
 			metrics: []string{
 				"kube_pod_container_status_running",
@@ -258,6 +282,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "1.2.3.4",
@@ -267,6 +294,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+					},
 					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "2.3.4.5",
@@ -274,8 +304,8 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_info{host_ip="1.1.1.1",namespace="ns1",pod="pod1",pod_ip="1.2.3.4"} 1
-				kube_pod_info{host_ip="1.1.1.1",namespace="ns2",pod="pod2",pod_ip="2.3.4.5"} 1
+				kube_pod_info{host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
+				kube_pod_info{host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
 				`,
 			metrics: []string{"kube_pod_info"},
 		}, {
@@ -285,6 +315,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					Status: v1.PodStatus{
 						Phase: "Running",
 					},
@@ -293,14 +326,17 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+					},
 					Status: v1.PodStatus{
 						Phase: "Pending",
 					},
 				},
 			},
 			want: metadata + `
-				kube_pod_status_phase{namespace="ns1",phase="Running",pod="pod1"} 1
-				kube_pod_status_phase{namespace="ns2",phase="Pending",pod="pod2"} 1
+				kube_pod_status_phase{namespace="ns1",phase="Running",node="node1",pod="pod1"} 1
+				kube_pod_status_phase{namespace="ns2",phase="Pending",node="node2",pod="pod2"} 1
 				`,
 			metrics: []string{"kube_pod_status_phase"},
 		}, {
@@ -310,6 +346,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					Status: v1.PodStatus{
 						Conditions: []v1.PodCondition{
 							v1.PodCondition{
@@ -323,6 +362,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+					},
 					Status: v1.PodStatus{
 						Conditions: []v1.PodCondition{
 							v1.PodCondition{
@@ -334,12 +376,12 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_status_ready{condition="false",namespace="ns1",pod="pod1"} 0
-				kube_pod_status_ready{condition="false",namespace="ns2",pod="pod2"} 1
-				kube_pod_status_ready{condition="true",namespace="ns1",pod="pod1"} 1
-				kube_pod_status_ready{condition="true",namespace="ns2",pod="pod2"} 0
-				kube_pod_status_ready{condition="unknown",namespace="ns1",pod="pod1"} 0
-				kube_pod_status_ready{condition="unknown",namespace="ns2",pod="pod2"} 0
+				kube_pod_status_ready{condition="false",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_status_ready{condition="false",namespace="ns2",node="node2",pod="pod2"} 1
+				kube_pod_status_ready{condition="true",namespace="ns1",node="node1",pod="pod1"} 1
+				kube_pod_status_ready{condition="true",namespace="ns2",node="node2",pod="pod2"} 0
+				kube_pod_status_ready{condition="unknown",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_status_ready{condition="unknown",namespace="ns2",node="node2",pod="pod2"} 0
 			`,
 			metrics: []string{"kube_pod_status_ready"},
 		}, {
@@ -349,6 +391,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					Status: v1.PodStatus{
 						Conditions: []v1.PodCondition{
 							v1.PodCondition{
@@ -362,6 +407,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+					},
 					Status: v1.PodStatus{
 						Conditions: []v1.PodCondition{
 							v1.PodCondition{
@@ -373,12 +421,12 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_status_scheduled{condition="false",namespace="ns1",pod="pod1"} 0
-				kube_pod_status_scheduled{condition="false",namespace="ns2",pod="pod2"} 1
-				kube_pod_status_scheduled{condition="true",namespace="ns1",pod="pod1"} 1
-				kube_pod_status_scheduled{condition="true",namespace="ns2",pod="pod2"} 0
-				kube_pod_status_scheduled{condition="unknown",namespace="ns1",pod="pod1"} 0
-				kube_pod_status_scheduled{condition="unknown",namespace="ns2",pod="pod2"} 0
+				kube_pod_status_scheduled{condition="false",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_status_scheduled{condition="false",namespace="ns2",node="node2",pod="pod2"} 1
+				kube_pod_status_scheduled{condition="true",namespace="ns1",node="node1",pod="pod1"} 1
+				kube_pod_status_scheduled{condition="true",namespace="ns2",node="node2",pod="pod2"} 0
+				kube_pod_status_scheduled{condition="unknown",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_status_scheduled{condition="unknown",namespace="ns2",node="node2",pod="pod2"} 0
 			`,
 			metrics: []string{"kube_pod_status_scheduled"},
 		}, {

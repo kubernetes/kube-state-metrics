@@ -26,52 +26,52 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip"}, nil,
+		[]string{"namespace", "pod", "host_ip", "pod_ip", "node"}, nil,
 	)
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
 		"The pods current phase.",
-		[]string{"namespace", "pod", "phase"}, nil,
+		[]string{"namespace", "pod", "phase", "node"}, nil,
 	)
 	descPodStatusReady = prometheus.NewDesc(
 		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
-		[]string{"namespace", "pod", "condition"}, nil,
+		[]string{"namespace", "pod", "node", "condition"}, nil,
 	)
 	descPodStatusScheduled = prometheus.NewDesc(
 		"kube_pod_status_scheduled",
 		"Describes the status of the scheduling process for the pod.",
-		[]string{"namespace", "pod", "condition"}, nil,
+		[]string{"namespace", "pod", "node", "condition"}, nil,
 	)
 	descPodContainerInfo = prometheus.NewDesc(
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
-		[]string{"namespace", "pod", "container", "image", "image_id", "container_id"}, nil,
+		[]string{"namespace", "pod", "container", "image", "image_id", "container_id", "node"}, nil,
 	)
 	descPodContainerStatusWaiting = prometheus.NewDesc(
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusRunning = prometheus.NewDesc(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusTerminated = prometheus.NewDesc(
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusReady = prometheus.NewDesc(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusRestarts = prometheus.NewDesc(
 		"kube_pod_container_status_restarts",
 		"The number of container restarts per container.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 
 	descPodContainerRequestedCpuCores = prometheus.NewDesc(
@@ -139,6 +139,7 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
+	nodeName := p.Spec.NodeName
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
 		lv = append([]string{p.Namespace, p.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
@@ -150,30 +151,29 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP)
-	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName)
+	addGauge(descPodStatusPhase, 1, string(p.Status.Phase), nodeName)
 
 	for _, c := range p.Status.Conditions {
 		switch c.Type {
 		case v1.PodReady:
-			addConditionMetrics(ch, descPodStatusReady, c.Status, p.Namespace, p.Name)
+			addConditionMetrics(ch, descPodStatusReady, c.Status, p.Namespace, p.Name, nodeName)
 		case v1.PodScheduled:
-			addConditionMetrics(ch, descPodStatusScheduled, c.Status, p.Namespace, p.Name)
+			addConditionMetrics(ch, descPodStatusScheduled, c.Status, p.Namespace, p.Name, nodeName)
 		}
 	}
 
 	for _, cs := range p.Status.ContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
-			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
+			cs.Name, cs.Image, cs.ImageID, cs.ContainerID, nodeName,
 		)
-		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name)
-		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
-		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
-		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
-		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
+		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name, nodeName)
+		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name, nodeName)
+		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name, nodeName)
+		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name, nodeName)
+		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name, nodeName)
 	}
 
-	nodeName := p.Spec.NodeName
 	for _, c := range p.Spec.Containers {
 		req := c.Resources.Requests
 		lim := c.Resources.Limits

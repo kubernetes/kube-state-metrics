@@ -187,6 +187,12 @@ func (l NodeLister) List() (v1.NodeList, error) {
 	return l()
 }
 
+type ResourceQuotaLister func() (v1.ResourceQuotaList, error)
+
+func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
+	return l()
+}
+
 // initializeMetricCollection creates and starts informers and initializes and
 // registers metrics for collection.
 func initializeMetricCollection(kubeClient clientset.Interface) {
@@ -196,10 +202,12 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 	dlw := cache.NewListWatchFromClient(eclient, "deployments", api.NamespaceAll, nil)
 	plw := cache.NewListWatchFromClient(cclient, "pods", api.NamespaceAll, nil)
 	nlw := cache.NewListWatchFromClient(cclient, "nodes", api.NamespaceAll, nil)
+	rqlw := cache.NewListWatchFromClient(cclient, "resourcequotas", api.NamespaceAll, nil)
 
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
 	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
+	rqinf := cache.NewSharedInformer(rqlw, &v1.ResourceQuota{}, resyncPeriod)
 
 	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
 		for _, c := range dinf.GetStore().List() {
@@ -222,11 +230,21 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 		return machines, nil
 	})
 
+	resourceQuotaLister := ResourceQuotaLister(func() (quotas v1.ResourceQuotaList, err error) {
+		for _, rq := range rqinf.GetStore().List() {
+			quotas.Items = append(quotas.Items, *(rq.(*v1.ResourceQuota)))
+		}
+		return quotas, nil
+	})
+
 	prometheus.MustRegister(&deploymentCollector{store: dplLister})
 	prometheus.MustRegister(&podCollector{store: podLister})
 	prometheus.MustRegister(&nodeCollector{store: nodeLister})
+	prometheus.MustRegister(&resourceQuotaCollector{store: resourceQuotaLister})
 
 	go dinf.Run(context.Background().Done())
 	go pinf.Run(context.Background().Done())
 	go ninf.Run(context.Background().Done())
+	go rqinf.Run(context.Background().Done())
+
 }

@@ -33,21 +33,6 @@ var (
 			"type",
 		}, nil,
 	)
-
-	resources = []v1.ResourceName{
-		v1.ResourceCPU,
-		v1.ResourceMemory,
-		v1.ResourceStorage,
-		v1.ResourcePods,
-		v1.ResourceServices,
-		v1.ResourceReplicationControllers,
-		v1.ResourceQuotas,
-		v1.ResourceSecrets,
-		v1.ResourceConfigMaps,
-		v1.ResourcePersistentVolumeClaims,
-		v1.ResourceServicesNodePorts,
-		v1.ResourceServicesLoadBalancers,
-	}
 )
 
 type resourceQuotaStore interface {
@@ -89,7 +74,7 @@ func (rqc *resourceQuotaCollector) collectResourceQuota(ch chan<- prometheus.Met
 			addGauge(d, float64(v.MilliValue())/1000, labels...)
 		}
 	}
-	for _, res := range resources {
+	for res := range rq.Status.Hard {
 		addResource(descResourceQuota, rq.Status.Hard, res, string(res), "hard")
 		addResource(descResourceQuota, rq.Status.Used, res, string(res), "used")
 	}

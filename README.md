@@ -40,6 +40,15 @@ additional metrics!
 | kube_node_status_allocatable_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
 | kube_node_status_allocatable_pods | Gauge | `node`=&lt;node-address&gt;|
 
+### DaemonSet Metrics
+
+| Metric name| Metric type | Labels/tags |
+| ---------- | ----------- | ----------- |
+| kube_daemonset_status_current_number_scheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
+| kube_daemonset_status_number_misscheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
+| kube_daemonset_status_desired_number_scheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
+| kube_daemonset_metadata_generation | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
+
 ### Deployment Metrics
 
 | Metric name| Metric type | Labels/tags |

@@ -187,6 +187,12 @@ func (l NodeLister) List() (v1.NodeList, error) {
 	return l()
 }
 
+type ReplicaSetLister func() ([]v1beta1.ReplicaSet, error)
+
+func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
+	return l()
+}
+
 // initializeMetricCollection creates and starts informers and initializes and
 // registers metrics for collection.
 func initializeMetricCollection(kubeClient clientset.Interface) {
@@ -196,10 +202,12 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 	dlw := cache.NewListWatchFromClient(eclient, "deployments", api.NamespaceAll, nil)
 	plw := cache.NewListWatchFromClient(cclient, "pods", api.NamespaceAll, nil)
 	nlw := cache.NewListWatchFromClient(cclient, "nodes", api.NamespaceAll, nil)
+	rslw := cache.NewListWatchFromClient(eclient, "replicasets", api.NamespaceAll, nil)
 
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
 	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
+	rsinf := cache.NewSharedInformer(rslw, &v1beta1.ReplicaSet{}, resyncPeriod)
 
 	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
 		for _, c := range dinf.GetStore().List() {
@@ -222,11 +230,20 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 		return machines, nil
 	})
 
+	replicaSetLister := ReplicaSetLister(func() (replicasets []v1beta1.ReplicaSet, err error) {
+		for _, c := range rsinf.GetStore().List() {
+			replicasets = append(replicasets, *(c.(*v1beta1.ReplicaSet)))
+		}
+		return replicasets, nil
+	})
+
 	prometheus.MustRegister(&deploymentCollector{store: dplLister})
 	prometheus.MustRegister(&podCollector{store: podLister})
 	prometheus.MustRegister(&nodeCollector{store: nodeLister})
+	prometheus.MustRegister(&replicasetCollector{store: replicaSetLister})
 
 	go dinf.Run(context.Background().Done())
 	go pinf.Run(context.Background().Done())
 	go ninf.Run(context.Background().Done())
+	go rsinf.Run(context.Background().Done())
 }

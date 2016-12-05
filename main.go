@@ -202,7 +202,7 @@ func initializeMetricCollection(kubeClient clientset.Interface) {
 	dlw := cache.NewListWatchFromClient(eclient, "deployments", api.NamespaceAll, nil)
 	plw := cache.NewListWatchFromClient(cclient, "pods", api.NamespaceAll, nil)
 	nlw := cache.NewListWatchFromClient(cclient, "nodes", api.NamespaceAll, nil)
-	rclw := cache.NewListWatchFromClient(cclient, "rcs", api.NamespaceAll, nil)
+	rclw := cache.NewListWatchFromClient(cclient, "replicationcontrollers", api.NamespaceAll, nil)
 
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)

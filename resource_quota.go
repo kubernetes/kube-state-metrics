@@ -68,15 +68,11 @@ func (rqc *resourceQuotaCollector) collectResourceQuota(ch chan<- prometheus.Met
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 
-	// Add capacity and allocatable resources if they are set.
-	addResource := func(d *prometheus.Desc, res v1.ResourceList, n v1.ResourceName, labels ...string) {
-		if v, ok := res[n]; ok {
-			addGauge(d, float64(v.MilliValue())/1000, labels...)
-		}
+	for res, qty := range rq.Status.Hard {
+		addGauge(descResourceQuota, float64(qty.MilliValue())/1000, string(res), "hard")
 	}
-	for res := range rq.Status.Hard {
-		addResource(descResourceQuota, rq.Status.Hard, res, string(res), "hard")
-		addResource(descResourceQuota, rq.Status.Used, res, string(res), "used")
+	for res, qty := range rq.Status.Used {
+		addGauge(descResourceQuota, float64(qty.MilliValue())/1000, string(res), "used")
 	}
 
 }

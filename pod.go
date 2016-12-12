@@ -26,7 +26,7 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip"}, nil,
+		[]string{"namespace", "pod", "host_ip", "pod_ip", "node"}, nil,
 	)
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
@@ -139,6 +139,7 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
+	nodeName := p.Spec.NodeName
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
 		lv = append([]string{p.Namespace, p.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
@@ -150,7 +151,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP)
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName)
 	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
 
 	for _, c := range p.Status.Conditions {
@@ -173,7 +174,6 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
 	}
 
-	nodeName := p.Spec.NodeName
 	for _, c := range p.Spec.Containers {
 		req := c.Resources.Requests
 		lim := c.Resources.Limits

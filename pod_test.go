@@ -258,6 +258,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "1.2.3.4",
@@ -267,6 +270,9 @@ func TestPodCollector(t *testing.T) {
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+					},
 					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "2.3.4.5",
@@ -274,8 +280,8 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_info{host_ip="1.1.1.1",namespace="ns1",pod="pod1",pod_ip="1.2.3.4"} 1
-				kube_pod_info{host_ip="1.1.1.1",namespace="ns2",pod="pod2",pod_ip="2.3.4.5"} 1
+				kube_pod_info{host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
+				kube_pod_info{host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
 				`,
 			metrics: []string{"kube_pod_info"},
 		}, {

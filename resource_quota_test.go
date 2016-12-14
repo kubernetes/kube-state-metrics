@@ -113,30 +113,30 @@ func TestResourceQuotaCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="cpu",type="hard"} 4.3
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="cpu",type="used"} 2.1
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="memory",type="hard"} 2.1e+09
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="memory",type="used"} 5e+08
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="storage",type="hard"} 1e+10
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="storage",type="used"} 9e+09
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="pods",type="hard"} 9
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="pods",type="used"} 8
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="services",type="hard"} 8
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="services",type="used"} 7
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="replicationcontrollers",type="hard"} 7
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="replicationcontrollers",type="used"} 6
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="resourcequotas",type="hard"} 6
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="resourcequotas",type="used"} 5
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="secrets",type="hard"} 5
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="secrets",type="used"} 4
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="configmaps",type="hard"} 4
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="configmaps",type="used"} 3
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="persistentvolumeclaims",type="hard"} 3
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="persistentvolumeclaims",type="used"} 2
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="services.nodeports",type="hard"} 2
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="services.nodeports",type="used"} 1
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="services.loadbalancers",type="hard"} 1
-			kube_resource_quota{name="quotaTest",namespace="testNS",resource="services.loadbalancers",type="used"} 0
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="cpu",type="hard"} 4.3
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="cpu",type="used"} 2.1
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="memory",type="hard"} 2.1e+09
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="memory",type="used"} 5e+08
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="storage",type="hard"} 1e+10
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="storage",type="used"} 9e+09
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="pods",type="hard"} 9
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="pods",type="used"} 8
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="services",type="hard"} 8
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="services",type="used"} 7
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="replicationcontrollers",type="hard"} 7
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="replicationcontrollers",type="used"} 6
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="resourcequotas",type="hard"} 6
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="resourcequotas",type="used"} 5
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="secrets",type="hard"} 5
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="secrets",type="used"} 4
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="configmaps",type="hard"} 4
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="configmaps",type="used"} 3
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="persistentvolumeclaims",type="hard"} 3
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="persistentvolumeclaims",type="used"} 2
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="services.nodeports",type="hard"} 2
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="services.nodeports",type="used"} 1
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="services.loadbalancers",type="hard"} 1
+			kube_resource_quota{resourcequota="quotaTest",namespace="testNS",resource="services.loadbalancers",type="used"} 0
 			`,
 		},
 	}

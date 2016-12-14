@@ -27,7 +27,7 @@ var (
 		"kube_resource_quota",
 		"Information about resource quota.",
 		[]string{
-			"name",
+			"resourcequota",
 			"namespace",
 			"resource",
 			"type",

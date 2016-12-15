@@ -85,7 +85,7 @@ additional metrics!
 
 | Metric name| Metric type | Labels/tags |
 | ---------- | ----------- | ----------- |
-| kube_resource_quota | Gauge | `name`=&lt;quota-name&gt; <br> `namespace`=&lt;namespace&gt; <br> `resource`=&lt;ResourceName&gt; <br> `type`=&lt;quota-type&gt; |
+| kube_resource_quota | Gauge | `resourcequota`=&lt;quota-name&gt; <br> `namespace`=&lt;namespace&gt; <br> `resource`=&lt;ResourceName&gt; <br> `type`=&lt;quota-type&gt; |
 
 ## kube-state-metrics vs. Heapster
 

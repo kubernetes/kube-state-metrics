@@ -81,6 +81,12 @@ additional metrics!
 | kube_pod_container_limits_cpu_cores | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; |
 | kube_pod_container_limits_memory_bytes | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; |
 
+### ResourceQuota Metrics
+
+| Metric name| Metric type | Labels/tags |
+| ---------- | ----------- | ----------- |
+| kube_resource_quota | Gauge | `resourcequota`=&lt;quota-name&gt; <br> `namespace`=&lt;namespace&gt; <br> `resource`=&lt;ResourceName&gt; <br> `type`=&lt;quota-type&gt; |
+
 ## kube-state-metrics vs. Heapster
 
 [Heapster](https://github.com/kubernetes/heapster) is a project which fetches

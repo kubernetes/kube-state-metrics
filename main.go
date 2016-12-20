@@ -51,7 +51,7 @@ var (
 
 	apiserver = flags.String("apiserver", "", `The URL of the apiserver to use as a master`)
 
-	kubeconfig = flags.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
+	kubeconfig = flags.String("kubeconfig", "", "absolute path to the kubeconfig file")
 
 	help = flags.BoolP("help", "h", false, "Print help text")
 
@@ -114,6 +114,7 @@ func createKubeClient() (kubeClient clientset.Interface, err error) {
 	} else {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		// if you want to change the loading rules (which files in which order), you can do so here
+		loadingRules.ExplicitPath = *kubeconfig
 		configOverrides := &clientcmd.ConfigOverrides{}
 		// if you want to change override values or bind them to flags, there are methods to help you
 		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)

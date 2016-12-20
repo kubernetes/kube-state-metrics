@@ -24,7 +24,7 @@ import (
 
 var (
 	descResourceQuota = prometheus.NewDesc(
-		"kube_resource_quota",
+		"kube_resourcequota",
 		"Information about resource quota.",
 		[]string{
 			"resourcequota",

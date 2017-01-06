@@ -39,9 +39,8 @@ import (
 )
 
 const (
-	resyncPeriod = 5 * time.Minute
-	metricsPath  = "/metrics"
-	healthzPath  = "/healthz"
+	metricsPath = "/metrics"
+	healthzPath = "/healthz"
 )
 
 var (
@@ -56,6 +55,10 @@ var (
 	help = flags.BoolP("help", "h", false, "Print help text")
 
 	port = flags.Int("port", 80, `Port to expose metrics on.`)
+
+	resync = flags.Int("resyncPeriod", 5, `Time in mins after which resource state will be resynced with kubernetes apiserver`)
+
+	resyncPeriod time.Duration
 )
 
 func main() {
@@ -73,6 +76,8 @@ func main() {
 		flags.Usage()
 		os.Exit(0)
 	}
+
+	resyncPeriod = time.Duration(*resync) * time.Minute
 
 	if *apiserver == "" && !(*inCluster) {
 		glog.Fatalf("--apiserver not set and --in-cluster is false; apiserver must be set to a valid URL")

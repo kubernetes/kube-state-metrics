@@ -74,8 +74,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *apiserver == "" && !(*inCluster) {
-		glog.Fatalf("--apiserver not set and --in-cluster is false; apiserver must be set to a valid URL")
+	if isNotExists(*kubeconfig) && !(*inCluster) {
+		glog.Fatalf("kubeconfig invalid and --in-cluster is false; kubeconfig must be set to a valid file(kubeconfig default file name: $HOME/.kube/config)")
 	}
 	glog.Infof("apiServer set to: %v", *apiserver)
 
@@ -88,6 +88,14 @@ func main() {
 
 	initializeMetricCollection(kubeClient)
 	metricsServer()
+}
+
+func isNotExists(file string) bool {
+	if file == "" {
+		file = clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename()
+	}
+	_, err := os.Stat(file)
+	return os.IsNotExist(err)
 }
 
 func createKubeClient() (kubeClient clientset.Interface, err error) {

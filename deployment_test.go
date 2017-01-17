@@ -271,7 +271,7 @@ func (s metricSorter) Less(i, j int) bool {
 	return s[i].GetTimestampMs() < s[j].GetTimestampMs()
 }
 
-// normalizeMetricFamilies returns a MetricFamily slice whith empty
+// normalizeMetricFamilies returns a MetricFamily slice with empty
 // MetricFamilies pruned and the remaining MetricFamilies sorted by name within
 // the slice, with the contained Metrics sorted within each MetricFamily.
 func normalizeMetricFamilies(metricFamiliesByName map[string]*dto.MetricFamily) []*dto.MetricFamily {

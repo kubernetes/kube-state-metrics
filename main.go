@@ -27,13 +27,13 @@ import (
 	"github.com/openshift/origin/pkg/util/proc"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/net/context"
-	clientset "k8s.io/client-go/1.5/kubernetes"
-	"k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/apis/extensions/v1beta1"
-	restclient "k8s.io/client-go/1.5/rest"
-	"k8s.io/client-go/1.5/tools/cache"
-	"k8s.io/client-go/1.5/tools/clientcmd"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -211,8 +211,8 @@ func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
 // initializeMetricCollection creates and starts informers and initializes and
 // registers metrics for collection.
 func initializeMetricCollection(kubeClient clientset.Interface) {
-	cclient := kubeClient.Core().GetRESTClient()
-	eclient := kubeClient.Extensions().GetRESTClient()
+	cclient := kubeClient.Core().RESTClient()
+	eclient := kubeClient.Extensions().RESTClient()
 
 	dslw := cache.NewListWatchFromClient(eclient, "daemonsets", api.NamespaceAll, nil)
 	dlw := cache.NewListWatchFromClient(eclient, "deployments", api.NamespaceAll, nil)

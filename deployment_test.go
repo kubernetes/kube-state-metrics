@@ -28,13 +28,17 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 
-	"k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/util/intstr"
 )
 
 var (
 	depl1Replicas int32 = 200
 	depl2Replicas int32 = 5
+
+	depl1MaxUnavailable = intstr.FromInt(10)
+	depl2MaxUnavailable = intstr.FromString("20%")
 )
 
 type mockDeploymentStore struct {
@@ -65,6 +69,8 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_status_replicas_updated gauge
 		# HELP kube_deployment_status_observed_generation The generation observed by the deployment controller.
 		# TYPE kube_deployment_status_observed_generation gauge
+                # HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable Maximum number of unavailable replicas during a rolling update of a deployment.
+		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
 	`
 	cases := []struct {
 		depls []v1beta1.Deployment
@@ -87,6 +93,11 @@ func TestDeploymentCollector(t *testing.T) {
 					},
 					Spec: v1beta1.DeploymentSpec{
 						Replicas: &depl1Replicas,
+						Strategy: v1beta1.DeploymentStrategy{
+							RollingUpdate: &v1beta1.RollingUpdateDeployment{
+								MaxUnavailable: &depl1MaxUnavailable,
+							},
+						},
 					},
 				}, {
 					ObjectMeta: v1.ObjectMeta{
@@ -104,6 +115,11 @@ func TestDeploymentCollector(t *testing.T) {
 					Spec: v1beta1.DeploymentSpec{
 						Paused:   true,
 						Replicas: &depl2Replicas,
+						Strategy: v1beta1.DeploymentStrategy{
+							RollingUpdate: &v1beta1.RollingUpdateDeployment{
+								MaxUnavailable: &depl2MaxUnavailable,
+							},
+						},
 					},
 				},
 			},
@@ -124,6 +140,8 @@ func TestDeploymentCollector(t *testing.T) {
 				kube_deployment_status_replicas_updated{namespace="ns2",deployment="depl2"} 1
 				kube_deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
 				kube_deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111
+				kube_deployment_spec_strategy_rollingupdate_max_unavailable{namespace="ns1",deployment="depl1"} 10
+				kube_deployment_spec_strategy_rollingupdate_max_unavailable{namespace="ns2",deployment="depl2"} 1
 			`,
 		},
 	}

@@ -19,7 +19,8 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/1.5/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/util/intstr"
 )
 
 var (
@@ -62,6 +63,12 @@ var (
 		[]string{"namespace", "deployment"}, nil,
 	)
 
+	descDeploymentStrategyRollingUpdateMaxUnavailable = prometheus.NewDesc(
+		"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+		"Maximum number of unavailable replicas during a rolling update of a deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
 	descDeploymentMetadataGeneration = prometheus.NewDesc(
 		"kube_deployment_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
@@ -86,6 +93,7 @@ func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDeploymentStatusReplicasUpdated
 	ch <- descDeploymentStatusObservedGeneration
 	ch <- descDeploymentSpecPaused
+	ch <- descDeploymentStrategyRollingUpdateMaxUnavailable
 	ch <- descDeploymentSpecReplicas
 	ch <- descDeploymentMetadataGeneration
 }
@@ -115,4 +123,11 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 	addGauge(descDeploymentSpecPaused, boolFloat64(d.Spec.Paused))
 	addGauge(descDeploymentSpecReplicas, float64(*d.Spec.Replicas))
 	addGauge(descDeploymentMetadataGeneration, float64(d.ObjectMeta.Generation))
+
+	maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), true)
+	if err != nil {
+		glog.Errorf("Error converting RollingUpdate MaxUnavailable to int: %s", err)
+	} else {
+		addGauge(descDeploymentStrategyRollingUpdateMaxUnavailable, float64(maxUnavailable))
+	}
 }

@@ -19,8 +19,12 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/net/context"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/pkg/util/intstr"
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -75,6 +79,28 @@ var (
 		[]string{"namespace", "deployment"}, nil,
 	)
 )
+
+type DeploymentLister func() ([]v1beta1.Deployment, error)
+
+func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
+	return l()
+}
+
+func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+	client := kubeClient.Extensions().RESTClient()
+	dlw := cache.NewListWatchFromClient(client, "deployments", api.NamespaceAll, nil)
+	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
+
+	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
+		for _, c := range dinf.GetStore().List() {
+			deployments = append(deployments, *(c.(*v1beta1.Deployment)))
+		}
+		return deployments, nil
+	})
+
+	registry.MustRegister(&deploymentCollector{store: dplLister})
+	go dinf.Run(context.Background().Done())
+}
 
 type deploymentStore interface {
 	List() (deployments []v1beta1.Deployment, err error)

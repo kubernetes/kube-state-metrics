@@ -19,7 +19,11 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/net/context"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -44,6 +48,28 @@ var (
 		[]string{"namespace", "daemonset"}, nil,
 	)
 )
+
+type DaemonSetLister func() ([]v1beta1.DaemonSet, error)
+
+func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
+	return l()
+}
+
+func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+	client := kubeClient.Extensions().RESTClient()
+	dslw := cache.NewListWatchFromClient(client, "daemonsets", api.NamespaceAll, nil)
+	dsinf := cache.NewSharedInformer(dslw, &v1beta1.DaemonSet{}, resyncPeriod)
+
+	dsLister := DaemonSetLister(func() (daemonsets []v1beta1.DaemonSet, err error) {
+		for _, c := range dsinf.GetStore().List() {
+			daemonsets = append(daemonsets, *(c.(*v1beta1.DaemonSet)))
+		}
+		return daemonsets, nil
+	})
+
+	registry.MustRegister(&daemonsetCollector{store: dsLister})
+	go dsinf.Run(context.Background().Done())
+}
 
 type daemonsetStore interface {
 	List() (daemonsets []v1beta1.DaemonSet, err error)

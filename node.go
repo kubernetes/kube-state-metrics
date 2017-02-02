@@ -19,7 +19,11 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/net/context"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -90,6 +94,28 @@ var (
 		[]string{"node"}, nil,
 	)
 )
+
+type NodeLister func() (v1.NodeList, error)
+
+func (l NodeLister) List() (v1.NodeList, error) {
+	return l()
+}
+
+func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+	client := kubeClient.CoreV1().RESTClient()
+	nlw := cache.NewListWatchFromClient(client, "nodes", api.NamespaceAll, nil)
+	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
+
+	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
+		for _, m := range ninf.GetStore().List() {
+			machines.Items = append(machines.Items, *(m.(*v1.Node)))
+		}
+		return machines, nil
+	})
+
+	registry.MustRegister(&nodeCollector{store: nodeLister})
+	go ninf.Run(context.Background().Done())
+}
 
 type nodeStore interface {
 	List() (v1.NodeList, error)

@@ -17,25 +17,21 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift/origin/pkg/util/proc"
-	flag "github.com/spf13/pflag"
-	"golang.org/x/net/context"
-	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
-
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/pflag"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -45,20 +41,82 @@ const (
 )
 
 var (
-	flags = flag.NewFlagSet("", flag.ExitOnError)
-
-	inCluster = flags.Bool("in-cluster", true, `If true, use the built in kubernetes cluster for creating the client`)
-
-	apiserver = flags.String("apiserver", "", `The URL of the apiserver to use as a master`)
-
-	kubeconfig = flags.String("kubeconfig", "", "absolute path to the kubeconfig file")
-
-	help = flags.BoolP("help", "h", false, "Print help text")
-
-	port = flags.Int("port", 80, `Port to expose metrics on.`)
+	defaultCollectors = collectorSet{
+		"daemonsets":     struct{}{},
+		"deployments":    struct{}{},
+		"pods":           struct{}{},
+		"nodes":          struct{}{},
+		"resourcequotas": struct{}{},
+	}
+	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
+		"daemonsets":     RegisterDaemonSetCollector,
+		"deployments":    RegisterDeploymentCollector,
+		"pods":           RegisterPodCollector,
+		"nodes":          RegisterNodeCollector,
+		"resourcequotas": RegisterResourceQuotaCollector,
+	}
 )
 
+type collectorSet map[string]struct{}
+
+func (c *collectorSet) String() string {
+	s := *c
+	return strings.Join(s.asSlice(), ",")
+}
+
+func (c *collectorSet) Set(value string) error {
+	s := *c
+	cols := strings.Split(value, ",")
+	for _, col := range cols {
+		_, ok := availableCollectors[col]
+		if !ok {
+			glog.Fatalf("Collector \"%s\" does not exist", col)
+		}
+		s[col] = struct{}{}
+	}
+	return nil
+}
+
+func (c collectorSet) asSlice() []string {
+	cols := []string{}
+	for col, _ := range c {
+		cols = append(cols, col)
+	}
+	return cols
+}
+
+func (c collectorSet) isEmpty() bool {
+	return len(c.asSlice()) == 0
+}
+
+func (c *collectorSet) Type() string {
+	return "map[string]struct{}"
+}
+
+type options struct {
+	inCluster  bool
+	apiserver  string
+	kubeconfig string
+	help       bool
+	port       int
+	collectors collectorSet
+}
+
 func main() {
+	// configure glog
+	flag.CommandLine.Parse([]string{})
+	flag.Lookup("logtostderr").Value.Set("true")
+
+	options := &options{collectors: make(collectorSet)}
+	flags := pflag.NewFlagSet("", pflag.ExitOnError)
+
+	flags.BoolVar(&options.inCluster, "in-cluster", true, `If true, use the built in kubernetes cluster for creating the client`)
+	flags.StringVar(&options.apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
+	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
+	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
+	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
+	flags.Var(&options.collectors, "collectors", "Collectors to be enabled")
+
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		flags.PrintDefaults()
@@ -69,25 +127,35 @@ func main() {
 		glog.Fatalf("Error: %s", err)
 	}
 
-	if *help {
+	if options.help {
 		flags.Usage()
 		os.Exit(0)
 	}
 
-	if isNotExists(*kubeconfig) && !(*inCluster) {
+	var collectors collectorSet
+	if len(options.collectors) == 0 {
+		glog.Infof("Using default collectors")
+		collectors = defaultCollectors
+	} else {
+		collectors = options.collectors
+	}
+
+	if isNotExists(options.kubeconfig) && !(options.inCluster) {
 		glog.Fatalf("kubeconfig invalid and --in-cluster is false; kubeconfig must be set to a valid file(kubeconfig default file name: $HOME/.kube/config)")
 	}
-	glog.Infof("apiServer set to: %v", *apiserver)
+	if options.apiserver != "" {
+		glog.Infof("apiserver set to: %v", options.apiserver)
+	}
 
 	proc.StartReaper()
 
-	kubeClient, err := createKubeClient()
+	kubeClient, err := createKubeClient(options.inCluster, options.apiserver, options.kubeconfig)
 	if err != nil {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
-	initializeMetricCollection(kubeClient)
-	metricsServer()
+	registerCollectors(kubeClient, collectors)
+	metricsServer(options.port)
 }
 
 func isNotExists(file string) bool {
@@ -98,17 +166,16 @@ func isNotExists(file string) bool {
 	return os.IsNotExist(err)
 }
 
-func createKubeClient() (kubeClient clientset.Interface, err error) {
-	glog.Infof("Creating client")
-	if *inCluster {
-		config, err := restclient.InClusterConfig()
+func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kubeClient clientset.Interface, err error) {
+	if inCluster {
+		config, err := rest.InClusterConfig()
 		if err != nil {
 			return nil, err
 		}
 		// Allow overriding of apiserver even if using inClusterConfig
 		// (necessary if kube-proxy isn't properly set up).
-		if *apiserver != "" {
-			config.Host = *apiserver
+		if apiserver != "" {
+			config.Host = apiserver
 		}
 		tokenPresent := false
 		if len(config.BearerToken) > 0 {
@@ -122,7 +189,7 @@ func createKubeClient() (kubeClient clientset.Interface, err error) {
 	} else {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		// if you want to change the loading rules (which files in which order), you can do so here
-		loadingRules.ExplicitPath = *kubeconfig
+		loadingRules.ExplicitPath = kubeconfig
 		configOverrides := &clientcmd.ConfigOverrides{}
 		// if you want to change override values or bind them to flags, there are methods to help you
 		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -141,18 +208,19 @@ func createKubeClient() (kubeClient clientset.Interface, err error) {
 	// Informers don't seem to do a good job logging error messages when it
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
-	glog.Infof("testing communication with server")
+	glog.Infof("Testing communication with server")
 	_, err = kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
 	}
+	glog.Infof("Communication with server successful")
 
 	return kubeClient, nil
 }
 
-func metricsServer() {
+func metricsServer(port int) {
 	// Address to listen on for web interface and telemetry
-	listenAddress := fmt.Sprintf(":%d", *port)
+	listenAddress := fmt.Sprintf(":%d", port)
 
 	glog.Infof("Starting metrics server: %s", listenAddress)
 	// Add metricsPath
@@ -178,99 +246,17 @@ func metricsServer() {
 	log.Fatal(http.ListenAndServe(listenAddress, nil))
 }
 
-type DaemonSetLister func() ([]v1beta1.DaemonSet, error)
-
-func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
-	return l()
-}
-
-type DeploymentLister func() ([]v1beta1.Deployment, error)
-
-func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
-	return l()
-}
-
-type PodLister func() ([]v1.Pod, error)
-
-func (l PodLister) List() ([]v1.Pod, error) {
-	return l()
-}
-
-type NodeLister func() (v1.NodeList, error)
-
-func (l NodeLister) List() (v1.NodeList, error) {
-	return l()
-}
-
-type ResourceQuotaLister func() (v1.ResourceQuotaList, error)
-
-func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
-	return l()
-}
-
-// initializeMetricCollection creates and starts informers and initializes and
+// registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
-func initializeMetricCollection(kubeClient clientset.Interface) {
-	cclient := kubeClient.Core().RESTClient()
-	eclient := kubeClient.Extensions().RESTClient()
-
-	dslw := cache.NewListWatchFromClient(eclient, "daemonsets", api.NamespaceAll, nil)
-	dlw := cache.NewListWatchFromClient(eclient, "deployments", api.NamespaceAll, nil)
-	plw := cache.NewListWatchFromClient(cclient, "pods", api.NamespaceAll, nil)
-	nlw := cache.NewListWatchFromClient(cclient, "nodes", api.NamespaceAll, nil)
-	rqlw := cache.NewListWatchFromClient(cclient, "resourcequotas", api.NamespaceAll, nil)
-
-	dsinf := cache.NewSharedInformer(dslw, &v1beta1.DaemonSet{}, resyncPeriod)
-	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
-	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
-	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
-	rqinf := cache.NewSharedInformer(rqlw, &v1.ResourceQuota{}, resyncPeriod)
-
-	dsLister := DaemonSetLister(func() (daemonsets []v1beta1.DaemonSet, err error) {
-		for _, c := range dsinf.GetStore().List() {
-			daemonsets = append(daemonsets, *(c.(*v1beta1.DaemonSet)))
+func registerCollectors(kubeClient clientset.Interface, enabledCollectors collectorSet) {
+	activeCollectors := []string{}
+	for c, _ := range enabledCollectors {
+		f, ok := availableCollectors[c]
+		if ok {
+			f(prometheus.DefaultRegisterer, kubeClient)
+			activeCollectors = append(activeCollectors, c)
 		}
-		return daemonsets, nil
-	})
+	}
 
-	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
-		for _, c := range dinf.GetStore().List() {
-			deployments = append(deployments, *(c.(*v1beta1.Deployment)))
-		}
-		return deployments, nil
-	})
-
-	podLister := PodLister(func() (pods []v1.Pod, err error) {
-		for _, m := range pinf.GetStore().List() {
-			pods = append(pods, *m.(*v1.Pod))
-		}
-		return pods, nil
-	})
-
-	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
-		for _, m := range ninf.GetStore().List() {
-			machines.Items = append(machines.Items, *(m.(*v1.Node)))
-		}
-		return machines, nil
-	})
-
-	resourceQuotaLister := ResourceQuotaLister(func() (quotas v1.ResourceQuotaList, err error) {
-		for _, rq := range rqinf.GetStore().List() {
-			quotas.Items = append(quotas.Items, *(rq.(*v1.ResourceQuota)))
-		}
-		return quotas, nil
-	})
-
-	prometheus.MustRegister(&daemonsetCollector{store: dsLister})
-	prometheus.MustRegister(&deploymentCollector{store: dplLister})
-	prometheus.MustRegister(&podCollector{store: podLister})
-	prometheus.MustRegister(&nodeCollector{store: nodeLister})
-	prometheus.MustRegister(&resourceQuotaCollector{store: resourceQuotaLister})
-
-	go dsinf.Run(context.Background().Done())
-	go dinf.Run(context.Background().Done())
-	go pinf.Run(context.Background().Done())
-	go ninf.Run(context.Background().Done())
-	go rqinf.Run(context.Background().Done())
-
+	glog.Infof("Active collectors: %s", strings.Join(activeCollectors, ","))
 }

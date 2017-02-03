@@ -47,6 +47,7 @@ var (
 		"pods":           struct{}{},
 		"nodes":          struct{}{},
 		"resourcequotas": struct{}{},
+		"replicasets":    struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
 		"daemonsets":     RegisterDaemonSetCollector,
@@ -54,6 +55,7 @@ var (
 		"pods":           RegisterPodCollector,
 		"nodes":          RegisterNodeCollector,
 		"resourcequotas": RegisterResourceQuotaCollector,
+		"replicasets":    RegisterReplicaSetCollector,
 	}
 )
 

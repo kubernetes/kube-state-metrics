@@ -150,6 +150,10 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 	addGauge(descDeploymentSpecReplicas, float64(*d.Spec.Replicas))
 	addGauge(descDeploymentMetadataGeneration, float64(d.ObjectMeta.Generation))
 
+	if d.Spec.Strategy.RollingUpdate == nil {
+		return
+	}
+
 	maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), true)
 	if err != nil {
 		glog.Errorf("Error converting RollingUpdate MaxUnavailable to int: %s", err)

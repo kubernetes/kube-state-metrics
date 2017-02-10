@@ -1,3 +1,7 @@
+## v0.4.1 / 2017-02-10
+
+* [BUGFIX] fix panic if max unavailable if rolling update is unset
+
 ## v0.4.0 / 2017-02-07
 
 * [FEATURE] Add replicaset metrics

@@ -115,11 +115,6 @@ func TestDeploymentCollector(t *testing.T) {
 					Spec: v1beta1.DeploymentSpec{
 						Paused:   true,
 						Replicas: &depl2Replicas,
-						Strategy: v1beta1.DeploymentStrategy{
-							RollingUpdate: &v1beta1.RollingUpdateDeployment{
-								MaxUnavailable: &depl2MaxUnavailable,
-							},
-						},
 					},
 				},
 			},
@@ -130,6 +125,9 @@ func TestDeploymentCollector(t *testing.T) {
 				kube_deployment_spec_paused{namespace="ns2",deployment="depl2"} 1
 				kube_deployment_spec_replicas{namespace="ns1",deployment="depl1"} 200
 				kube_deployment_spec_replicas{namespace="ns2",deployment="depl2"} 5
+				kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
+				kube_deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
+				kube_deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111
 				kube_deployment_status_replicas{namespace="ns1",deployment="depl1"} 15
 				kube_deployment_status_replicas{namespace="ns2",deployment="depl2"} 10
 				kube_deployment_status_replicas_available{namespace="ns1",deployment="depl1"} 10
@@ -138,10 +136,6 @@ func TestDeploymentCollector(t *testing.T) {
 				kube_deployment_status_replicas_unavailable{namespace="ns2",deployment="depl2"} 0
 				kube_deployment_status_replicas_updated{namespace="ns1",deployment="depl1"} 2
 				kube_deployment_status_replicas_updated{namespace="ns2",deployment="depl2"} 1
-				kube_deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
-				kube_deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111
-				kube_deployment_spec_strategy_rollingupdate_max_unavailable{namespace="ns1",deployment="depl1"} 10
-				kube_deployment_spec_strategy_rollingupdate_max_unavailable{namespace="ns2",deployment="depl2"} 1
 			`,
 		},
 	}

@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.6
+  - 1.7
 script:
-  - go build
-  - go test
+  - make test-unit
+  - make

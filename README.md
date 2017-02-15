@@ -16,6 +16,10 @@ the raw metrics.
 
 *Requires Kubernetes 1.2+*
 
+## Container Image
+
+The latest container image can be found at `gcr.io/google_containers/kube-state-metrics:v0.4.1`.
+
 ## Metrics
 
 There are many more metrics we could report, but this first pass is focused on

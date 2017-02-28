@@ -5,11 +5,11 @@ metadata:
     prometheus.io/scrape: 'true'
   name: kube-state-metrics
   labels:
-    k8s-app: kube-state-metrics
+    app: kube-state-metrics
 spec:
   ports:
   - name: http-metrics
     port: 8080
     protocol: TCP
   selector:
-    k8s-app: kube-state-metrics
+    app: kube-state-metrics

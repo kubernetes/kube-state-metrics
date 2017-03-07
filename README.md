@@ -137,8 +137,8 @@ anywhere.
 In other words, kube-state-metrics itself is designed to be another source for
 Heapster (although this is not currently the case).
 
-Additionally, some monitoring systems such as Prometheus do not use Heapster
-for metric collection at all and instead implement their own. Having
+Additionally, some monitoring systems such as Prometheus can use both Heapster
+and kube-state-metrics as scrape target for metric collection. Having
 kube-state-metrics as a separate project enables access to these metrics from
 those monitoring systems.
 

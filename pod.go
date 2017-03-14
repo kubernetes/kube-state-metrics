@@ -18,7 +18,7 @@ package main
 
 import (
 	"encoding/json"
- +	"fmt"
+ 	"fmt"
 	
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"

@@ -17,20 +17,20 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/1.5/pkg/api"
+	"k8s.io/client-go/1.5/pkg/api/v1"
 )
 
 var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip", "node"}, nil,
+		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "controllers"}, nil,
 	)
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
@@ -103,28 +103,6 @@ var (
 	)
 )
 
-type PodLister func() ([]v1.Pod, error)
-
-func (l PodLister) List() ([]v1.Pod, error) {
-	return l()
-}
-
-func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
-	client := kubeClient.CoreV1().RESTClient()
-	plw := cache.NewListWatchFromClient(client, "pods", api.NamespaceAll, nil)
-	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
-
-	podLister := PodLister(func() (pods []v1.Pod, err error) {
-		for _, m := range pinf.GetStore().List() {
-			pods = append(pods, *m.(*v1.Pod))
-		}
-		return pods, nil
-	})
-
-	registry.MustRegister(&podCollector{store: podLister})
-	go pinf.Run(context.Background().Done())
-}
-
 type podStore interface {
 	List() (pods []v1.Pod, err error)
 }
@@ -152,6 +130,18 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsMemoryBytes
 }
 
+func printControllers(annotation map[string]string) string {
+	value, ok := annotation[api.CreatedByAnnotation]
+	if ok {
+		var r api.SerializedReference
+		err := json.Unmarshal([]byte(value), &r)
+		if err == nil {
+			return fmt.Sprintf("%s/%s", r.Reference.Kind, r.Reference.Name)
+		}
+	}
+	return "<none>"
+}
+
 // Collect implements the prometheus.Collector interface.
 func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	pods, err := pc.store.List()
@@ -177,7 +167,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName)
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, printControllers(p.Annotations))
 	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
 
 	for _, c := range p.Status.Conditions {

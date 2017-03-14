@@ -17,9 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
- 	"fmt"
-	
 	"testing"
 
 	"k8s.io/client-go/pkg/api/resource"

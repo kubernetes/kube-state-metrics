@@ -17,6 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
+ +	"fmt"
+	
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"

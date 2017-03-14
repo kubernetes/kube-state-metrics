@@ -17,13 +17,13 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/1.5/pkg/api"
-	
+	"golang.org/x/net/context"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -102,6 +102,28 @@ var (
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 )
+
+type PodLister func() ([]v1.Pod, error)
+
+func (l PodLister) List() ([]v1.Pod, error) {
+	return l()
+}
+
+func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+	client := kubeClient.CoreV1().RESTClient()
+	plw := cache.NewListWatchFromClient(client, "pods", api.NamespaceAll, nil)
+	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
+
+	podLister := PodLister(func() (pods []v1.Pod, err error) {
+		for _, m := range pinf.GetStore().List() {
+			pods = append(pods, *m.(*v1.Pod))
+		}
+		return pods, nil
+	})
+
+	registry.MustRegister(&podCollector{store: podLister})
+	go pinf.Run(context.Background().Done())
+}
 
 type podStore interface {
 	List() (pods []v1.Pod, err error)

@@ -33,7 +33,7 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "controllers"}, nil,
+		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by"}, nil,
 	)
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
@@ -155,7 +155,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsMemoryBytes
 }
 
-func printControllers(annotation map[string]string) string {
+func extractCreatedBy(annotation map[string]string) string {
 	value, ok := annotation[api.CreatedByAnnotation]
 	if ok {
 		var r api.SerializedReference
@@ -192,7 +192,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, printControllers(p.Annotations))
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, extractCreatedBy(p.Annotations))
 	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
 
 	for _, c := range p.Status.Conditions {

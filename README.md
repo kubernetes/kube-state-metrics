@@ -158,7 +158,7 @@ service account token that has read-only access to the Kubernetes cluster.
 
 ## Kubernetes Deployment
 
-To deploy this project, you can simply run `kubectl apply -f kubernetes` and a
+To deploy this project, you can simply run `kubectl -n kube-system apply -f kubernetes` and a
 Kubernetes service and deployment will be created. The service already has a
 `prometheus.io/scrape: 'true'` annotation and if you added the recommended
 Prometheus service-endpoint scraping [configuration](https://raw.githubusercontent.com/prometheus/prometheus/master/documentation/examples/prometheus-kubernetes.yml), Prometheus will pick it up automatically and you can start using the generated

@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: kube-state-metrics-deployment
+  namespace: kube-system
 spec:
   replicas: 1
   template:
@@ -15,3 +16,14 @@ spec:
         image: gcr.io/google_containers/kube-state-metrics:v0.4.1
         ports:
         - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 8
+          timeoutSeconds: 4
+        resources:
+          limits:
+            cpu: .1
+            memory: 75M

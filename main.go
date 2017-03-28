@@ -47,6 +47,7 @@ var (
 		"pods":                   struct{}{},
 		"nodes":                  struct{}{},
 		"resourcequotas":         struct{}{},
+		"limitrange":		  struct{}{},
 		"replicasets":            struct{}{},
 		"replicationcontrollers": struct{}{},
 	}
@@ -56,6 +57,7 @@ var (
 		"pods":                   RegisterPodCollector,
 		"nodes":                  RegisterNodeCollector,
 		"resourcequotas":         RegisterResourceQuotaCollector,
+		"limitrange":		  RegisterLimitRangeCollector,
 		"replicasets":            RegisterReplicaSetCollector,
 		"replicationcontrollers": RegisterReplicationControllerCollector,
 	}

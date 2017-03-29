@@ -300,8 +300,8 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",start_time="2017-03-29 23:44:22 +0800 CST"} 1
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5", start_time="2017-03-29 23:44:22 +0800 CST"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",start_time="2017-03-29 23:44:22 +0000 CST"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5", start_time="2017-03-29 23:44:22 +0000 CST"} 1
 				`,
 			metrics: []string{"kube_pod_info"},
 		}, {

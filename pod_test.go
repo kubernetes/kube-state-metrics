@@ -18,8 +18,10 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"k8s.io/client-go/pkg/api/resource"
+	"k8s.io/client-go/pkg/api/unversioned"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -264,6 +266,15 @@ func TestPodCollector(t *testing.T) {
 					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "1.2.3.4",
+						Conditions: []v1.PodCondition{
+							v1.PodCondition{
+								Type:   v1.PodInitialized,
+								Status: v1.ConditionTrue,
+								LastTransitionTime: unversioned.Time{
+									Time: time.Unix(1490802262, 0),
+								},
+							},
+						},
 					},
 				}, {
 					ObjectMeta: v1.ObjectMeta{
@@ -276,12 +287,21 @@ func TestPodCollector(t *testing.T) {
 					Status: v1.PodStatus{
 						HostIP: "1.1.1.1",
 						PodIP:  "2.3.4.5",
+						Conditions: []v1.PodCondition{
+							v1.PodCondition{
+								Type:   v1.PodInitialized,
+								Status: v1.ConditionTrue,
+								LastTransitionTime: unversioned.Time{
+									Time: time.Unix(1490802262, 0),
+								},
+							},
+						},
 					},
 				},
 			},
 			want: metadata + `
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",start_time="2017-03-29 23:44:22 +0800 CST"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5", start_time="2017-03-29 23:44:22 +0800 CST"} 1
 				`,
 			metrics: []string{"kube_pod_info"},
 		}, {

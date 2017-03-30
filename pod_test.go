@@ -271,7 +271,7 @@ func TestPodCollector(t *testing.T) {
 								Type:   v1.PodInitialized,
 								Status: v1.ConditionTrue,
 								LastTransitionTime: unversioned.Time{
-									Time: time.Unix(1490802262, 0),
+									Time: time.Unix(1490802262, 0).UTC(),
 								},
 							},
 						},
@@ -292,7 +292,7 @@ func TestPodCollector(t *testing.T) {
 								Type:   v1.PodInitialized,
 								Status: v1.ConditionTrue,
 								LastTransitionTime: unversioned.Time{
-									Time: time.Unix(1490802262, 0),
+									Time: time.Unix(1490802262, 0).UTC(),
 								},
 							},
 						},
@@ -300,8 +300,8 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",start_time="2017-03-29 23:44:22 +0000 CST"} 1
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5", start_time="2017-03-29 23:44:22 +0000 CST"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",start_time="2017-03-29 15:44:22 +0000 UTC"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5", start_time="2017-03-29 15:44:22 +0000 UTC"} 1
 				`,
 			metrics: []string{"kube_pod_info"},
 		}, {

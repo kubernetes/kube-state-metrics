@@ -72,24 +72,24 @@ type limitRangeCollector struct {
 }
 
 // Describe implements the prometheus.Collector interface.
-func (rqc *limitRangeCollector) Describe(ch chan<- *prometheus.Desc) {
+func (lrc *limitRangeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descLimitRange
 }
 
 // Collect implements the prometheus.Collector interface.
-func (rqc *limitRangeCollector) Collect(ch chan<- prometheus.Metric) {
-	limitRangeCollector, err := rqc.store.List()
+func (lrc *limitRangeCollector) Collect(ch chan<- prometheus.Metric) {
+	limitRangeCollector, err := lrc.store.List()
 	if err != nil {
-		glog.Errorf("listing resource quotas failed: %s", err)
+		glog.Errorf("listing limit ranges failed: %s", err)
 		return
 	}
 
 	for _, rq := range limitRangeCollector.Items {
-		rqc.collectLimitRange(ch, rq)
+		lrc.collectLimitRange(ch, rq)
 	}
 }
 
-func (rqc *limitRangeCollector) collectLimitRange(ch chan<- prometheus.Metric, rq v1.LimitRange) {
+func (lrc *limitRangeCollector) collectLimitRange(ch chan<- prometheus.Metric, rq v1.LimitRange) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{rq.Name, rq.Namespace}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)

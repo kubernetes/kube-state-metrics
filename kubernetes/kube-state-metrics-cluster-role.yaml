@@ -8,6 +8,7 @@ rules:
   - nodes
   - pods
   - resourcequotas
+  - replicationcontrollers
   verbs: ["list", "watch"]
 - apiGroups: ["extensions"]
   resources:
@@ -15,3 +16,4 @@ rules:
   - deployments
   - replicasets
   verbs: ["list", "watch"]
+

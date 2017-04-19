@@ -43,6 +43,9 @@ additional metrics!
 | kube_node_status_allocatable_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
 | kube_node_status_allocatable_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
 | kube_node_status_allocatable_pods | Gauge | `node`=&lt;node-address&gt;|
+| kube_node_status_memory_pressure | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
+| kube_node_status_disk_pressure | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
+| kube_node_status_network_unavailable | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
 
 ### DaemonSet Metrics
 

@@ -63,17 +63,17 @@ var (
 	)
 	descNodeStatusMemoryPressure = prometheus.NewDesc(
 		"kube_node_status_memory_pressure",
-		"Wether the kubelet is under pressure due to insufficient available memory.",
+		"Whether the kubelet is under pressure due to insufficient available memory.",
 		[]string{"node", "condition"}, nil,
 	)
 	descNodeStatusDiskPressure = prometheus.NewDesc(
 		"kube_node_status_disk_pressure",
-		"Wether the kubelet is under pressure due to insufficient available disk.",
+		"Whether the kubelet is under pressure due to insufficient available disk.",
 		[]string{"node", "condition"}, nil,
 	)
 	descNodeStatusNetworkUnavailable = prometheus.NewDesc(
 		"kube_node_status_network_unavailable",
-		"Wether the network for the node is not correctly configured.",
+		"Whether the network is correctly configured for the node.",
 		[]string{"node", "condition"}, nil,
 	)
 

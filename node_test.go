@@ -55,11 +55,11 @@ func TestNodeCollector(t *testing.T) {
 		# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
 		# TYPE kube_node_status_allocatable_memory_bytes gauge
 		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
-                # HELP kube_node_status_memory_pressure Wether the kubelet is under pressure due to insufficient available memory.
+                # HELP kube_node_status_memory_pressure Whether the kubelet is under pressure due to insufficient available memory.
                 # TYPE kube_node_status_memory_pressure gauge
-                # HELP kube_node_status_disk_pressure Wether the kubelet is under pressure due to insufficient available disk.
+                # HELP kube_node_status_disk_pressure Whether the kubelet is under pressure due to insufficient available disk.
                 # TYPE kube_node_status_disk_pressure gauge
-                # HELP kube_node_status_network_unavailable Wether the network for the node is not correctly configured.
+                # HELP kube_node_status_network_unavailable Whether the network is correctly configured for the node.
                 # TYPE kube_node_status_network_unavailable gauge
 	`
 	cases := []struct {

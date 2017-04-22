@@ -43,6 +43,8 @@ func TestDaemonSetCollector(t *testing.T) {
 		# TYPE kube_daemonset_status_number_misscheduled gauge
 		# HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
 		# TYPE kube_daemonset_status_desired_number_scheduled gauge
+		# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
+		# TYPE kube_daemonset_status_number_ready gauge
 	`
 	cases := []struct {
 		dss  []v1beta1.DaemonSet
@@ -60,6 +62,7 @@ func TestDaemonSetCollector(t *testing.T) {
 						CurrentNumberScheduled: 15,
 						NumberMisscheduled:     10,
 						DesiredNumberScheduled: 5,
+						NumberReady:            5,
 					},
 				}, {
 					ObjectMeta: v1.ObjectMeta{
@@ -71,6 +74,7 @@ func TestDaemonSetCollector(t *testing.T) {
 						CurrentNumberScheduled: 10,
 						NumberMisscheduled:     5,
 						DesiredNumberScheduled: 0,
+						NumberReady:            0,
 					},
 				},
 			},
@@ -83,6 +87,8 @@ func TestDaemonSetCollector(t *testing.T) {
 				kube_daemonset_status_number_misscheduled{namespace="ns2",daemonset="ds2"} 5
 				kube_daemonset_status_desired_number_scheduled{namespace="ns1",daemonset="ds1"} 5
 				kube_daemonset_status_desired_number_scheduled{namespace="ns2",daemonset="ds2"} 0
+				kube_daemonset_status_number_ready{namespace="ns1",daemonset="ds1"} 5
+				kube_daemonset_status_number_ready{namespace="ns2",daemonset="ds2"} 0
 			`,
 		},
 	}

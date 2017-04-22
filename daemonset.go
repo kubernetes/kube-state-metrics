@@ -42,6 +42,11 @@ var (
 		"The number of nodes that should be running the daemon pod.",
 		[]string{"namespace", "daemonset"}, nil,
 	)
+	descDaemonSetNumberReady = prometheus.NewDesc(
+		"kube_daemonset_status_number_ready",
+		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
+		[]string{"namespace", "daemonset"}, nil,
+	)
 	descDaemonSetMetadataGeneration = prometheus.NewDesc(
 		"kube_daemonset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
@@ -85,6 +90,7 @@ func (dc *daemonsetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDaemonSetCurrentNumberScheduled
 	ch <- descDaemonSetNumberMisscheduled
 	ch <- descDaemonSetDesiredNumberScheduled
+	ch <- descDaemonSetNumberReady
 	ch <- descDaemonSetMetadataGeneration
 }
 
@@ -108,5 +114,6 @@ func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1
 	addGauge(descDaemonSetCurrentNumberScheduled, float64(d.Status.CurrentNumberScheduled))
 	addGauge(descDaemonSetNumberMisscheduled, float64(d.Status.NumberMisscheduled))
 	addGauge(descDaemonSetDesiredNumberScheduled, float64(d.Status.DesiredNumberScheduled))
+	addGauge(descDaemonSetNumberReady, float64(d.Status.NumberReady))
 	addGauge(descDaemonSetMetadataGeneration, float64(d.ObjectMeta.Generation))
 }

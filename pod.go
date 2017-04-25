@@ -58,27 +58,27 @@ var (
 	descPodContainerStatusWaiting = prometheus.NewDesc(
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusRunning = prometheus.NewDesc(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusTerminated = prometheus.NewDesc(
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusReady = prometheus.NewDesc(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 	descPodContainerStatusRestarts = prometheus.NewDesc(
 		"kube_pod_container_status_restarts",
 		"The number of container restarts per container.",
-		[]string{"namespace", "pod", "container"}, nil,
+		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
 
 	descPodContainerResourceRequestsCpuCores = prometheus.NewDesc(
@@ -208,11 +208,11 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
 		)
-		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name)
-		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
-		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
-		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
-		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
+		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name, nodeName)
+		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name, nodeName)
+		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name, nodeName)
+		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name, nodeName)
+		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name, nodeName)
 	}
 
 	for _, c := range p.Spec.Containers {

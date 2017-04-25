@@ -118,6 +118,9 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
@@ -131,6 +134,9 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
@@ -150,14 +156,17 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_ready{container="container1",namespace="ns1",node="node1",pod="pod1"} 1
+				kube_pod_container_status_ready{container="container2",namespace="ns2",node="node1",pod="pod2"} 1
+				kube_pod_container_status_ready{container="container3",namespace="ns2",node="node1",pod="pod2"} 0
 				`,
 			metrics: []string{"kube_pod_container_status_ready"},
 		}, {
 			pods: []v1.Pod{
 				{
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
@@ -171,6 +180,9 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
@@ -190,14 +202,17 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_status_restarts{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_restarts{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_restarts{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_restarts{container="container1",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_container_status_restarts{container="container2",namespace="ns2",node="node1",pod="pod2"} 0
+				kube_pod_container_status_restarts{container="container3",namespace="ns2",node="node1",pod="pod2"} 1
 				`,
 			metrics: []string{"kube_pod_container_status_restarts"},
 		}, {
 			pods: []v1.Pod{
 				{
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
@@ -213,6 +228,9 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
@@ -236,15 +254,15 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_running{container="container1",namespace="ns1",node="node1",pod="pod1"} 1
+				kube_pod_container_status_running{container="container2",namespace="ns2",node="node1",pod="pod2"} 0
+				kube_pod_container_status_running{container="container3",namespace="ns2",node="node1",pod="pod2"} 0
+				kube_pod_container_status_terminated{container="container1",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_container_status_terminated{container="container2",namespace="ns2",node="node1",pod="pod2"} 1
+				kube_pod_container_status_terminated{container="container3",namespace="ns2",node="node1",pod="pod2"} 0
+				kube_pod_container_status_waiting{container="container1",namespace="ns1",node="node1",pod="pod1"} 0
+				kube_pod_container_status_waiting{container="container2",namespace="ns2",node="node1",pod="pod2"} 0
+				kube_pod_container_status_waiting{container="container3",namespace="ns2",node="node1",pod="pod2"} 1
 				`,
 			metrics: []string{
 				"kube_pod_container_status_running",

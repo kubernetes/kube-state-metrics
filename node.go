@@ -61,6 +61,21 @@ var (
 		"The phase the node is currently in.",
 		[]string{"node", "phase"}, nil,
 	)
+	descNodeStatusMemoryPressure = prometheus.NewDesc(
+		"kube_node_status_memory_pressure",
+		"Whether the kubelet is under pressure due to insufficient available memory.",
+		[]string{"node", "condition"}, nil,
+	)
+	descNodeStatusDiskPressure = prometheus.NewDesc(
+		"kube_node_status_disk_pressure",
+		"Whether the kubelet is under pressure due to insufficient available disk.",
+		[]string{"node", "condition"}, nil,
+	)
+	descNodeStatusNetworkUnavailable = prometheus.NewDesc(
+		"kube_node_status_network_unavailable",
+		"Whether the network is correctly configured for the node.",
+		[]string{"node", "condition"}, nil,
+	)
 
 	descNodeStatusCapacityPods = prometheus.NewDesc(
 		"kube_node_status_capacity_pods",
@@ -131,6 +146,9 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeInfo
 	ch <- descNodeSpecUnschedulable
 	ch <- descNodeStatusReady
+	ch <- descNodeStatusMemoryPressure
+	ch <- descNodeStatusDiskPressure
+	ch <- descNodeStatusNetworkUnavailable
 	ch <- descNodeStatusOutOfDisk
 	ch <- descNodeStatusPhase
 	ch <- descNodeStatusCapacityCPU
@@ -171,13 +189,18 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 	addGauge(descNodeSpecUnschedulable, boolFloat64(n.Spec.Unschedulable))
 
 	// Collect node conditions and while default to false.
-	// TODO(fabxc): add remaining conditions: NodeMemoryPressure,  NodeDiskPressure, NodeNetworkUnavailable
 	for _, c := range n.Status.Conditions {
 		switch c.Type {
 		case v1.NodeReady:
 			addConditionMetrics(ch, descNodeStatusReady, c.Status, n.Name)
 		case v1.NodeOutOfDisk:
 			addConditionMetrics(ch, descNodeStatusOutOfDisk, c.Status, n.Name)
+		case v1.NodeMemoryPressure:
+			addConditionMetrics(ch, descNodeStatusMemoryPressure, c.Status, n.Name)
+		case v1.NodeDiskPressure:
+			addConditionMetrics(ch, descNodeStatusDiskPressure, c.Status, n.Name)
+		case v1.NodeNetworkUnavailable:
+			addConditionMetrics(ch, descNodeStatusNetworkUnavailable, c.Status, n.Name)
 		}
 	}
 

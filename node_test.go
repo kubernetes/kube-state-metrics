@@ -37,6 +37,8 @@ func TestNodeCollector(t *testing.T) {
 	const metadata = `
 		# HELP kube_node_info Information about a cluster node.
 		# TYPE kube_node_info gauge
+		# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_node_labels gauge
 		# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
 		# TYPE kube_node_spec_unschedulable gauge
 		# HELP kube_node_status_ready The ready status of a cluster node.
@@ -55,12 +57,12 @@ func TestNodeCollector(t *testing.T) {
 		# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
 		# TYPE kube_node_status_allocatable_memory_bytes gauge
 		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
-                # HELP kube_node_status_memory_pressure Whether the kubelet is under pressure due to insufficient available memory.
-                # TYPE kube_node_status_memory_pressure gauge
-                # HELP kube_node_status_disk_pressure Whether the kubelet is under pressure due to insufficient available disk.
-                # TYPE kube_node_status_disk_pressure gauge
-                # HELP kube_node_status_network_unavailable Whether the network is correctly configured for the node.
-                # TYPE kube_node_status_network_unavailable gauge
+		# HELP kube_node_status_memory_pressure Whether the kubelet is under pressure due to insufficient available memory.
+		# TYPE kube_node_status_memory_pressure gauge
+		# HELP kube_node_status_disk_pressure Whether the kubelet is under pressure due to insufficient available disk.
+		# TYPE kube_node_status_disk_pressure gauge
+		# HELP kube_node_status_network_unavailable Whether the network is correctly configured for the node.
+		# TYPE kube_node_status_network_unavailable gauge
 	`
 	cases := []struct {
 		nodes   []v1.Node
@@ -87,6 +89,7 @@ func TestNodeCollector(t *testing.T) {
 			},
 			want: metadata + `
 				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
+				kube_node_labels{node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 0
 			`,
 		},
@@ -96,6 +99,9 @@ func TestNodeCollector(t *testing.T) {
 				{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "127.0.0.1",
+						Labels: map[string]string{
+							"type": "master",
+						},
 					},
 					Spec: v1.NodeSpec{
 						Unschedulable: true,
@@ -123,6 +129,7 @@ func TestNodeCollector(t *testing.T) {
 			},
 			want: metadata + `
 				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
+				kube_node_labels{label_type="master",node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 1
 				kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4.3
 				kube_node_status_capacity_memory_bytes{node="127.0.0.1"} 2e9

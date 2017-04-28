@@ -27,6 +27,10 @@ import (
 )
 
 var (
+	descNodeLabelsName          = "kube_node_labels"
+	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descNodeLabelsDefaultLabels = []string{"node"}
+
 	descNodeInfo = prometheus.NewDesc(
 		"kube_node_info",
 		"Information about a cluster node.",
@@ -38,6 +42,12 @@ var (
 			"kubelet_version",
 			"kubeproxy_version",
 		}, nil,
+	)
+
+	descNodeLabels = prometheus.NewDesc(
+		descNodeLabelsName,
+		descNodeLabelsHelp,
+		descNodeLabelsDefaultLabels, nil,
 	)
 
 	descNodeSpecUnschedulable = prometheus.NewDesc(
@@ -144,6 +154,7 @@ type nodeCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeInfo
+	ch <- descNodeLabels
 	ch <- descNodeSpecUnschedulable
 	ch <- descNodeStatusReady
 	ch <- descNodeStatusMemoryPressure
@@ -171,6 +182,15 @@ func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
+func nodeLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descNodeLabelsName,
+		descNodeLabelsHelp,
+		append(descNodeLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{n.Name}, lv...)
@@ -185,6 +205,8 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		n.Status.NodeInfo.KubeletVersion,
 		n.Status.NodeInfo.KubeProxyVersion,
 	)
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+	addGauge(nodeLabelsDesc(labelKeys), 1, labelValues...)
 
 	addGauge(descNodeSpecUnschedulable, boolFloat64(n.Spec.Unschedulable))
 

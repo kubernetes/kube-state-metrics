@@ -18,8 +18,9 @@ package main
 
 import (
 	"encoding/json"
- 	"fmt"
-	
+	"fmt"
+	"regexp"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -30,51 +31,71 @@ import (
 )
 
 var (
+	invalidLabelCharRE         = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	descPodLabelsName          = "kube_pod_labels"
+	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
+
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
 		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by"}, nil,
 	)
+
+	descPodLabels = prometheus.NewDesc(
+		descPodLabelsName,
+		descPodLabelsHelp,
+		descPodLabelsDefaultLabels, nil,
+	)
+
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
 		"The pods current phase.",
 		[]string{"namespace", "pod", "phase"}, nil,
 	)
+
 	descPodStatusReady = prometheus.NewDesc(
 		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
 		[]string{"namespace", "pod", "condition"}, nil,
 	)
+
 	descPodStatusScheduled = prometheus.NewDesc(
 		"kube_pod_status_scheduled",
 		"Describes the status of the scheduling process for the pod.",
 		[]string{"namespace", "pod", "condition"}, nil,
 	)
+
 	descPodContainerInfo = prometheus.NewDesc(
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
 		[]string{"namespace", "pod", "container", "image", "image_id", "container_id"}, nil,
 	)
+
 	descPodContainerStatusWaiting = prometheus.NewDesc(
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
+
 	descPodContainerStatusRunning = prometheus.NewDesc(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
+
 	descPodContainerStatusTerminated = prometheus.NewDesc(
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
+
 	descPodContainerStatusReady = prometheus.NewDesc(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
+
 	descPodContainerStatusRestarts = prometheus.NewDesc(
 		"kube_pod_container_status_restarts",
 		"The number of container restarts per container.",
@@ -140,6 +161,7 @@ type podCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodInfo
+	ch <- descPodLabels
 	ch <- descPodStatusPhase
 	ch <- descPodStatusReady
 	ch <- descPodStatusScheduled
@@ -179,6 +201,31 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
+func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
+	labelKeys := make([]string, len(labels))
+	labelValues := make([]string, len(labels))
+	i := 0
+	for k, v := range labels {
+		labelKeys[i] = "kube_label_" + sanitizeLabelName(k)
+		labelValues[i] = v
+		i++
+	}
+	return labelKeys, labelValues
+}
+
+func sanitizeLabelName(s string) string {
+	return invalidLabelCharRE.ReplaceAllString(s, "_")
+}
+
+func podLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descPodLabelsName,
+		descPodLabelsHelp,
+		append(descPodLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	nodeName := p.Spec.NodeName
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
@@ -193,6 +240,8 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	}
 
 	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, extractCreatedBy(p.Annotations))
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
+	addGauge(podLabelsDesc(labelKeys), 1, labelValues...)
 	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
 
 	for _, c := range p.Status.Conditions {

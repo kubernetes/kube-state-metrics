@@ -28,6 +28,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift/origin/pkg/util/proc"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -47,9 +48,10 @@ var (
 		"pods":                   struct{}{},
 		"nodes":                  struct{}{},
 		"resourcequotas":         struct{}{},
-		"limitrange":		  struct{}{},
+		"limitrange":             struct{}{},
 		"replicasets":            struct{}{},
 		"replicationcontrollers": struct{}{},
+		"services":               struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
 		"daemonsets":             RegisterDaemonSetCollector,
@@ -57,9 +59,10 @@ var (
 		"pods":                   RegisterPodCollector,
 		"nodes":                  RegisterNodeCollector,
 		"resourcequotas":         RegisterResourceQuotaCollector,
-		"limitrange":		  RegisterLimitRangeCollector,
+		"limitrange":             RegisterLimitRangeCollector,
 		"replicasets":            RegisterReplicaSetCollector,
 		"replicationcontrollers": RegisterReplicationControllerCollector,
+		"services":               RegisterServiceCollector,
 	}
 )
 
@@ -160,8 +163,9 @@ func main() {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
-	registerCollectors(kubeClient, collectors)
-	metricsServer(options.port)
+	registry := prometheus.NewRegistry()
+	registerCollectors(registry, kubeClient, collectors)
+	metricsServer(registry, options.port)
 }
 
 func isNotExists(file string) bool {
@@ -224,13 +228,13 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	return kubeClient, nil
 }
 
-func metricsServer(port int) {
+func metricsServer(registry prometheus.Gatherer, port int) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := fmt.Sprintf(":%d", port)
 
 	glog.Infof("Starting metrics server: %s", listenAddress)
 	// Add metricsPath
-	http.Handle(metricsPath, prometheus.UninstrumentedHandler())
+	http.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	// Add healthzPath
 	http.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -254,12 +258,12 @@ func metricsServer(port int) {
 
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
-func registerCollectors(kubeClient clientset.Interface, enabledCollectors collectorSet) {
+func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet) {
 	activeCollectors := []string{}
 	for c, _ := range enabledCollectors {
 		f, ok := availableCollectors[c]
 		if ok {
-			f(prometheus.DefaultRegisterer, kubeClient)
+			f(registry, kubeClient)
 			activeCollectors = append(activeCollectors, c)
 		}
 	}

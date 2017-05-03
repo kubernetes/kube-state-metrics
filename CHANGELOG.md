@@ -1,3 +1,12 @@
+## v0.5.0 / 2017-05-03
+
+* [FEATURE] Add label metrics for Pods, Nodes and Services.
+* [FEATURE] Expose number number of ready Pods for DaemonSets.
+* [FEATURE] Add LimitRange metrics.
+* [FEATURE] Add ReplicationController metrics.
+* [ENHANCEMENT] Add NodeMemoryPressure, NodeDiskPressure, NodeNetworkUnavailable condition metrics.
+* [ENHANCEMENT] Add `created_by` label to `kube_pod_info` metric.
+
 ## v0.4.1 / 2017-02-10
 
 * [BUGFIX] fix panic if max unavailable if rolling update is unset

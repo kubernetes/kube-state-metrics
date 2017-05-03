@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"strconv"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -27,45 +29,35 @@ import (
 )
 
 var (
+	descJobInfo = prometheus.NewDesc(
+		"kube_job_info",
+		"Information about job.",
+		[]string{"namespace", "job", "parallelism", "completions", "active_deadline_seconds", "start_time", "completion_time"}, nil,
+	)
 	descJobStatusSucceeded = prometheus.NewDesc(
 		"kube_job_status_succeeded",
 		"The number of pods which reached Phase Succeeded.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
+		[]string{"namespace", "job"}, nil,
 	)
 	descJobStatusFailed = prometheus.NewDesc(
 		"kube_job_status_failed",
 		"The number of pods which reached Phase Failed.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
+		[]string{"namespace", "job"}, nil,
 	)
 	descJobStatusActive = prometheus.NewDesc(
 		"kube_job_status_active",
 		"The number of actively running pods.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
+		[]string{"namespace", "job"}, nil,
 	)
-	descJobStatusConditionComplete = prometheus.NewDesc(
-		"kube_job_status_condition_complete",
+	descJobConditionComplete = prometheus.NewDesc(
+		"kube_job_complete",
 		"The job has completed its execution.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
+		[]string{"namespace", "job", "condition"}, nil,
 	)
-	descJobStatusConditionFailed = prometheus.NewDesc(
-		"kube_job_status_condition_failed",
+	descJobConditionFailed = prometheus.NewDesc(
+		"kube_job_failed",
 		"The job has failed its execution.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
-	)
-	descJobStatusStartTime = prometheus.NewDesc(
-		"kube_job_status_start_time",
-		"The time when the job was acknowledged by the Job Manager.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
-	)
-	descJobStatusCompletionTime = prometheus.NewDesc(
-		"kube_job_status_completion_time",
-		"Time when the job was completed.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
-	)
-	descJobSpecCompletions = prometheus.NewDesc(
-		"kube_job_spec_completions",
-		"The desired number of successfully finished pods.",
-		[]string{"namespace", "job_name", "created_by"}, nil,
+		[]string{"namespace", "job", "condition"}, nil,
 	)
 )
 
@@ -102,14 +94,12 @@ type jobCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descJobInfo
 	ch <- descJobStatusSucceeded
 	ch <- descJobStatusFailed
 	ch <- descJobStatusActive
-	ch <- descJobStatusConditionComplete
-	ch <- descJobStatusConditionFailed
-	ch <- descJobStatusStartTime
-	ch <- descJobStatusCompletionTime
-	ch <- descJobSpecCompletions
+	ch <- descJobConditionComplete
+	ch <- descJobConditionFailed
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -129,39 +119,38 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
-	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{j.Namespace, j.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
+
+	var completionTime string
+	if j.Status.CompletionTime == nil {
+		completionTime = ""
+	} else {
+		completionTime = strconv.FormatInt(j.Status.CompletionTime.Unix(), 10)
 	}
 
-    created_by     := extractCreatedBy(j.Annotations)
-
-	addGauge(descJobStatusSucceeded, float64(j.Status.Succeeded), created_by)
-	addGauge(descJobStatusFailed, float64(j.Status.Failed), created_by)
-	addGauge(descJobStatusActive, float64(j.Status.Active), created_by)
-	addCounter(descJobStatusStartTime, float64(j.Status.StartTime.Unix()), created_by)
-	addCounter(descJobStatusCompletionTime, float64(j.Status.CompletionTime.Unix()), created_by)
-	addGauge(descJobSpecCompletions, float64(*j.Spec.Completions), created_by)
-
-	foundCondition := false
-	for _, jc := range j.Status.Conditions {
-		if jc.Type == v1batch.JobComplete {
-			addGauge(descJobStatusConditionComplete, float64(1), created_by)
-			addGauge(descJobStatusConditionFailed, float64(0), created_by)
-			foundCondition = true
-			break
-		}
-
-		if jc.Type == v1batch.JobFailed {
-			addGauge(descJobStatusConditionComplete, float64(0), created_by)
-			addGauge(descJobStatusConditionFailed, float64(1), created_by)
-			foundCondition = true
-			break
-		}
+	var activeDeadlineSeconds string
+	if j.Spec.ActiveDeadlineSeconds == nil {
+		activeDeadlineSeconds = ""
+	} else {
+		activeDeadlineSeconds = strconv.FormatInt(*j.Spec.ActiveDeadlineSeconds, 10)
 	}
 
-	if !foundCondition {
-		addGauge(descJobStatusConditionComplete, float64(0), created_by)
-		addGauge(descJobStatusConditionFailed, float64(0), created_by)
+	addGauge(descJobInfo, 1,
+		strconv.FormatInt(int64(*j.Spec.Parallelism), 10),
+		strconv.FormatInt(int64(*j.Spec.Completions), 10),
+		activeDeadlineSeconds,
+		strconv.FormatInt(j.Status.StartTime.Unix(), 10),
+		completionTime)
+
+	addGauge(descJobStatusSucceeded, float64(j.Status.Succeeded))
+	addGauge(descJobStatusFailed, float64(j.Status.Failed))
+	addGauge(descJobStatusActive, float64(j.Status.Active))
+
+	for _, c := range j.Status.Conditions {
+		switch c.Type {
+			case v1batch.JobComplete:
+				addConditionMetrics(ch, descJobConditionComplete, c.Status, j.Namespace, j.Name)
+			case v1batch.JobFailed:
+				addConditionMetrics(ch, descJobConditionFailed, c.Status, j.Namespace, j.Name)
+		}
 	}
 }

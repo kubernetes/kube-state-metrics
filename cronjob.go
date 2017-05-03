@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"strconv"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -27,6 +29,11 @@ import (
 )
 
 var (
+	descCronJobInfo = prometheus.NewDesc(
+		"kube_cronjob_info",
+		"Info about cronjob.",
+		[]string{"namespace", "cronjob", "schedule", "starting_deadline_seconds", "concurrency_policy"}, nil,
+	)
 	descCronJobStatusActive = prometheus.NewDesc(
 		"kube_cronjob_status_active",
 		"Active holds pointers to currently running jobs.",
@@ -77,6 +84,7 @@ type cronJobCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descCronJobInfo
 	ch <- descCronJobStatusActive
 	ch <- descCronJobStatusLastScheduleTime
 	ch <- descCronJobSpecSuspend
@@ -103,6 +111,19 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
+
+	var startingDeadlineSeconds string
+	if j.Spec.StartingDeadlineSeconds == nil {
+		startingDeadlineSeconds = ""
+	} else {
+		startingDeadlineSeconds = strconv.FormatInt(*j.Spec.StartingDeadlineSeconds, 10)
+	}
+
+	addGauge(descCronJobInfo, 1,
+		j.Spec.Schedule,
+		startingDeadlineSeconds,
+		string(j.Spec.ConcurrencyPolicy))
+
 	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
 	addCounter(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))
 	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))

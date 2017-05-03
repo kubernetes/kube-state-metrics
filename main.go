@@ -45,23 +45,23 @@ var (
 	defaultCollectors = collectorSet{
 		"daemonsets":             struct{}{},
 		"deployments":            struct{}{},
-		"pods":                   struct{}{},
+		"limitranges":            struct{}{},
 		"nodes":                  struct{}{},
-		"resourcequotas":         struct{}{},
-		"limitrange":             struct{}{},
+		"pods":                   struct{}{},
 		"replicasets":            struct{}{},
 		"replicationcontrollers": struct{}{},
+		"resourcequotas":         struct{}{},
 		"services":               struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
 		"daemonsets":             RegisterDaemonSetCollector,
 		"deployments":            RegisterDeploymentCollector,
-		"pods":                   RegisterPodCollector,
+		"limitranges":            RegisterLimitRangeCollector,
 		"nodes":                  RegisterNodeCollector,
-		"resourcequotas":         RegisterResourceQuotaCollector,
-		"limitrange":             RegisterLimitRangeCollector,
+		"pods":                   RegisterPodCollector,
 		"replicasets":            RegisterReplicaSetCollector,
 		"replicationcontrollers": RegisterReplicationControllerCollector,
+		"resourcequotas":         RegisterResourceQuotaCollector,
 		"services":               RegisterServiceCollector,
 	}
 )

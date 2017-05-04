@@ -18,7 +18,14 @@ the raw metrics.
 
 ## Container Image
 
-The latest container image can be found at `quay.io/coreos/kube-state-metrics:v0.5.0`.
+The primary source of the container image for kube-state-metrics can be found
+at [quay.io/coreos/kube-state-metrics](https://quay.io/coreos/kube-state-metrics). The latest image is
+`quay.io/coreos/kube-state-metrics:v0.5.0`.
+
+> We are happy to add mirrors of this repository here, but are primarily
+> maintaining the `quay.io/coreos/kube-state-metrics` repository. The image
+> used to be distributed via gcr, but due to lack of access it is not possible
+> for us to maintain that repository.
 
 ## Metrics
 

@@ -18,7 +18,7 @@ the raw metrics.
 
 ## Container Image
 
-The latest container image can be found at `gcr.io/google_containers/kube-state-metrics:v0.4.1`.
+The latest container image can be found at `gcr.io/google_containers/kube-state-metrics:v0.5.0`.
 
 ## Metrics
 

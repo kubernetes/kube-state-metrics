@@ -20,7 +20,7 @@ the raw metrics.
 
 The latest container image can be found at `gcr.io/google_containers/kube-state-metrics:v0.5.0`.
 
-## Metrics
+## Metrics Documentation
 
 There are many more metrics we could report, but this first pass is focused on
 those that could be used for actionable alerts. Please contribute PR's for
@@ -28,102 +28,7 @@ additional metrics!
 
 > WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
 
-### Node Metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_node_info | Gauge | `node`=&lt;node-address&gt; <br> `kernel_version`=&lt;kernel-version&gt; <br> `os_image`=&lt;os-image-name&gt; <br> `container_runtime_version`=&lt;container-runtime-and-version-combination&gt; <br> `kubelet_version`=&lt;kubelet-version&gt; <br> `kubeproxy_version`=&lt;kubeproxy-version&gt; |
-| kube_node_spec_unschedulable | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_ready| Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
-| kube_node_status_out_of_disk | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
-| kube_node_status_phase| Gauge | `node`=&lt;node-address&gt; <br> `phase`=&lt;Pending\|Running\|Terminated&gt; |
-| kube_node_status_capacity_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_capacity_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_capacity_pods | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_allocatable_cpu_cores | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_allocatable_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_allocatable_pods | Gauge | `node`=&lt;node-address&gt;|
-| kube_node_status_memory_pressure | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
-| kube_node_status_disk_pressure | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
-| kube_node_status_network_unavailable | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
-
-### DaemonSet Metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_daemonset_status_current_number_scheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
-| kube_daemonset_status_number_misscheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
-| kube_daemonset_status_desired_number_scheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
-| kube_daemonset_status_number_ready | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
-| kube_daemonset_metadata_generation | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
-
-### Deployment Metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_deployment_status_replicas | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_status_replicas_available | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_status_replicas_unavailable | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_status_replicas_updated | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_status_observed_generation | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_spec_replicas | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_spec_paused | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_spec_strategy_rollingupdate_max_unavailable | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-| kube_deployment_metadata_generation | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; |
-
-### Pod Metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_pod_info | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `host_ip`=&lt;host-ip&gt; <br> `pod_ip`=&lt;pod-ip&gt; <br> `start_time`=&lt;date-time since kubelet acknowledged pod&gt; <br> `node`=&lt;node-name&gt;<br> `created_by`=&lt;created_by&gt;  |
-| kube_pod_status_phase | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `phase`=&lt;Pending\|Running\|Succeeded\|Failed\|Unknown&gt; |
-| kube_pod_status_ready | Gauge |  `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
-| kube_pod_status_scheduled | Gauge |  `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
-| kube_pod_container_info | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `image`=&lt;image-name&gt; <br> `image_id`=&lt;image-id&gt; <br> `container_id`=&lt;containerid&gt; |
-| kube_pod_container_status_waiting | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; |
-| kube_pod_container_status_running | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; |
-| kube_pod_container_status_terminated | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; |
-| kube_pod_container_status_ready | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; |
-| kube_pod_container_status_restarts | Counter | `container`=&lt;container-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `pod`=&lt;pod-name&gt; |
-| kube_pod_container_resource_requests_cpu_cores | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; |
-| kube_pod_container_resource_requests_memory_bytes | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; |
-| kube_pod_container_resource_limits_cpu_cores | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; |
-| kube_pod_container_resource_limits_memory_bytes | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; |
-
-### ResourceQuota Metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_resourcequota | Gauge | `resourcequota`=&lt;quota-name&gt; <br> `namespace`=&lt;namespace&gt; <br> `resource`=&lt;ResourceName&gt; <br> `type`=&lt;quota-type&gt; |
-
-### LimitRange Metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_limitrange | Gauge | `limitrange`=&lt;limitrange-name&gt; <br> `namespace`=&lt;namespace&gt; <br> `resource`=&lt;ResourceName&gt; <br> `type`=&lt;Pod\|Container\|PersistentVolumeClaim&gt; <br> `constraint`=&lt;constraint&gt;|
-
-### ReplicaSet metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_replicaset_status_replicas | Gauge | `replicaset`=&lt;replicaset-name&gt; <br> `namespace`=&lt;replicaset-namespace&gt; |
-| kube_replicaset_status_fully_labeled_replicas | Gauge | `replicaset`=&lt;replicaset-name&gt; <br> `namespace`=&lt;replicaset-namespace&gt; |
-| kube_replicaset_status_ready_replicas | Gauge | `replicaset`=&lt;replicaset-name&gt; <br> `namespace`=&lt;replicaset-namespace&gt; |
-| kube_replicaset_status_observed_generation | Gauge | `replicaset`=&lt;replicaset-name&gt; <br> `namespace`=&lt;replicaset-namespace&gt; |
-| kube_replicaset_spec_replicas | Gauge | `replicaset`=&lt;replicaset-name&gt; <br> `namespace`=&lt;replicaset-namespace&gt; |
-| kube_replicaset_metadata_generation | Gauge | `replicaset`=&lt;replicaset-name&gt; <br> `namespace`=&lt;replicaset-namespace&gt; |
-
-### ReplicationController metrics
-
-| Metric name| Metric type | Labels/tags |
-| ---------- | ----------- | ----------- |
-| kube_replicationcontroller_status_replicas | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; |
-| kube_replicationcontroller_status_fully_labeled_replicas | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; |
-| kube_replicationcontroller_status_ready_replicas | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; |
-| kube_replicationcontroller_status_available_replicas | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; |
-| kube_replicationcontroller_status_observed_generation | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; |
-| kube_replicationcontroller_spec_replicas | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; |
-| kube_replicationcontroller_metadata_generation | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; |
+See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
 
 ## kube-state-metrics vs. Heapster
 

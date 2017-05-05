@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift/origin/pkg/util/proc"
@@ -33,12 +32,13 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"k8s.io/kube-state-metrics/collectors"
 )
 
 const (
-	resyncPeriod = 5 * time.Minute
-	metricsPath  = "/metrics"
-	healthzPath  = "/healthz"
+	metricsPath = "/metrics"
+	healthzPath = "/healthz"
 )
 
 var (
@@ -54,15 +54,15 @@ var (
 		"services":               struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
-		"daemonsets":             RegisterDaemonSetCollector,
-		"deployments":            RegisterDeploymentCollector,
-		"limitranges":            RegisterLimitRangeCollector,
-		"nodes":                  RegisterNodeCollector,
-		"pods":                   RegisterPodCollector,
-		"replicasets":            RegisterReplicaSetCollector,
-		"replicationcontrollers": RegisterReplicationControllerCollector,
-		"resourcequotas":         RegisterResourceQuotaCollector,
-		"services":               RegisterServiceCollector,
+		"daemonsets":             collectors.RegisterDaemonSetCollector,
+		"deployments":            collectors.RegisterDeploymentCollector,
+		"limitranges":            collectors.RegisterLimitRangeCollector,
+		"nodes":                  collectors.RegisterNodeCollector,
+		"pods":                   collectors.RegisterPodCollector,
+		"replicasets":            collectors.RegisterReplicaSetCollector,
+		"replicationcontrollers": collectors.RegisterReplicationControllerCollector,
+		"resourcequotas":         collectors.RegisterResourceQuotaCollector,
+		"services":               collectors.RegisterServiceCollector,
 	}
 )
 

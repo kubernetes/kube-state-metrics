@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package collectors
 
 import (
+	"time"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -27,6 +29,8 @@ import (
 )
 
 var (
+	resyncPeriod = 5 * time.Minute
+
 	descNodeLabelsName          = "kube_node_labels"
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}

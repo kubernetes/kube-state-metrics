@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package collectors
 
 import (
 	"strconv"
@@ -32,7 +32,7 @@ var (
 	descJobInfo = prometheus.NewDesc(
 		"kube_job_info",
 		"Information about job.",
-		[]string{"namespace", "job", "parallelism", "completions", "active_deadline_seconds", "start_time", "completion_time"}, nil,
+		[]string{"namespace", "job", "parallelism", "completions", "active_deadline_seconds"}, nil,
 	)
 	descJobStatusSucceeded = prometheus.NewDesc(
 		"kube_job_status_succeeded",
@@ -58,6 +58,16 @@ var (
 		"kube_job_failed",
 		"The job has failed its execution.",
 		[]string{"namespace", "job", "condition"}, nil,
+	)
+	descJobStatusStartTime = prometheus.NewDesc(
+		"kube_job_status_start_time",
+		"StartTime represents time when the job was acknowledged by the Job Manager.",
+		[]string{"namespace", "job"}, nil,
+	)
+	descJobStatusCompletionTime = prometheus.NewDesc(
+		"kube_job_status_completion_time",
+		"CompletionTime represents time when the job was completed.",
+		[]string{"namespace", "job"}, nil,
 	)
 )
 
@@ -100,6 +110,8 @@ func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descJobStatusActive
 	ch <- descJobConditionComplete
 	ch <- descJobConditionFailed
+	ch <- descJobStatusStartTime
+	ch <- descJobStatusCompletionTime
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -119,12 +131,9 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
-
-	var completionTime string
-	if j.Status.CompletionTime == nil {
-		completionTime = ""
-	} else {
-		completionTime = strconv.FormatInt(j.Status.CompletionTime.Unix(), 10)
+	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
+		lv = append([]string{j.Namespace, j.Name}, lv...)
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
 	var activeDeadlineSeconds string
@@ -137,13 +146,17 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 	addGauge(descJobInfo, 1,
 		strconv.FormatInt(int64(*j.Spec.Parallelism), 10),
 		strconv.FormatInt(int64(*j.Spec.Completions), 10),
-		activeDeadlineSeconds,
-		strconv.FormatInt(j.Status.StartTime.Unix(), 10),
-		completionTime)
+		activeDeadlineSeconds)
 
 	addGauge(descJobStatusSucceeded, float64(j.Status.Succeeded))
 	addGauge(descJobStatusFailed, float64(j.Status.Failed))
 	addGauge(descJobStatusActive, float64(j.Status.Active))
+
+	addCounter(descJobStatusStartTime, float64(j.Status.StartTime.Unix()))
+
+	if j.Status.CompletionTime != nil {
+		addCounter(descJobStatusCompletionTime, float64(j.Status.CompletionTime.Unix()))
+	}
 
 	for _, c := range j.Status.Conditions {
 		switch c.Type {

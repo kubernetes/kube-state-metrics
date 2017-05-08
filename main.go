@@ -56,10 +56,10 @@ var (
 		"cronjobs":               struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
-		"cronjobs":               RegisterCronJobCollector,
+		"cronjobs":               collectors.RegisterCronJobCollector,
 		"daemonsets":             collectors.RegisterDaemonSetCollector,
 		"deployments":            collectors.RegisterDeploymentCollector,
-		"jobs":                   RegisterJobCollector,
+		"jobs":                   collectors.RegisterJobCollector,
 		"limitranges":            collectors.RegisterLimitRangeCollector,
 		"nodes":                  collectors.RegisterNodeCollector,
 		"pods":                   collectors.RegisterPodCollector,

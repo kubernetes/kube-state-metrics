@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package collectors
 
 import (
 	"strconv"
@@ -125,6 +125,9 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 		string(j.Spec.ConcurrencyPolicy))
 
 	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
-	addCounter(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))
 	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
+
+	if j.Status.LastScheduleTime != nil {
+		addCounter(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))
+	}
 }

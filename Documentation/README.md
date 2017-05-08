@@ -6,8 +6,10 @@ Pull requests completeing the metrics documentation as well as sample usages are
 
 Per group of metrics there is one file for all metrics. See each file for specific documentation about the exposed metrics:
 
+* [CronJob Metrics](cronjob-metrics.md)
 * [DaemonSet Metrics](daemonset-metrics.md)
 * [Deployment Metrics](deployment-metrics.md)
+* [Job Metrics](job-metrics.md)
 * [LimitRange Metrics](limitrange-metrics.md)
 * [Node Metrics](node-metrics.md)
 * [Pod Metrics](pod-metrics.md)

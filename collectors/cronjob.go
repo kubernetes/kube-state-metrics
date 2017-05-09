@@ -17,8 +17,6 @@ limitations under the License.
 package collectors
 
 import (
-	"strconv"
-
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -32,7 +30,7 @@ var (
 	descCronJobInfo = prometheus.NewDesc(
 		"kube_cronjob_info",
 		"Info about cronjob.",
-		[]string{"namespace", "cronjob", "schedule", "starting_deadline_seconds", "concurrency_policy"}, nil,
+		[]string{"namespace", "cronjob", "schedule", "concurrency_policy"}, nil,
 	)
 	descCronJobStatusActive = prometheus.NewDesc(
 		"kube_cronjob_status_active",
@@ -47,6 +45,11 @@ var (
 	descCronJobSpecSuspend = prometheus.NewDesc(
 		"kube_cronjob_spec_suspend",
 		"Suspend flag tells the controller to suspend subsequent executions.",
+		[]string{"namespace", "cronjob"}, nil,
+	)
+	descCronJobSpecStartingDeadlineSeconds = prometheus.NewDesc(
+		"kube_cronjob_spec_starting_deadline_seconds",
+		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
 		[]string{"namespace", "cronjob"}, nil,
 	)
 )
@@ -88,6 +91,7 @@ func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descCronJobStatusActive
 	ch <- descCronJobStatusLastScheduleTime
 	ch <- descCronJobSpecSuspend
+	ch <- descCronJobSpecStartingDeadlineSeconds
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -112,17 +116,11 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	var startingDeadlineSeconds string
-	if j.Spec.StartingDeadlineSeconds == nil {
-		startingDeadlineSeconds = ""
-	} else {
-		startingDeadlineSeconds = strconv.FormatInt(*j.Spec.StartingDeadlineSeconds, 10)
+	if j.Spec.StartingDeadlineSeconds != nil {
+		addGauge(descCronJobSpecStartingDeadlineSeconds, float64(*j.Spec.StartingDeadlineSeconds))
 	}
 
-	addGauge(descCronJobInfo, 1,
-		j.Spec.Schedule,
-		startingDeadlineSeconds,
-		string(j.Spec.ConcurrencyPolicy))
+	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
 
 	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
 	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))

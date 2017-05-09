@@ -17,8 +17,6 @@ limitations under the License.
 package collectors
 
 import (
-	"strconv"
-
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -32,7 +30,22 @@ var (
 	descJobInfo = prometheus.NewDesc(
 		"kube_job_info",
 		"Information about job.",
-		[]string{"namespace", "job", "parallelism", "completions", "active_deadline_seconds"}, nil,
+		[]string{"namespace", "job"}, nil,
+	)
+	descJobSpecParallelism = prometheus.NewDesc(
+		"kube_job_spec_parallelism",
+		"The maximum desired number of pods the job should run at any given time.",
+		[]string{"namespace", "job"}, nil,
+	)
+	descJobSpecCompletions = prometheus.NewDesc(
+		"kube_job_spec_completions",
+		"The desired number of successfully finished pods the job should be run with.",
+		[]string{"namespace", "job"}, nil,
+	)
+	descJobSpecActiveDeadlineSeconds = prometheus.NewDesc(
+		"kube_job_spec_active_deadline_seconds",
+		"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
+		[]string{"namespace", "job"}, nil,
 	)
 	descJobStatusSucceeded = prometheus.NewDesc(
 		"kube_job_status_succeeded",
@@ -105,6 +118,9 @@ type jobCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descJobInfo
+	ch <- descJobSpecParallelism
+	ch <- descJobSpecCompletions
+	ch <- descJobSpecActiveDeadlineSeconds
 	ch <- descJobStatusSucceeded
 	ch <- descJobStatusFailed
 	ch <- descJobStatusActive
@@ -136,17 +152,13 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	var activeDeadlineSeconds string
-	if j.Spec.ActiveDeadlineSeconds == nil {
-		activeDeadlineSeconds = ""
-	} else {
-		activeDeadlineSeconds = strconv.FormatInt(*j.Spec.ActiveDeadlineSeconds, 10)
-	}
+	addGauge(descJobInfo, 1)
+	addGauge(descJobSpecParallelism, float64(*j.Spec.Parallelism))
+	addGauge(descJobSpecCompletions, float64(*j.Spec.Completions))
 
-	addGauge(descJobInfo, 1,
-		strconv.FormatInt(int64(*j.Spec.Parallelism), 10),
-		strconv.FormatInt(int64(*j.Spec.Completions), 10),
-		activeDeadlineSeconds)
+	if j.Spec.ActiveDeadlineSeconds != nil {
+		addGauge(descJobSpecActiveDeadlineSeconds, float64(*j.Spec.ActiveDeadlineSeconds))
+	}
 
 	addGauge(descJobStatusSucceeded, float64(j.Status.Succeeded))
 	addGauge(descJobStatusFailed, float64(j.Status.Failed))

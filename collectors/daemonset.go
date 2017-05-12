@@ -61,7 +61,7 @@ func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
 }
 
 func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
-	client := kubeClient.Extensions().RESTClient()
+	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	dslw := cache.NewListWatchFromClient(client, "daemonsets", api.NamespaceAll, nil)
 	dsinf := cache.NewSharedInformer(dslw, &v1beta1.DaemonSet{}, resyncPeriod)
 

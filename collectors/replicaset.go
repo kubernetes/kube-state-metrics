@@ -66,7 +66,7 @@ func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
 }
 
 func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
-	client := kubeClient.Extensions().RESTClient()
+	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	rslw := cache.NewListWatchFromClient(client, "replicasets", api.NamespaceAll, nil)
 	rsinf := cache.NewSharedInformer(rslw, &v1beta1.ReplicaSet{}, resyncPeriod)
 

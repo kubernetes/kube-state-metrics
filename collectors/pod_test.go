@@ -34,6 +34,7 @@ func (ds mockPodStore) List() (pods []v1.Pod, err error) {
 func TestPodCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
+	var test = true
 	const metadata = `
 		# HELP kube_pod_container_info Information about a container in a pod.
 		# TYPE kube_pod_container_info gauge
@@ -271,6 +272,13 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
+						OwnerReferences: []v1.OwnerReference{
+							{
+								Kind:       "ReplicaSet",
+								Name:       "rs-name",
+								Controller: &test,
+							},
+						},
 					},
 					Spec: v1.PodSpec{
 						NodeName: "node2",
@@ -282,8 +290,8 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
+				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5",owner_kind="ReplicaSet",owner_name="rs-name",owner_is_controller="true"} 1
 				`,
 			metrics: []string{"kube_pod_info"},
 		}, {

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,9 +40,8 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by"}, nil,
+		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by", "owner_kind", "owner_name", "owner_is_controller"}, nil,
 	)
-
 	descPodLabels = prometheus.NewDesc(
 		descPodLabelsName,
 		descPodLabelsHelp,
@@ -238,8 +238,15 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
+	owners := p.GetOwnerReferences()
+	if len(owners) == 0 {
+		addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, extractCreatedBy(p.Annotations), "<none>", "<none>", "<none>")
+	} else {
+		for _, owner := range owners {
+			addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, extractCreatedBy(p.Annotations), owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+		}
+	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, extractCreatedBy(p.Annotations))
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
 	addGauge(podLabelsDesc(labelKeys), 1, labelValues...)
 	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))

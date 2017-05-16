@@ -79,6 +79,17 @@ Kubernetes service and deployment will be created. The service already has a
 Prometheus service-endpoint scraping [configuration](https://raw.githubusercontent.com/prometheus/prometheus/master/documentation/examples/prometheus-kubernetes.yml), Prometheus will pick it up automatically and you can start using the generated
 metrics right away.
 
+### GKE - Google Container Engine
+
+You will need a certified user to deploy on GKE.
+
+```
+gcloud config set container/use_client_certificate True
+export CLOUDSDK_CONTAINER_USE_CLIENT_CERTIFICATE=True
+gcloud container clusters get-credentials <cluster-name>
+kubectl apply -f kubernetes
+```
+
 # Development
 
 When developing, test a metric dump against your local Kubernetes cluster by

@@ -19,7 +19,6 @@ package collectors
 import (
 	"testing"
 
-	"k8s.io/client-go/pkg/api/resource"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -40,55 +39,48 @@ func TestNamespaceCollector(t *testing.T) {
 	# TYPE kube_namespace_status_phase gauge
 	`
 	cases := []struct {
-		ranges  []v1.LimitRange
+		ns      []v1.Namespace
 		metrics []string // which metrics should be checked
 		want    string
 	}{
 		{
-			ranges: []v1.LimitRange{
+			ns: []v1.Namespace{
 				{
 					ObjectMeta: v1.ObjectMeta{
-						Name:      "quotaTest",
-						Namespace: "testNS",
+						Name: "nsActiveTest",
 					},
-					Spec: v1.LimitRangeSpec{
-						Limits: []v1.LimitRangeItem{
-							{
-								Type: v1.LimitTypePod,
-								Max: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								Min: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								Default: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								DefaultRequest: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								MaxLimitRequestRatio: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-							},
-						},
+					Spec: v1.NamespaceSpec{
+						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+					},
+					Status: v1.NamespaceStatus{
+						Phase: v1.NamespaceActive,
+					},
+				},
+				{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "nsTerminateTest",
+					},
+					Spec: v1.NamespaceSpec{
+						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+					},
+					Status: v1.NamespaceStatus{
+						Phase: v1.NamespaceTerminating,
 					},
 				},
 			},
+
 			want: metadata + `
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="min"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="max"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="default"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="defaultRequest"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="maxLimitRequestRatio"} 2.1e+09
+		kube_namespace_status_phase{name="nsActiveTest",create_time="testNS",status="Active"} 1
+		kube_namespace_status_phase{name="nsTerminateTest",create_time="testNS",status="Terminating"} 1
 		`,
 		},
 	}
+
 	for _, c := range cases {
-		dc := &limitRangeCollector{
-			store: &mockLimitRangeStore{
-				list: func() (v1.LimitRangeList, error) {
-					return v1.LimitRangeList{Items: c.ranges}, nil
+		dc := &namespaceCollector{
+			store: &mockNamespaceStore{
+				list: func() (v1.NamespaceList, error) {
+					return v1.NamespaceList{Items: c.ns}, nil
 				},
 			},
 		}

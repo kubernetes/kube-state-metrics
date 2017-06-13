@@ -97,12 +97,6 @@ func (lrc *namespaceCollector) collectNamespace(ch chan<- prometheus.Metric, rq 
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 	status := string(rq.Status.Phase)
-	addGauge(descNamespace, stringFloat64(status), rq.CreationTimestamp.String(), status)
+	addGauge(descNamespace, 1, rq.CreationTimestamp.String(), status)
 
-}
-func stringFloat64(b string) float64 {
-	if b == "Active" {
-		return 1
-	}
-	return 0
 }

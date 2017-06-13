@@ -16,3 +16,4 @@ Per group of metrics there is one file for all metrics. See each file for specif
 * [ReplicaSet Metrics](replicaset-metrics.md)
 * [ReplicationController Metrics](replicationcontroller-metrics.md)
 * [ResourceQuota Metrics](resourcequota-metrics.md)
+* [Service Metrics](service-metrics.md)

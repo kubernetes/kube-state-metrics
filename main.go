@@ -43,6 +43,7 @@ const (
 
 var (
 	defaultCollectors = collectorSet{
+		"namespaces":             struct{}{},
 		"daemonsets":             struct{}{},
 		"deployments":            struct{}{},
 		"limitranges":            struct{}{},
@@ -56,6 +57,7 @@ var (
 		"cronjobs":               struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
+		"namespaces":             collectors.RegisterNamespaceCollector,
 		"cronjobs":               collectors.RegisterCronJobCollector,
 		"daemonsets":             collectors.RegisterDaemonSetCollector,
 		"deployments":            collectors.RegisterDeploymentCollector,

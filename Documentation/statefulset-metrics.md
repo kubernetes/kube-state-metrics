@@ -1,4 +1,4 @@
-# Service Metrics
+# Stateful Set Metrics
  
 | Metric name| Metric type | Labels/tags |
 | ---------- | ----------- | ----------- |

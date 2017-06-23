@@ -2,6 +2,7 @@ all: build
 
 FLAGS =
 COMMONENVVAR = GOOS=linux GOARCH=amd64
+ARCHS = amd64 386 arm arm64
 BUILDENVVAR = CGO_ENABLED=0
 TESTENVVAR = 
 REGISTRY = gcr.io/google_containers
@@ -13,6 +14,9 @@ deps:
 
 build: clean deps
 	$(COMMONENVVAR) $(BUILDENVVAR) godep go build -o kube-state-metrics 
+
+crossbuild:
+	$(foreach arch,$(ARCHS), GOOS=linux GOARCH=$(arch) $(BUILDENVVAR) godep go build -o kube-state-metrics-$(arch);)
 
 test-unit: clean deps build
 	$(COMMONENVVAR) $(TESTENVVAR) godep go test --race $(FLAGS) $(PKGS)

@@ -18,7 +18,6 @@ package collectors
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strconv"
 
@@ -40,8 +39,15 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by", "owner_kind", "owner_name", "owner_is_controller"}, nil,
+		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"}, nil,
 	)
+
+	descPodOwner = prometheus.NewDesc(
+		"kube_pod_owner",
+		"Information about the Pod's owner.",
+		[]string{"namespace", "pod", "owner_kind", "owner_name", "owner_is_controller"}, nil,
+	)
+
 	descPodLabels = prometheus.NewDesc(
 		descPodLabelsName,
 		descPodLabelsHelp,
@@ -161,6 +167,7 @@ type podCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodInfo
+	ch <- descPodOwner
 	ch <- descPodLabels
 	ch <- descPodStatusPhase
 	ch <- descPodStatusReady
@@ -177,16 +184,16 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsMemoryBytes
 }
 
-func extractCreatedBy(annotation map[string]string) string {
+func extractCreatedBy(annotation map[string]string) *api.ObjectReference {
 	value, ok := annotation[api.CreatedByAnnotation]
 	if ok {
 		var r api.SerializedReference
 		err := json.Unmarshal([]byte(value), &r)
 		if err == nil {
-			return fmt.Sprintf("%s/%s", r.Reference.Kind, r.Reference.Name)
+			return &r.Reference
 		}
 	}
-	return "<none>"
+	return nil
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -238,12 +245,26 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
+
+	createdBy := extractCreatedBy(p.Annotations)
+	createdByKind := "<none>"
+	createdByName := "<none>"
+	if createdBy != nil {
+		if createdBy.Kind != "" {
+			createdByKind = createdBy.Kind
+		}
+		if createdBy.Name != "" {
+			createdByName = createdBy.Name
+		}
+	}
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, createdByKind, createdByName)
+
 	owners := p.GetOwnerReferences()
 	if len(owners) == 0 {
-		addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, extractCreatedBy(p.Annotations), "<none>", "<none>", "<none>")
+		addGauge(descPodOwner, 1, "<none>", "<none>", "<none>")
 	} else {
 		for _, owner := range owners {
-			addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, extractCreatedBy(p.Annotations), owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			addGauge(descPodOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
 		}
 	}
 

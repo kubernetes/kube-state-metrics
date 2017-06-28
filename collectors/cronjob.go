@@ -17,8 +17,11 @@ limitations under the License.
 package collectors
 
 import (
+	"time"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/robfig/cron"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
@@ -26,7 +29,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+type nowFuncT func() time.Time
+
 var (
+	nowFunc nowFuncT // so that we can mock out `time.Now()` in tests
 	descCronJobInfo = prometheus.NewDesc(
 		"kube_cronjob_info",
 		"Info about cronjob.",
@@ -52,7 +58,18 @@ var (
 		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
 		[]string{"namespace", "cronjob"}, nil,
 	)
+	descCronJobSchedulingDelay = prometheus.NewDesc(
+		"kube_cronjob_scheduling_delay",
+		"Number of seconds the cron job is delayed scheduling",
+		[]string{"namespace", "cronjob"}, nil,
+	)
 )
+
+func init() {
+	nowFunc = func() time.Time {
+		return time.Now()
+	}
+}
 
 type CronJobLister func() ([]v2batch.CronJob, error)
 
@@ -92,6 +109,7 @@ func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descCronJobStatusLastScheduleTime
 	ch <- descCronJobSpecSuspend
 	ch <- descCronJobSpecStartingDeadlineSeconds
+	ch <- descCronJobSchedulingDelay
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -103,6 +121,21 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 	for _, cj := range cronjobs {
 		cjc.collectCronJob(ch, cj)
+	}
+}
+
+func getSchedulingDelaySeconds(schedule string, lastScheduleTime time.Time) float64 {
+	sched, err := cron.ParseStandard(schedule)
+	if err != nil {
+		glog.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
+		return 0
+	}
+	nextScheduleTime := sched.Next(lastScheduleTime)
+	delay := nowFunc().Sub(nextScheduleTime).Seconds()
+	if delay < 0 {
+		return 0
+	} else {
+		return delay
 	}
 }
 
@@ -120,8 +153,12 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 		addGauge(descCronJobSpecStartingDeadlineSeconds, float64(*j.Spec.StartingDeadlineSeconds))
 	}
 
-	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
+	// If the cron job is suspended, don't track delays
+	if j.Status.LastScheduleTime != nil && !*j.Spec.Suspend {
+		addGauge(descCronJobSchedulingDelay, getSchedulingDelaySeconds(j.Spec.Schedule, j.Status.LastScheduleTime.Time))
+	}
 
+	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
 	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
 	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
 

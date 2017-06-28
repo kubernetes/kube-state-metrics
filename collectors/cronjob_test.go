@@ -17,13 +17,21 @@ limitations under the License.
 package collectors
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/api/unversioned"
 	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
 )
+
+func init() {
+	// Mock time.Now() for `kube_cronjob_scheduling_delay`
+	nowFunc = func() time.Time {
+		t, _ := time.Parse(time.RFC3339, "2017-05-26T18:08:03Z")
+		return t
+	}
+}
 
 var (
 	SuspendTrue bool = true
@@ -42,6 +50,30 @@ func (cjs mockCronJobStore) List() (cronJobs []v2batch.CronJob, err error) {
 	return cjs.f()
 }
 
+type delaytest struct {
+	time     time.Time
+	schedule string
+	delay    float64
+}
+
+func parseTime(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return t
+}
+
+func TestSchedulingDelay(t *testing.T) {
+	var tests = []delaytest{
+		{parseTime("2017-05-26T18:06:01Z"), "* * * * *", 63},
+		{parseTime("2017-05-26T15:06:00Z"), "0 */3 * * *", 483},
+	}
+	for _, test := range tests {
+		delay := getSchedulingDelaySeconds(test.schedule, test.time)
+		if delay != test.delay {
+			t.Errorf("Delay doesn't match. actual %d, expected %d. Schedule: %s, time: %s", delay, test.delay, test.schedule, test.time.String())
+		}
+	}
+}
+
 func TestCronJobCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
@@ -56,6 +88,8 @@ func TestCronJobCollector(t *testing.T) {
 		# TYPE kube_cronjob_status_active gauge
 		# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 		# TYPE kube_cronjob_status_last_schedule_time counter
+		# HELP kube_cronjob_scheduling_delay Number of seconds the cron job is delayed scheduling
+		# TYPE kube_cronjob_scheduling_delay gauge
 	`
 	cases := []struct {
 		cronJobs []v2batch.CronJob
@@ -117,6 +151,8 @@ func TestCronJobCollector(t *testing.T) {
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
+
+				kube_cronjob_scheduling_delay{cronjob="ActiveRunningCronJob1",namespace="ns1"} 483
 
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 300
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300

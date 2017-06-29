@@ -29,10 +29,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type nowFuncT func() time.Time
+type timeNowT func() time.Time
 
 var (
-	nowFunc nowFuncT // so that we can mock out `time.Now()` in tests
+	timeNow timeNowT // so that we can mock out `time.Now()` in tests
 	descCronJobInfo = prometheus.NewDesc(
 		"kube_cronjob_info",
 		"Info about cronjob.",
@@ -66,9 +66,7 @@ var (
 )
 
 func init() {
-	nowFunc = func() time.Time {
-		return time.Now()
-	}
+	timeNow = time.Now
 }
 
 type CronJobLister func() ([]v2batch.CronJob, error)
@@ -131,7 +129,7 @@ func getSchedulingDelaySeconds(schedule string, lastScheduleTime time.Time) floa
 		return 0
 	}
 	nextScheduleTime := sched.Next(lastScheduleTime)
-	delay := nowFunc().Sub(nextScheduleTime).Seconds()
+	delay := timeNow().Sub(nextScheduleTime).Seconds()
 	if delay < 0 {
 		return 0
 	} else {

@@ -27,7 +27,7 @@ import (
 
 func init() {
 	// Mock time.Now() for `kube_cronjob_scheduling_delay`
-	nowFunc = func() time.Time {
+	timeNow = func() time.Time {
 		t, _ := time.Parse(time.RFC3339, "2017-05-26T18:08:03Z")
 		return t
 	}

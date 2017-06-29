@@ -132,9 +132,8 @@ func getSchedulingDelaySeconds(schedule string, lastScheduleTime time.Time) floa
 	delay := timeNow().Sub(nextScheduleTime).Seconds()
 	if delay < 0 {
 		return 0
-	} else {
-		return delay
 	}
+	return delay
 }
 
 func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batch.CronJob) {

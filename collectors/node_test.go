@@ -85,10 +85,13 @@ func TestNodeCollector(t *testing.T) {
 							ContainerRuntimeVersion: "rkt",
 						},
 					},
+					Spec: v1.NodeSpec{
+						ProviderID: "provider://i-uniqueid",
+					},
 				},
 			},
 			want: metadata + `
-				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
+				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-uniqueid"} 1
 				kube_node_labels{node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 0
 			`,
@@ -105,6 +108,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 					Spec: v1.NodeSpec{
 						Unschedulable: true,
+						ProviderID:    "provider://i-randomidentifier",
 					},
 					Status: v1.NodeStatus{
 						NodeInfo: v1.NodeSystemInfo{
@@ -128,7 +132,7 @@ func TestNodeCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage"} 1
+				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-randomidentifier"} 1
 				kube_node_labels{label_type="master",node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 1
 				kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4.3

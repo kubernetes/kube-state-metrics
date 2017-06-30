@@ -25,14 +25,12 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/unversioned"
 	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
-type timeNowT func() time.Time
-
 var (
-	timeNow timeNowT // so that we can mock out `time.Now()` in tests
 	descCronJobInfo = prometheus.NewDesc(
 		"kube_cronjob_info",
 		"Info about cronjob.",
@@ -58,16 +56,12 @@ var (
 		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
 		[]string{"namespace", "cronjob"}, nil,
 	)
-	descCronJobSchedulingDelay = prometheus.NewDesc(
-		"kube_cronjob_scheduling_delay",
-		"Number of seconds the cron job is delayed scheduling",
+	descCronJobNextScheduledTime = prometheus.NewDesc(
+		"kube_cronjob_next_schedule_time",
+		"Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
 		[]string{"namespace", "cronjob"}, nil,
 	)
 )
-
-func init() {
-	timeNow = time.Now
-}
 
 type CronJobLister func() ([]v2batch.CronJob, error)
 
@@ -107,7 +101,7 @@ func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descCronJobStatusLastScheduleTime
 	ch <- descCronJobSpecSuspend
 	ch <- descCronJobSpecStartingDeadlineSeconds
-	ch <- descCronJobSchedulingDelay
+	ch <- descCronJobNextScheduledTime
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -122,18 +116,19 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func getSchedulingDelaySeconds(schedule string, lastScheduleTime time.Time) float64 {
+func getNextScheduledTime(schedule string, lastScheduleTime *unversioned.Time, createdTime unversioned.Time) time.Time {
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
 		glog.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
-		return 0
+		return time.Time{}
 	}
-	nextScheduleTime := sched.Next(lastScheduleTime)
-	delay := timeNow().Sub(nextScheduleTime).Seconds()
-	if delay < 0 {
-		return 0
+	if !lastScheduleTime.IsZero() {
+		return sched.Next((*lastScheduleTime).Time)
 	}
-	return delay
+	if !createdTime.IsZero() {
+		return sched.Next(createdTime.Time)
+	}
+	return time.Time{}
 }
 
 func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batch.CronJob) {
@@ -150,9 +145,10 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 		addGauge(descCronJobSpecStartingDeadlineSeconds, float64(*j.Spec.StartingDeadlineSeconds))
 	}
 
-	// If the cron job is suspended, don't track delays
-	if j.Status.LastScheduleTime != nil && !*j.Spec.Suspend {
-		addGauge(descCronJobSchedulingDelay, getSchedulingDelaySeconds(j.Spec.Schedule, j.Status.LastScheduleTime.Time))
+	// If the cron job is suspended, don't track the next scheduled time
+	nextScheduledTime := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
+	if !nextScheduledTime.IsZero() && !*j.Spec.Suspend {
+		addGauge(descCronJobNextScheduledTime, float64(nextScheduledTime.Unix()))
 	}
 
 	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))

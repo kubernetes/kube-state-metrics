@@ -41,6 +41,7 @@ var (
 			"container_runtime_version",
 			"kubelet_version",
 			"kubeproxy_version",
+			"provider_id",
 		}, nil,
 	)
 
@@ -204,6 +205,7 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		n.Status.NodeInfo.ContainerRuntimeVersion,
 		n.Status.NodeInfo.KubeletVersion,
 		n.Status.NodeInfo.KubeProxyVersion,
+		n.Spec.ProviderID,
 	)
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
 	addGauge(nodeLabelsDesc(labelKeys), 1, labelValues...)

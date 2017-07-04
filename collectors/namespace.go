@@ -39,10 +39,10 @@ var (
 )
 
 // NamespaceLister ...
-type NamespaceLister func() (v1.NamespaceList, error)
+type NamespaceLister func() ([]v1.Namespace, error)
 
 // List ...
-func (l NamespaceLister) List() (v1.NamespaceList, error) {
+func (l NamespaceLister) List() ([]v1.Namespace, error) {
 	return l()
 }
 
@@ -50,22 +50,22 @@ func (l NamespaceLister) List() (v1.NamespaceList, error) {
 func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
 	client := kubeClient.CoreV1().RESTClient()
 
-	rqlw := cache.NewListWatchFromClient(client, "namespaces", api.NamespaceAll, nil)
-	rqinf := cache.NewSharedInformer(rqlw, &v1.Namespace{}, resyncPeriod)
+	nslw := cache.NewListWatchFromClient(client, "namespaces", api.NamespaceAll, nil)
+	nsinf := cache.NewSharedInformer(nslw, &v1.Namespace{}, resyncPeriod)
 
-	namespaceLister := NamespaceLister(func() (ranges v1.NamespaceList, err error) {
-		for _, rq := range rqinf.GetStore().List() {
-			ranges.Items = append(ranges.Items, *(rq.(*v1.Namespace)))
+	namespaceLister := NamespaceLister(func() (namespaces []v1.Namespace, err error) {
+		for _, ns := range nsinf.GetStore().List() {
+			namespaces = append(namespaces, *(ns.(*v1.Namespace)))
 		}
-		return ranges, nil
+		return namespaces, nil
 	})
 
 	registry.MustRegister(&namespaceCollector{store: namespaceLister})
-	go rqinf.Run(context.Background().Done())
+	go nsinf.Run(context.Background().Done())
 }
 
 type namespaceStore interface {
-	List() (v1.NamespaceList, error)
+	List() ([]v1.Namespace, error)
 }
 
 // limitRangeCollector collects metrics about all limit ranges in the cluster.
@@ -74,26 +74,26 @@ type namespaceCollector struct {
 }
 
 // Describe implements the prometheus.Collector interface.
-func (lrc *namespaceCollector) Describe(ch chan<- *prometheus.Desc) {
+func (nsc *namespaceCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNamespace
 }
 
 // Collect implements the prometheus.Collector interface.
-func (lrc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
-	namespaceCollector, err := lrc.store.List()
+func (nsc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
+	nsls, err := nsc.store.List()
 	if err != nil {
 		glog.Errorf("listing limit ranges failed: %s", err)
 		return
 	}
 
-	for _, rq := range namespaceCollector.Items {
-		lrc.collectNamespace(ch, rq)
+	for _, rq := range nsls {
+		nsc.collectNamespace(ch, rq)
 	}
 }
 
 func (lrc *namespaceCollector) collectNamespace(ch chan<- prometheus.Metric, rq v1.Namespace) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{rq.Name, rq.Namespace}, lv...)
+		lv = append([]string{rq.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 	status := string(rq.Status.Phase)

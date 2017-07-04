@@ -23,10 +23,10 @@ import (
 )
 
 type mockNamespaceStore struct {
-	list func() (v1.NamespaceList, error)
+	list func() ([]v1.Namespace, error)
 }
 
-func (ns mockNamespaceStore) List() (v1.NamespaceList, error) {
+func (ns mockNamespaceStore) List() ([]v1.Namespace, error) {
 	return ns.list()
 }
 
@@ -35,7 +35,7 @@ func TestNamespaceCollector(t *testing.T) {
 	// output so we only have to modify a single place when doing adjustments.
 
 	const metadata = `
-	# HELP kube_namespace_status_phase Information about namespace.
+	# HELP kube_namespace_status_phase kubernetes namespace status phase.
 	# TYPE kube_namespace_status_phase gauge
 	`
 	cases := []struct {
@@ -70,8 +70,8 @@ func TestNamespaceCollector(t *testing.T) {
 			},
 
 			want: metadata + `
-		kube_namespace_status_phase{name="nsActiveTest",create_time="testNS",status="Active"} 1
-		kube_namespace_status_phase{name="nsTerminateTest",create_time="testNS",status="Terminating"} 1
+		kube_namespace_status_phase{name="nsActiveTest",create_time="0001-01-01 00:00:00 +0000 UTC",status="Active"} 1
+		kube_namespace_status_phase{name="nsTerminateTest",create_time="0001-01-01 00:00:00 +0000 UTC",status="Terminating"} 1
 		`,
 		},
 	}
@@ -79,8 +79,8 @@ func TestNamespaceCollector(t *testing.T) {
 	for _, c := range cases {
 		dc := &namespaceCollector{
 			store: &mockNamespaceStore{
-				list: func() (v1.NamespaceList, error) {
-					return v1.NamespaceList{Items: c.ns}, nil
+				list: func() ([]v1.Namespace, error) {
+					return c.ns, nil
 				},
 			},
 		}

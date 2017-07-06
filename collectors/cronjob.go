@@ -17,6 +17,7 @@ limitations under the License.
 package collectors
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang/glog"
@@ -116,19 +117,18 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func getNextScheduledTime(schedule string, lastScheduleTime *unversioned.Time, createdTime unversioned.Time) time.Time {
+func getNextScheduledTime(schedule string, lastScheduleTime *unversioned.Time, createdTime unversioned.Time) (time.Time, error) {
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
-		glog.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
-		return time.Time{}
+		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
 	}
 	if !lastScheduleTime.IsZero() {
-		return sched.Next((*lastScheduleTime).Time)
+		return sched.Next((*lastScheduleTime).Time), nil
 	}
 	if !createdTime.IsZero() {
-		return sched.Next(createdTime.Time)
+		return sched.Next(createdTime.Time), nil
 	}
-	return time.Time{}
+	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
 }
 
 func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batch.CronJob) {
@@ -146,8 +146,10 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 	}
 
 	// If the cron job is suspended, don't track the next scheduled time
-	nextScheduledTime := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
-	if !nextScheduledTime.IsZero() && !*j.Spec.Suspend {
+	nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
+	if err != nil {
+		glog.Errorf("%s", err)
+	} else if !*j.Spec.Suspend {
 		addGauge(descCronJobNextScheduledTime, float64(nextScheduledTime.Unix()))
 	}
 

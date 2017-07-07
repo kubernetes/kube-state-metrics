@@ -17,11 +17,16 @@ limitations under the License.
 package collectors
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/robfig/cron"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/unversioned"
 	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -50,6 +55,11 @@ var (
 	descCronJobSpecStartingDeadlineSeconds = prometheus.NewDesc(
 		"kube_cronjob_spec_starting_deadline_seconds",
 		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
+		[]string{"namespace", "cronjob"}, nil,
+	)
+	descCronJobNextScheduledTime = prometheus.NewDesc(
+		"kube_cronjob_next_schedule_time",
+		"Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
 		[]string{"namespace", "cronjob"}, nil,
 	)
 )
@@ -92,6 +102,7 @@ func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descCronJobStatusLastScheduleTime
 	ch <- descCronJobSpecSuspend
 	ch <- descCronJobSpecStartingDeadlineSeconds
+	ch <- descCronJobNextScheduledTime
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -104,6 +115,20 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, cj := range cronjobs {
 		cjc.collectCronJob(ch, cj)
 	}
+}
+
+func getNextScheduledTime(schedule string, lastScheduleTime *unversioned.Time, createdTime unversioned.Time) (time.Time, error) {
+	sched, err := cron.ParseStandard(schedule)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
+	}
+	if !lastScheduleTime.IsZero() {
+		return sched.Next((*lastScheduleTime).Time), nil
+	}
+	if !createdTime.IsZero() {
+		return sched.Next(createdTime.Time), nil
+	}
+	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
 }
 
 func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batch.CronJob) {
@@ -120,8 +145,15 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 		addGauge(descCronJobSpecStartingDeadlineSeconds, float64(*j.Spec.StartingDeadlineSeconds))
 	}
 
-	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
+	// If the cron job is suspended, don't track the next scheduled time
+	nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
+	if err != nil {
+		glog.Errorf("%s", err)
+	} else if !*j.Spec.Suspend {
+		addGauge(descCronJobNextScheduledTime, float64(nextScheduledTime.Unix()))
+	}
 
+	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
 	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
 	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
 

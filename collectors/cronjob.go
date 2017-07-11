@@ -136,10 +136,6 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
-	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{j.Namespace, j.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
-	}
 
 	if j.Spec.StartingDeadlineSeconds != nil {
 		addGauge(descCronJobSpecStartingDeadlineSeconds, float64(*j.Spec.StartingDeadlineSeconds))
@@ -158,6 +154,6 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
 
 	if j.Status.LastScheduleTime != nil {
-		addCounter(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))
+		addGauge(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))
 	}
 }

@@ -56,7 +56,7 @@ func TestCronJobCollector(t *testing.T) {
 		# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
 		# TYPE kube_cronjob_status_active gauge
 		# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
-		# TYPE kube_cronjob_status_last_schedule_time counter
+		# TYPE kube_cronjob_status_last_schedule_time gauge
 		# HELP kube_cronjob_next_schedule_time Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 		# TYPE kube_cronjob_next_schedule_time gauge
 	`

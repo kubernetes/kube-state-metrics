@@ -1,3 +1,9 @@
+## v0.6.0 / 2017-07-11
+
+* [FEATURE] Add StatefulSet metrics
+* [FEATURE] Add `kube_cronjob_next_schedule_time` metric
+* [FEATURE] Add label for provider ID in node metrics
+
 ## v0.5.0 / 2017-05-03
 
 * [FEATURE] Add label metrics for Pods, Nodes and Services.

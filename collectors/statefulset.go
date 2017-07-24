@@ -38,6 +38,12 @@ var (
 		"Sequence number representing a specific generation of the desired state for the StatefulSet.",
 		[]string{"namespace", "statefulset"}, nil,
 	)
+
+	descStatefulSetLabels = prometheus.NewDesc(
+		descStatefulSetLabelsName,
+		descStatefulSetLabelsHelp,
+		descStatefulSetLabelsDefaultLabels, nil,
+	)
 )
 
 type StatefulSetLister func() ([]v1beta1.StatefulSet, error)
@@ -76,6 +82,7 @@ func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descStatefulSetStatusObservedGeneration
 	ch <- descStatefulSetSpecReplicas
 	ch <- descStatefulSetMetadataGeneration
+	ch <- descStatefulSetLabels
 }
 
 // Collect implements the prometheus.Collector interface.

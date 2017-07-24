@@ -82,6 +82,12 @@ var (
 		"Sequence number representing a specific generation of the desired state.",
 		[]string{"namespace", "deployment"}, nil,
 	)
+
+	descDeploymentLabels = prometheus.NewDesc(
+		descDeploymentLabelsName,
+		descDeploymentLabelsHelp,
+		descDeploymentLabelsDefaultLabels, nil,
+	)
 )
 
 type DeploymentLister func() ([]v1beta1.Deployment, error)
@@ -126,6 +132,7 @@ func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDeploymentStrategyRollingUpdateMaxUnavailable
 	ch <- descDeploymentSpecReplicas
 	ch <- descDeploymentMetadataGeneration
+	ch <- descDeploymentLabels
 }
 
 // Collect implements the prometheus.Collector interface.

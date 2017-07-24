@@ -28,6 +28,10 @@ import (
 )
 
 var (
+	descDeploymentLabelsName          = "kube_deployment_labels"
+	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
+
 	descDeploymentStatusReplicas = prometheus.NewDesc(
 		"kube_deployment_status_replicas",
 		"The number of replicas per deployment.",
@@ -136,6 +140,15 @@ func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
+func deploymentLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descDeploymentLabelsName,
+		descDeploymentLabelsHelp,
+		append(descDeploymentLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d v1beta1.Deployment) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
@@ -160,4 +173,7 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 	} else {
 		addGauge(descDeploymentStrategyRollingUpdateMaxUnavailable, float64(maxUnavailable))
 	}
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
+	addGauge(deploymentLabelsDesc(labelKeys), 1, labelValues...)
 }

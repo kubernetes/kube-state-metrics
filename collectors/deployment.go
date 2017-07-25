@@ -161,6 +161,9 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
+	addGauge(deploymentLabelsDesc(labelKeys), 1, labelValues...)
 	addGauge(descDeploymentStatusReplicas, float64(d.Status.Replicas))
 	addGauge(descDeploymentStatusReplicasAvailable, float64(d.Status.AvailableReplicas))
 	addGauge(descDeploymentStatusReplicasUnavailable, float64(d.Status.UnavailableReplicas))
@@ -180,7 +183,4 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 	} else {
 		addGauge(descDeploymentStrategyRollingUpdateMaxUnavailable, float64(maxUnavailable))
 	}
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
-	addGauge(deploymentLabelsDesc(labelKeys), 1, labelValues...)
 }

@@ -11,6 +11,10 @@ import (
 )
 
 var (
+	descStatefulSetLabelsName          = "kube_statefulset_labels"
+	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
+
 	descStatefulSetStatusReplicas = prometheus.NewDesc(
 		"kube_statefulset_status_replicas",
 		"The number of replicas per StatefulSet.",
@@ -33,6 +37,12 @@ var (
 		"kube_statefulset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state for the StatefulSet.",
 		[]string{"namespace", "statefulset"}, nil,
+	)
+
+	descStatefulSetLabels = prometheus.NewDesc(
+		descStatefulSetLabelsName,
+		descStatefulSetLabelsHelp,
+		descStatefulSetLabelsDefaultLabels, nil,
 	)
 )
 
@@ -72,6 +82,7 @@ func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descStatefulSetStatusObservedGeneration
 	ch <- descStatefulSetSpecReplicas
 	ch <- descStatefulSetMetadataGeneration
+	ch <- descStatefulSetLabels
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -86,6 +97,15 @@ func (sc *statefulSetCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
+func statefulSetLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descStatefulSetLabelsName,
+		descStatefulSetLabelsHelp,
+		append(descStatefulSetLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, statefulSet v1beta1.StatefulSet) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{statefulSet.Namespace, statefulSet.Name}, lv...)
@@ -95,4 +115,7 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 	addGauge(descStatefulSetStatusObservedGeneration, float64(*statefulSet.Status.ObservedGeneration))
 	addGauge(descStatefulSetSpecReplicas, float64(*statefulSet.Spec.Replicas))
 	addGauge(descStatefulSetMetadataGeneration, float64(statefulSet.ObjectMeta.Generation))
-} 
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(statefulSet.Labels)
+	addGauge(statefulSetLabelsDesc(labelKeys), 1, labelValues...)
+}

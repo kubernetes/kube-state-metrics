@@ -34,6 +34,8 @@ func TestStatefuleSetCollector(t *testing.T) {
  		# TYPE kube_statefulset_replicas gauge
  		# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
  		# TYPE kube_statefulset_metadata_generation gauge
+		# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_statefulset_labels gauge
  	`
 	cases := []struct {
 		depls []v1beta1.StatefulSet
@@ -45,6 +47,9 @@ func TestStatefuleSetCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:       "statefulset1",
 						Namespace:  "ns1",
+						Labels: map[string]string{
+							"app": "example1",
+						},
 						Generation: 3,
 					},
 					Spec: v1beta1.StatefulSetSpec{
@@ -59,6 +64,9 @@ func TestStatefuleSetCollector(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:       "statefulset2",
 						Namespace:  "ns2",
+						Labels: map[string]string{
+							"app": "example2",
+						},
 						Generation: 21,
 					},
 					Spec: v1beta1.StatefulSetSpec{
@@ -80,6 +88,8 @@ func TestStatefuleSetCollector(t *testing.T) {
  				kube_statefulset_replicas{namespace="ns2",statefulset="statefulset2"} 6
  				kube_statefulset_metadata_generation{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_metadata_generation{namespace="ns2",statefulset="statefulset2"} 21
+				kube_statefulset_labels{label_app="example1",namespace="ns1",statefulset="statefulset1"} 1
+				kube_statefulset_labels{label_app="example2",namespace="ns2",statefulset="statefulset2"} 1
  			`,
 		},
 	}

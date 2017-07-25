@@ -28,6 +28,10 @@ import (
 )
 
 var (
+	descDeploymentLabelsName          = "kube_deployment_labels"
+	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
+
 	descDeploymentStatusReplicas = prometheus.NewDesc(
 		"kube_deployment_status_replicas",
 		"The number of replicas per deployment.",
@@ -78,6 +82,12 @@ var (
 		"Sequence number representing a specific generation of the desired state.",
 		[]string{"namespace", "deployment"}, nil,
 	)
+
+	descDeploymentLabels = prometheus.NewDesc(
+		descDeploymentLabelsName,
+		descDeploymentLabelsHelp,
+		descDeploymentLabelsDefaultLabels, nil,
+	)
 )
 
 type DeploymentLister func() ([]v1beta1.Deployment, error)
@@ -122,6 +132,7 @@ func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDeploymentStrategyRollingUpdateMaxUnavailable
 	ch <- descDeploymentSpecReplicas
 	ch <- descDeploymentMetadataGeneration
+	ch <- descDeploymentLabels
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -136,11 +147,23 @@ func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
+func deploymentLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descDeploymentLabelsName,
+		descDeploymentLabelsHelp,
+		append(descDeploymentLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d v1beta1.Deployment) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
+	addGauge(deploymentLabelsDesc(labelKeys), 1, labelValues...)
 	addGauge(descDeploymentStatusReplicas, float64(d.Status.Replicas))
 	addGauge(descDeploymentStatusReplicasAvailable, float64(d.Status.AvailableReplicas))
 	addGauge(descDeploymentStatusReplicasUnavailable, float64(d.Status.UnavailableReplicas))

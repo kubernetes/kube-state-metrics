@@ -1,13 +1,13 @@
 package collectors
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 	"github.com/golang/glog"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/apis/apps/v1beta1"
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -112,7 +112,9 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 	addGauge(descStatefulSetStatusReplicas, float64(statefulSet.Status.Replicas))
-	addGauge(descStatefulSetStatusObservedGeneration, float64(*statefulSet.Status.ObservedGeneration))
+	if statefulSet.Status.ObservedGeneration != nil {
+		addGauge(descStatefulSetStatusObservedGeneration, float64(*statefulSet.Status.ObservedGeneration))
+	}
 	addGauge(descStatefulSetSpecReplicas, float64(*statefulSet.Spec.Replicas))
 	addGauge(descStatefulSetMetadataGeneration, float64(statefulSet.ObjectMeta.Generation))
 

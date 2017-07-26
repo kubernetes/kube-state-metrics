@@ -1,14 +1,16 @@
 package collectors
 
 import (
-	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 	"testing"
+
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 )
 
 var (
 	statefulSet1Replicas int32 = 3
 	statefulSet2Replicas int32 = 6
+	statefulSet3Replicas int32 = 9
 
 	statefulSet1ObservedGeneration int64 = 1
 	statefulSet2ObservedGeneration int64 = 2
@@ -45,51 +47,72 @@ func TestStatefuleSetCollector(t *testing.T) {
 			depls: []v1beta1.StatefulSet{
 				{
 					ObjectMeta: v1.ObjectMeta{
-						Name:       "statefulset1",
-						Namespace:  "ns1",
+						Name:      "statefulset1",
+						Namespace: "ns1",
 						Labels: map[string]string{
 							"app": "example1",
 						},
 						Generation: 3,
 					},
 					Spec: v1beta1.StatefulSetSpec{
-						Replicas:            &statefulSet1Replicas,
-						ServiceName:   		 "statefulset1service",
+						Replicas:    &statefulSet1Replicas,
+						ServiceName: "statefulset1service",
 					},
 					Status: v1beta1.StatefulSetStatus{
 						ObservedGeneration: &statefulSet1ObservedGeneration,
-						Replicas: 2,
+						Replicas:           2,
 					},
 				}, {
 					ObjectMeta: v1.ObjectMeta{
-						Name:       "statefulset2",
-						Namespace:  "ns2",
+						Name:      "statefulset2",
+						Namespace: "ns2",
 						Labels: map[string]string{
 							"app": "example2",
 						},
 						Generation: 21,
 					},
 					Spec: v1beta1.StatefulSetSpec{
-						Replicas:            &statefulSet2Replicas,
-						ServiceName:   		 "statefulset2service",
+						Replicas:    &statefulSet2Replicas,
+						ServiceName: "statefulset2service",
 					},
 					Status: v1beta1.StatefulSetStatus{
 						ObservedGeneration: &statefulSet2ObservedGeneration,
-						Replicas: 5,
+						Replicas:           5,
+					},
+				}, {
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "statefulset3",
+						Namespace: "ns3",
+						Labels: map[string]string{
+							"app": "example3",
+						},
+						Generation: 36,
+					},
+					Spec: v1beta1.StatefulSetSpec{
+						Replicas:    &statefulSet3Replicas,
+						ServiceName: "statefulset2service",
+					},
+					Status: v1beta1.StatefulSetStatus{
+						ObservedGeneration: nil,
+						Replicas:           7,
 					},
 				},
 			},
 			want: metadata + `
  				kube_statefulset_status_replicas{namespace="ns1",statefulset="statefulset1"} 2
  				kube_statefulset_status_replicas{namespace="ns2",statefulset="statefulset2"} 5
+ 				kube_statefulset_status_replicas{namespace="ns3",statefulset="statefulset3"} 7
  				kube_statefulset_status_observed_generation{namespace="ns1",statefulset="statefulset1"} 1
  				kube_statefulset_status_observed_generation{namespace="ns2",statefulset="statefulset2"} 2
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_replicas{namespace="ns2",statefulset="statefulset2"} 6
+ 				kube_statefulset_replicas{namespace="ns3",statefulset="statefulset3"} 9
  				kube_statefulset_metadata_generation{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_metadata_generation{namespace="ns2",statefulset="statefulset2"} 21
+ 				kube_statefulset_metadata_generation{namespace="ns3",statefulset="statefulset3"} 36
 				kube_statefulset_labels{label_app="example1",namespace="ns1",statefulset="statefulset1"} 1
 				kube_statefulset_labels{label_app="example2",namespace="ns2",statefulset="statefulset2"} 1
+				kube_statefulset_labels{label_app="example3",namespace="ns3",statefulset="statefulset3"} 1
  			`,
 		},
 	}
@@ -103,4 +126,4 @@ func TestStatefuleSetCollector(t *testing.T) {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}
-} 
+}

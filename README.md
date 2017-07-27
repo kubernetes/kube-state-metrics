@@ -59,7 +59,17 @@ for metric collection at all and instead implement their own, but
 Having kube-state-metrics as a separate project enables access to these metrics
 from those monitoring systems.
 
-# Building the Docker container
+# Setup
+
+Install this project to your `$GOPATH` in the following manner:
+
+```
+git clone https://github.com/kubernetes/kube-state-metrics \
+    $GOPATH/src/k8s.io/kube-state-metrics
+```
+
+## Building the Docker container
+
 Simple run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
 ```

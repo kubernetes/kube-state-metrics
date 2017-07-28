@@ -52,6 +52,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_status_waiting gauge
 		# HELP kube_pod_info Information about pod.
 		# TYPE kube_pod_info gauge
+		# HELP kube_pod_owner Information about the Pod's owner.
+		# TYPE kube_pod_owner gauge
 		# HELP kube_pod_status_phase The pods current phase.
 		# TYPE kube_pod_status_phase gauge
 		# HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
@@ -290,10 +292,12 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
-				kube_pod_info{created_by="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5",owner_kind="ReplicaSet",owner_name="rs-name",owner_is_controller="true"} 1
+				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
+				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
+				kube_pod_owner{namespace="ns1",pod="pod1",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
+				kube_pod_owner{namespace="ns2",pod="pod2",owner_kind="ReplicaSet",owner_name="rs-name",owner_is_controller="true"} 1
 				`,
-			metrics: []string{"kube_pod_info"},
+			metrics: []string{"kube_pod_info", "kube_pod_owner"},
 		}, {
 			pods: []v1.Pod{
 				{

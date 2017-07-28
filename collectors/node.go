@@ -45,6 +45,12 @@ var (
 		}, nil,
 	)
 
+	descNodeCreated = prometheus.NewDesc(
+		"kube_node_created",
+		"Unix creation timestamp",
+		[]string{"node"}, nil,
+	)
+
 	descNodeLabels = prometheus.NewDesc(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
@@ -155,6 +161,7 @@ type nodeCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeInfo
+	ch <- descNodeCreated
 	ch <- descNodeLabels
 	ch <- descNodeSpecUnschedulable
 	ch <- descNodeStatusReady
@@ -207,6 +214,7 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		n.Status.NodeInfo.KubeProxyVersion,
 		n.Spec.ProviderID,
 	)
+	addGauge(descNodeCreated, float64(n.CreationTimestamp.Unix()))
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
 	addGauge(nodeLabelsDesc(labelKeys), 1, labelValues...)
 

@@ -27,6 +27,11 @@ import (
 )
 
 var (
+	descDaemonSetCreated = prometheus.NewDesc(
+		"kube_daemonset_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "daemonset"}, nil,
+	)
 	descDaemonSetCurrentNumberScheduled = prometheus.NewDesc(
 		"kube_daemonset_status_current_number_scheduled",
 		"The number of nodes running at least one daemon pod and are supposed to.",
@@ -87,6 +92,7 @@ type daemonsetCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *daemonsetCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descDaemonSetCreated
 	ch <- descDaemonSetCurrentNumberScheduled
 	ch <- descDaemonSetNumberMisscheduled
 	ch <- descDaemonSetDesiredNumberScheduled
@@ -111,6 +117,7 @@ func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	addGauge(descDaemonSetCreated, float64(d.CreationTimestamp.Unix()))
 	addGauge(descDaemonSetCurrentNumberScheduled, float64(d.Status.CurrentNumberScheduled))
 	addGauge(descDaemonSetNumberMisscheduled, float64(d.Status.NumberMisscheduled))
 	addGauge(descDaemonSetDesiredNumberScheduled, float64(d.Status.DesiredNumberScheduled))

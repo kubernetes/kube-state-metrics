@@ -37,6 +37,12 @@ var (
 		[]string{"namespace", "service"}, nil,
 	)
 
+	descServiceCreated = prometheus.NewDesc(
+		"kube_service_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "service"}, nil,
+	)
+
 	descServiceLabels = prometheus.NewDesc(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
@@ -79,6 +85,7 @@ type serviceCollector struct {
 func (pc *serviceCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descServiceInfo
 	ch <- descServiceLabels
+	ch <- descServiceCreated
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -112,6 +119,7 @@ func (sc *serviceCollector) collectService(ch chan<- prometheus.Metric, s v1.Ser
 	}
 
 	addGauge(descServiceInfo, 1)
+	addGauge(descServiceCreated, float64(s.CreationTimestamp.Unix()))
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 	addGauge(serviceLabelsDesc(labelKeys), 1, labelValues...)
 }

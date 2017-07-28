@@ -32,6 +32,11 @@ var (
 		"Information about job.",
 		[]string{"namespace", "job"}, nil,
 	)
+	descJobCreated = prometheus.NewDesc(
+		"kube_job_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "job"}, nil,
+	)
 	descJobSpecParallelism = prometheus.NewDesc(
 		"kube_job_spec_parallelism",
 		"The maximum desired number of pods the job should run at any given time.",
@@ -118,6 +123,7 @@ type jobCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descJobInfo
+	ch <- descJobCreated
 	ch <- descJobSpecParallelism
 	ch <- descJobSpecCompletions
 	ch <- descJobSpecActiveDeadlineSeconds
@@ -153,6 +159,7 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 	}
 
 	addGauge(descJobInfo, 1)
+	addGauge(descJobCreated, float64(j.CreationTimestamp.Unix()))
 	addGauge(descJobSpecParallelism, float64(*j.Spec.Parallelism))
 	addGauge(descJobSpecCompletions, float64(*j.Spec.Completions))
 

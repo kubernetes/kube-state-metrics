@@ -40,6 +40,8 @@ func TestReplicaSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_replicaset_created Unix creation timestamp
+		# TYPE kube_replicaset_created gauge
 	  # HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
 		# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
@@ -92,6 +94,8 @@ func TestReplicaSetCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_replicaset_created{namespace="ns1",replicaset="rs1"} -6.21355968e+10
+				kube_replicaset_created{namespace="ns2",replicaset="rs2"} -6.21355968e+10
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns1",replicaset="rs1"} 5

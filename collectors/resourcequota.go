@@ -27,6 +27,11 @@ import (
 )
 
 var (
+	descResourceQuotaCreated = prometheus.NewDesc(
+	    "kube_resourcequota_created",
+	    "Unix creation timestamp",
+	    []string{"namespace", "resourcequota"}, nil,
+	)
 	descResourceQuota = prometheus.NewDesc(
 		"kube_resourcequota",
 		"Information about resource quota.",
@@ -72,6 +77,7 @@ type resourceQuotaCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (rqc *resourceQuotaCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descResourceQuotaCreated
 	ch <- descResourceQuota
 }
 
@@ -94,6 +100,7 @@ func (rqc *resourceQuotaCollector) collectResourceQuota(ch chan<- prometheus.Met
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 
+	addGauge(descResourceQuotaCreated, float64(rq.CreationTimestamp.Unix()))
 	for res, qty := range rq.Status.Hard {
 		addGauge(descResourceQuota, float64(qty.MilliValue())/1000, string(res), "hard")
 	}

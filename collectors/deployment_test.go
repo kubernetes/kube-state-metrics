@@ -53,6 +53,8 @@ func TestDeploymentCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_deployment_created Unix creation timestamp
+		# TYPE kube_deployment_created gauge
 		# HELP kube_deployment_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_deployment_metadata_generation gauge
 		# HELP kube_deployment_spec_paused Whether the deployment is paused and will not be processed by the deployment controller.
@@ -127,6 +129,8 @@ func TestDeploymentCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_deployment_created{deployment="depl1",namespace="ns1"} -6.21355968e+10
+				kube_deployment_created{deployment="depl2",namespace="ns2"} -6.21355968e+10
 				kube_deployment_metadata_generation{namespace="ns1",deployment="depl1"} 21
 				kube_deployment_metadata_generation{namespace="ns2",deployment="depl2"} 14
 				kube_deployment_spec_paused{namespace="ns1",deployment="depl1"} 0

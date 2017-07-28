@@ -35,6 +35,8 @@ func TestDaemonSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_daemonset_created Unix creation timestamp
+		# TYPE kube_daemonset_created gauge
 	  # HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_daemonset_metadata_generation gauge
 		# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
@@ -79,6 +81,8 @@ func TestDaemonSetCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_daemonset_created{daemonset="ds1",namespace="ns1"} -6.21355968e+10
+				kube_daemonset_created{daemonset="ds2",namespace="ns2"} -6.21355968e+10
 				kube_daemonset_metadata_generation{namespace="ns1",daemonset="ds1"} 21
 				kube_daemonset_metadata_generation{namespace="ns2",daemonset="ds2"} 14
 				kube_daemonset_status_current_number_scheduled{namespace="ns1",daemonset="ds1"} 15

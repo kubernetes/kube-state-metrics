@@ -39,6 +39,8 @@ func TestLimitRangeollector(t *testing.T) {
 	const metadata = `
 	# HELP kube_limitrange Information about limit range.
 	# TYPE kube_limitrange gauge
+	# HELP kube_limitrange_created Unix creation timestamp
+	# TYPE kube_limitrange_created gauge
 	`
 	cases := []struct {
 		ranges  []v1.LimitRange
@@ -82,6 +84,7 @@ func TestLimitRangeollector(t *testing.T) {
 		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="default"} 2.1e+09
 		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="defaultRequest"} 2.1e+09
 		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="maxLimitRequestRatio"} 2.1e+09
+		kube_limitrange_created{limitrange="testNS",namespace="quotaTest"} -6.21355968e+10
 		`,
 		},
 	}

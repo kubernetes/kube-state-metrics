@@ -37,6 +37,8 @@ func TestResourceQuotaCollector(t *testing.T) {
 	const metadata = `
 	# HELP kube_resourcequota Information about resource quota.
 	# TYPE kube_resourcequota gauge
+	# HELP kube_resourcequota_created Unix creation timestamp
+	# TYPE kube_resourcequota_created gauge
 	`
 	cases := []struct {
 		quotas  []v1.ResourceQuota
@@ -54,7 +56,9 @@ func TestResourceQuotaCollector(t *testing.T) {
 					Status: v1.ResourceQuotaStatus{},
 				},
 			},
-			want: metadata,
+			want: metadata + `
+			kube_resourcequota_created{namespace="quotaTest",resourcequota="testNS"} -6.21355968e+10
+			`,
 		},
 		// Verify resource metrics.
 		{
@@ -113,6 +117,7 @@ func TestResourceQuotaCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+			kube_resourcequota_created{namespace="quotaTest",resourcequota="testNS"} -6.21355968e+10
 			kube_resourcequota{resourcequota="quotaTest",namespace="testNS",resource="cpu",type="hard"} 4.3
 			kube_resourcequota{resourcequota="quotaTest",namespace="testNS",resource="cpu",type="used"} 2.1
 			kube_resourcequota{resourcequota="quotaTest",namespace="testNS",resource="memory",type="hard"} 2.1e+09

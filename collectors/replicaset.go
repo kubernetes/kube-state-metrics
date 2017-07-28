@@ -27,6 +27,11 @@ import (
 )
 
 var (
+	descReplicaSetCreated = prometheus.NewDesc(
+		"kube_replicaset_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "replicaset"}, nil,
+	)
 	descReplicaSetStatusReplicas = prometheus.NewDesc(
 		"kube_replicaset_status_replicas",
 		"The number of replicas per ReplicaSet.",
@@ -92,6 +97,7 @@ type replicasetCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descReplicaSetCreated
 	ch <- descReplicaSetStatusReplicas
 	ch <- descReplicaSetStatusFullyLabeledReplicas
 	ch <- descReplicaSetStatusReadyReplicas
@@ -117,6 +123,7 @@ func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d 
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	addGauge(descReplicaSetCreated, float64(d.CreationTimestamp.Unix()))
 	addGauge(descReplicaSetStatusReplicas, float64(d.Status.Replicas))
 	addGauge(descReplicaSetStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
 	addGauge(descReplicaSetStatusReadyReplicas, float64(d.Status.ReadyReplicas))

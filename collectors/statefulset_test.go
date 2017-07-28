@@ -28,6 +28,8 @@ func TestStatefuleSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_statefulset_created Unix creation timestamp
+		# TYPE kube_statefulset_created gauge
  		# HELP kube_statefulset_status_replicas The number of replicas per StatefulSet.
  		# TYPE kube_statefulset_status_replicas gauge
  		# HELP kube_statefulset_status_observed_generation The generation observed by the StatefulSet controller.
@@ -99,6 +101,9 @@ func TestStatefuleSetCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_statefulset_created{namespace="ns1",statefulset="statefulset1"} -6.21355968e+10
+				kube_statefulset_created{namespace="ns2",statefulset="statefulset2"} -6.21355968e+10
+				kube_statefulset_created{namespace="ns3",statefulset="statefulset3"} -6.21355968e+10
  				kube_statefulset_status_replicas{namespace="ns1",statefulset="statefulset1"} 2
  				kube_statefulset_status_replicas{namespace="ns2",statefulset="statefulset2"} 5
  				kube_statefulset_status_replicas{namespace="ns3",statefulset="statefulset3"} 7

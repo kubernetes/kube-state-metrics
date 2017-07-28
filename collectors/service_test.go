@@ -34,6 +34,8 @@ func TestServiceCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_service_created Unix creation timestamp
+		# TYPE kube_service_created gauge
 		# HELP kube_service_info Information about service.
 		# TYPE kube_service_info gauge
 		# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
@@ -57,6 +59,7 @@ func TestServiceCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_service_created{namespace="default",service="test-service"} -6.21355968e+10
 				kube_service_info{namespace="default",service="test-service"} 1
 				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
 			`,

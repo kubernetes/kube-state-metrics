@@ -37,6 +37,11 @@ var (
 		"Info about cronjob.",
 		[]string{"namespace", "cronjob", "schedule", "concurrency_policy"}, nil,
 	)
+	descCronJobCreated = prometheus.NewDesc(
+		"kube_cronjob_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "cronjob"}, nil,
+	)
 	descCronJobStatusActive = prometheus.NewDesc(
 		"kube_cronjob_status_active",
 		"Active holds pointers to currently running jobs.",
@@ -98,6 +103,7 @@ type cronJobCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descCronJobInfo
+	ch <- descCronJobCreated
 	ch <- descCronJobStatusActive
 	ch <- descCronJobStatusLastScheduleTime
 	ch <- descCronJobSpecSuspend
@@ -150,6 +156,7 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 	}
 
 	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
+	addGauge(descCronJobCreated, float64(j.CreationTimestamp.Unix()))
 	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
 	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
 

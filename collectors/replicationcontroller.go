@@ -28,6 +28,11 @@ import (
 )
 
 var (
+	descReplicationControllerCreated = prometheus.NewDesc(
+		"kube_replicationcontroller_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "replicationcontroller"}, nil,
+	)
 	descReplicationControllerStatusReplicas = prometheus.NewDesc(
 		"kube_replicationcontroller_status_replicas",
 		"The number of replicas per ReplicationController.",
@@ -97,6 +102,7 @@ type replicationcontrollerCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *replicationcontrollerCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descReplicationControllerCreated
 	ch <- descReplicationControllerStatusReplicas
 	ch <- descReplicationControllerStatusFullyLabeledReplicas
 	ch <- descReplicationControllerStatusReadyReplicas
@@ -123,6 +129,7 @@ func (dc *replicationcontrollerCollector) collectReplicationController(ch chan<-
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	addGauge(descReplicationControllerCreated, float64(d.CreationTimestamp.Unix()))
 	addGauge(descReplicationControllerStatusReplicas, float64(d.Status.Replicas))
 	addGauge(descReplicationControllerStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
 	addGauge(descReplicationControllerStatusReadyReplicas, float64(d.Status.ReadyReplicas))

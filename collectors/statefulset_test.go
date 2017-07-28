@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/apps/v1beta1"
@@ -28,6 +29,8 @@ func TestStatefuleSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_statefulset_created Unix creation timestamp
+		# TYPE kube_statefulset_created gauge
  		# HELP kube_statefulset_status_replicas The number of replicas per StatefulSet.
  		# TYPE kube_statefulset_status_replicas gauge
  		# HELP kube_statefulset_status_observed_generation The generation observed by the StatefulSet controller.
@@ -48,6 +51,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "statefulset1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace: "ns1",
 						Labels: map[string]string{
 							"app": "example1",
@@ -99,6 +103,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_statefulset_created{namespace="ns1",statefulset="statefulset1"} 1.5e+09
  				kube_statefulset_status_replicas{namespace="ns1",statefulset="statefulset1"} 2
  				kube_statefulset_status_replicas{namespace="ns2",statefulset="statefulset2"} 5
  				kube_statefulset_status_replicas{namespace="ns3",statefulset="statefulset3"} 7

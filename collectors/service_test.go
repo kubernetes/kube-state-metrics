@@ -18,6 +18,7 @@ package collectors
 
 import (
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
@@ -37,6 +38,8 @@ func TestServiceCollector(t *testing.T) {
 	const metadata = `
 		# HELP kube_service_info Information about service.
 		# TYPE kube_service_info gauge
+		# HELP kube_service_created Unix creation timestamp
+		# TYPE kube_service_created gauge
 		# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_service_labels gauge
 	`
@@ -50,6 +53,7 @@ func TestServiceCollector(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-service",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace: "default",
 						Labels: map[string]string{
 							"app": "example",
@@ -59,6 +63,7 @@ func TestServiceCollector(t *testing.T) {
 			},
 			want: metadata + `
 				kube_service_info{namespace="default",service="test-service"} 1
+				kube_service_created{namespace="default",service="test-service"} 1.5e+09
 				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
 			`,
 		},

@@ -38,6 +38,12 @@ var (
 			"constraint",
 		}, nil,
 	)
+
+	descLimitRangeCreated = prometheus.NewDesc(
+	    "kube_limitrange_created",
+	    "Unix creation timestamp",
+	    []string{"namespace", "limitrange"}, nil,
+	)
 )
 
 type LimitRangeLister func() (v1.LimitRangeList, error)
@@ -74,6 +80,7 @@ type limitRangeCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (lrc *limitRangeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descLimitRange
+	ch <- descLimitRangeCreated
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -94,6 +101,10 @@ func (lrc *limitRangeCollector) collectLimitRange(ch chan<- prometheus.Metric, r
 		lv = append([]string{rq.Name, rq.Namespace}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	if !rq.CreationTimestamp.IsZero() {
+		addGauge(descLimitRangeCreated, float64(rq.CreationTimestamp.Unix()))
+	}
+
 	rawLimitRanges := rq.Spec.Limits
 	for _, rawLimitRange := range rawLimitRanges {
 		for resource, min := range rawLimitRange.Min {

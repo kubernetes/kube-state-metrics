@@ -49,6 +49,8 @@ func TestCronJobCollector(t *testing.T) {
 	const metadata = `
 		# HELP kube_cronjob_info Info about cronjob.
 		# TYPE kube_cronjob_info gauge
+		# HELP kube_cronjob_created Unix creation timestamp
+		# TYPE kube_cronjob_created gauge
 		# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 		# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
 		# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
@@ -118,6 +120,8 @@ func TestCronJobCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.4958234e+09
+
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1

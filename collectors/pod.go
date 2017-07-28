@@ -60,6 +60,12 @@ var (
 		descPodLabelsDefaultLabels, nil,
 	)
 
+	descPodCreated = prometheus.NewDesc(
+		"kube_pod_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "pod"}, nil,
+	)
+
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
 		"The pods current phase.",
@@ -176,6 +182,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodStartTime
 	ch <- descPodOwner
 	ch <- descPodLabels
+	ch <- descPodCreated
 	ch <- descPodStatusPhase
 	ch <- descPodStatusReady
 	ch <- descPodStatusScheduled
@@ -289,6 +296,10 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodSucceeded), string(v1.PodSucceeded))
 		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodFailed), string(v1.PodFailed))
 		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodUnknown), string(v1.PodUnknown))
+	}
+
+	if !p.CreationTimestamp.IsZero() {
+		addGauge(descPodCreated, float64(p.CreationTimestamp.Unix()))
 	}
 
 	for _, c := range p.Status.Conditions {

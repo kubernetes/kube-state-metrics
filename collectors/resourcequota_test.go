@@ -19,7 +19,8 @@ package collectors
 import (
 	"testing"
 
-	"k8s.io/client-go/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -47,7 +48,7 @@ func TestResourceQuotaCollector(t *testing.T) {
 		{
 			quotas: []v1.ResourceQuota{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "quotaTest",
 						Namespace: "testNS",
 					},
@@ -60,7 +61,7 @@ func TestResourceQuotaCollector(t *testing.T) {
 		{
 			quotas: []v1.ResourceQuota{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "quotaTest",
 						Namespace: "testNS",
 					},

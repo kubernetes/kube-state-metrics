@@ -19,6 +19,7 @@ package collectors
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -47,7 +48,7 @@ func TestServiceCollector(t *testing.T) {
 		{
 			services: []v1.Service{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-service",
 						Namespace: "default",
 						Labels: map[string]string{

@@ -19,7 +19,8 @@ package collectors
 import (
 	"testing"
 
-	"k8s.io/client-go/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -73,7 +74,7 @@ func TestNodeCollector(t *testing.T) {
 		{
 			nodes: []v1.Node{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
 					Status: v1.NodeStatus{
@@ -100,7 +101,7 @@ func TestNodeCollector(t *testing.T) {
 		{
 			nodes: []v1.Node{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.1",
 						Labels: map[string]string{
 							"type": "master",
@@ -147,7 +148,7 @@ func TestNodeCollector(t *testing.T) {
 		{
 			nodes: []v1.Node{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
 					Status: v1.NodeStatus{
@@ -157,7 +158,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.2",
 					},
 					Status: v1.NodeStatus{
@@ -167,7 +168,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.3",
 					},
 					Status: v1.NodeStatus{
@@ -194,7 +195,7 @@ func TestNodeCollector(t *testing.T) {
 		{
 			nodes: []v1.Node{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
 					Status: v1.NodeStatus{
@@ -202,7 +203,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.2",
 					},
 					Status: v1.NodeStatus{
@@ -210,7 +211,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.3",
 					},
 					Status: v1.NodeStatus{
@@ -235,7 +236,7 @@ func TestNodeCollector(t *testing.T) {
 		{
 			nodes: []v1.Node{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
 					Status: v1.NodeStatus{
@@ -245,7 +246,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.2",
 					},
 					Status: v1.NodeStatus{
@@ -255,7 +256,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.3",
 					},
 					Status: v1.NodeStatus{
@@ -282,7 +283,7 @@ func TestNodeCollector(t *testing.T) {
 		{
 			nodes: []v1.Node{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
 					Status: v1.NodeStatus{
@@ -292,7 +293,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.2",
 					},
 					Status: v1.NodeStatus{
@@ -302,7 +303,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.3",
 					},
 					Status: v1.NodeStatus{
@@ -329,7 +330,7 @@ func TestNodeCollector(t *testing.T) {
 		{
 			nodes: []v1.Node{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.1",
 					},
 					Status: v1.NodeStatus{
@@ -339,7 +340,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.2",
 					},
 					Status: v1.NodeStatus{
@@ -349,7 +350,7 @@ func TestNodeCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "127.0.0.3",
 					},
 					Status: v1.NodeStatus{

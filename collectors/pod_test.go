@@ -19,7 +19,8 @@ package collectors
 import (
 	"testing"
 
-	"k8s.io/client-go/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -77,7 +78,7 @@ func TestPodCollector(t *testing.T) {
 		{
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -92,7 +93,7 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -123,7 +124,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -136,7 +137,7 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -163,7 +164,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -176,7 +177,7 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -203,7 +204,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -218,7 +219,7 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -259,7 +260,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -271,10 +272,10 @@ func TestPodCollector(t *testing.T) {
 						PodIP:  "1.2.3.4",
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
-						OwnerReferences: []v1.OwnerReference{
+						OwnerReferences: []metav1.OwnerReference{
 							{
 								Kind:       "ReplicaSet",
 								Name:       "rs-name",
@@ -301,7 +302,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -309,7 +310,7 @@ func TestPodCollector(t *testing.T) {
 						Phase: "Running",
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -326,7 +327,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -339,7 +340,7 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -365,7 +366,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -378,7 +379,7 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -404,7 +405,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 					},
@@ -440,7 +441,7 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
 					},
@@ -508,7 +509,7 @@ func TestPodCollector(t *testing.T) {
 		}, {
 			pods: []v1.Pod{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
 						Namespace: "ns1",
 						Labels: map[string]string{

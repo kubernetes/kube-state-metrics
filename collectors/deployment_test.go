@@ -28,9 +28,9 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 
-	"k8s.io/client-go/pkg/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/util/intstr"
 )
 
 var (
@@ -81,9 +81,9 @@ func TestDeploymentCollector(t *testing.T) {
 		{
 			depls: []v1beta1.Deployment{
 				{
-					ObjectMeta: v1.ObjectMeta{
-						Name:       "depl1",
-						Namespace:  "ns1",
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "depl1",
+						Namespace: "ns1",
 						Labels: map[string]string{
 							"app": "example1",
 						},
@@ -105,9 +105,9 @@ func TestDeploymentCollector(t *testing.T) {
 						},
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
-						Name:       "depl2",
-						Namespace:  "ns2",
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "depl2",
+						Namespace: "ns2",
 						Labels: map[string]string{
 							"app": "example2",
 						},

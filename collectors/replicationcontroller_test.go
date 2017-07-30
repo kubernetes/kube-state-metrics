@@ -19,6 +19,7 @@ package collectors
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -61,7 +62,7 @@ func TestReplicationControllerCollector(t *testing.T) {
 		{
 			rss: []v1.ReplicationController{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "rc1",
 						Namespace:  "ns1",
 						Generation: 21,
@@ -77,7 +78,7 @@ func TestReplicationControllerCollector(t *testing.T) {
 						Replicas: &rc1Replicas,
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "rc2",
 						Namespace:  "ns2",
 						Generation: 14,

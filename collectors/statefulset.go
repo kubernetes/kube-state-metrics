@@ -115,7 +115,10 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 	if statefulSet.Status.ObservedGeneration != nil {
 		addGauge(descStatefulSetStatusObservedGeneration, float64(*statefulSet.Status.ObservedGeneration))
 	}
-	addGauge(descStatefulSetSpecReplicas, float64(*statefulSet.Spec.Replicas))
+
+	if statefulSet.Spec.Replicas != nil {
+		addGauge(descStatefulSetSpecReplicas, float64(*statefulSet.Spec.Replicas))
+	}
 	addGauge(descStatefulSetMetadataGeneration, float64(statefulSet.ObjectMeta.Generation))
 
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(statefulSet.Labels)

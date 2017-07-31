@@ -19,7 +19,7 @@ package collectors
 import (
 	"testing"
 
-	"k8s.io/client-go/pkg/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
@@ -53,7 +53,7 @@ func TestDaemonSetCollector(t *testing.T) {
 		{
 			dss: []v1beta1.DaemonSet{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "ds1",
 						Namespace:  "ns1",
 						Generation: 21,
@@ -65,7 +65,7 @@ func TestDaemonSetCollector(t *testing.T) {
 						NumberReady:            5,
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "ds2",
 						Namespace:  "ns2",
 						Generation: 14,

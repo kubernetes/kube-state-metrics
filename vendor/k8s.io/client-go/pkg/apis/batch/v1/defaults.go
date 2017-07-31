@@ -17,14 +17,11 @@ limitations under the License.
 package v1
 
 import (
-	"k8s.io/client-go/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	RegisterDefaults(scheme)
-	return scheme.AddDefaultingFuncs(
-		SetDefaults_Job,
-	)
+	return RegisterDefaults(scheme)
 }
 
 func SetDefaults_Job(obj *Job) {

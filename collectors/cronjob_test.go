@@ -20,18 +20,18 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/api/unversioned"
 	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
 )
 
 var (
-	SuspendTrue bool = true
-	SuspendFalse bool = false
+	SuspendTrue                bool  = true
+	SuspendFalse               bool  = false
 	StartingDeadlineSeconds300 int64 = 300
 
-	ActiveRunningCronJob1LastScheduleTime, _ = time.Parse(time.RFC3339, "2017-05-26T12:00:07Z")
-	SuspendedCronJob1LastScheduleTime, _ = time.Parse(time.RFC3339, "2017-05-26T17:30:00Z")
+	ActiveRunningCronJob1LastScheduleTime, _          = time.Parse(time.RFC3339, "2017-05-26T12:00:07Z")
+	SuspendedCronJob1LastScheduleTime, _              = time.Parse(time.RFC3339, "2017-05-26T17:30:00Z")
 	ActiveCronJob1NoLastScheduledCreationTimestamp, _ = time.Parse(time.RFC3339, "2017-05-26T18:30:00Z")
 )
 
@@ -62,58 +62,58 @@ func TestCronJobCollector(t *testing.T) {
 	`
 	cases := []struct {
 		cronJobs []v2batch.CronJob
-		want  string
+		want     string
 	}{
 		{
 			cronJobs: []v2batch.CronJob{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "ActiveRunningCronJob1",
 						Namespace:  "ns1",
 						Generation: 1,
 					},
 					Status: v2batch.CronJobStatus{
-						Active:           	[]v1.ObjectReference{v1.ObjectReference{Name: "FakeJob1"}, v1.ObjectReference{Name: "FakeJob2"}},
-						LastScheduleTime:	&unversioned.Time{Time: ActiveRunningCronJob1LastScheduleTime},
+						Active:           []v1.ObjectReference{v1.ObjectReference{Name: "FakeJob1"}, v1.ObjectReference{Name: "FakeJob2"}},
+						LastScheduleTime: &metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 					},
 					Spec: v2batch.CronJobSpec{
-						StartingDeadlineSeconds:	&StartingDeadlineSeconds300,
-						ConcurrencyPolicy:		"Forbid",
-						Suspend:			&SuspendFalse,
-						Schedule:			"0 */6 * * *",
+						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
+						ConcurrencyPolicy:       "Forbid",
+						Suspend:                 &SuspendFalse,
+						Schedule:                "0 */6 * * *",
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "SuspendedCronJob1",
 						Namespace:  "ns1",
 						Generation: 1,
 					},
 					Status: v2batch.CronJobStatus{
-						Active:           	[]v1.ObjectReference{},
-						LastScheduleTime:	&unversioned.Time{Time: SuspendedCronJob1LastScheduleTime},
+						Active:           []v1.ObjectReference{},
+						LastScheduleTime: &metav1.Time{Time: SuspendedCronJob1LastScheduleTime},
 					},
 					Spec: v2batch.CronJobSpec{
-						StartingDeadlineSeconds:	&StartingDeadlineSeconds300,
-						ConcurrencyPolicy:		"Forbid",
-						Suspend:			&SuspendTrue,
-						Schedule:			"0 */3 * * *",
+						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
+						ConcurrencyPolicy:       "Forbid",
+						Suspend:                 &SuspendTrue,
+						Schedule:                "0 */3 * * *",
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
-						Name:       "ActiveCronJob1NoLastScheduled",
-						CreationTimestamp: unversioned.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
-						Namespace:  "ns1",
-						Generation: 1,
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "ActiveCronJob1NoLastScheduled",
+						CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
+						Namespace:         "ns1",
+						Generation:        1,
 					},
 					Status: v2batch.CronJobStatus{
-						Active:           	[]v1.ObjectReference{},
-						LastScheduleTime:	nil,
+						Active:           []v1.ObjectReference{},
+						LastScheduleTime: nil,
 					},
 					Spec: v2batch.CronJobSpec{
-						StartingDeadlineSeconds:	&StartingDeadlineSeconds300,
-						ConcurrencyPolicy:		"Forbid",
-						Suspend:			&SuspendFalse,
-						Schedule:			"25 * * * *",
+						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
+						ConcurrencyPolicy:       "Forbid",
+						Suspend:                 &SuspendFalse,
+						Schedule:                "25 * * * *",
 					},
 				},
 			},

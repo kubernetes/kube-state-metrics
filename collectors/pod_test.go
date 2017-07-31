@@ -17,7 +17,9 @@ limitations under the License.
 package collectors
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +38,9 @@ func TestPodCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	var test = true
+	startTime := time.Now()
+	metav1StartTime := metav1.NewTime(startTime)
+
 	const metadata = `
 		# HELP kube_pod_container_info Information about a container in a pod.
 		# TYPE kube_pod_container_info gauge
@@ -53,6 +58,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_status_waiting gauge
 		# HELP kube_pod_info Information about pod.
 		# TYPE kube_pod_info gauge
+		# HELP kube_pod_start_time Start time in unix timestamp for a pod.
+		# TYPE kube_pod_start_time gauge
 		# HELP kube_pod_owner Information about the Pod's owner.
 		# TYPE kube_pod_owner gauge
 		# HELP kube_pod_status_phase The pods current phase.
@@ -268,8 +275,9 @@ func TestPodCollector(t *testing.T) {
 						NodeName: "node1",
 					},
 					Status: v1.PodStatus{
-						HostIP: "1.1.1.1",
-						PodIP:  "1.2.3.4",
+						HostIP:    "1.1.1.1",
+						PodIP:     "1.2.3.4",
+						StartTime: &metav1StartTime,
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -295,10 +303,11 @@ func TestPodCollector(t *testing.T) {
 			want: metadata + `
 				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
 				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
+				` + fmt.Sprintf("kube_pod_start_time{namespace=\"ns1\",pod=\"pod1\"} %d\n", startTime.Unix()) + `
 				kube_pod_owner{namespace="ns1",pod="pod1",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
 				kube_pod_owner{namespace="ns2",pod="pod2",owner_kind="ReplicaSet",owner_name="rs-name",owner_is_controller="true"} 1
 				`,
-			metrics: []string{"kube_pod_info", "kube_pod_owner"},
+			metrics: []string{"kube_pod_info", "kube_pod_start_time", "kube_pod_owner"},
 		}, {
 			pods: []v1.Pod{
 				{

@@ -128,6 +128,8 @@ func (dc *replicationcontrollerCollector) collectReplicationController(ch chan<-
 	addGauge(descReplicationControllerStatusReadyReplicas, float64(d.Status.ReadyReplicas))
 	addGauge(descReplicationControllerStatusAvailableReplicas, float64(d.Status.AvailableReplicas))
 	addGauge(descReplicationControllerStatusObservedGeneration, float64(d.Status.ObservedGeneration))
-	addGauge(descReplicationControllerSpecReplicas, float64(*d.Spec.Replicas))
+	if d.Spec.Replicas != nil {
+		addGauge(descReplicationControllerSpecReplicas, float64(*d.Spec.Replicas))
+	}
 	addGauge(descReplicationControllerMetadataGeneration, float64(d.ObjectMeta.Generation))
 }

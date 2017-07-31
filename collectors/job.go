@@ -153,8 +153,14 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 	}
 
 	addGauge(descJobInfo, 1)
-	addGauge(descJobSpecParallelism, float64(*j.Spec.Parallelism))
-	addGauge(descJobSpecCompletions, float64(*j.Spec.Completions))
+
+	if j.Spec.Parallelism != nil {
+		addGauge(descJobSpecParallelism, float64(*j.Spec.Parallelism))
+	}
+
+	if j.Spec.Completions != nil {
+		addGauge(descJobSpecCompletions, float64(*j.Spec.Completions))
+	}
 
 	if j.Spec.ActiveDeadlineSeconds != nil {
 		addGauge(descJobSpecActiveDeadlineSeconds, float64(*j.Spec.ActiveDeadlineSeconds))
@@ -172,10 +178,10 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 
 	for _, c := range j.Status.Conditions {
 		switch c.Type {
-			case v1batch.JobComplete:
-				addConditionMetrics(ch, descJobConditionComplete, c.Status, j.Namespace, j.Name)
-			case v1batch.JobFailed:
-				addConditionMetrics(ch, descJobConditionFailed, c.Status, j.Namespace, j.Name)
+		case v1batch.JobComplete:
+			addConditionMetrics(ch, descJobConditionComplete, c.Status, j.Namespace, j.Name)
+		case v1batch.JobFailed:
+			addConditionMetrics(ch, descJobConditionFailed, c.Status, j.Namespace, j.Name)
 		}
 	}
 }

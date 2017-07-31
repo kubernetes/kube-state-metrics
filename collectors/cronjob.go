@@ -151,7 +151,9 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batc
 
 	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
 	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
-	addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
+	if j.Spec.Suspend != nil {
+		addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
+	}
 
 	if j.Status.LastScheduleTime != nil {
 		addGauge(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))

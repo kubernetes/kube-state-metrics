@@ -14,7 +14,14 @@ either by Prometheus itself or by a scraper that is compatible with scraping
 a Prometheus client endpoint. You can also open `/metrics` in a browser to see
 the raw metrics.
 
-*Requires Kubernetes 1.2+*
+## Kubernetes Version
+
+kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
+Kubernetes clusters. The supported Kubernetes cluster version is determined by `client-go`.
+The compatibility matrix for client-go and Kubernetes cluster can be found 
+[here](https://github.com/kubernetes/client-go#compatibility-matrix). 
+All additional compatibility is only best effort, or happens to still/already be supported.
+Currently, `client-go` is in version `v2.0.0-alpha.1`.
 
 ## Container Image
 

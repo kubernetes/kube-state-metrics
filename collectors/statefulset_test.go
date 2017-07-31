@@ -3,7 +3,7 @@ package collectors
 import (
 	"testing"
 
-	"k8s.io/client-go/pkg/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 )
 
@@ -46,7 +46,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 		{
 			depls: []v1beta1.StatefulSet{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "statefulset1",
 						Namespace: "ns1",
 						Labels: map[string]string{
@@ -63,7 +63,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 						Replicas:           2,
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "statefulset2",
 						Namespace: "ns2",
 						Labels: map[string]string{
@@ -80,7 +80,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 						Replicas:           5,
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "statefulset3",
 						Namespace: "ns3",
 						Labels: map[string]string{

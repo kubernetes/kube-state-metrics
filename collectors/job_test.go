@@ -17,26 +17,26 @@ limitations under the License.
 package collectors
 
 import (
-	"time"
 	"testing"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/api/unversioned"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 )
 
 var (
-	Parallelism1 int32 = 1
-	Completions1 int32 = 1
+	Parallelism1             int32 = 1
+	Completions1             int32 = 1
 	ActiveDeadlineSeconds900 int64 = 900
 
-	RunningJob1StartTime, _ = time.Parse(time.RFC3339, "2017-05-26T12:00:07Z")
+	RunningJob1StartTime, _    = time.Parse(time.RFC3339, "2017-05-26T12:00:07Z")
 	SuccessfulJob1StartTime, _ = time.Parse(time.RFC3339, "2017-05-26T12:00:07Z")
-	FailedJob1StartTime, _ = time.Parse(time.RFC3339, "2017-05-26T14:00:07Z")
+	FailedJob1StartTime, _     = time.Parse(time.RFC3339, "2017-05-26T14:00:07Z")
 	SuccessfulJob2StartTime, _ = time.Parse(time.RFC3339, "2017-05-26T12:10:07Z")
 
 	SuccessfulJob1CompletionTime, _ = time.Parse(time.RFC3339, "2017-05-26T13:00:07Z")
-	FailedJob1CompletionTime, _ = time.Parse(time.RFC3339, "2017-05-26T15:00:07Z")
+	FailedJob1CompletionTime, _     = time.Parse(time.RFC3339, "2017-05-26T15:00:07Z")
 	SuccessfulJob2CompletionTime, _ = time.Parse(time.RFC3339, "2017-05-26T13:10:07Z")
 )
 
@@ -77,93 +77,90 @@ func TestJobCollector(t *testing.T) {
 	`
 	cases := []struct {
 		jobs []v1batch.Job
-		want  string
+		want string
 	}{
 		{
 			jobs: []v1batch.Job{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "RunningJob1",
 						Namespace:  "ns1",
 						Generation: 1,
 					},
 					Status: v1batch.JobStatus{
-						Active:            1,
-						Failed:            0,
-						Succeeded:         0,
-						CompletionTime:    nil,
-						StartTime:         &unversioned.Time{Time: RunningJob1StartTime},
+						Active:         1,
+						Failed:         0,
+						Succeeded:      0,
+						CompletionTime: nil,
+						StartTime:      &metav1.Time{Time: RunningJob1StartTime},
 					},
 					Spec: v1batch.JobSpec{
-						ActiveDeadlineSeconds:	&ActiveDeadlineSeconds900,
-						Parallelism:		&Parallelism1,
-						Completions:		&Completions1,
+						ActiveDeadlineSeconds: &ActiveDeadlineSeconds900,
+						Parallelism:           &Parallelism1,
+						Completions:           &Completions1,
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "SuccessfulJob1",
 						Namespace:  "ns1",
 						Generation: 1,
 					},
 					Status: v1batch.JobStatus{
-						Active:            0,
-						Failed:            0,
-						Succeeded:         1,
-						CompletionTime:    &unversioned.Time{Time: SuccessfulJob1CompletionTime},
-						StartTime:         &unversioned.Time{Time: SuccessfulJob1StartTime},
-                                                Conditions:        []v1batch.JobCondition{
+						Active:         0,
+						Failed:         0,
+						Succeeded:      1,
+						CompletionTime: &metav1.Time{Time: SuccessfulJob1CompletionTime},
+						StartTime:      &metav1.Time{Time: SuccessfulJob1StartTime},
+						Conditions: []v1batch.JobCondition{
 							{Type: v1batch.JobComplete, Status: v1.ConditionTrue},
-                                                },
-
+						},
 					},
 					Spec: v1batch.JobSpec{
-						ActiveDeadlineSeconds:	&ActiveDeadlineSeconds900,
-						Parallelism:		&Parallelism1,
-						Completions:		&Completions1,
+						ActiveDeadlineSeconds: &ActiveDeadlineSeconds900,
+						Parallelism:           &Parallelism1,
+						Completions:           &Completions1,
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "FailedJob1",
 						Namespace:  "ns1",
 						Generation: 1,
 					},
 					Status: v1batch.JobStatus{
-						Active:            0,
-						Failed:            1,
-						Succeeded:         0,
-						CompletionTime:    &unversioned.Time{Time: FailedJob1CompletionTime},
-						StartTime:         &unversioned.Time{Time: FailedJob1StartTime},
-                                                Conditions:        []v1batch.JobCondition{
+						Active:         0,
+						Failed:         1,
+						Succeeded:      0,
+						CompletionTime: &metav1.Time{Time: FailedJob1CompletionTime},
+						StartTime:      &metav1.Time{Time: FailedJob1StartTime},
+						Conditions: []v1batch.JobCondition{
 							{Type: v1batch.JobFailed, Status: v1.ConditionTrue},
-                                                },
-
+						},
 					},
 					Spec: v1batch.JobSpec{
-						ActiveDeadlineSeconds:	&ActiveDeadlineSeconds900,
-						Parallelism:		&Parallelism1,
-						Completions:		&Completions1,
+						ActiveDeadlineSeconds: &ActiveDeadlineSeconds900,
+						Parallelism:           &Parallelism1,
+						Completions:           &Completions1,
 					},
 				}, {
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:       "SuccessfulJob2NoActiveDeadlineSeconds",
 						Namespace:  "ns1",
 						Generation: 1,
 					},
 					Status: v1batch.JobStatus{
-						Active:            0,
-						Failed:            0,
-						Succeeded:         1,
-						CompletionTime:    &unversioned.Time{Time: SuccessfulJob2CompletionTime},
-						StartTime:         &unversioned.Time{Time: SuccessfulJob2StartTime},
-                                                Conditions:        []v1batch.JobCondition{
+						Active:         0,
+						Failed:         0,
+						Succeeded:      1,
+						CompletionTime: &metav1.Time{Time: SuccessfulJob2CompletionTime},
+						StartTime:      &metav1.Time{Time: SuccessfulJob2StartTime},
+						Conditions: []v1batch.JobCondition{
 							{Type: v1batch.JobComplete, Status: v1.ConditionTrue},
-                                                },
-
+						},
 					},
 					Spec: v1batch.JobSpec{
-						ActiveDeadlineSeconds:	nil,
-						Parallelism:		&Parallelism1,
-						Completions:		&Completions1,
+						ActiveDeadlineSeconds: nil,
+						Parallelism:           &Parallelism1,
+						Completions:           &Completions1,
 					},
 				},
 			},

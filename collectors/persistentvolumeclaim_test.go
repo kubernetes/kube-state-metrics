@@ -19,6 +19,7 @@ package collectors
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -46,7 +47,7 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 		{
 			pvcs: []v1.PersistentVolumeClaim{
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mysql-data",
 						Namespace: "default",
 					},
@@ -55,7 +56,7 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "prometheus-data",
 						Namespace: "default",
 					},
@@ -64,7 +65,7 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "mongo-data",
 					},
 					Status: v1.PersistentVolumeClaimStatus{

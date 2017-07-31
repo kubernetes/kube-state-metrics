@@ -121,6 +121,8 @@ func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d 
 	addGauge(descReplicaSetStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
 	addGauge(descReplicaSetStatusReadyReplicas, float64(d.Status.ReadyReplicas))
 	addGauge(descReplicaSetStatusObservedGeneration, float64(d.Status.ObservedGeneration))
-	addGauge(descReplicaSetSpecReplicas, float64(*d.Spec.Replicas))
+	if d.Spec.Replicas != nil {
+		addGauge(descReplicaSetSpecReplicas, float64(*d.Spec.Replicas))
+	}
 	addGauge(descReplicaSetMetadataGeneration, float64(d.ObjectMeta.Generation))
 }

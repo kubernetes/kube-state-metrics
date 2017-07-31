@@ -270,7 +270,14 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
 	addGauge(podLabelsDesc(labelKeys), 1, labelValues...)
-	addGauge(descPodStatusPhase, 1, string(p.Status.Phase))
+
+	if p := p.Status.Phase; p != "" {
+		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodPending), string(v1.PodPending))
+		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodRunning), string(v1.PodRunning))
+		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodSucceeded), string(v1.PodSucceeded))
+		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodFailed), string(v1.PodFailed))
+		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodUnknown), string(v1.PodUnknown))
+	}
 
 	for _, c := range p.Status.Conditions {
 		switch c.Type {

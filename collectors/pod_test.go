@@ -319,8 +319,16 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_pod_status_phase{namespace="ns1",phase="Failed",pod="pod1"} 0
+				kube_pod_status_phase{namespace="ns1",phase="Pending",pod="pod1"} 0
 				kube_pod_status_phase{namespace="ns1",phase="Running",pod="pod1"} 1
+				kube_pod_status_phase{namespace="ns1",phase="Succeeded",pod="pod1"} 0
+				kube_pod_status_phase{namespace="ns1",phase="Unknown",pod="pod1"} 0
+				kube_pod_status_phase{namespace="ns2",phase="Failed",pod="pod2"} 0
 				kube_pod_status_phase{namespace="ns2",phase="Pending",pod="pod2"} 1
+				kube_pod_status_phase{namespace="ns2",phase="Running",pod="pod2"} 0
+				kube_pod_status_phase{namespace="ns2",phase="Succeeded",pod="pod2"} 0
+				kube_pod_status_phase{namespace="ns2",phase="Unknown",pod="pod2"} 0
 				`,
 			metrics: []string{"kube_pod_status_phase"},
 		}, {

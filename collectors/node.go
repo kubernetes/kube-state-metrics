@@ -60,7 +60,7 @@ var (
 	descNodeStatusCondition = prometheus.NewDesc(
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
-		[]string{"node", "type", "status"}, nil,
+		[]string{"node", "type", "condition"}, nil,
 	)
 
 	descNodeStatusReady = prometheus.NewDesc(

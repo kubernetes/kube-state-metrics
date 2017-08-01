@@ -220,33 +220,33 @@ func TestNodeCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_node_status_condition{node="127.0.0.1",type="NetworkUnavailable",condition="true"} 1
-				kube_node_status_condition{node="127.0.0.1",type="NetworkUnavailable",condition="false"} 0
-				kube_node_status_condition{node="127.0.0.1",type="NetworkUnavailable",condition="unknown"} 0
-				kube_node_status_condition{node="127.0.0.2",type="NetworkUnavailable",condition="true"} 0
-				kube_node_status_condition{node="127.0.0.2",type="NetworkUnavailable",condition="false"} 0
-				kube_node_status_condition{node="127.0.0.2",type="NetworkUnavailable",condition="unknown"} 1
-				kube_node_status_condition{node="127.0.0.3",type="NetworkUnavailable",condition="true"} 0
-				kube_node_status_condition{node="127.0.0.3",type="NetworkUnavailable",condition="false"} 1
-				kube_node_status_condition{node="127.0.0.3",type="NetworkUnavailable",condition="unknown"} 0
-				kube_node_status_condition{node="127.0.0.1",type="Ready",condition="true"} 1
-				kube_node_status_condition{node="127.0.0.1",type="Ready",condition="false"} 0
-				kube_node_status_condition{node="127.0.0.1",type="Ready",condition="unknown"} 0
-				kube_node_status_condition{node="127.0.0.2",type="Ready",condition="true"} 0
-				kube_node_status_condition{node="127.0.0.2",type="Ready",condition="false"} 0
-				kube_node_status_condition{node="127.0.0.2",type="Ready",condition="unknown"} 1
-				kube_node_status_condition{node="127.0.0.3",type="Ready",condition="true"} 0
-				kube_node_status_condition{node="127.0.0.3",type="Ready",condition="false"} 1
-				kube_node_status_condition{node="127.0.0.3",type="Ready",condition="unknown"} 0
-				kube_node_status_condition{node="127.0.0.1",type="CustomizedType",condition="true"} 1
-				kube_node_status_condition{node="127.0.0.1",type="CustomizedType",condition="false"} 0
-				kube_node_status_condition{node="127.0.0.1",type="CustomizedType",condition="unknown"} 0
-				kube_node_status_condition{node="127.0.0.2",type="CustomizedType",condition="true"} 0
-				kube_node_status_condition{node="127.0.0.2",type="CustomizedType",condition="false"} 0
-				kube_node_status_condition{node="127.0.0.2",type="CustomizedType",condition="unknown"} 1
-				kube_node_status_condition{node="127.0.0.3",type="CustomizedType",condition="true"} 0
-				kube_node_status_condition{node="127.0.0.3",type="CustomizedType",condition="false"} 1
-				kube_node_status_condition{node="127.0.0.3",type="CustomizedType",condition="unknown"} 0
+				kube_node_status_condition{node="127.0.0.1",condition="NetworkUnavailable",status="true"} 1
+				kube_node_status_condition{node="127.0.0.1",condition="NetworkUnavailable",status="false"} 0
+				kube_node_status_condition{node="127.0.0.1",condition="NetworkUnavailable",status="unknown"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="NetworkUnavailable",status="true"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="NetworkUnavailable",status="false"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="NetworkUnavailable",status="unknown"} 1
+				kube_node_status_condition{node="127.0.0.3",condition="NetworkUnavailable",status="true"} 0
+				kube_node_status_condition{node="127.0.0.3",condition="NetworkUnavailable",status="false"} 1
+				kube_node_status_condition{node="127.0.0.3",condition="NetworkUnavailable",status="unknown"} 0
+				kube_node_status_condition{node="127.0.0.1",condition="Ready",status="true"} 1
+				kube_node_status_condition{node="127.0.0.1",condition="Ready",status="false"} 0
+				kube_node_status_condition{node="127.0.0.1",condition="Ready",status="unknown"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="Ready",status="true"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="Ready",status="false"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="Ready",status="unknown"} 1
+				kube_node_status_condition{node="127.0.0.3",condition="Ready",status="true"} 0
+				kube_node_status_condition{node="127.0.0.3",condition="Ready",status="false"} 1
+				kube_node_status_condition{node="127.0.0.3",condition="Ready",status="unknown"} 0
+				kube_node_status_condition{node="127.0.0.1",condition="CustomizedType",status="true"} 1
+				kube_node_status_condition{node="127.0.0.1",condition="CustomizedType",status="false"} 0
+				kube_node_status_condition{node="127.0.0.1",condition="CustomizedType",status="unknown"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="CustomizedType",status="true"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="CustomizedType",status="false"} 0
+				kube_node_status_condition{node="127.0.0.2",condition="CustomizedType",status="unknown"} 1
+				kube_node_status_condition{node="127.0.0.3",condition="CustomizedType",status="true"} 0
+				kube_node_status_condition{node="127.0.0.3",condition="CustomizedType",status="false"} 1
+				kube_node_status_condition{node="127.0.0.3",condition="CustomizedType",status="unknown"} 0
 			`,
 			metrics: []string{"kube_node_status_condition"},
 		},

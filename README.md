@@ -37,6 +37,20 @@ additional metrics!
 
 See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
 
+## Resource recommendation
+
+Resource usage changes with the size of the cluster. As a general rule, you should allocate
+
+* 200MiB memory
+* 0.1 cores
+
+For clusters of more than 100 nodes, allocate at least
+
+* 2MiB memory per node
+* 0.001 cores per node
+
+These numbers are based on [scalability tests](https://github.com/kubernetes/kube-state-metrics/issues/124#issuecomment-318394185) at 30 pods per node.
+
 ## kube-state-metrics vs. Heapster
 
 [Heapster](https://github.com/kubernetes/heapster) is a project which fetches

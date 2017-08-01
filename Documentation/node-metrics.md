@@ -17,3 +17,4 @@
 | kube_node_status_memory_pressure | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
 | kube_node_status_disk_pressure | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
 | kube_node_status_network_unavailable | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |
+| kube_node_status_condition | Gauge | `node`=&lt;node-address&gt; <br> `type`=&lt;node-condition-type&gt; <br> `condition`=&lt;true\|false\|unknown&gt; |

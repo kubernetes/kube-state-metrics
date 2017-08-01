@@ -57,6 +57,12 @@ var (
 		[]string{"node"}, nil,
 	)
 
+	descNodeStatusCondition = prometheus.NewDesc(
+		"kube_node_status_condition",
+		"The condition of a cluster node.",
+		[]string{"node", "type", "status"}, nil,
+	)
+
 	descNodeStatusReady = prometheus.NewDesc(
 		"kube_node_status_ready",
 		"The ready status of a cluster node.",
@@ -162,6 +168,7 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeStatusDiskPressure
 	ch <- descNodeStatusNetworkUnavailable
 	ch <- descNodeStatusOutOfDisk
+	ch <- descNodeStatusCondition
 	ch <- descNodeStatusPhase
 	ch <- descNodeStatusCapacityCPU
 	ch <- descNodeStatusCapacityMemory
@@ -214,6 +221,7 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 
 	// Collect node conditions and while default to false.
 	for _, c := range n.Status.Conditions {
+		// Each core type expose a particular metric.
 		switch c.Type {
 		case v1.NodeReady:
 			addConditionMetrics(ch, descNodeStatusReady, c.Status, n.Name)
@@ -226,6 +234,11 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		case v1.NodeNetworkUnavailable:
 			addConditionMetrics(ch, descNodeStatusNetworkUnavailable, c.Status, n.Name)
 		}
+		// This all-in-one metric family contains all conditions for extensibility.
+		// Third party plugin may report customized condition for cluster node
+		// (e.g. node-problem-detector), and Kubernetes may add new core
+		// conditions in future.
+		addConditionMetrics(ch, descNodeStatusCondition, c.Status, n.Name, string(c.Type))
 	}
 
 	// Set current phase to 1, others to 0 if it is set.

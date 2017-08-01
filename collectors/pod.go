@@ -42,6 +42,12 @@ var (
 		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"}, nil,
 	)
 
+	descPodStartTime = prometheus.NewDesc(
+		"kube_pod_start_time",
+		"Start time in unix timestamp for a pod.",
+		[]string{"namespace", "pod"}, nil,
+	)
+
 	descPodOwner = prometheus.NewDesc(
 		"kube_pod_owner",
 		"Information about the Pod's owner.",
@@ -167,6 +173,7 @@ type podCollector struct {
 // Describe implements the prometheus.Collector interface.
 func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodInfo
+	ch <- descPodStartTime
 	ch <- descPodOwner
 	ch <- descPodLabels
 	ch <- descPodStatusPhase
@@ -257,6 +264,11 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			createdByName = createdBy.Name
 		}
 	}
+
+	if p.Status.StartTime != nil {
+		addGauge(descPodStartTime, float64((*(p.Status.StartTime)).Unix()))
+	}
+
 	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, createdByKind, createdByName)
 
 	owners := p.GetOwnerReferences()

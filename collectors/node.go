@@ -63,35 +63,10 @@ var (
 		[]string{"node", "type", "condition"}, nil,
 	)
 
-	descNodeStatusReady = prometheus.NewDesc(
-		"kube_node_status_ready",
-		"The ready status of a cluster node.",
-		[]string{"node", "condition"}, nil,
-	)
-	descNodeStatusOutOfDisk = prometheus.NewDesc(
-		"kube_node_status_out_of_disk",
-		"Whether the node is out of disk space",
-		[]string{"node", "condition"}, nil,
-	)
 	descNodeStatusPhase = prometheus.NewDesc(
 		"kube_node_status_phase",
 		"The phase the node is currently in.",
 		[]string{"node", "phase"}, nil,
-	)
-	descNodeStatusMemoryPressure = prometheus.NewDesc(
-		"kube_node_status_memory_pressure",
-		"Whether the kubelet is under pressure due to insufficient available memory.",
-		[]string{"node", "condition"}, nil,
-	)
-	descNodeStatusDiskPressure = prometheus.NewDesc(
-		"kube_node_status_disk_pressure",
-		"Whether the kubelet is under pressure due to insufficient available disk.",
-		[]string{"node", "condition"}, nil,
-	)
-	descNodeStatusNetworkUnavailable = prometheus.NewDesc(
-		"kube_node_status_network_unavailable",
-		"Whether the network is correctly configured for the node.",
-		[]string{"node", "condition"}, nil,
 	)
 
 	descNodeStatusCapacityPods = prometheus.NewDesc(
@@ -163,11 +138,6 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeInfo
 	ch <- descNodeLabels
 	ch <- descNodeSpecUnschedulable
-	ch <- descNodeStatusReady
-	ch <- descNodeStatusMemoryPressure
-	ch <- descNodeStatusDiskPressure
-	ch <- descNodeStatusNetworkUnavailable
-	ch <- descNodeStatusOutOfDisk
 	ch <- descNodeStatusCondition
 	ch <- descNodeStatusPhase
 	ch <- descNodeStatusCapacityCPU
@@ -221,19 +191,6 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 
 	// Collect node conditions and while default to false.
 	for _, c := range n.Status.Conditions {
-		// Each core type expose a particular metric.
-		switch c.Type {
-		case v1.NodeReady:
-			addConditionMetrics(ch, descNodeStatusReady, c.Status, n.Name)
-		case v1.NodeOutOfDisk:
-			addConditionMetrics(ch, descNodeStatusOutOfDisk, c.Status, n.Name)
-		case v1.NodeMemoryPressure:
-			addConditionMetrics(ch, descNodeStatusMemoryPressure, c.Status, n.Name)
-		case v1.NodeDiskPressure:
-			addConditionMetrics(ch, descNodeStatusDiskPressure, c.Status, n.Name)
-		case v1.NodeNetworkUnavailable:
-			addConditionMetrics(ch, descNodeStatusNetworkUnavailable, c.Status, n.Name)
-		}
 		// This all-in-one metric family contains all conditions for extensibility.
 		// Third party plugin may report customized condition for cluster node
 		// (e.g. node-problem-detector), and Kubernetes may add new core

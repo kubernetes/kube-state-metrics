@@ -375,6 +375,77 @@ func TestNodeCollector(t *testing.T) {
 			`,
 			metrics: []string{"kube_node_status_network_unavailable"},
 		},
+		// Verify StatusCondition
+		{
+			nodes: []v1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.1",
+					},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionTrue},
+							{Type: v1.NodeReady, Status: v1.ConditionTrue},
+							{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionTrue},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.2",
+					},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionUnknown},
+							{Type: v1.NodeReady, Status: v1.ConditionUnknown},
+							{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionUnknown},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.3",
+					},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionFalse},
+							{Type: v1.NodeReady, Status: v1.ConditionFalse},
+							{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionFalse},
+						},
+					},
+				},
+			},
+			want: metadata + `
+				kube_node_status_condition{node="127.0.0.1",type="NetworkUnavailable",condition="true"} 1
+				kube_node_status_condition{node="127.0.0.1",type="NetworkUnavailable",condition="false"} 0
+				kube_node_status_condition{node="127.0.0.1",type="NetworkUnavailable",condition="unknown"} 0
+				kube_node_status_condition{node="127.0.0.2",type="NetworkUnavailable",condition="true"} 0
+				kube_node_status_condition{node="127.0.0.2",type="NetworkUnavailable",condition="false"} 0
+				kube_node_status_condition{node="127.0.0.2",type="NetworkUnavailable",condition="unknown"} 1
+				kube_node_status_condition{node="127.0.0.3",type="NetworkUnavailable",condition="true"} 0
+				kube_node_status_condition{node="127.0.0.3",type="NetworkUnavailable",condition="false"} 1
+				kube_node_status_condition{node="127.0.0.3",type="NetworkUnavailable",condition="unknown"} 0
+				kube_node_status_condition{node="127.0.0.1",type="Ready",condition="true"} 1
+				kube_node_status_condition{node="127.0.0.1",type="Ready",condition="false"} 0
+				kube_node_status_condition{node="127.0.0.1",type="Ready",condition="unknown"} 0
+				kube_node_status_condition{node="127.0.0.2",type="Ready",condition="true"} 0
+				kube_node_status_condition{node="127.0.0.2",type="Ready",condition="false"} 0
+				kube_node_status_condition{node="127.0.0.2",type="Ready",condition="unknown"} 1
+				kube_node_status_condition{node="127.0.0.3",type="Ready",condition="true"} 0
+				kube_node_status_condition{node="127.0.0.3",type="Ready",condition="false"} 1
+				kube_node_status_condition{node="127.0.0.3",type="Ready",condition="unknown"} 0
+				kube_node_status_condition{node="127.0.0.1",type="CustomizedType",condition="true"} 1
+				kube_node_status_condition{node="127.0.0.1",type="CustomizedType",condition="false"} 0
+				kube_node_status_condition{node="127.0.0.1",type="CustomizedType",condition="unknown"} 0
+				kube_node_status_condition{node="127.0.0.2",type="CustomizedType",condition="true"} 0
+				kube_node_status_condition{node="127.0.0.2",type="CustomizedType",condition="false"} 0
+				kube_node_status_condition{node="127.0.0.2",type="CustomizedType",condition="unknown"} 1
+				kube_node_status_condition{node="127.0.0.3",type="CustomizedType",condition="true"} 0
+				kube_node_status_condition{node="127.0.0.3",type="CustomizedType",condition="false"} 1
+				kube_node_status_condition{node="127.0.0.3",type="CustomizedType",condition="unknown"} 0
+			`,
+			metrics: []string{"kube_node_status_condition"},
+		},
 	}
 	for _, c := range cases {
 		dc := &nodeCollector{

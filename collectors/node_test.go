@@ -64,6 +64,8 @@ func TestNodeCollector(t *testing.T) {
 		# TYPE kube_node_status_disk_pressure gauge
 		# HELP kube_node_status_network_unavailable Whether the network is correctly configured for the node.
 		# TYPE kube_node_status_network_unavailable gauge
+		# HELP kube_node_status_condition The condition of a cluster node.
+		# TYPE kube_node_status_condition gauge
 	`
 	cases := []struct {
 		nodes   []v1.Node

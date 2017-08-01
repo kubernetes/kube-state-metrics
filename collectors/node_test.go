@@ -42,8 +42,6 @@ func TestNodeCollector(t *testing.T) {
 		# TYPE kube_node_labels gauge
 		# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
 		# TYPE kube_node_spec_unschedulable gauge
-		# HELP kube_node_status_ready The ready status of a cluster node.
-		# TYPE kube_node_status_ready gauge
 		# TYPE kube_node_status_phase gauge
 		# HELP kube_node_status_phase The phase the node is currently in.
 		# TYPE kube_node_status_capacity_pods gauge
@@ -58,12 +56,6 @@ func TestNodeCollector(t *testing.T) {
 		# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
 		# TYPE kube_node_status_allocatable_memory_bytes gauge
 		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
-		# HELP kube_node_status_memory_pressure Whether the kubelet is under pressure due to insufficient available memory.
-		# TYPE kube_node_status_memory_pressure gauge
-		# HELP kube_node_status_disk_pressure Whether the kubelet is under pressure due to insufficient available disk.
-		# TYPE kube_node_status_disk_pressure gauge
-		# HELP kube_node_status_network_unavailable Whether the network is correctly configured for the node.
-		# TYPE kube_node_status_network_unavailable gauge
 		# HELP kube_node_status_condition The condition of a cluster node.
 		# TYPE kube_node_status_condition gauge
 	`
@@ -146,53 +138,6 @@ func TestNodeCollector(t *testing.T) {
 				kube_node_status_allocatable_pods{node="127.0.0.1"} 555
 			`,
 		},
-		// Verify condition enumerations.
-		{
-			nodes: []v1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.1",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeReady, Status: v1.ConditionTrue},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.2",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeReady, Status: v1.ConditionUnknown},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.3",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeReady, Status: v1.ConditionFalse},
-						},
-					},
-				},
-			},
-			want: metadata + `
-				kube_node_status_ready{node="127.0.0.1",condition="true"} 1
-				kube_node_status_ready{node="127.0.0.1",condition="false"} 0
-				kube_node_status_ready{node="127.0.0.1",condition="unknown"} 0
-				kube_node_status_ready{node="127.0.0.2",condition="true"} 0
-				kube_node_status_ready{node="127.0.0.2",condition="false"} 0
-				kube_node_status_ready{node="127.0.0.2",condition="unknown"} 1
-				kube_node_status_ready{node="127.0.0.3",condition="true"} 0
-				kube_node_status_ready{node="127.0.0.3",condition="false"} 1
-				kube_node_status_ready{node="127.0.0.3",condition="unknown"} 0
-			`,
-			metrics: []string{"kube_node_status_ready"},
-		},
 		// Verify phase enumerations.
 		{
 			nodes: []v1.Node{
@@ -233,147 +178,6 @@ func TestNodeCollector(t *testing.T) {
 				kube_node_status_phase{node="127.0.0.3",phase="Pending"} 0
 			`,
 			metrics: []string{"kube_node_status_phase"},
-		},
-		// Verify MemoryPressure
-		{
-			nodes: []v1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.1",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeMemoryPressure, Status: v1.ConditionTrue},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.2",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeMemoryPressure, Status: v1.ConditionUnknown},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.3",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeMemoryPressure, Status: v1.ConditionFalse},
-						},
-					},
-				},
-			},
-			want: metadata + `
-				kube_node_status_memory_pressure{node="127.0.0.1",condition="true"} 1
-				kube_node_status_memory_pressure{node="127.0.0.1",condition="false"} 0
-				kube_node_status_memory_pressure{node="127.0.0.1",condition="unknown"} 0
-				kube_node_status_memory_pressure{node="127.0.0.2",condition="true"} 0
-				kube_node_status_memory_pressure{node="127.0.0.2",condition="false"} 0
-				kube_node_status_memory_pressure{node="127.0.0.2",condition="unknown"} 1
-				kube_node_status_memory_pressure{node="127.0.0.3",condition="true"} 0
-				kube_node_status_memory_pressure{node="127.0.0.3",condition="false"} 1
-				kube_node_status_memory_pressure{node="127.0.0.3",condition="unknown"} 0
-			`,
-			metrics: []string{"kube_node_status_memory_pressure"},
-		},
-		// Verify DiskPressure
-		{
-			nodes: []v1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.1",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeDiskPressure, Status: v1.ConditionTrue},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.2",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeDiskPressure, Status: v1.ConditionUnknown},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.3",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeDiskPressure, Status: v1.ConditionFalse},
-						},
-					},
-				},
-			},
-			want: metadata + `
-				kube_node_status_disk_pressure{node="127.0.0.1",condition="true"} 1
-				kube_node_status_disk_pressure{node="127.0.0.1",condition="false"} 0
-				kube_node_status_disk_pressure{node="127.0.0.1",condition="unknown"} 0
-				kube_node_status_disk_pressure{node="127.0.0.2",condition="true"} 0
-				kube_node_status_disk_pressure{node="127.0.0.2",condition="false"} 0
-				kube_node_status_disk_pressure{node="127.0.0.2",condition="unknown"} 1
-				kube_node_status_disk_pressure{node="127.0.0.3",condition="true"} 0
-				kube_node_status_disk_pressure{node="127.0.0.3",condition="false"} 1
-				kube_node_status_disk_pressure{node="127.0.0.3",condition="unknown"} 0
-			`,
-			metrics: []string{"kube_node_status_disk_pressure"},
-		},
-		// Verify NetworkUnavailable
-		{
-			nodes: []v1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.1",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionTrue},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.2",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionUnknown},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.3",
-					},
-					Status: v1.NodeStatus{
-						Conditions: []v1.NodeCondition{
-							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionFalse},
-						},
-					},
-				},
-			},
-			want: metadata + `
-				kube_node_status_network_unavailable{node="127.0.0.1",condition="true"} 1
-				kube_node_status_network_unavailable{node="127.0.0.1",condition="false"} 0
-				kube_node_status_network_unavailable{node="127.0.0.1",condition="unknown"} 0
-				kube_node_status_network_unavailable{node="127.0.0.2",condition="true"} 0
-				kube_node_status_network_unavailable{node="127.0.0.2",condition="false"} 0
-				kube_node_status_network_unavailable{node="127.0.0.2",condition="unknown"} 1
-				kube_node_status_network_unavailable{node="127.0.0.3",condition="true"} 0
-				kube_node_status_network_unavailable{node="127.0.0.3",condition="false"} 1
-				kube_node_status_network_unavailable{node="127.0.0.3",condition="unknown"} 0
-			`,
-			metrics: []string{"kube_node_status_network_unavailable"},
 		},
 		// Verify StatusCondition
 		{

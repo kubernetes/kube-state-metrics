@@ -7,7 +7,6 @@
 * [FEATURE] Add StatefulSet metrics.
 * [FEATURE] Add Job and CronJob metrics.
 * [FEATURE] Add label metrics for deployments.
-* [FEATURE] Add `kube_node_status_disk_pressure` metric.
 * [FEATURE] Add `kube_pod_owner` metrics.
 * [ENHANCEMENT] Add `provider_id` label to `kube_node_info` metric.
 * [BUGFIX] Fix various nil pointer panics.

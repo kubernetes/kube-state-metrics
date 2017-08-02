@@ -18,6 +18,7 @@ package collectors
 
 import (
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -35,6 +36,8 @@ func TestDaemonSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_daemonset_created Unix creation timestamp
+		# TYPE kube_daemonset_created gauge
 	  # HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_daemonset_metadata_generation gauge
 		# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
@@ -67,6 +70,7 @@ func TestDaemonSetCollector(t *testing.T) {
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:       "ds2",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:  "ns2",
 						Generation: 14,
 					},
@@ -79,6 +83,7 @@ func TestDaemonSetCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_daemonset_created{daemonset="ds2",namespace="ns2"} 1.5e+09
 				kube_daemonset_metadata_generation{namespace="ns1",daemonset="ds1"} 21
 				kube_daemonset_metadata_generation{namespace="ns2",daemonset="ds2"} 14
 				kube_daemonset_status_current_number_scheduled{namespace="ns1",daemonset="ds1"} 15

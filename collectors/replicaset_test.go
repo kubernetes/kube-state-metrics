@@ -18,6 +18,7 @@ package collectors
 
 import (
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -40,6 +41,8 @@ func TestReplicaSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_replicaset_created Unix creation timestamp
+		# TYPE kube_replicaset_created gauge
 	  # HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
 		# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
@@ -62,6 +65,7 @@ func TestReplicaSetCollector(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:       "rs1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:  "ns1",
 						Generation: 21,
 					},
@@ -92,6 +96,7 @@ func TestReplicaSetCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns1",replicaset="rs1"} 5

@@ -5,8 +5,11 @@ metadata:
 rules:
 - apiGroups: [""]
   resources:
-  - nodes
   - pods
+  verbs: ["list", "watch", "get"]
+- apiGroups: [""]
+  resources:
+  - nodes
   - services
   - resourcequotas
   - replicationcontrollers
@@ -15,8 +18,11 @@ rules:
   verbs: ["list", "watch"]
 - apiGroups: ["extensions"]
   resources:
-  - daemonsets
   - deployments
+  verbs: ["list", "watch", "get", "update"]
+- apiGroups: ["extensions"]
+  resources:
+  - daemonsets
   - replicasets
   verbs: ["list", "watch"]
 - apiGroups: ["apps"]

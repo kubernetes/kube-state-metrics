@@ -4,6 +4,9 @@ go:
 install:
 - mkdir -p $HOME/gopath/src/k8s.io
 - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/kube-state-metrics
-script:
-- make test-unit
-- make
+jobs:
+  include:
+    - stage: Unit Test
+      script: make test-unit
+    - stage: Build
+      script: make

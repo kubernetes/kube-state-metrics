@@ -2,9 +2,9 @@
 
 This documentation is intended to be a complete reflection of the current state of the exposed metrics of kube-state-metrics.
 
-Pull requests completeing the metrics documentation as well as sample usages are very welcome.
+Any contribution to improving this documentation or adding sample usages will be appreciated.
 
-Per group of metrics there is one file for all metrics. See each file for specific documentation about the exposed metrics:
+Per group of metrics there is one file for each metrics. See each file for specific documentation about the exposed metrics:
 
 * [CronJob Metrics](cronjob-metrics.md)
 * [DaemonSet Metrics](daemonset-metrics.md)

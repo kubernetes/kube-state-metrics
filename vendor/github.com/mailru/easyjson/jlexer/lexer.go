@@ -519,8 +519,9 @@ func (r *Lexer) SkipRecursive() {
 	r.err = &LexerError{
 		Reason: "EOF reached while skipping array/object or token",
 		Offset: r.pos,
-		Data: string(r.Data[r.pos:]),
-	}}
+		Data:   string(r.Data[r.pos:]),
+	}
+}
 
 // Raw fetches the next item recursively as a data slice
 func (r *Lexer) Raw() []byte {

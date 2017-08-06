@@ -84,11 +84,10 @@ from those monitoring systems.
 
 # Setup
 
-Install this project to your `$GOPATH` in the following manner:
+Install this project to your `$GOPATH` using `go get`:
 
 ```
-git clone https://github.com/kubernetes/kube-state-metrics \
-    $GOPATH/src/k8s.io/kube-state-metrics
+go get k8s.io/kube-state-metrics
 ```
 
 ## Building the Docker container

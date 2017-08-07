@@ -30,7 +30,7 @@ spec:
           limits:
             memory: 50Mi
             cpu: 200m
-      - name: pod-nanny
+      - name: addon-resizer
         image: gcr.io/google_containers/addon-resizer:1.0
         resources:
           limits:

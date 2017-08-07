@@ -64,7 +64,7 @@ type persistentVolumeClaimStore interface {
 	List() (v1.PersistentVolumeClaimList, error)
 }
 
-// persistentVolumeClaimCollector collects metrics about all limit ranges in the cluster.
+// persistentVolumeClaimCollector collects metrics about all persistentVolumeClaims in the cluster.
 type persistentVolumeClaimCollector struct {
 	store persistentVolumeClaimStore
 }

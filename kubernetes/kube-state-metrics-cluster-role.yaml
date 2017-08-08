@@ -28,4 +28,3 @@ rules:
   - cronjobs
   - jobs
   verbs: ["list", "watch"]
-

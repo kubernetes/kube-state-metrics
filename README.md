@@ -103,6 +103,26 @@ make container
 Simply build and run kube-state-metrics inside a Kubernetes pod which has a
 service account token that has read-only access to the Kubernetes cluster.
 
+The kube-state-metrics binary takes a number of arguments.
+
+```
+$ kube-state-metrics --help
+Usage of kube-state-metrics:
+      --apiserver string                 The URL of the apiserver to use as a master
+      --collectors map[string]struct{}   Collectors to be enabled
+  -h, --help                             Print help text
+      --in-cluster                       If true, use the built in kubernetes cluster for creating the client (default true)
+      --kubeconfig string                Absolute path to the kubeconfig file
+      --port int                         Port to expose metrics on. (default 80)
+```
+
+In most cases, it is fine to run it without any arguments. By default, [these collectors](https://github.com/kubernetes/kube-state-metrics/blob/master/main.go#L45-L59) are enabled. If you don't need all of them or
+your cluster only supports a subset of them, you may selectively enable specific collectors only, e. g.:
+
+```
+kube-state-metrics --collectors=daemonsets,deployments,nodes,pods
+```
+
 ## Kubernetes Deployment
 
 To deploy this project, you can simply run `kubectl apply -f kubernetes` and a

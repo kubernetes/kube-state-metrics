@@ -24,7 +24,7 @@ container: build
 	docker build -t ${REGISTRY}/kube-state-metrics:$(TAG) .
 
 push: container
-	gcloud docker push ${REGISTRY}/kube-state-metrics:$(TAG)
+	gcloud docker -- push ${REGISTRY}/kube-state-metrics:$(TAG)
 
 clean:
 	rm -f kube-state-metrics

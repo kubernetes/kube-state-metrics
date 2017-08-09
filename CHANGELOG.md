@@ -1,3 +1,7 @@
+## v1.0.0 / 2017-08-09
+
+After a testing period of one week, there were no additional bugs found or features introduced.
+
 ## v1.0.0-rc.1 / 2017-08-02
 
 * [CHANGE] Remove `kube_node_status_ready`, `kube_node_status_out_of_disk`, `kube_node_status_memory_pressure`, `kube_node_status_disk_pressure`, and `kube_node_status_network_unavailable` metrics in favor of one generic `kube_node_status_condition` metric.
@@ -10,7 +14,6 @@
 * [FEATURE] Add `kube_pod_owner` metrics.
 * [ENHANCEMENT] Add `provider_id` label to `kube_node_info` metric.
 * [BUGFIX] Fix various nil pointer panics.
-
 
 ## v0.5.0 / 2017-05-03
 

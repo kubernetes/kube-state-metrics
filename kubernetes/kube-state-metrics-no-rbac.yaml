@@ -1,3 +1,21 @@
+# Copyright 2015 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Configuration to deploy release version of the kube-state-metrics compatible with
+# Kubernetes 1.7 (RBAC disabled).
+#
+# Example usage: kubectl create -f <this_file>
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -56,4 +74,23 @@ spec:
           - --memory=30Mi
           - --extra-memory=2Mi
           - --threshold=5
-          - --deployment=kube-state-metrics
+          - --deployment=kube-state-metricsapiVersion: v1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-state-metrics
+  namespace: kube-system
+  labels:
+    k8s-app: kube-state-metrics
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: http-metrics
+    protocol: TCP
+  selector:
+    k8s-app: kube-state-metrics
+

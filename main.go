@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/kube-state-metrics/collectors"
 )
 
@@ -43,34 +45,34 @@ const (
 
 var (
 	defaultCollectors = collectorSet{
-		"daemonsets":             struct{}{},
-		"deployments":            struct{}{},
-		"limitranges":            struct{}{},
-		"nodes":                  struct{}{},
-		"pods":                   struct{}{},
-		"replicasets":            struct{}{},
-		"replicationcontrollers": struct{}{},
-		"resourcequotas":         struct{}{},
-		"services":               struct{}{},
-		"jobs":                   struct{}{},
-		"cronjobs":               struct{}{},
-		"statefulsets":           struct{}{},
-		"persistentvolumeclaims": struct{}{},
+		"daemonsets/v1beta1":        struct{}{},
+		"deployments/v1beta1":       struct{}{},
+		"limitranges/v1":            struct{}{},
+		"nodes/v1":                  struct{}{},
+		"pods/v1":                   struct{}{},
+		"replicasets/v1beta1":       struct{}{},
+		"replicationcontrollers/v1": struct{}{},
+		"resourcequotas/v1":         struct{}{},
+		"services/v1":               struct{}{},
+		"jobs/v1":                   struct{}{},
+		"cronjobs/v2alpha1":         struct{}{},
+		"statefulsets/v1beta1":      struct{}{},
+		"persistentvolumeclaims/v1": struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
-		"cronjobs":               collectors.RegisterCronJobCollector,
-		"daemonsets":             collectors.RegisterDaemonSetCollector,
-		"deployments":            collectors.RegisterDeploymentCollector,
-		"jobs":                   collectors.RegisterJobCollector,
-		"limitranges":            collectors.RegisterLimitRangeCollector,
-		"nodes":                  collectors.RegisterNodeCollector,
-		"pods":                   collectors.RegisterPodCollector,
-		"replicasets":            collectors.RegisterReplicaSetCollector,
-		"replicationcontrollers": collectors.RegisterReplicationControllerCollector,
-		"resourcequotas":         collectors.RegisterResourceQuotaCollector,
-		"services":               collectors.RegisterServiceCollector,
-		"statefulsets":           collectors.RegisterStatefulSetCollector,
-		"persistentvolumeclaims": collectors.RegisterPersistentVolumeClaimCollector,
+		"cronjobs/v2alpha1":         collectors.RegisterCronJobCollector,
+		"daemonsets/v1beta1":        collectors.RegisterDaemonSetCollector,
+		"deployments/v1beta1":       collectors.RegisterDeploymentCollector,
+		"jobs/v1":                   collectors.RegisterJobCollector,
+		"limitranges/v1":            collectors.RegisterLimitRangeCollector,
+		"nodes/v1":                  collectors.RegisterNodeCollector,
+		"pods/v1":                   collectors.RegisterPodCollector,
+		"replicasets/v1beta1":       collectors.RegisterReplicaSetCollector,
+		"replicationcontrollers/v1": collectors.RegisterReplicationControllerCollector,
+		"resourcequotas/v1":         collectors.RegisterResourceQuotaCollector,
+		"services/v1":               collectors.RegisterServiceCollector,
+		"statefulsets/v1beta1":      collectors.RegisterStatefulSetCollector,
+		"persistentvolumeclaims/v1": collectors.RegisterPersistentVolumeClaimCollector,
 	}
 )
 
@@ -96,7 +98,7 @@ func (c *collectorSet) Set(value string) error {
 
 func (c collectorSet) asSlice() []string {
 	cols := []string{}
-	for col, _ := range c {
+	for col := range c {
 		cols = append(cols, col)
 	}
 	return cols
@@ -268,13 +270,40 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 // registers metrics for collection.
 func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet) {
 	activeCollectors := []string{}
-	for c, _ := range enabledCollectors {
+	resourceMap, err := getSupportedResources(kubeClient)
+	if err != nil {
+		glog.Error(err)
+	}
+	for c := range enabledCollectors {
 		f, ok := availableCollectors[c]
-		if ok {
+		if ok && resourceMap[schema.GroupVersionResource{Group: "", Resource: strings.Split(c, "/")[0], Version: strings.Split(c, "/")[1]}] {
 			f(registry, kubeClient)
 			activeCollectors = append(activeCollectors, c)
 		}
 	}
 
-	glog.Infof("Active collectors: %s", strings.Join(activeCollectors, ","))
+}
+
+func getSupportedResources(kubeClient clientset.Interface) (map[schema.GroupVersionResource]bool, error) {
+	resourceMap, err := kubeClient.Discovery().ServerResources()
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("unable to get all supported resources from server: %v", err))
+	}
+	if len(resourceMap) == 0 {
+		return nil, fmt.Errorf("unable to get any supported resources from server")
+	}
+
+	allResources := map[schema.GroupVersionResource]bool{}
+	for _, apiResourceList := range resourceMap {
+		version, err := schema.ParseGroupVersion(apiResourceList.GroupVersion)
+		// ignore group info
+		version.Group = ""
+		if err != nil {
+			return nil, err
+		}
+		for _, apiResource := range apiResourceList.APIResources {
+			allResources[version.WithResource(apiResource.Name)] = true
+		}
+	}
+	return allResources, nil
 }

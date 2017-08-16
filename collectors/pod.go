@@ -17,7 +17,6 @@ limitations under the License.
 package collectors
 
 import (
-	"encoding/json"
 	"regexp"
 	"strconv"
 
@@ -35,12 +34,6 @@ var (
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-
-	descPodInfo = prometheus.NewDesc(
-		"kube_pod_info",
-		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"}, nil,
-	)
 
 	descPodStartTime = prometheus.NewDesc(
 		"kube_pod_start_time",
@@ -172,7 +165,6 @@ type podCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descPodInfo
 	ch <- descPodStartTime
 	ch <- descPodOwner
 	ch <- descPodLabels
@@ -189,18 +181,6 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceRequestsMemoryBytes
 	ch <- descPodContainerResourceLimitsCpuCores
 	ch <- descPodContainerResourceLimitsMemoryBytes
-}
-
-func extractCreatedBy(annotation map[string]string) *api.ObjectReference {
-	value, ok := annotation[api.CreatedByAnnotation]
-	if ok {
-		var r api.SerializedReference
-		err := json.Unmarshal([]byte(value), &r)
-		if err == nil {
-			return &r.Reference
-		}
-	}
-	return nil
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -253,23 +233,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	createdBy := extractCreatedBy(p.Annotations)
-	createdByKind := "<none>"
-	createdByName := "<none>"
-	if createdBy != nil {
-		if createdBy.Kind != "" {
-			createdByKind = createdBy.Kind
-		}
-		if createdBy.Name != "" {
-			createdByName = createdBy.Name
-		}
-	}
-
 	if p.Status.StartTime != nil {
 		addGauge(descPodStartTime, float64((*(p.Status.StartTime)).Unix()))
 	}
-
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, createdByKind, createdByName)
 
 	owners := p.GetOwnerReferences()
 	if len(owners) == 0 {

@@ -42,6 +42,12 @@ var (
 		descServiceLabelsHelp,
 		descServiceLabelsDefaultLabels, nil,
 	)
+
+	descServiceSpecServiceType = prometheus.NewDesc(
+		"kube_service_spec_servicetype",
+		"ServiceType about service.",
+		[]string{"namespace", "service", "clusterIP", "type"}, nil,
+	)
 )
 
 type ServiceLister func() ([]v1.Service, error)
@@ -79,6 +85,7 @@ type serviceCollector struct {
 func (pc *serviceCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descServiceInfo
 	ch <- descServiceLabels
+	ch <- descServiceSpecServiceType
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -114,4 +121,5 @@ func (sc *serviceCollector) collectService(ch chan<- prometheus.Metric, s v1.Ser
 	addGauge(descServiceInfo, 1)
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 	addGauge(serviceLabelsDesc(labelKeys), 1, labelValues...)
+	addGauge(descServiceSpecServiceType, 1, s.Spec.ClusterIP, string(s.Spec.Type))
 }

@@ -109,7 +109,8 @@ func getPersistentVolumeClaimClass(claim *v1.PersistentVolumeClaim) string {
 		return *claim.Spec.StorageClassName
 	}
 
-	return ""
+	// Special non-empty string to indicate absence of storage class.
+	return "<none>"
 }
 
 func (collector *persistentVolumeClaimCollector) collectPersistentVolumeClaim(ch chan<- prometheus.Metric, pvc v1.PersistentVolumeClaim) {

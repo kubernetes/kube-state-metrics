@@ -1,7 +1,7 @@
 all: build
 
 FLAGS =
-COMMONENVVAR = GOOS=linux GOARCH=amd64
+COMMONENVVAR = GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(subst x86_64,amd64,$(patsubst i%86,386,$(shell uname -m)))
 BUILDENVVAR = CGO_ENABLED=0
 TESTENVVAR = 
 REGISTRY = gcr.io/google_containers

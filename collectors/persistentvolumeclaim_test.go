@@ -83,18 +83,15 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mongo-data",
 					},
-					Spec: v1.PersistentVolumeClaimSpec{
-						StorageClassName: &storageClassName,
-					},
 					Status: v1.PersistentVolumeClaimStatus{
 						Phase: v1.ClaimLost,
 					},
 				},
 			},
 			want: metadata + `
-				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="rbd",phase="Bound"} 0
-				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="rbd",phase="Lost"} 1
-				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="rbd",phase="Pending"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Bound"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Lost"} 1
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Pending"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",phase="Bound"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",phase="Pending"} 0

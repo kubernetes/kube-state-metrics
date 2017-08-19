@@ -18,6 +18,7 @@ package collectors
 
 import (
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +39,8 @@ func TestLimitRangeollector(t *testing.T) {
 	testMemory := "2.1G"
 	testMemoryQuantity := resource.MustParse(testMemory)
 	const metadata = `
+	# HELP kube_limitrange_created Unix creation timestamp
+	# TYPE kube_limitrange_created gauge
 	# HELP kube_limitrange Information about limit range.
 	# TYPE kube_limitrange gauge
 	`
@@ -51,6 +54,7 @@ func TestLimitRangeollector(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "quotaTest",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace: "testNS",
 					},
 					Spec: v1.LimitRangeSpec{
@@ -78,6 +82,7 @@ func TestLimitRangeollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+		kube_limitrange_created{limitrange="quotaTest",namespace="testNS"} 1.5e+09
 		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="min"} 2.1e+09
 		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="max"} 2.1e+09
 		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="default"} 2.1e+09

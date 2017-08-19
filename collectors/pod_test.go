@@ -18,6 +18,7 @@ package collectors
 
 import (
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +42,8 @@ func TestPodCollector(t *testing.T) {
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
 	const metadata = `
+		# HELP kube_pod_created Unix creation timestamp
+		# TYPE kube_pod_created gauge
 		# HELP kube_pod_container_info Information about a container in a pod.
 		# TYPE kube_pod_container_info gauge
 		# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
@@ -268,6 +271,7 @@ func TestPodCollector(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace: "ns1",
 					},
 					Spec: v1.PodSpec{
@@ -300,13 +304,14 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_pod_created{namespace="ns1",pod="pod1"} 1.5e+09
 				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
 				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1"} 1501569018
 				kube_pod_owner{namespace="ns1",pod="pod1",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
 				kube_pod_owner{namespace="ns2",pod="pod2",owner_kind="ReplicaSet",owner_name="rs-name",owner_is_controller="true"} 1
 				`,
-			metrics: []string{"kube_pod_info", "kube_pod_start_time", "kube_pod_owner"},
+			metrics: []string{"kube_pod_created", "kube_pod_info", "kube_pod_start_time", "kube_pod_owner"},
 		}, {
 			pods: []v1.Pod{
 				{

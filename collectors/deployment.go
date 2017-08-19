@@ -32,6 +32,12 @@ var (
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 
+	descDeploymentCreated = prometheus.NewDesc(
+		"kube_deployment_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
 	descDeploymentStatusReplicas = prometheus.NewDesc(
 		"kube_deployment_status_replicas",
 		"The number of replicas per deployment.",
@@ -123,6 +129,7 @@ type deploymentCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descDeploymentCreated
 	ch <- descDeploymentStatusReplicas
 	ch <- descDeploymentStatusReplicasAvailable
 	ch <- descDeploymentStatusReplicasUnavailable
@@ -161,9 +168,11 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
-
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
 	addGauge(deploymentLabelsDesc(labelKeys), 1, labelValues...)
+	if !d.CreationTimestamp.IsZero() {
+		addGauge(descDeploymentCreated, float64(d.CreationTimestamp.Unix()))
+	}
 	addGauge(descDeploymentStatusReplicas, float64(d.Status.Replicas))
 	addGauge(descDeploymentStatusReplicasAvailable, float64(d.Status.AvailableReplicas))
 	addGauge(descDeploymentStatusReplicasUnavailable, float64(d.Status.UnavailableReplicas))

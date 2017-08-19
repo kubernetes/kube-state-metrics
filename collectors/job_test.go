@@ -52,6 +52,8 @@ func TestJobCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_job_created Unix creation timestamp
+		# TYPE kube_job_created gauge
 		# HELP kube_job_complete The job has completed its execution.
 		# TYPE kube_job_complete gauge
 		# HELP kube_job_failed The job has failed its execution.
@@ -84,6 +86,7 @@ func TestJobCollector(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:       "RunningJob1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:  "ns1",
 						Generation: 1,
 					},
@@ -165,6 +168,8 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_job_created{job="RunningJob1",namespace="ns1"} 1.5e+09
+				
 				kube_job_complete{condition="false",job="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="false",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 

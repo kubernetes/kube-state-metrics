@@ -18,6 +18,7 @@ package collectors
 
 import (
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +39,8 @@ func TestResourceQuotaCollector(t *testing.T) {
 	const metadata = `
 	# HELP kube_resourcequota Information about resource quota.
 	# TYPE kube_resourcequota gauge
+	# HELP kube_resourcequota_created Unix creation timestamp
+	# TYPE kube_resourcequota_created gauge
 	`
 	cases := []struct {
 		quotas  []v1.ResourceQuota
@@ -50,12 +53,15 @@ func TestResourceQuotaCollector(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "quotaTest",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace: "testNS",
 					},
 					Status: v1.ResourceQuotaStatus{},
 				},
 			},
-			want: metadata,
+			want: metadata + `
+			kube_resourcequota_created{namespace="testNS",resourcequota="quotaTest"} 1.5e+09
+			`,
 		},
 		// Verify resource metrics.
 		{

@@ -28,9 +28,9 @@ import (
 
 var (
 	descResourceQuotaCreated = prometheus.NewDesc(
-	    "kube_resourcequota_created",
-	    "Unix creation timestamp",
-	    []string{"resourcequota", "namespace"}, nil,
+		"kube_resourcequota_created",
+		"Unix creation timestamp",
+		[]string{"resourcequota", "namespace"}, nil,
 	)
 	descResourceQuota = prometheus.NewDesc(
 		"kube_resourcequota",

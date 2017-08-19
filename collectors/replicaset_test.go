@@ -64,10 +64,10 @@ func TestReplicaSetCollector(t *testing.T) {
 			rss: []v1beta1.ReplicaSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:       "rs1",
+						Name:              "rs1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:  "ns1",
-						Generation: 21,
+						Namespace:         "ns1",
+						Generation:        21,
 					},
 					Status: v1beta1.ReplicaSetStatus{
 						Replicas:             5,

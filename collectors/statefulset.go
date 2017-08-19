@@ -15,6 +15,12 @@ var (
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 
+	descStatefulSetCreated = prometheus.NewDesc(
+		"kube_statefulset_created",
+		"Unix creation timestamp",
+		[]string{"namespace", "statefulset"}, nil,
+	)
+
 	descStatefulSetStatusReplicas = prometheus.NewDesc(
 		"kube_statefulset_status_replicas",
 		"The number of replicas per StatefulSet.",
@@ -78,6 +84,7 @@ type statefulSetCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descStatefulSetCreated
 	ch <- descStatefulSetStatusReplicas
 	ch <- descStatefulSetStatusObservedGeneration
 	ch <- descStatefulSetSpecReplicas
@@ -110,6 +117,9 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{statefulSet.Namespace, statefulSet.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
+	}
+	if !statefulSet.CreationTimestamp.IsZero() {
+			addGauge(descStatefulSetCreated, float64(statefulSet.CreationTimestamp.Unix()))
 	}
 	addGauge(descStatefulSetStatusReplicas, float64(statefulSet.Status.Replicas))
 	if statefulSet.Status.ObservedGeneration != nil {

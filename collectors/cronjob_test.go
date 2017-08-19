@@ -30,9 +30,9 @@ var (
 	SuspendFalse               bool  = false
 	StartingDeadlineSeconds300 int64 = 300
 
-	ActiveRunningCronJob1LastScheduleTime, _          = time.Parse(time.RFC3339, "2017-05-26T12:00:07Z")
-	SuspendedCronJob1LastScheduleTime, _              = time.Parse(time.RFC3339, "2017-05-26T17:30:00Z")
-	ActiveCronJob1NoLastScheduledCreationTimestamp, _ = time.Parse(time.RFC3339, "2017-05-26T18:30:00Z")
+	ActiveRunningCronJob1LastScheduleTime          = time.Unix(1500000000, 0)
+	SuspendedCronJob1LastScheduleTime              = time.Unix(1500000000 + 5.5 * 3600, 0) // 5.5 hours later
+	ActiveCronJob1NoLastScheduledCreationTimestamp = time.Unix(1500000000 + 6.5 * 3600, 0)
 )
 
 type mockCronJobStore struct {
@@ -49,6 +49,8 @@ func TestCronJobCollector(t *testing.T) {
 	const metadata = `
 		# HELP kube_cronjob_info Info about cronjob.
 		# TYPE kube_cronjob_info gauge
+		# HELP kube_cronjob_created Unix creation timestamp
+		# TYPE kube_cronjob_created gauge
 		# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 		# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
 		# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
@@ -118,12 +120,14 @@ func TestCronJobCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.5000234e+09
+
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 
-				kube_cronjob_next_schedule_time{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.4958267e+09
-				kube_cronjob_next_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.4958216e+09
+				kube_cronjob_next_schedule_time{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.5000243e+09
+				kube_cronjob_next_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.500012e+09
 
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 300
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300
@@ -137,8 +141,8 @@ func TestCronJobCollector(t *testing.T) {
 				kube_cronjob_status_active{cronjob="SuspendedCronJob1",namespace="ns1"} 0
 				kube_cronjob_status_active{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 0
 
-				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.495800007e+09
-				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.4958198e+09
+				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.5e+09
+				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.5000198e+09
 			`,
 		},
 	}

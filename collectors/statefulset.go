@@ -119,7 +119,7 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 	if !statefulSet.CreationTimestamp.IsZero() {
-			addGauge(descStatefulSetCreated, float64(statefulSet.CreationTimestamp.Unix()))
+		addGauge(descStatefulSetCreated, float64(statefulSet.CreationTimestamp.Unix()))
 	}
 	addGauge(descStatefulSetStatusReplicas, float64(statefulSet.Status.Replicas))
 	if statefulSet.Status.ObservedGeneration != nil {

@@ -30,6 +30,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -57,7 +58,7 @@ var (
 		"statefulsets":           struct{}{},
 		"persistentvolumeclaims": struct{}{},
 	}
-	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface){
+	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
 		"cronjobs":               collectors.RegisterCronJobCollector,
 		"daemonsets":             collectors.RegisterDaemonSetCollector,
 		"deployments":            collectors.RegisterDeploymentCollector,
@@ -117,6 +118,7 @@ type options struct {
 	help       bool
 	port       int
 	collectors collectorSet
+	namespace  string
 }
 
 func main() {
@@ -133,6 +135,7 @@ func main() {
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
 	flags.Var(&options.collectors, "collectors", "Collectors to be enabled")
+	flags.StringVar(&options.namespace, "namespace", api.NamespaceAll, "namespace to be enabled for collecting resources")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -151,10 +154,16 @@ func main() {
 
 	var collectors collectorSet
 	if len(options.collectors) == 0 {
-		glog.Infof("Using default collectors")
+		glog.Info("Using default collectors")
 		collectors = defaultCollectors
 	} else {
 		collectors = options.collectors
+	}
+
+	if options.namespace == api.NamespaceAll {
+		glog.Info("Using all namespace")
+	} else {
+		glog.Infof("Using %s namespace", options.namespace)
 	}
 
 	if isNotExists(options.kubeconfig) && !(options.inCluster) {
@@ -172,7 +181,7 @@ func main() {
 	}
 
 	registry := prometheus.NewRegistry()
-	registerCollectors(registry, kubeClient, collectors)
+	registerCollectors(registry, kubeClient, collectors, options.namespace)
 	metricsServer(registry, options.port)
 }
 
@@ -266,12 +275,12 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
-func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet) {
+func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespace string) {
 	activeCollectors := []string{}
 	for c, _ := range enabledCollectors {
 		f, ok := availableCollectors[c]
 		if ok {
-			f(registry, kubeClient)
+			f(registry, kubeClient, namespace)
 			activeCollectors = append(activeCollectors, c)
 		}
 	}

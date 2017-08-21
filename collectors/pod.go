@@ -163,9 +163,9 @@ func (l PodLister) List() ([]v1.Pod, error) {
 	return l()
 }
 
-func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	plw := cache.NewListWatchFromClient(client, "pods", api.NamespaceAll, nil)
+	plw := cache.NewListWatchFromClient(client, "pods", namespace, nil)
 	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
 
 	podLister := PodLister(func() (pods []v1.Pod, err error) {

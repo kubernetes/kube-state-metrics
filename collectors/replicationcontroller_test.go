@@ -66,10 +66,10 @@ func TestReplicationControllerCollector(t *testing.T) {
 			rss: []v1.ReplicationController{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:       "rc1",
+						Name:              "rc1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:  "ns1",
-						Generation: 21,
+						Namespace:         "ns1",
+						Generation:        21,
 					},
 					Status: v1.ReplicationControllerStatus{
 						Replicas:             5,

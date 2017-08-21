@@ -99,7 +99,7 @@ func TestNodeCollector(t *testing.T) {
 			nodes: []v1.Node{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "127.0.0.1",
+						Name:              "127.0.0.1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Labels: map[string]string{
 							"type": "master",

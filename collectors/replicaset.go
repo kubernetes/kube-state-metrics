@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -70,9 +69,9 @@ func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
 	return l()
 }
 
-func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	rslw := cache.NewListWatchFromClient(client, "replicasets", api.NamespaceAll, nil)
+	rslw := cache.NewListWatchFromClient(client, "replicasets", namespace, nil)
 	rsinf := cache.NewSharedInformer(rslw, &v1beta1.ReplicaSet{}, resyncPeriod)
 
 	replicaSetLister := ReplicaSetLister(func() (replicasets []v1beta1.ReplicaSet, err error) {

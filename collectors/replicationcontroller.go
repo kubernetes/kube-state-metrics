@@ -22,7 +22,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -76,9 +75,9 @@ func (l ReplicationControllerLister) List() ([]v1.ReplicationController, error) 
 	return l()
 }
 
-func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	rclw := cache.NewListWatchFromClient(client, "replicationcontrollers", api.NamespaceAll, nil)
+	rclw := cache.NewListWatchFromClient(client, "replicationcontrollers", namespace, nil)
 	rcinf := cache.NewSharedInformer(rclw, &v1.ReplicationController{}, resyncPeriod)
 
 	replicationControllerLister := ReplicationControllerLister(func() (rcs []v1.ReplicationController, err error) {

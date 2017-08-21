@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -56,9 +55,9 @@ func (l ServiceLister) List() ([]v1.Service, error) {
 	return l()
 }
 
-func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	slw := cache.NewListWatchFromClient(client, "services", api.NamespaceAll, nil)
+	slw := cache.NewListWatchFromClient(client, "services", namespace, nil)
 	sinf := cache.NewSharedInformer(slw, &v1.Service{}, resyncPeriod)
 
 	serviceLister := ServiceLister(func() (services []v1.Service, err error) {

@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -52,9 +51,9 @@ func (l LimitRangeLister) List() (v1.LimitRangeList, error) {
 	return l()
 }
 
-func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	rqlw := cache.NewListWatchFromClient(client, "limitranges", api.NamespaceAll, nil)
+	rqlw := cache.NewListWatchFromClient(client, "limitranges", namespace, nil)
 	rqinf := cache.NewSharedInformer(rqlw, &v1.LimitRange{}, resyncPeriod)
 
 	limitRangeLister := LimitRangeLister(func() (ranges v1.LimitRangeList, err error) {

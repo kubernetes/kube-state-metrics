@@ -22,7 +22,6 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -102,9 +101,9 @@ func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
 	return l()
 }
 
-func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	dlw := cache.NewListWatchFromClient(client, "deployments", api.NamespaceAll, nil)
+	dlw := cache.NewListWatchFromClient(client, "deployments", namespace, nil)
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 
 	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {

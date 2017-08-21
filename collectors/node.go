@@ -114,7 +114,7 @@ func (l NodeLister) List() (v1.NodeList, error) {
 	return l()
 }
 
-func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
 	nlw := cache.NewListWatchFromClient(client, "nodes", api.NamespaceAll, nil)
 	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)

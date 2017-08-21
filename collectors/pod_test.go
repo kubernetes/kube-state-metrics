@@ -270,9 +270,9 @@ func TestPodCollector(t *testing.T) {
 			pods: []v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
+						Name:              "pod1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace: "ns1",
+						Namespace:         "ns1",
 					},
 					Spec: v1.PodSpec{
 						NodeName: "node1",

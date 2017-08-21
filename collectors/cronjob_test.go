@@ -31,8 +31,8 @@ var (
 	StartingDeadlineSeconds300 int64 = 300
 
 	ActiveRunningCronJob1LastScheduleTime          = time.Unix(1500000000, 0)
-	SuspendedCronJob1LastScheduleTime              = time.Unix(1500000000 + 5.5 * 3600, 0) // 5.5 hours later
-	ActiveCronJob1NoLastScheduledCreationTimestamp = time.Unix(1500000000 + 6.5 * 3600, 0)
+	SuspendedCronJob1LastScheduleTime              = time.Unix(1500000000+5.5*3600, 0) // 5.5 hours later
+	ActiveCronJob1NoLastScheduledCreationTimestamp = time.Unix(1500000000+6.5*3600, 0)
 )
 
 type mockCronJobStore struct {

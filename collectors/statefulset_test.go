@@ -50,9 +50,9 @@ func TestStatefuleSetCollector(t *testing.T) {
 			depls: []v1beta1.StatefulSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "statefulset1",
+						Name:              "statefulset1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace: "ns1",
+						Namespace:         "ns1",
 						Labels: map[string]string{
 							"app": "example1",
 						},

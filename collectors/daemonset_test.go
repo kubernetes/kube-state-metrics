@@ -69,10 +69,10 @@ func TestDaemonSetCollector(t *testing.T) {
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
-						Name:       "ds2",
+						Name:              "ds2",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:  "ns2",
-						Generation: 14,
+						Namespace:         "ns2",
+						Generation:        14,
 					},
 					Status: v1beta1.DaemonSetStatus{
 						CurrentNumberScheduled: 10,

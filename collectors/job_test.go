@@ -85,10 +85,10 @@ func TestJobCollector(t *testing.T) {
 			jobs: []v1batch.Job{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:       "RunningJob1",
+						Name:              "RunningJob1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:  "ns1",
-						Generation: 1,
+						Namespace:         "ns1",
+						Generation:        1,
 					},
 					Status: v1batch.JobStatus{
 						Active:         1,

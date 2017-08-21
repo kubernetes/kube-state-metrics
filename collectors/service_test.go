@@ -52,9 +52,9 @@ func TestServiceCollector(t *testing.T) {
 			services: []v1.Service{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-service",
+						Name:              "test-service",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace: "default",
+						Namespace:         "default",
 						Labels: map[string]string{
 							"app": "example",
 						},

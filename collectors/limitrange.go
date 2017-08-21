@@ -40,9 +40,9 @@ var (
 	)
 
 	descLimitRangeCreated = prometheus.NewDesc(
-	    "kube_limitrange_created",
-	    "Unix creation timestamp",
-	    []string{"limitrange", "namespace"}, nil,
+		"kube_limitrange_created",
+		"Unix creation timestamp",
+		[]string{"limitrange", "namespace"}, nil,
 	)
 )
 

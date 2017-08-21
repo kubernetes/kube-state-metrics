@@ -143,6 +143,18 @@ var (
 		"The limit on memory to be used by a container in bytes.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
+
+	descPodContainerResourceRequestsNvidiaGPUDevices = prometheus.NewDesc(
+		"kube_pod_container_resource_requests_nvidia_gpu_devices",
+		"The number of requested gpu devices by a container.",
+		[]string{"namespace", "pod", "container", "node"}, nil,
+	)
+
+	descPodContainerResourceLimitsNvidiaGPUDevices = prometheus.NewDesc(
+		"kube_pod_container_resource_limits_nvidia_gpu_devices",
+		"The limit on gpu devices to be used by a container.",
+		[]string{"namespace", "pod", "container", "node"}, nil,
+	)
 )
 
 type PodLister func() ([]v1.Pod, error)
@@ -196,6 +208,8 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceRequestsMemoryBytes
 	ch <- descPodContainerResourceLimitsCpuCores
 	ch <- descPodContainerResourceLimitsMemoryBytes
+	ch <- descPodContainerResourceRequestsNvidiaGPUDevices
+	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 }
 
 func extractCreatedBy(annotation map[string]string) *api.ObjectReference {
@@ -335,13 +349,22 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 				c.Name, nodeName)
 		}
 
+		if gpu, ok := req[v1.ResourceNvidiaGPU]; ok {
+			addGauge(descPodContainerResourceRequestsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+		}
+
 		if cpu, ok := lim[v1.ResourceCPU]; ok {
 			addGauge(descPodContainerResourceLimitsCpuCores, float64(cpu.MilliValue())/1000,
 				c.Name, nodeName)
 		}
+
 		if mem, ok := lim[v1.ResourceMemory]; ok {
 			addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
 				c.Name, nodeName)
+		}
+
+		if gpu, ok := lim[v1.ResourceNvidiaGPU]; ok {
+			addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
 		}
 	}
 }

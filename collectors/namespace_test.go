@@ -1,3 +1,19 @@
+/*
+Copyright 2017 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package collectors
 
 import (
@@ -9,11 +25,11 @@ import (
 )
 
 type mockNamespaceStore struct {
-	f func() ([]v1.Namespace, error)
+	list func() ([]v1.Namespace, error)
 }
 
-func (ds mockNamespaceStore) List() (deployments []v1.Namespace, err error) {
-	return ds.f()
+func (ns mockNamespaceStore) List() ([]v1.Namespace, error) {
+	return ns.list()
 }
 
 func TestNamespaceCollector(t *testing.T) {
@@ -24,13 +40,39 @@ func TestNamespaceCollector(t *testing.T) {
 		# TYPE kube_namespace_created gauge
 		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_namespace_labels gauge
+		# HELP kube_namespace_status_phase kubernetes namespace status phase.
+		# TYPE kube_namespace_status_phase gauge
  	`
+
 	cases := []struct {
-		depls []v1.Namespace
-		want  string
+		ns      []v1.Namespace
+		metrics []string // which metrics should be checked
+		want    string
 	}{
 		{
-			depls: []v1.Namespace{
+			ns: []v1.Namespace{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "nsActiveTest",
+					},
+					Spec: v1.NamespaceSpec{
+						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+					},
+					Status: v1.NamespaceStatus{
+						Phase: v1.NamespaceActive,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "nsTerminateTest",
+					},
+					Spec: v1.NamespaceSpec{
+						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+					},
+					Status: v1.NamespaceStatus{
+						Phase: v1.NamespaceTerminating,
+					},
+				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              "ns1",
@@ -38,6 +80,12 @@ func TestNamespaceCollector(t *testing.T) {
 						Labels: map[string]string{
 							"app": "example1",
 						},
+					},
+					Spec: v1.NamespaceSpec{
+						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+					},
+					Status: v1.NamespaceStatus{
+						Phase: v1.NamespaceActive,
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -47,9 +95,11 @@ func TestNamespaceCollector(t *testing.T) {
 							"l2":  "label2",
 						},
 					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "ns3",
+					Spec: v1.NamespaceSpec{
+						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+					},
+					Status: v1.NamespaceStatus{
+						Phase: v1.NamespaceActive,
 					},
 				},
 			},
@@ -58,17 +108,26 @@ func TestNamespaceCollector(t *testing.T) {
 				kube_namespace_created{namespace="ns1"} 1.5e+09
 				kube_namespace_labels{label_app="example1",namespace="ns1"} 1
 				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
-				kube_namespace_labels{namespace="ns3"} 1
- 			`,
+				kube_namespace_labels{namespace="nsActiveTest"} 1
+				kube_namespace_labels{namespace="nsTerminateTest"} 1
+				kube_namespace_status_phase{name="ns1",phase="Active"} 1
+				kube_namespace_status_phase{name="ns1",phase="Terminating"} 0
+				kube_namespace_status_phase{name="ns2",phase="Active"} 1
+				kube_namespace_status_phase{name="ns2",phase="Terminating"} 0
+				kube_namespace_status_phase{name="nsActiveTest",phase="Active"} 1
+				kube_namespace_status_phase{name="nsActiveTest",phase="Terminating"} 0
+				kube_namespace_status_phase{name="nsTerminateTest",phase="Active"} 0
+				kube_namespace_status_phase{name="nsTerminateTest",phase="Terminating"} 1
+			`,
 		},
 	}
 	for _, c := range cases {
-		sc := &namespaceCollector{
+		nsc := &namespaceCollector{
 			store: mockNamespaceStore{
-				f: func() ([]v1.Namespace, error) { return c.depls, nil },
+				list: func() ([]v1.Namespace, error) { return c.ns, nil },
 			},
 		}
-		if err := gatherAndCompare(sc, c.want, nil); err != nil {
+		if err := gatherAndCompare(nsc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

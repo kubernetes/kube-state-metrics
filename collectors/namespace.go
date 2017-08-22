@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2017 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,11 +27,27 @@ import (
 )
 
 var (
+	descNamespaceLabelsName          = "kube_namespace_labels"
+	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descNamespaceLabelsDefaultLabels = []string{"namespace"}
+
+	descNamespaceCreated = prometheus.NewDesc(
+		"kube_namespace_created",
+		"Unix creation timestamp",
+		[]string{"namespace"}, nil,
+	)
+
+	descNamespaceLabels = prometheus.NewDesc(
+		descNamespaceLabelsName,
+		descNamespaceLabelsHelp,
+		descNamespaceLabelsDefaultLabels, nil,
+	)
+
 	descNamespacePhase = prometheus.NewDesc(
 		"kube_namespace_status_phase",
 		"kubernetes namespace status phase.",
 		[]string{
-			"name",
+			"namespace",
 			"phase",
 		}, nil,
 	)
@@ -46,7 +62,7 @@ func (l NamespaceLister) List() ([]v1.Namespace, error) {
 }
 
 // RegisterNamespaceCollector registry namespace collector
-func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface) {
+func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
 
 	nslw := cache.NewListWatchFromClient(client, "namespaces", api.NamespaceAll, nil)
@@ -74,6 +90,8 @@ type namespaceCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (nsc *namespaceCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descNamespaceCreated
+	ch <- descNamespaceLabels
 	ch <- descNamespacePhase
 }
 
@@ -90,13 +108,28 @@ func (nsc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (nsc *namespaceCollector) collectNamespace(ch chan<- prometheus.Metric, rq v1.Namespace) {
+func (nsc *namespaceCollector) collectNamespace(ch chan<- prometheus.Metric, ns v1.Namespace) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{rq.Name}, lv...)
+		lv = append([]string{ns.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 
-	addGauge(descNamespacePhase, boolFloat64(rq.Status.Phase == v1.NamespaceActive), string(v1.NamespaceActive))
-	addGauge(descNamespacePhase, boolFloat64(rq.Status.Phase == v1.NamespaceTerminating), string(v1.NamespaceTerminating))
+	addGauge(descNamespacePhase, boolFloat64(ns.Status.Phase == v1.NamespaceActive), string(v1.NamespaceActive))
+	addGauge(descNamespacePhase, boolFloat64(ns.Status.Phase == v1.NamespaceTerminating), string(v1.NamespaceTerminating))
 
+	if !ns.CreationTimestamp.IsZero() {
+		addGauge(descNamespaceCreated, float64(ns.CreationTimestamp.Unix()))
+	}
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(ns.Labels)
+	addGauge(namespaceLabelsDesc(labelKeys), 1, labelValues...)
+}
+
+func namespaceLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descNamespaceLabelsName,
+		descNamespaceLabelsHelp,
+		append(descNamespaceLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
 }

@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	descReplicaSetCreated = prometheus.NewDesc(
+	ReplicaSetGroupVersionResource = v1beta1.SchemeGroupVersion.WithResource("replicasets")
+	descReplicaSetCreated          = prometheus.NewDesc(
 		"kube_replicaset_created",
 		"Unix creation timestamp",
 		[]string{"namespace", "replicaset"}, nil,

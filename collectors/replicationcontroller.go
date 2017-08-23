@@ -27,7 +27,8 @@ import (
 )
 
 var (
-	descReplicationControllerCreated = prometheus.NewDesc(
+	ReplicationControllerGroupVersionResource = v1.SchemeGroupVersion.WithResource("replicationcontrollers")
+	descReplicationControllerCreated          = prometheus.NewDesc(
 		"kube_replicationcontroller_created",
 		"Unix creation timestamp",
 		[]string{"namespace", "replicationcontroller"}, nil,

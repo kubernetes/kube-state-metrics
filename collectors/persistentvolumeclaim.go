@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	descPersistentVolumeClaimStatusPhase = prometheus.NewDesc(
+	PersistentVolumeClaimGroupVersionResource = v1.SchemeGroupVersion.WithResource("persistentvolumeclaims")
+	descPersistentVolumeClaimStatusPhase      = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_status_phase",
 		"The phase the claim is currently in.",
 		[]string{

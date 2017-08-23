@@ -26,6 +26,7 @@ import (
 )
 
 var (
+	StatefulSetGroupVersionResource    = v1beta1.SchemeGroupVersion.WithResource("statefulsets")
 	descStatefulSetLabelsName          = "kube_statefulset_labels"
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}

@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	descResourceQuotaCreated = prometheus.NewDesc(
+	ResourceQuotaGroupVersionResource = v1.SchemeGroupVersion.WithResource("resourcequotas")
+	descResourceQuotaCreated          = prometheus.NewDesc(
 		"kube_resourcequota_created",
 		"Unix creation timestamp",
 		[]string{"resourcequota", "namespace"}, nil,

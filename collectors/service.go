@@ -26,6 +26,7 @@ import (
 )
 
 var (
+	ServiceGroupVersionResource    = v1.SchemeGroupVersion.WithResource("services")
 	descServiceLabelsName          = "kube_service_labels"
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}

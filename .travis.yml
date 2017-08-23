@@ -12,3 +12,5 @@ jobs:
       script: make test-unit
     - stage: Build
       script: make
+    - stage: Check that all metrics are documented
+      script: make doccheck

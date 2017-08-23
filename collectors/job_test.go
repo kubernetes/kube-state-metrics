@@ -193,7 +193,7 @@ func TestJobCollector(t *testing.T) {
 				kube_job_info{job="FailedJob1",namespace="ns1",created_by_kind="<none>",created_by_name="<none>"} 1
 				kube_job_info{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",created_by_kind="<none>",created_by_name="<none>"} 1
 
-				kube_job_spec_active_deadline_seconds{job="RunningJob1",namespace="ns1"} 900
+				kube_job_spec_active_deadline_seconds{job="RunningJob-1",namespace="ns1"} 900
 				kube_job_spec_active_deadline_seconds{job="SuccessfulJob1",namespace="ns1"} 900
 				kube_job_spec_active_deadline_seconds{job="FailedJob1",namespace="ns1"} 900
 

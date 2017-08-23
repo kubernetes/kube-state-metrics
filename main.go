@@ -58,6 +58,7 @@ var (
 		"statefulsets":           struct{}{},
 		"persistentvolumeclaims": struct{}{},
 		"namespaces":             struct{}{},
+		"ingresses":              struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
 		"cronjobs":               collectors.RegisterCronJobCollector,
@@ -74,6 +75,7 @@ var (
 		"statefulsets":           collectors.RegisterStatefulSetCollector,
 		"persistentvolumeclaims": collectors.RegisterPersistentVolumeClaimCollector,
 		"namespaces":             collectors.RegisterNamespaceCollector,
+		"ingresses":              collectors.RegisterIngressCollector,
 	}
 )
 

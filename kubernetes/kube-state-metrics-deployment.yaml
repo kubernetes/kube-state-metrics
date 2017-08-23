@@ -25,7 +25,7 @@ spec:
           timeoutSeconds: 5
         resources:
           requests:
-            memory: 200Mi
+            memory: 100Mi
             cpu: 100m
           limits:
             memory: 200Mi
@@ -53,7 +53,7 @@ spec:
           - --container=kube-state-metrics
           - --cpu=100m
           - --extra-cpu=1m
-          - --memory=200Mi
+          - --memory=100Mi
           - --extra-memory=2Mi
-          - --threshold=100
+          - --threshold=5
           - --deployment=kube-state-metrics

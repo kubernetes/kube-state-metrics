@@ -276,7 +276,11 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodOwner, 1, "<none>", "<none>", "<none>")
 	} else {
 		for _, owner := range owners {
-			addGauge(descPodOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			if owner.Controller != nil {
+				addGauge(descPodOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			} else {
+				addGauge(descPodOwner, 1, owner.Kind, owner.Name, "false")
+			}
 		}
 	}
 

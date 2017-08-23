@@ -212,7 +212,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 }
 
-func extractCreatedBy(annotation map[string]string) *api.ObjectReference {
+func ExtractCreatedBy(annotation map[string]string) *api.ObjectReference {
 	value, ok := annotation[api.CreatedByAnnotation]
 	if ok {
 		var r api.SerializedReference
@@ -274,7 +274,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	createdBy := extractCreatedBy(p.Annotations)
+	createdBy := ExtractCreatedBy(p.Annotations)
 	createdByKind := "<none>"
 	createdByName := "<none>"
 	if createdBy != nil {

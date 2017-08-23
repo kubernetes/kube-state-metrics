@@ -29,7 +29,7 @@ var (
 	descJobInfo = prometheus.NewDesc(
 		"kube_job_info",
 		"Information about job.",
-		[]string{"namespace", "job"}, nil,
+		[]string{"namespace", "job", "created_by_kind", "created_by_name"}, nil,
 	)
 	descJobCreated = prometheus.NewDesc(
 		"kube_job_created",
@@ -156,8 +156,18 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
-
-	addGauge(descJobInfo, 1)
+	createdBy := ExtractCreatedBy(j.Annotations)
+	createdByKind := "<none>"
+	createdByName := "<none>"
+	if createdBy != nil {
+		if createdBy.Kind != "" {
+			createdByKind = createdBy.Kind
+		}
+		if createdBy.Name != "" {
+			createdByName = createdBy.Name
+		}
+	}
+	addGauge(descJobInfo, 1, createdByKind, createdByName)
 
 	if j.Spec.Parallelism != nil {
 		addGauge(descJobSpecParallelism, float64(*j.Spec.Parallelism))

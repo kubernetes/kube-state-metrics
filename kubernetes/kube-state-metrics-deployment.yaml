@@ -25,10 +25,10 @@ spec:
           timeoutSeconds: 5
         resources:
           requests:
-            memory: 30Mi
+            memory: 200Mi
             cpu: 100m
           limits:
-            memory: 50Mi
+            memory: 200Mi
             cpu: 200m
       - name: addon-resizer
         image: gcr.io/google_containers/addon-resizer:1.0
@@ -53,7 +53,7 @@ spec:
           - --container=kube-state-metrics
           - --cpu=100m
           - --extra-cpu=1m
-          - --memory=30Mi
+          - --memory=200Mi
           - --extra-memory=2Mi
-          - --threshold=5
+          - --threshold=100
           - --deployment=kube-state-metrics

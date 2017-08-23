@@ -11,6 +11,12 @@ PKGS = $(shell go list ./... | grep -v /vendor/)
 gofmtcheck:
 	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi     
 
+doccheck:
+	grep -hoE '(kube_[^ |]+)' Documentation/* | sort -u > documented_metrics
+	sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' collectors/*_test.go | sort -u > tested_metrics
+	diff -u0 tested_metrics documented_metrics
+	rm -f tested_metrics documented_metrics
+
 deps:
 	go get github.com/tools/godep
 

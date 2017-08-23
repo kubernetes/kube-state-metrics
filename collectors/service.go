@@ -42,6 +42,12 @@ var (
 		[]string{"namespace", "service"}, nil,
 	)
 
+	descServiceSpecServiceType = prometheus.NewDesc(
+		"kube_service_spec_service_type",
+		"Type about service.",
+		[]string{"namespace", "service", "clusterIP", "type"}, nil,
+	)
+
 	descServiceLabels = prometheus.NewDesc(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
@@ -85,6 +91,7 @@ func (pc *serviceCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descServiceInfo
 	ch <- descServiceLabels
 	ch <- descServiceCreated
+	ch <- descServiceSpecServiceType
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -116,6 +123,7 @@ func (sc *serviceCollector) collectService(ch chan<- prometheus.Metric, s v1.Ser
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	addGauge(descServiceSpecServiceType, 1, s.Spec.ClusterIP, string(s.Spec.Type))
 
 	addGauge(descServiceInfo, 1)
 	if !s.CreationTimestamp.IsZero() {

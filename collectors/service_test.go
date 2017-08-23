@@ -42,6 +42,8 @@ func TestServiceCollector(t *testing.T) {
 		# TYPE kube_service_created gauge
 		# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_service_labels gauge
+		# HELP kube_service_spec_service_type Type about service.
+ 	  # TYPE kube_service_spec_service_type gauge
 	`
 	cases := []struct {
 		services []v1.Service
@@ -59,12 +61,53 @@ func TestServiceCollector(t *testing.T) {
 							"app": "example",
 						},
 					},
+					Spec: v1.ServiceSpec{
+						ClusterIP: "10.233.0.2",
+						Type:      v1.ServiceTypeClusterIP,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example",
+						},
+					},
+					Spec: v1.ServiceSpec{
+						ClusterIP: "10.233.0.3",
+						Type:      v1.ServiceTypeNodePort,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example",
+						},
+					},
+					Spec: v1.ServiceSpec{
+						ClusterIP: "10.233.0.4",
+						Type:      v1.ServiceTypeLoadBalancer,
+					},
 				},
 			},
 			want: metadata + `
 				kube_service_info{namespace="default",service="test-service"} 1
 				kube_service_created{namespace="default",service="test-service"} 1.5e+09
 				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
+				kube_service_spec_service_type{clusterIP="10.233.0.2",namespace="default",service="test-service",type="ClusterIP"} 1
+				kube_service_info{namespace="default",service="test-service"} 1
+				kube_service_created{namespace="default",service="test-service"} 1.5e+09
+				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
+				kube_service_spec_service_type{clusterIP="10.233.0.3",namespace="default",service="test-service",type="NodePort"} 1
+				kube_service_info{namespace="default",service="test-service"} 1
+				kube_service_created{namespace="default",service="test-service"} 1.5e+09
+				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
+				kube_service_spec_service_type{clusterIP="10.233.0.4",namespace="default",service="test-service",type="LoadBalancer"} 1
 			`,
 		},
 	}

@@ -26,13 +26,22 @@ import (
 )
 
 var (
+	descPersistentVolumeClaimInfo = prometheus.NewDesc(
+		"kube_persistentvolumeclaim_info",
+		"Information about persistent volume claim.",
+		[]string{
+			"namespace",
+			"storageclass",
+			"persistentvolumeclaim",
+		}, nil,
+	)
 	descPersistentVolumeClaimStatusPhase = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_status_phase",
 		"The phase the persistent volume claim is currently in.",
 		[]string{
 			"namespace",
-			"persistentvolumeclaim",
 			"storageclass",
+			"persistentvolumeclaim",
 			"phase",
 		}, nil,
 	)
@@ -41,8 +50,8 @@ var (
 		"The capacity of storage requested by the persistent volume claim.",
 		[]string{
 			"namespace",
-			"persistentvolumeclaim",
 			"storageclass",
+			"persistentvolumeclaim",
 		}, nil,
 	)
 )
@@ -80,6 +89,7 @@ type persistentVolumeClaimCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (collector *persistentVolumeClaimCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descPersistentVolumeClaimInfo
 	ch <- descPersistentVolumeClaimStatusPhase
 	ch <- descPersistentVolumeClaimResourceRequestsStorage
 }
@@ -116,9 +126,11 @@ func getPersistentVolumeClaimClass(claim *v1.PersistentVolumeClaim) string {
 func (collector *persistentVolumeClaimCollector) collectPersistentVolumeClaim(ch chan<- prometheus.Metric, pvc v1.PersistentVolumeClaim) {
 	storageClassName := getPersistentVolumeClaimClass(&pvc)
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{pvc.Namespace, pvc.Name, storageClassName}, lv...)
+		lv = append([]string{pvc.Namespace, storageClassName, pvc.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+
+	addGauge(descPersistentVolumeClaimInfo, 1)
 
 	// Set current phase to 1, others to 0 if it is set.
 	if p := pvc.Status.Phase; p != "" {

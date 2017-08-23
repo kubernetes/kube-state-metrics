@@ -36,6 +36,8 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
+		# TYPE kube_persistentvolumeclaim_info gauge
 		# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
 		# TYPE kube_persistentvolumeclaim_status_phase gauge
 		# HELP kube_persistentvolumeclaim_resource_requests_storage The capacity of storage requested by the persistent volume claim.
@@ -89,6 +91,9 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>"} 1
+				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd"} 1
+				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Lost"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Pending"} 0
@@ -100,7 +105,7 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",phase="Pending"} 1
 				kube_persistentvolumeclaim_resource_requests_storage{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd"} 1.073741824e+09
 			`,
-			metrics: []string{"kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage"},
+			metrics: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage"},
 		},
 	}
 	for _, c := range cases {

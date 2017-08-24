@@ -42,8 +42,8 @@ func TestServiceCollector(t *testing.T) {
 		# TYPE kube_service_created gauge
 		# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_service_labels gauge
-		# HELP kube_service_spec_service_type Type about service.
- 	  # TYPE kube_service_spec_service_type gauge
+		# HELP kube_service_spec_type Type about service.
+		# TYPE kube_service_spec_type gauge
 	`
 	cases := []struct {
 		services []v1.Service
@@ -99,15 +99,15 @@ func TestServiceCollector(t *testing.T) {
 				kube_service_info{namespace="default",service="test-service"} 1
 				kube_service_created{namespace="default",service="test-service"} 1.5e+09
 				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
-				kube_service_spec_service_type{clusterIP="10.233.0.2",namespace="default",service="test-service",type="ClusterIP"} 1
+				kube_service_spec_type{clusterIP="10.233.0.2",namespace="default",service="test-service",type="ClusterIP"} 1
 				kube_service_info{namespace="default",service="test-service"} 1
 				kube_service_created{namespace="default",service="test-service"} 1.5e+09
 				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
-				kube_service_spec_service_type{clusterIP="10.233.0.3",namespace="default",service="test-service",type="NodePort"} 1
+				kube_service_spec_type{clusterIP="10.233.0.3",namespace="default",service="test-service",type="NodePort"} 1
 				kube_service_info{namespace="default",service="test-service"} 1
 				kube_service_created{namespace="default",service="test-service"} 1.5e+09
 				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
-				kube_service_spec_service_type{clusterIP="10.233.0.4",namespace="default",service="test-service",type="LoadBalancer"} 1
+				kube_service_spec_type{clusterIP="10.233.0.4",namespace="default",service="test-service",type="LoadBalancer"} 1
 			`,
 		},
 	}

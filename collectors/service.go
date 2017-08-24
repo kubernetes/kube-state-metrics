@@ -43,7 +43,7 @@ var (
 	)
 
 	descServiceSpecServiceType = prometheus.NewDesc(
-		"kube_service_spec_service_type",
+		"kube_service_spec_type",
 		"Type about service.",
 		[]string{"namespace", "service", "clusterIP", "type"}, nil,
 	)

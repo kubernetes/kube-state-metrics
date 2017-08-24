@@ -94,16 +94,16 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>"} 1
 				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd"} 1
 				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd"} 1
-				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Bound"} 0
-				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Lost"} 1
-				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",phase="Pending"} 0
-				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",phase="Bound"} 1
-				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",phase="Lost"} 0
-				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",phase="Pending"} 0
-				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",phase="Bound"} 0
-				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",phase="Lost"} 0
-				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",phase="Pending"} 1
-				kube_persistentvolumeclaim_resource_requests_storage{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd"} 1.073741824e+09
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Bound"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Lost"} 1
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Pending"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Bound"} 1
+				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Lost"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Pending"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Bound"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Lost"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Pending"} 1
+				kube_persistentvolumeclaim_resource_requests_storage{namespace="default",persistentvolumeclaim="mysql-data"} 1.073741824e+09
 			`,
 			metrics: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage"},
 		},

@@ -26,13 +26,30 @@ import (
 )
 
 var (
+	descPersistentVolumeClaimInfo = prometheus.NewDesc(
+		"kube_persistentvolumeclaim_info",
+		"Information about persistent volume claim.",
+		[]string{
+			"namespace",
+			"persistentvolumeclaim",
+			"storageclass",
+		}, nil,
+	)
 	descPersistentVolumeClaimStatusPhase = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_status_phase",
-		"The phase the claim is currently in.",
+		"The phase the persistent volume claim is currently in.",
 		[]string{
 			"namespace",
 			"persistentvolumeclaim",
 			"phase",
+		}, nil,
+	)
+	descPersistentVolumeClaimResourceRequestsStorage = prometheus.NewDesc(
+		"kube_persistentvolumeclaim_resource_requests_storage_bytes",
+		"The capacity of storage requested by the persistent volume claim.",
+		[]string{
+			"namespace",
+			"persistentvolumeclaim",
 		}, nil,
 	)
 )
@@ -70,14 +87,16 @@ type persistentVolumeClaimCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (collector *persistentVolumeClaimCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descPersistentVolumeClaimInfo
 	ch <- descPersistentVolumeClaimStatusPhase
+	ch <- descPersistentVolumeClaimResourceRequestsStorage
 }
 
 // Collect implements the prometheus.Collector interface.
 func (collector *persistentVolumeClaimCollector) Collect(ch chan<- prometheus.Metric) {
 	persistentVolumeClaimCollector, err := collector.store.List()
 	if err != nil {
-		glog.Errorf("listing limit ranges failed: %s", err)
+		glog.Errorf("listing persistent volume claims failed: %s", err)
 		return
 	}
 
@@ -86,16 +105,39 @@ func (collector *persistentVolumeClaimCollector) Collect(ch chan<- prometheus.Me
 	}
 }
 
+// getPersistentVolumeClaimClass returns StorageClassName. If no storage class was
+// requested, it returns "".
+func getPersistentVolumeClaimClass(claim *v1.PersistentVolumeClaim) string {
+	// Use beta annotation first
+	if class, found := claim.Annotations[v1.BetaStorageClassAnnotation]; found {
+		return class
+	}
+
+	if claim.Spec.StorageClassName != nil {
+		return *claim.Spec.StorageClassName
+	}
+
+	// Special non-empty string to indicate absence of storage class.
+	return "<none>"
+}
+
 func (collector *persistentVolumeClaimCollector) collectPersistentVolumeClaim(ch chan<- prometheus.Metric, pvc v1.PersistentVolumeClaim) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{pvc.Namespace, pvc.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 
+	storageClassName := getPersistentVolumeClaimClass(&pvc)
+	addGauge(descPersistentVolumeClaimInfo, 1, storageClassName)
+
 	// Set current phase to 1, others to 0 if it is set.
 	if p := pvc.Status.Phase; p != "" {
 		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimLost), string(v1.ClaimLost))
 		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimBound), string(v1.ClaimBound))
 		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimPending), string(v1.ClaimPending))
+	}
+
+	if storage, ok := pvc.Spec.Resources.Requests[v1.ResourceStorage]; ok {
+		addGauge(descPersistentVolumeClaimResourceRequestsStorage, float64(storage.Value()))
 	}
 }

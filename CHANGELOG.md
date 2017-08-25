@@ -1,3 +1,7 @@
+## v1.0.1 / 2017-08-24
+
+* [BUGFIX] Fix nil pointer panic when pods have an owner without controllers.
+
 ## v1.0.0 / 2017-08-09
 
 After a testing period of one week, there were no additional bugs found or features introduced.

@@ -13,3 +13,4 @@
 | kube_node_status_allocatable_memory_bytes | Gauge | `node`=&lt;node-address&gt;|
 | kube_node_status_allocatable_pods | Gauge | `node`=&lt;node-address&gt;|
 | kube_node_status_condition | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;node-condition&gt; <br> `status`=&lt;true\|false\|unknown&gt; |
+| kube_node_created | Gauge | `node`=&lt;node-address&gt;|

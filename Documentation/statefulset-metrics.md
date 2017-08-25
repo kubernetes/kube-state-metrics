@@ -6,3 +6,5 @@
 | kube_statefulset_status_observed_generation | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  |
 | kube_statefulset_replicas | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  |
 | kube_statefulset_metadata_generation | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  |
+| kube_statefulset_created | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  |
+| kube_statefulset_labels | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt; <br> `label_STATEFULSET_LABEL`=&lt;STATEFULSET_LABEL&gt; |

@@ -4,7 +4,7 @@ FLAGS =
 COMMONENVVAR = GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(subst x86_64,amd64,$(patsubst i%86,386,$(shell uname -m)))
 BUILDENVVAR = CGO_ENABLED=0
 TESTENVVAR = 
-REGISTRY = gcr.io/google_containers
+REGISTRY = quay.io/coreos
 TAG = $(shell git describe --abbrev=0)
 PKGS = $(shell go list ./... | grep -v /vendor/)
 
@@ -35,7 +35,7 @@ container: build
 	docker build -t ${REGISTRY}/kube-state-metrics:$(TAG) .
 
 push: container
-	gcloud docker -- push ${REGISTRY}/kube-state-metrics:$(TAG)
+	docker push ${REGISTRY}/kube-state-metrics:$(TAG)
 
 clean:
 	rm -f kube-state-metrics

@@ -178,7 +178,9 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 	addGauge(descJobStatusFailed, float64(j.Status.Failed))
 	addGauge(descJobStatusActive, float64(j.Status.Active))
 
-	addCounter(descJobStatusStartTime, float64(j.Status.StartTime.Unix()))
+	if j.Status.StartTime != nil {
+		addCounter(descJobStatusStartTime, float64(j.Status.StartTime.Unix()))
+	}
 
 	if j.Status.CompletionTime != nil {
 		addCounter(descJobStatusCompletionTime, float64(j.Status.CompletionTime.Unix()))

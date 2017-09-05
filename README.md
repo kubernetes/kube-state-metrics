@@ -36,7 +36,14 @@ those that could be used for actionable alerts. Please contribute PR's for
 additional metrics!
 
 > WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
-> For now kube_pod_container_resource_requests_nvidia_gpu_devices and kube_pod_container_resource_limits_nvidia_gpu_devices are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
+> For now the following metrics
+>
+>	* kube_pod_container_resource_requests_nvidia_gpu_devices
+>	* kube_pod_container_resource_limits_nvidia_gpu_devices
+>	* kube_node_status_capacity_nvidia_gpu_cards
+>	* kube_node_status_allocatable_nvidia_gpu_cards
+>
+>	are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
 
 See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
 

@@ -1,4 +1,4 @@
-FROM scratch
+FROM BASEIMAGE
 
 COPY kube-state-metrics /
 VOLUME /tmp

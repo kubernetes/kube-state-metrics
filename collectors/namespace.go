@@ -106,6 +106,8 @@ func (nsc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rq := range nsls {
 		nsc.collectNamespace(ch, rq)
 	}
+
+	glog.Infof("collected %d namespaces", len(nsls))
 }
 
 func (nsc *namespaceCollector) collectNamespace(ch chan<- prometheus.Metric, ns v1.Namespace) {

@@ -93,6 +93,8 @@ func (lrc *limitRangeCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rq := range limitRangeCollector.Items {
 		lrc.collectLimitRange(ch, rq)
 	}
+
+	glog.Infof("collected %d limitranges", len(limitRangeCollector.Items))
 }
 
 func (lrc *limitRangeCollector) collectLimitRange(ch chan<- prometheus.Metric, rq v1.LimitRange) {

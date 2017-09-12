@@ -145,6 +145,8 @@ func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, j := range jobs {
 		jc.collectJob(ch, j)
 	}
+
+	glog.Infof("collected %d jobs", len(jobs))
 }
 
 func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {

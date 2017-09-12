@@ -113,14 +113,16 @@ func (dc *replicationcontrollerCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (dc *replicationcontrollerCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	rcs, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing replicationcontrollers failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range rcs {
 		dc.collectReplicationController(ch, d)
 	}
+
+	glog.Infof("collected %d replicationcontrollers", len(rcs))
 }
 
 func (dc *replicationcontrollerCollector) collectReplicationController(ch chan<- prometheus.Metric, d v1.ReplicationController) {

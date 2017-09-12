@@ -177,6 +177,8 @@ func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, n := range nodes.Items {
 		nc.collectNode(ch, n)
 	}
+
+	glog.Infof("collected %d nodes", len(nodes.Items))
 }
 
 func nodeLabelsDesc(labelKeys []string) *prometheus.Desc {

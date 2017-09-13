@@ -91,6 +91,8 @@ func (rqc *resourceQuotaCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rq := range resourceQuota.Items {
 		rqc.collectResourceQuota(ch, rq)
 	}
+
+	glog.Infof("collected %d resourcequotas", len(resourceQuota.Items))
 }
 
 func (rqc *resourceQuotaCollector) collectResourceQuota(ch chan<- prometheus.Metric, rq v1.ResourceQuota) {

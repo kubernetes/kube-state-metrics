@@ -109,14 +109,16 @@ func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (sc *statefulSetCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := sc.store.List()
+	sss, err := sc.store.List()
 	if err != nil {
 		glog.Errorf("listing statefulsets failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range sss {
 		sc.collectStatefulSet(ch, d)
 	}
+
+	glog.Infof("collected %d statefulsets", len(sss))
 }
 
 func statefulSetLabelsDesc(labelKeys []string) *prometheus.Desc {

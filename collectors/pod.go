@@ -339,11 +339,11 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		}
 	}
 
-	waitingReason := func(cs v1.ContainerStatus) string {
+	waitingReason := func(cs v1.ContainerStatus, reason string) bool {
 		if cs.State.Waiting == nil {
-			return ""
+			return false
 		}
-		return cs.State.Waiting.Reason
+		return cs.State.Waiting.Reason == reason
 	}
 
 	for _, cs := range p.Status.ContainerStatuses {
@@ -352,7 +352,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		)
 		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name)
 		for _, reason := range containerWaitingReasons {
-			addGauge(descPodContainerStatusWaitingReason, boolFloat64(cs.State.Waiting != nil && reason == waitingReason(cs)), cs.Name, reason)
+			addGauge(descPodContainerStatusWaitingReason, boolFloat64(waitingReason(cs, reason)), cs.Name, reason)
 		}
 		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
 		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)

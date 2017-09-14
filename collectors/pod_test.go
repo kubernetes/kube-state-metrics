@@ -58,6 +58,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_status_terminated gauge
 		# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 		# TYPE kube_pod_container_status_waiting gauge
+		# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+		# TYPE kube_pod_container_status_waiting_reason gauge
 		# HELP kube_pod_info Information about pod.
 		# TYPE kube_pod_info gauge
 		# HELP kube_pod_start_time Start time in unix timestamp for a pod.
@@ -247,7 +249,9 @@ func TestPodCollector(t *testing.T) {
 							v1.ContainerStatus{
 								Name: "container3",
 								State: v1.ContainerState{
-									Waiting: &v1.ContainerStateWaiting{},
+									Waiting: &v1.ContainerStateWaiting{
+										Reason: "ContainerCreating",
+									},
 								},
 							},
 						},
@@ -264,10 +268,17 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
+				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ErrImagePull"} 0
+				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCreating"} 0
+				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
+				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCreating"} 1
+				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
 				`,
 			metrics: []string{
 				"kube_pod_container_status_running",
 				"kube_pod_container_status_waiting",
+				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 			},
 		}, {

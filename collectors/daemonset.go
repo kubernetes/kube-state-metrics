@@ -102,14 +102,16 @@ func (dc *daemonsetCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	dss, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing daemonsets failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range dss {
 		dc.collectDaemonSet(ch, d)
 	}
+
+	glog.Infof("collected %d daemonsets", len(dss))
 }
 
 func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1beta1.DaemonSet) {

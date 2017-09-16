@@ -36,6 +36,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"net/http/pprof"
+
 	"k8s.io/kube-state-metrics/collectors"
 )
 
@@ -254,15 +256,24 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 	listenAddress := fmt.Sprintf(":%d", port)
 
 	glog.Infof("Starting metrics server: %s", listenAddress)
+
+	mux := http.NewServeMux()
+
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
 	// Add metricsPath
-	http.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	// Add healthzPath
-	http.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("ok"))
 	})
 	// Add index
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
              <head><title>Kube Metrics Server</title></head>
              <body>
@@ -274,7 +285,7 @@ func metricsServer(registry prometheus.Gatherer, port int) {
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(listenAddress, nil))
+	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
 // registerCollectors creates and starts informers and initializes and

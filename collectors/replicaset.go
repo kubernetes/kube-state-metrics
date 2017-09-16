@@ -108,14 +108,16 @@ func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	rss, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing replicasets failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range rss {
 		dc.collectReplicaSet(ch, d)
 	}
+
+	glog.Infof("collected %d replicasets", len(rss))
 }
 
 func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {

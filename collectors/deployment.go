@@ -144,14 +144,16 @@ func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	ds, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing deployments failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range ds {
 		dc.collectDeployment(ch, d)
 	}
+
+	glog.Infof("collected %d deployments", len(ds))
 }
 
 func deploymentLabelsDesc(labelKeys []string) *prometheus.Desc {

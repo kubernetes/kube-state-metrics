@@ -126,13 +126,13 @@ type options struct {
 }
 
 func main() {
-	// configure glog
-	flag.CommandLine.Parse([]string{})
-	flag.Lookup("logtostderr").Value.Set("true")
-
 	options := &options{collectors: make(collectorSet)}
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
-
+	// add glog flags
+	flags.AddGoFlagSet(flag.CommandLine)
+	flags.Lookup("logtostderr").Value.Set("true")
+	flags.Lookup("logtostderr").DefValue = "true"
+	flags.Lookup("logtostderr").NoOptDefVal = "true"
 	flags.BoolVar(&options.inCluster, "in-cluster", true, `If true, use the built in kubernetes cluster for creating the client`)
 	flags.StringVar(&options.apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")

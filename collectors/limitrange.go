@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	descLimitRange = prometheus.NewDesc(
+	LimitRangeGroupVersionResource = v1.SchemeGroupVersion.WithResource("limitranges")
+	descLimitRange                 = prometheus.NewDesc(
 		"kube_limitrange",
 		"Information about limit range.",
 		[]string{

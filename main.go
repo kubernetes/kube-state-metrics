@@ -29,6 +29,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
@@ -46,20 +48,20 @@ const (
 
 var (
 	defaultCollectors = collectorSet{
-		"daemonsets":             struct{}{},
-		"deployments":            struct{}{},
-		"limitranges":            struct{}{},
-		"nodes":                  struct{}{},
-		"pods":                   struct{}{},
-		"replicasets":            struct{}{},
-		"replicationcontrollers": struct{}{},
-		"resourcequotas":         struct{}{},
-		"services":               struct{}{},
-		"jobs":                   struct{}{},
-		"cronjobs":               struct{}{},
-		"statefulsets":           struct{}{},
-		"persistentvolumeclaims": struct{}{},
-		"namespaces":             struct{}{},
+		"daemonsets":             collectors.DaemonSetGroupVersionResource,
+		"deployments":            collectors.DeploymentGroupVersionResource,
+		"limitranges":            collectors.LimitRangeGroupVersionResource,
+		"nodes":                  collectors.NodeGroupVersionResource,
+		"pods":                   collectors.PodGroupVersionResource,
+		"replicasets":            collectors.ReplicaSetGroupVersionResource,
+		"replicationcontrollers": collectors.ReplicationControllerGroupVersionResource,
+		"resourcequotas":         collectors.ResourceQuotaGroupVersionResource,
+		"services":               collectors.ServiceGroupVersionResource,
+		"jobs":                   collectors.JobGroupVersionResource,
+		"cronjobs":               collectors.CronJobGroupVersionResource,
+		"statefulsets":           collectors.StatefulSetGroupVersionResource,
+		"persistentvolumeclaims": collectors.PersistentVolumeClaimGroupVersionResource,
+		"namespaces":             collectors.NamespaceGroupVersionResource,
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
 		"cronjobs":               collectors.RegisterCronJobCollector,
@@ -79,7 +81,7 @@ var (
 	}
 )
 
-type collectorSet map[string]struct{}
+type collectorSet map[string]schema.GroupVersionResource
 
 func (c *collectorSet) String() string {
 	s := *c
@@ -94,7 +96,7 @@ func (c *collectorSet) Set(value string) error {
 		if !ok {
 			glog.Fatalf("Collector \"%s\" does not exist", col)
 		}
-		s[col] = struct{}{}
+		s[col] = schema.GroupVersionResource{}
 	}
 	return nil
 }
@@ -112,7 +114,7 @@ func (c collectorSet) isEmpty() bool {
 }
 
 func (c *collectorSet) Type() string {
-	return "map[string]struct{}"
+	return "map[string]schema.GroupVersionResource{}"
 }
 
 type options struct {
@@ -290,13 +292,51 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 // registers metrics for collection.
 func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespace string) {
 	activeCollectors := []string{}
-	for c, _ := range enabledCollectors {
+	resourceMap, err := getSupportedResources(kubeClient)
+	//glog.Infof("resource map is %#v", resourceMap)
+	if err != nil {
+		glog.Error(err)
+	}
+	for c := range enabledCollectors {
+		glog.Infof("enabledCollectors is %v", c)
 		f, ok := availableCollectors[c]
-		if ok {
+		_, sure := defaultCollectors[c]
+
+		if !sure {
+			continue
+		}
+		result, sure := resourceMap[defaultCollectors[c]]
+		if !result || !sure {
+			continue
+		}
+		if ok && result {
 			f(registry, kubeClient, namespace)
 			activeCollectors = append(activeCollectors, c)
 		}
 	}
 
 	glog.Infof("Active collectors: %s", strings.Join(activeCollectors, ","))
+
+}
+
+func getSupportedResources(kubeClient clientset.Interface) (map[schema.GroupVersionResource]bool, error) {
+	resourceMap, err := kubeClient.Discovery().ServerResources()
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("unable to get all supported resources from server: %v", err))
+	}
+	if len(resourceMap) == 0 {
+		return nil, fmt.Errorf("unable to get any supported resources from server")
+	}
+
+	allResources := map[schema.GroupVersionResource]bool{}
+	for _, apiResourceList := range resourceMap {
+		version, err := schema.ParseGroupVersion(apiResourceList.GroupVersion)
+		if err != nil {
+			return nil, err
+		}
+		for _, apiResource := range apiResourceList.APIResources {
+			allResources[version.WithResource(apiResource.Name)] = true
+		}
+	}
+	return allResources, nil
 }

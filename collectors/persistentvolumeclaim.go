@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	descPersistentVolumeClaimInfo = prometheus.NewDesc(
+	PersistentVolumeClaimGroupVersionResource = v1.SchemeGroupVersion.WithResource("persistentvolumeclaims")
+	descPersistentVolumeClaimInfo             = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_info",
 		"Information about persistent volume claim.",
 		[]string{

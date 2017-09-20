@@ -27,6 +27,7 @@ import (
 )
 
 var (
+	DeploymentGroupVersionResource    = v1beta1.SchemeGroupVersion.WithResource("deployments")
 	descDeploymentLabelsName          = "kube_deployment_labels"
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}

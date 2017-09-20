@@ -31,6 +31,7 @@ import (
 )
 
 var (
+	PodGroupVersionResource    = v1.SchemeGroupVersion.WithResource("pods")
 	invalidLabelCharRE         = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."

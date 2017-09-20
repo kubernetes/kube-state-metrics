@@ -27,6 +27,7 @@ import (
 )
 
 var (
+	NodeGroupVersionResource    = v1.SchemeGroupVersion.WithResource("nodes")
 	descNodeLabelsName          = "kube_node_labels"
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}

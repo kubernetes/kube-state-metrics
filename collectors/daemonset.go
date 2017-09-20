@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	descDaemonSetCreated = prometheus.NewDesc(
+	DaemonSetGroupVersionResource = v1beta1.SchemeGroupVersion.WithResource("daemonsets")
+	descDaemonSetCreated          = prometheus.NewDesc(
 		"kube_daemonset_created",
 		"Unix creation timestamp",
 		[]string{"namespace", "daemonset"}, nil,

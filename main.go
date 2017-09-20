@@ -112,7 +112,7 @@ func (c collectorSet) isEmpty() bool {
 }
 
 func (c *collectorSet) Type() string {
-	return "map[string]struct{}"
+	return "string"
 }
 
 type options struct {
@@ -138,7 +138,7 @@ func main() {
 	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
-	flags.Var(&options.collectors, "collectors", "Collectors to be enabled")
+	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
 	flags.StringVar(&options.namespace, "namespace", api.NamespaceAll, "namespace to be enabled for collecting resources")
 
 	flags.Usage = func() {

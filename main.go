@@ -22,6 +22,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/golang/glog"
@@ -83,7 +84,9 @@ type collectorSet map[string]struct{}
 
 func (c *collectorSet) String() string {
 	s := *c
-	return strings.Join(s.asSlice(), ",")
+	ss := s.asSlice()
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
 }
 
 func (c *collectorSet) Set(value string) error {

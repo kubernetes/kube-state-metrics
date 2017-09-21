@@ -201,8 +201,10 @@ func isNotExists(file string) bool {
 }
 
 func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kubeClient clientset.Interface, err error) {
+	var config *rest.Config
+
 	if inCluster {
-		config, err := rest.InClusterConfig()
+		config, err = rest.InClusterConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -217,9 +219,6 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 		}
 		glog.Infof("service account token present: %v", tokenPresent)
 		glog.Infof("service host: %s", config.Host)
-		if kubeClient, err = clientset.NewForConfig(config); err != nil {
-			return nil, err
-		}
 	} else {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		// if you want to change the loading rules (which files in which order), you can do so here
@@ -227,16 +226,18 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 		configOverrides := &clientcmd.ConfigOverrides{}
 		// if you want to change override values or bind them to flags, there are methods to help you
 		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-		config, err := kubeConfig.ClientConfig()
+		config, err = kubeConfig.ClientConfig()
 		//config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 		//config, err := clientcmd.DefaultClientConfig.ClientConfig()
 		if err != nil {
 			return nil, err
 		}
-		kubeClient, err = clientset.NewForConfig(config)
-		if err != nil {
-			return nil, err
-		}
+	}
+
+	config.ContentType = "application/vnd.kubernetes.protobuf"
+	kubeClient, err = clientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
 	}
 
 	// Informers don't seem to do a good job logging error messages when it

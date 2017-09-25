@@ -98,12 +98,12 @@ from those monitoring systems.
 
 ## Compatibility matrix
 
-|                     | Kubernetes 1.4 | Kubernetes 1.5 | Kubernetes 1.6 | Kubernetes 1.7 |
+| kube-state-metrics/client-go version                 | Kubernetes 1.4 | Kubernetes 1.5 | Kubernetes 1.6 | Kubernetes 1.7 |
 |---------------------|----------------|----------------|----------------|----------------|
-| **v0.4.0**   | ✓              |✓               | ✓              | ✓              |
-| **v0.5.0**   | ✓              | ✓              | ✓              | ✓              |
-| **v1.0.x**   | ✓              | ✓              | ✓              | ✓              |
-| **master**   | ✓              | ✓              | ✓              | ✓              |
+| **v0.4.0/v2.0.0-alpha.1**   | ✓              |✓               | x              | x              |
+| **v0.5.0/v2.0.0-alpha.1**   | ✓              | ✓              | x              | x              |
+| **v1.0.x/4.0.0-beta.0**   | ?              | ?              | ✓              | ✓              |
+| **master/4.0.0-beta.0**   | ?              | ?              | ✓              | ✓              |
 
 - `✓` Fully supported version range.
 - `?` Due to breaking changes between Kubernetes API versions, some features might not work in kube-state-metrics.

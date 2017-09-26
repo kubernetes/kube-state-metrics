@@ -35,6 +35,7 @@ var (
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
+	containerWaitingReasons    = []string{"ContainerCreating", "ErrImagePull"}
 
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
@@ -94,6 +95,12 @@ var (
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
 		[]string{"namespace", "pod", "container"}, nil,
+	)
+
+	descPodContainerStatusWaitingReason = prometheus.NewDesc(
+		"kube_pod_container_status_waiting_reason",
+		"Describes the reason the container is currently in waiting state.",
+		[]string{"namespace", "pod", "container", "reason"}, nil,
 	)
 
 	descPodContainerStatusRunning = prometheus.NewDesc(
@@ -200,6 +207,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodStatusScheduled
 	ch <- descPodContainerInfo
 	ch <- descPodContainerStatusWaiting
+	ch <- descPodContainerStatusWaitingReason
 	ch <- descPodContainerStatusRunning
 	ch <- descPodContainerStatusTerminated
 	ch <- descPodContainerStatusReady
@@ -331,11 +339,21 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		}
 	}
 
+	waitingReason := func(cs v1.ContainerStatus, reason string) bool {
+		if cs.State.Waiting == nil {
+			return false
+		}
+		return cs.State.Waiting.Reason == reason
+	}
+
 	for _, cs := range p.Status.ContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
 		)
 		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name)
+		for _, reason := range containerWaitingReasons {
+			addGauge(descPodContainerStatusWaitingReason, boolFloat64(waitingReason(cs, reason)), cs.Name, reason)
+		}
 		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
 		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)

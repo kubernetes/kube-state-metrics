@@ -20,8 +20,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/apps/v1beta2"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -67,20 +67,20 @@ var (
 	)
 )
 
-type StatefulSetLister func() ([]v1beta1.StatefulSet, error)
+type StatefulSetLister func() ([]v1beta2.StatefulSet, error)
 
-func (l StatefulSetLister) List() ([]v1beta1.StatefulSet, error) {
+func (l StatefulSetLister) List() ([]v1beta2.StatefulSet, error) {
 	return l()
 }
 
 func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.AppsV1beta1().RESTClient()
 	dlw := cache.NewListWatchFromClient(client, "statefulsets", namespace, nil)
-	dinf := cache.NewSharedInformer(dlw, &v1beta1.StatefulSet{}, resyncPeriod)
+	dinf := cache.NewSharedInformer(dlw, &v1beta2.StatefulSet{}, resyncPeriod)
 
-	statefulSetLister := StatefulSetLister(func() (statefulSets []v1beta1.StatefulSet, err error) {
+	statefulSetLister := StatefulSetLister(func() (statefulSets []v1beta2.StatefulSet, err error) {
 		for _, c := range dinf.GetStore().List() {
-			statefulSets = append(statefulSets, *(c.(*v1beta1.StatefulSet)))
+			statefulSets = append(statefulSets, *(c.(*v1beta2.StatefulSet)))
 		}
 		return statefulSets, nil
 	})
@@ -90,7 +90,7 @@ func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kub
 }
 
 type statefulSetStore interface {
-	List() (statefulSets []v1beta1.StatefulSet, err error)
+	List() (statefulSets []v1beta2.StatefulSet, err error)
 }
 
 type statefulSetCollector struct {
@@ -130,7 +130,7 @@ func statefulSetLabelsDesc(labelKeys []string) *prometheus.Desc {
 	)
 }
 
-func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, statefulSet v1beta1.StatefulSet) {
+func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, statefulSet v1beta2.StatefulSet) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{statefulSet.Namespace, statefulSet.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
@@ -139,9 +139,8 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 		addGauge(descStatefulSetCreated, float64(statefulSet.CreationTimestamp.Unix()))
 	}
 	addGauge(descStatefulSetStatusReplicas, float64(statefulSet.Status.Replicas))
-	if statefulSet.Status.ObservedGeneration != nil {
-		addGauge(descStatefulSetStatusObservedGeneration, float64(*statefulSet.Status.ObservedGeneration))
-	}
+
+	addGauge(descStatefulSetStatusObservedGeneration, float64(statefulSet.Status.ObservedGeneration))
 
 	if statefulSet.Spec.Replicas != nil {
 		addGauge(descStatefulSetSpecReplicas, float64(*statefulSet.Spec.Replicas))

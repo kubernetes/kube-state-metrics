@@ -20,15 +20,15 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 type mockDaemonSetStore struct {
-	f func() ([]v1beta1.DaemonSet, error)
+	f func() ([]v1beta2.DaemonSet, error)
 }
 
-func (ds mockDaemonSetStore) List() (daemonsets []v1beta1.DaemonSet, err error) {
+func (ds mockDaemonSetStore) List() (daemonsets []v1beta2.DaemonSet, err error) {
 	return ds.f()
 }
 
@@ -50,18 +50,18 @@ func TestDaemonSetCollector(t *testing.T) {
 		# TYPE kube_daemonset_status_number_ready gauge
 	`
 	cases := []struct {
-		dss  []v1beta1.DaemonSet
+		dss  []v1beta2.DaemonSet
 		want string
 	}{
 		{
-			dss: []v1beta1.DaemonSet{
+			dss: []v1beta2.DaemonSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:       "ds1",
 						Namespace:  "ns1",
 						Generation: 21,
 					},
-					Status: v1beta1.DaemonSetStatus{
+					Status: v1beta2.DaemonSetStatus{
 						CurrentNumberScheduled: 15,
 						NumberMisscheduled:     10,
 						DesiredNumberScheduled: 5,
@@ -74,7 +74,7 @@ func TestDaemonSetCollector(t *testing.T) {
 						Namespace:         "ns2",
 						Generation:        14,
 					},
-					Status: v1beta1.DaemonSetStatus{
+					Status: v1beta2.DaemonSetStatus{
 						CurrentNumberScheduled: 10,
 						NumberMisscheduled:     5,
 						DesiredNumberScheduled: 0,
@@ -100,7 +100,7 @@ func TestDaemonSetCollector(t *testing.T) {
 	for _, c := range cases {
 		dc := &daemonsetCollector{
 			store: mockDaemonSetStore{
-				f: func() ([]v1beta1.DaemonSet, error) { return c.dss, nil },
+				f: func() ([]v1beta2.DaemonSet, error) { return c.dss, nil },
 			},
 		}
 		if err := gatherAndCompare(dc, c.want, nil); err != nil {

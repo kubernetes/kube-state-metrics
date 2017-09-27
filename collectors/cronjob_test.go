@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
-	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
+	v1beta1 "k8s.io/api/batch/v1beta1"
 )
 
 var (
@@ -36,10 +36,10 @@ var (
 )
 
 type mockCronJobStore struct {
-	f func() ([]v2batch.CronJob, error)
+	f func() ([]v1beta1.CronJob, error)
 }
 
-func (cjs mockCronJobStore) List() (cronJobs []v2batch.CronJob, err error) {
+func (cjs mockCronJobStore) List() (cronJobs []v1beta1.CronJob, err error) {
 	return cjs.f()
 }
 
@@ -67,7 +67,7 @@ func TestCronJobCollector(t *testing.T) {
 		want     string
 	}{
 		{
-			cronJobs: []v2batch.CronJob{
+			cronJobs: []v1beta1.CronJob{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:       "ActiveRunningCronJob1",
@@ -78,7 +78,7 @@ func TestCronJobCollector(t *testing.T) {
 						Active:           []v1.ObjectReference{v1.ObjectReference{Name: "FakeJob1"}, v1.ObjectReference{Name: "FakeJob2"}},
 						LastScheduleTime: &metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 					},
-					Spec: v2batch.CronJobSpec{
+					Spec: v1beta1.CronJobSpec{
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendFalse,
@@ -90,11 +90,11 @@ func TestCronJobCollector(t *testing.T) {
 						Namespace:  "ns1",
 						Generation: 1,
 					},
-					Status: v2batch.CronJobStatus{
+					Status: v1beta1.CronJobStatus{
 						Active:           []v1.ObjectReference{},
 						LastScheduleTime: &metav1.Time{Time: SuspendedCronJob1LastScheduleTime},
 					},
-					Spec: v2batch.CronJobSpec{
+					Spec: v1beta1.CronJobSpec{
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendTrue,
@@ -107,11 +107,11 @@ func TestCronJobCollector(t *testing.T) {
 						Namespace:         "ns1",
 						Generation:        1,
 					},
-					Status: v2batch.CronJobStatus{
+					Status: v1beta1.CronJobStatus{
 						Active:           []v1.ObjectReference{},
 						LastScheduleTime: nil,
 					},
-					Spec: v2batch.CronJobSpec{
+					Spec: v1beta1.CronJobSpec{
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendFalse,
@@ -149,7 +149,7 @@ func TestCronJobCollector(t *testing.T) {
 	for _, c := range cases {
 		cjc := &cronJobCollector{
 			store: mockCronJobStore{
-				f: func() ([]v2batch.CronJob, error) { return c.cronJobs, nil },
+				f: func() ([]v1beta1.CronJob, error) { return c.cronJobs, nil },
 			},
 		}
 		if err := gatherAndCompare(cjc, c.want, nil); err != nil {

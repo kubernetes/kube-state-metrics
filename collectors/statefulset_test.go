@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 )
 
 var (
@@ -34,10 +34,10 @@ var (
 )
 
 type mockStatefulSetStore struct {
-	f func() ([]v1beta1.StatefulSet, error)
+	f func() ([]v1beta2.StatefulSet, error)
 }
 
-func (ds mockStatefulSetStore) List() (deployments []v1beta1.StatefulSet, err error) {
+func (ds mockStatefulSetStore) List() (deployments []v1beta2.StatefulSet, err error) {
 	return ds.f()
 }
 
@@ -59,11 +59,11 @@ func TestStatefuleSetCollector(t *testing.T) {
 		# TYPE kube_statefulset_labels gauge
  	`
 	cases := []struct {
-		depls []v1beta1.StatefulSet
+		depls []v1beta2.StatefulSet
 		want  string
 	}{
 		{
-			depls: []v1beta1.StatefulSet{
+			depls: []v1beta2.StatefulSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              "statefulset1",
@@ -74,11 +74,11 @@ func TestStatefuleSetCollector(t *testing.T) {
 						},
 						Generation: 3,
 					},
-					Spec: v1beta1.StatefulSetSpec{
+					Spec: v1beta2.StatefulSetSpec{
 						Replicas:    &statefulSet1Replicas,
 						ServiceName: "statefulset1service",
 					},
-					Status: v1beta1.StatefulSetStatus{
+					Status: v1beta2.StatefulSetStatus{
 						ObservedGeneration: &statefulSet1ObservedGeneration,
 						Replicas:           2,
 					},
@@ -91,11 +91,11 @@ func TestStatefuleSetCollector(t *testing.T) {
 						},
 						Generation: 21,
 					},
-					Spec: v1beta1.StatefulSetSpec{
+					Spec: v1beta2.StatefulSetSpec{
 						Replicas:    &statefulSet2Replicas,
 						ServiceName: "statefulset2service",
 					},
-					Status: v1beta1.StatefulSetStatus{
+					Status: v1beta2.StatefulSetStatus{
 						ObservedGeneration: &statefulSet2ObservedGeneration,
 						Replicas:           5,
 					},
@@ -108,11 +108,11 @@ func TestStatefuleSetCollector(t *testing.T) {
 						},
 						Generation: 36,
 					},
-					Spec: v1beta1.StatefulSetSpec{
+					Spec: v1beta2.StatefulSetSpec{
 						Replicas:    &statefulSet3Replicas,
 						ServiceName: "statefulset2service",
 					},
-					Status: v1beta1.StatefulSetStatus{
+					Status: v1beta2.StatefulSetStatus{
 						ObservedGeneration: nil,
 						Replicas:           7,
 					},
@@ -140,7 +140,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 	for _, c := range cases {
 		sc := &statefulSetCollector{
 			store: mockStatefulSetStore{
-				f: func() ([]v1beta1.StatefulSet, error) { return c.depls, nil },
+				f: func() ([]v1beta2.StatefulSet, error) { return c.depls, nil },
 			},
 		}
 		if err := gatherAndCompare(sc, c.want, nil); err != nil {

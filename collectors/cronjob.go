@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
+	v1beta1 "k8s.io/api/batch/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -69,20 +69,20 @@ var (
 	)
 )
 
-type CronJobLister func() ([]v2batch.CronJob, error)
+type CronJobLister func() ([]v1beta1.CronJob, error)
 
-func (l CronJobLister) List() ([]v2batch.CronJob, error) {
+func (l CronJobLister) List() ([]v1beta1.CronJob, error) {
 	return l()
 }
 
 func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.BatchV2alpha1().RESTClient()
 	cjlw := cache.NewListWatchFromClient(client, "cronjobs", namespace, nil)
-	cjinf := cache.NewSharedInformer(cjlw, &v2batch.CronJob{}, resyncPeriod)
+	cjinf := cache.NewSharedInformer(cjlw, &v1beta1.CronJob{}, resyncPeriod)
 
-	cronJobLister := CronJobLister(func() (cronjobs []v2batch.CronJob, err error) {
+	cronJobLister := CronJobLister(func() (cronjobs []v1beta1.CronJob, err error) {
 		for _, c := range cjinf.GetStore().List() {
-			cronjobs = append(cronjobs, *(c.(*v2batch.CronJob)))
+			cronjobs = append(cronjobs, *(c.(*v1beta1.CronJob)))
 		}
 		return cronjobs, nil
 	})
@@ -92,7 +92,7 @@ func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kuberne
 }
 
 type cronJobStore interface {
-	List() (cronjobs []v2batch.CronJob, err error)
+	List() (cronjobs []v1beta1.CronJob, err error)
 }
 
 // cronJobCollector collects metrics about all cronjobs in the cluster.
@@ -139,7 +139,7 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
 }
 
-func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v2batch.CronJob) {
+func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j v1beta1.CronJob) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)

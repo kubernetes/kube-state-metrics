@@ -20,8 +20,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -88,20 +88,20 @@ var (
 	)
 )
 
-type JobLister func() ([]v1batch.Job, error)
+type JobLister func() ([]v1.Job, error)
 
-func (l JobLister) List() ([]v1batch.Job, error) {
+func (l JobLister) List() ([]v1.Job, error) {
 	return l()
 }
 
 func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.BatchV1().RESTClient()
 	jlw := cache.NewListWatchFromClient(client, "jobs", namespace, nil)
-	jinf := cache.NewSharedInformer(jlw, &v1batch.Job{}, resyncPeriod)
+	jinf := cache.NewSharedInformer(jlw, &v1.Job{}, resyncPeriod)
 
-	jobLister := JobLister(func() (jobs []v1batch.Job, err error) {
+	jobLister := JobLister(func() (jobs []v1.Job, err error) {
 		for _, c := range jinf.GetStore().List() {
-			jobs = append(jobs, *(c.(*v1batch.Job)))
+			jobs = append(jobs, *(c.(*v1.Job)))
 		}
 		return jobs, nil
 	})
@@ -111,7 +111,7 @@ func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.
 }
 
 type jobStore interface {
-	List() (jobs []v1batch.Job, err error)
+	List() (jobs []v1.Job, err error)
 }
 
 // jobCollector collects metrics about all jobs in the cluster.
@@ -149,7 +149,7 @@ func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
 	glog.Infof("collected %d jobs", len(jobs))
 }
 
-func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
+func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1.Job) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
@@ -190,9 +190,9 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 
 	for _, c := range j.Status.Conditions {
 		switch c.Type {
-		case v1batch.JobComplete:
+		case v1.JobComplete:
 			addConditionMetrics(ch, descJobConditionComplete, c.Status, j.Namespace, j.Name)
-		case v1batch.JobFailed:
+		case v1.JobFailed:
 			addConditionMetrics(ch, descJobConditionFailed, c.Status, j.Namespace, j.Name)
 		}
 	}

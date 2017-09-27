@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
+	v1batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 )
 
 var (
@@ -169,7 +169,7 @@ func TestJobCollector(t *testing.T) {
 			},
 			want: metadata + `
 				kube_job_created{job="RunningJob1",namespace="ns1"} 1.5e+09
-				
+
 				kube_job_complete{condition="false",job="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="false",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 

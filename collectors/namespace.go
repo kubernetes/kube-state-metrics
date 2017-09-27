@@ -20,9 +20,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -65,7 +64,7 @@ func (l NamespaceLister) List() ([]v1.Namespace, error) {
 func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
 
-	nslw := cache.NewListWatchFromClient(client, "namespaces", api.NamespaceAll, nil)
+	nslw := cache.NewListWatchFromClient(client, "namespaces", v1.NamespaceAll, nil)
 	nsinf := cache.NewSharedInformer(nslw, &v1.Namespace{}, resyncPeriod)
 
 	namespaceLister := NamespaceLister(func() (namespaces []v1.Namespace, err error) {

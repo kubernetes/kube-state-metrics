@@ -20,8 +20,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/apps/v1beta2"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -63,20 +63,20 @@ var (
 	)
 )
 
-type ReplicaSetLister func() ([]v1beta1.ReplicaSet, error)
+type ReplicaSetLister func() ([]v1beta2.ReplicaSet, error)
 
-func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
+func (l ReplicaSetLister) List() ([]v1beta2.ReplicaSet, error) {
 	return l()
 }
 
 func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	rslw := cache.NewListWatchFromClient(client, "replicasets", namespace, nil)
-	rsinf := cache.NewSharedInformer(rslw, &v1beta1.ReplicaSet{}, resyncPeriod)
+	rsinf := cache.NewSharedInformer(rslw, &v1beta2.ReplicaSet{}, resyncPeriod)
 
-	replicaSetLister := ReplicaSetLister(func() (replicasets []v1beta1.ReplicaSet, err error) {
+	replicaSetLister := ReplicaSetLister(func() (replicasets []v1beta2.ReplicaSet, err error) {
 		for _, c := range rsinf.GetStore().List() {
-			replicasets = append(replicasets, *(c.(*v1beta1.ReplicaSet)))
+			replicasets = append(replicasets, *(c.(*v1beta2.ReplicaSet)))
 		}
 		return replicasets, nil
 	})
@@ -86,7 +86,7 @@ func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kube
 }
 
 type replicasetStore interface {
-	List() (replicasets []v1beta1.ReplicaSet, err error)
+	List() (replicasets []v1beta2.ReplicaSet, err error)
 }
 
 // replicasetCollector collects metrics about all replicasets in the cluster.
@@ -119,7 +119,7 @@ func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
 	glog.Infof("collected %d replicasets", len(rss))
 }
 
-func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {
+func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta2.ReplicaSet) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)

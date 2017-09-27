@@ -20,8 +20,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/apps/v1beta2"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -58,20 +58,20 @@ var (
 	)
 )
 
-type DaemonSetLister func() ([]v1beta1.DaemonSet, error)
+type DaemonSetLister func() ([]v1beta2.DaemonSet, error)
 
-func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
+func (l DaemonSetLister) List() ([]v1beta2.DaemonSet, error) {
 	return l()
 }
 
 func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	dslw := cache.NewListWatchFromClient(client, "daemonsets", namespace, nil)
-	dsinf := cache.NewSharedInformer(dslw, &v1beta1.DaemonSet{}, resyncPeriod)
+	dsinf := cache.NewSharedInformer(dslw, &v1beta2.DaemonSet{}, resyncPeriod)
 
-	dsLister := DaemonSetLister(func() (daemonsets []v1beta1.DaemonSet, err error) {
+	dsLister := DaemonSetLister(func() (daemonsets []v1beta2.DaemonSet, err error) {
 		for _, c := range dsinf.GetStore().List() {
-			daemonsets = append(daemonsets, *(c.(*v1beta1.DaemonSet)))
+			daemonsets = append(daemonsets, *(c.(*v1beta2.DaemonSet)))
 		}
 		return daemonsets, nil
 	})
@@ -81,7 +81,7 @@ func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kuber
 }
 
 type daemonsetStore interface {
-	List() (daemonsets []v1beta1.DaemonSet, err error)
+	List() (daemonsets []v1beta2.DaemonSet, err error)
 }
 
 // daemonsetCollector collects metrics about all daemonsets in the cluster.
@@ -113,7 +113,7 @@ func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
 	glog.Infof("collected %d daemonsets", len(dss))
 }
 
-func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1beta1.DaemonSet) {
+func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1beta2.DaemonSet) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)

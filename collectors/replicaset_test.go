@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 var (
@@ -30,10 +30,10 @@ var (
 )
 
 type mockReplicaSetStore struct {
-	f func() ([]v1beta1.ReplicaSet, error)
+	f func() ([]v1beta2.ReplicaSet, error)
 }
 
-func (rs mockReplicaSetStore) List() (replicasets []v1beta1.ReplicaSet, err error) {
+func (rs mockReplicaSetStore) List() (replicasets []v1beta2.ReplicaSet, err error) {
 	return rs.f()
 }
 
@@ -57,11 +57,11 @@ func TestReplicaSetCollector(t *testing.T) {
 		# TYPE kube_replicaset_spec_replicas gauge
 	`
 	cases := []struct {
-		rss  []v1beta1.ReplicaSet
+		rss  []v1beta2.ReplicaSet
 		want string
 	}{
 		{
-			rss: []v1beta1.ReplicaSet{
+			rss: []v1beta2.ReplicaSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              "rs1",
@@ -69,13 +69,13 @@ func TestReplicaSetCollector(t *testing.T) {
 						Namespace:         "ns1",
 						Generation:        21,
 					},
-					Status: v1beta1.ReplicaSetStatus{
+					Status: v1beta2.ReplicaSetStatus{
 						Replicas:             5,
 						FullyLabeledReplicas: 10,
 						ReadyReplicas:        5,
 						ObservedGeneration:   1,
 					},
-					Spec: v1beta1.ReplicaSetSpec{
+					Spec: v1beta2.ReplicaSetSpec{
 						Replicas: &rs1Replicas,
 					},
 				}, {
@@ -84,13 +84,13 @@ func TestReplicaSetCollector(t *testing.T) {
 						Namespace:  "ns2",
 						Generation: 14,
 					},
-					Status: v1beta1.ReplicaSetStatus{
+					Status: v1beta2.ReplicaSetStatus{
 						Replicas:             0,
 						FullyLabeledReplicas: 5,
 						ReadyReplicas:        0,
 						ObservedGeneration:   5,
 					},
-					Spec: v1beta1.ReplicaSetSpec{
+					Spec: v1beta2.ReplicaSetSpec{
 						Replicas: &rs2Replicas,
 					},
 				},
@@ -115,7 +115,7 @@ func TestReplicaSetCollector(t *testing.T) {
 	for _, c := range cases {
 		dc := &replicasetCollector{
 			store: mockReplicaSetStore{
-				f: func() ([]v1beta1.ReplicaSet, error) { return c.rss, nil },
+				f: func() ([]v1beta2.ReplicaSet, error) { return c.rss, nil },
 			},
 		}
 		if err := gatherAndCompare(dc, c.want, nil); err != nil {

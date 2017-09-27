@@ -24,9 +24,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -212,10 +211,10 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 }
 
-func extractCreatedBy(annotation map[string]string) *api.ObjectReference {
-	value, ok := annotation[api.CreatedByAnnotation]
+func extractCreatedBy(annotation map[string]string) *v1.ObjectReference {
+	value, ok := annotation[v1.CreatedByAnnotation]
 	if ok {
-		var r api.SerializedReference
+		var r v1.SerializedReference
 		err := json.Unmarshal([]byte(value), &r)
 		if err == nil {
 			return &r.Reference

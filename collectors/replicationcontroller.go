@@ -77,6 +77,7 @@ func (l ReplicationControllerLister) List() ([]v1.ReplicationController, error) 
 
 func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
+	glog.Infof("collect replicationcontroller with %s", client.APIVersion())
 	rclw := cache.NewListWatchFromClient(client, "replicationcontrollers", namespace, nil)
 	rcinf := cache.NewSharedInformer(rclw, &v1.ReplicationController{}, resyncPeriod)
 

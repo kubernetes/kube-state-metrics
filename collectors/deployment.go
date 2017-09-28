@@ -103,6 +103,7 @@ func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
 
 func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
+	glog.Infof("collect deployment with %s", client.APIVersion())
 	dlw := cache.NewListWatchFromClient(client, "deployments", namespace, nil)
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 

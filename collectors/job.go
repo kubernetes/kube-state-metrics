@@ -96,6 +96,7 @@ func (l JobLister) List() ([]v1batch.Job, error) {
 
 func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.BatchV1().RESTClient()
+	glog.Infof("collect job with %s", client.APIVersion())
 	jlw := cache.NewListWatchFromClient(client, "jobs", namespace, nil)
 	jinf := cache.NewSharedInformer(jlw, &v1batch.Job{}, resyncPeriod)
 

@@ -64,7 +64,7 @@ func (l NamespaceLister) List() ([]v1.Namespace, error) {
 // RegisterNamespaceCollector registry namespace collector
 func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-
+	glog.Infof("collect namespace with %s", client.APIVersion())
 	nslw := cache.NewListWatchFromClient(client, "namespaces", api.NamespaceAll, nil)
 	nsinf := cache.NewSharedInformer(nslw, &v1.Namespace{}, resyncPeriod)
 

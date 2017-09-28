@@ -53,6 +53,7 @@ func (l LimitRangeLister) List() (v1.LimitRangeList, error) {
 
 func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
+	glog.Infof("collect limitrange with %s", client.APIVersion())
 	rqlw := cache.NewListWatchFromClient(client, "limitranges", namespace, nil)
 	rqinf := cache.NewSharedInformer(rqlw, &v1.LimitRange{}, resyncPeriod)
 

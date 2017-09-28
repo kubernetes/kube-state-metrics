@@ -57,6 +57,7 @@ func (l ServiceLister) List() ([]v1.Service, error) {
 
 func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
+	glog.Infof("collect service with %s", client.APIVersion())
 	slw := cache.NewListWatchFromClient(client, "services", namespace, nil)
 	sinf := cache.NewSharedInformer(slw, &v1.Service{}, resyncPeriod)
 

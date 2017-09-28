@@ -62,6 +62,7 @@ func (l PersistentVolumeClaimLister) List() (v1.PersistentVolumeClaimList, error
 
 func RegisterPersistentVolumeClaimCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
+	glog.Infof("collect persistentvolumeclaim with %s", client.APIVersion())
 	pvclw := cache.NewListWatchFromClient(client, "persistentvolumeclaims", namespace, nil)
 	pvcinf := cache.NewSharedInformer(pvclw, &v1.PersistentVolumeClaim{}, resyncPeriod)
 

@@ -51,6 +51,7 @@ func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
 
 func RegisterResourceQuotaCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
+	glog.Infof("collect resourcequota with %s", client.APIVersion())
 	rqlw := cache.NewListWatchFromClient(client, "resourcequotas", namespace, nil)
 	rqinf := cache.NewSharedInformer(rqlw, &v1.ResourceQuota{}, resyncPeriod)
 

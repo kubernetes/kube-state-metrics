@@ -75,6 +75,7 @@ func (l StatefulSetLister) List() ([]v1beta1.StatefulSet, error) {
 
 func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.AppsV1beta1().RESTClient()
+	glog.Infof("collect statefulset with %s", client.APIVersion())
 	dlw := cache.NewListWatchFromClient(client, "statefulsets", namespace, nil)
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.StatefulSet{}, resyncPeriod)
 

@@ -126,6 +126,7 @@ func (l NodeLister) List() (v1.NodeList, error) {
 
 func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
+	glog.Infof("collect node with %s", client.APIVersion())
 	nlw := cache.NewListWatchFromClient(client, "nodes", api.NamespaceAll, nil)
 	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
 

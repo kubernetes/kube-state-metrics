@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	descJobInfo = prometheus.NewDesc(
+	JobGroupVersionResource = v1batch.SchemeGroupVersion.WithResource("jobs")
+	descJobInfo             = prometheus.NewDesc(
 		"kube_job_info",
 		"Information about job.",
 		[]string{"namespace", "job"}, nil,

@@ -32,7 +32,8 @@ import (
 )
 
 var (
-	descCronJobInfo = prometheus.NewDesc(
+	CronJobGroupVersionResource = v2batch.SchemeGroupVersion.WithResource("cronjobs")
+	descCronJobInfo             = prometheus.NewDesc(
 		"kube_cronjob_info",
 		"Info about cronjob.",
 		[]string{"namespace", "cronjob", "schedule", "concurrency_policy"}, nil,

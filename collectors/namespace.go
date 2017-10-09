@@ -27,6 +27,7 @@ import (
 )
 
 var (
+	NamespaceGroupVersionResource    = v1.SchemeGroupVersion.WithResource("namespaces")
 	descNamespaceLabelsName          = "kube_namespace_labels"
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}

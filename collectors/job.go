@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -97,7 +98,7 @@ func (l JobLister) List() ([]v1batch.Job, error) {
 func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.BatchV1().RESTClient()
 	glog.Infof("collect job with %s", client.APIVersion())
-	jlw := cache.NewListWatchFromClient(client, "jobs", namespace, nil)
+	jlw := cache.NewListWatchFromClient(client, "jobs", namespace, fields.Everything())
 	jinf := cache.NewSharedInformer(jlw, &v1batch.Job{}, resyncPeriod)
 
 	jobLister := JobLister(func() (jobs []v1batch.Job, err error) {

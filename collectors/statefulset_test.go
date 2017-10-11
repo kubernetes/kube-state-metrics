@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/api/apps/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 )
 
 var (

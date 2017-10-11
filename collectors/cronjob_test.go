@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
+	v2batch "k8s.io/api/batch/v2alpha1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
-	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
 )
 
 var (

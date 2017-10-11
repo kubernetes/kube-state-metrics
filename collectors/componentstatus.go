@@ -27,7 +27,7 @@ import (
 
 var (
 	descComponentStatus = prometheus.NewDesc(
-		"kube_component_status",
+		"kube_componentstatus",
 		"kube component status.",
 		[]string{"name", "status"}, nil,
 	)
@@ -59,7 +59,7 @@ type componentStatusStore interface {
 	List() (componentStatus []v1.ComponentStatus, err error)
 }
 
-// componentStatusCollector collects metrics about all component in the cluster.
+// componentStatusCollector collects metrics about all components in the cluster.
 type componentStatusCollector struct {
 	store componentStatusStore
 }

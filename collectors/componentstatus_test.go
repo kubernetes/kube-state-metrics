@@ -35,8 +35,8 @@ func TestComponentStatusCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_component_status kube component status.
-		# TYPE kube_component_status gauge
+		# HELP kube_componentstatus kube component status.
+		# TYPE kube_componentstatus gauge
 	`
 	cases := []struct {
 		cms     []v1.ComponentStatus
@@ -59,11 +59,11 @@ func TestComponentStatusCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_component_status{name="etcd1",status="True"} 1
-				kube_component_status{name="etcd1",status="False"} 0
-				kube_component_status{name="etcd1",status="Unknown"} 0
+				kube_componentstatus{name="etcd1",status="True"} 1
+				kube_componentstatus{name="etcd1",status="False"} 0
+				kube_componentstatus{name="etcd1",status="Unknown"} 0
 			`,
-			metrics: []string{"kube_component_status"},
+			metrics: []string{"kube_componentstatus"},
 		},
 	}
 	for _, c := range cases {

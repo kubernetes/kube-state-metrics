@@ -2,4 +2,4 @@
 
 | Metric name| Metric type | Labels/tags |
 | ---------- | ----------- | ----------- |
-| kube_component_status | Gauge | `name`=&lt;component-name&gt; <br> `status`=&lt;True\|False\|Unknow&gt;  |
+| kube_componentstatus | Gauge | `name`=&lt;component-name&gt; <br> `status`=&lt;True\|False\|Unknow&gt;  |

@@ -24,9 +24,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -173,7 +173,7 @@ func (l PodLister) List() ([]v1.Pod, error) {
 func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect pod with %s", client.APIVersion())
-	plw := cache.NewListWatchFromClient(client, "pods", namespace, nil)
+	plw := cache.NewListWatchFromClient(client, "pods", namespace, fields.Everything())
 	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
 
 	podLister := PodLister(func() (pods []v1.Pod, err error) {
@@ -221,10 +221,10 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 }
 
-func extractCreatedBy(annotation map[string]string) *api.ObjectReference {
-	value, ok := annotation[api.CreatedByAnnotation]
+func extractCreatedBy(annotation map[string]string) *v1.ObjectReference {
+	value, ok := annotation[v1.CreatedByAnnotation]
 	if ok {
-		var r api.SerializedReference
+		var r v1.SerializedReference
 		err := json.Unmarshal([]byte(value), &r)
 		if err == nil {
 			return &r.Reference

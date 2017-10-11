@@ -30,8 +30,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -142,7 +142,7 @@ func main() {
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
 	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
-	flags.StringVar(&options.namespace, "namespace", api.NamespaceAll, "namespace to be enabled for collecting resources")
+	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -167,7 +167,7 @@ func main() {
 		collectors = options.collectors
 	}
 
-	if options.namespace == api.NamespaceAll {
+	if options.namespace == metav1.NamespaceAll {
 		glog.Info("Using all namespace")
 	} else {
 		glog.Infof("Using %s namespace", options.namespace)

@@ -20,9 +20,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -104,7 +105,7 @@ func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
 func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	glog.Infof("collect deployment with %s", client.APIVersion())
-	dlw := cache.NewListWatchFromClient(client, "deployments", namespace, nil)
+	dlw := cache.NewListWatchFromClient(client, "deployments", namespace, fields.Everything())
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 
 	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {

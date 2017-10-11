@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -67,7 +68,7 @@ func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
 func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	glog.Infof("collect daemonset with %s", client.APIVersion())
-	dslw := cache.NewListWatchFromClient(client, "daemonsets", namespace, nil)
+	dslw := cache.NewListWatchFromClient(client, "daemonsets", namespace, fields.Everything())
 	dsinf := cache.NewSharedInformer(dslw, &v1beta1.DaemonSet{}, resyncPeriod)
 
 	dsLister := DaemonSetLister(func() (daemonsets []v1beta1.DaemonSet, err error) {

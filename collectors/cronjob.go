@@ -27,7 +27,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	v2batch "k8s.io/client-go/pkg/apis/batch/v2alpha1"
+	v2batch "k8s.io/api/batch/v2alpha1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -78,7 +79,7 @@ func (l CronJobLister) List() ([]v2batch.CronJob, error) {
 func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.BatchV2alpha1().RESTClient()
 	glog.Infof("collect cronjob with %s", client.APIVersion())
-	cjlw := cache.NewListWatchFromClient(client, "cronjobs", namespace, nil)
+	cjlw := cache.NewListWatchFromClient(client, "cronjobs", namespace, fields.Everything())
 	cjinf := cache.NewSharedInformer(cjlw, &v2batch.CronJob{}, resyncPeriod)
 
 	cronJobLister := CronJobLister(func() (cronjobs []v2batch.CronJob, err error) {

@@ -20,9 +20,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -127,7 +128,7 @@ func (l NodeLister) List() (v1.NodeList, error) {
 func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect node with %s", client.APIVersion())
-	nlw := cache.NewListWatchFromClient(client, "nodes", api.NamespaceAll, nil)
+	nlw := cache.NewListWatchFromClient(client, "nodes", metav1.NamespaceAll, fields.Everything())
 	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
 
 	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {

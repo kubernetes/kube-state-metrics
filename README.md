@@ -21,6 +21,7 @@ the raw metrics.
 - [Versioning](#versioning)
   - [Kubernetes Version](#kubernetes-version)
   - [Compatibility matrix](#compatibility-matrix)
+  - [Resource group version compatibility](#resource-group-version-compatibility)
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
 - [Resource recommendation](#resource-recommendation)
@@ -40,19 +41,25 @@ Kubernetes clusters. The supported Kubernetes cluster version is determined by `
 The compatibility matrix for client-go and Kubernetes cluster can be found 
 [here](https://github.com/kubernetes/client-go#compatibility-matrix). 
 All additional compatibility is only best effort, or happens to still/already be supported.
-Currently, `client-go` is in version `v4.0.0-beta.0`.
+Currently, `client-go` is in version `release-5.0`.
 
 #### Compatibility matrix
+At most 5 kube-state-metrics releases will be recorded below.
 
-| kube-state-metrics | client-go | **Kubernetes 1.4**  | **Kubernetes 1.5** | **Kubernetes 1.6** | **Kubernetes 1.7** |
-|--------------------|-----------|---------------------|--------------------|--------------------|--------------------|
-| **v0.4.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |
-| **v0.5.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |
-| **v1.0.x** |  4.0.0-beta.0     |          ✓          |         ✓          |        ✓           |         ✓          |
-| **master** |  4.0.0-beta.0     |          ✓          |         ✓          |        ✓           |         ✓          |
+| kube-state-metrics | client-go | **Kubernetes 1.4**  | **Kubernetes 1.5** | **Kubernetes 1.6** | **Kubernetes 1.7** | **Kubernetes 1.8** |
+|--------------------|-----------|---------------------|--------------------|--------------------|--------------------|--------------------|
+| **v0.4.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |
+| **v0.5.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |
+| **v1.0.x** |  4.0.0-beta.0     |          ✓          |         ✓          |        ✓           |         ✓          |         -          |
+| **master** |  release-5.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |
 
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
+
+#### Resource group version compatibility
+Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA 
+in different Kubernetes versions. As for now, kube-state-metrics will only use the oldest API available in the latest 
+release. 
 
 #### Container Image
 

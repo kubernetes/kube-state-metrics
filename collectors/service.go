@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -58,7 +59,7 @@ func (l ServiceLister) List() ([]v1.Service, error) {
 func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect service with %s", client.APIVersion())
-	slw := cache.NewListWatchFromClient(client, "services", namespace, nil)
+	slw := cache.NewListWatchFromClient(client, "services", namespace, fields.Everything())
 	sinf := cache.NewSharedInformer(slw, &v1.Service{}, resyncPeriod)
 
 	serviceLister := ServiceLister(func() (services []v1.Service, err error) {

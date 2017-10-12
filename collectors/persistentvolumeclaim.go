@@ -34,6 +34,7 @@ var (
 			"namespace",
 			"persistentvolumeclaim",
 			"storageclass",
+			"volumename",
 		}, nil,
 	)
 	descPersistentVolumeClaimStatusPhase = prometheus.NewDesc(
@@ -132,7 +133,8 @@ func (collector *persistentVolumeClaimCollector) collectPersistentVolumeClaim(ch
 	}
 
 	storageClassName := getPersistentVolumeClaimClass(&pvc)
-	addGauge(descPersistentVolumeClaimInfo, 1, storageClassName)
+	volumeName := pvc.Spec.VolumeName
+	addGauge(descPersistentVolumeClaimInfo, 1, storageClassName, volumeName)
 
 	// Set current phase to 1, others to 0 if it is set.
 	if p := pvc.Status.Phase; p != "" {

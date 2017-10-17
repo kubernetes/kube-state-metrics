@@ -36,6 +36,7 @@ var (
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
 	containerWaitingReasons    = []string{"ContainerCreating", "ErrImagePull"}
+	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error"}
 
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
@@ -113,6 +114,12 @@ var (
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
 		[]string{"namespace", "pod", "container"}, nil,
+	)
+
+	descPodContainerStatusTerminatedReason = prometheus.NewDesc(
+		"kube_pod_container_status_terminated_reason",
+		"Describes the reason the container is currently in terminated state.",
+		[]string{"namespace", "pod", "container", "reason"}, nil,
 	)
 
 	descPodContainerStatusReady = prometheus.NewDesc(
@@ -211,6 +218,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusWaitingReason
 	ch <- descPodContainerStatusRunning
 	ch <- descPodContainerStatusTerminated
+	ch <- descPodContainerStatusTerminatedReason
 	ch <- descPodContainerStatusReady
 	ch <- descPodContainerStatusRestarts
 	ch <- descPodContainerResourceRequestsCpuCores
@@ -347,6 +355,13 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		return cs.State.Waiting.Reason == reason
 	}
 
+	terminationReason := func(cs v1.ContainerStatus, reason string) bool {
+		if cs.State.Terminated == nil {
+			return false
+		}
+		return cs.State.Terminated.Reason == reason
+	}
+
 	for _, cs := range p.Status.ContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
@@ -357,6 +372,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		}
 		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
 		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
+		for _, reason := range containerTerminatedReasons {
+			addGauge(descPodContainerStatusTerminatedReason, boolFloat64(terminationReason(cs, reason)), cs.Name, reason)
+		}
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
 	}

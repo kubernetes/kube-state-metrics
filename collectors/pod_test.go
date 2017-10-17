@@ -56,6 +56,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_status_running gauge
 		# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 		# TYPE kube_pod_container_status_terminated gauge
+		# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+		# TYPE kube_pod_container_status_terminated_reason gauge
 		# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 		# TYPE kube_pod_container_status_waiting gauge
 		# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
@@ -243,7 +245,9 @@ func TestPodCollector(t *testing.T) {
 							v1.ContainerStatus{
 								Name: "container2",
 								State: v1.ContainerState{
-									Terminated: &v1.ContainerStateTerminated{},
+									Terminated: &v1.ContainerStateTerminated{
+										Reason: "OOMKilled",
+									},
 								},
 							},
 							v1.ContainerStatus{
@@ -265,6 +269,15 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
 				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
+				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
+				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
+				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Completed"} 0
+				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Error"} 0
+				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled"} 1
+				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Completed"} 0
+				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
+				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
@@ -280,6 +293,7 @@ func TestPodCollector(t *testing.T) {
 				"kube_pod_container_status_waiting",
 				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
+				"kube_pod_container_status_terminated_reason",
 			},
 		}, {
 			pods: []v1.Pod{

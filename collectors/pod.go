@@ -36,7 +36,7 @@ var (
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
 	containerWaitingReasons    = []string{"ContainerCreating", "ErrImagePull"}
-	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error"}
+	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",

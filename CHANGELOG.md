@@ -1,3 +1,7 @@
+## v1.1.0 / 2017-10-19
+
+After a testing period of one week, there were no additional bugs found or features introduced.
+
 ## v1.1.0-rc.0 / 2017-10-12
 
 * [FEATURE] Add `kube_pod_container_status_waiting_reason` metric.

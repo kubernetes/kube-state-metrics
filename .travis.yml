@@ -1,16 +1,15 @@
+sudo: required
+
 language: go
+
 go:
 - 1.8
+
 install:
 - mkdir -p $HOME/gopath/src/k8s.io
 - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/kube-state-metrics
+
 jobs:
   include:
-    - stage: Go fmt
-      script: make gofmtcheck
-    - stage: Unit Test
-      script: make test-unit
-    - stage: Build
-      script: make
-    - stage: Check that all metrics are documented
-      script: make doccheck
+    - stage: E2e
+      script: make e2e

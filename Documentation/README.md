@@ -20,3 +20,4 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [Service Metrics](service-metrics.md)
 * [StatefulSet Metrics](statefulset-metrics.md)
 * [Namespace Metrics](namespace-metrics.md)
+* [Horizontal Pod Autoscaler Metrics](horizontalpodautoscaler-metrics.md)

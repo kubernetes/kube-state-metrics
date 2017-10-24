@@ -19,8 +19,8 @@ package collectors
 import (
 	"testing"
 
+	autoscaling "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	autoscaling "k8s.io/client-go/pkg/apis/autoscaling/v1"
 )
 
 var (

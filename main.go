@@ -295,7 +295,7 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 // registers metrics for collection.
 func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespace string) {
 	activeCollectors := []string{}
-	for c, _ := range enabledCollectors {
+	for c := range enabledCollectors {
 		f, ok := availableCollectors[c]
 		if ok {
 			f(registry, kubeClient, namespace)

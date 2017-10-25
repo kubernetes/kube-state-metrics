@@ -67,4 +67,7 @@ endif
 clean:
 	rm -f kube-state-metrics
 
-.PHONY: all build all-push all-container test-unit container push clean
+e2e:
+	./scripts/e2e.sh
+
+.PHONY: all build all-push all-container test-unit container push clean e2e

@@ -50,8 +50,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_labels gauge
 		# HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
 		# TYPE kube_pod_container_status_ready gauge
-		# HELP kube_pod_container_status_restarts The number of container restarts per container.
-		# TYPE kube_pod_container_status_restarts counter
+		# HELP kube_pod_container_status_restarts_total The number of container restarts per container.
+		# TYPE kube_pod_container_status_restarts_total counter
 		# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 		# TYPE kube_pod_container_status_running gauge
 		# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
@@ -213,11 +213,11 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_status_restarts{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_restarts{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_restarts{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_restarts_total{container="container1",namespace="ns1",pod="pod1"} 0
+				kube_pod_container_status_restarts_total{container="container2",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_restarts_total{container="container3",namespace="ns2",pod="pod2"} 1
 				`,
-			metrics: []string{"kube_pod_container_status_restarts"},
+			metrics: []string{"kube_pod_container_status_restarts_total"},
 		}, {
 			pods: []v1.Pod{
 				{

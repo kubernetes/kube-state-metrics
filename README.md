@@ -52,7 +52,7 @@ At most 5 kube-state-metrics releases will be recorded below.
 | **v0.5.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |
 | **v1.0.x** |  4.0.0-beta.0     |          ✓          |         ✓          |        ✓           |         ✓          |         -          |
 | **v1.1.0** |  release-5.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |
-| **master** |  release-5.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |
+| **master** |  v5.0.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
 

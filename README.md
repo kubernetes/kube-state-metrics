@@ -38,8 +38,8 @@ the raw metrics.
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
 Kubernetes clusters. The supported Kubernetes cluster version is determined by `client-go`.
-The compatibility matrix for client-go and Kubernetes cluster can be found 
-[here](https://github.com/kubernetes/client-go#compatibility-matrix). 
+The compatibility matrix for client-go and Kubernetes cluster can be found
+[here](https://github.com/kubernetes/client-go#compatibility-matrix).
 All additional compatibility is only best effort, or happens to still/already be supported.
 Currently, `client-go` is in version `release-5.0`.
 
@@ -57,9 +57,9 @@ At most 5 kube-state-metrics releases will be recorded below.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
 
 #### Resource group version compatibility
-Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA 
-in different Kubernetes versions. As for now, kube-state-metrics will only use the oldest API available in the latest 
-release. 
+Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
+in different Kubernetes versions. As for now, kube-state-metrics will only use the oldest API available in the latest
+release.
 
 #### Container Image
 
@@ -166,8 +166,10 @@ metrics right away.
 When developing, test a metric dump against your local Kubernetes cluster by
 running:
 
+> Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
+
 	go install
-	kube-state-metrics --apiserver=<APISERVER-HERE> --in-cluster=false --port=8080
+	kube-state-metrics  --in-cluster=false --port=8080 --kubeconfig=<KUBE-CONIFG>
 
 Then curl the metrics endpoint
 

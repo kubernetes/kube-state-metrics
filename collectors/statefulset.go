@@ -43,6 +43,24 @@ var (
 		[]string{"namespace", "statefulset"}, nil,
 	)
 
+	descStatefulSetStatusReplicasCurrent = prometheus.NewDesc(
+		"kube_statefulset_status_replicas_current",
+		"The number of current replicas per StatefulSet.",
+		[]string{"namespace", "statefulset"}, nil,
+	)
+
+	descStatefulSetStatusReplicasReady = prometheus.NewDesc(
+		"kube_statefulset_status_replicas_ready",
+		"The number of ready replicas per StatefulSet.",
+		[]string{"namespace", "statefulset"}, nil,
+	)
+
+	descStatefulSetStatusReplicasUpdated = prometheus.NewDesc(
+		"kube_statefulset_status_replicas_updated",
+		"The number of updated replicas per StatefulSet.",
+		[]string{"namespace", "statefulset"}, nil,
+	)
+
 	descStatefulSetStatusObservedGeneration = prometheus.NewDesc(
 		"kube_statefulset_status_observed_generation",
 		"The generation observed by the StatefulSet controller.",
@@ -103,6 +121,9 @@ type statefulSetCollector struct {
 func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descStatefulSetCreated
 	ch <- descStatefulSetStatusReplicas
+	ch <- descStatefulSetStatusReplicasCurrent
+	ch <- descStatefulSetStatusReplicasReady
+	ch <- descStatefulSetStatusReplicasUpdated
 	ch <- descStatefulSetStatusObservedGeneration
 	ch <- descStatefulSetSpecReplicas
 	ch <- descStatefulSetMetadataGeneration
@@ -141,6 +162,9 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 		addGauge(descStatefulSetCreated, float64(statefulSet.CreationTimestamp.Unix()))
 	}
 	addGauge(descStatefulSetStatusReplicas, float64(statefulSet.Status.Replicas))
+	addGauge(descStatefulSetStatusReplicasCurrent, float64(statefulSet.Status.CurrentReplicas))
+	addGauge(descStatefulSetStatusReplicasReady, float64(statefulSet.Status.ReadyReplicas))
+	addGauge(descStatefulSetStatusReplicasUpdated, float64(statefulSet.Status.UpdatedReplicas))
 	if statefulSet.Status.ObservedGeneration != nil {
 		addGauge(descStatefulSetStatusObservedGeneration, float64(*statefulSet.Status.ObservedGeneration))
 	}

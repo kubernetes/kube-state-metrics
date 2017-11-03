@@ -78,14 +78,22 @@ those that could be used for actionable alerts. Please contribute PR's for
 additional metrics!
 
 > WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
-> For now the following metrics
+> For now the following metrics and collectors
 >
+> **metrics**
 >	* kube_pod_container_resource_requests_nvidia_gpu_devices
 >	* kube_pod_container_resource_limits_nvidia_gpu_devices
 >	* kube_node_status_capacity_nvidia_gpu_cards
 >	* kube_node_status_allocatable_nvidia_gpu_cards
 >
 >	are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
+>
+> **collectors**
+> * v2alpha1/cronjob
+>
+> If users want to enable this feature when kubernetes version larger than 1.8,
+> It must be configured, with the following parameter setting for apiserver.
+> `--runtime-config=batch/v2alpha1=true`
 
 See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
 

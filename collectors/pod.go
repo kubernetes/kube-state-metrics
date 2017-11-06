@@ -129,7 +129,7 @@ var (
 	)
 
 	descPodContainerStatusRestarts = prometheus.NewDesc(
-		"kube_pod_container_status_restarts",
+		"kube_pod_container_status_restarts_total",
 		"The number of container restarts per container.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)

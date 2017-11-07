@@ -64,7 +64,7 @@ func (iter *Iterator) trySkipString() bool {
 		} else if c == '\\' {
 			return false
 		} else if c < ' ' {
-			iter.ReportError("trySkipString",
+			iter.ReportError("ReadString",
 				fmt.Sprintf(`invalid control character found: %d`, c))
 			return true // already failed
 		}

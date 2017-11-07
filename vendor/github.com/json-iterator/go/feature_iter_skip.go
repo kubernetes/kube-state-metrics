@@ -25,7 +25,7 @@ func (iter *Iterator) ReadBool() (ret bool) {
 		iter.skipFourBytes('a', 'l', 's', 'e')
 		return false
 	}
-	iter.ReportError("ReadBool", "expect t or f, but found "+string([]byte{c}))
+	iter.ReportError("ReadBool", "expect t or f")
 	return
 }
 
@@ -59,9 +59,7 @@ func (iter *Iterator) stopCapture() []byte {
 	iter.captureStartedAt = -1
 	iter.captured = nil
 	if len(captured) == 0 {
-		copied := make([]byte, len(remaining))
-		copy(copied, remaining)
-		return copied
+		return remaining
 	}
 	captured = append(captured, remaining...)
 	return captured

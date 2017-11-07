@@ -40,7 +40,7 @@ mkdir $HOME/.kube || true
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
-sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION
+sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION --extra-config=apiserver.Authorization.Mode=RBAC
 
 minikube update-context
 
@@ -69,6 +69,9 @@ fi
 set -e
 
 kubectl version
+kubectl apply -f scripts/minikube-rbac.yaml
+kubectl apply -f kubernetes/metrics-rbac/
+docker build -f scripts/Dockerfile -t ksm-test:v0.0.1 .
 
 # query kube-state-metrics image tag
 make container
@@ -124,7 +127,7 @@ set -e
 echo "kube-state-metrics is up and running"
 
 echo "access kube-state-metrics metrics endpoint"
-curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/metrics" >$KUBE_STATE_METRICS_LOG_DIR/metrics
+kubectl run -it curl --image=ksm-test:v0.0.1 > $KUBE_STATE_METRICS_LOG_DIR/metrics
 
 echo "check metrics format with promtool"
 wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz

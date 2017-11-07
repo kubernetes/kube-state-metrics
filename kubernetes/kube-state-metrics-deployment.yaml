@@ -17,6 +17,10 @@ spec:
       containers:
       - name: kube-state-metrics
         image: quay.io/coreos/kube-state-metrics:v1.1.0
+        args:
+        - "--anonymous-auth=false"
+        - "--authentication-token-webhook=true"
+        - "--authorization-mode=Webhook"
         ports:
         - name: http-metrics
           containerPort: 8080

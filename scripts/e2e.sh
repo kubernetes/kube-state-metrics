@@ -133,6 +133,12 @@ echo "check metrics format with promtool"
 wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz
 tar zxfv /tmp/prometheus.tar.gz -C /tmp
 cat $KUBE_STATE_METRICS_LOG_DIR/metrics | /tmp/prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool check-metrics
+RESULT=$?
+if [ $RESULT -eq 1 ]; then
+    echo
+    cat $KUBE_STATE_METRICS_LOG_DIR/metrics
+    exit 1
+fi
 
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/healthz")
 if [ "$KUBE_STATE_METRICS_STATUS" == "ok" ]; then

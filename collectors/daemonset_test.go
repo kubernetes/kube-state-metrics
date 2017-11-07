@@ -46,8 +46,14 @@ func TestDaemonSetCollector(t *testing.T) {
 		# TYPE kube_daemonset_status_number_misscheduled gauge
 		# HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
 		# TYPE kube_daemonset_status_desired_number_scheduled gauge
+		# HELP kube_daemonset_status_number_available The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
+		# TYPE kube_daemonset_status_number_available gauge
 		# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
 		# TYPE kube_daemonset_status_number_ready gauge
+		# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
+		# TYPE kube_daemonset_status_number_unavailable gauge
+		# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
+		# TYPE kube_daemonset_updated_number_scheduled gauge
 	`
 	cases := []struct {
 		dss  []v1beta1.DaemonSet
@@ -88,12 +94,18 @@ func TestDaemonSetCollector(t *testing.T) {
 				kube_daemonset_metadata_generation{namespace="ns2",daemonset="ds2"} 14
 				kube_daemonset_status_current_number_scheduled{namespace="ns1",daemonset="ds1"} 15
 				kube_daemonset_status_current_number_scheduled{namespace="ns2",daemonset="ds2"} 10
-				kube_daemonset_status_number_misscheduled{namespace="ns1",daemonset="ds1"} 10
-				kube_daemonset_status_number_misscheduled{namespace="ns2",daemonset="ds2"} 5
 				kube_daemonset_status_desired_number_scheduled{namespace="ns1",daemonset="ds1"} 5
 				kube_daemonset_status_desired_number_scheduled{namespace="ns2",daemonset="ds2"} 0
+				kube_daemonset_status_number_available{daemonset="ds1",namespace="ns1"} 0
+		    kube_daemonset_status_number_available{daemonset="ds2",namespace="ns2"} 0
+				kube_daemonset_status_number_misscheduled{namespace="ns1",daemonset="ds1"} 10
+				kube_daemonset_status_number_misscheduled{namespace="ns2",daemonset="ds2"} 5
 				kube_daemonset_status_number_ready{namespace="ns1",daemonset="ds1"} 5
 				kube_daemonset_status_number_ready{namespace="ns2",daemonset="ds2"} 0
+				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
+		    kube_daemonset_status_number_unavailable{daemonset="ds2",namespace="ns2"} 0
+				kube_daemonset_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
+		    kube_daemonset_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
 			`,
 		},
 	}

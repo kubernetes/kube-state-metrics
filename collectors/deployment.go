@@ -43,6 +43,19 @@ var (
 		"The number of replicas per deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
+
+	descDeploymentStatusReplicasUpdated = prometheus.NewDesc(
+		"kube_deployment_status_replicas_updated",
+		"The number of updated replicas per deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
+	descDeploymentStatusReplicasReady = prometheus.NewDesc(
+		"kube_deployment_status_replicas_ready",
+		"The number of ready pods targeted by this deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
 	descDeploymentStatusReplicasAvailable = prometheus.NewDesc(
 		"kube_deployment_status_replicas_available",
 		"The number of available replicas per deployment.",
@@ -51,11 +64,6 @@ var (
 	descDeploymentStatusReplicasUnavailable = prometheus.NewDesc(
 		"kube_deployment_status_replicas_unavailable",
 		"The number of unavailable replicas per deployment.",
-		[]string{"namespace", "deployment"}, nil,
-	)
-	descDeploymentStatusReplicasUpdated = prometheus.NewDesc(
-		"kube_deployment_status_replicas_updated",
-		"The number of updated replicas per deployment.",
 		[]string{"namespace", "deployment"}, nil,
 	)
 
@@ -132,6 +140,7 @@ type deploymentCollector struct {
 func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDeploymentCreated
 	ch <- descDeploymentStatusReplicas
+	ch <- descDeploymentStatusReplicasReady
 	ch <- descDeploymentStatusReplicasAvailable
 	ch <- descDeploymentStatusReplicasUnavailable
 	ch <- descDeploymentStatusReplicasUpdated
@@ -177,9 +186,10 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 		addGauge(descDeploymentCreated, float64(d.CreationTimestamp.Unix()))
 	}
 	addGauge(descDeploymentStatusReplicas, float64(d.Status.Replicas))
+	addGauge(descDeploymentStatusReplicasUpdated, float64(d.Status.UpdatedReplicas))
+	addGauge(descDeploymentStatusReplicasReady, float64(d.Status.ReadyReplicas))
 	addGauge(descDeploymentStatusReplicasAvailable, float64(d.Status.AvailableReplicas))
 	addGauge(descDeploymentStatusReplicasUnavailable, float64(d.Status.UnavailableReplicas))
-	addGauge(descDeploymentStatusReplicasUpdated, float64(d.Status.UpdatedReplicas))
 	addGauge(descDeploymentStatusObservedGeneration, float64(d.Status.ObservedGeneration))
 	addGauge(descDeploymentSpecPaused, boolFloat64(d.Spec.Paused))
 	addGauge(descDeploymentSpecReplicas, float64(*d.Spec.Replicas))

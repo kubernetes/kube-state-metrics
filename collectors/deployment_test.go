@@ -64,7 +64,9 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_spec_replicas gauge
 		# HELP kube_deployment_status_replicas The number of replicas per deployment.
 		# TYPE kube_deployment_status_replicas gauge
-		# HELP kube_deployment_status_replicas_available The number of available replicas per deployment.
+		# HELP kube_deployment_status_replicas The number of replicas per deployment.
+		# TYPE kube_deployment_status_replicas_ready gaugeß
+		# HELP kube_deployment_status_replicas_ready The number of ready pods targeted by this deployment.
 		# TYPE kube_deployment_status_replicas_available gauge
 		# HELP kube_deployment_status_replicas_unavailable The number of unavailable replicas per deployment.
 		# TYPE kube_deployment_status_replicas_unavailable gauge
@@ -72,7 +74,7 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_status_replicas_updated gauge
 		# HELP kube_deployment_status_observed_generation The generation observed by the deployment controller.
 		# TYPE kube_deployment_status_observed_generation gauge
-                # HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable Maximum number of unavailable replicas during a rolling update of a deployment.
+    # HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable Maximum number of unavailable replicas during a rolling update of a deployment.
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
 		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
@@ -98,6 +100,7 @@ func TestDeploymentCollector(t *testing.T) {
 						AvailableReplicas:   10,
 						UnavailableReplicas: 5,
 						UpdatedReplicas:     2,
+						ReadyReplicas:       10,
 						ObservedGeneration:  111,
 					},
 					Spec: v1beta1.DeploymentSpec{
@@ -122,6 +125,7 @@ func TestDeploymentCollector(t *testing.T) {
 						AvailableReplicas:   5,
 						UnavailableReplicas: 0,
 						UpdatedReplicas:     1,
+						ReadyReplicas:       5,
 						ObservedGeneration:  1111,
 					},
 					Spec: v1beta1.DeploymentSpec{
@@ -138,6 +142,8 @@ func TestDeploymentCollector(t *testing.T) {
 				kube_deployment_spec_paused{namespace="ns2",deployment="depl2"} 1
 				kube_deployment_spec_replicas{namespace="ns1",deployment="depl1"} 200
 				kube_deployment_spec_replicas{namespace="ns2",deployment="depl2"} 5
+				kube_deployment_status_replicas_ready{namespace="ns1",deployment="depl1"} 10
+				kube_deployment_status_replicas_ready{namespace="ns2",deployment="depl2"} 5
 				kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
 				kube_deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
 				kube_deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111

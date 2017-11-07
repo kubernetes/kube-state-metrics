@@ -64,9 +64,9 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_spec_replicas gauge
 		# HELP kube_deployment_status_replicas The number of replicas per deployment.
 		# TYPE kube_deployment_status_replicas gauge
-		# HELP kube_deployment_status_replicas The number of replicas per deployment.
-		# TYPE kube_deployment_status_replicas_ready gaugeß
+		# TYPE kube_deployment_status_replicas_ready gauge
 		# HELP kube_deployment_status_replicas_ready The number of ready pods targeted by this deployment.
+		# HELP kube_deployment_status_replicas_available The number of available replicas per deployment.
 		# TYPE kube_deployment_status_replicas_available gauge
 		# HELP kube_deployment_status_replicas_unavailable The number of unavailable replicas per deployment.
 		# TYPE kube_deployment_status_replicas_unavailable gauge

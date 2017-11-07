@@ -31,6 +31,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -120,6 +122,12 @@ func (c *collectorSet) Type() string {
 	return "string"
 }
 
+type AuthInterface interface {
+	authenticator.Request
+	authorizer.RequestAttributesGetter
+	authorizer.Authorizer
+}
+
 type options struct {
 	inCluster  bool
 	apiserver  string
@@ -128,10 +136,22 @@ type options struct {
 	port       int
 	collectors collectorSet
 	namespace  string
+	auth       AuthConfig
 }
 
 func main() {
-	options := &options{collectors: make(collectorSet)}
+	options := &options{
+		collectors: make(collectorSet),
+		auth: AuthConfig{
+			Authentication: &AuthnConfig{
+				Anonymous: &AnonConfig{},
+				Webhook:   &WebhookConfig{},
+				X509:      &X509Config{},
+			},
+			Authorization: &AuthzConfig{},
+		},
+	}
+
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
 	// add glog flags
 	flags.AddGoFlagSet(flag.CommandLine)
@@ -145,6 +165,12 @@ func main() {
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
 	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
 	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
+
+	// Auth flags.
+	flags.BoolVar(&options.auth.Authentication.Anonymous.Enabled, "anonymous-auth", true, "Enables anonymous requests to the Kubelet server. Requests that are not rejected by another authentication method are treated as anonymous requests. Anonymous requests have a username of system:anonymous, and a group name of system:unauthenticated.")
+	flags.BoolVar(&options.auth.Authentication.Webhook.Enabled, "authentication-token-webhook", false, "Use the TokenReview API to determine authentication for bearer tokens.")
+	flags.StringVar(&options.auth.Authentication.X509.ClientCAFile, "client-ca-file", "", "If set, any request presenting a client certificate signed by one of the authorities in the client-ca-file is authenticated with an identity corresponding to the CommonName of the client certificate.")
+	flags.StringVar(&options.auth.Authorization.Mode, "authorization-mode", "AlwaysAllow", "Authorization mode for Kubelet server. Valid options are AlwaysAllow or Webhook. Webhook mode uses the SubjectAccessReview API to determine authorization.")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -189,9 +215,14 @@ func main() {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
+	auth, err := BuildAuth(kubeClient, options.auth)
+	if err != nil {
+		glog.Fatalf("Failed to create auth: %v", err)
+	}
+
 	registry := prometheus.NewRegistry()
 	registerCollectors(registry, kubeClient, collectors, options.namespace)
-	metricsServer(registry, options.port)
+	metricsServer(registry, options.port, auth)
 }
 
 func isNotExists(file string) bool {
@@ -254,7 +285,7 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	return kubeClient, nil
 }
 
-func metricsServer(registry prometheus.Gatherer, port int) {
+func metricsServer(registry prometheus.Gatherer, port int, auth AuthInterface) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := fmt.Sprintf(":%d", port)
 
@@ -268,8 +299,17 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
+	promhandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	// Add metricsPath
-	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux.Handle(metricsPath, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ok := AuthRequest(auth, w, req)
+		if !ok {
+			return
+		}
+
+		promhandler.ServeHTTP(w, req)
+	}))
+
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)

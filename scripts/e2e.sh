@@ -127,7 +127,18 @@ set -e
 echo "kube-state-metrics is up and running"
 
 echo "access kube-state-metrics metrics endpoint"
-kubectl run -it curl --image=ksm-test:v0.0.1 > $KUBE_STATE_METRICS_LOG_DIR/metrics
+docker build -f scripts/Dockerfile -t ksm-curl:v0.0.1 .
+kubectl create -f scripts/ksm-curl-job.yaml
+for i in {1..30}; do # timeout for 1 minutes
+    RESULT=$(kubectl get job ksm-curl -ojsonpath='{.status.succeeded}')
+    if [ "$RESULT" == "1" ]; then
+        break
+    fi
+
+    echo "waiting for kube-state-metrics being scraped"
+    sleep 2
+done
+kubectl logs job/ksm-curl > $KUBE_STATE_METRICS_LOG_DIR/metrics
 
 echo "check metrics format with promtool"
 wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz

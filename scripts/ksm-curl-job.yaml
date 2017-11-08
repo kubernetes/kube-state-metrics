@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ksm-curl
+spec:
+  template:
+    metadata:
+      name: ksm-curl
+    spec:
+      containers:
+      - name: ksm-curl
+        image: ksm-curl:v0.0.1
+      restartPolicy: Never
+  backoffLimit: 4

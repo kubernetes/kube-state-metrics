@@ -156,10 +156,6 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
-	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{j.Namespace, j.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, v, lv...)
-	}
 
 	addGauge(descJobInfo, 1)
 

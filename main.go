@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -38,6 +39,7 @@ import (
 	"net/http/pprof"
 
 	"k8s.io/kube-state-metrics/collectors"
+	"k8s.io/kube-state-metrics/version"
 )
 
 const (
@@ -245,10 +247,12 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
 	glog.Infof("Testing communication with server")
-	_, err = kubeClient.Discovery().ServerVersion()
+	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
 	}
+	glog.Infof("Running in Kubernetes Cluster version v%v.%v (%v) - git (%v) commit %v - platform %v",
+		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)
 	glog.Infof("Communication with server successful")
 
 	return kubeClient, nil
@@ -274,6 +278,12 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("ok"))
+	})
+	// Add buildInfo
+	mux.HandleFunc("/build", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		b, _ := json.Marshal(version.String())
+		w.Write(b)
 	})
 	// Add index
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

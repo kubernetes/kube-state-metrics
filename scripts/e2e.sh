@@ -146,7 +146,7 @@ tar zxfv /tmp/prometheus.tar.gz -C /tmp
 cat $KUBE_STATE_METRICS_LOG_DIR/metrics | /tmp/prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool check-metrics
 RESULT=$?
 if [ $RESULT -eq 1 ]; then
-    echo
+    echo "metrics data is invalid after checking metrics with promtool\n\n"
     cat $KUBE_STATE_METRICS_LOG_DIR/metrics
     exit 1
 fi

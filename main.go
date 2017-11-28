@@ -304,6 +304,7 @@ func metricsServer(registry prometheus.Gatherer, port int, auth AuthInterface) {
 	mux.Handle(metricsPath, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ok := AuthRequest(auth, w, req)
 		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 

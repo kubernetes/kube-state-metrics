@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2017 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"sort"
 	"strings"
@@ -35,9 +36,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"net/http/pprof"
-
 	"k8s.io/kube-state-metrics/collectors"
+	"k8s.io/kube-state-metrics/version"
 )
 
 const (
@@ -145,6 +145,7 @@ func main() {
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
 	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
 	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
+	versionFlag := flags.BoolP("version", "", false, "kube-state-metrics build information")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -154,6 +155,11 @@ func main() {
 	err := flags.Parse(os.Args)
 	if err != nil {
 		glog.Fatalf("Error: %s", err)
+	}
+
+	if *versionFlag {
+		fmt.Printf("kube-state-metrics version: %#v", version.GetVersion())
+		os.Exit(0)
 	}
 
 	if options.help {
@@ -245,10 +251,12 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
 	glog.Infof("Testing communication with server")
-	_, err = kubeClient.Discovery().ServerVersion()
+	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
 	}
+	glog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
+		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)
 	glog.Infof("Communication with server successful")
 
 	return kubeClient, nil

@@ -37,19 +37,34 @@ var (
 		"The number of nodes running at least one daemon pod and are supposed to.",
 		[]string{"namespace", "daemonset"}, nil,
 	)
-	descDaemonSetNumberMisscheduled = prometheus.NewDesc(
-		"kube_daemonset_status_number_misscheduled",
-		"The number of nodes running a daemon pod but are not supposed to.",
-		[]string{"namespace", "daemonset"}, nil,
-	)
 	descDaemonSetDesiredNumberScheduled = prometheus.NewDesc(
 		"kube_daemonset_status_desired_number_scheduled",
 		"The number of nodes that should be running the daemon pod.",
 		[]string{"namespace", "daemonset"}, nil,
 	)
+	descDaemonSetNumberAvailable = prometheus.NewDesc(
+		"kube_daemonset_status_number_available",
+		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available",
+		[]string{"namespace", "daemonset"}, nil,
+	)
+	descDaemonSetNumberMisscheduled = prometheus.NewDesc(
+		"kube_daemonset_status_number_misscheduled",
+		"The number of nodes running a daemon pod but are not supposed to.",
+		[]string{"namespace", "daemonset"}, nil,
+	)
 	descDaemonSetNumberReady = prometheus.NewDesc(
 		"kube_daemonset_status_number_ready",
 		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
+		[]string{"namespace", "daemonset"}, nil,
+	)
+	descDaemonSetNumberUnavailable = prometheus.NewDesc(
+		"kube_daemonset_status_number_unavailable",
+		"The number of nodes that should be running the daemon pod and have none of the daemon pod running and available",
+		[]string{"namespace", "daemonset"}, nil,
+	)
+	descDaemonSetUpdatedNumberScheduled = prometheus.NewDesc(
+		"kube_daemonset_updated_number_scheduled",
+		"The total number of nodes that are running updated daemon pod",
 		[]string{"namespace", "daemonset"}, nil,
 	)
 	descDaemonSetMetadataGeneration = prometheus.NewDesc(
@@ -95,9 +110,12 @@ type daemonsetCollector struct {
 func (dc *daemonsetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDaemonSetCreated
 	ch <- descDaemonSetCurrentNumberScheduled
+	ch <- descDaemonSetNumberAvailable
 	ch <- descDaemonSetNumberMisscheduled
+	ch <- descDaemonSetNumberUnavailable
 	ch <- descDaemonSetDesiredNumberScheduled
 	ch <- descDaemonSetNumberReady
+	ch <- descDaemonSetUpdatedNumberScheduled
 	ch <- descDaemonSetMetadataGeneration
 }
 
@@ -124,8 +142,11 @@ func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1
 		addGauge(descDaemonSetCreated, float64(d.CreationTimestamp.Unix()))
 	}
 	addGauge(descDaemonSetCurrentNumberScheduled, float64(d.Status.CurrentNumberScheduled))
+	addGauge(descDaemonSetNumberAvailable, float64(d.Status.NumberAvailable))
+	addGauge(descDaemonSetNumberUnavailable, float64(d.Status.NumberUnavailable))
 	addGauge(descDaemonSetNumberMisscheduled, float64(d.Status.NumberMisscheduled))
 	addGauge(descDaemonSetDesiredNumberScheduled, float64(d.Status.DesiredNumberScheduled))
 	addGauge(descDaemonSetNumberReady, float64(d.Status.NumberReady))
+	addGauge(descDaemonSetUpdatedNumberScheduled, float64(d.Status.UpdatedNumberScheduled))
 	addGauge(descDaemonSetMetadataGeneration, float64(d.ObjectMeta.Generation))
 }

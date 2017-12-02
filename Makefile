@@ -1,18 +1,22 @@
 FLAGS =
 BUILDENVVAR = CGO_ENABLED=0
-TESTENVVAR = 
+TESTENVVAR =
 REGISTRY = quay.io/coreos
 TAG = $(shell git describe --abbrev=0)
 PKGS = $(shell go list ./... | grep -v /vendor/)
 ARCH ?= $(shell go env GOARCH)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
-
+PKG=k8s.io/kube-state-metrics
 
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
+ifndef COMMIT
+  COMMIT := git-$(shell git rev-parse --short HEAD)
+endif
+
 gofmtcheck:
-	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi     
+	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi
 
 doccheck:
 	@echo "- Checking if documentation is up to date..."
@@ -26,7 +30,8 @@ doccheck:
 	@echo OK
 
 build: clean
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(BUILDENVVAR) go build -o kube-state-metrics
+	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(BUILDENVVAR) go build -ldflags "-s -w -X ${PKG}/version.RELEASE=${TAG} -X ${PKG}/version.COMMIT=${COMMIT} " \
+	-o kube-state-metrics
 
 test-unit: clean build
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)

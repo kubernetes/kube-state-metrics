@@ -245,10 +245,12 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
 	glog.Infof("Testing communication with server")
-	_, err = kubeClient.Discovery().ServerVersion()
+	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
 	}
+	glog.Infof("Running in Kubernetes Cluster version v%v.%v (%v) - git (%v) commit %v - platform %v",
+		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)
 	glog.Infof("Communication with server successful")
 
 	return kubeClient, nil

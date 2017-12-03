@@ -34,13 +34,19 @@ var (
 	descServiceInfo = prometheus.NewDesc(
 		"kube_service_info",
 		"Information about service.",
-		[]string{"namespace", "service"}, nil,
+		[]string{"namespace", "service", "cluster_ip"}, nil,
 	)
 
 	descServiceCreated = prometheus.NewDesc(
 		"kube_service_created",
 		"Unix creation timestamp",
 		[]string{"namespace", "service"}, nil,
+	)
+
+	descServiceSpecType = prometheus.NewDesc(
+		"kube_service_spec_type",
+		"Type about service.",
+		[]string{"namespace", "service", "type"}, nil,
 	)
 
 	descServiceLabels = prometheus.NewDesc(
@@ -87,6 +93,7 @@ func (pc *serviceCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descServiceInfo
 	ch <- descServiceLabels
 	ch <- descServiceCreated
+	ch <- descServiceSpecType
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -99,7 +106,6 @@ func (sc *serviceCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, s := range services {
 		sc.collectService(ch, s)
 	}
-
 	glog.Infof("collected %d services", len(services))
 }
 
@@ -120,8 +126,9 @@ func (sc *serviceCollector) collectService(ch chan<- prometheus.Metric, s v1.Ser
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	addGauge(descServiceSpecType, 1, string(s.Spec.Type))
 
-	addGauge(descServiceInfo, 1)
+	addGauge(descServiceInfo, 1, s.Spec.ClusterIP)
 	if !s.CreationTimestamp.IsZero() {
 		addGauge(descServiceCreated, float64(s.CreationTimestamp.Unix()))
 	}

@@ -106,7 +106,7 @@ func (c *collectorSet) Set(value string) error {
 
 func (c collectorSet) asSlice() []string {
 	cols := []string{}
-	for col, _ := range c {
+	for col := range c {
 		cols = append(cols, col)
 	}
 	return cols
@@ -128,6 +128,7 @@ type options struct {
 	port       int
 	collectors collectorSet
 	namespace  string
+	version    bool
 }
 
 func main() {
@@ -145,7 +146,7 @@ func main() {
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
 	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
 	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
-	versionFlag := flags.BoolP("version", "", false, "kube-state-metrics version information")
+	flags.BoolVarP(&options.version, "version", "", false, "kube-state-metrics build version information")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -157,8 +158,8 @@ func main() {
 		glog.Fatalf("Error: %s", err)
 	}
 
-	if *versionFlag {
-		fmt.Printf("%#v", version.GetVersion())
+	if options.version {
+		fmt.Printf("%#v\n", version.GetVersion())
 		os.Exit(0)
 	}
 

@@ -11,10 +11,7 @@ PKG=k8s.io/kube-state-metrics
 
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
-
-ifndef COMMIT
-  Commit := $(shell git rev-parse --short HEAD)
-endif
+Commit := $(shell git rev-parse --short HEAD)
 
 gofmtcheck:
 	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi

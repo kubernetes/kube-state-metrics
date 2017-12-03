@@ -191,9 +191,6 @@ func (stream *Stream) ensure(minimal int) {
 func (stream *Stream) growAtLeast(minimal int) {
 	if stream.out != nil {
 		stream.Flush()
-		if stream.Available() >= minimal {
-			return
-		}
 	}
 	toGrow := len(stream.buf)
 	if toGrow < minimal {
@@ -283,7 +280,8 @@ func (stream *Stream) WriteArrayStart() {
 
 // WriteEmptyArray write []
 func (stream *Stream) WriteEmptyArray() {
-	stream.writeTwoBytes('[', ']')
+	stream.writeByte('[')
+	stream.writeByte(']')
 }
 
 // WriteArrayEnd write ] with possible indention

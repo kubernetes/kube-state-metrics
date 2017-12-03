@@ -9,6 +9,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [CronJob Metrics](cronjob-metrics.md)
 * [DaemonSet Metrics](daemonset-metrics.md)
 * [Deployment Metrics](deployment-metrics.md)
+* [Ingress Metrics](ingress-metrics.md)
 * [Job Metrics](job-metrics.md)
 * [LimitRange Metrics](limitrange-metrics.md)
 * [Node Metrics](node-metrics.md)

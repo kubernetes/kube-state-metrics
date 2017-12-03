@@ -6,12 +6,12 @@ TAG = $(shell git describe --abbrev=0)
 PKGS = $(shell go list ./... | grep -v /vendor/)
 ARCH ?= $(shell go env GOARCH)
 BuildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+Commit := $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG=k8s.io/kube-state-metrics
 
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
-Commit := $(shell git rev-parse --short HEAD)
 
 gofmtcheck:
 	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi

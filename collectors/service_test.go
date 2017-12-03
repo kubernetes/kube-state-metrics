@@ -42,6 +42,8 @@ func TestServiceCollector(t *testing.T) {
 		# TYPE kube_service_created gauge
 		# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_service_labels gauge
+		# HELP kube_service_spec_type Type about service.
+		# TYPE kube_service_spec_type gauge
 	`
 	cases := []struct {
 		services []v1.Service
@@ -52,19 +54,77 @@ func TestServiceCollector(t *testing.T) {
 			services: []v1.Service{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:              "test-service",
+						Name:              "test-service1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:         "default",
 						Labels: map[string]string{
-							"app": "example",
+							"app": "example1",
 						},
+					},
+					Spec: v1.ServiceSpec{
+						ClusterIP: "1.2.3.4",
+						Type:      v1.ServiceTypeClusterIP,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service2",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example2",
+						},
+					},
+					Spec: v1.ServiceSpec{
+						ClusterIP: "1.2.3.5",
+						Type:      v1.ServiceTypeNodePort,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service3",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example3",
+						},
+					},
+					Spec: v1.ServiceSpec{
+						ClusterIP: "1.2.3.6",
+						Type:      v1.ServiceTypeLoadBalancer,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service4",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example4",
+						},
+					},
+					Spec: v1.ServiceSpec{
+						Type: v1.ServiceTypeExternalName,
 					},
 				},
 			},
-			want: metadata + `
-				kube_service_info{namespace="default",service="test-service"} 1
-				kube_service_created{namespace="default",service="test-service"} 1.5e+09
-				kube_service_labels{label_app="example",namespace="default",service="test-service"} 1
+			want: metadata + `	
+				kube_service_created{namespace="default",service="test-service1"} 1.5e+09
+				kube_service_created{namespace="default",service="test-service2"} 1.5e+09
+				kube_service_created{namespace="default",service="test-service3"} 1.5e+09
+				kube_service_created{namespace="default",service="test-service4"} 1.5e+09		
+				kube_service_info{cluster_ip="",namespace="default",service="test-service4"} 1
+				kube_service_info{cluster_ip="1.2.3.4",namespace="default",service="test-service1"} 1
+				kube_service_info{cluster_ip="1.2.3.5",namespace="default",service="test-service2"} 1
+				kube_service_info{cluster_ip="1.2.3.6",namespace="default",service="test-service3"} 1		
+				kube_service_labels{label_app="example1",namespace="default",service="test-service1"} 1
+				kube_service_labels{label_app="example2",namespace="default",service="test-service2"} 1
+				kube_service_labels{label_app="example3",namespace="default",service="test-service3"} 1
+				kube_service_labels{label_app="example4",namespace="default",service="test-service4"} 1
+				kube_service_spec_type{namespace="default",service="test-service1",type="ClusterIP"} 1
+				kube_service_spec_type{namespace="default",service="test-service2",type="NodePort"} 1
+				kube_service_spec_type{namespace="default",service="test-service3",type="LoadBalancer"} 1
+				kube_service_spec_type{namespace="default",service="test-service4",type="ExternalName"} 1
 			`,
 		},
 	}

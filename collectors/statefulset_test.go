@@ -1,11 +1,27 @@
+/*
+Copyright 2017 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package collectors
 
 import (
 	"testing"
 	"time"
 
+	"k8s.io/api/apps/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 )
 
 var (
@@ -33,6 +49,12 @@ func TestStatefuleSetCollector(t *testing.T) {
 		# TYPE kube_statefulset_created gauge
  		# HELP kube_statefulset_status_replicas The number of replicas per StatefulSet.
  		# TYPE kube_statefulset_status_replicas gauge
+		# HELP kube_statefulset_status_replicas_current The number of current replicas per StatefulSet.
+		# TYPE kube_statefulset_status_replicas_current gauge
+		# HELP kube_statefulset_status_replicas_ready The number of ready replicas per StatefulSet.
+		# TYPE kube_statefulset_status_replicas_ready gauge
+		# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
+		# TYPE kube_statefulset_status_replicas_updated gauge
  		# HELP kube_statefulset_status_observed_generation The generation observed by the StatefulSet controller.
  		# TYPE kube_statefulset_status_observed_generation gauge
  		# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
@@ -80,8 +102,11 @@ func TestStatefuleSetCollector(t *testing.T) {
 						ServiceName: "statefulset2service",
 					},
 					Status: v1beta1.StatefulSetStatus{
+						CurrentReplicas:    2,
 						ObservedGeneration: &statefulSet2ObservedGeneration,
+						ReadyReplicas:      5,
 						Replicas:           5,
+						UpdatedReplicas:    3,
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -107,6 +132,15 @@ func TestStatefuleSetCollector(t *testing.T) {
  				kube_statefulset_status_replicas{namespace="ns1",statefulset="statefulset1"} 2
  				kube_statefulset_status_replicas{namespace="ns2",statefulset="statefulset2"} 5
  				kube_statefulset_status_replicas{namespace="ns3",statefulset="statefulset3"} 7
+				kube_statefulset_status_replicas_current{namespace="ns1",statefulset="statefulset1"} 0
+				kube_statefulset_status_replicas_current{namespace="ns2",statefulset="statefulset2"} 2
+				kube_statefulset_status_replicas_current{namespace="ns3",statefulset="statefulset3"} 0
+				kube_statefulset_status_replicas_ready{namespace="ns1",statefulset="statefulset1"} 0
+				kube_statefulset_status_replicas_ready{namespace="ns2",statefulset="statefulset2"} 5
+				kube_statefulset_status_replicas_ready{namespace="ns3",statefulset="statefulset3"} 0
+				kube_statefulset_status_replicas_updated{namespace="ns1",statefulset="statefulset1"} 0
+				kube_statefulset_status_replicas_updated{namespace="ns2",statefulset="statefulset2"} 3
+				kube_statefulset_status_replicas_updated{namespace="ns3",statefulset="statefulset3"} 0
  				kube_statefulset_status_observed_generation{namespace="ns1",statefulset="statefulset1"} 1
  				kube_statefulset_status_observed_generation{namespace="ns2",statefulset="statefulset2"} 2
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3

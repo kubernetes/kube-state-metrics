@@ -24,9 +24,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -35,6 +35,8 @@ var (
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
+	containerWaitingReasons    = []string{"ContainerCreating", "ErrImagePull"}
+	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
@@ -96,6 +98,12 @@ var (
 		[]string{"namespace", "pod", "container"}, nil,
 	)
 
+	descPodContainerStatusWaitingReason = prometheus.NewDesc(
+		"kube_pod_container_status_waiting_reason",
+		"Describes the reason the container is currently in waiting state.",
+		[]string{"namespace", "pod", "container", "reason"}, nil,
+	)
+
 	descPodContainerStatusRunning = prometheus.NewDesc(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
@@ -108,6 +116,12 @@ var (
 		[]string{"namespace", "pod", "container"}, nil,
 	)
 
+	descPodContainerStatusTerminatedReason = prometheus.NewDesc(
+		"kube_pod_container_status_terminated_reason",
+		"Describes the reason the container is currently in terminated state.",
+		[]string{"namespace", "pod", "container", "reason"}, nil,
+	)
+
 	descPodContainerStatusReady = prometheus.NewDesc(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
@@ -115,7 +129,7 @@ var (
 	)
 
 	descPodContainerStatusRestarts = prometheus.NewDesc(
-		"kube_pod_container_status_restarts",
+		"kube_pod_container_status_restarts_total",
 		"The number of container restarts per container.",
 		[]string{"namespace", "pod", "container"}, nil,
 	)
@@ -165,7 +179,8 @@ func (l PodLister) List() ([]v1.Pod, error) {
 
 func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	plw := cache.NewListWatchFromClient(client, "pods", namespace, nil)
+	glog.Infof("collect pod with %s", client.APIVersion())
+	plw := cache.NewListWatchFromClient(client, "pods", namespace, fields.Everything())
 	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
 
 	podLister := PodLister(func() (pods []v1.Pod, err error) {
@@ -200,8 +215,10 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodStatusScheduled
 	ch <- descPodContainerInfo
 	ch <- descPodContainerStatusWaiting
+	ch <- descPodContainerStatusWaitingReason
 	ch <- descPodContainerStatusRunning
 	ch <- descPodContainerStatusTerminated
+	ch <- descPodContainerStatusTerminatedReason
 	ch <- descPodContainerStatusReady
 	ch <- descPodContainerStatusRestarts
 	ch <- descPodContainerResourceRequestsCpuCores
@@ -212,10 +229,10 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 }
 
-func ExtractCreatedBy(annotation map[string]string) *api.ObjectReference {
-	value, ok := annotation[api.CreatedByAnnotation]
+func extractCreatedBy(annotation map[string]string) *v1.ObjectReference {
+	value, ok := annotation[v1.CreatedByAnnotation]
 	if ok {
-		var r api.SerializedReference
+		var r v1.SerializedReference
 		err := json.Unmarshal([]byte(value), &r)
 		if err == nil {
 			return &r.Reference
@@ -234,6 +251,8 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, p := range pods {
 		pc.collectPod(ch, p)
 	}
+
+	glog.Infof("collected %d pods", len(pods))
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
@@ -297,7 +316,11 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodOwner, 1, "<none>", "<none>", "<none>")
 	} else {
 		for _, owner := range owners {
-			addGauge(descPodOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			if owner.Controller != nil {
+				addGauge(descPodOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			} else {
+				addGauge(descPodOwner, 1, owner.Kind, owner.Name, "false")
+			}
 		}
 	}
 
@@ -325,13 +348,33 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		}
 	}
 
+	waitingReason := func(cs v1.ContainerStatus, reason string) bool {
+		if cs.State.Waiting == nil {
+			return false
+		}
+		return cs.State.Waiting.Reason == reason
+	}
+
+	terminationReason := func(cs v1.ContainerStatus, reason string) bool {
+		if cs.State.Terminated == nil {
+			return false
+		}
+		return cs.State.Terminated.Reason == reason
+	}
+
 	for _, cs := range p.Status.ContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
 		)
 		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name)
+		for _, reason := range containerWaitingReasons {
+			addGauge(descPodContainerStatusWaitingReason, boolFloat64(waitingReason(cs, reason)), cs.Name, reason)
+		}
 		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
 		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
+		for _, reason := range containerTerminatedReasons {
+			addGauge(descPodContainerStatusTerminatedReason, boolFloat64(terminationReason(cs, reason)), cs.Name, reason)
+		}
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
 	}

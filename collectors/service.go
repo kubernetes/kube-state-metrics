@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -33,13 +34,19 @@ var (
 	descServiceInfo = prometheus.NewDesc(
 		"kube_service_info",
 		"Information about service.",
-		[]string{"namespace", "service"}, nil,
+		[]string{"namespace", "service", "cluster_ip"}, nil,
 	)
 
 	descServiceCreated = prometheus.NewDesc(
 		"kube_service_created",
 		"Unix creation timestamp",
 		[]string{"namespace", "service"}, nil,
+	)
+
+	descServiceSpecType = prometheus.NewDesc(
+		"kube_service_spec_type",
+		"Type about service.",
+		[]string{"namespace", "service", "type"}, nil,
 	)
 
 	descServiceLabels = prometheus.NewDesc(
@@ -57,7 +64,8 @@ func (l ServiceLister) List() ([]v1.Service, error) {
 
 func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	slw := cache.NewListWatchFromClient(client, "services", namespace, nil)
+	glog.Infof("collect service with %s", client.APIVersion())
+	slw := cache.NewListWatchFromClient(client, "services", namespace, fields.Everything())
 	sinf := cache.NewSharedInformer(slw, &v1.Service{}, resyncPeriod)
 
 	serviceLister := ServiceLister(func() (services []v1.Service, err error) {
@@ -85,6 +93,7 @@ func (pc *serviceCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descServiceInfo
 	ch <- descServiceLabels
 	ch <- descServiceCreated
+	ch <- descServiceSpecType
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -97,6 +106,7 @@ func (sc *serviceCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, s := range services {
 		sc.collectService(ch, s)
 	}
+	glog.Infof("collected %d services", len(services))
 }
 
 func serviceLabelsDesc(labelKeys []string) *prometheus.Desc {
@@ -116,8 +126,9 @@ func (sc *serviceCollector) collectService(ch chan<- prometheus.Metric, s v1.Ser
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	addGauge(descServiceSpecType, 1, string(s.Spec.Type))
 
-	addGauge(descServiceInfo, 1)
+	addGauge(descServiceInfo, 1, s.Spec.ClusterIP)
 	if !s.CreationTimestamp.IsZero() {
 		addGauge(descServiceCreated, float64(s.CreationTimestamp.Unix()))
 	}

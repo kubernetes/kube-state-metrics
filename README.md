@@ -16,31 +16,91 @@ either by Prometheus itself or by a scraper that is compatible with scraping
 a Prometheus client endpoint. You can also open `/metrics` in a browser to see
 the raw metrics.
 
-## Kubernetes Version
+## Table of Contents
+
+- [Versioning](#versioning)
+  - [Kubernetes Version](#kubernetes-version)
+  - [Compatibility matrix](#compatibility-matrix)
+  - [Resource group version compatibility](#resource-group-version-compatibility)
+  - [Container Image](#container-image)
+- [Metrics Documentation](#metrics-documentation)
+- [Resource recommendation](#resource-recommendation)
+- [kube-state-metrics vs. Heaspter](#kube-state-metrics-vs-heapster)
+- [Setup](#setup)
+  - [Building the Docker container](#building-the-docker-container)
+- [Usage](#usage)
+  - [Kubernetes Deployment](#kubernetes-deployment)
+  - [Deployment](#deployment)
+
+### Versioning
+
+#### Kubernetes Version
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
 Kubernetes clusters. The supported Kubernetes cluster version is determined by `client-go`.
-The compatibility matrix for client-go and Kubernetes cluster can be found 
-[here](https://github.com/kubernetes/client-go#compatibility-matrix). 
+The compatibility matrix for client-go and Kubernetes cluster can be found
+[here](https://github.com/kubernetes/client-go#compatibility-matrix).
 All additional compatibility is only best effort, or happens to still/already be supported.
-Currently, `client-go` is in version `v4.0.0-beta.0`.
+Currently, `client-go` is in version `release-5.0`.
 
-## Container Image
+#### Compatibility matrix
+At most 5 kube-state-metrics releases will be recorded below.
 
-The latest container image can be found at `gcr.io/google_containers/kube-state-metrics:v0.5.0`.
+| kube-state-metrics | client-go | **Kubernetes 1.4**  | **Kubernetes 1.5** | **Kubernetes 1.6** | **Kubernetes 1.7** | **Kubernetes 1.8** |
+|--------------------|-----------|---------------------|--------------------|--------------------|--------------------|--------------------|
+| **v0.4.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |
+| **v0.5.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |
+| **v1.0.x** |  4.0.0-beta.0     |          ✓          |         ✓          |        ✓           |         ✓          |         -          |
+| **v1.1.0** |  release-5.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |
+| **master** |  v5.0.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |
+- `✓` Fully supported version range.
+- `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
 
-## Metrics Documentation
+#### Resource group version compatibility
+Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
+in different Kubernetes versions. As for now, kube-state-metrics will only use the oldest API available in the latest
+release.
+
+#### Container Image
+
+The latest container image can be found at:
+* `quay.io/coreos/kube-state-metrics:v1.1.0`
+* `gcr.io/google_containers/kube-state-metrics:v1.1.0`
+
+**Note**:
+The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on
+`gcr.io` is only maintained on best effort as it requires external help from Google employees.
+
+### Metrics Documentation
 
 There are many more metrics we could report, but this first pass is focused on
 those that could be used for actionable alerts. Please contribute PR's for
 additional metrics!
 
 > WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
-> For now kube_pod_container_resource_requests_nvidia_gpu_devices and kube_pod_container_resource_limits_nvidia_gpu_devices are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
+> For now the following metrics and collectors
+>
+> **metrics**
+>	* kube_pod_container_resource_requests_nvidia_gpu_devices
+>	* kube_pod_container_resource_limits_nvidia_gpu_devices
+>	* kube_node_status_capacity_nvidia_gpu_cards
+>	* kube_node_status_allocatable_nvidia_gpu_cards
+>
+>	are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
+>
+> **collectors**
+> * v2alpha1/cronjob
+>
+> If users want to enable this feature when kubernetes version larger than 1.7,
+> It must be configured, with the following parameter setting for apiserver.
+> `--runtime-config=batch/v2alpha1=true`
+>
+> Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
+> which may be changed at any given release.
 
 See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
 
-## Resource recommendation
+### Resource recommendation
 
 Resource usage changes with the size of the cluster. As a general rule, you should allocate
 
@@ -54,7 +114,7 @@ For clusters of more than 100 nodes, allocate at least
 
 These numbers are based on [scalability tests](https://github.com/kubernetes/kube-state-metrics/issues/124#issuecomment-318394185) at 30 pods per node.
 
-## kube-state-metrics vs. Heapster
+### kube-state-metrics vs. Heapster
 
 [Heapster](https://github.com/kubernetes/heapster) is a project which fetches
 metrics (such as CPU and memory utilization) from the Kubernetes API server and
@@ -83,7 +143,7 @@ for metric collection at all and instead implement their own, but
 Having kube-state-metrics as a separate project enables access to these metrics
 from those monitoring systems.
 
-# Setup
+### Setup
 
 Install this project to your `$GOPATH` using `go get`:
 
@@ -91,7 +151,7 @@ Install this project to your `$GOPATH` using `go get`:
 go get k8s.io/kube-state-metrics
 ```
 
-## Building the Docker container
+#### Building the Docker container
 
 Simple run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
@@ -99,12 +159,12 @@ self-contained, statically-linked binary and build a Docker image:
 make container
 ```
 
-# Usage
+### Usage
 
 Simply build and run kube-state-metrics inside a Kubernetes pod which has a
 service account token that has read-only access to the Kubernetes cluster.
 
-## Kubernetes Deployment
+#### Kubernetes Deployment
 
 To deploy this project, you can simply run `kubectl apply -f kubernetes` and a
 Kubernetes service and deployment will be created. The service already has a
@@ -112,13 +172,15 @@ Kubernetes service and deployment will be created. The service already has a
 Prometheus service-endpoint scraping [configuration](https://raw.githubusercontent.com/prometheus/prometheus/master/documentation/examples/prometheus-kubernetes.yml), Prometheus will pick it up automatically and you can start using the generated
 metrics right away.
 
-# Development
+#### Development
 
 When developing, test a metric dump against your local Kubernetes cluster by
 running:
 
+> Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
+
 	go install
-	kube-state-metrics --apiserver=<APISERVER-HERE> --in-cluster=false --port=8080
+	kube-state-metrics  --in-cluster=false --port=8080 --kubeconfig=<KUBE-CONIFG>
 
 Then curl the metrics endpoint
 

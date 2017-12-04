@@ -20,19 +20,38 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 var (
+	descPersistentVolumeClaimInfo = prometheus.NewDesc(
+		"kube_persistentvolumeclaim_info",
+		"Information about persistent volume claim.",
+		[]string{
+			"namespace",
+			"persistentvolumeclaim",
+			"storageclass",
+			"volumename",
+		}, nil,
+	)
 	descPersistentVolumeClaimStatusPhase = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_status_phase",
-		"The phase the claim is currently in.",
+		"The phase the persistent volume claim is currently in.",
 		[]string{
 			"namespace",
 			"persistentvolumeclaim",
 			"phase",
+		}, nil,
+	)
+	descPersistentVolumeClaimResourceRequestsStorage = prometheus.NewDesc(
+		"kube_persistentvolumeclaim_resource_requests_storage_bytes",
+		"The capacity of storage requested by the persistent volume claim.",
+		[]string{
+			"namespace",
+			"persistentvolumeclaim",
 		}, nil,
 	)
 )
@@ -45,7 +64,8 @@ func (l PersistentVolumeClaimLister) List() (v1.PersistentVolumeClaimList, error
 
 func RegisterPersistentVolumeClaimCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	pvclw := cache.NewListWatchFromClient(client, "persistentvolumeclaims", namespace, nil)
+	glog.Infof("collect persistentvolumeclaim with %s", client.APIVersion())
+	pvclw := cache.NewListWatchFromClient(client, "persistentvolumeclaims", namespace, fields.Everything())
 	pvcinf := cache.NewSharedInformer(pvclw, &v1.PersistentVolumeClaim{}, resyncPeriod)
 
 	persistentVolumeClaimLister := PersistentVolumeClaimLister(func() (pvcs v1.PersistentVolumeClaimList, err error) {
@@ -70,20 +90,40 @@ type persistentVolumeClaimCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (collector *persistentVolumeClaimCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descPersistentVolumeClaimInfo
 	ch <- descPersistentVolumeClaimStatusPhase
+	ch <- descPersistentVolumeClaimResourceRequestsStorage
 }
 
 // Collect implements the prometheus.Collector interface.
 func (collector *persistentVolumeClaimCollector) Collect(ch chan<- prometheus.Metric) {
 	persistentVolumeClaimCollector, err := collector.store.List()
 	if err != nil {
-		glog.Errorf("listing limit ranges failed: %s", err)
+		glog.Errorf("listing persistent volume claims failed: %s", err)
 		return
 	}
 
 	for _, pvc := range persistentVolumeClaimCollector.Items {
 		collector.collectPersistentVolumeClaim(ch, pvc)
 	}
+
+	glog.Infof("collected %d persistentvolumeclaims", len(persistentVolumeClaimCollector.Items))
+}
+
+// getPersistentVolumeClaimClass returns StorageClassName. If no storage class was
+// requested, it returns "".
+func getPersistentVolumeClaimClass(claim *v1.PersistentVolumeClaim) string {
+	// Use beta annotation first
+	if class, found := claim.Annotations[v1.BetaStorageClassAnnotation]; found {
+		return class
+	}
+
+	if claim.Spec.StorageClassName != nil {
+		return *claim.Spec.StorageClassName
+	}
+
+	// Special non-empty string to indicate absence of storage class.
+	return "<none>"
 }
 
 func (collector *persistentVolumeClaimCollector) collectPersistentVolumeClaim(ch chan<- prometheus.Metric, pvc v1.PersistentVolumeClaim) {
@@ -92,10 +132,18 @@ func (collector *persistentVolumeClaimCollector) collectPersistentVolumeClaim(ch
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 
+	storageClassName := getPersistentVolumeClaimClass(&pvc)
+	volumeName := pvc.Spec.VolumeName
+	addGauge(descPersistentVolumeClaimInfo, 1, storageClassName, volumeName)
+
 	// Set current phase to 1, others to 0 if it is set.
 	if p := pvc.Status.Phase; p != "" {
 		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimLost), string(v1.ClaimLost))
 		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimBound), string(v1.ClaimBound))
 		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimPending), string(v1.ClaimPending))
+	}
+
+	if storage, ok := pvc.Spec.Resources.Requests[v1.ResourceStorage]; ok {
+		addGauge(descPersistentVolumeClaimResourceRequestsStorage, float64(storage.Value()))
 	}
 }

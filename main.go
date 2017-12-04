@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/golang/glog"
@@ -29,12 +31,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"k8s.io/kube-state-metrics/collectors"
+	"k8s.io/kube-state-metrics/version"
 )
 
 const (
@@ -44,34 +47,40 @@ const (
 
 var (
 	defaultCollectors = collectorSet{
-		"daemonsets":             struct{}{},
-		"deployments":            struct{}{},
-		"limitranges":            struct{}{},
-		"nodes":                  struct{}{},
-		"pods":                   struct{}{},
-		"replicasets":            struct{}{},
-		"replicationcontrollers": struct{}{},
-		"resourcequotas":         struct{}{},
-		"services":               struct{}{},
-		"jobs":                   struct{}{},
-		"cronjobs":               struct{}{},
-		"statefulsets":           struct{}{},
-		"persistentvolumeclaims": struct{}{},
+		"daemonsets":               struct{}{},
+		"deployments":              struct{}{},
+		"limitranges":              struct{}{},
+		"nodes":                    struct{}{},
+		"pods":                     struct{}{},
+		"replicasets":              struct{}{},
+		"replicationcontrollers":   struct{}{},
+		"resourcequotas":           struct{}{},
+		"services":                 struct{}{},
+		"jobs":                     struct{}{},
+		"cronjobs":                 struct{}{},
+		"statefulsets":             struct{}{},
+		"persistentvolumes":        struct{}{},
+		"persistentvolumeclaims":   struct{}{},
+		"namespaces":               struct{}{},
+		"horizontalpodautoscalers": struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
-		"cronjobs":               collectors.RegisterCronJobCollector,
-		"daemonsets":             collectors.RegisterDaemonSetCollector,
-		"deployments":            collectors.RegisterDeploymentCollector,
-		"jobs":                   collectors.RegisterJobCollector,
-		"limitranges":            collectors.RegisterLimitRangeCollector,
-		"nodes":                  collectors.RegisterNodeCollector,
-		"pods":                   collectors.RegisterPodCollector,
-		"replicasets":            collectors.RegisterReplicaSetCollector,
-		"replicationcontrollers": collectors.RegisterReplicationControllerCollector,
-		"resourcequotas":         collectors.RegisterResourceQuotaCollector,
-		"services":               collectors.RegisterServiceCollector,
-		"statefulsets":           collectors.RegisterStatefulSetCollector,
-		"persistentvolumeclaims": collectors.RegisterPersistentVolumeClaimCollector,
+		"cronjobs":                 collectors.RegisterCronJobCollector,
+		"daemonsets":               collectors.RegisterDaemonSetCollector,
+		"deployments":              collectors.RegisterDeploymentCollector,
+		"jobs":                     collectors.RegisterJobCollector,
+		"limitranges":              collectors.RegisterLimitRangeCollector,
+		"nodes":                    collectors.RegisterNodeCollector,
+		"pods":                     collectors.RegisterPodCollector,
+		"replicasets":              collectors.RegisterReplicaSetCollector,
+		"replicationcontrollers":   collectors.RegisterReplicationControllerCollector,
+		"resourcequotas":           collectors.RegisterResourceQuotaCollector,
+		"services":                 collectors.RegisterServiceCollector,
+		"statefulsets":             collectors.RegisterStatefulSetCollector,
+		"persistentvolumes":        collectors.RegisterPersistentVolumeCollector,
+		"persistentvolumeclaims":   collectors.RegisterPersistentVolumeClaimCollector,
+		"namespaces":               collectors.RegisterNamespaceCollector,
+		"horizontalpodautoscalers": collectors.RegisterHorizontalPodAutoScalerCollector,
 	}
 )
 
@@ -79,7 +88,9 @@ type collectorSet map[string]struct{}
 
 func (c *collectorSet) String() string {
 	s := *c
-	return strings.Join(s.asSlice(), ",")
+	ss := s.asSlice()
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
 }
 
 func (c *collectorSet) Set(value string) error {
@@ -97,7 +108,7 @@ func (c *collectorSet) Set(value string) error {
 
 func (c collectorSet) asSlice() []string {
 	cols := []string{}
-	for col, _ := range c {
+	for col := range c {
 		cols = append(cols, col)
 	}
 	return cols
@@ -108,7 +119,7 @@ func (c collectorSet) isEmpty() bool {
 }
 
 func (c *collectorSet) Type() string {
-	return "map[string]struct{}"
+	return "string"
 }
 
 type options struct {
@@ -119,23 +130,25 @@ type options struct {
 	port       int
 	collectors collectorSet
 	namespace  string
+	version    bool
 }
 
 func main() {
-	// configure glog
-	flag.CommandLine.Parse([]string{})
-	flag.Lookup("logtostderr").Value.Set("true")
-
 	options := &options{collectors: make(collectorSet)}
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
-
+	// add glog flags
+	flags.AddGoFlagSet(flag.CommandLine)
+	flags.Lookup("logtostderr").Value.Set("true")
+	flags.Lookup("logtostderr").DefValue = "true"
+	flags.Lookup("logtostderr").NoOptDefVal = "true"
 	flags.BoolVar(&options.inCluster, "in-cluster", true, `If true, use the built in kubernetes cluster for creating the client`)
 	flags.StringVar(&options.apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
-	flags.Var(&options.collectors, "collectors", "Collectors to be enabled")
-	flags.StringVar(&options.namespace, "namespace", api.NamespaceAll, "namespace to be enabled for collecting resources")
+	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
+	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
+	flags.BoolVarP(&options.version, "version", "", false, "kube-state-metrics build version information")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -145,6 +158,11 @@ func main() {
 	err := flags.Parse(os.Args)
 	if err != nil {
 		glog.Fatalf("Error: %s", err)
+	}
+
+	if options.version {
+		fmt.Printf("%#v\n", version.GetVersion())
+		os.Exit(0)
 	}
 
 	if options.help {
@@ -160,7 +178,7 @@ func main() {
 		collectors = options.collectors
 	}
 
-	if options.namespace == api.NamespaceAll {
+	if options.namespace == metav1.NamespaceAll {
 		glog.Info("Using all namespace")
 	} else {
 		glog.Infof("Using %s namespace", options.namespace)
@@ -236,10 +254,12 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
 	glog.Infof("Testing communication with server")
-	_, err = kubeClient.Discovery().ServerVersion()
+	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
 	}
+	glog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
+		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)
 	glog.Infof("Communication with server successful")
 
 	return kubeClient, nil
@@ -250,15 +270,24 @@ func metricsServer(registry prometheus.Gatherer, port int) {
 	listenAddress := fmt.Sprintf(":%d", port)
 
 	glog.Infof("Starting metrics server: %s", listenAddress)
+
+	mux := http.NewServeMux()
+
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
 	// Add metricsPath
-	http.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	// Add healthzPath
-	http.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("ok"))
 	})
 	// Add index
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
              <head><title>Kube Metrics Server</title></head>
              <body>
@@ -270,14 +299,14 @@ func metricsServer(registry prometheus.Gatherer, port int) {
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(listenAddress, nil))
+	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
 func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespace string) {
 	activeCollectors := []string{}
-	for c, _ := range enabledCollectors {
+	for c := range enabledCollectors {
 		f, ok := availableCollectors[c]
 		if ok {
 			f(registry, kubeClient, namespace)

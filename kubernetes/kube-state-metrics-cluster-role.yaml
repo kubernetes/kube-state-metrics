@@ -1,4 +1,4 @@
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kube-state-metrics
@@ -12,6 +12,7 @@ rules:
   - replicationcontrollers
   - limitranges
   - persistentvolumeclaims
+  - namespaces
   verbs: ["list", "watch"]
 - apiGroups: ["extensions"]
   resources:

@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -36,19 +37,34 @@ var (
 		"The number of nodes running at least one daemon pod and are supposed to.",
 		[]string{"namespace", "daemonset"}, nil,
 	)
-	descDaemonSetNumberMisscheduled = prometheus.NewDesc(
-		"kube_daemonset_status_number_misscheduled",
-		"The number of nodes running a daemon pod but are not supposed to.",
-		[]string{"namespace", "daemonset"}, nil,
-	)
 	descDaemonSetDesiredNumberScheduled = prometheus.NewDesc(
 		"kube_daemonset_status_desired_number_scheduled",
 		"The number of nodes that should be running the daemon pod.",
 		[]string{"namespace", "daemonset"}, nil,
 	)
+	descDaemonSetNumberAvailable = prometheus.NewDesc(
+		"kube_daemonset_status_number_available",
+		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available",
+		[]string{"namespace", "daemonset"}, nil,
+	)
+	descDaemonSetNumberMisscheduled = prometheus.NewDesc(
+		"kube_daemonset_status_number_misscheduled",
+		"The number of nodes running a daemon pod but are not supposed to.",
+		[]string{"namespace", "daemonset"}, nil,
+	)
 	descDaemonSetNumberReady = prometheus.NewDesc(
 		"kube_daemonset_status_number_ready",
 		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
+		[]string{"namespace", "daemonset"}, nil,
+	)
+	descDaemonSetNumberUnavailable = prometheus.NewDesc(
+		"kube_daemonset_status_number_unavailable",
+		"The number of nodes that should be running the daemon pod and have none of the daemon pod running and available",
+		[]string{"namespace", "daemonset"}, nil,
+	)
+	descDaemonSetUpdatedNumberScheduled = prometheus.NewDesc(
+		"kube_daemonset_updated_number_scheduled",
+		"The total number of nodes that are running updated daemon pod",
 		[]string{"namespace", "daemonset"}, nil,
 	)
 	descDaemonSetMetadataGeneration = prometheus.NewDesc(
@@ -66,7 +82,8 @@ func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
 
 func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	dslw := cache.NewListWatchFromClient(client, "daemonsets", namespace, nil)
+	glog.Infof("collect daemonset with %s", client.APIVersion())
+	dslw := cache.NewListWatchFromClient(client, "daemonsets", namespace, fields.Everything())
 	dsinf := cache.NewSharedInformer(dslw, &v1beta1.DaemonSet{}, resyncPeriod)
 
 	dsLister := DaemonSetLister(func() (daemonsets []v1beta1.DaemonSet, err error) {
@@ -93,22 +110,27 @@ type daemonsetCollector struct {
 func (dc *daemonsetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDaemonSetCreated
 	ch <- descDaemonSetCurrentNumberScheduled
+	ch <- descDaemonSetNumberAvailable
 	ch <- descDaemonSetNumberMisscheduled
+	ch <- descDaemonSetNumberUnavailable
 	ch <- descDaemonSetDesiredNumberScheduled
 	ch <- descDaemonSetNumberReady
+	ch <- descDaemonSetUpdatedNumberScheduled
 	ch <- descDaemonSetMetadataGeneration
 }
 
 // Collect implements the prometheus.Collector interface.
 func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	dss, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing daemonsets failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range dss {
 		dc.collectDaemonSet(ch, d)
 	}
+
+	glog.Infof("collected %d daemonsets", len(dss))
 }
 
 func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1beta1.DaemonSet) {
@@ -120,8 +142,11 @@ func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1
 		addGauge(descDaemonSetCreated, float64(d.CreationTimestamp.Unix()))
 	}
 	addGauge(descDaemonSetCurrentNumberScheduled, float64(d.Status.CurrentNumberScheduled))
+	addGauge(descDaemonSetNumberAvailable, float64(d.Status.NumberAvailable))
+	addGauge(descDaemonSetNumberUnavailable, float64(d.Status.NumberUnavailable))
 	addGauge(descDaemonSetNumberMisscheduled, float64(d.Status.NumberMisscheduled))
 	addGauge(descDaemonSetDesiredNumberScheduled, float64(d.Status.DesiredNumberScheduled))
 	addGauge(descDaemonSetNumberReady, float64(d.Status.NumberReady))
+	addGauge(descDaemonSetUpdatedNumberScheduled, float64(d.Status.UpdatedNumberScheduled))
 	addGauge(descDaemonSetMetadataGeneration, float64(d.ObjectMeta.Generation))
 }

@@ -20,9 +20,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -103,7 +104,8 @@ func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
 
 func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	dlw := cache.NewListWatchFromClient(client, "deployments", namespace, nil)
+	glog.Infof("collect deployment with %s", client.APIVersion())
+	dlw := cache.NewListWatchFromClient(client, "deployments", namespace, fields.Everything())
 	dinf := cache.NewSharedInformer(dlw, &v1beta1.Deployment{}, resyncPeriod)
 
 	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
@@ -143,14 +145,16 @@ func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	ds, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing deployments failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range ds {
 		dc.collectDeployment(ch, d)
 	}
+
+	glog.Infof("collected %d deployments", len(ds))
 }
 
 func deploymentLabelsDesc(labelKeys []string) *prometheus.Desc {

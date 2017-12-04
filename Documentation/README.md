@@ -12,6 +12,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [Job Metrics](job-metrics.md)
 * [LimitRange Metrics](limitrange-metrics.md)
 * [Node Metrics](node-metrics.md)
+* [PersistentVolume Metrics](persistentvolume-metrics.md)
 * [PersistentVolumeClaim Metrics](persistentvolumeclaim-metrics.md)
 * [Pod Metrics](pod-metrics.md)
 * [ReplicaSet Metrics](replicaset-metrics.md)
@@ -19,3 +20,5 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [ResourceQuota Metrics](resourcequota-metrics.md)
 * [Service Metrics](service-metrics.md)
 * [StatefulSet Metrics](statefulset-metrics.md)
+* [Namespace Metrics](namespace-metrics.md)
+* [Horizontal Pod Autoscaler Metrics](horizontalpodautoscaler-metrics.md)

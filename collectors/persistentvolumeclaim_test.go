@@ -19,8 +19,9 @@ package collectors
 import (
 	"testing"
 
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
 )
 
 type mockPersistentVolumeClaimStore struct {
@@ -35,9 +36,14 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_persistentvolumeclaim_status_phase The phase the claim is currently in.
+		# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
+		# TYPE kube_persistentvolumeclaim_info gauge
+		# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
 		# TYPE kube_persistentvolumeclaim_status_phase gauge
+		# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
+		# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
 	`
+	storageClassName := "rbd"
 	cases := []struct {
 		pvcs    []v1.PersistentVolumeClaim
 		metrics []string // which metrics should be checked
@@ -51,6 +57,15 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 						Name:      "mysql-data",
 						Namespace: "default",
 					},
+					Spec: v1.PersistentVolumeClaimSpec{
+						StorageClassName: &storageClassName,
+						Resources: v1.ResourceRequirements{
+							Requests: v1.ResourceList{
+								v1.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						},
+						VolumeName: "pvc-mysql-data",
+					},
 					Status: v1.PersistentVolumeClaimStatus{
 						Phase: v1.ClaimBound,
 					},
@@ -59,6 +74,10 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "prometheus-data",
 						Namespace: "default",
+					},
+					Spec: v1.PersistentVolumeClaimSpec{
+						StorageClassName: &storageClassName,
+						VolumeName:       "pvc-prometheus-data",
 					},
 					Status: v1.PersistentVolumeClaimStatus{
 						Phase: v1.ClaimPending,
@@ -74,6 +93,9 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",volumename=""} 1
+				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data"} 1
+				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",volumename="pvc-prometheus-data"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Lost"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Pending"} 0
@@ -83,8 +105,9 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Pending"} 1
+				kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace="default",persistentvolumeclaim="mysql-data"} 1.073741824e+09
 			`,
-			metrics: []string{"kube_persistentvolumeclaim_status_phase"},
+			metrics: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes"},
 		},
 	}
 	for _, c := range cases {

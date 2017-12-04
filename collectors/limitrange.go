@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -53,7 +54,8 @@ func (l LimitRangeLister) List() (v1.LimitRangeList, error) {
 
 func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	rqlw := cache.NewListWatchFromClient(client, "limitranges", namespace, nil)
+	glog.Infof("collect limitrange with %s", client.APIVersion())
+	rqlw := cache.NewListWatchFromClient(client, "limitranges", namespace, fields.Everything())
 	rqinf := cache.NewSharedInformer(rqlw, &v1.LimitRange{}, resyncPeriod)
 
 	limitRangeLister := LimitRangeLister(func() (ranges v1.LimitRangeList, err error) {
@@ -93,6 +95,8 @@ func (lrc *limitRangeCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rq := range limitRangeCollector.Items {
 		lrc.collectLimitRange(ch, rq)
 	}
+
+	glog.Infof("collected %d limitranges", len(limitRangeCollector.Items))
 }
 
 func (lrc *limitRangeCollector) collectLimitRange(ch chan<- prometheus.Metric, rq v1.LimitRange) {

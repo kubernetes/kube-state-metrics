@@ -21,8 +21,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -77,7 +78,8 @@ func (l ReplicationControllerLister) List() ([]v1.ReplicationController, error) 
 
 func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	rclw := cache.NewListWatchFromClient(client, "replicationcontrollers", namespace, nil)
+	glog.Infof("collect replicationcontroller with %s", client.APIVersion())
+	rclw := cache.NewListWatchFromClient(client, "replicationcontrollers", namespace, fields.Everything())
 	rcinf := cache.NewSharedInformer(rclw, &v1.ReplicationController{}, resyncPeriod)
 
 	replicationControllerLister := ReplicationControllerLister(func() (rcs []v1.ReplicationController, err error) {
@@ -113,14 +115,16 @@ func (dc *replicationcontrollerCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (dc *replicationcontrollerCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	rcs, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing replicationcontrollers failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range rcs {
 		dc.collectReplicationController(ch, d)
 	}
+
+	glog.Infof("collected %d replicationcontrollers", len(rcs))
 }
 
 func (dc *replicationcontrollerCollector) collectReplicationController(ch chan<- prometheus.Metric, d v1.ReplicationController) {

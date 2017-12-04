@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -71,7 +72,8 @@ func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
 
 func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	rslw := cache.NewListWatchFromClient(client, "replicasets", namespace, nil)
+	glog.Infof("collect replicaset with %s", client.APIVersion())
+	rslw := cache.NewListWatchFromClient(client, "replicasets", namespace, fields.Everything())
 	rsinf := cache.NewSharedInformer(rslw, &v1beta1.ReplicaSet{}, resyncPeriod)
 
 	replicaSetLister := ReplicaSetLister(func() (replicasets []v1beta1.ReplicaSet, err error) {
@@ -107,14 +109,16 @@ func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface.
 func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
-	dpls, err := dc.store.List()
+	rss, err := dc.store.List()
 	if err != nil {
 		glog.Errorf("listing replicasets failed: %s", err)
 		return
 	}
-	for _, d := range dpls {
+	for _, d := range rss {
 		dc.collectReplicaSet(ch, d)
 	}
+
+	glog.Infof("collected %d replicasets", len(rss))
 }
 
 func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {

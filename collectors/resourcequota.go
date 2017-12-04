@@ -20,8 +20,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -51,7 +52,8 @@ func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
 
 func RegisterResourceQuotaCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	rqlw := cache.NewListWatchFromClient(client, "resourcequotas", namespace, nil)
+	glog.Infof("collect resourcequota with %s", client.APIVersion())
+	rqlw := cache.NewListWatchFromClient(client, "resourcequotas", namespace, fields.Everything())
 	rqinf := cache.NewSharedInformer(rqlw, &v1.ResourceQuota{}, resyncPeriod)
 
 	resourceQuotaLister := ResourceQuotaLister(func() (quotas v1.ResourceQuotaList, err error) {
@@ -91,6 +93,8 @@ func (rqc *resourceQuotaCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rq := range resourceQuota.Items {
 		rqc.collectResourceQuota(ch, rq)
 	}
+
+	glog.Infof("collected %d resourcequotas", len(resourceQuota.Items))
 }
 
 func (rqc *resourceQuotaCollector) collectResourceQuota(ch chan<- prometheus.Metric, rq v1.ResourceQuota) {

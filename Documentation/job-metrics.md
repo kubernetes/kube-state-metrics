@@ -5,7 +5,7 @@
 | kube_job_info | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; <br> `created_by_kind`=&lt;created_by_kind&gt;<br> `created_by_name`=&lt;created_by_name&gt;<br> |
 | kube_job_spec_parallelism | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_spec_completions | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
-| kube_job_spec_active_dealine_seconds | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
+| kube_job_spec_active_deadline_seconds | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_status_active | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_status_succeeded | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_status_failed | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
@@ -13,3 +13,4 @@
 | kube_job_status_completion_time | Counter | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_complete | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_failed | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
+| kube_job_created | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |

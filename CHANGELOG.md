@@ -1,3 +1,28 @@
+## v1.1.0 / 2017-10-19
+
+After a testing period of one week, there were no additional bugs found or features introduced.
+
+## v1.1.0-rc.0 / 2017-10-12
+
+* [FEATURE] Add `kube_pod_container_status_waiting_reason` metric.
+* [FEATURE] Add `kube_node_status_capacity_nvidia_gpu_cards` and `kube_node_status_allocatable_nvidia_gpu_cards` metrics.
+* [FEATURE] Add `kube_persistentvolumeclaim_info`, `kube_persistentvolumeclaim_status_phase` and `kube_persistentvolumeclaim_resource_requests_storage_bytes` metrics.
+* [FEATURE] Add `kube_cronjob_created` metric.
+* [FEATURE] Add `kube_namespace_status_phase`, `kube_namespace_labels` and `kube_namespace_created` metrics.
+* [FEATURE] Add `*_created` metrics for all available collectors and resources.
+* [FEATURE] Add ability to specify glog flags.
+* [FEATURE] Add ability to limit kube-state-metrics objects to single namespace.
+* [ENHANCEMENT] Bump client-go to 5.0 release branch.
+* [ENHANCEMENT] Add pprof endpoints for profiling.
+* [ENHANCEMENT] Log resources and API versions used when collecting metrics from objects.
+* [ENHANCEMENT] Log number of resources used to generate metrics off of.
+* [ENHANCEMENT] Improve a usage message for collectors flag.
+* [BUGFIX] Fix Job start time nil panic.
+
+## v1.0.1 / 2017-08-24
+
+* [BUGFIX] Fix nil pointer panic when pods have an owner without controllers.
+
 ## v1.0.0 / 2017-08-09
 
 After a testing period of one week, there were no additional bugs found or features introduced.

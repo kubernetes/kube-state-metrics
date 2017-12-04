@@ -20,9 +20,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -85,6 +86,11 @@ var (
 		"The total CPU resources of the node.",
 		[]string{"node"}, nil,
 	)
+	descNodeStatusCapacityNvidiaGPU = prometheus.NewDesc(
+		"kube_node_status_capacity_nvidia_gpu_cards",
+		"The total Nvidia GPU resources of the node.",
+		[]string{"node"}, nil,
+	)
 	descNodeStatusCapacityMemory = prometheus.NewDesc(
 		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
@@ -99,6 +105,11 @@ var (
 	descNodeStatusAllocatableCPU = prometheus.NewDesc(
 		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
+		[]string{"node"}, nil,
+	)
+	descNodeStatusAllocatableNvidiaGPU = prometheus.NewDesc(
+		"kube_node_status_allocatable_nvidia_gpu_cards",
+		"The Nvidia GPU resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
 	descNodeStatusAllocatableMemory = prometheus.NewDesc(
@@ -116,7 +127,8 @@ func (l NodeLister) List() (v1.NodeList, error) {
 
 func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
-	nlw := cache.NewListWatchFromClient(client, "nodes", api.NamespaceAll, nil)
+	glog.Infof("collect node with %s", client.APIVersion())
+	nlw := cache.NewListWatchFromClient(client, "nodes", metav1.NamespaceAll, fields.Everything())
 	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
 
 	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
@@ -148,9 +160,11 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeStatusCondition
 	ch <- descNodeStatusPhase
 	ch <- descNodeStatusCapacityCPU
+	ch <- descNodeStatusCapacityNvidiaGPU
 	ch <- descNodeStatusCapacityMemory
 	ch <- descNodeStatusCapacityPods
 	ch <- descNodeStatusAllocatableCPU
+	ch <- descNodeStatusAllocatableNvidiaGPU
 	ch <- descNodeStatusAllocatableMemory
 	ch <- descNodeStatusAllocatablePods
 }
@@ -165,6 +179,8 @@ func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, n := range nodes.Items {
 		nc.collectNode(ch, n)
 	}
+
+	glog.Infof("collected %d nodes", len(nodes.Items))
 }
 
 func nodeLabelsDesc(labelKeys []string) *prometheus.Desc {
@@ -222,10 +238,12 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		}
 	}
 	addResource(descNodeStatusCapacityCPU, n.Status.Capacity, v1.ResourceCPU)
+	addResource(descNodeStatusCapacityNvidiaGPU, n.Status.Capacity, v1.ResourceNvidiaGPU)
 	addResource(descNodeStatusCapacityMemory, n.Status.Capacity, v1.ResourceMemory)
 	addResource(descNodeStatusCapacityPods, n.Status.Capacity, v1.ResourcePods)
 
 	addResource(descNodeStatusAllocatableCPU, n.Status.Allocatable, v1.ResourceCPU)
+	addResource(descNodeStatusAllocatableNvidiaGPU, n.Status.Allocatable, v1.ResourceNvidiaGPU)
 	addResource(descNodeStatusAllocatableMemory, n.Status.Allocatable, v1.ResourceMemory)
 	addResource(descNodeStatusAllocatablePods, n.Status.Allocatable, v1.ResourcePods)
 }

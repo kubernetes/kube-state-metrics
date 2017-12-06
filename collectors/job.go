@@ -90,7 +90,7 @@ var (
 		[]string{"namespace", "job"}, nil,
 	)
 	descJobOwner = prometheus.NewDesc(
-		"kube_Job_owner",
+		"kube_job_owner",
 		"Information about the Job's owner.",
 		[]string{"namespace", "job", "owner_kind", "owner_name", "owner_is_controller"}, nil,
 	)

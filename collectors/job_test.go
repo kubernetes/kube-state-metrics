@@ -53,8 +53,8 @@ func TestJobCollector(t *testing.T) {
 	// output so we only have to modify a single place when doing adjustments.
 	var test = true
 	const metadata = `
-		# HELP kube_Job_owner Information about the Job's owner.
-		# TYPE kube_Job_owner gauge
+		# HELP kube_job_owner Information about the Job's owner.
+		# TYPE kube_job_owner gauge
 		# HELP kube_job_created Unix creation timestamp
 		# TYPE kube_job_created gauge
 		# HELP kube_job_complete The job has completed its execution.
@@ -178,10 +178,10 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_Job_owner{job="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
-				kube_Job_owner{job="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="rs-name"} 1
-				kube_Job_owner{job="SuccessfulJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
-				kube_Job_owner{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="rs-name"} 1
+				kube_job_owner{job="SuccessfulJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				
 				kube_job_created{job="RunningJob1",namespace="ns1"} 1.5e+09
 				

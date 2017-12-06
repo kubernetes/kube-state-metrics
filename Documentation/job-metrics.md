@@ -14,3 +14,4 @@
 | kube_job_complete | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_failed | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_created | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
+| kube_job_owner | Gauge | `pod`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; <br> `owner_kind`=&lt;owner kind&gt; <br> `owner_name`=&lt;owner name&gt; <br> `owner_is_controller`=&lt;whether owner is controller&gt;  |

@@ -17,6 +17,8 @@ limitations under the License.
 package collectors
 
 import (
+	"strconv"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -87,6 +89,11 @@ var (
 		"CompletionTime represents time when the job was completed.",
 		[]string{"namespace", "job"}, nil,
 	)
+	descJobOwner = prometheus.NewDesc(
+		"kube_job_owner",
+		"Information about the Job's owner.",
+		[]string{"namespace", "job", "owner_kind", "owner_name", "owner_is_controller"}, nil,
+	)
 )
 
 type JobLister func() ([]v1batch.Job, error)
@@ -135,6 +142,7 @@ func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descJobConditionFailed
 	ch <- descJobStatusStartTime
 	ch <- descJobStatusCompletionTime
+	ch <- descJobOwner
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -196,6 +204,19 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 			addConditionMetrics(ch, descJobConditionComplete, c.Status, j.Namespace, j.Name)
 		case v1batch.JobFailed:
 			addConditionMetrics(ch, descJobConditionFailed, c.Status, j.Namespace, j.Name)
+		}
+	}
+
+	owners := j.GetOwnerReferences()
+	if len(owners) == 0 {
+		addGauge(descJobOwner, 1, "<none>", "<none>", "<none>")
+	} else {
+		for _, owner := range owners {
+			if owner.Controller != nil {
+				addGauge(descJobOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			} else {
+				addGauge(descJobOwner, 1, owner.Kind, owner.Name, "false")
+			}
 		}
 	}
 }

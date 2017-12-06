@@ -51,7 +51,10 @@ func (js mockJobStore) List() (jobs []v1batch.Job, err error) {
 func TestJobCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
+	var test = true
 	const metadata = `
+		# HELP kube_job_owner Information about the Job's owner.
+		# TYPE kube_job_owner gauge
 		# HELP kube_job_created Unix creation timestamp
 		# TYPE kube_job_created gauge
 		# HELP kube_job_complete The job has completed its execution.
@@ -89,6 +92,13 @@ func TestJobCollector(t *testing.T) {
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:         "ns1",
 						Generation:        1,
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Kind:       "CronJob",
+								Name:       "rs-name",
+								Controller: &test,
+							},
+						},
 					},
 					Status: v1batch.JobStatus{
 						Active:         1,
@@ -168,21 +178,22 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_job_owner{job="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="rs-name"} 1
+				kube_job_owner{job="SuccessfulJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				
 				kube_job_created{job="RunningJob1",namespace="ns1"} 1.5e+09
 				
 				kube_job_complete{condition="false",job="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="false",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
-
 				kube_job_complete{condition="true",job="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_complete{condition="true",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
-
 				kube_job_complete{condition="unknown",job="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="unknown",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 
 				kube_job_failed{condition="false",job="FailedJob1",namespace="ns1"} 0
-
 				kube_job_failed{condition="true",job="FailedJob1",namespace="ns1"} 1
-
 				kube_job_failed{condition="unknown",job="FailedJob1",namespace="ns1"} 0
 
 				kube_job_info{job="RunningJob1",namespace="ns1"} 1

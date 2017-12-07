@@ -77,7 +77,7 @@ func (l CronJobLister) List() ([]batchv1beta1.CronJob, error) {
 }
 
 func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
-	client := kubeClient.BatchV2alpha1().RESTClient()
+	client := kubeClient.BatchV1beta1().RESTClient()
 	glog.Infof("collect cronjob with %s", client.APIVersion())
 	cjlw := cache.NewListWatchFromClient(client, "cronjobs", namespace, fields.Everything())
 	cjinf := cache.NewSharedInformer(cjlw, &batchv1beta1.CronJob{}, resyncPeriod)

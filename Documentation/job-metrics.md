@@ -3,6 +3,7 @@
 | Metric name| Metric type | Labels/tags |
 | ---------- | ----------- | ----------- |
 | kube_job_info | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
+| kube_job_labels | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; <br> `label_JOB_LABEL`=&lt;JOB_LABEL&gt;  |
 | kube_job_spec_parallelism | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_spec_completions | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |
 | kube_job_spec_active_deadline_seconds | Gauge | `job`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; |

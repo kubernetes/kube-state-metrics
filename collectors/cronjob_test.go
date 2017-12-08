@@ -47,6 +47,8 @@ func TestCronJobCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_cronjob_labels gauge
 		# HELP kube_cronjob_info Info about cronjob.
 		# TYPE kube_cronjob_info gauge
 		# HELP kube_cronjob_created Unix creation timestamp
@@ -73,6 +75,9 @@ func TestCronJobCollector(t *testing.T) {
 						Name:       "ActiveRunningCronJob1",
 						Namespace:  "ns1",
 						Generation: 1,
+						Labels: map[string]string{
+							"app": "example-active-running-1",
+						},
 					},
 					Status: batchv1beta1.CronJobStatus{
 						Active:           []v1.ObjectReference{v1.ObjectReference{Name: "FakeJob1"}, v1.ObjectReference{Name: "FakeJob2"}},
@@ -89,6 +94,9 @@ func TestCronJobCollector(t *testing.T) {
 						Name:       "SuspendedCronJob1",
 						Namespace:  "ns1",
 						Generation: 1,
+						Labels: map[string]string{
+							"app": "example-suspended-1",
+						},
 					},
 					Status: batchv1beta1.CronJobStatus{
 						Active:           []v1.ObjectReference{},
@@ -106,6 +114,9 @@ func TestCronJobCollector(t *testing.T) {
 						CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
 						Namespace:         "ns1",
 						Generation:        1,
+						Labels: map[string]string{
+							"app": "example-active-no-last-scheduled-1",
+						},
 					},
 					Status: batchv1beta1.CronJobStatus{
 						Active:           []v1.ObjectReference{},
@@ -125,6 +136,10 @@ func TestCronJobCollector(t *testing.T) {
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
+
+				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",label_app="example-active-no-last-scheduled-1",namespace="ns1"} 1
+				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",label_app="example-active-running-1",namespace="ns1"} 1
+				kube_cronjob_labels{cronjob="SuspendedCronJob1",label_app="example-suspended-1",namespace="ns1"} 1
 
 				kube_cronjob_next_schedule_time{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.5000243e+09
 				kube_cronjob_next_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.500012e+09

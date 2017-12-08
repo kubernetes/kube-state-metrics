@@ -60,6 +60,8 @@ func TestJobCollector(t *testing.T) {
 		# TYPE kube_job_failed gauge
 		# HELP kube_job_info Information about job.
 		# TYPE kube_job_info gauge
+		# HELP kube_job_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_job_labels gauge
 		# HELP kube_job_spec_active_deadline_seconds The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
 		# TYPE kube_job_spec_active_deadline_seconds gauge
 		# HELP kube_job_spec_completions The desired number of successfully finished pods the job should be run with.
@@ -89,6 +91,9 @@ func TestJobCollector(t *testing.T) {
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:         "ns1",
 						Generation:        1,
+						Labels: map[string]string{
+							"app": "example-running-1",
+						},
 					},
 					Status: v1batch.JobStatus{
 						Active:         1,
@@ -107,6 +112,9 @@ func TestJobCollector(t *testing.T) {
 						Name:       "SuccessfulJob1",
 						Namespace:  "ns1",
 						Generation: 1,
+						Labels: map[string]string{
+							"app": "example-successful-1",
+						},
 					},
 					Status: v1batch.JobStatus{
 						Active:         0,
@@ -128,6 +136,9 @@ func TestJobCollector(t *testing.T) {
 						Name:       "FailedJob1",
 						Namespace:  "ns1",
 						Generation: 1,
+						Labels: map[string]string{
+							"app": "example-failed-1",
+						},
 					},
 					Status: v1batch.JobStatus{
 						Active:         0,
@@ -149,6 +160,9 @@ func TestJobCollector(t *testing.T) {
 						Name:       "SuccessfulJob2NoActiveDeadlineSeconds",
 						Namespace:  "ns1",
 						Generation: 1,
+						Labels: map[string]string{
+							"app": "example-successful-2",
+						},
 					},
 					Status: v1batch.JobStatus{
 						Active:         0,
@@ -189,6 +203,12 @@ func TestJobCollector(t *testing.T) {
 				kube_job_info{job="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_info{job="FailedJob1",namespace="ns1"} 1
 				kube_job_info{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+
+				kube_job_labels{job="FailedJob1",label_app="example-failed-1",namespace="ns1"} 1
+				kube_job_labels{job="RunningJob1",label_app="example-running-1",namespace="ns1"} 1
+				kube_job_labels{job="SuccessfulJob1",label_app="example-successful-1",namespace="ns1"} 1
+				kube_job_labels{job="SuccessfulJob2NoActiveDeadlineSeconds",label_app="example-successful-2",namespace="ns1"} 1
+
 
 				kube_job_spec_active_deadline_seconds{job="RunningJob1",namespace="ns1"} 900
 				kube_job_spec_active_deadline_seconds{job="SuccessfulJob1",namespace="ns1"} 900

@@ -33,6 +33,16 @@ import (
 )
 
 var (
+	descCronJobLabelsName          = "kube_cronjob_labels"
+	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
+
+	descCronJobLabels = prometheus.NewDesc(
+		descCronJobLabelsName,
+		descCronJobLabelsHelp,
+		descCronJobLabelsDefaultLabels, nil,
+	)
+
 	descCronJobInfo = prometheus.NewDesc(
 		"kube_cronjob_info",
 		"Info about cronjob.",
@@ -106,6 +116,7 @@ type cronJobCollector struct {
 func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descCronJobInfo
 	ch <- descCronJobCreated
+	ch <- descCronJobLabels
 	ch <- descCronJobStatusActive
 	ch <- descCronJobStatusLastScheduleTime
 	ch <- descCronJobSpecSuspend
@@ -141,6 +152,15 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
 }
 
+func cronJobLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descCronJobLabelsName,
+		descCronJobLabelsHelp,
+		append(descCronJobLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j batchv1beta1.CronJob) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
@@ -160,6 +180,10 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j batchv
 	}
 
 	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+	addGauge(cronJobLabelsDesc(labelKeys), 1, labelValues...)
+
 	if !j.CreationTimestamp.IsZero() {
 		addGauge(descCronJobCreated, float64(j.CreationTimestamp.Unix()))
 	}

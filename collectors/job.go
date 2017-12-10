@@ -27,6 +27,16 @@ import (
 )
 
 var (
+	descJobLabelsName          = "kube_job_labels"
+	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descJobLabelsDefaultLabels = []string{"namespace", "job"}
+
+	descJobLabels = prometheus.NewDesc(
+		descJobLabelsName,
+		descJobLabelsHelp,
+		descJobLabelsDefaultLabels, nil,
+	)
+
 	descJobInfo = prometheus.NewDesc(
 		"kube_job_info",
 		"Information about job.",
@@ -125,6 +135,7 @@ type jobCollector struct {
 func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descJobInfo
 	ch <- descJobCreated
+	ch <- descJobLabels
 	ch <- descJobSpecParallelism
 	ch <- descJobSpecCompletions
 	ch <- descJobSpecActiveDeadlineSeconds
@@ -151,6 +162,15 @@ func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
 	glog.Infof("collected %d jobs", len(jobs))
 }
 
+func jobLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descJobLabelsName,
+		descJobLabelsHelp,
+		append(descJobLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
@@ -162,6 +182,9 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 	}
 
 	addGauge(descJobInfo, 1)
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+	addGauge(jobLabelsDesc(labelKeys), 1, labelValues...)
 
 	if j.Spec.Parallelism != nil {
 		addGauge(descJobSpecParallelism, float64(*j.Spec.Parallelism))

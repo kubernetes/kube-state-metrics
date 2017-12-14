@@ -23,3 +23,4 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [StatefulSet Metrics](statefulset-metrics.md)
 * [Namespace Metrics](namespace-metrics.md)
 * [Horizontal Pod Autoscaler Metrics](horizontalpodautoscaler-metrics.md)
+* [Endpoint Metrics](endpoint-metrics.md)

@@ -64,6 +64,7 @@ var (
 		"persistentvolumeclaims":   struct{}{},
 		"namespaces":               struct{}{},
 		"horizontalpodautoscalers": struct{}{},
+		"endpoint":                 struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
 		"componentstatuses":        collectors.RegisterComponentStatusCollector,
@@ -83,6 +84,7 @@ var (
 		"persistentvolumeclaims":   collectors.RegisterPersistentVolumeClaimCollector,
 		"namespaces":               collectors.RegisterNamespaceCollector,
 		"horizontalpodautoscalers": collectors.RegisterHorizontalPodAutoScalerCollector,
+		"endpoint":                 collectors.RegisterEndpointCollector,
 	}
 )
 

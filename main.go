@@ -130,6 +130,7 @@ type options struct {
 	kubeconfig string
 	help       bool
 	port       int
+	host       string
 	collectors collectorSet
 	namespace  string
 	version    bool
@@ -148,6 +149,7 @@ func main() {
 	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
+	flags.StringVar(&options.host, "host", "", `Host to expose metrics on.`)
 	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
 	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
 	flags.BoolVarP(&options.version, "version", "", false, "kube-state-metrics build version information")
@@ -202,7 +204,7 @@ func main() {
 
 	registry := prometheus.NewRegistry()
 	registerCollectors(registry, kubeClient, collectors, options.namespace)
-	metricsServer(registry, options.port)
+	metricsServer(registry, options.host, options.port)
 }
 
 func isNotExists(file string) bool {
@@ -267,9 +269,9 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	return kubeClient, nil
 }
 
-func metricsServer(registry prometheus.Gatherer, port int) {
+func metricsServer(registry prometheus.Gatherer, host string, port int) {
 	// Address to listen on for web interface and telemetry
-	listenAddress := fmt.Sprintf(":%d", port)
+	listenAddress := fmt.Sprintf("%s:%d", host, port)
 
 	glog.Infof("Starting metrics server: %s", listenAddress)
 

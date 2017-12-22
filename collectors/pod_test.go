@@ -103,7 +103,7 @@ func TestPodCollector(t *testing.T) {
 						ContainerStatuses: []v1.ContainerStatus{
 							v1.ContainerStatus{
 								Name:        "container1",
-								Image:       "gcr.io/google_containers/hyperkube1",
+								Image:       "k8s.gcr.io/hyperkube1",
 								ImageID:     "docker://sha256:aaa",
 								ContainerID: "docker://ab123",
 							},
@@ -118,13 +118,13 @@ func TestPodCollector(t *testing.T) {
 						ContainerStatuses: []v1.ContainerStatus{
 							v1.ContainerStatus{
 								Name:        "container2",
-								Image:       "gcr.io/google_containers/hyperkube2",
+								Image:       "k8s.gcr.io/hyperkube2",
 								ImageID:     "docker://sha256:bbb",
 								ContainerID: "docker://cd456",
 							},
 							v1.ContainerStatus{
 								Name:        "container3",
-								Image:       "gcr.io/google_containers/hyperkube3",
+								Image:       "k8s.gcr.io/hyperkube3",
 								ImageID:     "docker://sha256:ccc",
 								ContainerID: "docker://ef789",
 							},
@@ -133,9 +133,9 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_pod_container_info{container="container1",container_id="docker://ab123",image="gcr.io/google_containers/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_info{container="container2",container_id="docker://cd456",image="gcr.io/google_containers/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_info{container="container3",container_id="docker://ef789",image="gcr.io/google_containers/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_info{container="container1",container_id="docker://ab123",image="k8s.gcr.io/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1
+				kube_pod_container_info{container="container2",container_id="docker://cd456",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_info{container="container3",container_id="docker://ef789",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
 				`,
 			metrics: []string{"kube_pod_container_info"},
 		}, {

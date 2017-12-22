@@ -27,7 +27,7 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 5
       - name: addon-resizer
-        image: gcr.io/google_containers/addon-resizer:1.0
+        image: k8s.gcr.io/addon-resizer:1.0
         resources:
           limits:
             cpu: 100m

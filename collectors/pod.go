@@ -17,7 +17,6 @@ limitations under the License.
 package collectors
 
 import (
-	"encoding/json"
 	"regexp"
 	"strconv"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -229,18 +229,6 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 }
 
-func extractCreatedBy(annotation map[string]string) *v1.ObjectReference {
-	value, ok := annotation[v1.CreatedByAnnotation]
-	if ok {
-		var r v1.SerializedReference
-		err := json.Unmarshal([]byte(value), &r)
-		if err == nil {
-			return &r.Reference
-		}
-	}
-	return nil
-}
-
 // Collect implements the prometheus.Collector interface.
 func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	pods, err := pc.store.List()
@@ -293,7 +281,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addConstMetric(desc, prometheus.CounterValue, v, lv...)
 	}
 
-	createdBy := extractCreatedBy(p.Annotations)
+	createdBy := metav1.GetControllerOf(&p)
 	createdByKind := "<none>"
 	createdByName := "<none>"
 	if createdBy != nil {

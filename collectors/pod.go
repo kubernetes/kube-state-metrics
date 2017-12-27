@@ -245,9 +245,12 @@ func extractCreatedBy(annotation map[string]string) *v1.ObjectReference {
 func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	pods, err := pc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "pod"}).Inc()
 		glog.Errorf("listing pods failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "pod"}).Observe(float64(len(pods)))
 	for _, p := range pods {
 		pc.collectPod(ch, p)
 	}

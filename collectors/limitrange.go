@@ -88,10 +88,12 @@ func (lrc *limitRangeCollector) Describe(ch chan<- *prometheus.Desc) {
 func (lrc *limitRangeCollector) Collect(ch chan<- prometheus.Metric) {
 	limitRangeCollector, err := lrc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "limitrange"}).Inc()
 		glog.Errorf("listing limit ranges failed: %s", err)
 		return
 	}
 
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "limitrange"}).Observe(float64(len(limitRangeCollector.Items)))
 	for _, rq := range limitRangeCollector.Items {
 		lrc.collectLimitRange(ch, rq)
 	}

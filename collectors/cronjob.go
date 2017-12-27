@@ -128,9 +128,12 @@ func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
 func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 	cronjobs, err := cjc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "cronjob"}).Inc()
 		glog.Errorf("listing cronjobs failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "cronjob"}).Observe(float64(len(cronjobs)))
 	for _, cj := range cronjobs {
 		cjc.collectCronJob(ch, cj)
 	}

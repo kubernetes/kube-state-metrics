@@ -173,9 +173,12 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
 	nodes, err := nc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "node"}).Inc()
 		glog.Errorf("listing nodes failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "node"}).Observe(float64(len(nodes.Items)))
 	for _, n := range nodes.Items {
 		nc.collectNode(ch, n)
 	}

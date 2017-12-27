@@ -100,10 +100,12 @@ func (nsc *namespaceCollector) Describe(ch chan<- *prometheus.Desc) {
 func (nsc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
 	nsls, err := nsc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "namespace"}).Inc()
 		glog.Errorf("listing namespace failed: %s", err)
 		return
 	}
 
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "namespace"}).Observe(float64(len(nsls)))
 	for _, rq := range nsls {
 		nsc.collectNamespace(ch, rq)
 	}

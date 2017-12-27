@@ -152,9 +152,12 @@ func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
 func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
 	jobs, err := jc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "job"}).Inc()
 		glog.Errorf("listing jobs failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "job"}).Observe(float64(len(jobs)))
 	for _, j := range jobs {
 		jc.collectJob(ch, j)
 	}

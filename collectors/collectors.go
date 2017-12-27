@@ -18,8 +18,30 @@ package collectors
 
 import (
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
 	resyncPeriod = 5 * time.Minute
+
+	kubeStateMetricsSubsystem = "ksm"
+
+	ScrapeErrorTotalMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: kubeStateMetricsSubsystem,
+			Name:      "scrape_error_total",
+			Help:      "Total scrape errors encountered when scraping a resource",
+		},
+		[]string{"resource"},
+	)
+
+	ResourcesPerScrapeMetric = prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Subsystem: kubeStateMetricsSubsystem,
+			Name:      "resources_per_scrape",
+			Help:      "Number of resources returned per scrape",
+		},
+		[]string{"resource"},
+	)
 )

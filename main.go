@@ -38,7 +38,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"k8s.io/kube-state-metrics/collectors"
+	kcollectors "k8s.io/kube-state-metrics/collectors"
 	"k8s.io/kube-state-metrics/version"
 )
 
@@ -69,24 +69,24 @@ var (
 		"endpoints":                struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
-		"componentstatuses":        collectors.RegisterComponentStatusCollector,
-		"cronjobs":                 collectors.RegisterCronJobCollector,
-		"daemonsets":               collectors.RegisterDaemonSetCollector,
-		"deployments":              collectors.RegisterDeploymentCollector,
-		"jobs":                     collectors.RegisterJobCollector,
-		"limitranges":              collectors.RegisterLimitRangeCollector,
-		"nodes":                    collectors.RegisterNodeCollector,
-		"pods":                     collectors.RegisterPodCollector,
-		"replicasets":              collectors.RegisterReplicaSetCollector,
-		"replicationcontrollers":   collectors.RegisterReplicationControllerCollector,
-		"resourcequotas":           collectors.RegisterResourceQuotaCollector,
-		"services":                 collectors.RegisterServiceCollector,
-		"statefulsets":             collectors.RegisterStatefulSetCollector,
-		"persistentvolumes":        collectors.RegisterPersistentVolumeCollector,
-		"persistentvolumeclaims":   collectors.RegisterPersistentVolumeClaimCollector,
-		"namespaces":               collectors.RegisterNamespaceCollector,
-		"horizontalpodautoscalers": collectors.RegisterHorizontalPodAutoScalerCollector,
-		"endpoints":                collectors.RegisterEndpointCollector,
+		"componentstatuses":        kcollectors.RegisterComponentStatusCollector,
+		"cronjobs":                 kcollectors.RegisterCronJobCollector,
+		"daemonsets":               kcollectors.RegisterDaemonSetCollector,
+		"deployments":              kcollectors.RegisterDeploymentCollector,
+		"jobs":                     kcollectors.RegisterJobCollector,
+		"limitranges":              kcollectors.RegisterLimitRangeCollector,
+		"nodes":                    kcollectors.RegisterNodeCollector,
+		"pods":                     kcollectors.RegisterPodCollector,
+		"replicasets":              kcollectors.RegisterReplicaSetCollector,
+		"replicationcontrollers":   kcollectors.RegisterReplicationControllerCollector,
+		"resourcequotas":           kcollectors.RegisterResourceQuotaCollector,
+		"services":                 kcollectors.RegisterServiceCollector,
+		"statefulsets":             kcollectors.RegisterStatefulSetCollector,
+		"persistentvolumes":        kcollectors.RegisterPersistentVolumeCollector,
+		"persistentvolumeclaims":   kcollectors.RegisterPersistentVolumeClaimCollector,
+		"namespaces":               kcollectors.RegisterNamespaceCollector,
+		"horizontalpodautoscalers": kcollectors.RegisterHorizontalPodAutoScalerCollector,
+		"endpoints":                kcollectors.RegisterEndpointCollector,
 	}
 )
 
@@ -129,15 +129,16 @@ func (c *collectorSet) Type() string {
 }
 
 type options struct {
-	inCluster  bool
-	apiserver  string
-	kubeconfig string
-	help       bool
-	port       int
-	host       string
-	collectors collectorSet
-	namespace  string
-	version    bool
+	inCluster      bool
+	apiserver      string
+	kubeconfig     string
+	help           bool
+	port           int
+	ksmMetricsPort int
+	host           string
+	collectors     collectorSet
+	namespace      string
+	version        bool
 }
 
 func main() {
@@ -153,6 +154,7 @@ func main() {
 	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
 	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
+	flags.IntVar(&options.ksmMetricsPort, "ksm-metrics-port", 81, `Port to expose kube-state-metrics own metrics on.`)
 	flags.StringVar(&options.host, "host", "0.0.0.0", `Host to expose metrics on.`)
 	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
 	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
@@ -205,6 +207,13 @@ func main() {
 	if err != nil {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
+
+	ksmMetricsRegistry := prometheus.NewRegistry()
+	ksmMetricsRegistry.Register(kcollectors.ResourcesPerScrapeMetric)
+	ksmMetricsRegistry.Register(kcollectors.ScrapeErrorTotalMetric)
+	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(os.Getpid(), ""))
+	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
+	go ksmMetricsServer(ksmMetricsRegistry, options.host, options.ksmMetricsPort)
 
 	registry := prometheus.NewRegistry()
 	registerCollectors(registry, kubeClient, collectors, options.namespace)
@@ -271,6 +280,31 @@ func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kube
 	glog.Infof("Communication with server successful")
 
 	return kubeClient, nil
+}
+
+func ksmMetricsServer(registry prometheus.Gatherer, host string, port int) {
+	// Address to listen on for web interface and telemetry
+	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
+
+	glog.Infof("Starting kube-state-metrics own metrics server: %s", listenAddress)
+
+	mux := http.NewServeMux()
+
+	// Add metricsPath
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	// Add index
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
+             <head><title>Kube-State-Metrics Metrics Server</title></head>
+             <body>
+             <h1>Kube-State-Metrics Metrics</h1>
+			 <ul>
+             <li><a href='` + metricsPath + `'>metrics</a></li>
+			 </ul>
+             </body>
+             </html>`))
+	})
+	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
 func metricsServer(registry prometheus.Gatherer, host string, port int) {

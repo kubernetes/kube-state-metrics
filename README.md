@@ -24,6 +24,7 @@ the raw metrics.
   - [Resource group version compatibility](#resource-group-version-compatibility)
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
+- [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
 - [kube-state-metrics vs. Heaspter](#kube-state-metrics-vs-heapster)
 - [Setup](#setup)
@@ -99,6 +100,9 @@ additional metrics!
 > which may be changed at any given release.
 
 See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
+
+### Kube-state-metrics self metrics
+kube-state-metrics exposes its own metrics under `--ksm-metrics-port`.
 
 ### Resource recommendation
 

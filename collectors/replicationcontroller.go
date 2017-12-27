@@ -117,9 +117,12 @@ func (dc *replicationcontrollerCollector) Describe(ch chan<- *prometheus.Desc) {
 func (dc *replicationcontrollerCollector) Collect(ch chan<- prometheus.Metric) {
 	rcs, err := dc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Inc()
 		glog.Errorf("listing replicationcontrollers failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Observe(float64(len(rcs)))
 	for _, d := range rcs {
 		dc.collectReplicationController(ch, d)
 	}

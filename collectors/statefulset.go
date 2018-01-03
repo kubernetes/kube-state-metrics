@@ -134,9 +134,12 @@ func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
 func (sc *statefulSetCollector) Collect(ch chan<- prometheus.Metric) {
 	sss, err := sc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "statefulset"}).Inc()
 		glog.Errorf("listing statefulsets failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "statefulset"}).Observe(float64(len(sss)))
 	for _, d := range sss {
 		sc.collectStatefulSet(ch, d)
 	}

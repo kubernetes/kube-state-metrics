@@ -123,9 +123,12 @@ func (dc *daemonsetCollector) Describe(ch chan<- *prometheus.Desc) {
 func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
 	dss, err := dc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "daemonset"}).Inc()
 		glog.Errorf("listing daemonsets failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "daemonset"}).Observe(float64(len(dss)))
 	for _, d := range dss {
 		dc.collectDaemonSet(ch, d)
 	}

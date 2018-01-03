@@ -147,9 +147,12 @@ func (dc *deploymentCollector) Describe(ch chan<- *prometheus.Desc) {
 func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 	ds, err := dc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "deployment"}).Inc()
 		glog.Errorf("listing deployments failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "deployment"}).Observe(float64(len(ds)))
 	for _, d := range ds {
 		dc.collectDeployment(ch, d)
 	}

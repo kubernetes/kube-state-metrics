@@ -75,9 +75,12 @@ func (csc *componentStatusCollector) Describe(ch chan<- *prometheus.Desc) {
 func (csc *componentStatusCollector) Collect(ch chan<- prometheus.Metric) {
 	csl, err := csc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "componentstatus"}).Inc()
 		glog.Errorf("listing component status failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "componentstatus"}).Observe(float64(len(csl.Items)))
 	for _, s := range csl.Items {
 		csc.collectComponentStatus(ch, s)
 	}

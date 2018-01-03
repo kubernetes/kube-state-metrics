@@ -111,9 +111,12 @@ func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
 func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
 	rss, err := dc.store.List()
 	if err != nil {
+		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicaset"}).Inc()
 		glog.Errorf("listing replicasets failed: %s", err)
 		return
 	}
+
+	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicaset"}).Observe(float64(len(rss)))
 	for _, d := range rss {
 		dc.collectReplicaSet(ch, d)
 	}

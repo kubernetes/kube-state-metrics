@@ -13,6 +13,7 @@ rules:
   - limitranges
   - persistentvolumeclaims
   - namespaces
+  - endpoints
   verbs: ["list", "watch"]
 - apiGroups: ["extensions"]
   resources:

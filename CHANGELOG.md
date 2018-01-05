@@ -1,3 +1,22 @@
+## v1.2.0-rc.0 / 2018-01-05
+
+* [CHANGE] The CronJob collector now expects the version to be v1beta1.
+* [FEATURE] Add `Endpoints` metrics collector.
+* [FEATURE] Add `PersistentVolume` metrics collector.
+* [FEATURE] Add `HorizontalPodAutoscaler` metrics collector.
+* [FEATURE] Add `kube_pod_container_status_terminated_reason` metric.
+* [FEATURE] Add `kube_job_labels` metric.
+* [FEATURE] Add `kube_cronjob_labels` metric.
+* [FEATURE] Add `kube_service_spec_type` metric.
+* [FEATURE] Add `kube_statefulset_status_replicas_current` metric.
+* [FEATURE] Add `kube_statefulset_status_replicas_ready` metric.
+* [FEATURE] Add `kube_statefulset_status_replicas_updated` metric.
+* [ENHANCEMENT] Allow specifying the host/IP kube-state-metrics binds to.
+* [ENHANCEMENT] Add `volumename` label to `kube_persistentvolumeclaim_info` metric.
+* [ENHANCEMENT] Add `cluster_ip` label to `kube_service_info` metric.
+* [ENHANCEMENT] Print version on startup and useful debug information at runtime.
+* [ENHANCEMENT] Add metrics for kube-state-metrics itself. For separation purposes this listens on a separate host/IP and port, both configurable respectively.
+
 ## v1.1.0 / 2017-10-19
 
 After a testing period of one week, there were no additional bugs found or features introduced.

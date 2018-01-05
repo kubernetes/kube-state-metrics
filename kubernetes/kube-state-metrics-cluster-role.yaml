@@ -12,6 +12,7 @@ rules:
   - replicationcontrollers
   - limitranges
   - persistentvolumeclaims
+  - persistentvolumes
   - namespaces
   - endpoints
   verbs: ["list", "watch"]
@@ -29,4 +30,8 @@ rules:
   resources:
   - cronjobs
   - jobs
+  verbs: ["list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources:
+  - horizontalpodautoscalers
   verbs: ["list", "watch"]

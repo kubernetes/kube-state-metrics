@@ -6,7 +6,6 @@ Any contribution to improving this documentation or adding sample usages will be
 
 Per group of metrics there is one file for each metrics. See each file for specific documentation about the exposed metrics:
 
-* [ComponentStatus Metrics](componentstatus-metrics.md)
 * [CronJob Metrics](cronjob-metrics.md)
 * [DaemonSet Metrics](daemonset-metrics.md)
 * [Deployment Metrics](deployment-metrics.md)

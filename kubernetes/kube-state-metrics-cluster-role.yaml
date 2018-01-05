@@ -14,6 +14,7 @@ rules:
   - persistentvolumeclaims
   - namespaces
   - endpoints
+  - componentstatuses
   verbs: ["list", "watch"]
 - apiGroups: ["extensions"]
   resources:

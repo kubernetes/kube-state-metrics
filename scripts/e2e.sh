@@ -17,11 +17,11 @@
 set -e
 set -o pipefail
 
-KUBERNETES_VERSION=v1.8.0
+KUBERNETES_VERSION=v1.9.1
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
 KUBE_STATE_METRICS_IMAGE_NAME_PATTERN='quay.io\/coreos\/kube-state-metrics'
-PROMETHEUS_VERSION=1.8.1
+PROMETHEUS_VERSION=2.0.0
 
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
 
@@ -30,7 +30,7 @@ curl -sLo minikube https://storage.googleapis.com/minikube/releases/latest/minik
 
 minikube version
 
-curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+curl -sLo kubectl https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false

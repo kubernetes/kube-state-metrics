@@ -21,7 +21,7 @@ KUBERNETES_VERSION=v1.8.0
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
 KUBE_STATE_METRICS_IMAGE_NAME_PATTERN='quay.io\/coreos\/kube-state-metrics'
-PROMETHEUS_VERSION=1.8.1
+PROMETHEUS_VERSION=2.0.0
 
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
 
@@ -40,7 +40,7 @@ mkdir $HOME/.kube || true
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
-sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION
+sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION --logtostderr
 
 minikube update-context
 
@@ -129,7 +129,7 @@ curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube
 echo "check metrics format with promtool"
 wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz
 tar zxfv /tmp/prometheus.tar.gz -C /tmp
-cat $KUBE_STATE_METRICS_LOG_DIR/metrics | /tmp/prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool check-metrics
+cat $KUBE_STATE_METRICS_LOG_DIR/metrics | /tmp/prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool check metrics
 
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/healthz")
 if [ "$KUBE_STATE_METRICS_STATUS" == "ok" ]; then

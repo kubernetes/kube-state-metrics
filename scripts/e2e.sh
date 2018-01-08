@@ -21,7 +21,7 @@ KUBERNETES_VERSION=v1.8.0
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
 KUBE_STATE_METRICS_IMAGE_NAME_PATTERN='quay.io\/coreos\/kube-state-metrics'
-PROMETHEUS_VERSION=1.8.1
+PROMETHEUS_VERSION=2.0.0
 
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
 
@@ -40,7 +40,7 @@ mkdir $HOME/.kube || true
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
-sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION
+sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION --logtostderr
 
 minikube update-context
 

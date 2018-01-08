@@ -1,4 +1,5 @@
 apiVersion: apps/v1beta2
+# for Kubernetes versions after 1.9.0 could use apps/v1
 kind: Deployment
 metadata:
   name: kube-state-metrics

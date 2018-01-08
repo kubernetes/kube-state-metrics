@@ -42,7 +42,6 @@ Kubernetes clusters. The supported Kubernetes cluster version is determined by `
 The compatibility matrix for client-go and Kubernetes cluster can be found
 [here](https://github.com/kubernetes/client-go#compatibility-matrix).
 All additional compatibility is only best effort, or happens to still/already be supported.
-Currently, `client-go` is in version `release-5.0`.
 
 #### Compatibility matrix
 At most 5 kube-state-metrics releases will be recorded below.

@@ -38,6 +38,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	kcollectors "k8s.io/kube-state-metrics/collectors"
 	"k8s.io/kube-state-metrics/version"
 )
@@ -45,6 +47,10 @@ import (
 const (
 	metricsPath = "/metrics"
 	healthzPath = "/healthz"
+)
+
+var (
+	requiredVerbs = []string{"list", "watch"}
 )
 
 var (
@@ -215,6 +221,18 @@ func main() {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
+	supportedResourceMetaInfo, err := getSupportedResourceMetaInfo(kubeClient)
+	if err != nil {
+		glog.Fatalf("Failed to list supported resource meta info: %v", err)
+	}
+
+	glog.V(4).Info(supportedResourceMetaInfo)
+
+	err = validateCollectors(supportedResourceMetaInfo, collectors)
+	if err != nil {
+		glog.Fatalf("Failed to validate resources: %v", err)
+	}
+
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.Register(kcollectors.ResourcesPerScrapeMetric)
 	ksmMetricsRegistry.Register(kcollectors.ScrapeErrorTotalMetric)
@@ -349,6 +367,65 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
              </html>`))
 	})
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
+}
+
+type resourceMetaInfo struct {
+	GroupVersion schema.GroupVersion
+	Verbs        sets.String
+}
+
+// getSupportedResourceMetaInfo queries supported resource meta info about group version and verbs.
+func getSupportedResourceMetaInfo(kubeClient clientset.Interface) (supportedResourceMetaInfo map[string][]resourceMetaInfo, err error) {
+	apiRLs, err := kubeClient.Discovery().ServerResources()
+	if err != nil {
+		return supportedResourceMetaInfo, err
+	}
+
+	supportedResourceMetaInfo = make(map[string][]resourceMetaInfo)
+
+	for _, arl := range apiRLs {
+		groupVersion, err := schema.ParseGroupVersion(arl.GroupVersion)
+		if err != nil {
+			return map[string][]resourceMetaInfo{}, err
+		}
+		for _, ar := range arl.APIResources {
+			if _, exists := supportedResourceMetaInfo[ar.Name]; !exists {
+				supportedResourceMetaInfo[ar.Name] = []resourceMetaInfo{
+					{
+						GroupVersion: groupVersion,
+						Verbs:        sets.NewString(ar.Verbs...),
+					},
+				}
+			} else {
+				supportedResourceMetaInfo[ar.Name] = append(supportedResourceMetaInfo[ar.Name], resourceMetaInfo{
+					GroupVersion: groupVersion,
+					Verbs:        sets.NewString(ar.Verbs...),
+				})
+			}
+		}
+	}
+
+	return
+}
+
+// validateCollectors checks whether the specified collectors are validating to the server.
+func validateCollectors(supportedResourceMetaInfo map[string][]resourceMetaInfo, enabledCollectors collectorSet) error {
+	for c := range enabledCollectors {
+		if rmis, exists := supportedResourceMetaInfo[c]; !exists {
+			return fmt.Errorf("resource %q is not supported with the server", c)
+		} else {
+			// For now, we can not make sure what the group version each resource will use. So,
+			// we only check the resource with only one group version.
+			// TODO(andyxning): add supported verbs check for all collected resources
+			if len(rmis) == 1 {
+				if !rmis[0].Verbs.HasAll(requiredVerbs...) {
+					return fmt.Errorf("resource %q does not support both verbs: %v", c, requiredVerbs)
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // registerCollectors creates and starts informers and initializes and

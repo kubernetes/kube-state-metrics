@@ -90,11 +90,11 @@ additional metrics!
 >	are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
 >
 > **collectors**
-> * v2alpha1/cronjob
+> * v1beta1/cronjob
 >
-> If users want to enable this feature when kubernetes version larger than 1.7,
+> If users want to enable this feature when kubernetes version greater or equal to 1.8,
 > It must be configured, with the following parameter setting for apiserver.
-> `--runtime-config=batch/v2alpha1=true`
+> `--runtime-config=batch/v1beta1=true`
 >
 > Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.

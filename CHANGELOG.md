@@ -1,3 +1,7 @@
+## v1.2.0 / 2018-01-15
+
+After a testing period of 10 days, there were no additional bugs found or features introduced.
+
 ## v1.2.0-rc.0 / 2018-01-05
 
 * [CHANGE] The CronJob collector now expects the version to be v1beta1.

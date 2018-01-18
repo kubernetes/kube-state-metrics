@@ -291,7 +291,8 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	mux := http.NewServeMux()
 
 	// Add metricsPath
-	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	logger := log.New(os.Stderr, "Prometheus HTTP logger: ", log.Lshortfile)
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: logger}))
 	// Add index
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
@@ -322,7 +323,8 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	// Add metricsPath
-	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	logger := log.New(os.Stderr, "Prometheus HTTP logger: ", log.Lshortfile)
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: logger}))
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)

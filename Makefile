@@ -50,7 +50,7 @@ all-push: $(addprefix sub-push-,$(ALL_ARCH))
 container: .container-$(ARCH)
 .container-$(ARCH):
 	cp -r * $(TEMP_DIR)
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(BUILDENVVAR) go build -o $(TEMP_DIR)/kube-state-metrics
+	GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=0 go build -o $(TEMP_DIR)/kube-state-metrics
 	docker build -t $(MULTI_ARCH_IMG):$(TAG) $(TEMP_DIR)
 
 ifeq ($(ARCH), amd64)

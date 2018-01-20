@@ -96,7 +96,7 @@ func (collector *persistentVolumeCollector) Collect(ch chan<- prometheus.Metric)
 		collector.collectPersistentVolume(ch, pv)
 	}
 
-	glog.Infof("collected %d persistentvolumes", len(persistentVolumeCollector.Items))
+	glog.V(4).Infof("collected %d persistentvolumes", len(persistentVolumeCollector.Items))
 }
 
 func (collector *persistentVolumeCollector) collectPersistentVolume(ch chan<- prometheus.Metric, pv v1.PersistentVolume) {

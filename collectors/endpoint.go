@@ -117,7 +117,7 @@ func (ec *endpointCollector) Collect(ch chan<- prometheus.Metric) {
 		ec.collectEndpoints(ch, e)
 	}
 
-	glog.Infof("collected %d endpoints", len(endpoints))
+	glog.V(4).Infof("collected %d endpoints", len(endpoints))
 }
 
 func (ec *endpointCollector) collectEndpoints(ch chan<- prometheus.Metric, e v1.Endpoints) {

@@ -120,6 +120,8 @@ func (hc *hpaCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, h := range hpas.Items {
 		hc.collectHPA(ch, h)
 	}
+
+	glog.V(4).Infof("collected %d jobs", len(hpas.Items))
 }
 
 func hpaLabelsDesc(labelKeys []string) *prometheus.Desc {

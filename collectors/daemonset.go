@@ -133,7 +133,7 @@ func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
 		dc.collectDaemonSet(ch, d)
 	}
 
-	glog.Infof("collected %d daemonsets", len(dss))
+	glog.V(4).Infof("collected %d daemonsets", len(dss))
 }
 
 func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1beta1.DaemonSet) {

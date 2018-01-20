@@ -109,7 +109,7 @@ func (collector *persistentVolumeClaimCollector) Collect(ch chan<- prometheus.Me
 		collector.collectPersistentVolumeClaim(ch, pvc)
 	}
 
-	glog.Infof("collected %d persistentvolumeclaims", len(persistentVolumeClaimCollector.Items))
+	glog.V(4).Infof("collected %d persistentvolumeclaims", len(persistentVolumeClaimCollector.Items))
 }
 
 // getPersistentVolumeClaimClass returns StorageClassName. If no storage class was

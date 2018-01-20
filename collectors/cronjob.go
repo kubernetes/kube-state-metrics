@@ -138,7 +138,7 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 		cjc.collectCronJob(ch, cj)
 	}
 
-	glog.Infof("collected %d cronjobs", len(cronjobs))
+	glog.V(4).Infof("collected %d cronjobs", len(cronjobs))
 }
 
 func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {

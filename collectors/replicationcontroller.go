@@ -127,7 +127,7 @@ func (dc *replicationcontrollerCollector) Collect(ch chan<- prometheus.Metric) {
 		dc.collectReplicationController(ch, d)
 	}
 
-	glog.Infof("collected %d replicationcontrollers", len(rcs))
+	glog.V(4).Infof("collected %d replicationcontrollers", len(rcs))
 }
 
 func (dc *replicationcontrollerCollector) collectReplicationController(ch chan<- prometheus.Metric, d v1.ReplicationController) {

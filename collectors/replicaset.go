@@ -121,7 +121,7 @@ func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
 		dc.collectReplicaSet(ch, d)
 	}
 
-	glog.Infof("collected %d replicasets", len(rss))
+	glog.V(4).Infof("collected %d replicasets", len(rss))
 }
 
 func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {

@@ -157,7 +157,7 @@ func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 		dc.collectDeployment(ch, d)
 	}
 
-	glog.Infof("collected %d deployments", len(ds))
+	glog.V(4).Infof("collected %d deployments", len(ds))
 }
 
 func deploymentLabelsDesc(labelKeys []string) *prometheus.Desc {

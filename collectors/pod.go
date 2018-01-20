@@ -243,7 +243,7 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 		pc.collectPod(ch, p)
 	}
 
-	glog.Infof("collected %d pods", len(pods))
+	glog.V(4).Infof("collected %d pods", len(pods))
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {

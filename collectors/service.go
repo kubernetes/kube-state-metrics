@@ -109,7 +109,7 @@ func (sc *serviceCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, s := range services {
 		sc.collectService(ch, s)
 	}
-	glog.Infof("collected %d services", len(services))
+	glog.V(4).Infof("collected %d services", len(services))
 }
 
 func serviceLabelsDesc(labelKeys []string) *prometheus.Desc {

@@ -144,7 +144,7 @@ func (sc *statefulSetCollector) Collect(ch chan<- prometheus.Metric) {
 		sc.collectStatefulSet(ch, d)
 	}
 
-	glog.Infof("collected %d statefulsets", len(sss))
+	glog.V(4).Infof("collected %d statefulsets", len(sss))
 }
 
 func statefulSetLabelsDesc(labelKeys []string) *prometheus.Desc {

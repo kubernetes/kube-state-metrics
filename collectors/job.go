@@ -162,7 +162,7 @@ func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
 		jc.collectJob(ch, j)
 	}
 
-	glog.Infof("collected %d jobs", len(jobs))
+	glog.V(4).Infof("collected %d jobs", len(jobs))
 }
 
 func jobLabelsDesc(labelKeys []string) *prometheus.Desc {

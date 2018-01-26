@@ -269,9 +269,9 @@ func TestPodCollector(t *testing.T) {
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
 							v1.ContainerStatus{
-								Name: "container1",
+								Name: "container4",
 								State: v1.ContainerState{
-									Terminated: &v1.ContainerStateTerminated{
+									Waiting: &v1.ContainerStateWaiting{
 										Reason: "CrashLoopBackOff",
 									},
 								},
@@ -287,7 +287,7 @@ func TestPodCollector(t *testing.T) {
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
 							v1.ContainerStatus{
-								Name: "container1",
+								Name: "container5",
 								State: v1.ContainerState{
 									Waiting: &v1.ContainerStateWaiting{
 										Reason: "ImagePullBackOff",
@@ -305,7 +305,7 @@ func TestPodCollector(t *testing.T) {
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
 							v1.ContainerStatus{
-								Name: "container1",
+								Name: "container6",
 								State: v1.ContainerState{
 									Waiting: &v1.ContainerStateWaiting{
 										Reason: "ErrImagePull",
@@ -318,33 +318,33 @@ func TestPodCollector(t *testing.T) {
 			},
 			want: metadata + `
 				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_running{container="container1",namespace="ns3",pod="pod3"} 0
-				kube_pod_container_status_running{container="container1",namespace="ns4",pod="pod4"} 0
-				kube_pod_container_status_running{container="container1",namespace="ns5",pod="pod5"} 0
+				kube_pod_container_status_running{container="container4",namespace="ns3",pod="pod3"} 0
+				kube_pod_container_status_running{container="container5",namespace="ns4",pod="pod4"} 0
+				kube_pod_container_status_running{container="container6",namespace="ns5",pod="pod5"} 0
 				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_terminated{container="container1",namespace="ns3",pod="pod3"} 1
-				kube_pod_container_status_terminated{container="container1",namespace="ns4",pod="pod4"} 0
-				kube_pod_container_status_terminated{container="container1",namespace="ns5",pod="pod5"} 0
+				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3"} 0
+				kube_pod_container_status_terminated{container="container5",namespace="ns4",pod="pod4"} 0
+				kube_pod_container_status_terminated{container="container6",namespace="ns5",pod="pod5"} 0
 				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
 				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns3",pod="pod3",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns3",pod="pod3",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns4",pod="pod4",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns4",pod="pod4",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns4",pod="pod4",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns4",pod="pod4",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns5",pod="pod5",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns5",pod="pod5",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns5",pod="pod5",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns5",pod="pod5",reason="OOMKilled"} 0
+				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
+				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
+				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
+				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Completed"} 0
+				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Error"} 0
+				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="OOMKilled"} 0
+				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Completed"} 0
+				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Error"} 0
+				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="OOMKilled"} 0
 				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Completed"} 0
 				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Error"} 0
@@ -356,25 +356,25 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_waiting{container="container1",namespace="ns3",pod="pod3"} 0
-				kube_pod_container_status_waiting{container="container1",namespace="ns4",pod="pod4"} 1
-				kube_pod_container_status_waiting{container="container1",namespace="ns5",pod="pod5"} 1
+				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3"} 1
+				kube_pod_container_status_waiting{container="container5",namespace="ns4",pod="pod4"} 1
+				kube_pod_container_status_waiting{container="container6",namespace="ns5",pod="pod5"} 1
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ImagePullBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns3",pod="pod3",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns3",pod="pod3",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns3",pod="pod3",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns3",pod="pod3",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns4",pod="pod4",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns4",pod="pod4",reason="ImagePullBackOff"} 1
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns4",pod="pod4",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns4",pod="pod4",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns5",pod="pod5",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns5",pod="pod5",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns5",pod="pod5",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns5",pod="pod5",reason="ErrImagePull"} 1
+				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCreating"} 0
+				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ImagePullBackOff"} 0
+				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff"} 1
+				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ErrImagePull"} 0
+				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCreating"} 0
+				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ImagePullBackOff"} 1
+				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CrashLoopBackOff"} 0
+				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ErrImagePull"} 0
+				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCreating"} 0
+				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ImagePullBackOff"} 0
+				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CrashLoopBackOff"} 0
+				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ErrImagePull"} 1
 				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCreating"} 0
 				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ImagePullBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0

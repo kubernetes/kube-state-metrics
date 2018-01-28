@@ -38,9 +38,32 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	appsv1beta1 "k8s.io/api/apps/v1beta1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	kcollectors "k8s.io/kube-state-metrics/collectors"
+	cronjobbatchv1beta1 "k8s.io/kube-state-metrics/collectors/cronjob/batch/v1beta1"
+	daemonsetextensionsv1beta1 "k8s.io/kube-state-metrics/collectors/daemonset/extensions/v1beta1"
+	deploymentextensionsv1beta1 "k8s.io/kube-state-metrics/collectors/deployment/extensions/v1beta1"
+	endpointcorev1 "k8s.io/kube-state-metrics/collectors/endpoint/core/v1"
+	hpaautoscalingv1 "k8s.io/kube-state-metrics/collectors/hpa/autoscaling/v1"
+	jobbatchv1 "k8s.io/kube-state-metrics/collectors/job/batch/v1"
+	limitrangecorev1 "k8s.io/kube-state-metrics/collectors/limitrange/core/v1"
+	namespacecorev1 "k8s.io/kube-state-metrics/collectors/namespace/core/v1"
+	nodecorev1 "k8s.io/kube-state-metrics/collectors/node/core/v1"
+	persistentvolumecorev1 "k8s.io/kube-state-metrics/collectors/persistentvolume/core/v1"
+	persistentvolumeclaimcorev1 "k8s.io/kube-state-metrics/collectors/persistentvolumeclaim/core/v1"
+	podcorev1 "k8s.io/kube-state-metrics/collectors/pod/core/v1"
+	replicasetextensionsv1beta1 "k8s.io/kube-state-metrics/collectors/replicaset/extensions/v1beta1"
+	replicationcontrollercorev1 "k8s.io/kube-state-metrics/collectors/replicationcontroller/core/v1"
+	resourcequotacorev1 "k8s.io/kube-state-metrics/collectors/resourcequota/core/v1"
+	servicecorev1 "k8s.io/kube-state-metrics/collectors/service/core/v1"
+	statefulsetappsv1beta1 "k8s.io/kube-state-metrics/collectors/statefulset/apps/v1beta1"
 	"k8s.io/kube-state-metrics/version"
 )
 
@@ -54,43 +77,77 @@ var (
 )
 
 var (
-	defaultCollectors = collectorSet{
-		"daemonsets":               struct{}{},
-		"deployments":              struct{}{},
-		"limitranges":              struct{}{},
-		"nodes":                    struct{}{},
-		"pods":                     struct{}{},
-		"replicasets":              struct{}{},
-		"replicationcontrollers":   struct{}{},
-		"resourcequotas":           struct{}{},
-		"services":                 struct{}{},
-		"jobs":                     struct{}{},
-		"cronjobs":                 struct{}{},
-		"statefulsets":             struct{}{},
-		"persistentvolumes":        struct{}{},
-		"persistentvolumeclaims":   struct{}{},
-		"namespaces":               struct{}{},
-		"horizontalpodautoscalers": struct{}{},
-		"endpoints":                struct{}{},
+	supportedCollectors = collectorsMap{
+		"daemonsets":               extensionsv1beta1.SchemeGroupVersion.String(),
+		"deployments":              extensionsv1beta1.SchemeGroupVersion.String(),
+		"limitranges":              corev1.SchemeGroupVersion.String(),
+		"nodes":                    corev1.SchemeGroupVersion.String(),
+		"pods":                     corev1.SchemeGroupVersion.String(),
+		"replicasets":              extensionsv1beta1.SchemeGroupVersion.String(),
+		"replicationcontrollers":   corev1.SchemeGroupVersion.String(),
+		"resourcequotas":           corev1.SchemeGroupVersion.String(),
+		"services":                 corev1.SchemeGroupVersion.String(),
+		"jobs":                     batchv1.SchemeGroupVersion.String(),
+		"cronjobs":                 batchv1beta1.SchemeGroupVersion.String(),
+		"statefulsets":             appsv1beta1.SchemeGroupVersion.String(),
+		"persistentvolumes":        corev1.SchemeGroupVersion.String(),
+		"persistentvolumeclaims":   corev1.SchemeGroupVersion.String(),
+		"namespaces":               corev1.SchemeGroupVersion.String(),
+		"horizontalpodautoscalers": autoscalingv1.SchemeGroupVersion.String(),
+		"endpoints":                corev1.SchemeGroupVersion.String(),
 	}
-	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
-		"cronjobs":                 kcollectors.RegisterCronJobCollector,
-		"daemonsets":               kcollectors.RegisterDaemonSetCollector,
-		"deployments":              kcollectors.RegisterDeploymentCollector,
-		"jobs":                     kcollectors.RegisterJobCollector,
-		"limitranges":              kcollectors.RegisterLimitRangeCollector,
-		"nodes":                    kcollectors.RegisterNodeCollector,
-		"pods":                     kcollectors.RegisterPodCollector,
-		"replicasets":              kcollectors.RegisterReplicaSetCollector,
-		"replicationcontrollers":   kcollectors.RegisterReplicationControllerCollector,
-		"resourcequotas":           kcollectors.RegisterResourceQuotaCollector,
-		"services":                 kcollectors.RegisterServiceCollector,
-		"statefulsets":             kcollectors.RegisterStatefulSetCollector,
-		"persistentvolumes":        kcollectors.RegisterPersistentVolumeCollector,
-		"persistentvolumeclaims":   kcollectors.RegisterPersistentVolumeClaimCollector,
-		"namespaces":               kcollectors.RegisterNamespaceCollector,
-		"horizontalpodautoscalers": kcollectors.RegisterHorizontalPodAutoScalerCollector,
-		"endpoints":                kcollectors.RegisterEndpointCollector,
+	registeredCollectors = map[string]map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
+		"cronjobs": {
+			batchv1beta1.SchemeGroupVersion.String(): cronjobbatchv1beta1.RegisterCronJobCollector,
+		},
+		"daemonsets": {
+			extensionsv1beta1.SchemeGroupVersion.String(): daemonsetextensionsv1beta1.RegisterDaemonSetCollector,
+		},
+		"deployments": {
+			extensionsv1beta1.SchemeGroupVersion.String(): deploymentextensionsv1beta1.RegisterDeploymentCollector,
+		},
+		"jobs": {
+			batchv1.SchemeGroupVersion.String(): jobbatchv1.RegisterJobCollector,
+		},
+		"limitranges": {
+			corev1.SchemeGroupVersion.String(): limitrangecorev1.RegisterLimitRangeCollector,
+		},
+		"nodes": {
+			corev1.SchemeGroupVersion.String(): nodecorev1.RegisterNodeCollector,
+		},
+		"pods": {
+			corev1.SchemeGroupVersion.String(): podcorev1.RegisterPodCollector,
+		},
+		"replicasets": {
+			extensionsv1beta1.SchemeGroupVersion.String(): replicasetextensionsv1beta1.RegisterReplicaSetCollector,
+		},
+		"replicationcontrollers": {
+			corev1.SchemeGroupVersion.String(): replicationcontrollercorev1.RegisterReplicationControllerCollector,
+		},
+		"resourcequotas": {
+			corev1.SchemeGroupVersion.String(): resourcequotacorev1.RegisterResourceQuotaCollector,
+		},
+		"services": {
+			corev1.SchemeGroupVersion.String(): servicecorev1.RegisterServiceCollector,
+		},
+		"statefulsets": {
+			appsv1beta1.SchemeGroupVersion.String(): statefulsetappsv1beta1.RegisterStatefulSetCollector,
+		},
+		"persistentvolumes": {
+			corev1.SchemeGroupVersion.String(): persistentvolumecorev1.RegisterPersistentVolumeCollector,
+		},
+		"persistentvolumeclaims": {
+			corev1.SchemeGroupVersion.String(): persistentvolumeclaimcorev1.RegisterPersistentVolumeClaimCollector,
+		},
+		"namespaces": {
+			corev1.SchemeGroupVersion.String(): namespacecorev1.RegisterNamespaceCollector,
+		},
+		"horizontalpodautoscalers": {
+			autoscalingv1.SchemeGroupVersion.String(): hpaautoscalingv1.RegisterHorizontalPodAutoScalerCollector,
+		},
+		"endpoints": {
+			corev1.SchemeGroupVersion.String(): endpointcorev1.RegisterEndpointCollector,
+		},
 	}
 )
 
@@ -101,60 +158,111 @@ func (pl promLogger) Println(v ...interface{}) {
 	glog.Error(v)
 }
 
-type collectorSet map[string]struct{}
+type collectorsMap map[string]string
 
-func (c *collectorSet) String() string {
+func (c *collectorsMap) String() string {
 	s := *c
 	ss := s.asSlice()
 	sort.Strings(ss)
 	return strings.Join(ss, ",")
 }
 
-func (c *collectorSet) Set(value string) error {
+func (c *collectorsMap) Set(value string) error {
 	s := *c
 	cols := strings.Split(value, ",")
 	for _, col := range cols {
-		_, ok := availableCollectors[col]
+		val, ok := supportedCollectors[col]
 		if !ok {
-			glog.Fatalf("Collector \"%s\" does not exist", col)
+			return fmt.Errorf("collector %q does not exist", col)
 		}
-		s[col] = struct{}{}
+		s[col] = val
 	}
 	return nil
 }
 
-func (c collectorSet) asSlice() []string {
-	cols := []string{}
+func (c collectorsMap) asSlice() []string {
+	var cols []string
 	for col := range c {
 		cols = append(cols, col)
 	}
 	return cols
 }
 
-func (c collectorSet) isEmpty() bool {
+func (c collectorsMap) isEmpty() bool {
 	return len(c.asSlice()) == 0
 }
 
-func (c *collectorSet) Type() string {
+func (c *collectorsMap) Type() string {
+	return "string"
+}
+
+type collectorsConfigMap map[string]string
+
+func (c *collectorsConfigMap) String() string {
+	s := *c
+	var cC []string
+	for key, value := range s {
+		cC = append(cC, strings.Join([]string{key, value}, "="))
+	}
+
+	return strings.Join(cC, ",")
+}
+
+func (c *collectorsConfigMap) Set(value string) error {
+	s := *c
+	cols := strings.Split(value, ",")
+	for _, col := range cols {
+		parts := strings.Split(col, "=")
+		if len(parts) != 2 {
+			return fmt.Errorf("collector config format error for %q. Must be collector=groupVersion", col)
+		} else {
+			collector, groupVersion := parts[0], parts[1]
+			_, err := schema.ParseGroupVersion(groupVersion)
+			if err != nil {
+				return fmt.Errorf("specified group version %q for collector %q is invalid: %v", groupVersion, c, err)
+			}
+			s[collector] = groupVersion
+		}
+	}
+	return nil
+}
+
+func (c collectorsConfigMap) asSlice() []string {
+	var cols []string
+	for col := range c {
+		cols = append(cols, col)
+	}
+	return cols
+}
+
+func (c collectorsConfigMap) isEmpty() bool {
+	return len(c.asSlice()) == 0
+}
+
+func (c *collectorsConfigMap) Type() string {
 	return "string"
 }
 
 type options struct {
-	inCluster     bool
-	apiserver     string
-	kubeconfig    string
-	help          bool
-	port          int
-	host          string
-	telemetryPort int
-	telemetryHost string
-	collectors    collectorSet
-	namespace     string
-	version       bool
+	inCluster                bool
+	apiserver                string
+	kubeconfig               string
+	help                     bool
+	port                     int
+	host                     string
+	telemetryPort            int
+	telemetryHost            string
+	collectors               collectorsMap
+	collectorsConfig         collectorsConfigMap
+	listRegisteredCollectors bool
+	namespace                string
+	version                  bool
 }
 
 func main() {
-	options := &options{collectors: make(collectorSet)}
+	collectorsConfig := collectorsConfigMap(map[string]string(supportedCollectors))
+
+	options := &options{collectors: make(collectorsMap), collectorsConfig: make(collectorsConfigMap)}
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
 	// add glog flags
 	flags.AddGoFlagSet(flag.CommandLine)
@@ -162,6 +270,7 @@ func main() {
 	flags.Lookup("logtostderr").DefValue = "true"
 	flags.Lookup("logtostderr").NoOptDefVal = "true"
 	flags.BoolVar(&options.inCluster, "in-cluster", true, `If true, use the built in kubernetes cluster for creating the client`)
+	flags.BoolVar(&options.listRegisteredCollectors, "list-registered-collectors", false, `If true, list registered collectors with corresponding supported group versions`)
 	flags.StringVar(&options.apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
@@ -169,7 +278,8 @@ func main() {
 	flags.StringVar(&options.host, "host", "0.0.0.0", `Host to expose metrics on.`)
 	flags.IntVar(&options.telemetryPort, "telemetry-port", 81, `Port to expose kube-state-metrics self metrics on.`)
 	flags.StringVar(&options.telemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
-	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
+	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &supportedCollectors))
+	flags.Var(&options.collectorsConfig, "collectors-config", fmt.Sprintf("Comma-separated list of collectors group version to be used. Defaults to %q", &collectorsConfig))
 	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
 	flags.BoolVarP(&options.version, "version", "", false, "kube-state-metrics build version information")
 
@@ -188,17 +298,33 @@ func main() {
 		os.Exit(0)
 	}
 
+	if options.listRegisteredCollectors {
+		for c, val := range registeredCollectors {
+			fmt.Printf("%s: ", c)
+			for groupVersion := range val {
+				fmt.Printf("%s ", groupVersion)
+			}
+			fmt.Println()
+		}
+		os.Exit(0)
+	}
+
 	if options.help {
 		flags.Usage()
 		os.Exit(0)
 	}
 
-	var collectors collectorSet
+	var collectors collectorsMap
 	if len(options.collectors) == 0 {
 		glog.Info("Using default collectors")
-		collectors = defaultCollectors
+		collectors = supportedCollectors
 	} else {
 		collectors = options.collectors
+	}
+
+	err = mergeCollectorsConfig(collectors, options.collectorsConfig)
+	if err != nil {
+		glog.Fatalf("Failed to merge collectors and collectors config: %v", err)
 	}
 
 	if options.namespace == metav1.NamespaceAll {
@@ -221,17 +347,14 @@ func main() {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
 
-	supportedResourceMetaInfo, err := getSupportedResourceMetaInfo(kubeClient)
+	supportedResourceMetaInfo, err := getServerSupportedResourceMetaInfo(kubeClient)
 	if err != nil {
-		glog.Fatalf("Failed to list supported resource meta info: %v", err)
+		glog.Fatalf("Failed to list server supported resource meta info: %v", err)
 	}
 
 	glog.V(4).Info(supportedResourceMetaInfo)
 
-	err = validateCollectors(supportedResourceMetaInfo, collectors)
-	if err != nil {
-		glog.Fatalf("Failed to validate resources: %v", err)
-	}
+	mergeCollectorsAgainstServer(supportedResourceMetaInfo, collectors)
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.Register(kcollectors.ResourcesPerScrapeMetric)
@@ -374,8 +497,8 @@ type resourceMetaInfo struct {
 	Verbs        sets.String
 }
 
-// getSupportedResourceMetaInfo queries supported resource meta info about group version and verbs.
-func getSupportedResourceMetaInfo(kubeClient clientset.Interface) (supportedResourceMetaInfo map[string][]resourceMetaInfo, err error) {
+// getServerSupportedResourceMetaInfo queries server for the supported resource meta info about group version and verbs.
+func getServerSupportedResourceMetaInfo(kubeClient clientset.Interface) (supportedResourceMetaInfo map[string][]resourceMetaInfo, err error) {
 	apiRLs, err := kubeClient.Discovery().ServerResources()
 	if err != nil {
 		return supportedResourceMetaInfo, err
@@ -408,20 +531,35 @@ func getSupportedResourceMetaInfo(kubeClient clientset.Interface) (supportedReso
 	return
 }
 
-// validateCollectors checks whether the specified collectors are validating to the server.
-func validateCollectors(supportedResourceMetaInfo map[string][]resourceMetaInfo, enabledCollectors collectorSet) error {
-	for c := range enabledCollectors {
+// mergeCollectorsAgainstServer checks whether the specified collectors are validating to the server.
+func mergeCollectorsAgainstServer(supportedResourceMetaInfo map[string][]resourceMetaInfo, enabledCollectors collectorsMap) {
+	mergedCollectors := enabledCollectors
+
+	for c, groupVersion := range enabledCollectors {
 		if rmis, exists := supportedResourceMetaInfo[c]; !exists {
-			return fmt.Errorf("resource %q is not supported with the server", c)
+			glog.Errorf("Collector %q is not supported with the server", c)
+			delete(mergedCollectors, c)
 		} else {
-			// For now, we can not make sure what the group version each resource will use. So,
-			// we only check the resource with only one group version.
-			// TODO(andyxning): add supported verbs check for all collected resources
-			if len(rmis) == 1 {
-				if !rmis[0].Verbs.HasAll(requiredVerbs...) {
-					return fmt.Errorf("resource %q does not support both verbs: %v", c, requiredVerbs)
+			for _, rmi := range rmis {
+				if rmi.GroupVersion.String() == groupVersion {
+					if !rmi.Verbs.HasAll(requiredVerbs...) {
+						glog.Errorf("Collector %q does not support all these verbs: %v", c, requiredVerbs)
+						delete(mergedCollectors, c)
+					}
 				}
 			}
+		}
+	}
+
+	enabledCollectors = mergedCollectors
+}
+
+func mergeCollectorsConfig(enabledCollectors collectorsMap, collectorsConfig collectorsConfigMap) error {
+	for c, groupVersion := range collectorsConfig {
+		if _, exists := enabledCollectors[c]; exists {
+			enabledCollectors[c] = groupVersion
+		} else {
+			return fmt.Errorf("collector %q is not enabled", c)
 		}
 	}
 
@@ -430,15 +568,22 @@ func validateCollectors(supportedResourceMetaInfo map[string][]resourceMetaInfo,
 
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
-func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespace string) {
-	activeCollectors := []string{}
-	for c := range enabledCollectors {
-		f, ok := availableCollectors[c]
-		if ok {
-			f(registry, kubeClient, namespace)
-			activeCollectors = append(activeCollectors, c)
+func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorsMap, namespace string) {
+	actualCollectors := enabledCollectors
+
+	for c, groupVersion := range enabledCollectors {
+		if fns, ok := registeredCollectors[c]; ok {
+			if f, exists := fns[groupVersion]; exists {
+				f(registry, kubeClient, namespace)
+			} else {
+				glog.Errorf("Group version %q for collector %q is not registered in kube-state-metrics. Ignore collecting", groupVersion, c)
+				delete(actualCollectors, c)
+			}
+		} else {
+			glog.Errorf("Enabled collector %q is not registered in kube-state-metrics. Ignore collecting", c)
+			delete(actualCollectors, c)
 		}
 	}
 
-	glog.Infof("Active collectors: %s", strings.Join(activeCollectors, ","))
+	glog.Infof("Active collectors: %s", actualCollectors)
 }

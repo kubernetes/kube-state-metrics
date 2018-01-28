@@ -19,11 +19,16 @@ package collectors
 import (
 	"time"
 
+	"regexp"
+
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/api/core/v1"
 )
 
 var (
-	resyncPeriod = 5 * time.Minute
+	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+
+	ResyncPeriod = 5 * time.Minute
 
 	ScrapeErrorTotalMetric = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -41,3 +46,44 @@ var (
 		[]string{"resource"},
 	)
 )
+
+func sanitizeLabelName(s string) string {
+	return invalidLabelCharRE.ReplaceAllString(s, "_")
+}
+
+func KubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
+	labelKeys := make([]string, len(labels))
+	labelValues := make([]string, len(labels))
+	i := 0
+	for k, v := range labels {
+		labelKeys[i] = "label_" + sanitizeLabelName(k)
+		labelValues[i] = v
+		i++
+	}
+	return labelKeys, labelValues
+}
+
+func BoolFloat64(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// AddConditionMetrics generates one metric for each possible resource condition
+// status. For this function to work properly, the last label in the metric
+// description must be the condition.
+func AddConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, cs v1.ConditionStatus, lv ...string) {
+	ch <- prometheus.MustNewConstMetric(
+		desc, prometheus.GaugeValue, BoolFloat64(cs == v1.ConditionTrue),
+		append(lv, "true")...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		desc, prometheus.GaugeValue, BoolFloat64(cs == v1.ConditionFalse),
+		append(lv, "false")...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		desc, prometheus.GaugeValue, BoolFloat64(cs == v1.ConditionUnknown),
+		append(lv, "unknown")...,
+	)
+}

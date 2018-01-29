@@ -121,7 +121,7 @@ func (hc *hpaCollector) Collect(ch chan<- prometheus.Metric) {
 		hc.collectHPA(ch, h)
 	}
 
-	glog.V(4).Infof("collected %d jobs", len(hpas.Items))
+	glog.V(4).Infof("collected %d hpas", len(hpas.Items))
 }
 
 func hpaLabelsDesc(labelKeys []string) *prometheus.Desc {

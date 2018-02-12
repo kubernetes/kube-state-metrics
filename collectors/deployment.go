@@ -83,6 +83,12 @@ var (
 		[]string{"namespace", "deployment"}, nil,
 	)
 
+	descDeploymentStrategyRollingUpdateMaxSurge = prometheus.NewDesc(
+		"kube_deployment_spec_strategy_rollingupdate_max_surge",
+		"Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
+		[]string{"namespace", "deployment"}, nil,
+	)
+
 	descDeploymentMetadataGeneration = prometheus.NewDesc(
 		"kube_deployment_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
@@ -198,4 +204,12 @@ func (dc *deploymentCollector) collectDeployment(ch chan<- prometheus.Metric, d 
 	} else {
 		addGauge(descDeploymentStrategyRollingUpdateMaxUnavailable, float64(maxUnavailable))
 	}
+
+	maxSurge, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
+	if err != nil {
+		glog.Errorf("Error converting RollingUpdate MaxSurge to int: %s", err)
+	} else {
+		addGauge(descDeploymentStrategyRollingUpdateMaxSurge, float64(maxSurge))
+	}
+
 }

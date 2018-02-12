@@ -40,6 +40,9 @@ var (
 
 	depl1MaxUnavailable = intstr.FromInt(10)
 	depl2MaxUnavailable = intstr.FromString("20%")
+
+	depl1MaxSurge = intstr.FromInt(10)
+	depl2MaxSurge = intstr.FromString("20%")
 )
 
 type mockDeploymentStore struct {
@@ -72,8 +75,10 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_status_replicas_updated gauge
 		# HELP kube_deployment_status_observed_generation The generation observed by the deployment controller.
 		# TYPE kube_deployment_status_observed_generation gauge
-                # HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable Maximum number of unavailable replicas during a rolling update of a deployment.
+		# HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable Maximum number of unavailable replicas during a rolling update of a deployment.
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
+		# HELP kube_deployment_spec_strategy_rollingupdate_max_surge Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
+		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
 		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
 	`
@@ -105,6 +110,7 @@ func TestDeploymentCollector(t *testing.T) {
 						Strategy: v1beta1.DeploymentStrategy{
 							RollingUpdate: &v1beta1.RollingUpdateDeployment{
 								MaxUnavailable: &depl1MaxUnavailable,
+								MaxSurge:       &depl1MaxSurge,
 							},
 						},
 					},
@@ -139,6 +145,7 @@ func TestDeploymentCollector(t *testing.T) {
 				kube_deployment_spec_replicas{namespace="ns1",deployment="depl1"} 200
 				kube_deployment_spec_replicas{namespace="ns2",deployment="depl2"} 5
 				kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
+				kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
 				kube_deployment_status_observed_generation{namespace="ns1",deployment="depl1"} 111
 				kube_deployment_status_observed_generation{namespace="ns2",deployment="depl2"} 1111
 				kube_deployment_status_replicas{namespace="ns1",deployment="depl1"} 15

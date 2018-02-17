@@ -35,7 +35,6 @@ import (
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	kcollectors "k8s.io/kube-state-metrics/collectors"
@@ -134,7 +133,6 @@ func (c *collectorSet) Type() string {
 }
 
 type options struct {
-	inCluster     bool
 	apiserver     string
 	kubeconfig    string
 	help          bool
@@ -155,7 +153,6 @@ func main() {
 	flags.Lookup("logtostderr").Value.Set("true")
 	flags.Lookup("logtostderr").DefValue = "true"
 	flags.Lookup("logtostderr").NoOptDefVal = "true"
-	flags.BoolVar(&options.inCluster, "in-cluster", true, `If true, use the built in kubernetes cluster for creating the client`)
 	flags.StringVar(&options.apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
@@ -201,16 +198,13 @@ func main() {
 		glog.Infof("Using %s namespace", options.namespace)
 	}
 
-	if isNotExists(options.kubeconfig) && !(options.inCluster) {
-		glog.Fatalf("kubeconfig invalid and --in-cluster is false; kubeconfig must be set to a valid file(kubeconfig default file name: $HOME/.kube/config)")
-	}
-	if options.apiserver != "" {
-		glog.Infof("apiserver set to: %v", options.apiserver)
+	if options.apiserver == "" && options.kubeconfig == "" {
+		glog.Info("Provide at least at least apiserver or kubeconfig")
 	}
 
 	proc.StartReaper()
 
-	kubeClient, err := createKubeClient(options.inCluster, options.apiserver, options.kubeconfig)
+	kubeClient, err := createKubeClient(options.apiserver, options.kubeconfig)
 	if err != nil {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
@@ -227,51 +221,15 @@ func main() {
 	metricsServer(registry, options.host, options.port)
 }
 
-func isNotExists(file string) bool {
-	if file == "" {
-		file = clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename()
+func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
+	config, err := clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
+	if err != nil {
+		return nil, err
 	}
-	_, err := os.Stat(file)
-	return os.IsNotExist(err)
-}
 
-func createKubeClient(inCluster bool, apiserver string, kubeconfig string) (kubeClient clientset.Interface, err error) {
-	if inCluster {
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			return nil, err
-		}
-		// Allow overriding of apiserver even if using inClusterConfig
-		// (necessary if kube-proxy isn't properly set up).
-		if apiserver != "" {
-			config.Host = apiserver
-		}
-		tokenPresent := false
-		if len(config.BearerToken) > 0 {
-			tokenPresent = true
-		}
-		glog.Infof("service account token present: %v", tokenPresent)
-		glog.Infof("service host: %s", config.Host)
-		if kubeClient, err = clientset.NewForConfig(config); err != nil {
-			return nil, err
-		}
-	} else {
-		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-		// if you want to change the loading rules (which files in which order), you can do so here
-		loadingRules.ExplicitPath = kubeconfig
-		configOverrides := &clientcmd.ConfigOverrides{}
-		// if you want to change override values or bind them to flags, there are methods to help you
-		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-		config, err := kubeConfig.ClientConfig()
-		//config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		//config, err := clientcmd.DefaultClientConfig.ClientConfig()
-		if err != nil {
-			return nil, err
-		}
-		kubeClient, err = clientset.NewForConfig(config)
-		if err != nil {
-			return nil, err
-		}
+	kubeClient, err := clientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
 	}
 
 	// Informers don't seem to do a good job logging error messages when it

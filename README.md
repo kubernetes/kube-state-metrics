@@ -10,7 +10,7 @@ such as deployments, nodes and pods.
 
 The metrics are exported through the [Prometheus golang
 client](https://github.com/prometheus/client_golang) on the HTTP endpoint `/metrics` on
-the listening port (default 8080). They are served either as plaintext or
+the listening port (default 80). They are served either as plaintext or
 protobuf depending on the `Accept` header. They are designed to be consumed
 either by Prometheus itself or by a scraper that is compatible with scraping
 a Prometheus client endpoint. You can also open `/metrics` in a browser to see
@@ -102,7 +102,7 @@ additional metrics!
 See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
 
 ### Kube-state-metrics self metrics
-kube-state-metrics exposes its own metrics under `--telemetry-host` and `--telemetry-port`.
+kube-state-metrics exposes its own metrics under `--telemetry-host` and `--telemetry-port` (default 81).
 
 | Metric name | Metric type | Description | Labels/tags |
 | ----------- | ----------- | ----------- | ----------- |
@@ -197,7 +197,7 @@ running:
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
 	go install
-	kube-state-metrics  --in-cluster=false --port=8080 --kubeconfig=<KUBE-CONIFG>
+	kube-state-metrics  --in-cluster=false --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONIFG>
 
 Then curl the metrics endpoint
 

@@ -22,6 +22,8 @@ spec:
         ports:
         - name: http-metrics
           containerPort: 8080
+        - name: telemetry
+          containerPort: 8081
         readinessProbe:
           httpGet:
             path: /healthz

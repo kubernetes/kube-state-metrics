@@ -104,6 +104,7 @@ func (nsc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing namespace failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "namespace"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "namespace"}).Observe(float64(len(nsls)))
 	for _, rq := range nsls {

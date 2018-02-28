@@ -156,6 +156,7 @@ func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing jobs failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "job"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "job"}).Observe(float64(len(jobs)))
 	for _, j := range jobs {

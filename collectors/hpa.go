@@ -115,6 +115,7 @@ func (hc *hpaCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing HorizontalPodAutoscalers failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "horizontalpodautoscaler"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "horizontalpodautoscaler"}).Observe(float64(len(hpas.Items)))
 	for _, h := range hpas.Items {

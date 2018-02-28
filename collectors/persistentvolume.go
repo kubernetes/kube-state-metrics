@@ -90,6 +90,7 @@ func (collector *persistentVolumeCollector) Collect(ch chan<- prometheus.Metric)
 		glog.Errorf("listing persistentVolume failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "persistentvolume"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "persistentvolume"}).Observe(float64(len(persistentVolumeCollector.Items)))
 	for _, pv := range persistentVolumeCollector.Items {

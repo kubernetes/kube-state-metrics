@@ -111,6 +111,7 @@ func (ec *endpointCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing endpoints failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "endpoint"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "endpoint"}).Observe(float64(len(endpoints)))
 	for _, e := range endpoints {

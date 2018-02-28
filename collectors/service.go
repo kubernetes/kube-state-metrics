@@ -104,6 +104,7 @@ func (sc *serviceCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing services failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "service"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "service"}).Observe(float64(len(services)))
 	for _, s := range services {

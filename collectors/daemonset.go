@@ -127,6 +127,7 @@ func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing daemonsets failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "daemonset"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "daemonset"}).Observe(float64(len(dss)))
 	for _, d := range dss {

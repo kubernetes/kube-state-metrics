@@ -90,6 +90,7 @@ func (rqc *resourceQuotaCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing resource quotas failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "resourcequota"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "resourcequota"}).Observe(float64(len(resourceQuota.Items)))
 	for _, rq := range resourceQuota.Items {

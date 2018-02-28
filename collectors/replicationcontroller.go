@@ -121,6 +121,7 @@ func (dc *replicationcontrollerCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing replicationcontrollers failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Observe(float64(len(rcs)))
 	for _, d := range rcs {

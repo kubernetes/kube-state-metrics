@@ -138,6 +138,7 @@ func (sc *statefulSetCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing statefulsets failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "statefulset"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "statefulset"}).Observe(float64(len(sss)))
 	for _, d := range sss {

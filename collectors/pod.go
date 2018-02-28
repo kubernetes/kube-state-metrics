@@ -237,6 +237,7 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 		glog.Errorf("listing pods failed: %s", err)
 		return
 	}
+	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "pod"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "pod"}).Observe(float64(len(pods)))
 	for _, p := range pods {

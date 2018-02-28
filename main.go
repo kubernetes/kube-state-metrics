@@ -66,6 +66,8 @@ var (
 		"namespaces":               struct{}{},
 		"horizontalpodautoscalers": struct{}{},
 		"endpoints":                struct{}{},
+		"secrets":                  struct{}{},
+		"configmaps":               struct{}{},
 	}
 	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
 		"cronjobs":                 kcollectors.RegisterCronJobCollector,
@@ -85,6 +87,8 @@ var (
 		"namespaces":               kcollectors.RegisterNamespaceCollector,
 		"horizontalpodautoscalers": kcollectors.RegisterHorizontalPodAutoScalerCollector,
 		"endpoints":                kcollectors.RegisterEndpointCollector,
+		"secrets":                  kcollectors.RegisterSecretCollector,
+		"configmaps":               kcollectors.RegisterConfigMapCollector,
 	}
 )
 

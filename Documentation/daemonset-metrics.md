@@ -11,3 +11,4 @@
 | kube_daemonset_status_number_unavailable | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
 | kube_daemonset_updated_number_scheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
 | kube_daemonset_metadata_generation | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; |
+| kube_daemonset_labels | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; <br> `label_DAEMONSET_LABEL`=&lt;DAEMONSET_LABEL&gt; |

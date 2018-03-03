@@ -65,8 +65,8 @@ func TestDaemonSetCollector(t *testing.T) {
 			dss: []v1beta1.DaemonSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:       "ds1",
-						Namespace:  "ns1",
+						Name:      "ds1",
+						Namespace: "ns1",
 						Labels: map[string]string{
 							"app": "example1",
 						},
@@ -86,7 +86,7 @@ func TestDaemonSetCollector(t *testing.T) {
 						Labels: map[string]string{
 							"app": "example2",
 						},
-						Generation:        14,
+						Generation: 14,
 					},
 					Status: v1beta1.DaemonSetStatus{
 						CurrentNumberScheduled: 10,
@@ -102,7 +102,7 @@ func TestDaemonSetCollector(t *testing.T) {
 						Labels: map[string]string{
 							"app": "example3",
 						},
-						Generation:        15,
+						Generation: 15,
 					},
 					Status: v1beta1.DaemonSetStatus{
 						CurrentNumberScheduled: 10,

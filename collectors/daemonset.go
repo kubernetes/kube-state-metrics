@@ -27,6 +27,10 @@ import (
 )
 
 var (
+	descDaemonSetLabelsName          = "kube_daemonset_labels"
+	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
+
 	descDaemonSetCreated = prometheus.NewDesc(
 		"kube_daemonset_created",
 		"Unix creation timestamp",
@@ -71,6 +75,11 @@ var (
 		"kube_daemonset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		[]string{"namespace", "daemonset"}, nil,
+	)
+	descDaemonSetLabels = prometheus.NewDesc(
+		descDaemonSetLabelsName,
+		descDaemonSetLabelsHelp,
+		descDaemonSetLabelsDefaultLabels, nil,
 	)
 )
 
@@ -117,6 +126,7 @@ func (dc *daemonsetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descDaemonSetNumberReady
 	ch <- descDaemonSetUpdatedNumberScheduled
 	ch <- descDaemonSetMetadataGeneration
+	ch <- descDaemonSetLabels
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -137,6 +147,15 @@ func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
 	glog.V(4).Infof("collected %d daemonsets", len(dss))
 }
 
+func DaemonSetLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descDaemonSetLabelsName,
+		descDaemonSetLabelsHelp,
+		append(descDaemonSetLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
 func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1beta1.DaemonSet) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
@@ -153,4 +172,7 @@ func (dc *daemonsetCollector) collectDaemonSet(ch chan<- prometheus.Metric, d v1
 	addGauge(descDaemonSetNumberReady, float64(d.Status.NumberReady))
 	addGauge(descDaemonSetUpdatedNumberScheduled, float64(d.Status.UpdatedNumberScheduled))
 	addGauge(descDaemonSetMetadataGeneration, float64(d.ObjectMeta.Generation))
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.ObjectMeta.Labels)
+	addGauge(DaemonSetLabelsDesc(labelKeys), 1, labelValues...)
 }

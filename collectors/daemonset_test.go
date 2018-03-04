@@ -54,7 +54,9 @@ func TestDaemonSetCollector(t *testing.T) {
 		# TYPE kube_daemonset_status_number_unavailable gauge
 		# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
 		# TYPE kube_daemonset_updated_number_scheduled gauge
-	`
+		# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_daemonset_labels gauge
+`
 	cases := []struct {
 		dss  []v1beta1.DaemonSet
 		want string
@@ -63,8 +65,11 @@ func TestDaemonSetCollector(t *testing.T) {
 			dss: []v1beta1.DaemonSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:       "ds1",
-						Namespace:  "ns1",
+						Name:      "ds1",
+						Namespace: "ns1",
+						Labels: map[string]string{
+							"app": "example1",
+						},
 						Generation: 21,
 					},
 					Status: v1beta1.DaemonSetStatus{
@@ -78,7 +83,10 @@ func TestDaemonSetCollector(t *testing.T) {
 						Name:              "ds2",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:         "ns2",
-						Generation:        14,
+						Labels: map[string]string{
+							"app": "example2",
+						},
+						Generation: 14,
 					},
 					Status: v1beta1.DaemonSetStatus{
 						CurrentNumberScheduled: 10,
@@ -91,7 +99,10 @@ func TestDaemonSetCollector(t *testing.T) {
 						Name:              "ds3",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:         "ns3",
-						Generation:        15,
+						Labels: map[string]string{
+							"app": "example3",
+						},
+						Generation: 15,
 					},
 					Status: v1beta1.DaemonSetStatus{
 						CurrentNumberScheduled: 10,
@@ -131,6 +142,9 @@ func TestDaemonSetCollector(t *testing.T) {
 				kube_daemonset_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_updated_number_scheduled{daemonset="ds3",namespace="ns3"} 5
+				kube_daemonset_labels{label_app="example1",namespace="ns1",daemonset="ds1"} 1
+				kube_daemonset_labels{label_app="example2",namespace="ns2",daemonset="ds2"} 1
+				kube_daemonset_labels{label_app="example3",namespace="ns3",daemonset="ds3"} 1
 			`,
 		},
 	}

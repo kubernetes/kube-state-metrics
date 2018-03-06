@@ -40,6 +40,8 @@ func TestNamespaceCollector(t *testing.T) {
 		# TYPE kube_namespace_created gauge
 		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_namespace_labels gauge
+		# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_namespace_annotations gauge
 		# HELP kube_namespace_status_phase kubernetes namespace status phase.
 		# TYPE kube_namespace_status_phase gauge
 	`
@@ -80,6 +82,9 @@ func TestNamespaceCollector(t *testing.T) {
 						Labels: map[string]string{
 							"app": "example1",
 						},
+						Annotations: map[string]string{
+							"app": "example1",
+						},
 					},
 					Spec: v1.NamespaceSpec{
 						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
@@ -91,6 +96,10 @@ func TestNamespaceCollector(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "ns2",
 						Labels: map[string]string{
+							"app": "example2",
+							"l2":  "label2",
+						},
+						Annotations: map[string]string{
 							"app": "example2",
 							"l2":  "label2",
 						},
@@ -110,6 +119,10 @@ func TestNamespaceCollector(t *testing.T) {
 				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
 				kube_namespace_labels{namespace="nsActiveTest"} 1
 				kube_namespace_labels{namespace="nsTerminateTest"} 1
+				kube_namespace_annotations{annotation_app="example1",namespace="ns1"} 1
+				kube_namespace_annotations{annotation_app="example2",annotation_l2="label2",namespace="ns2"} 1
+				kube_namespace_annotations{namespace="nsActiveTest"} 1
+				kube_namespace_annotations{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
 				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1

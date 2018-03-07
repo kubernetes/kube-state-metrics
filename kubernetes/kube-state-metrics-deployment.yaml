@@ -21,13 +21,13 @@ spec:
         image: quay.io/coreos/kube-state-metrics:v1.2.0
         ports:
         - name: http-metrics
-          containerPort: 8080
+          containerPort: 80
         - name: telemetry
-          containerPort: 8081
+          containerPort: 81
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 8080
+            port: 80
           initialDelaySeconds: 5
           timeoutSeconds: 5
       - name: addon-resizer

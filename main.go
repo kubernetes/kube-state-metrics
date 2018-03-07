@@ -198,10 +198,6 @@ func main() {
 		glog.Infof("Using %s namespace", options.namespace)
 	}
 
-	if options.apiserver == "" && options.kubeconfig == "" {
-		glog.Info("Provide at least at least apiserver or kubeconfig")
-	}
-
 	proc.StartReaper()
 
 	kubeClient, err := createKubeClient(options.apiserver, options.kubeconfig)

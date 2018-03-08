@@ -27,6 +27,16 @@ import (
 )
 
 var (
+	descPersistentVolumeLabelsName          = "kube_persistentvolume_labels"
+	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descPersistentVolumeLabelsDefaultLabels = []string{"namespace", "persistentvolume"}
+
+	descPersistentVolumeLabels = prometheus.NewDesc(
+		descPersistentVolumeLabelsName,
+		descPersistentVolumeLabelsHelp,
+		descPersistentVolumeLabelsDefaultLabels, nil,
+	)
+
 	descPersistentVolumeStatusPhase = prometheus.NewDesc(
 		"kube_persistentvolume_status_phase",
 		"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
@@ -80,6 +90,16 @@ type persistentVolumeCollector struct {
 func (collector *persistentVolumeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPersistentVolumeStatusPhase
 	ch <- descPersistentVolumeInfo
+	ch <- descPersistentVolumeLabels
+}
+
+func persistentVolumeLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descPersistentVolumeLabelsName,
+		descPersistentVolumeLabelsHelp,
+		append(descPersistentVolumeLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -105,6 +125,9 @@ func (collector *persistentVolumeCollector) collectPersistentVolume(ch chan<- pr
 		lv = append([]string{pv.Namespace, pv.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(pv.Labels)
+	addGauge(persistentVolumeLabelsDesc(labelKeys), 1, labelValues...)
 
 	addGauge(descPersistentVolumeInfo, 1, pv.Spec.StorageClassName)
 	// Set current phase to 1, others to 0 if it is set.

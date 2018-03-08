@@ -32,6 +32,10 @@ var (
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
 
+	descNamespaceAnnotationsName          = "kube_namespace_annotations"
+	descNamespaceAnnotationsHelp          = "Kubernetes annotations converted to Prometheus labels."
+	descNamespaceAnnotationsDefaultLabels = []string{"namespace"}
+
 	descNamespaceCreated = prometheus.NewDesc(
 		"kube_namespace_created",
 		"Unix creation timestamp",
@@ -42,6 +46,12 @@ var (
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		descNamespaceLabelsDefaultLabels, nil,
+	)
+
+	descNamespaceAnnotations = prometheus.NewDesc(
+		descNamespaceAnnotationsName,
+		descNamespaceAnnotationsHelp,
+		descNamespaceAnnotationsDefaultLabels, nil,
 	)
 
 	descNamespacePhase = prometheus.NewDesc(
@@ -93,6 +103,7 @@ type namespaceCollector struct {
 func (nsc *namespaceCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNamespaceCreated
 	ch <- descNamespaceLabels
+	ch <- descNamespaceAnnotations
 	ch <- descNamespacePhase
 }
 
@@ -129,6 +140,9 @@ func (nsc *namespaceCollector) collectNamespace(ch chan<- prometheus.Metric, ns 
 
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(ns.Labels)
 	addGauge(namespaceLabelsDesc(labelKeys), 1, labelValues...)
+
+	annnotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(ns.Annotations)
+	addGauge(namespaceAnnotationsDesc(annnotationKeys), 1, annotationValues...)
 }
 
 func namespaceLabelsDesc(labelKeys []string) *prometheus.Desc {
@@ -136,6 +150,15 @@ func namespaceLabelsDesc(labelKeys []string) *prometheus.Desc {
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		append(descNamespaceLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
+}
+
+func namespaceAnnotationsDesc(annotationKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descNamespaceAnnotationsName,
+		descNamespaceAnnotationsHelp,
+		append(descNamespaceAnnotationsDefaultLabels, annotationKeys...),
 		nil,
 	)
 }

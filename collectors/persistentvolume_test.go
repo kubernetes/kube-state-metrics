@@ -37,6 +37,8 @@ func TestPersistentVolumeCollector(t *testing.T) {
 	const metadata = `
 			# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
 			# TYPE kube_persistentvolume_status_phase gauge
+			# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+			# TYPE kube_persistentvolume_labels gauge
 			# HELP kube_persistentvolume_info Information about persistentvolume.
 			# TYPE kube_persistentvolume_info gauge
 	`
@@ -152,6 +154,39 @@ func TestPersistentVolumeCollector(t *testing.T) {
 					kube_persistentvolume_info{namespace="default",persistentvolume="test-pv-pending",storageclass="test"} 1
 				`,
 			metrics: []string{"kube_persistentvolume_info"},
+		},
+		{
+			pvs: []v1.PersistentVolume{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-labeled-pv",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "mysql-server",
+						},
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumePending,
+					},
+					Spec: v1.PersistentVolumeSpec{
+						StorageClassName: "test",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-unlabeled-pv",
+						Namespace: "default",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumeAvailable,
+					},
+				},
+			},
+			want: metadata + `
+					kube_persistentvolume_labels{namespace="default",persistentvolume="test-unlabeled-pv"} 1
+					kube_persistentvolume_labels{label_app="mysql-server",namespace="default",persistentvolume="test-labeled-pv"} 1
+				`,
+			metrics: []string{"kube_persistentvolume_labels"},
 		},
 	}
 	for _, c := range cases {

@@ -27,6 +27,16 @@ import (
 )
 
 var (
+	descPersistentVolumeClaimLabelsName          = "kube_persistentvolumeclaim_labels"
+	descPersistentVolumeClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
+
+	descPersistentVolumeClaimLabels = prometheus.NewDesc(
+		descPersistentVolumeClaimLabelsName,
+		descPersistentVolumeClaimLabelsHelp,
+		descPersistentVolumeClaimLabelsDefaultLabels, nil,
+	)
+
 	descPersistentVolumeClaimInfo = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_info",
 		"Information about persistent volume claim.",
@@ -90,9 +100,19 @@ type persistentVolumeClaimCollector struct {
 
 // Describe implements the prometheus.Collector interface.
 func (collector *persistentVolumeClaimCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- descPersistentVolumeClaimLabels
 	ch <- descPersistentVolumeClaimInfo
 	ch <- descPersistentVolumeClaimStatusPhase
 	ch <- descPersistentVolumeClaimResourceRequestsStorage
+}
+
+func persistentVolumeClaimLabelsDesc(labelKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descPersistentVolumeClaimLabelsName,
+		descPersistentVolumeClaimLabelsHelp,
+		append(descPersistentVolumeClaimLabelsDefaultLabels, labelKeys...),
+		nil,
+	)
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -134,6 +154,9 @@ func (collector *persistentVolumeClaimCollector) collectPersistentVolumeClaim(ch
 		lv = append([]string{pvc.Namespace, pvc.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(pvc.Labels)
+	addGauge(persistentVolumeClaimLabelsDesc(labelKeys), 1, labelValues...)
 
 	storageClassName := getPersistentVolumeClaimClass(&pvc)
 	volumeName := pvc.Spec.VolumeName

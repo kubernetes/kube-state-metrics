@@ -86,6 +86,10 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_resource_requests_nvidia_gpu_devices gauge
 		# HELP kube_pod_container_resource_limits_nvidia_gpu_devices The limit on gpu devices to be used by a container.
 		# TYPE kube_pod_container_resource_limits_nvidia_gpu_devices gauge
+		# HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
+		# TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
+		# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
+		# TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 	`
 	cases := []struct {
 		pods    []v1.Pod
@@ -689,8 +693,60 @@ func TestPodCollector(t *testing.T) {
 			metrics: []string{
 				"kube_pod_labels",
 			},
-		},
-	}
+		}, {
+			pods: []v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+						Labels: map[string]string{
+							"app": "example",
+						},
+					},
+					Spec: v1.PodSpec{
+						Volumes: []v1.Volume{
+							v1.Volume{
+								Name: "myvol",
+								VolumeSource: v1.VolumeSource{
+									PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+										ClaimName: "claim1",
+										ReadOnly:  false,
+									},
+								},
+							},
+							v1.Volume{
+								Name: "my-readonly-vol",
+								VolumeSource: v1.VolumeSource{
+									PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+										ClaimName: "claim2",
+										ReadOnly:  true,
+									},
+								},
+							},
+							v1.Volume{
+								Name: "not-pvc-vol",
+								VolumeSource: v1.VolumeSource{
+									EmptyDir: &v1.EmptyDirVolumeSource{
+										Medium: "memory",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: metadata + `
+				kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="ns1",persistentvolumeclaim="claim1",pod="pod1",volume="myvol"} 1
+				kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="ns1",persistentvolumeclaim="claim2",pod="pod1",volume="my-readonly-vol"} 1
+				kube_pod_spec_volumes_persistentvolumeclaims_readonly{namespace="ns1",persistentvolumeclaim="claim1",pod="pod1",volume="myvol"} 0
+				kube_pod_spec_volumes_persistentvolumeclaims_readonly{namespace="ns1",persistentvolumeclaim="claim2",pod="pod1",volume="my-readonly-vol"} 1
+
+		`,
+			metrics: []string{
+				"kube_pod_spec_volumes_persistentvolumeclaims_info",
+				"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
+			},
+		}}
 	for _, c := range cases {
 		pc := &podCollector{
 			store: mockPodStore{

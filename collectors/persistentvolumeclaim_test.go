@@ -38,6 +38,8 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 	const metadata = `
 		# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
 		# TYPE kube_persistentvolumeclaim_info gauge
+		# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_persistentvolumeclaim_labels gauge
 		# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
 		# TYPE kube_persistentvolumeclaim_status_phase gauge
 		# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
@@ -56,6 +58,9 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mysql-data",
 						Namespace: "default",
+						Labels: map[string]string{
+							"app": "mysql-server",
+						},
 					},
 					Spec: v1.PersistentVolumeClaimSpec{
 						StorageClassName: &storageClassName,
@@ -106,8 +111,11 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Pending"} 1
 				kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace="default",persistentvolumeclaim="mysql-data"} 1.073741824e+09
+				kube_persistentvolumeclaim_labels{namespace="",persistentvolumeclaim="mongo-data"} 1
+				kube_persistentvolumeclaim_labels{namespace="default",persistentvolumeclaim="prometheus-data"} 1
+				kube_persistentvolumeclaim_labels{label_app="mysql-server",namespace="default",persistentvolumeclaim="mysql-data"} 1
 			`,
-			metrics: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes"},
+			metrics: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels"},
 		},
 	}
 	for _, c := range cases {

@@ -29,7 +29,7 @@ import (
 var (
 	descPersistentVolumeLabelsName          = "kube_persistentvolume_labels"
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descPersistentVolumeLabelsDefaultLabels = []string{"namespace", "persistentvolume"}
+	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 
 	descPersistentVolumeLabels = prometheus.NewDesc(
 		descPersistentVolumeLabelsName,
@@ -41,7 +41,6 @@ var (
 		"kube_persistentvolume_status_phase",
 		"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
 		[]string{
-			"namespace",
 			"persistentvolume",
 			"phase",
 		}, nil,
@@ -50,7 +49,7 @@ var (
 	descPersistentVolumeInfo = prometheus.NewDesc(
 		"kube_persistentvolume_info",
 		"Information about persistentvolume.",
-		[]string{"namespace", "persistentvolume", "storageclass"}, nil,
+		[]string{"persistentvolume", "storageclass"}, nil,
 	)
 )
 
@@ -63,7 +62,7 @@ func (pvl PersistentVolumeLister) List() (v1.PersistentVolumeList, error) {
 func RegisterPersistentVolumeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect persistentvolume with %s", client.APIVersion())
-	pvlw := cache.NewListWatchFromClient(client, "persistentvolumes", namespace, fields.Everything())
+	pvlw := cache.NewListWatchFromClient(client, "persistentvolumes", v1.NamespaceAll, fields.Everything())
 	pvinf := cache.NewSharedInformer(pvlw, &v1.PersistentVolume{}, resyncPeriod)
 
 	persistentVolumeLister := PersistentVolumeLister(func() (pvs v1.PersistentVolumeList, err error) {
@@ -122,7 +121,7 @@ func (collector *persistentVolumeCollector) Collect(ch chan<- prometheus.Metric)
 
 func (collector *persistentVolumeCollector) collectPersistentVolume(ch chan<- prometheus.Metric, pv v1.PersistentVolume) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{pv.Namespace, pv.Name}, lv...)
+		lv = append([]string{pv.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
 

@@ -169,6 +169,18 @@ var (
 		"The limit on gpu devices to be used by a container.",
 		[]string{"namespace", "pod", "container", "node"}, nil,
 	)
+
+	descPodSpecVolumesPersistentVolumeClaimsInfo = prometheus.NewDesc(
+		"kube_pod_spec_volumes_persistentvolumeclaims_info",
+		"Information about persistentvolumeclaim volumes in a pod.",
+		[]string{"namespace", "pod", "volume", "persistentvolumeclaim"}, nil,
+	)
+
+	descPodSpecVolumesPersistentVolumeClaimsReadOnly = prometheus.NewDesc(
+		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
+		"Describes whether a persistentvolumeclaim is mounted read only.",
+		[]string{"namespace", "pod", "volume", "persistentvolumeclaim"}, nil,
+	)
 )
 
 type PodLister func() ([]v1.Pod, error)
@@ -227,6 +239,8 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsMemoryBytes
 	ch <- descPodContainerResourceRequestsNvidiaGPUDevices
 	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
+	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
+	ch <- descPodSpecVolumesPersistentVolumeClaimsReadOnly
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -412,6 +426,17 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 
 		if gpu, ok := lim[v1.ResourceNvidiaGPU]; ok {
 			addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+		}
+	}
+
+	for _, v := range p.Spec.Volumes {
+		if v.PersistentVolumeClaim != nil {
+			addGauge(descPodSpecVolumesPersistentVolumeClaimsInfo, 1, v.Name, v.PersistentVolumeClaim.ClaimName)
+			readOnly := 0.0
+			if v.PersistentVolumeClaim.ReadOnly {
+				readOnly = 1.0
+			}
+			addGauge(descPodSpecVolumesPersistentVolumeClaimsReadOnly, readOnly, v.Name, v.PersistentVolumeClaim.ClaimName)
 		}
 	}
 }

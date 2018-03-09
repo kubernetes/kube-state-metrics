@@ -87,7 +87,7 @@ func TestCronJobCollector(t *testing.T) {
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendFalse,
-						Schedule:                "0 */6 * * *",
+						Schedule:                "0 */6 * * * *",
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -106,7 +106,7 @@ func TestCronJobCollector(t *testing.T) {
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendTrue,
-						Schedule:                "0 */3 * * *",
+						Schedule:                "0 */3 * * * *",
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -126,23 +126,23 @@ func TestCronJobCollector(t *testing.T) {
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendFalse,
-						Schedule:                "25 * * * *",
+						Schedule:                "25 * * * * *",
 					},
 				},
 			},
 			want: metadata + `
 				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.5000234e+09
 
-				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
-				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
-				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
+				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * * *"} 1
+				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * * *"} 1
+				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * * *"} 1
 
 				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",label_app="example-active-no-last-scheduled-1",namespace="ns1"} 1
 				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",label_app="example-active-running-1",namespace="ns1"} 1
 				kube_cronjob_labels{cronjob="SuspendedCronJob1",label_app="example-suspended-1",namespace="ns1"} 1
 
-				kube_cronjob_next_schedule_time{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.5000243e+09
-				kube_cronjob_next_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.500012e+09
+				kube_cronjob_next_schedule_time{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.500023425e+09
+				kube_cronjob_next_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.50000012e+09
 
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 300
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300

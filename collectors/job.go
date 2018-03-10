@@ -21,9 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	v1batch "k8s.io/api/batch/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -105,21 +103,23 @@ func (l JobLister) List() ([]v1batch.Job, error) {
 	return l()
 }
 
-func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.BatchV1().RESTClient()
 	glog.Infof("collect job with %s", client.APIVersion())
-	jlw := cache.NewListWatchFromClient(client, "jobs", namespace, fields.Everything())
-	jinf := cache.NewSharedInformer(jlw, &v1batch.Job{}, resyncPeriod)
+
+	jinfs := NewSharedInformerList(client, "jobs", namespaces, &v1batch.Job{})
 
 	jobLister := JobLister(func() (jobs []v1batch.Job, err error) {
-		for _, c := range jinf.GetStore().List() {
-			jobs = append(jobs, *(c.(*v1batch.Job)))
+		for _, jinf := range *jinfs {
+			for _, c := range jinf.GetStore().List() {
+				jobs = append(jobs, *(c.(*v1batch.Job)))
+			}
 		}
 		return jobs, nil
 	})
 
 	registry.MustRegister(&jobCollector{store: jobLister})
-	go jinf.Run(context.Background().Done())
+	jinfs.Run(context.Background().Done())
 }
 
 type jobStore interface {

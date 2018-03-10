@@ -21,9 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -52,21 +50,23 @@ func (l LimitRangeLister) List() (v1.LimitRangeList, error) {
 	return l()
 }
 
-func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect limitrange with %s", client.APIVersion())
-	rqlw := cache.NewListWatchFromClient(client, "limitranges", namespace, fields.Everything())
-	rqinf := cache.NewSharedInformer(rqlw, &v1.LimitRange{}, resyncPeriod)
+
+	rqinfs := NewSharedInformerList(client, "limitranges", namespaces, &v1.LimitRange{})
 
 	limitRangeLister := LimitRangeLister(func() (ranges v1.LimitRangeList, err error) {
-		for _, rq := range rqinf.GetStore().List() {
-			ranges.Items = append(ranges.Items, *(rq.(*v1.LimitRange)))
+		for _, rqinf := range *rqinfs {
+			for _, rq := range rqinf.GetStore().List() {
+				ranges.Items = append(ranges.Items, *(rq.(*v1.LimitRange)))
+			}
 		}
 		return ranges, nil
 	})
 
 	registry.MustRegister(&limitRangeCollector{store: limitRangeLister})
-	go rqinf.Run(context.Background().Done())
+	rqinfs.Run(context.Background().Done())
 }
 
 type limitRangeStore interface {

@@ -20,6 +20,10 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -41,3 +45,20 @@ var (
 		[]string{"resource"},
 	)
 )
+
+type SharedInformerList []cache.SharedInformer
+
+func NewSharedInformerList(client rest.Interface, resource string, namespaces []string, objType runtime.Object) *SharedInformerList {
+	sinfs := SharedInformerList{}
+	for _, namespace := range namespaces {
+		slw := cache.NewListWatchFromClient(client, resource, namespace, fields.Everything())
+		sinfs = append(sinfs, cache.NewSharedInformer(slw, objType, resyncPeriod))
+	}
+	return &sinfs
+}
+
+func (sil SharedInformerList) Run(stopCh <-chan struct{}) {
+	for _, sinf := range sil {
+		go sinf.Run(stopCh)
+	}
+}

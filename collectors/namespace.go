@@ -22,9 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -73,21 +71,23 @@ func (l NamespaceLister) List() ([]v1.Namespace, error) {
 }
 
 // RegisterNamespaceCollector registry namespace collector
-func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect namespace with %s", client.APIVersion())
-	nslw := cache.NewListWatchFromClient(client, "namespaces", metav1.NamespaceAll, fields.Everything())
-	nsinf := cache.NewSharedInformer(nslw, &v1.Namespace{}, resyncPeriod)
+
+	nsinfs := NewSharedInformerList(client, "namespaces", []string{metav1.NamespaceAll}, &v1.Namespace{})
 
 	namespaceLister := NamespaceLister(func() (namespaces []v1.Namespace, err error) {
-		for _, ns := range nsinf.GetStore().List() {
-			namespaces = append(namespaces, *(ns.(*v1.Namespace)))
+		for _, nsinf := range *nsinfs {
+			for _, ns := range nsinf.GetStore().List() {
+				namespaces = append(namespaces, *(ns.(*v1.Namespace)))
+			}
 		}
 		return namespaces, nil
 	})
 
 	registry.MustRegister(&namespaceCollector{store: namespaceLister})
-	go nsinf.Run(context.Background().Done())
+	nsinfs.Run(context.Background().Done())
 }
 
 type namespaceStore interface {

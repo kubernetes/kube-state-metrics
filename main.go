@@ -47,6 +47,7 @@ const (
 )
 
 var (
+	defaultNamespaces = namespaceList{metav1.NamespaceAll}
 	defaultCollectors = collectorSet{
 		"daemonsets":               struct{}{},
 		"deployments":              struct{}{},
@@ -68,7 +69,7 @@ var (
 		"secrets":                  struct{}{},
 		"configmaps":               struct{}{},
 	}
-	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespace string){
+	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespaces []string){
 		"cronjobs":                 kcollectors.RegisterCronJobCollector,
 		"daemonsets":               kcollectors.RegisterDaemonSetCollector,
 		"deployments":              kcollectors.RegisterDeploymentCollector,
@@ -136,6 +137,26 @@ func (c *collectorSet) Type() string {
 	return "string"
 }
 
+type namespaceList []string
+
+func (n *namespaceList) String() string {
+	return strings.Join(*n, ",")
+}
+
+func (n *namespaceList) IsAllNamespaces() bool {
+	return len(*n) == 1 && (*n)[0] == metav1.NamespaceAll
+}
+
+func (n *namespaceList) Set(value string) error {
+	splittedNamespaces := strings.Split(value, ",")
+	*n = append(*n, splittedNamespaces...)
+	return nil
+}
+
+func (n *namespaceList) Type() string {
+	return "string"
+}
+
 type options struct {
 	apiserver     string
 	kubeconfig    string
@@ -145,7 +166,7 @@ type options struct {
 	telemetryPort int
 	telemetryHost string
 	collectors    collectorSet
-	namespace     string
+	namespaces    namespaceList
 	version       bool
 }
 
@@ -165,7 +186,7 @@ func main() {
 	flags.IntVar(&options.telemetryPort, "telemetry-port", 81, `Port to expose kube-state-metrics self metrics on.`)
 	flags.StringVar(&options.telemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
 	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
-	flags.StringVar(&options.namespace, "namespace", metav1.NamespaceAll, "namespace to be enabled for collecting resources")
+	flags.Var(&options.namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &defaultNamespaces))
 	flags.BoolVarP(&options.version, "version", "", false, "kube-state-metrics build version information")
 
 	flags.Usage = func() {
@@ -196,10 +217,17 @@ func main() {
 		collectors = options.collectors
 	}
 
-	if options.namespace == metav1.NamespaceAll {
+	var namespaces namespaceList
+	if len(options.namespaces) == 0 {
+		namespaces = defaultNamespaces
+	} else {
+		namespaces = options.namespaces
+	}
+
+	if namespaces.IsAllNamespaces() {
 		glog.Info("Using all namespace")
 	} else {
-		glog.Infof("Using %s namespace", options.namespace)
+		glog.Infof("Using %s namespaces", namespaces)
 	}
 
 	proc.StartReaper()
@@ -217,7 +245,7 @@ func main() {
 	go telemetryServer(ksmMetricsRegistry, options.telemetryHost, options.telemetryPort)
 
 	registry := prometheus.NewRegistry()
-	registerCollectors(registry, kubeClient, collectors, options.namespace)
+	registerCollectors(registry, kubeClient, collectors, namespaces)
 	metricsServer(registry, options.host, options.port)
 }
 
@@ -311,12 +339,12 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
-func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespace string) {
+func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespaces namespaceList) {
 	activeCollectors := []string{}
 	for c := range enabledCollectors {
 		f, ok := availableCollectors[c]
 		if ok {
-			f(registry, kubeClient, namespace)
+			f(registry, kubeClient, namespaces)
 			activeCollectors = append(activeCollectors, c)
 		}
 	}

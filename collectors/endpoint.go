@@ -23,9 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -68,21 +66,23 @@ func (l EndpointLister) List() ([]v1.Endpoints, error) {
 	return l()
 }
 
-func RegisterEndpointCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterEndpointCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect endpoint with %s", client.APIVersion())
-	slw := cache.NewListWatchFromClient(client, "endpoints", namespace, fields.Everything())
-	sinf := cache.NewSharedInformer(slw, &v1.Endpoints{}, resyncPeriod)
+
+	sinfs := NewSharedInformerList(client, "endpoints", namespaces, &v1.Endpoints{})
 
 	endpointLister := EndpointLister(func() (endpoints []v1.Endpoints, err error) {
-		for _, m := range sinf.GetStore().List() {
-			endpoints = append(endpoints, *m.(*v1.Endpoints))
+		for _, sinf := range *sinfs {
+			for _, m := range sinf.GetStore().List() {
+				endpoints = append(endpoints, *m.(*v1.Endpoints))
+			}
 		}
 		return endpoints, nil
 	})
 
 	registry.MustRegister(&endpointCollector{store: endpointLister})
-	go sinf.Run(context.Background().Done())
+	sinfs.Run(context.Background().Done())
 }
 
 type endpointStore interface {

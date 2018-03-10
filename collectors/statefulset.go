@@ -21,9 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/apps/v1beta1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -92,21 +90,23 @@ func (l StatefulSetLister) List() ([]v1beta1.StatefulSet, error) {
 	return l()
 }
 
-func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.AppsV1beta1().RESTClient()
 	glog.Infof("collect statefulset with %s", client.APIVersion())
-	dlw := cache.NewListWatchFromClient(client, "statefulsets", namespace, fields.Everything())
-	dinf := cache.NewSharedInformer(dlw, &v1beta1.StatefulSet{}, resyncPeriod)
+
+	dinfs := NewSharedInformerList(client, "statefulsets", namespaces, &v1beta1.StatefulSet{})
 
 	statefulSetLister := StatefulSetLister(func() (statefulSets []v1beta1.StatefulSet, err error) {
-		for _, c := range dinf.GetStore().List() {
-			statefulSets = append(statefulSets, *(c.(*v1beta1.StatefulSet)))
+		for _, dinf := range *dinfs {
+			for _, c := range dinf.GetStore().List() {
+				statefulSets = append(statefulSets, *(c.(*v1beta1.StatefulSet)))
+			}
 		}
 		return statefulSets, nil
 	})
 
 	registry.MustRegister(&statefulSetCollector{store: statefulSetLister})
-	go dinf.Run(context.Background().Done())
+	dinfs.Run(context.Background().Done())
 }
 
 type statefulSetStore interface {

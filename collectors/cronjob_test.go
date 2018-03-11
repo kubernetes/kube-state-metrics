@@ -17,6 +17,8 @@ limitations under the License.
 package collectors
 
 import (
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -26,13 +28,14 @@ import (
 )
 
 var (
-	SuspendTrue                bool  = true
-	SuspendFalse               bool  = false
+	SuspendTrue                      = true
+	SuspendFalse                     = false
 	StartingDeadlineSeconds300 int64 = 300
 
-	ActiveRunningCronJob1LastScheduleTime          = time.Unix(1500000000, 0)
-	SuspendedCronJob1LastScheduleTime              = time.Unix(1500000000+5.5*3600, 0) // 5.5 hours later
-	ActiveCronJob1NoLastScheduledCreationTimestamp = time.Unix(1500000000+6.5*3600, 0)
+	// "1520742896" is "2018/3/11 12:34:56" in "Asia/Shanghai".
+	ActiveRunningCronJob1LastScheduleTime          = time.Unix(1520742896, 0)
+	SuspendedCronJob1LastScheduleTime              = time.Unix(1520742896+5.5*3600, 0) // 5.5 hours later
+	ActiveCronJob1NoLastScheduledCreationTimestamp = time.Unix(1520742896+6.5*3600, 0)
 )
 
 type mockCronJobStore struct {
@@ -46,6 +49,65 @@ func (cjs mockCronJobStore) List() (cronJobs []batchv1beta1.CronJob, err error) 
 func TestCronJobCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
+
+	hour := ActiveRunningCronJob1LastScheduleTime.Hour()
+	ActiveRunningCronJob1NextScheduleTime := time.Time{}
+	switch {
+	case hour < 6:
+		ActiveRunningCronJob1NextScheduleTime = time.Date(
+			ActiveRunningCronJob1LastScheduleTime.Year(),
+			ActiveRunningCronJob1LastScheduleTime.Month(),
+			ActiveRunningCronJob1LastScheduleTime.Day(),
+			6,
+			0,
+			0, 0, time.Local)
+	case hour < 12:
+		ActiveRunningCronJob1NextScheduleTime = time.Date(
+			ActiveRunningCronJob1LastScheduleTime.Year(),
+			ActiveRunningCronJob1LastScheduleTime.Month(),
+			ActiveRunningCronJob1LastScheduleTime.Day(),
+			12,
+			0,
+			0, 0, time.Local)
+	case hour < 18:
+		ActiveRunningCronJob1NextScheduleTime = time.Date(
+			ActiveRunningCronJob1LastScheduleTime.Year(),
+			ActiveRunningCronJob1LastScheduleTime.Month(),
+			ActiveRunningCronJob1LastScheduleTime.Day(),
+			18,
+			0,
+			0, 0, time.Local)
+	case hour < 24:
+		ActiveRunningCronJob1NextScheduleTime = time.Date(
+			ActiveRunningCronJob1LastScheduleTime.Year(),
+			ActiveRunningCronJob1LastScheduleTime.Month(),
+			ActiveRunningCronJob1LastScheduleTime.Day(),
+			24,
+			0,
+			0, 0, time.Local)
+	}
+
+	minute := ActiveCronJob1NoLastScheduledCreationTimestamp.Minute()
+	ActiveCronJob1NoLastScheduledNextScheduleTime := time.Time{}
+	switch {
+	case minute < 25:
+		ActiveCronJob1NoLastScheduledNextScheduleTime = time.Date(
+			ActiveCronJob1NoLastScheduledCreationTimestamp.Year(),
+			ActiveCronJob1NoLastScheduledCreationTimestamp.Month(),
+			ActiveCronJob1NoLastScheduledCreationTimestamp.Day(),
+			ActiveCronJob1NoLastScheduledCreationTimestamp.Hour(),
+			25,
+			0, 0, time.Local)
+	default:
+		ActiveCronJob1NoLastScheduledNextScheduleTime = time.Date(
+			ActiveCronJob1NoLastScheduledNextScheduleTime.Year(),
+			ActiveCronJob1NoLastScheduledNextScheduleTime.Month(),
+			ActiveCronJob1NoLastScheduledNextScheduleTime.Day(),
+			ActiveCronJob1NoLastScheduledNextScheduleTime.Hour()+1,
+			25,
+			0, 0, time.Local)
+	}
+
 	const metadata = `
 		# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_cronjob_labels gauge
@@ -80,14 +142,14 @@ func TestCronJobCollector(t *testing.T) {
 						},
 					},
 					Status: batchv1beta1.CronJobStatus{
-						Active:           []v1.ObjectReference{v1.ObjectReference{Name: "FakeJob1"}, v1.ObjectReference{Name: "FakeJob2"}},
+						Active:           []v1.ObjectReference{{Name: "FakeJob1"}, {Name: "FakeJob2"}},
 						LastScheduleTime: &metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 					},
 					Spec: batchv1beta1.CronJobSpec{
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendFalse,
-						Schedule:                "0 */6 * * * *",
+						Schedule:                "0 */6 * * *",
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -106,7 +168,7 @@ func TestCronJobCollector(t *testing.T) {
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendTrue,
-						Schedule:                "0 */3 * * * *",
+						Schedule:                "0 */3 * * *",
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -126,24 +188,26 @@ func TestCronJobCollector(t *testing.T) {
 						StartingDeadlineSeconds: &StartingDeadlineSeconds300,
 						ConcurrencyPolicy:       "Forbid",
 						Suspend:                 &SuspendFalse,
-						Schedule:                "25 * * * * *",
+						Schedule:                "25 * * * *",
 					},
 				},
 			},
 			want: metadata + `
-				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.5000234e+09
+				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.520766296e+09
 
-				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * * *"} 1
-				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * * *"} 1
-				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * * *"} 1
+				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
+				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
+				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 
 				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",label_app="example-active-no-last-scheduled-1",namespace="ns1"} 1
 				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",label_app="example-active-running-1",namespace="ns1"} 1
 				kube_cronjob_labels{cronjob="SuspendedCronJob1",label_app="example-suspended-1",namespace="ns1"} 1
-
-				kube_cronjob_next_schedule_time{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.500023425e+09
-				kube_cronjob_next_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.50000012e+09
-
+                ` +
+				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveCronJob1NoLastScheduled\",namespace=\"ns1\"} %ve+09\n",
+					float64(ActiveCronJob1NoLastScheduledNextScheduleTime.Unix())/math.Pow10(9)) +
+				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveRunningCronJob1\",namespace=\"ns1\"} %ve+09\n",
+					float64(ActiveRunningCronJob1NextScheduleTime.Unix())/math.Pow10(9)) +
+				`
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 300
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="SuspendedCronJob1",namespace="ns1"} 300
@@ -156,8 +220,8 @@ func TestCronJobCollector(t *testing.T) {
 				kube_cronjob_status_active{cronjob="SuspendedCronJob1",namespace="ns1"} 0
 				kube_cronjob_status_active{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 0
 
-				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.5e+09
-				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.5000198e+09
+				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.520742896e+09
+				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.520762696e+09
 			`,
 		},
 	}

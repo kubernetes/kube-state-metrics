@@ -50,6 +50,12 @@ var (
 		[]string{"namespace", "pod"}, nil,
 	)
 
+	descPodCompletionTime = prometheus.NewDesc(
+		"kube_pod_completion_time",
+		"Completion time in unix timestamp for a pod.",
+		[]string{"namespace", "pod"}, nil,
+	)
+
 	descPodOwner = prometheus.NewDesc(
 		"kube_pod_owner",
 		"Information about the Pod's owner.",
@@ -219,6 +225,7 @@ type podCollector struct {
 func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodInfo
 	ch <- descPodStartTime
+	ch <- descPodCompletionTime
 	ch <- descPodOwner
 	ch <- descPodLabels
 	ch <- descPodCreated
@@ -380,6 +387,8 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		return cs.State.Terminated.Reason == reason
 	}
 
+	var lastFinishTime float64
+
 	for _, cs := range p.Status.ContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
@@ -395,6 +404,16 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		}
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
+
+		if cs.State.Terminated != nil {
+			if lastFinishTime == 0 || lastFinishTime < float64(cs.State.Terminated.FinishedAt.Unix()) {
+				lastFinishTime = float64(cs.State.Terminated.FinishedAt.Unix())
+			}
+		}
+	}
+
+	if lastFinishTime > 0 {
+		addGauge(descPodCompletionTime, lastFinishTime)
 	}
 
 	for _, c := range p.Spec.Containers {

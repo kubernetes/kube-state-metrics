@@ -154,7 +154,7 @@ func (n *namespaceList) Set(value string) error {
 }
 
 func (n *namespaceList) Type() string {
-	return "string"
+	return "namespaceList"
 }
 
 type options struct {

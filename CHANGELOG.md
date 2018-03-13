@@ -1,3 +1,6 @@
+
+* [FEATURE] Add `kube_pod_completion_time` metric.
+
 ## v1.2.0 / 2018-01-15
 
 After a testing period of 10 days, there were no additional bugs found or features introduced.

@@ -112,11 +112,14 @@ func (c *collectorSet) Set(value string) error {
 	s := *c
 	cols := strings.Split(value, ",")
 	for _, col := range cols {
-		_, ok := availableCollectors[col]
-		if !ok {
-			glog.Fatalf("Collector \"%s\" does not exist", col)
+		col = strings.TrimSpace(col)
+		if len(col) != 0 {
+			_, ok := availableCollectors[col]
+			if !ok {
+				glog.Fatalf("Collector \"%s\" does not exist", col)
+			}
+			s[col] = struct{}{}
 		}
-		s[col] = struct{}{}
 	}
 	return nil
 }
@@ -149,12 +152,17 @@ func (n *namespaceList) IsAllNamespaces() bool {
 
 func (n *namespaceList) Set(value string) error {
 	splittedNamespaces := strings.Split(value, ",")
-	*n = append(*n, splittedNamespaces...)
+	for _, ns := range splittedNamespaces {
+		ns = strings.TrimSpace(ns)
+		if len(ns) != 0 {
+			*n = append(*n, ns)
+		}
+	}
 	return nil
 }
 
 func (n *namespaceList) Type() string {
-	return "namespaceList"
+	return "string"
 }
 
 type options struct {

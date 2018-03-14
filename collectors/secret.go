@@ -21,9 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -68,21 +66,23 @@ func (l SecretLister) List() ([]v1.Secret, error) {
 	return l()
 }
 
-func RegisterSecretCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterSecretCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect secret with %s", client.APIVersion())
-	slw := cache.NewListWatchFromClient(client, "secrets", namespace, fields.Everything())
-	sinf := cache.NewSharedInformer(slw, &v1.Secret{}, resyncPeriod)
+
+	sinfs := NewSharedInformerList(client, "secrets", namespaces, &v1.Secret{})
 
 	secretLister := SecretLister(func() (secrets []v1.Secret, err error) {
-		for _, m := range sinf.GetStore().List() {
-			secrets = append(secrets, *m.(*v1.Secret))
+		for _, sinf := range *sinfs {
+			for _, m := range sinf.GetStore().List() {
+				secrets = append(secrets, *m.(*v1.Secret))
+			}
 		}
 		return secrets, nil
 	})
 
 	registry.MustRegister(&secretCollector{store: secretLister})
-	go sinf.Run(context.Background().Done())
+	sinfs.Run(context.Background().Done())
 }
 
 type secretStore interface {

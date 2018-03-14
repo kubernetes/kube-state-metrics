@@ -22,9 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -76,21 +74,23 @@ func (l ReplicationControllerLister) List() ([]v1.ReplicationController, error) 
 	return l()
 }
 
-func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect replicationcontroller with %s", client.APIVersion())
-	rclw := cache.NewListWatchFromClient(client, "replicationcontrollers", namespace, fields.Everything())
-	rcinf := cache.NewSharedInformer(rclw, &v1.ReplicationController{}, resyncPeriod)
+
+	rcinfs := NewSharedInformerList(client, "replicationcontrollers", namespaces, &v1.ReplicationController{})
 
 	replicationControllerLister := ReplicationControllerLister(func() (rcs []v1.ReplicationController, err error) {
-		for _, c := range rcinf.GetStore().List() {
-			rcs = append(rcs, *(c.(*v1.ReplicationController)))
+		for _, rcinf := range *rcinfs {
+			for _, c := range rcinf.GetStore().List() {
+				rcs = append(rcs, *(c.(*v1.ReplicationController)))
+			}
 		}
 		return rcs, nil
 	})
 
 	registry.MustRegister(&replicationcontrollerCollector{store: replicationControllerLister})
-	go rcinf.Run(context.Background().Done())
+	rcinfs.Run(context.Background().Done())
 }
 
 type replicationcontrollerStore interface {

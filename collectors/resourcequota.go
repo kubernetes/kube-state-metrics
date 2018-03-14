@@ -21,9 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -50,21 +48,23 @@ func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
 	return l()
 }
 
-func RegisterResourceQuotaCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterResourceQuotaCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect resourcequota with %s", client.APIVersion())
-	rqlw := cache.NewListWatchFromClient(client, "resourcequotas", namespace, fields.Everything())
-	rqinf := cache.NewSharedInformer(rqlw, &v1.ResourceQuota{}, resyncPeriod)
+
+	rqinfs := NewSharedInformerList(client, "resourcequotas", namespaces, &v1.ResourceQuota{})
 
 	resourceQuotaLister := ResourceQuotaLister(func() (quotas v1.ResourceQuotaList, err error) {
-		for _, rq := range rqinf.GetStore().List() {
-			quotas.Items = append(quotas.Items, *(rq.(*v1.ResourceQuota)))
+		for _, rqinf := range *rqinfs {
+			for _, rq := range rqinf.GetStore().List() {
+				quotas.Items = append(quotas.Items, *(rq.(*v1.ResourceQuota)))
+			}
 		}
 		return quotas, nil
 	})
 
 	registry.MustRegister(&resourceQuotaCollector{store: resourceQuotaLister})
-	go rqinf.Run(context.Background().Done())
+	rqinfs.Run(context.Background().Done())
 }
 
 type resourceQuotaStore interface {

@@ -45,6 +45,8 @@ func TestNodeCollector(t *testing.T) {
 		# TYPE kube_node_labels gauge
 		# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
 		# TYPE kube_node_spec_unschedulable gauge
+		# HELP kube_node_spec_taint The taint of a cluster node.
+		# TYPE kube_node_spec_taint gauge
 		# TYPE kube_node_status_phase gauge
 		# HELP kube_node_status_phase The phase the node is currently in.
 		# TYPE kube_node_status_capacity_pods gauge
@@ -262,6 +264,29 @@ func TestNodeCollector(t *testing.T) {
 				kube_node_status_condition{node="127.0.0.3",condition="CustomizedType",status="unknown"} 0
 			`,
 			metrics: []string{"kube_node_status_condition"},
+		},
+		// Verify SpecTaints
+		{
+			nodes: []v1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.1",
+					},
+					Spec: v1.NodeSpec{
+						Taints: []v1.Taint{
+							{Key: "node.kubernetes.io/memory-pressure", Value: "true", Effect: v1.TaintEffectPreferNoSchedule},
+							{Key: "Accelerated", Value: "gpu", Effect: v1.TaintEffectPreferNoSchedule},
+							{Key: "Dedicated", Effect: v1.TaintEffectPreferNoSchedule},
+						},
+					},
+				},
+			},
+			want: metadata + `
+				kube_node_spec_taint{effect="PreferNoSchedule",key="Dedicated",node="127.0.0.1",value=""} 1
+				kube_node_spec_taint{effect="PreferNoSchedule",key="Accelerated",node="127.0.0.1",value="gpu"} 1
+				kube_node_spec_taint{effect="PreferNoSchedule",key="node.kubernetes.io/memory-pressure",node="127.0.0.1",value="true"} 1
+			`,
+			metrics: []string{"kube_node_spec_taint"},
 		},
 	}
 	for _, c := range cases {

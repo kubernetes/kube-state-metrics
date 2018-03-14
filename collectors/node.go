@@ -62,6 +62,12 @@ var (
 		[]string{"node"}, nil,
 	)
 
+	descNodeSpecTaint = prometheus.NewDesc(
+		"kube_node_spec_taint",
+		"The taint of a cluster node.",
+		[]string{"node", "key", "value", "effect"}, nil,
+	)
+
 	descNodeStatusCondition = prometheus.NewDesc(
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
@@ -157,6 +163,7 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeCreated
 	ch <- descNodeLabels
 	ch <- descNodeSpecUnschedulable
+	ch <- descNodeSpecTaint
 	ch <- descNodeStatusCondition
 	ch <- descNodeStatusPhase
 	ch <- descNodeStatusCapacityCPU
@@ -218,6 +225,14 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 	addGauge(nodeLabelsDesc(labelKeys), 1, labelValues...)
 
 	addGauge(descNodeSpecUnschedulable, boolFloat64(n.Spec.Unschedulable))
+
+	// Collect node taints
+	for _, taint := range n.Spec.Taints {
+		// Taints are applied to repel pods from nodes that do not have a corresponding
+		// toleration.  Many node conditions are optionally reflected as taints
+		// by the node controller in order to simplify scheduling constraints.
+		addGauge(descNodeSpecTaint, 1, taint.Key, taint.Value, string(taint.Effect))
+	}
 
 	// Collect node conditions and while default to false.
 	for _, c := range n.Status.Conditions {

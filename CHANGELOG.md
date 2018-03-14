@@ -1,6 +1,8 @@
 ## Unreleased
 
 * [FEATURE] Add `kube_pod_completion_time` metric.
+* [FEATURE] Allow to specify multiple namespace.
+* [BUGFIX] Fix namespacing of HPA.
 
 ## v1.2.0 / 2018-01-15
 

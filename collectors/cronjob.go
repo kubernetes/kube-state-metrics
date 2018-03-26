@@ -143,7 +143,7 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {
-	sched, err := cron.Parse(schedule)
+	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
 	}

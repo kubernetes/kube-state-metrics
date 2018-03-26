@@ -1,8 +1,19 @@
-## Unreleased
+## v1.3.0-rc.0 / 2018-03-23
 
-* [FEATURE] Add `kube_pod_completion_time` metric.
 * [FEATURE] Allow to specify multiple namespace.
+* [FEATURE] Add `kube_pod_completion_time`, `kube_pod_spec_volumes_persistentvolumeclaims_info`, and `kube_pod_spec_volumes_persistentvolumeclaims_readonly` metrics to the Pod collector.
+* [FEATURE] Add `kube_node_spec_taint` metric.
+* [FEATURE] Add `kube_namespace_annotations` metric.
+* [FEATURE] Add `kube_deployment_spec_strategy_rollingupdate_max_surge` metric.
+* [FEATURE] Add `kube_persistentvolume_labels` metric.
+* [FEATURE] Add `kube_persistentvolumeclaim_lables` metric.
+* [FEATURE] Add `kube_daemonset_labels` metric.
+* [FEATURE] Add Secret metrics.
+* [FEATURE] Add ConfigMap metrics.
+* [ENHANCEMENT] Add additional reasons to `kube_pod_container_status_waiting_reason` metric.
 * [BUGFIX] Fix namespacing of HPA.
+* [BUGFIX] Fix namespacing of PersistentVolumes.
+* [BUGFIX] Fix CronJob tab parsing.
 
 ## v1.2.0 / 2018-01-15
 

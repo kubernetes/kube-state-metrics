@@ -92,9 +92,10 @@ additional metrics!
 > **collectors**
 > * v2alpha1/cronjob
 >
-> If users want to enable this feature when kubernetes version larger than 1.7,
-> It must be configured, with the following parameter setting for apiserver.
-> `--runtime-config=batch/v2alpha1=true`
+> If users want to enable this feature in kubernetes version less than 1.8,
+> it must be configured with the following parameter setting for apiserver:
+> `--runtime-config=batch/v2alpha1=true`. For cluster versions >= 1.8, cronjobs
+> are enabled by default in batch/v2alpha1
 >
 > Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.

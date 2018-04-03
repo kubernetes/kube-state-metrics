@@ -87,15 +87,7 @@ additional metrics!
 >	* kube_node_status_capacity_nvidia_gpu_cards
 >	* kube_node_status_allocatable_nvidia_gpu_cards
 >
->	are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
->
-> **collectors**
-> * v2alpha1/cronjob
->
-> If users want to enable this feature in kubernetes version less than 1.8,
-> it must be configured with the following parameter setting for apiserver:
-> `--runtime-config=batch/v2alpha1=true`. For cluster versions >= 1.8, cronjobs
-> are enabled by default in batch/v2alpha1
+>	are in alpha stage and will be deprecated when the kubernetes accelerator feature support is deprecated in version v1.11.
 >
 > Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.

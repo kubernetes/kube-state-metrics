@@ -1,3 +1,7 @@
+## v1.3.0 / 2018-04-04
+
+After a testing period of 12 days, there were no additional bugs found or features introduced.
+
 ## v1.3.0-rc.0 / 2018-03-23
 
 * [FEATURE] Allow to specify multiple namespace.

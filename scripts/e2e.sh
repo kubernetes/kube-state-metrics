@@ -20,7 +20,6 @@ set -o pipefail
 KUBERNETES_VERSION=v1.8.0
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
-KUBE_STATE_METRICS_IMAGE_NAME_PATTERN='quay.io\/coreos\/kube-state-metrics'
 PROMETHEUS_VERSION=2.0.0
 
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
@@ -77,7 +76,7 @@ ksm_image_tag=`docker images -a|grep 'quay.io/coreos/kube-state-metrics'|awk '{p
 echo "local kube-state-metrics image tag: $ksm_image_tag"
 
 # update kube-state-metrics image tag in kube-state-metrics-deployment.yaml
-sed -i.bak "s/$KUBE_STATE_METRICS_IMAGE_NAME_PATTERN:v.*/$KUBE_STATE_METRICS_IMAGE_NAME_PATTERN:$ksm_image_tag/g" ./kubernetes/kube-state-metrics-deployment.yaml
+sed -i.bak "s|$KUBE_STATE_METRICS_IMAGE_NAME:v.*|$KUBE_STATE_METRICS_IMAGE_NAME:$ksm_image_tag|g" ./kubernetes/kube-state-metrics-deployment.yaml
 cat ./kubernetes/kube-state-metrics-deployment.yaml
 
 # set up kube-state-metrics manifests

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limitrange
+spec:
+  limits:
+  - default:
+      memory: 1000Mi
+    defaultRequest:
+      memory: 1Mi
+    type: Container

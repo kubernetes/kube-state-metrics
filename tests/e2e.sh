@@ -20,17 +20,48 @@ set -o pipefail
 KUBERNETES_VERSION=v1.8.0
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
-KUBE_STATE_METRICS_IMAGE_NAME_PATTERN='quay.io\/coreos\/kube-state-metrics'
 PROMETHEUS_VERSION=2.0.0
+E2E_SETUP_MINIKUBE=${E2E_SETUP_MINIKUBE-yes}
+E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL-yes}
+E2E_SETUP_PROMTOOL=${E2E_SETUP_PROMTOOL-yes}
+MINIKUBE_DRIVER=${MINIKUBE_DRIVER:-none}
+SUDO=${SUDO-sudo}
 
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
 
-# setup a Kubernetes cluster
-curl -sLo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+function finish() {
+    echo "calling cleaup function"
+    # kill kubectl proxy in background
+    kill %1 || true
+    kubectl delete -f kubernetes/ || true
+    kubectl delete -f tests/manifests/ || true
+}
+
+function setup_minikube() {
+    curl -sLo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 \
+        && chmod +x minikube \
+        && $SUDO mv minikube /usr/local/bin/
+}
+
+function setup_kubectl() {
+    curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl \
+        && chmod +x kubectl \
+        && $SUDO mv kubectl /usr/local/bin/
+}
+
+function setup_promtool() {
+    wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz
+    tar zxfv /tmp/prometheus.tar.gz -C /tmp/ prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool
+    $SUDO mv /tmp/prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool /usr/local/bin/
+    rmdir /tmp/prometheus-$PROMETHEUS_VERSION.linux-amd64
+    rm /tmp/prometheus.tar.gz
+}
+
+[ -n "$E2E_SETUP_MINIKUBE" ] && setup_minikube
 
 minikube version
 
-curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+[ -n "$E2E_SETUP_KUBECTL" ] && setup_kubectl
 
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -40,7 +71,7 @@ mkdir $HOME/.kube || true
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
-sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION --logtostderr
+$SUDO minikube start --vm-driver=$MINIKUBE_DRIVER --kubernetes-version=$KUBERNETES_VERSION --logtostderr
 
 minikube update-context
 
@@ -70,6 +101,9 @@ set -e
 
 kubectl version
 
+# ensure that we build docker image in minikube
+[ "$MINIKUBE_DRIVER" != "none" ] && eval $(minikube docker-env)
+
 # query kube-state-metrics image tag
 make container
 docker images -a
@@ -77,8 +111,10 @@ ksm_image_tag=`docker images -a|grep 'quay.io/coreos/kube-state-metrics'|awk '{p
 echo "local kube-state-metrics image tag: $ksm_image_tag"
 
 # update kube-state-metrics image tag in kube-state-metrics-deployment.yaml
-sed -i.bak "s/$KUBE_STATE_METRICS_IMAGE_NAME_PATTERN:v.*/$KUBE_STATE_METRICS_IMAGE_NAME_PATTERN:$ksm_image_tag/g" ./kubernetes/kube-state-metrics-deployment.yaml
+sed -i.bak "s|$KUBE_STATE_METRICS_IMAGE_NAME:v.*|$KUBE_STATE_METRICS_IMAGE_NAME:$ksm_image_tag|g" ./kubernetes/kube-state-metrics-deployment.yaml
 cat ./kubernetes/kube-state-metrics-deployment.yaml
+
+trap finish EXIT
 
 # set up kube-state-metrics manifests
 kubectl create -f ./kubernetes/kube-state-metrics-service-account.yaml
@@ -92,6 +128,8 @@ kubectl create -f ./kubernetes/kube-state-metrics-role.yaml
 kubectl create -f ./kubernetes/kube-state-metrics-deployment.yaml
 
 kubectl create -f ./kubernetes/kube-state-metrics-service.yaml
+
+kubectl create -f ./tests/manifests/
 
 echo "make requests to kube-state-metrics"
 
@@ -127,9 +165,15 @@ echo "access kube-state-metrics metrics endpoint"
 curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/metrics" >$KUBE_STATE_METRICS_LOG_DIR/metrics
 
 echo "check metrics format with promtool"
-wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz
-tar zxfv /tmp/prometheus.tar.gz -C /tmp
-cat $KUBE_STATE_METRICS_LOG_DIR/metrics | /tmp/prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool check metrics
+[ -n "$E2E_SETUP_PROMTOOL" ] && setup_promtool
+cat $KUBE_STATE_METRICS_LOG_DIR/metrics | promtool check metrics
+
+collectors=$(find collectors/ -name "*.go" -not -name "*_test.go" -not -name "collectors.go" | xargs -n1 basename | awk -F. '{print $1}')
+echo "available collectors: $collectors"
+for collector in $collectors; do
+    echo "checking that kube_${collector}* metrics exists"
+    grep "^kube_${collector}_" $KUBE_STATE_METRICS_LOG_DIR/metrics
+done
 
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/healthz")
 if [ "$KUBE_STATE_METRICS_STATUS" == "ok" ]; then

@@ -10,6 +10,7 @@ Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG=k8s.io/kube-state-metrics
 
+
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
@@ -27,7 +28,7 @@ doccheck:
 	@cd Documentation; for doc in *.md; do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
-build: clean
+build: clean validate_go_version
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(BUILDENVVAR) go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
 
 test-unit: clean build
@@ -72,4 +73,7 @@ clean:
 e2e:
 	./scripts/e2e.sh
 
-.PHONY: all build all-push all-container test-unit container push clean e2e
+validate_go_version:
+	./hacks/validate_go_version.sh
+
+.PHONY: all build all-push all-container test-unit container push clean e2e validate_go_version

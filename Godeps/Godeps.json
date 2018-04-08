@@ -244,6 +244,10 @@
 			"Rev": "1e65e9bf72c307081cea196f47ef37aed17eb316"
 		},
 		{
+			"ImportPath": "golang.org/x/text/internal",
+			"Rev": "1e65e9bf72c307081cea196f47ef37aed17eb316"
+		},
+		{
 			"ImportPath": "golang.org/x/text/internal/tag",
 			"Rev": "1e65e9bf72c307081cea196f47ef37aed17eb316"
 		},
@@ -579,6 +583,11 @@
 			"Rev": "9d38e20d609d27e00d4ec18f7b9db67105a2bde0"
 		},
 		{
+			"ImportPath": "k8s.io/apimachinery/pkg/util/mergepatch",
+			"Comment": "kubernetes-1.8.0-rc.1",
+			"Rev": "9d38e20d609d27e00d4ec18f7b9db67105a2bde0"
+		},
+		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/net",
 			"Comment": "kubernetes-1.8.0-rc.1",
 			"Rev": "9d38e20d609d27e00d4ec18f7b9db67105a2bde0"
@@ -590,6 +599,11 @@
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/sets",
+			"Comment": "kubernetes-1.8.0-rc.1",
+			"Rev": "9d38e20d609d27e00d4ec18f7b9db67105a2bde0"
+		},
+		{
+			"ImportPath": "k8s.io/apimachinery/pkg/util/strategicpatch",
 			"Comment": "kubernetes-1.8.0-rc.1",
 			"Rev": "9d38e20d609d27e00d4ec18f7b9db67105a2bde0"
 		},
@@ -620,6 +634,11 @@
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/watch",
+			"Comment": "kubernetes-1.8.0-rc.1",
+			"Rev": "9d38e20d609d27e00d4ec18f7b9db67105a2bde0"
+		},
+		{
+			"ImportPath": "k8s.io/apimachinery/third_party/forked/golang/json",
 			"Comment": "kubernetes-1.8.0-rc.1",
 			"Rev": "9d38e20d609d27e00d4ec18f7b9db67105a2bde0"
 		},
@@ -876,6 +895,25 @@
 		{
 			"ImportPath": "k8s.io/kube-openapi/pkg/common",
 			"Rev": "abfc5fbe1cf87ee697db107fdfd24c32fe4397a8"
+		},
+		{
+			"ImportPath": "k8s.io/kube-openapi/pkg/util/proto",
+			"Rev": "abfc5fbe1cf87ee697db107fdfd24c32fe4397a8"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/apis/core",
+			"Comment": "v1.9.0",
+			"Rev": "925c127ec6b946659ad0fd596fa959be43f0cc05"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/apis",
+			"Comment": "v1.9.0",
+			"Rev": "925c127ec6b946659ad0fd596fa959be43f0cc05"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/node",
+			"Comment": "v1.9.0",
+			"Rev": "925c127ec6b946659ad0fd596fa959be43f0cc05"
 		}
 	]
 }

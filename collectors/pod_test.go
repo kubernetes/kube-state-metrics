@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubernetes/pkg/util/node"
 )
 
 type mockPodStore struct {
@@ -481,7 +482,7 @@ func TestPodCollector(t *testing.T) {
 						Namespace: "ns1",
 					},
 					Status: v1.PodStatus{
-						Phase: "Running",
+						Phase: v1.PodRunning,
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -489,7 +490,27 @@ func TestPodCollector(t *testing.T) {
 						Namespace: "ns2",
 					},
 					Status: v1.PodStatus{
-						Phase: "Pending",
+						Phase: v1.PodPending,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod3",
+						Namespace: "ns3",
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodUnknown,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "pod4",
+						Namespace:         "ns4",
+						DeletionTimestamp: &metav1.Time{},
+					},
+					Status: v1.PodStatus{
+						Phase:  v1.PodRunning,
+						Reason: node.NodeUnreachablePodReason,
 					},
 				},
 			},
@@ -504,6 +525,16 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_status_phase{namespace="ns2",phase="Running",pod="pod2"} 0
 				kube_pod_status_phase{namespace="ns2",phase="Succeeded",pod="pod2"} 0
 				kube_pod_status_phase{namespace="ns2",phase="Unknown",pod="pod2"} 0
+				kube_pod_status_phase{namespace="ns3",phase="Failed",pod="pod3"} 0
+				kube_pod_status_phase{namespace="ns3",phase="Pending",pod="pod3"} 0
+				kube_pod_status_phase{namespace="ns3",phase="Running",pod="pod3"} 0
+				kube_pod_status_phase{namespace="ns3",phase="Succeeded",pod="pod3"} 0
+				kube_pod_status_phase{namespace="ns3",phase="Unknown",pod="pod3"} 1
+				kube_pod_status_phase{namespace="ns4",phase="Failed",pod="pod4"} 0
+				kube_pod_status_phase{namespace="ns4",phase="Pending",pod="pod4"} 0
+				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4"} 0
+				kube_pod_status_phase{namespace="ns4",phase="Succeeded",pod="pod4"} 0
+				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4"} 1
 				`,
 			metrics: []string{"kube_pod_status_phase"},
 		}, {

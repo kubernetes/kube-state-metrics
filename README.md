@@ -87,7 +87,7 @@ additional metrics!
 >	* kube_node_status_capacity_nvidia_gpu_cards
 >	* kube_node_status_allocatable_nvidia_gpu_cards
 >
->	are in alpha stage and will be deprecated when the kubernetes accelerator feature support is deprecated in version v1.11.
+>	are deprecated and will be completely removed when the Kubernetes accelerator feature support is removed in version v1.11. (Kubernetes accelerator support is already deprecated in v1.10).
 >
 > Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.

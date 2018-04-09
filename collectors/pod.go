@@ -26,6 +26,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kubernetes/pkg/util/node"
 )
 
 var (
@@ -352,12 +353,14 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
 	addGauge(podLabelsDesc(labelKeys), 1, labelValues...)
 
-	if p := p.Status.Phase; p != "" {
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodPending), string(v1.PodPending))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodRunning), string(v1.PodRunning))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodSucceeded), string(v1.PodSucceeded))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodFailed), string(v1.PodFailed))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodUnknown), string(v1.PodUnknown))
+	if phase := p.Status.Phase; phase != "" {
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodPending), string(v1.PodPending))
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodSucceeded), string(v1.PodSucceeded))
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodFailed), string(v1.PodFailed))
+		// This logic is directly copied from: https://github.com/kubernetes/kubernetes/blob/d39bfa0d138368bbe72b0eaf434501dcb4ec9908/pkg/printers/internalversion/printers.go#L597-L601
+		// For more info, please go to: https://github.com/kubernetes/kube-state-metrics/issues/410
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodRunning && !(p.DeletionTimestamp != nil && p.Status.Reason == node.NodeUnreachablePodReason)), string(v1.PodRunning))
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodUnknown || (p.DeletionTimestamp != nil && p.Status.Reason == node.NodeUnreachablePodReason)), string(v1.PodUnknown))
 	}
 
 	if !p.CreationTimestamp.IsZero() {

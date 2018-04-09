@@ -1,4 +1,4 @@
-FROM scratch
+FROM alpine:3.7
 
 COPY kube-state-metrics /
 VOLUME /tmp

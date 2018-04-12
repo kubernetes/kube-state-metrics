@@ -26,7 +26,7 @@ PROMETHEUS_VERSION=2.0.0
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
 
 # setup a Kubernetes cluster
-curl -sLo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+curl -sLo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
 
 minikube version
 
@@ -40,7 +40,7 @@ mkdir $HOME/.kube || true
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
-sudo minikube start --vm-driver=none --kubernetes-version=$KUBERNETES_VERSION --logtostderr
+sudo minikube start --vm-driver=none --bootstrapper=localkube --kubernetes-version=$KUBERNETES_VERSION --logtostderr
 
 minikube update-context
 

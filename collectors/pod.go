@@ -30,12 +30,15 @@ import (
 )
 
 var (
-	invalidLabelCharRE         = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-	descPodLabelsName          = "kube_pod_labels"
-	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "ErrImagePull", "ImagePullBackOff"}
-	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
+	invalidLabelCharRE                   = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	descPodLabelsName                    = "kube_pod_labels"
+	descPodLabelsHelp                    = "Kubernetes labels converted to Prometheus labels."
+	descPodLabelsDefaultLabels           = []string{"namespace", "pod"}
+	descPodAnnotationsName               = "kube_pod_annotations"
+	descPodAnnotationsHelp               = "Kubernetes annotations converted to Prometheus labels."
+	descPodAnnotationsDefaultAnnotations = []string{"namespace", "pod"}
+	containerWaitingReasons              = []string{"ContainerCreating", "CrashLoopBackOff", "ErrImagePull", "ImagePullBackOff"}
+	containerTerminatedReasons           = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
@@ -65,6 +68,12 @@ var (
 		descPodLabelsName,
 		descPodLabelsHelp,
 		descPodLabelsDefaultLabels, nil,
+	)
+
+	descPodAnnotations = prometheus.NewDesc(
+		descPodAnnotationsName,
+		descPodAnnotationsHelp,
+		descPodAnnotationsDefaultAnnotations, nil,
 	)
 
 	descPodCreated = prometheus.NewDesc(
@@ -229,6 +238,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodCompletionTime
 	ch <- descPodOwner
 	ch <- descPodLabels
+	ch <- descPodAnnotations
 	ch <- descPodCreated
 	ch <- descPodStatusPhase
 	ch <- descPodStatusReady
@@ -306,6 +316,15 @@ func podLabelsDesc(labelKeys []string) *prometheus.Desc {
 	)
 }
 
+func podAnnotationsDesc(annotationKeys []string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		descPodAnnotationsName,
+		descPodAnnotationsHelp,
+		append(descPodAnnotationsDefaultAnnotations, annotationKeys...),
+		nil,
+	)
+}
+
 func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	nodeName := p.Spec.NodeName
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
@@ -352,6 +371,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
 	addGauge(podLabelsDesc(labelKeys), 1, labelValues...)
+
+	annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(p.Annotations)
+	addGauge(podAnnotationsDesc(annotationKeys), 1, annotationValues...)
 
 	if phase := p.Status.Phase; phase != "" {
 		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodPending), string(v1.PodPending))

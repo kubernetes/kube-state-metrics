@@ -188,10 +188,17 @@ var (
 	)
 )
 
-type PodLister func() ([]v1.Pod, error)
+type PodLister struct {
+	list    func() ([]v1.Pod, error)
+	getNode func(name string) *v1.Node
+}
 
 func (l PodLister) List() ([]v1.Pod, error) {
-	return l()
+	return l.list()
+}
+
+func (l PodLister) GetNode(name string) *v1.Node {
+	return l.getNode(name)
 }
 
 func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
@@ -199,22 +206,33 @@ func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.
 	glog.Infof("collect pod with %s", client.APIVersion())
 
 	pinfs := NewSharedInformerList(client, "pods", namespaces, &v1.Pod{})
-
-	podLister := PodLister(func() (pods []v1.Pod, err error) {
+	var pl PodLister
+	pl.list = func() (pods []v1.Pod, err error) {
 		for _, pinf := range *pinfs {
 			for _, m := range pinf.GetStore().List() {
 				pods = append(pods, *m.(*v1.Pod))
 			}
 		}
 		return pods, nil
-	})
+	}
 
-	registry.MustRegister(&podCollector{store: podLister})
+	ninfs := NewSharedInformerList(client, "nodes", []string{metav1.NamespaceAll}, &v1.Node{})
+	pl.getNode = func(name string) *v1.Node {
+		for _, ninf := range *ninfs {
+			if obj, ok, _ := ninf.GetStore().GetByKey(name); ok {
+				return obj.(*v1.Node)
+			}
+		}
+		return nil
+	}
+	registry.MustRegister(&podCollector{store: pl})
 	pinfs.Run(context.Background().Done())
+	ninfs.Run(context.Background().Done())
 }
 
 type podStore interface {
 	List() (pods []v1.Pod, err error)
+	GetNode(name string) *v1.Node
 }
 
 // podCollector collects metrics about all pods in the cluster.
@@ -439,15 +457,30 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		if cpu, ok := lim[v1.ResourceCPU]; ok {
 			addGauge(descPodContainerResourceLimitsCpuCores, float64(cpu.MilliValue())/1000,
 				c.Name, nodeName)
+		} else if node := pc.store.GetNode(nodeName); node != nil { // set limit with node resource
+			if cpu, ok := node.Status.Allocatable[v1.ResourceCPU]; ok {
+				addGauge(descPodContainerResourceLimitsCpuCores, float64(cpu.MilliValue())/1000,
+					c.Name, nodeName)
+			}
 		}
 
 		if mem, ok := lim[v1.ResourceMemory]; ok {
 			addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
 				c.Name, nodeName)
+		} else if node := pc.store.GetNode(nodeName); node != nil { // set limit with node resource
+			if mem, ok := node.Status.Allocatable[v1.ResourceMemory]; ok {
+				addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
+					c.Name, nodeName)
+			}
 		}
 
 		if gpu, ok := lim[v1.ResourceNvidiaGPU]; ok {
 			addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+		} else if node := pc.store.GetNode(nodeName); node != nil { // set limit with node resource
+			if gpu, ok := node.Status.Allocatable[v1.ResourceNvidiaGPU]; ok {
+				addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()),
+					c.Name, nodeName)
+			}
 		}
 	}
 

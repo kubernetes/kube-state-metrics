@@ -199,7 +199,7 @@ running:
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
 	go install
-	kube-state-metrics  --in-cluster=false --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONIFG>
+	kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
 
 Then curl the metrics endpoint
 

@@ -266,28 +266,3 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 	addResource(descNodeStatusAllocatableMemory, n.Status.Allocatable, v1.ResourceMemory)
 	addResource(descNodeStatusAllocatablePods, n.Status.Allocatable, v1.ResourcePods)
 }
-
-// addConditionMetrics generates one metric for each possible node condition
-// status. For this function to work properly, the last label in the metric
-// description must be the condition.
-func addConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, cs v1.ConditionStatus, lv ...string) {
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionTrue),
-		append(lv, "true")...,
-	)
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionFalse),
-		append(lv, "false")...,
-	)
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionUnknown),
-		append(lv, "unknown")...,
-	)
-}
-
-func boolFloat64(b bool) float64 {
-	if b {
-		return 1
-	}
-	return 0
-}

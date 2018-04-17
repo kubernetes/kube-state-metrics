@@ -116,6 +116,7 @@ func (hc *hpaCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "horizontalpodautoscaler"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "horizontalpodautoscaler"}).Observe(float64(len(hpas.Items)))
+	ObjectsListedTotalMetric.Add(float64(len(hpas.Items)))
 	for _, h := range hpas.Items {
 		hc.collectHPA(ch, h)
 	}

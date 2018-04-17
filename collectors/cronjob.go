@@ -135,6 +135,7 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "cronjob"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "cronjob"}).Observe(float64(len(cronjobs)))
+	ObjectsListedTotalMetric.Add(float64(len(cronjobs)))
 	for _, cj := range cronjobs {
 		cjc.collectCronJob(ch, cj)
 	}

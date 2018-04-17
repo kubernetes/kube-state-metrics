@@ -114,6 +114,7 @@ func (ec *endpointCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "endpoint"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "endpoint"}).Observe(float64(len(endpoints)))
+	ObjectsListedTotalMetric.Add(float64(len(endpoints)))
 	for _, e := range endpoints {
 		ec.collectEndpoints(ch, e)
 	}

@@ -96,6 +96,7 @@ func (cmc *configMapCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "configmap"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "configmap"}).Observe(float64(len(configMaps)))
+	ObjectsListedTotalMetric.Add(float64(len(configMaps)))
 	for _, s := range configMaps {
 		cmc.collectConfigMap(ch, s)
 	}

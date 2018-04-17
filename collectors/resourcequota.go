@@ -93,6 +93,7 @@ func (rqc *resourceQuotaCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "resourcequota"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "resourcequota"}).Observe(float64(len(resourceQuota.Items)))
+	ObjectsListedTotalMetric.Add(float64(len(resourceQuota.Items)))
 	for _, rq := range resourceQuota.Items {
 		rqc.collectResourceQuota(ch, rq)
 	}

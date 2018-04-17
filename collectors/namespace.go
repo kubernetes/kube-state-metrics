@@ -118,6 +118,7 @@ func (nsc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "namespace"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "namespace"}).Observe(float64(len(nsls)))
+	ObjectsListedTotalMetric.Add(float64(len(nsls)))
 	for _, rq := range nsls {
 		nsc.collectNamespace(ch, rq)
 	}

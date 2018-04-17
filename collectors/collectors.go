@@ -37,6 +37,13 @@ var (
 		[]string{"resource"},
 	)
 
+	ObjectsListedTotalMetric = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "ksm_kubernetes_objects_listed_total",
+			Help: "Total Kubernetes objects listed since ksm start",
+		},
+	)
+
 	ResourcesPerScrapeMetric = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "ksm_resources_per_scrape",

@@ -161,6 +161,7 @@ func (dc *deploymentCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "deployment"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "deployment"}).Observe(float64(len(ds)))
+	ObjectsListedTotalMetric.Add(float64(len(ds)))
 	for _, d := range ds {
 		dc.collectDeployment(ch, d)
 	}

@@ -107,6 +107,7 @@ func (sc *serviceCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "service"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "service"}).Observe(float64(len(services)))
+	ObjectsListedTotalMetric.Add(float64(len(services)))
 	for _, s := range services {
 		sc.collectService(ch, s)
 	}

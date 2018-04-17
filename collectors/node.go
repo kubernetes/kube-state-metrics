@@ -187,6 +187,7 @@ func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "node"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "node"}).Observe(float64(len(nodes.Items)))
+	ObjectsListedTotalMetric.Add(float64(len(nodes.Items)))
 	for _, n := range nodes.Items {
 		nc.collectNode(ch, n)
 	}

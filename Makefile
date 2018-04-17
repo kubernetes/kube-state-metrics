@@ -70,6 +70,6 @@ clean:
 	rm -f kube-state-metrics
 
 e2e:
-	./scripts/e2e.sh
+	./tests/e2e.sh
 
 .PHONY: all build all-push all-container test-unit container push clean e2e

@@ -1,0 +1,17 @@
+apiVersion: apps/v1beta2
+kind: DaemonSet
+metadata:
+  name: daemonset
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      name: daemonset
+  template:
+    metadata:
+      labels:
+        name: daemonset
+    spec:
+      containers:
+      - name: daemonset
+        image: nonexisting

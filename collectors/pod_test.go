@@ -65,6 +65,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_status_waiting_reason gauge
 		# HELP kube_pod_info Information about pod.
 		# TYPE kube_pod_info gauge
+		# HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
+		# TYPE kube_pod_status_scheduled_time gauge
 		# HELP kube_pod_start_time Start time in unix timestamp for a pod.
 		# TYPE kube_pod_start_time gauge
 		# HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
@@ -588,6 +590,9 @@ func TestPodCollector(t *testing.T) {
 							v1.PodCondition{
 								Type:   v1.PodScheduled,
 								Status: v1.ConditionTrue,
+								LastTransitionTime: metav1.Time{
+									Time: time.Unix(1501666018, 0),
+								},
 							},
 						},
 					},
@@ -607,6 +612,7 @@ func TestPodCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
+				kube_pod_status_scheduled_time{namespace="ns1",pod="pod1"} 1.501666018e+09
 				kube_pod_status_scheduled{condition="false",namespace="ns1",pod="pod1"} 0
 				kube_pod_status_scheduled{condition="false",namespace="ns2",pod="pod2"} 1
 				kube_pod_status_scheduled{condition="true",namespace="ns1",pod="pod1"} 1
@@ -614,7 +620,7 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_status_scheduled{condition="unknown",namespace="ns1",pod="pod1"} 0
 				kube_pod_status_scheduled{condition="unknown",namespace="ns2",pod="pod2"} 0
 			`,
-			metrics: []string{"kube_pod_status_scheduled"},
+			metrics: []string{"kube_pod_status_scheduled", "kube_pod_status_scheduled_time"},
 		}, {
 			pods: []v1.Pod{
 				{

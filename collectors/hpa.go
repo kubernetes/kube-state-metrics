@@ -21,7 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	autoscaling "k8s.io/api/autoscaling/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -60,6 +60,11 @@ var (
 		descHorizontalPodAutoscalerLabelsHelp,
 		descHorizontalPodAutoscalerLabelsDefaultLabels, nil,
 	)
+	descHorizontalPodAutoscalerCondition = prometheus.NewDesc(
+		"kube_hpa_status_condition",
+		"The condition of this autoscaler.",
+		[]string{"namespace", "hpa", "condition", "status"}, nil,
+	)
 )
 
 type HPALister func() (autoscaling.HorizontalPodAutoscalerList, error)
@@ -69,7 +74,7 @@ func (l HPALister) List() (autoscaling.HorizontalPodAutoscalerList, error) {
 }
 
 func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
-	client := kubeClient.Autoscaling().RESTClient()
+	client := kubeClient.AutoscalingV2beta1().RESTClient()
 	glog.Infof("collect hpa with %s", client.APIVersion())
 	hpainfs := NewSharedInformerList(client, "horizontalpodautoscalers", namespaces, &autoscaling.HorizontalPodAutoscaler{})
 
@@ -144,4 +149,8 @@ func (hc *hpaCollector) collectHPA(ch chan<- prometheus.Metric, h autoscaling.Ho
 	addGauge(descHorizontalPodAutoscalerSpecMinReplicas, float64(*h.Spec.MinReplicas))
 	addGauge(descHorizontalPodAutoscalerStatusCurrentReplicas, float64(h.Status.CurrentReplicas))
 	addGauge(descHorizontalPodAutoscalerStatusDesiredReplicas, float64(h.Status.DesiredReplicas))
+
+	for _, c := range h.Status.Conditions {
+		addConditionMetrics(ch, descHorizontalPodAutoscalerCondition, c.Status, h.Name, h.Namespace, string(c.Type))
+	}
 }

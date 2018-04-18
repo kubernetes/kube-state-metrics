@@ -21,6 +21,7 @@ import (
 
 	autoscaling "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kube-state-metrics/collectors/testutils"
 )
 
 var (
@@ -103,7 +104,7 @@ func TestHPACollector(t *testing.T) {
 				},
 			},
 		}
-		if err := gatherAndCompare(hc, c.want, c.metrics); err != nil {
+		if err := testutils.GatherAndCompare(hc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

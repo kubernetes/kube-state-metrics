@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kube-state-metrics/collectors/testutils"
 )
 
 var (
@@ -118,7 +119,7 @@ func TestReplicaSetCollector(t *testing.T) {
 				f: func() ([]v1beta1.ReplicaSet, error) { return c.rss, nil },
 			},
 		}
-		if err := gatherAndCompare(dc, c.want, nil); err != nil {
+		if err := testutils.GatherAndCompare(dc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -61,4 +62,29 @@ func (sil SharedInformerList) Run(stopCh <-chan struct{}) {
 	for _, sinf := range sil {
 		go sinf.Run(stopCh)
 	}
+}
+
+func boolFloat64(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// addConditionMetrics generates one metric for each possible node condition
+// status. For this function to work properly, the last label in the metric
+// description must be the condition.
+func addConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, cs v1.ConditionStatus, lv ...string) {
+	ch <- prometheus.MustNewConstMetric(
+		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionTrue),
+		append(lv, "true")...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionFalse),
+		append(lv, "false")...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionUnknown),
+		append(lv, "unknown")...,
+	)
 }

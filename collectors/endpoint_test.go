@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kube-state-metrics/collectors/testutils"
 )
 
 type mockEndpointStore struct {
@@ -112,7 +113,7 @@ func TestEndpointCollector(t *testing.T) {
 				},
 			},
 		}
-		if err := gatherAndCompare(sc, c.want, c.metrics); err != nil {
+		if err := testutils.GatherAndCompare(sc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

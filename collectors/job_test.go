@@ -23,6 +23,7 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kube-state-metrics/collectors/testutils"
 )
 
 var (
@@ -256,7 +257,7 @@ func TestJobCollector(t *testing.T) {
 				f: func() ([]v1batch.Job, error) { return c.jobs, nil },
 			},
 		}
-		if err := gatherAndCompare(jc, c.want, nil); err != nil {
+		if err := testutils.GatherAndCompare(jc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

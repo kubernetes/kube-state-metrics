@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kube-state-metrics/collectors/testutils"
 	"k8s.io/kubernetes/pkg/util/node"
 )
 
@@ -816,7 +817,7 @@ func TestPodCollector(t *testing.T) {
 				f: func() ([]v1.Pod, error) { return c.pods, nil },
 			},
 		}
-		if err := gatherAndCompare(pc, c.want, c.metrics); err != nil {
+		if err := testutils.GatherAndCompare(pc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)
 		}
 	}

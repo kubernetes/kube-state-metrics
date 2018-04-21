@@ -73,6 +73,12 @@ var (
 		[]string{"namespace", "pod"}, nil,
 	)
 
+	descPodStatusScheduledTime = prometheus.NewDesc(
+		"kube_pod_status_scheduled_time",
+		"Unix timestamp when pod moved into scheduled status",
+		[]string{"namespace", "pod"}, nil,
+	)
+
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
 		"The pods current phase.",
@@ -230,6 +236,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodOwner
 	ch <- descPodLabels
 	ch <- descPodCreated
+	ch <- descPodStatusScheduledTime
 	ch <- descPodStatusPhase
 	ch <- descPodStatusReady
 	ch <- descPodStatusScheduled
@@ -373,6 +380,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			addConditionMetrics(ch, descPodStatusReady, c.Status, p.Namespace, p.Name)
 		case v1.PodScheduled:
 			addConditionMetrics(ch, descPodStatusScheduled, c.Status, p.Namespace, p.Name)
+			if c.Status == v1.ConditionTrue {
+				addGauge(descPodStatusScheduledTime, float64(c.LastTransitionTime.Unix()))
+			}
 		}
 	}
 

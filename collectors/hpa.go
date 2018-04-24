@@ -151,6 +151,6 @@ func (hc *hpaCollector) collectHPA(ch chan<- prometheus.Metric, h autoscaling.Ho
 	addGauge(descHorizontalPodAutoscalerStatusDesiredReplicas, float64(h.Status.DesiredReplicas))
 
 	for _, c := range h.Status.Conditions {
-		addConditionMetrics(ch, descHorizontalPodAutoscalerCondition, c.Status, h.Name, h.Namespace, string(c.Type))
+		addConditionMetrics(ch, descHorizontalPodAutoscalerCondition, c.Status, h.Namespace, h.Name, string(c.Type))
 	}
 }

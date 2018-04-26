@@ -34,6 +34,12 @@ func (ds mockPodStore) List() (pods []v1.Pod, err error) {
 	return ds.f()
 }
 
+func (ds mockPodStore) GetNode(name string) *v1.Node {
+	node := &v1.Node{}
+	node.Name = name
+	return node
+}
+
 func TestPodCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.

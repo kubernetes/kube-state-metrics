@@ -192,12 +192,57 @@ var (
 		"Describes whether a persistentvolumeclaim is mounted read only.",
 		[]string{"namespace", "pod", "volume", "persistentvolumeclaim"}, nil,
 	)
+
+	// podResourceLimit
+	descPodResourceLimitsNvidiaGPUDevices = prometheus.NewDesc(
+		"kube_pod_resource_limits_nvidia_gpu_devices",
+		"The limit on gpu devices to be used by a pod.",
+		[]string{"namespace", "pod", "node"}, nil,
+	)
+
+	descPodResourceLimitsCpuCores = prometheus.NewDesc(
+		"kube_pod_resource_limits_cpu_cores",
+		"The limit on cpu cores to be used by a container.",
+		[]string{"namespace", "pod", "node"}, nil,
+	)
+
+	descPodResourceLimitsMemoryBytes = prometheus.NewDesc(
+		"kube_pod_resource_limits_memory_bytes",
+		"The limit on memory to be used by a pod in bytes.",
+		[]string{"namespace", "pod", "node"}, nil,
+	)
+
+	// podResourceRequests
+	descPodResourceRequestsNvidiaGPUDevices = prometheus.NewDesc(
+		"kube_pod_resource_requests_nvidia_gpu_devices",
+		"The limit on gpu devices to be used by a pod.",
+		[]string{"namespace", "pod", "node"}, nil,
+	)
+
+	descPodResourceRequestsCpuCores = prometheus.NewDesc(
+		"kube_pod_resource_requests_cpu_cores",
+		"The limit on cpu cores to be used by a container.",
+		[]string{"namespace", "pod", "node"}, nil,
+	)
+
+	descPodResourceRequestsMemoryBytes = prometheus.NewDesc(
+		"kube_pod_resource_requests_memory_bytes",
+		"The limit on memory to be used by a pod in bytes.",
+		[]string{"namespace", "pod", "node"}, nil,
+	)
 )
 
-type PodLister func() ([]v1.Pod, error)
+type PodLister struct {
+	list    func() ([]v1.Pod, error)
+	getNode func(name string) *v1.Node
+}
 
 func (l PodLister) List() ([]v1.Pod, error) {
-	return l()
+	return l.list()
+}
+
+func (l PodLister) GetNode(name string) *v1.Node {
+	return l.getNode(name)
 }
 
 func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
@@ -205,22 +250,33 @@ func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.
 	glog.Infof("collect pod with %s", client.APIVersion())
 
 	pinfs := NewSharedInformerList(client, "pods", namespaces, &v1.Pod{})
-
-	podLister := PodLister(func() (pods []v1.Pod, err error) {
+	var pl PodLister
+	pl.list = func() (pods []v1.Pod, err error) {
 		for _, pinf := range *pinfs {
 			for _, m := range pinf.GetStore().List() {
 				pods = append(pods, *m.(*v1.Pod))
 			}
 		}
 		return pods, nil
-	})
+	}
 
-	registry.MustRegister(&podCollector{store: podLister})
+	ninfs := NewSharedInformerList(client, "nodes", []string{metav1.NamespaceAll}, &v1.Node{})
+	pl.getNode = func(name string) *v1.Node {
+		for _, ninf := range *ninfs {
+			if obj, ok, _ := ninf.GetStore().GetByKey(name); ok {
+				return obj.(*v1.Node)
+			}
+		}
+		return nil
+	}
+	registry.MustRegister(&podCollector{store: pl})
 	pinfs.Run(context.Background().Done())
+	ninfs.Run(context.Background().Done())
 }
 
 type podStore interface {
 	List() (pods []v1.Pod, err error)
+	GetNode(name string) *v1.Node
 }
 
 // podCollector collects metrics about all pods in the cluster.
@@ -256,6 +312,16 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
 	ch <- descPodSpecVolumesPersistentVolumeClaimsReadOnly
+
+	// podResourceLimit
+	ch <- descPodResourceLimitsNvidiaGPUDevices
+	ch <- descPodResourceLimitsCpuCores
+	ch <- descPodResourceLimitsMemoryBytes
+
+	ch <- descPodResourceRequestsNvidiaGPUDevices
+	ch <- descPodResourceRequestsCpuCores
+	ch <- descPodResourceRequestsMemoryBytes
+
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -402,6 +468,13 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 
 	var lastFinishTime float64
 
+	var podMemLimits float64
+	var podCPULimits float64
+	var podGPULimits float64
+	var podMemRequests float64
+	var podCPURequests float64
+	var podGPURequests float64
+
 	for _, cs := range p.Status.ContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
@@ -434,32 +507,60 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		lim := c.Resources.Limits
 
 		if cpu, ok := req[v1.ResourceCPU]; ok {
-			addGauge(descPodContainerResourceRequestsCpuCores, float64(cpu.MilliValue())/1000,
-				c.Name, nodeName)
+			v := float64(cpu.MilliValue()) / 1000
+			addGauge(descPodContainerResourceRequestsCpuCores, v, c.Name, nodeName)
+			podCPURequests += v
 		}
+
 		if mem, ok := req[v1.ResourceMemory]; ok {
-			addGauge(descPodContainerResourceRequestsMemoryBytes, float64(mem.Value()),
-				c.Name, nodeName)
+			v := float64(mem.Value())
+			addGauge(descPodContainerResourceRequestsMemoryBytes, v, c.Name, nodeName)
+			podMemRequests += v
 		}
 
 		if gpu, ok := req[v1.ResourceNvidiaGPU]; ok {
-			addGauge(descPodContainerResourceRequestsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+			v := float64(gpu.Value())
+			addGauge(descPodContainerResourceRequestsNvidiaGPUDevices, v, c.Name, nodeName)
+			podGPURequests += v
 		}
 
 		if cpu, ok := lim[v1.ResourceCPU]; ok {
-			addGauge(descPodContainerResourceLimitsCpuCores, float64(cpu.MilliValue())/1000,
-				c.Name, nodeName)
+			v := float64(cpu.MilliValue()) / 1000
+			addGauge(descPodContainerResourceLimitsCpuCores, v, c.Name, nodeName)
+			podCPULimits += v
+		} else if node := pc.store.GetNode(nodeName); node != nil { // set limit with node resource
+			if cpu, ok := node.Status.Allocatable[v1.ResourceCPU]; ok {
+				podCPULimits = float64(cpu.MilliValue()) / 1000 // max
+			}
 		}
 
 		if mem, ok := lim[v1.ResourceMemory]; ok {
-			addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
-				c.Name, nodeName)
+			v := float64(mem.Value())
+			addGauge(descPodContainerResourceLimitsMemoryBytes, v, c.Name, nodeName)
+			podMemLimits += v
+		} else if node := pc.store.GetNode(nodeName); node != nil { // set limit with node resource
+			if mem, ok := node.Status.Allocatable[v1.ResourceMemory]; ok {
+				podMemLimits = float64(mem.Value()) // max
+			}
 		}
 
 		if gpu, ok := lim[v1.ResourceNvidiaGPU]; ok {
-			addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+			v := float64(gpu.Value())
+			addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, v, c.Name, nodeName)
+			podGPULimits += v
+		} else if node := pc.store.GetNode(nodeName); node != nil { // set limit with node resource
+			if gpu, ok := node.Status.Allocatable[v1.ResourceNvidiaGPU]; ok {
+				podGPULimits = float64(gpu.Value()) // max
+			}
 		}
 	}
+
+	addGauge(descPodResourceLimitsCpuCores, podCPULimits, nodeName)
+	addGauge(descPodResourceLimitsMemoryBytes, podMemLimits, nodeName)
+	addGauge(descPodResourceLimitsNvidiaGPUDevices, podGPULimits, nodeName)
+	addGauge(descPodResourceRequestsCpuCores, podCPURequests, nodeName)
+	addGauge(descPodResourceRequestsMemoryBytes, podMemRequests, nodeName)
+	addGauge(descPodResourceRequestsNvidiaGPUDevices, podGPULimits, nodeName)
 
 	for _, v := range p.Spec.Volumes {
 		if v.PersistentVolumeClaim != nil {

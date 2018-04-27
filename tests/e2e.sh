@@ -107,7 +107,7 @@ kubectl version
 # query kube-state-metrics image tag
 make container
 docker images -a
-ksm_image_tag=`docker images -a|grep 'quay.io/coreos/kube-state-metrics'|awk '{print $2}'|sort -u`
+ksm_image_tag=`docker images -a|grep 'quay.io/coreos/kube-state-metrics'|grep -v 'latest'|awk '{print $2}'|sort -u`
 echo "local kube-state-metrics image tag: $ksm_image_tag"
 
 # update kube-state-metrics image tag in kube-state-metrics-deployment.yaml

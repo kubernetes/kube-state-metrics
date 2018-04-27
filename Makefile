@@ -52,18 +52,30 @@ container: .container-$(ARCH)
 	docker run --rm -v "$$PWD":/go/src/k8s.io/kube-state-metrics -w /go/src/k8s.io/kube-state-metrics -e GOOS=linux -e GOARCH=$(ARCH) -e CGO_ENABLED=0 golang:${GO_VERSION} go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
 	cp -r * $(TEMP_DIR)
 	docker build -t $(MULTI_ARCH_IMG):$(TAG) $(TEMP_DIR)
+	docker tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
 
 ifeq ($(ARCH), amd64)
 	# Adding check for amd64
 	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
+	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
 endif
 
+quay-push: .quay-push-$(ARCH)
+.quay-push-$(ARCH): .container-$(ARCH)
+	docker push $(MULTI_ARCH_IMG):$(TAG)
+	docker push $(MULTI_ARCH_IMG):latest
+ifeq ($(ARCH), amd64)
+	docker push $(IMAGE):$(TAG)
+	docker push $(IMAGE):latest
+endif
 
 push: .push-$(ARCH)
 .push-$(ARCH): .container-$(ARCH)
 	gcloud docker -- push $(MULTI_ARCH_IMG):$(TAG)
+	gcloud docker -- push $(MULTI_ARCH_IMG):latest
 ifeq ($(ARCH), amd64)
 	gcloud docker -- push $(IMAGE):$(TAG)
+	gcloud docker -- push $(IMAGE):latest
 endif
 
 clean:
@@ -72,4 +84,4 @@ clean:
 e2e:
 	./tests/e2e.sh
 
-.PHONY: all build all-push all-container test-unit container push clean e2e
+.PHONY: all build all-push all-container test-unit container push quay-push clean e2e

@@ -21,7 +21,7 @@ import (
 
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
 )
 
 var (

@@ -53,7 +53,14 @@ func NewSharedInformerList(client rest.Interface, resource string, namespaces []
 	sinfs := SharedInformerList{}
 	for _, namespace := range namespaces {
 		slw := cache.NewListWatchFromClient(client, resource, namespace, fields.Everything())
-		sinfs = append(sinfs, cache.NewSharedInformer(slw, objType, resyncPeriod))
+		inf := cache.NewSharedInformer(slw, objType, resyncPeriod)
+
+		// We are adding an empty EventHandler on purpose, as without
+		// EventHandlers a shared informer will never be resynced, therefore it
+		// is only a matter of time until it will serve stale metrics. (see
+		// https://github.com/kubernetes/kube-state-metrics/issues/402)
+		inf.AddEventHandler(cache.ResourceEventHandlerFuncs{AddFunc: func(obj interface{}) {}})
+		sinfs = append(sinfs, inf)
 	}
 	return &sinfs
 }

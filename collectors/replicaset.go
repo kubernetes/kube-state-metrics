@@ -118,6 +118,7 @@ func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicaset"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicaset"}).Observe(float64(len(rss)))
+	ObjectsListedTotalMetric.Add(float64(len(rss)))
 	for _, d := range rss {
 		dc.collectReplicaSet(ch, d)
 	}

@@ -269,6 +269,7 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "pod"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "pod"}).Observe(float64(len(pods)))
+	ObjectsListedTotalMetric.Add(float64(len(pods)))
 	for _, p := range pods {
 		pc.collectPod(ch, p)
 	}

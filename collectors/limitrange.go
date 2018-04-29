@@ -95,6 +95,7 @@ func (lrc *limitRangeCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "limitrange"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "limitrange"}).Observe(float64(len(limitRangeCollector.Items)))
+	ObjectsListedTotalMetric.Add(float64(len(limitRangeCollector.Items)))
 	for _, rq := range limitRangeCollector.Items {
 		lrc.collectLimitRange(ch, rq)
 	}

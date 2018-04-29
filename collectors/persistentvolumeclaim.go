@@ -126,6 +126,7 @@ func (collector *persistentVolumeClaimCollector) Collect(ch chan<- prometheus.Me
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "persistentvolumeclaim"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "persistentvolumeclaim"}).Observe(float64(len(persistentVolumeClaimCollector.Items)))
+	ObjectsListedTotalMetric.Add(float64(len(persistentVolumeClaimCollector.Items)))
 	for _, pvc := range persistentVolumeClaimCollector.Items {
 		collector.collectPersistentVolumeClaim(ch, pvc)
 	}

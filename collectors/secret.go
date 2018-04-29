@@ -114,6 +114,7 @@ func (sc *secretCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "secret"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "secret"}).Observe(float64(len(secrets)))
+	ObjectsListedTotalMetric.Add(float64(len(secrets)))
 	for _, s := range secrets {
 		sc.collectSecret(ch, s)
 	}

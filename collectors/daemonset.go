@@ -140,6 +140,7 @@ func (dc *daemonsetCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "daemonset"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "daemonset"}).Observe(float64(len(dss)))
+	ObjectsListedTotalMetric.Add(float64(len(dss)))
 	for _, d := range dss {
 		dc.collectDaemonSet(ch, d)
 	}

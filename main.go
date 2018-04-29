@@ -247,6 +247,7 @@ func main() {
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.Register(kcollectors.ResourcesPerScrapeMetric)
+	ksmMetricsRegistry.Register(kcollectors.ObjectsListedTotalMetric)
 	ksmMetricsRegistry.Register(kcollectors.ScrapeErrorTotalMetric)
 	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(os.Getpid(), ""))
 	ksmMetricsRegistry.Register(prometheus.NewGoCollector())

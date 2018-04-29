@@ -159,6 +159,7 @@ func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
 	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "job"}).Add(0)
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "job"}).Observe(float64(len(jobs)))
+	ObjectsListedTotalMetric.Add(float64(len(jobs)))
 	for _, j := range jobs {
 		jc.collectJob(ch, j)
 	}

@@ -7,7 +7,7 @@ ARCH ?= $(shell go env GOARCH)
 BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
-PKG=k8s.io/kube-state-metrics
+PKG=k8s.io/kube-state-metrics/pkg
 GO_VERSION=1.10.1
 
 IMAGE = $(REGISTRY)/kube-state-metrics
@@ -19,7 +19,7 @@ gofmtcheck:
 doccheck:
 	@echo "- Checking if documentation is up to date..."
 	@grep -hoE '(kube_[^ |]+)' Documentation/* | sort -u > documented_metrics
-	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' collectors/*_test.go | sort -u > tested_metrics
+	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' pkg/collectors/*_test.go | sort -u > tested_metrics
 	@diff -u0 tested_metrics documented_metrics || (echo "ERROR: Metrics with - are present in tests but missing in documentation, metrics with + are documented but not tested."; exit 1)
 	@echo OK
 	@rm -f tested_metrics documented_metrics

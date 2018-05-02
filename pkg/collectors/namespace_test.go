@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
 )
 
 type mockNamespaceStore struct {

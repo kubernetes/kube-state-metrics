@@ -163,8 +163,19 @@ go get k8s.io/kube-state-metrics
 ```
 
 #### Building the Docker container
+Prior to making the container you may want to use godeps the restore and save 
+the dependencies.  You may also be missing oauth2 from your current environment.  
+You can perform the godeps save first to see if you are missing oauth2.  
+Otherwise the procedure looks something like the following:
 
-Simple run the following command in this root folder, which will create a
+```
+go get golang.org/x/oauth2
+godep restore
+rm -fr Godeps
+godep save ./...
+```
+
+Then, simply run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
 ```
 make container

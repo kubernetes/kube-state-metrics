@@ -7,6 +7,36 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "cloud.google.com/go/compute/metadata",
+			"Comment": "v0.1.0-115-g3b1ae45",
+			"Rev": "3b1ae45394a234c385be014e9a488f2bb6eef821"
+		},
+		{
+			"ImportPath": "cloud.google.com/go/internal",
+			"Comment": "v0.1.0-115-g3b1ae45",
+			"Rev": "3b1ae45394a234c385be014e9a488f2bb6eef821"
+		},
+		{
+			"ImportPath": "github.com/Azure/go-autorest/autorest",
+			"Comment": "v9.1.0",
+			"Rev": "e14a70c556c8e0db173358d1a903dca345a8e75e"
+		},
+		{
+			"ImportPath": "github.com/Azure/go-autorest/autorest/adal",
+			"Comment": "v9.1.0",
+			"Rev": "e14a70c556c8e0db173358d1a903dca345a8e75e"
+		},
+		{
+			"ImportPath": "github.com/Azure/go-autorest/autorest/azure",
+			"Comment": "v9.1.0",
+			"Rev": "e14a70c556c8e0db173358d1a903dca345a8e75e"
+		},
+		{
+			"ImportPath": "github.com/Azure/go-autorest/autorest/date",
+			"Comment": "v9.1.0",
+			"Rev": "e14a70c556c8e0db173358d1a903dca345a8e75e"
+		},
+		{
 			"ImportPath": "github.com/PuerkitoBio/purell",
 			"Comment": "v1.0.0",
 			"Rev": "8a290539e2e8629dbc4e6bad948158f790ec31f4"
@@ -22,6 +52,11 @@
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
+			"ImportPath": "github.com/dgrijalva/jwt-go",
+			"Comment": "v3.0.0-4-g01aeca5",
+			"Rev": "01aeca54ebda6e0fbfafd0a524d234159c05ec20"
 		},
 		{
 			"ImportPath": "github.com/emicklei/go-restful",
@@ -109,6 +144,34 @@
 			"ImportPath": "github.com/googleapis/gnostic/extensions",
 			"Comment": "v0.1.0",
 			"Rev": "ee43cbb60db7bd22502942cccbc39059117352ab"
+		},
+		{
+			"ImportPath": "github.com/gophercloud/gophercloud",
+			"Rev": "8183543f90d1aef267a5ecc209f2e0715b355acb"
+		},
+		{
+			"ImportPath": "github.com/gophercloud/gophercloud/openstack",
+			"Rev": "8183543f90d1aef267a5ecc209f2e0715b355acb"
+		},
+		{
+			"ImportPath": "github.com/gophercloud/gophercloud/openstack/identity/v2/tenants",
+			"Rev": "8183543f90d1aef267a5ecc209f2e0715b355acb"
+		},
+		{
+			"ImportPath": "github.com/gophercloud/gophercloud/openstack/identity/v2/tokens",
+			"Rev": "8183543f90d1aef267a5ecc209f2e0715b355acb"
+		},
+		{
+			"ImportPath": "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens",
+			"Rev": "8183543f90d1aef267a5ecc209f2e0715b355acb"
+		},
+		{
+			"ImportPath": "github.com/gophercloud/gophercloud/openstack/utils",
+			"Rev": "8183543f90d1aef267a5ecc209f2e0715b355acb"
+		},
+		{
+			"ImportPath": "github.com/gophercloud/gophercloud/pagination",
+			"Rev": "8183543f90d1aef267a5ecc209f2e0715b355acb"
 		},
 		{
 			"ImportPath": "github.com/gregjones/httpcache",
@@ -220,6 +283,10 @@
 			"Rev": "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
 		},
 		{
+			"ImportPath": "golang.org/x/net/context/ctxhttp",
+			"Rev": "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
+		},
+		{
 			"ImportPath": "golang.org/x/net/http2",
 			"Rev": "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
 		},
@@ -234,6 +301,26 @@
 		{
 			"ImportPath": "golang.org/x/net/lex/httplex",
 			"Rev": "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "a6bd8cefa1811bd24b86f8902872e4e8225f74c4"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/google",
+			"Rev": "a6bd8cefa1811bd24b86f8902872e4e8225f74c4"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/internal",
+			"Rev": "a6bd8cefa1811bd24b86f8902872e4e8225f74c4"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/jws",
+			"Rev": "a6bd8cefa1811bd24b86f8902872e4e8225f74c4"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/jwt",
+			"Rev": "a6bd8cefa1811bd24b86f8902872e4e8225f74c4"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
@@ -808,12 +895,42 @@
 			"Rev": "78700dec6369ba22221b72770783300f143df150"
 		},
 		{
+			"ImportPath": "k8s.io/client-go/plugin/pkg/client/auth",
+			"Comment": "v6.0.0",
+			"Rev": "78700dec6369ba22221b72770783300f143df150"
+		},
+		{
+			"ImportPath": "k8s.io/client-go/plugin/pkg/client/auth/azure",
+			"Comment": "v6.0.0",
+			"Rev": "78700dec6369ba22221b72770783300f143df150"
+		},
+		{
+			"ImportPath": "k8s.io/client-go/plugin/pkg/client/auth/gcp",
+			"Comment": "v6.0.0",
+			"Rev": "78700dec6369ba22221b72770783300f143df150"
+		},
+		{
+			"ImportPath": "k8s.io/client-go/plugin/pkg/client/auth/oidc",
+			"Comment": "v6.0.0",
+			"Rev": "78700dec6369ba22221b72770783300f143df150"
+		},
+		{
+			"ImportPath": "k8s.io/client-go/plugin/pkg/client/auth/openstack",
+			"Comment": "v6.0.0",
+			"Rev": "78700dec6369ba22221b72770783300f143df150"
+		},
+		{
 			"ImportPath": "k8s.io/client-go/rest",
 			"Comment": "v6.0.0",
 			"Rev": "78700dec6369ba22221b72770783300f143df150"
 		},
 		{
 			"ImportPath": "k8s.io/client-go/rest/watch",
+			"Comment": "v6.0.0",
+			"Rev": "78700dec6369ba22221b72770783300f143df150"
+		},
+		{
+			"ImportPath": "k8s.io/client-go/third_party/forked/golang/template",
 			"Comment": "v6.0.0",
 			"Rev": "78700dec6369ba22221b72770783300f143df150"
 		},
@@ -889,6 +1006,11 @@
 		},
 		{
 			"ImportPath": "k8s.io/client-go/util/integer",
+			"Comment": "v6.0.0",
+			"Rev": "78700dec6369ba22221b72770783300f143df150"
+		},
+		{
+			"ImportPath": "k8s.io/client-go/util/jsonpath",
 			"Comment": "v6.0.0",
 			"Rev": "78700dec6369ba22221b72770783300f143df150"
 		},

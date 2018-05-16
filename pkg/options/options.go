@@ -40,7 +40,9 @@ type options struct {
 }
 
 func NewOptions() *options {
-	return &options{}
+	return &options{
+		Collectors: CollectorSet{},
+	}
 }
 
 func (o *options) AddFlags() {

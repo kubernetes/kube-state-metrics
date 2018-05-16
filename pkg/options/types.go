@@ -20,7 +20,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -42,7 +42,7 @@ func (c *CollectorSet) Set(value string) error {
 		if len(col) != 0 {
 			_, ok := AvailableCollectors[col]
 			if !ok {
-				glog.Fatalf("Collector \"%s\" does not exist", col)
+				return fmt.Errorf("collector \"%s\" does not exist", col)
 			}
 			s[col] = struct{}{}
 		}

@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -129,7 +130,7 @@ func (l NodeLister) List() (v1.NodeList, error) {
 	return l()
 }
 
-func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect node with %s", client.APIVersion())
 
@@ -144,7 +145,7 @@ func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes
 		return machines, nil
 	})
 
-	registry.MustRegister(&nodeCollector{store: nodeLister})
+	registry.MustRegister(&nodeCollector{store: nodeLister, opts: opts})
 	ninfs.Run(context.Background().Done())
 }
 
@@ -155,6 +156,7 @@ type nodeStore interface {
 // nodeCollector collects metrics about all nodes in the cluster.
 type nodeCollector struct {
 	store nodeStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

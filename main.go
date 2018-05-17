@@ -106,7 +106,7 @@ func main() {
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 
 	registry := prometheus.NewRegistry()
-	registerCollectors(registry, kubeClient, collectors, namespaces)
+	registerCollectors(registry, kubeClient, collectors, namespaces, opts)
 	metricsServer(registry, opts.Host, opts.Port)
 }
 
@@ -200,12 +200,12 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
-func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors options.CollectorSet, namespaces options.NamespaceList) {
+func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors options.CollectorSet, namespaces options.NamespaceList, opts *options.Options) {
 	activeCollectors := []string{}
 	for c := range enabledCollectors {
-		f, ok := options.AvailableCollectors[c]
+		f, ok := kcollectors.AvailableCollectors[c]
 		if ok {
-			f(registry, kubeClient, namespaces)
+			f(registry, kubeClient, namespaces, opts)
 			activeCollectors = append(activeCollectors, c)
 		}
 	}

@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -50,7 +51,7 @@ func (l ConfigMapLister) List() ([]v1.ConfigMap, error) {
 	return l()
 }
 
-func RegisterConfigMapCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterConfigMapCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect configmap with %s", client.APIVersion())
 
@@ -65,7 +66,7 @@ func RegisterConfigMapCollector(registry prometheus.Registerer, kubeClient kuber
 		return configMaps, nil
 	})
 
-	registry.MustRegister(&configMapCollector{store: configMapLister})
+	registry.MustRegister(&configMapCollector{store: configMapLister, opts: opts})
 	cminfs.Run(context.Background().Done())
 }
 
@@ -76,6 +77,7 @@ type configMapStore interface {
 // configMapCollector collects metrics about all configMaps in the cluster.
 type configMapCollector struct {
 	store configMapStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

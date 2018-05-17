@@ -17,7 +17,6 @@ limitations under the License.
 package collectors
 
 import (
-	"regexp"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -26,11 +25,12 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/util/node"
 )
 
 var (
-	invalidLabelCharRE         = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
@@ -145,6 +145,18 @@ var (
 		[]string{"namespace", "pod", "container"}, nil,
 	)
 
+	descPodContainerResourceRequests = prometheus.NewDesc(
+		"kube_pod_container_resource_requests",
+		"The number of requested request resource by a container.",
+		[]string{"namespace", "pod", "container", "node", "resource", "unit"}, nil,
+	)
+
+	descPodContainerResourceLimits = prometheus.NewDesc(
+		"kube_pod_container_resource_limits",
+		"The number of requested limit resource by a container.",
+		[]string{"namespace", "pod", "container", "node", "resource", "unit"}, nil,
+	)
+
 	descPodContainerResourceRequestsCpuCores = prometheus.NewDesc(
 		"kube_pod_container_resource_requests_cpu_cores",
 		"The number of requested cpu cores by a container.",
@@ -200,7 +212,7 @@ func (l PodLister) List() ([]v1.Pod, error) {
 	return l()
 }
 
-func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect pod with %s", client.APIVersion())
 
@@ -215,7 +227,7 @@ func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.
 		return pods, nil
 	})
 
-	registry.MustRegister(&podCollector{store: podLister})
+	registry.MustRegister(&podCollector{store: podLister, opts: opts})
 	pinfs.Run(context.Background().Done())
 }
 
@@ -226,6 +238,7 @@ type podStore interface {
 // podCollector collects metrics about all pods in the cluster.
 type podCollector struct {
 	store podStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.
@@ -248,14 +261,19 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusTerminatedReason
 	ch <- descPodContainerStatusReady
 	ch <- descPodContainerStatusRestarts
-	ch <- descPodContainerResourceRequestsCpuCores
-	ch <- descPodContainerResourceRequestsMemoryBytes
-	ch <- descPodContainerResourceLimitsCpuCores
-	ch <- descPodContainerResourceLimitsMemoryBytes
-	ch <- descPodContainerResourceRequestsNvidiaGPUDevices
-	ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
 	ch <- descPodSpecVolumesPersistentVolumeClaimsReadOnly
+	ch <- descPodContainerResourceRequests
+	ch <- descPodContainerResourceLimits
+
+	if !pc.opts.DisablePodNonGenericResourceMetrics {
+		ch <- descPodContainerResourceRequestsCpuCores
+		ch <- descPodContainerResourceRequestsMemoryBytes
+		ch <- descPodContainerResourceLimitsCpuCores
+		ch <- descPodContainerResourceLimitsMemoryBytes
+		ch <- descPodContainerResourceRequestsNvidiaGPUDevices
+		ch <- descPodContainerResourceLimitsNvidiaGPUDevices
+	}
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -274,34 +292,6 @@ func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	glog.V(4).Infof("collected %d pods", len(pods))
-}
-
-func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
-	labelKeys := make([]string, len(labels))
-	labelValues := make([]string, len(labels))
-	i := 0
-	for k, v := range labels {
-		labelKeys[i] = "label_" + sanitizeLabelName(k)
-		labelValues[i] = v
-		i++
-	}
-	return labelKeys, labelValues
-}
-
-func kubeAnnotationsToPrometheusAnnotations(annotations map[string]string) ([]string, []string) {
-	annotationKeys := make([]string, len(annotations))
-	annotationValues := make([]string, len(annotations))
-	i := 0
-	for k, v := range annotations {
-		annotationKeys[i] = "annotation_" + sanitizeLabelName(k)
-		annotationValues[i] = v
-		i++
-	}
-	return annotationKeys, annotationValues
-}
-
-func sanitizeLabelName(s string) string {
-	return invalidLabelCharRE.ReplaceAllString(s, "_")
 }
 
 func podLabelsDesc(labelKeys []string) *prometheus.Desc {
@@ -429,35 +419,96 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodCompletionTime, lastFinishTime)
 	}
 
+	if !pc.opts.DisablePodNonGenericResourceMetrics {
+		for _, c := range p.Spec.Containers {
+			req := c.Resources.Requests
+			lim := c.Resources.Limits
+
+			if cpu, ok := req[v1.ResourceCPU]; ok {
+				addGauge(descPodContainerResourceRequestsCpuCores, float64(cpu.MilliValue())/1000,
+					c.Name, nodeName)
+			}
+			if mem, ok := req[v1.ResourceMemory]; ok {
+				addGauge(descPodContainerResourceRequestsMemoryBytes, float64(mem.Value()),
+					c.Name, nodeName)
+			}
+
+			if gpu, ok := req[v1.ResourceNvidiaGPU]; ok {
+				addGauge(descPodContainerResourceRequestsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+			}
+
+			if cpu, ok := lim[v1.ResourceCPU]; ok {
+				addGauge(descPodContainerResourceLimitsCpuCores, float64(cpu.MilliValue())/1000,
+					c.Name, nodeName)
+			}
+
+			if mem, ok := lim[v1.ResourceMemory]; ok {
+				addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
+					c.Name, nodeName)
+			}
+
+			if gpu, ok := lim[v1.ResourceNvidiaGPU]; ok {
+				addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+			}
+		}
+	}
+
 	for _, c := range p.Spec.Containers {
 		req := c.Resources.Requests
 		lim := c.Resources.Limits
 
-		if cpu, ok := req[v1.ResourceCPU]; ok {
-			addGauge(descPodContainerResourceRequestsCpuCores, float64(cpu.MilliValue())/1000,
-				c.Name, nodeName)
-		}
-		if mem, ok := req[v1.ResourceMemory]; ok {
-			addGauge(descPodContainerResourceRequestsMemoryBytes, float64(mem.Value()),
-				c.Name, nodeName)
+		for resourceName, val := range req {
+			switch resourceName {
+			case v1.ResourceCPU:
+				addGauge(descPodContainerResourceRequests, float64(val.MilliValue())/1000,
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "core")
+			case v1.ResourceStorage:
+				fallthrough
+			case v1.ResourceEphemeralStorage:
+				fallthrough
+			case v1.ResourceMemory:
+				addGauge(descPodContainerResourceRequests, float64(val.Value()),
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+			case v1.ResourceNvidiaGPU:
+				addGauge(descPodContainerResourceRequests, float64(val.Value()),
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+			default:
+				if helper.IsHugePageResourceName(resourceName) {
+					addGauge(descPodContainerResourceRequests, float64(val.Value()),
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+				}
+				if helper.IsExtendedResourceName(resourceName) {
+					addGauge(descPodContainerResourceRequests, float64(val.Value()),
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+				}
+			}
 		}
 
-		if gpu, ok := req[v1.ResourceNvidiaGPU]; ok {
-			addGauge(descPodContainerResourceRequestsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
-		}
-
-		if cpu, ok := lim[v1.ResourceCPU]; ok {
-			addGauge(descPodContainerResourceLimitsCpuCores, float64(cpu.MilliValue())/1000,
-				c.Name, nodeName)
-		}
-
-		if mem, ok := lim[v1.ResourceMemory]; ok {
-			addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
-				c.Name, nodeName)
-		}
-
-		if gpu, ok := lim[v1.ResourceNvidiaGPU]; ok {
-			addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
+		for resourceName, val := range lim {
+			switch resourceName {
+			case v1.ResourceCPU:
+				addGauge(descPodContainerResourceLimits, float64(val.MilliValue())/1000,
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "core")
+			case v1.ResourceStorage:
+				fallthrough
+			case v1.ResourceEphemeralStorage:
+				fallthrough
+			case v1.ResourceMemory:
+				addGauge(descPodContainerResourceLimits, float64(val.Value()),
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+			case v1.ResourceNvidiaGPU:
+				addGauge(descPodContainerResourceLimits, float64(val.Value()),
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+			default:
+				if helper.IsHugePageResourceName(resourceName) {
+					addGauge(descPodContainerResourceLimits, float64(val.Value()),
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+				}
+				if helper.IsExtendedResourceName(resourceName) {
+					addGauge(descPodContainerResourceLimits, float64(val.Value()),
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+				}
+			}
 		}
 	}
 

@@ -17,10 +17,7 @@ limitations under the License.
 package options
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
-	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
 )
 
 var (
@@ -40,31 +37,10 @@ var (
 		"statefulsets":             struct{}{},
 		"persistentvolumes":        struct{}{},
 		"persistentvolumeclaims":   struct{}{},
-		"Namespaces":               struct{}{},
+		"namespaces":               struct{}{},
 		"horizontalpodautoscalers": struct{}{},
 		"endpoints":                struct{}{},
 		"secrets":                  struct{}{},
 		"configmaps":               struct{}{},
-	}
-	AvailableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespaces []string){
-		"cronjobs":                 kcollectors.RegisterCronJobCollector,
-		"daemonsets":               kcollectors.RegisterDaemonSetCollector,
-		"deployments":              kcollectors.RegisterDeploymentCollector,
-		"jobs":                     kcollectors.RegisterJobCollector,
-		"limitranges":              kcollectors.RegisterLimitRangeCollector,
-		"nodes":                    kcollectors.RegisterNodeCollector,
-		"pods":                     kcollectors.RegisterPodCollector,
-		"replicasets":              kcollectors.RegisterReplicaSetCollector,
-		"replicationcontrollers":   kcollectors.RegisterReplicationControllerCollector,
-		"resourcequotas":           kcollectors.RegisterResourceQuotaCollector,
-		"services":                 kcollectors.RegisterServiceCollector,
-		"statefulsets":             kcollectors.RegisterStatefulSetCollector,
-		"persistentvolumes":        kcollectors.RegisterPersistentVolumeCollector,
-		"persistentvolumeclaims":   kcollectors.RegisterPersistentVolumeClaimCollector,
-		"Namespaces":               kcollectors.RegisterNamespaceCollector,
-		"horizontalpodautoscalers": kcollectors.RegisterHorizontalPodAutoScalerCollector,
-		"endpoints":                kcollectors.RegisterEndpointCollector,
-		"secrets":                  kcollectors.RegisterSecretCollector,
-		"configmaps":               kcollectors.RegisterConfigMapCollector,
 	}
 )

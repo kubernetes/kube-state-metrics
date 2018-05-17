@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -71,7 +72,7 @@ func (l NamespaceLister) List() ([]v1.Namespace, error) {
 }
 
 // RegisterNamespaceCollector registry namespace collector
-func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect namespace with %s", client.APIVersion())
 
@@ -86,7 +87,7 @@ func RegisterNamespaceCollector(registry prometheus.Registerer, kubeClient kuber
 		return namespaces, nil
 	})
 
-	registry.MustRegister(&namespaceCollector{store: namespaceLister})
+	registry.MustRegister(&namespaceCollector{store: namespaceLister, opts: opts})
 	nsinfs.Run(context.Background().Done())
 }
 
@@ -97,6 +98,7 @@ type namespaceStore interface {
 // namespaceCollector collects metrics about all namespace in the cluster.
 type namespaceCollector struct {
 	store namespaceStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

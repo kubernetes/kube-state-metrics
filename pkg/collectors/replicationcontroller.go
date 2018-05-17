@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -74,7 +75,7 @@ func (l ReplicationControllerLister) List() ([]v1.ReplicationController, error) 
 	return l()
 }
 
-func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterReplicationControllerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect replicationcontroller with %s", client.APIVersion())
 
@@ -89,7 +90,7 @@ func RegisterReplicationControllerCollector(registry prometheus.Registerer, kube
 		return rcs, nil
 	})
 
-	registry.MustRegister(&replicationcontrollerCollector{store: replicationControllerLister})
+	registry.MustRegister(&replicationcontrollerCollector{store: replicationControllerLister, opts: opts})
 	rcinfs.Run(context.Background().Done())
 }
 
@@ -99,6 +100,7 @@ type replicationcontrollerStore interface {
 
 type replicationcontrollerCollector struct {
 	store replicationcontrollerStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

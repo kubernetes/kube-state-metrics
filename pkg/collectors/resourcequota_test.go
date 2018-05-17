@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 type mockResourceQuotaStore struct {
@@ -155,6 +156,7 @@ func TestResourceQuotaCollector(t *testing.T) {
 					return v1.ResourceQuotaList{Items: c.quotas}, nil
 				},
 			},
+			opts: &options.Options{},
 		}
 		if err := testutils.GatherAndCompare(dc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)

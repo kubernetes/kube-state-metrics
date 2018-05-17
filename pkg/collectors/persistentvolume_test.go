@@ -22,6 +22,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 type mockPersistentVolumeStore struct {
@@ -188,6 +189,7 @@ func TestPersistentVolumeCollector(t *testing.T) {
 					return v1.PersistentVolumeList{Items: c.pvs}, nil
 				},
 			},
+			opts: &options.Options{},
 		}
 		if err := testutils.GatherAndCompare(dc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)

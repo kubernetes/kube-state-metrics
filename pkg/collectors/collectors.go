@@ -19,12 +19,16 @@ package collectors
 import (
 	"time"
 
+	"regexp"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -45,7 +49,31 @@ var (
 		},
 		[]string{"resource"},
 	)
+
+	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 )
+
+var AvailableCollectors = map[string]func(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options){
+	"cronjobs":                 RegisterCronJobCollector,
+	"daemonsets":               RegisterDaemonSetCollector,
+	"deployments":              RegisterDeploymentCollector,
+	"jobs":                     RegisterJobCollector,
+	"limitranges":              RegisterLimitRangeCollector,
+	"nodes":                    RegisterNodeCollector,
+	"pods":                     RegisterPodCollector,
+	"replicasets":              RegisterReplicaSetCollector,
+	"replicationcontrollers":   RegisterReplicationControllerCollector,
+	"resourcequotas":           RegisterResourceQuotaCollector,
+	"services":                 RegisterServiceCollector,
+	"statefulsets":             RegisterStatefulSetCollector,
+	"persistentvolumes":        RegisterPersistentVolumeCollector,
+	"persistentvolumeclaims":   RegisterPersistentVolumeClaimCollector,
+	"namespaces":               RegisterNamespaceCollector,
+	"horizontalpodautoscalers": RegisterHorizontalPodAutoScalerCollector,
+	"endpoints":                RegisterEndpointCollector,
+	"secrets":                  RegisterSecretCollector,
+	"configmaps":               RegisterConfigMapCollector,
+}
 
 type SharedInformerList []cache.SharedInformer
 
@@ -87,4 +115,32 @@ func addConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, cs 
 		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionUnknown),
 		append(lv, "unknown")...,
 	)
+}
+
+func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
+	labelKeys := make([]string, len(labels))
+	labelValues := make([]string, len(labels))
+	i := 0
+	for k, v := range labels {
+		labelKeys[i] = "label_" + sanitizeLabelName(k)
+		labelValues[i] = v
+		i++
+	}
+	return labelKeys, labelValues
+}
+
+func kubeAnnotationsToPrometheusAnnotations(annotations map[string]string) ([]string, []string) {
+	annotationKeys := make([]string, len(annotations))
+	annotationValues := make([]string, len(annotations))
+	i := 0
+	for k, v := range annotations {
+		annotationKeys[i] = "annotation_" + sanitizeLabelName(k)
+		annotationValues[i] = v
+		i++
+	}
+	return annotationKeys, annotationValues
+}
+
+func sanitizeLabelName(s string) string {
+	return invalidLabelCharRE.ReplaceAllString(s, "_")
 }

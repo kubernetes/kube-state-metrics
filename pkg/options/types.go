@@ -40,7 +40,7 @@ func (c *CollectorSet) Set(value string) error {
 	for _, col := range cols {
 		col = strings.TrimSpace(col)
 		if len(col) != 0 {
-			_, ok := AvailableCollectors[col]
+			_, ok := DefaultCollectors[col]
 			if !ok {
 				return fmt.Errorf("collector \"%s\" does not exist", col)
 			}

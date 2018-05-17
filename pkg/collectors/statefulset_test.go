@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/apps/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -161,6 +162,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 			store: mockStatefulSetStore{
 				f: func() ([]v1beta1.StatefulSet, error) { return c.depls, nil },
 			},
+			opts: &options.Options{},
 		}
 		if err := testutils.GatherAndCompare(sc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)

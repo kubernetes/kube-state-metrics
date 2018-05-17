@@ -24,6 +24,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -66,7 +67,7 @@ func (l EndpointLister) List() ([]v1.Endpoints, error) {
 	return l()
 }
 
-func RegisterEndpointCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterEndpointCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect endpoint with %s", client.APIVersion())
 
@@ -81,7 +82,7 @@ func RegisterEndpointCollector(registry prometheus.Registerer, kubeClient kubern
 		return endpoints, nil
 	})
 
-	registry.MustRegister(&endpointCollector{store: endpointLister})
+	registry.MustRegister(&endpointCollector{store: endpointLister, opts: opts})
 	sinfs.Run(context.Background().Done())
 }
 
@@ -92,6 +93,7 @@ type endpointStore interface {
 // endpointCollector collects metrics about all endpoints in the cluster.
 type endpointCollector struct {
 	store endpointStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

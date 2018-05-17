@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -106,7 +107,7 @@ func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
 	return l()
 }
 
-func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	glog.Infof("collect deployment with %s", client.APIVersion())
 
@@ -121,7 +122,7 @@ func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kube
 		return deployments, nil
 	})
 
-	registry.MustRegister(&deploymentCollector{store: dplLister})
+	registry.MustRegister(&deploymentCollector{store: dplLister, opts: opts})
 	dinfs.Run(context.Background().Done())
 }
 
@@ -132,6 +133,7 @@ type deploymentStore interface {
 // deploymentCollector collects metrics about all deployments in the cluster.
 type deploymentCollector struct {
 	store deploymentStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

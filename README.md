@@ -55,14 +55,14 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most 5 kube-state-metrics releases will be recorded below.
 
-| kube-state-metrics | client-go | **Kubernetes 1.4**  | **Kubernetes 1.5** | **Kubernetes 1.6** | **Kubernetes 1.7** | **Kubernetes 1.8** | **Kubernetes 1.9** |
-|--------------------|-----------|---------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
-| **v0.5.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |         -          |
-| **v1.0.x** |  4.0.0-beta.0     |          ✓          |         ✓          |        ✓           |         ✓          |         -          |         -          |
-| **v1.1.0** |  release-5.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         -          |
-| **v1.2.0** |  v6.0.0           |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         ✓          |
-| **v1.3.0** |  v6.0.0           |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         ✓          |
-| **master** |  v6.0.0           |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         ✓          |
+| kube-state-metrics | client-go | **Kubernetes 1.6** | **Kubernetes 1.7** | **Kubernetes 1.8** | **Kubernetes 1.9** |
+|--------------------|-----------|--------------------|--------------------|--------------------|--------------------|
+| **v1.0.x** |  4.0.0-beta.0     |         ✓          |         ✓          |         -          |         -          |
+| **v1.1.0** |  release-5.0      |         ✓          |         ✓          |         ✓          |         -          |
+| **v1.2.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
+| **v1.3.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
+| **v1.3.1** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
+| **master** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
 

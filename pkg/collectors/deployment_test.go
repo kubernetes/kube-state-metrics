@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -166,6 +167,7 @@ func TestDeploymentCollector(t *testing.T) {
 			store: mockDeploymentStore{
 				f: func() ([]v1beta1.Deployment, error) { return c.depls, nil },
 			},
+			opts: &options.Options{},
 		}
 		if err := testutils.GatherAndCompare(dc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)

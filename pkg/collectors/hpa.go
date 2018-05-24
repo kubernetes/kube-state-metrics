@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -73,7 +74,7 @@ func (l HPALister) List() (autoscaling.HorizontalPodAutoscalerList, error) {
 	return l()
 }
 
-func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.AutoscalingV2beta1().RESTClient()
 	glog.Infof("collect hpa with %s", client.APIVersion())
 	hpainfs := NewSharedInformerList(client, "horizontalpodautoscalers", namespaces, &autoscaling.HorizontalPodAutoscaler{})
@@ -87,7 +88,7 @@ func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, ku
 		return hpas, nil
 	})
 
-	registry.MustRegister(&hpaCollector{store: hpaLister})
+	registry.MustRegister(&hpaCollector{store: hpaLister, opts: opts})
 	hpainfs.Run(context.Background().Done())
 }
 
@@ -98,6 +99,7 @@ type hpaStore interface {
 // hpaCollector collects metrics about all Horizontal Pod Austoscalers in the cluster.
 type hpaCollector struct {
 	store hpaStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

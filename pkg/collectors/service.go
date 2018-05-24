@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -60,7 +61,7 @@ func (l ServiceLister) List() ([]v1.Service, error) {
 	return l()
 }
 
-func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect service with %s", client.APIVersion())
 
@@ -75,7 +76,7 @@ func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kuberne
 		return services, nil
 	})
 
-	registry.MustRegister(&serviceCollector{store: serviceLister})
+	registry.MustRegister(&serviceCollector{store: serviceLister, opts: opts})
 	sinfs.Run(context.Background().Done())
 }
 
@@ -86,6 +87,7 @@ type serviceStore interface {
 // serviceCollector collects metrics about all services in the cluster.
 type serviceCollector struct {
 	store serviceStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

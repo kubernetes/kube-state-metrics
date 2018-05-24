@@ -26,6 +26,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -231,6 +232,7 @@ func TestCronJobCollector(t *testing.T) {
 			store: mockCronJobStore{
 				f: func() ([]batchv1beta1.CronJob, error) { return c.cronJobs, nil },
 			},
+			opts: &options.Options{},
 		}
 		if err := testutils.GatherAndCompare(cjc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)

@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -84,7 +85,7 @@ func (l CronJobLister) List() ([]batchv1beta1.CronJob, error) {
 	return l()
 }
 
-func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.BatchV1beta1().RESTClient()
 	glog.Infof("collect cronjob with %s", client.APIVersion())
 
@@ -99,7 +100,7 @@ func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kuberne
 		return cronjobs, nil
 	})
 
-	registry.MustRegister(&cronJobCollector{store: cronJobLister})
+	registry.MustRegister(&cronJobCollector{store: cronJobLister, opts: opts})
 	cjinfs.Run(context.Background().Done())
 }
 
@@ -110,6 +111,7 @@ type cronJobStore interface {
 // cronJobCollector collects metrics about all cronjobs in the cluster.
 type cronJobCollector struct {
 	store cronJobStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

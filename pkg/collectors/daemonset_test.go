@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 type mockDaemonSetStore struct {
@@ -154,6 +155,7 @@ func TestDaemonSetCollector(t *testing.T) {
 			store: mockDaemonSetStore{
 				f: func() ([]v1beta1.DaemonSet, error) { return c.dss, nil },
 			},
+			opts: &options.Options{},
 		}
 		if err := testutils.GatherAndCompare(dc, c.want, nil); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)

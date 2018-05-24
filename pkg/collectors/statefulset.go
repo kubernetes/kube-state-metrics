@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -90,7 +91,7 @@ func (l StatefulSetLister) List() ([]v1beta1.StatefulSet, error) {
 	return l()
 }
 
-func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.AppsV1beta1().RESTClient()
 	glog.Infof("collect statefulset with %s", client.APIVersion())
 
@@ -105,7 +106,7 @@ func RegisterStatefulSetCollector(registry prometheus.Registerer, kubeClient kub
 		return statefulSets, nil
 	})
 
-	registry.MustRegister(&statefulSetCollector{store: statefulSetLister})
+	registry.MustRegister(&statefulSetCollector{store: statefulSetLister, opts: opts})
 	dinfs.Run(context.Background().Done())
 }
 
@@ -115,6 +116,7 @@ type statefulSetStore interface {
 
 type statefulSetCollector struct {
 	store statefulSetStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

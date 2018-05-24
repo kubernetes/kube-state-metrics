@@ -22,6 +22,7 @@ import (
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -103,6 +104,7 @@ func TestHPACollector(t *testing.T) {
 					return autoscaling.HorizontalPodAutoscalerList{Items: c.hpas}, nil
 				},
 			},
+			opts: &options.Options{},
 		}
 		if err := testutils.GatherAndCompare(hc, c.want, c.metrics); err != nil {
 			t.Errorf("unexpected collecting result:\n%s", err)

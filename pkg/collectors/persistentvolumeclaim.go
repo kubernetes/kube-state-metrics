@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -70,7 +71,7 @@ func (l PersistentVolumeClaimLister) List() (v1.PersistentVolumeClaimList, error
 	return l()
 }
 
-func RegisterPersistentVolumeClaimCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterPersistentVolumeClaimCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect persistentvolumeclaim with %s", client.APIVersion())
 
@@ -85,7 +86,7 @@ func RegisterPersistentVolumeClaimCollector(registry prometheus.Registerer, kube
 		return pvcs, nil
 	})
 
-	registry.MustRegister(&persistentVolumeClaimCollector{store: persistentVolumeClaimLister})
+	registry.MustRegister(&persistentVolumeClaimCollector{store: persistentVolumeClaimLister, opts: opts})
 	pvcinfs.Run(context.Background().Done())
 }
 
@@ -96,6 +97,7 @@ type persistentVolumeClaimStore interface {
 // persistentVolumeClaimCollector collects metrics about all persistentVolumeClaims in the cluster.
 type persistentVolumeClaimCollector struct {
 	store persistentVolumeClaimStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -48,7 +49,7 @@ func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
 	return l()
 }
 
-func RegisterResourceQuotaCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterResourceQuotaCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect resourcequota with %s", client.APIVersion())
 
@@ -63,7 +64,7 @@ func RegisterResourceQuotaCollector(registry prometheus.Registerer, kubeClient k
 		return quotas, nil
 	})
 
-	registry.MustRegister(&resourceQuotaCollector{store: resourceQuotaLister})
+	registry.MustRegister(&resourceQuotaCollector{store: resourceQuotaLister, opts: opts})
 	rqinfs.Run(context.Background().Done())
 }
 
@@ -74,6 +75,7 @@ type resourceQuotaStore interface {
 // resourceQuotaCollector collects metrics about all resource quotas in the cluster.
 type resourceQuotaCollector struct {
 	store resourceQuotaStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

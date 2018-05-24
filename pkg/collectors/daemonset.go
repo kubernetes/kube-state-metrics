@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -87,7 +88,7 @@ func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
 	return l()
 }
 
-func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	glog.Infof("collect daemonset with %s", client.APIVersion())
 
@@ -102,7 +103,7 @@ func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kuber
 		return daemonsets, nil
 	})
 
-	registry.MustRegister(&daemonsetCollector{store: dsLister})
+	registry.MustRegister(&daemonsetCollector{store: dsLister, opts: opts})
 	dsinfs.Run(context.Background().Done())
 }
 
@@ -113,6 +114,7 @@ type daemonsetStore interface {
 // daemonsetCollector collects metrics about all daemonsets in the cluster.
 type daemonsetCollector struct {
 	store daemonsetStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

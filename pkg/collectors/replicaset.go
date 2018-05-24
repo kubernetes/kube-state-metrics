@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -68,7 +69,7 @@ func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
 	return l()
 }
 
-func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.ExtensionsV1beta1().RESTClient()
 	glog.Infof("collect replicaset with %s", client.APIVersion())
 
@@ -83,7 +84,7 @@ func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kube
 		return replicasets, nil
 	})
 
-	registry.MustRegister(&replicasetCollector{store: replicaSetLister})
+	registry.MustRegister(&replicasetCollector{store: replicaSetLister, opts: opts})
 	rsinfs.Run(context.Background().Done())
 }
 
@@ -94,6 +95,7 @@ type replicasetStore interface {
 // replicasetCollector collects metrics about all replicasets in the cluster.
 type replicasetCollector struct {
 	store replicasetStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

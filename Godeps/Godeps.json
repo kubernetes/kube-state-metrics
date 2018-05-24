@@ -90,12 +90,12 @@
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
-			"Comment": "v0.3-162-gc0656ed",
+			"Comment": "v0.4-3-gc0656ed",
 			"Rev": "c0656edd0d9eab7c66d1eb0c568f9039345796f7"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/sortkeys",
-			"Comment": "v0.3-162-gc0656ed",
+			"Comment": "v0.4-3-gc0656ed",
 			"Rev": "c0656edd0d9eab7c66d1eb0c568f9039345796f7"
 		},
 		{
@@ -1024,6 +1024,16 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/apis/core",
+			"Comment": "v1.9.0",
+			"Rev": "925c127ec6b946659ad0fd596fa959be43f0cc05"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/apis/core/helper",
+			"Comment": "v1.9.0",
+			"Rev": "925c127ec6b946659ad0fd596fa959be43f0cc05"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/apis/core/v1/helper",
 			"Comment": "v1.9.0",
 			"Rev": "925c127ec6b946659ad0fd596fa959be43f0cc05"
 		},

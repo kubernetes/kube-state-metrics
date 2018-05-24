@@ -33,6 +33,7 @@ the raw metrics.
   - [Resource group version compatibility](#resource-group-version-compatibility)
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
+- [Metrics Deprecation](#metrics-deprecation)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
 - [kube-state-metrics vs. Heapster](#kube-state-metrics-vs-heapster)
@@ -102,6 +103,18 @@ additional metrics!
 > which may be changed at any given release.
 
 See the [`Documentation`](Documentation) directory for documentation of the exposed metrics.
+
+### Metrics Deprecation
+* **The following non-generic resource metrics for pods are marked deprecated. They will be removed in kube-state-metrics v2.0.0.**
+`kube_pod_container_resource_requests` and `kube_pod_container_resource_limits` are the replacements with `resource` labels
+representing the resource name and `unit` labels representing the resource unit.
+  * kube_pod_container_resource_requests_cpu_cores
+  * kube_pod_container_resource_limits_cpu_cores
+  * kube_pod_container_resource_requests_memory_bytes
+  * kube_pod_container_resource_limits_memory_bytes
+  * kube_pod_container_resource_requests_nvidia_gpu_devices
+  * kube_pod_container_resource_limits_nvidia_gpu_devices
+  
 
 ### Kube-state-metrics self metrics
 kube-state-metrics exposes its own metrics under `--telemetry-host` and `--telemetry-port` (default 81).

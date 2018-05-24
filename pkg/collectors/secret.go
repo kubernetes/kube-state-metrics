@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -66,7 +67,7 @@ func (l SecretLister) List() ([]v1.Secret, error) {
 	return l()
 }
 
-func RegisterSecretCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterSecretCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect secret with %s", client.APIVersion())
 
@@ -81,7 +82,7 @@ func RegisterSecretCollector(registry prometheus.Registerer, kubeClient kubernet
 		return secrets, nil
 	})
 
-	registry.MustRegister(&secretCollector{store: secretLister})
+	registry.MustRegister(&secretCollector{store: secretLister, opts: opts})
 	sinfs.Run(context.Background().Done())
 }
 
@@ -92,6 +93,7 @@ type secretStore interface {
 // secretCollector collects metrics about all secrets in the cluster.
 type secretCollector struct {
 	store secretStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

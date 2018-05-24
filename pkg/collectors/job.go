@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -103,7 +104,7 @@ func (l JobLister) List() ([]v1batch.Job, error) {
 	return l()
 }
 
-func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.BatchV1().RESTClient()
 	glog.Infof("collect job with %s", client.APIVersion())
 
@@ -118,7 +119,7 @@ func RegisterJobCollector(registry prometheus.Registerer, kubeClient kubernetes.
 		return jobs, nil
 	})
 
-	registry.MustRegister(&jobCollector{store: jobLister})
+	registry.MustRegister(&jobCollector{store: jobLister, opts: opts})
 	jinfs.Run(context.Background().Done())
 }
 
@@ -129,6 +130,7 @@ type jobStore interface {
 // jobCollector collects metrics about all jobs in the cluster.
 type jobCollector struct {
 	store jobStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

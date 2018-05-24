@@ -24,28 +24,29 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type options struct {
-	Apiserver     string
-	Kubeconfig    string
-	Help          bool
-	Port          int
-	Host          string
-	TelemetryPort int
-	TelemetryHost string
-	Collectors    CollectorSet
-	Namespaces    NamespaceList
-	Version       bool
+type Options struct {
+	Apiserver                           string
+	Kubeconfig                          string
+	Help                                bool
+	Port                                int
+	Host                                string
+	TelemetryPort                       int
+	TelemetryHost                       string
+	Collectors                          CollectorSet
+	Namespaces                          NamespaceList
+	Version                             bool
+	DisablePodNonGenericResourceMetrics bool
 
 	flags *pflag.FlagSet
 }
 
-func NewOptions() *options {
-	return &options{
+func NewOptions() *Options {
+	return &Options{
 		Collectors: CollectorSet{},
 	}
 }
 
-func (o *options) AddFlags() {
+func (o *Options) AddFlags() {
 	o.flags = pflag.NewFlagSet("", pflag.ExitOnError)
 	// add glog flags
 	o.flags.AddGoFlagSet(flag.CommandLine)
@@ -68,13 +69,14 @@ func (o *options) AddFlags() {
 	o.flags.Var(&o.Collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &DefaultCollectors))
 	o.flags.Var(&o.Namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
+	o.flags.BoolVarP(&o.DisablePodNonGenericResourceMetrics, "disable-pod-non-generic-resource-metrics", "", false, "Disable pod non generic resource request and limit metrics")
 }
 
-func (o *options) Parse() error {
+func (o *Options) Parse() error {
 	err := o.flags.Parse(os.Args)
 	return err
 }
 
-func (o *options) Usage() {
+func (o *Options) Usage() {
 	o.flags.Usage()
 }

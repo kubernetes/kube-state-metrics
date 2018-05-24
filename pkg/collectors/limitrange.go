@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -50,7 +51,7 @@ func (l LimitRangeLister) List() (v1.LimitRangeList, error) {
 	return l()
 }
 
-func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
+func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect limitrange with %s", client.APIVersion())
 
@@ -65,7 +66,7 @@ func RegisterLimitRangeCollector(registry prometheus.Registerer, kubeClient kube
 		return ranges, nil
 	})
 
-	registry.MustRegister(&limitRangeCollector{store: limitRangeLister})
+	registry.MustRegister(&limitRangeCollector{store: limitRangeLister, opts: opts})
 	rqinfs.Run(context.Background().Done())
 }
 
@@ -76,6 +77,7 @@ type limitRangeStore interface {
 // limitRangeCollector collects metrics about all limit ranges in the cluster.
 type limitRangeCollector struct {
 	store limitRangeStore
+	opts  *options.Options
 }
 
 // Describe implements the prometheus.Collector interface.

@@ -23,7 +23,9 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 )
 
 var (
@@ -81,25 +83,40 @@ var (
 		[]string{"node", "phase"}, nil,
 	)
 
+	descNodeStatusCapacity = prometheus.NewDesc(
+		"kube_node_status_capacity",
+		"The capacity for different resources of a node.",
+		[]string{"node", "resource", "unit"}, nil,
+	)
+
 	descNodeStatusCapacityPods = prometheus.NewDesc(
 		"kube_node_status_capacity_pods",
 		"The total pod resources of the node.",
 		[]string{"node"}, nil,
 	)
+
 	descNodeStatusCapacityCPU = prometheus.NewDesc(
 		"kube_node_status_capacity_cpu_cores",
 		"The total CPU resources of the node.",
 		[]string{"node"}, nil,
 	)
+
 	descNodeStatusCapacityNvidiaGPU = prometheus.NewDesc(
 		"kube_node_status_capacity_nvidia_gpu_cards",
 		"The total Nvidia GPU resources of the node.",
 		[]string{"node"}, nil,
 	)
+
 	descNodeStatusCapacityMemory = prometheus.NewDesc(
 		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
 		[]string{"node"}, nil,
+	)
+
+	descNodeStatusAllocatable = prometheus.NewDesc(
+		"kube_node_status_allocatable",
+		"The allocatable for different resources of a node that are available for scheduling.",
+		[]string{"node", "resource", "unit"}, nil,
 	)
 
 	descNodeStatusAllocatablePods = prometheus.NewDesc(
@@ -107,16 +124,19 @@ var (
 		"The pod resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
+
 	descNodeStatusAllocatableCPU = prometheus.NewDesc(
 		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
+
 	descNodeStatusAllocatableNvidiaGPU = prometheus.NewDesc(
 		"kube_node_status_allocatable_nvidia_gpu_cards",
 		"The Nvidia GPU resources of a node that are available for scheduling.",
 		[]string{"node"}, nil,
 	)
+
 	descNodeStatusAllocatableMemory = prometheus.NewDesc(
 		"kube_node_status_allocatable_memory_bytes",
 		"The memory resources of a node that are available for scheduling.",
@@ -168,14 +188,19 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeSpecTaint
 	ch <- descNodeStatusCondition
 	ch <- descNodeStatusPhase
-	ch <- descNodeStatusCapacityCPU
-	ch <- descNodeStatusCapacityNvidiaGPU
-	ch <- descNodeStatusCapacityMemory
-	ch <- descNodeStatusCapacityPods
-	ch <- descNodeStatusAllocatableCPU
-	ch <- descNodeStatusAllocatableNvidiaGPU
-	ch <- descNodeStatusAllocatableMemory
-	ch <- descNodeStatusAllocatablePods
+	ch <- descNodeStatusCapacity
+	ch <- descNodeStatusAllocatable
+
+	if !nc.opts.DisableNodeNonGenericResourceMetrics {
+		ch <- descNodeStatusCapacityCPU
+		ch <- descNodeStatusCapacityNvidiaGPU
+		ch <- descNodeStatusCapacityMemory
+		ch <- descNodeStatusCapacityPods
+		ch <- descNodeStatusAllocatableCPU
+		ch <- descNodeStatusAllocatableNvidiaGPU
+		ch <- descNodeStatusAllocatableMemory
+		ch <- descNodeStatusAllocatablePods
+	}
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -252,19 +277,74 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		addGauge(descNodeStatusPhase, boolFloat64(p == v1.NodeTerminated), string(v1.NodeTerminated))
 	}
 
-	// Add capacity and allocatable resources if they are set.
-	addResource := func(d *prometheus.Desc, res v1.ResourceList, n v1.ResourceName) {
-		if v, ok := res[n]; ok {
-			addGauge(d, float64(v.MilliValue())/1000)
+	if !nc.opts.DisableNodeNonGenericResourceMetrics {
+		// Add capacity and allocatable resources if they are set.
+		addResource := func(d *prometheus.Desc, res v1.ResourceList, n v1.ResourceName) {
+			if v, ok := res[n]; ok {
+				addGauge(d, float64(v.MilliValue())/1000)
+			}
+		}
+
+		addResource(descNodeStatusCapacityCPU, n.Status.Capacity, v1.ResourceCPU)
+		addResource(descNodeStatusCapacityNvidiaGPU, n.Status.Capacity, v1.ResourceNvidiaGPU)
+		addResource(descNodeStatusCapacityMemory, n.Status.Capacity, v1.ResourceMemory)
+		addResource(descNodeStatusCapacityPods, n.Status.Capacity, v1.ResourcePods)
+
+		addResource(descNodeStatusAllocatableCPU, n.Status.Allocatable, v1.ResourceCPU)
+		addResource(descNodeStatusAllocatableNvidiaGPU, n.Status.Allocatable, v1.ResourceNvidiaGPU)
+		addResource(descNodeStatusAllocatableMemory, n.Status.Allocatable, v1.ResourceMemory)
+		addResource(descNodeStatusAllocatablePods, n.Status.Allocatable, v1.ResourcePods)
+	}
+
+	capacity := n.Status.Capacity
+	allocatable := n.Status.Allocatable
+
+	for resourceName, val := range capacity {
+		switch resourceName {
+		case v1.ResourceCPU:
+			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitCore))
+		case v1.ResourceStorage:
+			fallthrough
+		case v1.ResourceEphemeralStorage:
+			fallthrough
+		case v1.ResourceMemory:
+			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+		case v1.ResourceNvidiaGPU:
+			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
+		case v1.ResourcePods:
+			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
+		default:
+			if helper.IsHugePageResourceName(resourceName) {
+				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+			}
+			if helper.IsExtendedResourceName(resourceName) {
+				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
+			}
 		}
 	}
-	addResource(descNodeStatusCapacityCPU, n.Status.Capacity, v1.ResourceCPU)
-	addResource(descNodeStatusCapacityNvidiaGPU, n.Status.Capacity, v1.ResourceNvidiaGPU)
-	addResource(descNodeStatusCapacityMemory, n.Status.Capacity, v1.ResourceMemory)
-	addResource(descNodeStatusCapacityPods, n.Status.Capacity, v1.ResourcePods)
 
-	addResource(descNodeStatusAllocatableCPU, n.Status.Allocatable, v1.ResourceCPU)
-	addResource(descNodeStatusAllocatableNvidiaGPU, n.Status.Allocatable, v1.ResourceNvidiaGPU)
-	addResource(descNodeStatusAllocatableMemory, n.Status.Allocatable, v1.ResourceMemory)
-	addResource(descNodeStatusAllocatablePods, n.Status.Allocatable, v1.ResourcePods)
+	for resourceName, val := range allocatable {
+		switch resourceName {
+		case v1.ResourceCPU:
+			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitCore))
+		case v1.ResourceStorage:
+			fallthrough
+		case v1.ResourceEphemeralStorage:
+			fallthrough
+		case v1.ResourceMemory:
+			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+		case v1.ResourceNvidiaGPU:
+			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
+		case v1.ResourcePods:
+			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
+		default:
+			if helper.IsHugePageResourceName(resourceName) {
+				addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+			}
+			if helper.IsExtendedResourceName(resourceName) {
+				addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
+			}
+		}
+	}
+
 }

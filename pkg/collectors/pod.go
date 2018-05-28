@@ -25,6 +25,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/util/node"
@@ -461,25 +462,25 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			switch resourceName {
 			case v1.ResourceCPU:
 				addGauge(descPodContainerResourceRequests, float64(val.MilliValue())/1000,
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "core")
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore))
 			case v1.ResourceStorage:
 				fallthrough
 			case v1.ResourceEphemeralStorage:
 				fallthrough
 			case v1.ResourceMemory:
 				addGauge(descPodContainerResourceRequests, float64(val.Value()),
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 			case v1.ResourceNvidiaGPU:
 				addGauge(descPodContainerResourceRequests, float64(val.Value()),
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 			default:
 				if helper.IsHugePageResourceName(resourceName) {
 					addGauge(descPodContainerResourceRequests, float64(val.Value()),
-						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 				}
 				if helper.IsExtendedResourceName(resourceName) {
 					addGauge(descPodContainerResourceRequests, float64(val.Value()),
-						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 				}
 			}
 		}
@@ -488,25 +489,25 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			switch resourceName {
 			case v1.ResourceCPU:
 				addGauge(descPodContainerResourceLimits, float64(val.MilliValue())/1000,
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "core")
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore))
 			case v1.ResourceStorage:
 				fallthrough
 			case v1.ResourceEphemeralStorage:
 				fallthrough
 			case v1.ResourceMemory:
 				addGauge(descPodContainerResourceLimits, float64(val.Value()),
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 			case v1.ResourceNvidiaGPU:
 				addGauge(descPodContainerResourceLimits, float64(val.Value()),
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 			default:
 				if helper.IsHugePageResourceName(resourceName) {
 					addGauge(descPodContainerResourceLimits, float64(val.Value()),
-						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "byte")
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 				}
 				if helper.IsExtendedResourceName(resourceName) {
 					addGauge(descPodContainerResourceLimits, float64(val.Value()),
-						c.Name, nodeName, sanitizeLabelName(string(resourceName)), "integer")
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 				}
 			}
 		}

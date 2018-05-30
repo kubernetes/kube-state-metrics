@@ -14,7 +14,7 @@ kube-state-metrics have the same grade of stability as the Kubernetes API
 objects themselves. In turn this means, that kube-state-metrics in certain
 situation may not show the exact same values as kubectl, as kubectl applies
 certain heuristics to display comprehensible messages. kube-state-metrics
-exposes raw data unmodified from the Kubernetes API, this way users has all the
+exposes raw data unmodified from the Kubernetes API, this way users have all the
 data they require and perform heuristics as they see fit.
 
 The metrics are exported through the [Prometheus golang

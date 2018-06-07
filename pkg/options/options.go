@@ -25,17 +25,18 @@ import (
 )
 
 type Options struct {
-	Apiserver                           string
-	Kubeconfig                          string
-	Help                                bool
-	Port                                int
-	Host                                string
-	TelemetryPort                       int
-	TelemetryHost                       string
-	Collectors                          CollectorSet
-	Namespaces                          NamespaceList
-	Version                             bool
-	DisablePodNonGenericResourceMetrics bool
+	Apiserver                            string
+	Kubeconfig                           string
+	Help                                 bool
+	Port                                 int
+	Host                                 string
+	TelemetryPort                        int
+	TelemetryHost                        string
+	Collectors                           CollectorSet
+	Namespaces                           NamespaceList
+	Version                              bool
+	DisablePodNonGenericResourceMetrics  bool
+	DisableNodeNonGenericResourceMetrics bool
 
 	flags *pflag.FlagSet
 }
@@ -70,6 +71,7 @@ func (o *Options) AddFlags() {
 	o.flags.Var(&o.Namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
 	o.flags.BoolVarP(&o.DisablePodNonGenericResourceMetrics, "disable-pod-non-generic-resource-metrics", "", false, "Disable pod non generic resource request and limit metrics")
+	o.flags.BoolVarP(&o.DisableNodeNonGenericResourceMetrics, "disable-node-non-generic-resource-metrics", "", false, "Disable node non generic resource request and limit metrics")
 }
 
 func (o *Options) Parse() error {

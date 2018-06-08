@@ -33,55 +33,56 @@ var (
 	descStatefulSetCreated = prometheus.NewDesc(
 		"kube_statefulset_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetStatusReplicas = prometheus.NewDesc(
 		"kube_statefulset_status_replicas",
 		"The number of replicas per StatefulSet.",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetStatusReplicasCurrent = prometheus.NewDesc(
 		"kube_statefulset_status_replicas_current",
 		"The number of current replicas per StatefulSet.",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetStatusReplicasReady = prometheus.NewDesc(
 		"kube_statefulset_status_replicas_ready",
 		"The number of ready replicas per StatefulSet.",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetStatusReplicasUpdated = prometheus.NewDesc(
 		"kube_statefulset_status_replicas_updated",
 		"The number of updated replicas per StatefulSet.",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetStatusObservedGeneration = prometheus.NewDesc(
 		"kube_statefulset_status_observed_generation",
 		"The generation observed by the StatefulSet controller.",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetSpecReplicas = prometheus.NewDesc(
 		"kube_statefulset_replicas",
 		"Number of desired pods for a StatefulSet.",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetMetadataGeneration = prometheus.NewDesc(
 		"kube_statefulset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state for the StatefulSet.",
-		[]string{"namespace", "statefulset"}, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
-
 	descStatefulSetLabels = prometheus.NewDesc(
 		descStatefulSetLabelsName,
 		descStatefulSetLabelsHelp,
-		descStatefulSetLabelsDefaultLabels, nil,
+		descStatefulSetLabelsDefaultLabels,
+		nil,
 	)
 )
 

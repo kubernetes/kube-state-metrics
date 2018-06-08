@@ -36,111 +36,110 @@ var (
 	descNodeInfo = prometheus.NewDesc(
 		"kube_node_info",
 		"Information about a cluster node.",
-		[]string{
-			"node",
+		append(descNodeLabelsDefaultLabels,
 			"kernel_version",
 			"os_image",
 			"container_runtime_version",
 			"kubelet_version",
 			"kubeproxy_version",
-			"provider_id",
-		}, nil,
+			"provider_id"),
+		nil,
 	)
-
 	descNodeCreated = prometheus.NewDesc(
 		"kube_node_created",
 		"Unix creation timestamp",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeLabels = prometheus.NewDesc(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
-		descNodeLabelsDefaultLabels, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeSpecUnschedulable = prometheus.NewDesc(
 		"kube_node_spec_unschedulable",
 		"Whether a node can schedule new pods.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeSpecTaint = prometheus.NewDesc(
 		"kube_node_spec_taint",
 		"The taint of a cluster node.",
-		[]string{"node", "key", "value", "effect"}, nil,
+		append(descNodeLabelsDefaultLabels, "key", "value", "effect"),
+		nil,
 	)
-
 	descNodeStatusCondition = prometheus.NewDesc(
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
-		[]string{"node", "condition", "status"}, nil,
+		append(descNodeLabelsDefaultLabels, "condition", "status"),
+		nil,
 	)
-
 	descNodeStatusPhase = prometheus.NewDesc(
 		"kube_node_status_phase",
 		"The phase the node is currently in.",
-		[]string{"node", "phase"}, nil,
+		append(descNodeLabelsDefaultLabels, "phase"),
+		nil,
 	)
-
 	descNodeStatusCapacity = prometheus.NewDesc(
 		"kube_node_status_capacity",
 		"The capacity for different resources of a node.",
-		[]string{"node", "resource", "unit"}, nil,
+		append(descNodeLabelsDefaultLabels, "resource", "unit"),
+		nil,
 	)
-
 	descNodeStatusCapacityPods = prometheus.NewDesc(
 		"kube_node_status_capacity_pods",
 		"The total pod resources of the node.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeStatusCapacityCPU = prometheus.NewDesc(
 		"kube_node_status_capacity_cpu_cores",
 		"The total CPU resources of the node.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeStatusCapacityNvidiaGPU = prometheus.NewDesc(
 		"kube_node_status_capacity_nvidia_gpu_cards",
 		"The total Nvidia GPU resources of the node.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeStatusCapacityMemory = prometheus.NewDesc(
 		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeStatusAllocatable = prometheus.NewDesc(
 		"kube_node_status_allocatable",
 		"The allocatable for different resources of a node that are available for scheduling.",
-		[]string{"node", "resource", "unit"}, nil,
+		append(descNodeLabelsDefaultLabels, "resource", "unit"),
+		nil,
 	)
-
 	descNodeStatusAllocatablePods = prometheus.NewDesc(
 		"kube_node_status_allocatable_pods",
 		"The pod resources of a node that are available for scheduling.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeStatusAllocatableCPU = prometheus.NewDesc(
 		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeStatusAllocatableNvidiaGPU = prometheus.NewDesc(
 		"kube_node_status_allocatable_nvidia_gpu_cards",
 		"The Nvidia GPU resources of a node that are available for scheduling.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
-
 	descNodeStatusAllocatableMemory = prometheus.NewDesc(
 		"kube_node_status_allocatable_memory_bytes",
 		"The memory resources of a node that are available for scheduling.",
-		[]string{"node"}, nil,
+		descNodeLabelsDefaultLabels,
+		nil,
 	)
 )
 

@@ -26,20 +26,21 @@ import (
 )
 
 var (
+	descResourceQuotaLabelsDefaultLabels = []string{"resourcequota", "namespace"}
+
 	descResourceQuotaCreated = prometheus.NewDesc(
 		"kube_resourcequota_created",
 		"Unix creation timestamp",
-		[]string{"resourcequota", "namespace"}, nil,
+		descResourceQuotaLabelsDefaultLabels,
+		nil,
 	)
 	descResourceQuota = prometheus.NewDesc(
 		"kube_resourcequota",
 		"Information about resource quota.",
-		[]string{
-			"resourcequota",
-			"namespace",
+		append(descResourceQuotaLabelsDefaultLabels,
 			"resource",
 			"type",
-		}, nil,
+		), nil,
 	)
 )
 

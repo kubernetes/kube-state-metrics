@@ -35,30 +35,37 @@ var (
 	descEndpointInfo = prometheus.NewDesc(
 		"kube_endpoint_info",
 		"Information about endpoint.",
-		[]string{"namespace", "endpoint"}, nil,
+		descEndpointLabelsDefaultLabels,
+		nil,
 	)
 
 	descEndpointCreated = prometheus.NewDesc(
 		"kube_endpoint_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "endpoint"}, nil,
+		descEndpointLabelsDefaultLabels,
+		nil,
 	)
 
 	descEndpointLabels = prometheus.NewDesc(
 		descEndpointLabelsName,
 		descEndpointLabelsHelp,
-		descEndpointLabelsDefaultLabels, nil,
+		descEndpointLabelsDefaultLabels,
+		nil,
 	)
 
 	descEndpointAddressAvailable = prometheus.NewDesc(
 		"kube_endpoint_address_available",
 		"Number of addresses available in endpoint.",
-		[]string{"namespace", "endpoint"}, nil)
+		descEndpointLabelsDefaultLabels,
+		nil,
+	)
 
 	descEndpointAddressNotReady = prometheus.NewDesc(
 		"kube_endpoint_address_not_ready",
 		"Number of addresses not ready in endpoint",
-		[]string{"namespace", "endpoint"}, nil)
+		descEndpointLabelsDefaultLabels,
+		nil,
+	)
 )
 
 type EndpointLister func() ([]v1.Endpoints, error)

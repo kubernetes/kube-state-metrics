@@ -116,6 +116,9 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 		return nil, err
 	}
 
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
+
 	kubeClient, err := clientset.NewForConfig(config)
 	if err != nil {
 		return nil, err

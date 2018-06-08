@@ -27,45 +27,55 @@ import (
 )
 
 var (
+	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
+
 	descReplicationControllerCreated = prometheus.NewDesc(
 		"kube_replicationcontroller_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 	descReplicationControllerStatusReplicas = prometheus.NewDesc(
 		"kube_replicationcontroller_status_replicas",
 		"The number of replicas per ReplicationController.",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 	descReplicationControllerStatusFullyLabeledReplicas = prometheus.NewDesc(
 		"kube_replicationcontroller_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicationController.",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 	descReplicationControllerStatusReadyReplicas = prometheus.NewDesc(
 		"kube_replicationcontroller_status_ready_replicas",
 		"The number of ready replicas per ReplicationController.",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 	descReplicationControllerStatusAvailableReplicas = prometheus.NewDesc(
 		"kube_replicationcontroller_status_available_replicas",
 		"The number of available replicas per ReplicationController.",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 	descReplicationControllerStatusObservedGeneration = prometheus.NewDesc(
 		"kube_replicationcontroller_status_observed_generation",
 		"The generation observed by the ReplicationController controller.",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 	descReplicationControllerSpecReplicas = prometheus.NewDesc(
 		"kube_replicationcontroller_spec_replicas",
 		"Number of desired pods for a ReplicationController.",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 	descReplicationControllerMetadataGeneration = prometheus.NewDesc(
 		"kube_replicationcontroller_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
-		[]string{"namespace", "replicationcontroller"}, nil,
+		descReplicationControllerLabelsDefaultLabels,
+		nil,
 	)
 )
 

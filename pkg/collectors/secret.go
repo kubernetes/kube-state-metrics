@@ -33,31 +33,36 @@ var (
 	descSecretInfo = prometheus.NewDesc(
 		"kube_secret_info",
 		"Information about secret.",
-		[]string{"namespace", "secret"}, nil,
+		descSecretLabelsDefaultLabels,
+		nil,
 	)
 
 	descSecretType = prometheus.NewDesc(
 		"kube_secret_type",
 		"Type about secret.",
-		[]string{"namespace", "secret", "type"}, nil,
+		append(descSecretLabelsDefaultLabels, "type"),
+		nil,
 	)
 
 	descSecretLabels = prometheus.NewDesc(
 		descSecretLabelsName,
 		descSecretLabelsHelp,
-		descSecretLabelsDefaultLabels, nil,
+		descSecretLabelsDefaultLabels,
+		nil,
 	)
 
 	descSecretCreated = prometheus.NewDesc(
 		"kube_secret_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "secret"}, nil,
+		descSecretLabelsDefaultLabels,
+		nil,
 	)
 
 	descSecretMetadataResourceVersion = prometheus.NewDesc(
 		"kube_secret_metadata_resource_version",
 		"Resource version representing a specific version of secret.",
-		[]string{"namespace", "secret", "resource_version"}, nil,
+		append(descSecretLabelsDefaultLabels, "resource_version"),
+		nil,
 	)
 )
 

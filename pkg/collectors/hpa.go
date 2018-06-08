@@ -34,37 +34,44 @@ var (
 	descHorizontalPodAutoscalerMetadataGeneration = prometheus.NewDesc(
 		"kube_hpa_metadata_generation",
 		"The generation observed by the HorizontalPodAutoscaler controller.",
-		[]string{"namespace", "hpa"}, nil,
+		descHorizontalPodAutoscalerLabelsDefaultLabels,
+		nil,
 	)
 	descHorizontalPodAutoscalerSpecMaxReplicas = prometheus.NewDesc(
 		"kube_hpa_spec_max_replicas",
 		"Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
-		[]string{"namespace", "hpa"}, nil,
+		descHorizontalPodAutoscalerLabelsDefaultLabels,
+		nil,
 	)
 	descHorizontalPodAutoscalerSpecMinReplicas = prometheus.NewDesc(
 		"kube_hpa_spec_min_replicas",
 		"Lower limit for the number of pods that can be set by the autoscaler, default 1.",
-		[]string{"namespace", "hpa"}, nil,
+		descHorizontalPodAutoscalerLabelsDefaultLabels,
+		nil,
 	)
 	descHorizontalPodAutoscalerStatusCurrentReplicas = prometheus.NewDesc(
 		"kube_hpa_status_current_replicas",
 		"Current number of replicas of pods managed by this autoscaler.",
-		[]string{"namespace", "hpa"}, nil,
+		descHorizontalPodAutoscalerLabelsDefaultLabels,
+		nil,
 	)
 	descHorizontalPodAutoscalerStatusDesiredReplicas = prometheus.NewDesc(
 		"kube_hpa_status_desired_replicas",
 		"Desired number of replicas of pods managed by this autoscaler.",
-		[]string{"namespace", "hpa"}, nil,
+		descHorizontalPodAutoscalerLabelsDefaultLabels,
+		nil,
 	)
 	descHorizontalPodAutoscalerLabels = prometheus.NewDesc(
 		descHorizontalPodAutoscalerLabelsName,
 		descHorizontalPodAutoscalerLabelsHelp,
-		descHorizontalPodAutoscalerLabelsDefaultLabels, nil,
+		descHorizontalPodAutoscalerLabelsDefaultLabels,
+		nil,
 	)
 	descHorizontalPodAutoscalerCondition = prometheus.NewDesc(
 		"kube_hpa_status_condition",
 		"The condition of this autoscaler.",
-		[]string{"namespace", "hpa", "condition", "status"}, nil,
+		append(descHorizontalPodAutoscalerLabelsDefaultLabels, "condition", "status"),
+		nil,
 	)
 )
 

@@ -26,22 +26,19 @@ import (
 )
 
 var (
-	descLimitRange = prometheus.NewDesc(
+	descLimitRangeLabelsDefaultLabels = []string{"limitrange", "namespace"}
+	descLimitRange                    = prometheus.NewDesc(
 		"kube_limitrange",
 		"Information about limit range.",
-		[]string{
-			"limitrange",
-			"namespace",
-			"resource",
-			"type",
-			"constraint",
-		}, nil,
+		append(descLimitRangeLabelsDefaultLabels, "resource", "type", "constraint"),
+		nil,
 	)
 
 	descLimitRangeCreated = prometheus.NewDesc(
 		"kube_limitrange_created",
 		"Unix creation timestamp",
-		[]string{"limitrange", "namespace"}, nil,
+		descLimitRangeLabelsDefaultLabels,
+		nil,
 	)
 )
 

@@ -45,37 +45,44 @@ var (
 	descCronJobInfo = prometheus.NewDesc(
 		"kube_cronjob_info",
 		"Info about cronjob.",
-		[]string{"namespace", "cronjob", "schedule", "concurrency_policy"}, nil,
+		append(descCronJobLabelsDefaultLabels, "schedule", "concurrency_policy"),
+		nil,
 	)
 	descCronJobCreated = prometheus.NewDesc(
 		"kube_cronjob_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "cronjob"}, nil,
+		descCronJobLabelsDefaultLabels,
+		nil,
 	)
 	descCronJobStatusActive = prometheus.NewDesc(
 		"kube_cronjob_status_active",
 		"Active holds pointers to currently running jobs.",
-		[]string{"namespace", "cronjob"}, nil,
+		descCronJobLabelsDefaultLabels,
+		nil,
 	)
 	descCronJobStatusLastScheduleTime = prometheus.NewDesc(
 		"kube_cronjob_status_last_schedule_time",
 		"LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
-		[]string{"namespace", "cronjob"}, nil,
+		descCronJobLabelsDefaultLabels,
+		nil,
 	)
 	descCronJobSpecSuspend = prometheus.NewDesc(
 		"kube_cronjob_spec_suspend",
 		"Suspend flag tells the controller to suspend subsequent executions.",
-		[]string{"namespace", "cronjob"}, nil,
+		descCronJobLabelsDefaultLabels,
+		nil,
 	)
 	descCronJobSpecStartingDeadlineSeconds = prometheus.NewDesc(
 		"kube_cronjob_spec_starting_deadline_seconds",
 		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
-		[]string{"namespace", "cronjob"}, nil,
+		descCronJobLabelsDefaultLabels,
+		nil,
 	)
 	descCronJobNextScheduledTime = prometheus.NewDesc(
 		"kube_cronjob_next_schedule_time",
 		"Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
-		[]string{"namespace", "cronjob"}, nil,
+		descCronJobLabelsDefaultLabels,
+		nil,
 	)
 )
 

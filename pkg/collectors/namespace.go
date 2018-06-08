@@ -38,28 +38,26 @@ var (
 	descNamespaceCreated = prometheus.NewDesc(
 		"kube_namespace_created",
 		"Unix creation timestamp",
-		[]string{"namespace"}, nil,
+		descNamespaceLabelsDefaultLabels,
+		nil,
 	)
-
 	descNamespaceLabels = prometheus.NewDesc(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
-		descNamespaceLabelsDefaultLabels, nil,
+		descNamespaceLabelsDefaultLabels,
+		nil,
 	)
-
 	descNamespaceAnnotations = prometheus.NewDesc(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,
-		descNamespaceAnnotationsDefaultLabels, nil,
+		descNamespaceAnnotationsDefaultLabels,
+		nil,
 	)
-
 	descNamespacePhase = prometheus.NewDesc(
 		"kube_namespace_status_phase",
 		"kubernetes namespace status phase.",
-		[]string{
-			"namespace",
-			"phase",
-		}, nil,
+		append(descNamespaceLabelsDefaultLabels, "phase"),
+		nil,
 	)
 )
 

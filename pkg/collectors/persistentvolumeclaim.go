@@ -33,35 +33,26 @@ var (
 	descPersistentVolumeClaimLabels = prometheus.NewDesc(
 		descPersistentVolumeClaimLabelsName,
 		descPersistentVolumeClaimLabelsHelp,
-		descPersistentVolumeClaimLabelsDefaultLabels, nil,
+		descPersistentVolumeClaimLabelsDefaultLabels,
+		nil,
 	)
-
 	descPersistentVolumeClaimInfo = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_info",
 		"Information about persistent volume claim.",
-		[]string{
-			"namespace",
-			"persistentvolumeclaim",
-			"storageclass",
-			"volumename",
-		}, nil,
+		append(descPersistentVolumeClaimLabelsDefaultLabels, "storageclass", "volumename"),
+		nil,
 	)
 	descPersistentVolumeClaimStatusPhase = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_status_phase",
 		"The phase the persistent volume claim is currently in.",
-		[]string{
-			"namespace",
-			"persistentvolumeclaim",
-			"phase",
-		}, nil,
+		append(descPersistentVolumeClaimLabelsDefaultLabels, "phase"),
+		nil,
 	)
 	descPersistentVolumeClaimResourceRequestsStorage = prometheus.NewDesc(
 		"kube_persistentvolumeclaim_resource_requests_storage_bytes",
 		"The capacity of storage requested by the persistent volume claim.",
-		[]string{
-			"namespace",
-			"persistentvolumeclaim",
-		}, nil,
+		descPersistentVolumeClaimLabelsDefaultLabels,
+		nil,
 	)
 )
 

@@ -33,25 +33,29 @@ var (
 	descServiceInfo = prometheus.NewDesc(
 		"kube_service_info",
 		"Information about service.",
-		[]string{"namespace", "service", "cluster_ip"}, nil,
+		append(descServiceLabelsDefaultLabels, "cluster_ip"),
+		nil,
 	)
 
 	descServiceCreated = prometheus.NewDesc(
 		"kube_service_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "service"}, nil,
+		descServiceLabelsDefaultLabels,
+		nil,
 	)
 
 	descServiceSpecType = prometheus.NewDesc(
 		"kube_service_spec_type",
 		"Type about service.",
-		[]string{"namespace", "service", "type"}, nil,
+		append(descServiceLabelsDefaultLabels, "type"),
+		nil,
 	)
 
 	descServiceLabels = prometheus.NewDesc(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
-		descServiceLabelsDefaultLabels, nil,
+		descServiceLabelsDefaultLabels,
+		nil,
 	)
 )
 

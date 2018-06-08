@@ -26,40 +26,48 @@ import (
 )
 
 var (
-	descReplicaSetCreated = prometheus.NewDesc(
+	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
+	descReplicaSetCreated             = prometheus.NewDesc(
 		"kube_replicaset_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "replicaset"}, nil,
+		descReplicaSetLabelsDefaultLabels,
+		nil,
 	)
 	descReplicaSetStatusReplicas = prometheus.NewDesc(
 		"kube_replicaset_status_replicas",
 		"The number of replicas per ReplicaSet.",
-		[]string{"namespace", "replicaset"}, nil,
+		descReplicaSetLabelsDefaultLabels,
+		nil,
 	)
 	descReplicaSetStatusFullyLabeledReplicas = prometheus.NewDesc(
 		"kube_replicaset_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicaSet.",
-		[]string{"namespace", "replicaset"}, nil,
+		descReplicaSetLabelsDefaultLabels,
+		nil,
 	)
 	descReplicaSetStatusReadyReplicas = prometheus.NewDesc(
 		"kube_replicaset_status_ready_replicas",
 		"The number of ready replicas per ReplicaSet.",
-		[]string{"namespace", "replicaset"}, nil,
+		descReplicaSetLabelsDefaultLabels,
+		nil,
 	)
 	descReplicaSetStatusObservedGeneration = prometheus.NewDesc(
 		"kube_replicaset_status_observed_generation",
 		"The generation observed by the ReplicaSet controller.",
-		[]string{"namespace", "replicaset"}, nil,
+		descReplicaSetLabelsDefaultLabels,
+		nil,
 	)
 	descReplicaSetSpecReplicas = prometheus.NewDesc(
 		"kube_replicaset_spec_replicas",
 		"Number of desired pods for a ReplicaSet.",
-		[]string{"namespace", "replicaset"}, nil,
+		descReplicaSetLabelsDefaultLabels,
+		nil,
 	)
 	descReplicaSetMetadataGeneration = prometheus.NewDesc(
 		"kube_replicaset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
-		[]string{"namespace", "replicaset"}, nil,
+		descReplicaSetLabelsDefaultLabels,
+		nil,
 	)
 )
 

@@ -33,22 +33,20 @@ var (
 	descPersistentVolumeLabels = prometheus.NewDesc(
 		descPersistentVolumeLabelsName,
 		descPersistentVolumeLabelsHelp,
-		descPersistentVolumeLabelsDefaultLabels, nil,
+		descPersistentVolumeLabelsDefaultLabels,
+		nil,
 	)
-
 	descPersistentVolumeStatusPhase = prometheus.NewDesc(
 		"kube_persistentvolume_status_phase",
 		"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
-		[]string{
-			"persistentvolume",
-			"phase",
-		}, nil,
+		append(descPersistentVolumeLabelsDefaultLabels, "phase"),
+		nil,
 	)
-
 	descPersistentVolumeInfo = prometheus.NewDesc(
 		"kube_persistentvolume_info",
 		"Information about persistentvolume.",
-		[]string{"persistentvolume", "storageclass"}, nil,
+		append(descPersistentVolumeLabelsDefaultLabels, "storageclass"),
+		nil,
 	)
 )
 

@@ -41,169 +41,170 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		[]string{"namespace", "pod", "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"}, nil,
+		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"),
+		nil,
 	)
-
 	descPodStartTime = prometheus.NewDesc(
 		"kube_pod_start_time",
 		"Start time in unix timestamp for a pod.",
-		[]string{"namespace", "pod"}, nil,
+		descPodLabelsDefaultLabels,
+		nil,
 	)
-
 	descPodCompletionTime = prometheus.NewDesc(
 		"kube_pod_completion_time",
 		"Completion time in unix timestamp for a pod.",
-		[]string{"namespace", "pod"}, nil,
+		descPodLabelsDefaultLabels,
+		nil,
 	)
-
 	descPodOwner = prometheus.NewDesc(
 		"kube_pod_owner",
 		"Information about the Pod's owner.",
-		[]string{"namespace", "pod", "owner_kind", "owner_name", "owner_is_controller"}, nil,
+		append(descPodLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
+		nil,
 	)
-
 	descPodLabels = prometheus.NewDesc(
 		descPodLabelsName,
 		descPodLabelsHelp,
-		descPodLabelsDefaultLabels, nil,
+		descPodLabelsDefaultLabels,
+		nil,
 	)
-
 	descPodCreated = prometheus.NewDesc(
 		"kube_pod_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "pod"}, nil,
+		descPodLabelsDefaultLabels,
+		nil,
 	)
-
 	descPodStatusScheduledTime = prometheus.NewDesc(
 		"kube_pod_status_scheduled_time",
 		"Unix timestamp when pod moved into scheduled status",
-		[]string{"namespace", "pod"}, nil,
+		descPodLabelsDefaultLabels,
+		nil,
 	)
-
 	descPodStatusPhase = prometheus.NewDesc(
 		"kube_pod_status_phase",
 		"The pods current phase.",
-		[]string{"namespace", "pod", "phase"}, nil,
+		append(descPodLabelsDefaultLabels, "phase"),
+		nil,
 	)
-
 	descPodStatusReady = prometheus.NewDesc(
 		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
-		[]string{"namespace", "pod", "condition"}, nil,
+		append(descPodLabelsDefaultLabels, "condition"),
+		nil,
 	)
-
 	descPodStatusScheduled = prometheus.NewDesc(
 		"kube_pod_status_scheduled",
 		"Describes the status of the scheduling process for the pod.",
-		[]string{"namespace", "pod", "condition"}, nil,
+		append(descPodLabelsDefaultLabels, "condition"),
+		nil,
 	)
-
 	descPodContainerInfo = prometheus.NewDesc(
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
-		[]string{"namespace", "pod", "container", "image", "image_id", "container_id"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "image", "image_id", "container_id"),
+		nil,
 	)
-
 	descPodContainerStatusWaiting = prometheus.NewDesc(
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
 	)
-
 	descPodContainerStatusWaitingReason = prometheus.NewDesc(
 		"kube_pod_container_status_waiting_reason",
 		"Describes the reason the container is currently in waiting state.",
-		[]string{"namespace", "pod", "container", "reason"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "reason"),
+		nil,
 	)
-
 	descPodContainerStatusRunning = prometheus.NewDesc(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
 	)
-
 	descPodContainerStatusTerminated = prometheus.NewDesc(
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
-		[]string{"namespace", "pod", "container"}, nil,
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
 	)
-
 	descPodContainerStatusTerminatedReason = prometheus.NewDesc(
 		"kube_pod_container_status_terminated_reason",
 		"Describes the reason the container is currently in terminated state.",
-		[]string{"namespace", "pod", "container", "reason"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "reason"),
+		nil,
 	)
-
 	descPodContainerStatusReady = prometheus.NewDesc(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
-		[]string{"namespace", "pod", "container"}, nil,
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
 	)
-
 	descPodContainerStatusRestarts = prometheus.NewDesc(
 		"kube_pod_container_status_restarts_total",
 		"The number of container restarts per container.",
-		[]string{"namespace", "pod", "container"}, nil,
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
 	)
-
 	descPodContainerResourceRequests = prometheus.NewDesc(
 		"kube_pod_container_resource_requests",
 		"The number of requested request resource by a container.",
-		[]string{"namespace", "pod", "container", "node", "resource", "unit"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node", "resource", "unit"),
+		nil,
 	)
-
 	descPodContainerResourceLimits = prometheus.NewDesc(
 		"kube_pod_container_resource_limits",
 		"The number of requested limit resource by a container.",
-		[]string{"namespace", "pod", "container", "node", "resource", "unit"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node", "resource", "unit"),
+		nil,
 	)
-
-	descPodContainerResourceRequestsCpuCores = prometheus.NewDesc(
+	descPodContainerResourceRequestsCPUCores = prometheus.NewDesc(
 		"kube_pod_container_resource_requests_cpu_cores",
 		"The number of requested cpu cores by a container.",
-		[]string{"namespace", "pod", "container", "node"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
 	)
-
 	descPodContainerResourceRequestsMemoryBytes = prometheus.NewDesc(
 		"kube_pod_container_resource_requests_memory_bytes",
 		"The number of requested memory bytes  by a container.",
-		[]string{"namespace", "pod", "container", "node"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
 	)
-
-	descPodContainerResourceLimitsCpuCores = prometheus.NewDesc(
+	descPodContainerResourceLimitsCPUCores = prometheus.NewDesc(
 		"kube_pod_container_resource_limits_cpu_cores",
 		"The limit on cpu cores to be used by a container.",
-		[]string{"namespace", "pod", "container", "node"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
 	)
-
 	descPodContainerResourceLimitsMemoryBytes = prometheus.NewDesc(
 		"kube_pod_container_resource_limits_memory_bytes",
 		"The limit on memory to be used by a container in bytes.",
-		[]string{"namespace", "pod", "container", "node"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
 	)
-
 	descPodContainerResourceRequestsNvidiaGPUDevices = prometheus.NewDesc(
 		"kube_pod_container_resource_requests_nvidia_gpu_devices",
 		"The number of requested gpu devices by a container.",
-		[]string{"namespace", "pod", "container", "node"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
 	)
-
 	descPodContainerResourceLimitsNvidiaGPUDevices = prometheus.NewDesc(
 		"kube_pod_container_resource_limits_nvidia_gpu_devices",
 		"The limit on gpu devices to be used by a container.",
-		[]string{"namespace", "pod", "container", "node"}, nil,
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
 	)
-
 	descPodSpecVolumesPersistentVolumeClaimsInfo = prometheus.NewDesc(
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
 		"Information about persistentvolumeclaim volumes in a pod.",
-		[]string{"namespace", "pod", "volume", "persistentvolumeclaim"}, nil,
+		append(descPodLabelsDefaultLabels, "volume", "persistentvolumeclaim"),
+		nil,
 	)
-
 	descPodSpecVolumesPersistentVolumeClaimsReadOnly = prometheus.NewDesc(
 		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 		"Describes whether a persistentvolumeclaim is mounted read only.",
-		[]string{"namespace", "pod", "volume", "persistentvolumeclaim"}, nil,
+		append(descPodLabelsDefaultLabels, "volume", "persistentvolumeclaim"),
+		nil,
 	)
 )
 
@@ -268,9 +269,9 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerResourceLimits
 
 	if !pc.opts.DisablePodNonGenericResourceMetrics {
-		ch <- descPodContainerResourceRequestsCpuCores
+		ch <- descPodContainerResourceRequestsCPUCores
 		ch <- descPodContainerResourceRequestsMemoryBytes
-		ch <- descPodContainerResourceLimitsCpuCores
+		ch <- descPodContainerResourceLimitsCPUCores
 		ch <- descPodContainerResourceLimitsMemoryBytes
 		ch <- descPodContainerResourceRequestsNvidiaGPUDevices
 		ch <- descPodContainerResourceLimitsNvidiaGPUDevices
@@ -426,7 +427,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			lim := c.Resources.Limits
 
 			if cpu, ok := req[v1.ResourceCPU]; ok {
-				addGauge(descPodContainerResourceRequestsCpuCores, float64(cpu.MilliValue())/1000,
+				addGauge(descPodContainerResourceRequestsCPUCores, float64(cpu.MilliValue())/1000,
 					c.Name, nodeName)
 			}
 			if mem, ok := req[v1.ResourceMemory]; ok {
@@ -439,7 +440,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			}
 
 			if cpu, ok := lim[v1.ResourceCPU]; ok {
-				addGauge(descPodContainerResourceLimitsCpuCores, float64(cpu.MilliValue())/1000,
+				addGauge(descPodContainerResourceLimitsCPUCores, float64(cpu.MilliValue())/1000,
 					c.Name, nodeName)
 			}
 

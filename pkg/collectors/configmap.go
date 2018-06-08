@@ -26,22 +26,27 @@ import (
 )
 
 var (
+	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
+
 	descConfigMapInfo = prometheus.NewDesc(
 		"kube_configmap_info",
 		"Information about configmap.",
-		[]string{"namespace", "configmap"}, nil,
+		descConfigMapLabelsDefaultLabels,
+		nil,
 	)
 
 	descConfigMapCreated = prometheus.NewDesc(
 		"kube_configmap_created",
 		"Unix creation timestamp",
-		[]string{"namespace", "configmap"}, nil,
+		descConfigMapLabelsDefaultLabels,
+		nil,
 	)
 
 	descConfigMapMetadataResourceVersion = prometheus.NewDesc(
 		"kube_configmap_metadata_resource_version",
 		"Resource version representing a specific version of the configmap.",
-		[]string{"namespace", "configmap", "resource_version"}, nil,
+		append(descConfigMapLabelsDefaultLabels, "resource_version"),
+		nil,
 	)
 )
 

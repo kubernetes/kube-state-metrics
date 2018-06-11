@@ -442,6 +442,10 @@ func TestPodCollector(t *testing.T) {
 						PodIP:  "2.3.4.5",
 						ContainerStatuses: []v1.ContainerStatus{
 							v1.ContainerStatus{
+								Name:        "container2_1",
+								Image:       "k8s.gcr.io/hyperkube2",
+								ImageID:     "docker://sha256:bbb",
+								ContainerID: "docker://cd456",
 								State: v1.ContainerState{
 									Terminated: &v1.ContainerStateTerminated{
 										FinishedAt: metav1.Time{
@@ -451,6 +455,10 @@ func TestPodCollector(t *testing.T) {
 								},
 							},
 							v1.ContainerStatus{
+								Name:        "container2_2",
+								Image:       "k8s.gcr.io/hyperkube2",
+								ImageID:     "docker://sha256:bbb",
+								ContainerID: "docker://cd456",
 								State: v1.ContainerState{
 									Terminated: &v1.ContainerStateTerminated{
 										FinishedAt: metav1.Time{
@@ -460,6 +468,10 @@ func TestPodCollector(t *testing.T) {
 								},
 							},
 							v1.ContainerStatus{
+								Name:        "container2_3",
+								Image:       "k8s.gcr.io/hyperkube2",
+								ImageID:     "docker://sha256:bbb",
+								ContainerID: "docker://cd456",
 								State: v1.ContainerState{
 									Terminated: &v1.ContainerStateTerminated{
 										FinishedAt: metav1.Time{

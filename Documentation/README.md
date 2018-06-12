@@ -4,6 +4,14 @@ This documentation is intended to be a complete reflection of the current state 
 
 Any contribution to improving this documentation or adding sample usages will be appreciated.
 
+Stages about metrics are grouped into three categoriges：
+
+| Stage | Description |
+| ----------- | ----------- |
+| EXPERIMENTAL | Metrics which are normally corresponds to Kubernetes API object alpha status or spec fields and can be changed at any time. |
+| STABLE       | Metrics which should be very few backwards-incompatible changes outside of major version updates. |
+| DEPRECATED   | Metrics which will be removed once the deprecation timeline is met. |
+    
 Per group of metrics there is one file for each metrics. See each file for specific documentation about the exposed metrics:
 
 * [CronJob Metrics](cronjob-metrics.md)

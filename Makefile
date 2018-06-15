@@ -18,7 +18,7 @@ gofmtcheck:
 
 doccheck:
 	@echo "- Checking if documentation is up to date..."
-	@grep -hoE '(kube_[^ |]+)' Documentation/* | sort -u > documented_metrics
+	@grep -hoE '(kube_[^ |]+)' Documentation/* --exclude=README.md| sort -u > documented_metrics
 	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' pkg/collectors/*_test.go | sort -u > tested_metrics
 	@diff -u0 tested_metrics documented_metrics || (echo "ERROR: Metrics with - are present in tests but missing in documentation, metrics with + are documented but not tested."; exit 1)
 	@echo OK

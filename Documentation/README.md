@@ -4,6 +4,13 @@ This documentation is intended to be a complete reflection of the current state 
 
 Any contribution to improving this documentation or adding sample usages will be appreciated.
 
+## Table of Contents
+
+- [Metrics Stages](#metrics-stages)
+- [Metrics Deprecation](#metrics-deprecation)
+- [Exposed Metrics](#exposed-metrics)
+
+## Metrics Stages
 Stages about metrics are grouped into three categoriges：
 
 | Stage | Description |
@@ -12,7 +19,7 @@ Stages about metrics are grouped into three categoriges：
 | STABLE       | Metrics which should be very few backwards-incompatible changes outside of major version updates. |
 | DEPRECATED   | Metrics which will be removed once the deprecation timeline is met. |
 
-### Metrics Deprecation
+## Metrics Deprecation
 * **The following non-generic resource metrics for pods are marked deprecated. They will be removed in kube-state-metrics v2.0.0.**
 `kube_pod_container_resource_requests` and `kube_pod_container_resource_limits` are the replacements with `resource` labels
 representing the resource name and `unit` labels representing the resource unit.
@@ -34,7 +41,7 @@ representing the resource name and `unit` labels representing the resource unit.
   * kube_node_status_allocatable_nvidia_gpu_cards
   * kube_node_status_allocatable_memory_bytes
 
-### Exposed Metrics 
+## Exposed Metrics 
 Per group of metrics there is one file for each metrics. See each file for specific documentation about the exposed metrics:
 
 * [CronJob Metrics](cronjob-metrics.md)

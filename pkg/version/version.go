@@ -15,6 +15,8 @@ package version
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 )
 
@@ -34,6 +36,12 @@ type Version struct {
 	GoVersion string
 	Compiler  string
 	Platform  string
+}
+
+func (v Version) String() string {
+	return fmt.Sprintf("%s/%s (%s/%s) kube-state-metrics/%s",
+		filepath.Base(os.Args[0]), v.Release,
+		runtime.GOOS, runtime.GOARCH, v.GitCommit)
 }
 
 // GetVersion returns kube-state-metrics version

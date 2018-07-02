@@ -55,14 +55,14 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most 5 kube-state-metrics releases will be recorded below.
 
-| kube-state-metrics | client-go | **Kubernetes 1.6** | **Kubernetes 1.7** | **Kubernetes 1.8** | **Kubernetes 1.9** |
+| kube-state-metrics | client-go | **Kubernetes 1.8** | **Kubernetes 1.9** | **Kubernetes 1.10** | **Kubernetes 1.11** |
 |--------------------|-----------|--------------------|--------------------|--------------------|--------------------|
 | **v1.0.x** |  4.0.0-beta.0     |         ✓          |         ✓          |         -          |         -          |
 | **v1.1.0** |  release-5.0      |         ✓          |         ✓          |         ✓          |         -          |
 | **v1.2.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.3.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.3.1** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
-| **master** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
+| **master** |  v8.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
 
@@ -96,7 +96,7 @@ additional metrics!
 >	* kube_node_status_capacity_nvidia_gpu_cards
 >	* kube_node_status_allocatable_nvidia_gpu_cards
 >
->	are deprecated and will be completely removed when the Kubernetes accelerator feature support is removed in version v1.11. (Kubernetes accelerator support is already deprecated in v1.10).
+>	are removed in kube-state-metrics v1.4.0.
 >
 > Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.

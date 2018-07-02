@@ -182,18 +182,6 @@ var (
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodContainerResourceRequestsNvidiaGPUDevices = prometheus.NewDesc(
-		"kube_pod_container_resource_requests_nvidia_gpu_devices",
-		"The number of requested gpu devices by a container.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
-		nil,
-	)
-	descPodContainerResourceLimitsNvidiaGPUDevices = prometheus.NewDesc(
-		"kube_pod_container_resource_limits_nvidia_gpu_devices",
-		"The limit on gpu devices to be used by a container.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
-		nil,
-	)
 	descPodSpecVolumesPersistentVolumeClaimsInfo = prometheus.NewDesc(
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
 		"Information about persistentvolumeclaim volumes in a pod.",
@@ -273,8 +261,6 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 		ch <- descPodContainerResourceRequestsMemoryBytes
 		ch <- descPodContainerResourceLimitsCPUCores
 		ch <- descPodContainerResourceLimitsMemoryBytes
-		ch <- descPodContainerResourceRequestsNvidiaGPUDevices
-		ch <- descPodContainerResourceLimitsNvidiaGPUDevices
 	}
 }
 
@@ -435,10 +421,6 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 					c.Name, nodeName)
 			}
 
-			if gpu, ok := req[v1.ResourceNvidiaGPU]; ok {
-				addGauge(descPodContainerResourceRequestsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
-			}
-
 			if cpu, ok := lim[v1.ResourceCPU]; ok {
 				addGauge(descPodContainerResourceLimitsCPUCores, float64(cpu.MilliValue())/1000,
 					c.Name, nodeName)
@@ -447,10 +429,6 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			if mem, ok := lim[v1.ResourceMemory]; ok {
 				addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
 					c.Name, nodeName)
-			}
-
-			if gpu, ok := lim[v1.ResourceNvidiaGPU]; ok {
-				addGauge(descPodContainerResourceLimitsNvidiaGPUDevices, float64(gpu.Value()), c.Name, nodeName)
 			}
 		}
 	}
@@ -471,9 +449,6 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			case v1.ResourceMemory:
 				addGauge(descPodContainerResourceRequests, float64(val.Value()),
 					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-			case v1.ResourceNvidiaGPU:
-				addGauge(descPodContainerResourceRequests, float64(val.Value()),
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 			default:
 				if helper.IsHugePageResourceName(resourceName) {
 					addGauge(descPodContainerResourceRequests, float64(val.Value()),
@@ -498,9 +473,6 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			case v1.ResourceMemory:
 				addGauge(descPodContainerResourceLimits, float64(val.Value()),
 					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-			case v1.ResourceNvidiaGPU:
-				addGauge(descPodContainerResourceLimits, float64(val.Value()),
-					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 			default:
 				if helper.IsHugePageResourceName(resourceName) {
 					addGauge(descPodContainerResourceLimits, float64(val.Value()),

@@ -93,10 +93,6 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_resource_limits_cpu_cores gauge
 		# HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
 		# TYPE kube_pod_container_resource_limits_memory_bytes gauge
-		# HELP kube_pod_container_resource_requests_nvidia_gpu_devices The number of requested gpu devices by a container.
-		# TYPE kube_pod_container_resource_requests_nvidia_gpu_devices gauge
-		# HELP kube_pod_container_resource_limits_nvidia_gpu_devices The limit on gpu devices to be used by a container.
-		# TYPE kube_pod_container_resource_limits_nvidia_gpu_devices gauge
 		# HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 		# TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 		# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
@@ -655,7 +651,6 @@ func TestPodCollector(t *testing.T) {
 									Requests: map[v1.ResourceName]resource.Quantity{
 										v1.ResourceCPU:                    resource.MustParse("200m"),
 										v1.ResourceMemory:                 resource.MustParse("100M"),
-										v1.ResourceNvidiaGPU:              resource.MustParse("3"),
 										v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
 										v1.ResourceStorage:                resource.MustParse("400M"),
 										v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
@@ -663,7 +658,6 @@ func TestPodCollector(t *testing.T) {
 									Limits: map[v1.ResourceName]resource.Quantity{
 										v1.ResourceCPU:                    resource.MustParse("200m"),
 										v1.ResourceMemory:                 resource.MustParse("100M"),
-										v1.ResourceNvidiaGPU:              resource.MustParse("3"),
 										v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
 										v1.ResourceStorage:                resource.MustParse("400M"),
 										v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
@@ -674,14 +668,12 @@ func TestPodCollector(t *testing.T) {
 								Name: "pod1_con2",
 								Resources: v1.ResourceRequirements{
 									Requests: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceCPU:       resource.MustParse("300m"),
-										v1.ResourceMemory:    resource.MustParse("200M"),
-										v1.ResourceNvidiaGPU: resource.MustParse("2"),
+										v1.ResourceCPU:    resource.MustParse("300m"),
+										v1.ResourceMemory: resource.MustParse("200M"),
 									},
 									Limits: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceCPU:       resource.MustParse("300m"),
-										v1.ResourceMemory:    resource.MustParse("200M"),
-										v1.ResourceNvidiaGPU: resource.MustParse("2"),
+										v1.ResourceCPU:    resource.MustParse("300m"),
+										v1.ResourceMemory: resource.MustParse("200M"),
 									},
 								},
 							},
@@ -699,14 +691,12 @@ func TestPodCollector(t *testing.T) {
 								Name: "pod2_con1",
 								Resources: v1.ResourceRequirements{
 									Requests: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceCPU:       resource.MustParse("400m"),
-										v1.ResourceMemory:    resource.MustParse("300M"),
-										v1.ResourceNvidiaGPU: resource.MustParse("3"),
+										v1.ResourceCPU:    resource.MustParse("400m"),
+										v1.ResourceMemory: resource.MustParse("300M"),
 									},
 									Limits: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceCPU:       resource.MustParse("400m"),
-										v1.ResourceMemory:    resource.MustParse("300M"),
-										v1.ResourceNvidiaGPU: resource.MustParse("3"),
+										v1.ResourceCPU:    resource.MustParse("400m"),
+										v1.ResourceMemory: resource.MustParse("300M"),
 									},
 								},
 							},
@@ -714,14 +704,12 @@ func TestPodCollector(t *testing.T) {
 								Name: "pod2_con2",
 								Resources: v1.ResourceRequirements{
 									Requests: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceCPU:       resource.MustParse("500m"),
-										v1.ResourceMemory:    resource.MustParse("400M"),
-										v1.ResourceNvidiaGPU: resource.MustParse("5"),
+										v1.ResourceCPU:    resource.MustParse("500m"),
+										v1.ResourceMemory: resource.MustParse("400M"),
 									},
 									Limits: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceCPU:       resource.MustParse("500m"),
-										v1.ResourceMemory:    resource.MustParse("400M"),
-										v1.ResourceNvidiaGPU: resource.MustParse("5"),
+										v1.ResourceCPU:    resource.MustParse("500m"),
+										v1.ResourceMemory: resource.MustParse("400M"),
 									},
 								},
 							},
@@ -742,10 +730,6 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_resource_requests_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
 				kube_pod_container_resource_requests_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
 				kube_pod_container_resource_requests_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
-				kube_pod_container_resource_requests_nvidia_gpu_devices{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 3
-				kube_pod_container_resource_requests_nvidia_gpu_devices{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2
-				kube_pod_container_resource_requests_nvidia_gpu_devices{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3
-				kube_pod_container_resource_requests_nvidia_gpu_devices{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 5
 				kube_pod_container_resource_limits_cpu_cores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 0.2
 				kube_pod_container_resource_limits_cpu_cores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 0.3
 				kube_pod_container_resource_limits_cpu_cores{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 0.4
@@ -754,10 +738,6 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_resource_limits_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
 				kube_pod_container_resource_limits_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
 				kube_pod_container_resource_limits_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
-				kube_pod_container_resource_limits_nvidia_gpu_devices{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 3
-				kube_pod_container_resource_limits_nvidia_gpu_devices{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2
-				kube_pod_container_resource_limits_nvidia_gpu_devices{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3
-				kube_pod_container_resource_limits_nvidia_gpu_devices{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 5
 				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
 				kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.3
 				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
@@ -769,10 +749,6 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
 				kube_pod_container_resource_requests{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
 				kube_pod_container_resource_requests{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 4e+08
-				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 3
-				kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 2
-				kube_pod_container_resource_requests{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 3
-				kube_pod_container_resource_requests{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 5
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
 				kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.3
@@ -784,18 +760,12 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
 				kube_pod_container_resource_limits{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
 				kube_pod_container_resource_limits{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 4e+08
-				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 3
-				kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 2
-				kube_pod_container_resource_limits{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 3
-				kube_pod_container_resource_limits{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 5
 		`,
 			metrics: []string{
 				"kube_pod_container_resource_requests_cpu_cores",
 				"kube_pod_container_resource_requests_memory_bytes",
-				"kube_pod_container_resource_requests_nvidia_gpu_devices",
 				"kube_pod_container_resource_limits_cpu_cores",
 				"kube_pod_container_resource_limits_memory_bytes",
-				"kube_pod_container_resource_limits_nvidia_gpu_devices",
 				"kube_pod_container_resource_requests",
 				"kube_pod_container_resource_limits",
 			},

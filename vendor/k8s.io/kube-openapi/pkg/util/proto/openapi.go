@@ -18,6 +18,7 @@ package proto
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -34,10 +35,11 @@ const (
 	object = "object"
 )
 
-// Resources interface describe a resources provider, that can give you
-// resource based on group-version-kind.
-type Resources interface {
-	LookupResource(string) Schema
+// Models interface describe a model provider. They can give you the
+// schema for a specific model.
+type Models interface {
+	LookupModel(string) Schema
+	ListModels() []string
 }
 
 // SchemaVisitor is an interface that you need to implement if you want
@@ -54,6 +56,14 @@ type SchemaVisitor interface {
 	VisitPrimitive(*Primitive)
 	VisitKind(*Kind)
 	VisitReference(Reference)
+}
+
+// SchemaVisitorArbitrary is an additional visitor interface which handles
+// arbitrary types. For backwards compatibility, it's a separate interface
+// which is checked for at runtime.
+type SchemaVisitorArbitrary interface {
+	SchemaVisitor
+	VisitArbitrary(*Arbitrary)
 }
 
 // Schema is the base definition of an openapi type.
@@ -179,6 +189,26 @@ func (k *Kind) GetName() string {
 	return fmt.Sprintf("Kind(%v)", properties)
 }
 
+// IsRequired returns true if `field` is a required field for this type.
+func (k *Kind) IsRequired(field string) bool {
+	for _, f := range k.RequiredFields {
+		if f == field {
+			return true
+		}
+	}
+	return false
+}
+
+// Keys returns a alphabetically sorted list of keys.
+func (k *Kind) Keys() []string {
+	keys := make([]string, 0)
+	for key := range k.Fields {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 // Map is an object who values must all be of the same `SubType`.
 // The key of the object is always of type `string`.
 type Map struct {
@@ -218,6 +248,23 @@ func (p *Primitive) GetName() string {
 		return p.Type
 	}
 	return fmt.Sprintf("%s (%s)", p.Type, p.Format)
+}
+
+// Arbitrary is a value of any type (primitive, object or array)
+type Arbitrary struct {
+	BaseSchema
+}
+
+var _ Schema = &Arbitrary{}
+
+func (a *Arbitrary) Accept(v SchemaVisitor) {
+	if visitor, ok := v.(SchemaVisitorArbitrary); ok {
+		visitor.VisitArbitrary(a)
+	}
+}
+
+func (a *Arbitrary) GetName() string {
+	return "Arbitrary value (primitive, object or array)"
 }
 
 // Reference implementation depends on the type of document.

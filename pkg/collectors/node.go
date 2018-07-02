@@ -99,12 +99,6 @@ var (
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusCapacityNvidiaGPU = prometheus.NewDesc(
-		"kube_node_status_capacity_nvidia_gpu_cards",
-		"The total Nvidia GPU resources of the node.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
 	descNodeStatusCapacityMemory = prometheus.NewDesc(
 		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
@@ -126,12 +120,6 @@ var (
 	descNodeStatusAllocatableCPU = prometheus.NewDesc(
 		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeStatusAllocatableNvidiaGPU = prometheus.NewDesc(
-		"kube_node_status_allocatable_nvidia_gpu_cards",
-		"The Nvidia GPU resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
@@ -192,11 +180,9 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	if !nc.opts.DisableNodeNonGenericResourceMetrics {
 		ch <- descNodeStatusCapacityCPU
-		ch <- descNodeStatusCapacityNvidiaGPU
 		ch <- descNodeStatusCapacityMemory
 		ch <- descNodeStatusCapacityPods
 		ch <- descNodeStatusAllocatableCPU
-		ch <- descNodeStatusAllocatableNvidiaGPU
 		ch <- descNodeStatusAllocatableMemory
 		ch <- descNodeStatusAllocatablePods
 	}
@@ -285,12 +271,10 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		}
 
 		addResource(descNodeStatusCapacityCPU, n.Status.Capacity, v1.ResourceCPU)
-		addResource(descNodeStatusCapacityNvidiaGPU, n.Status.Capacity, v1.ResourceNvidiaGPU)
 		addResource(descNodeStatusCapacityMemory, n.Status.Capacity, v1.ResourceMemory)
 		addResource(descNodeStatusCapacityPods, n.Status.Capacity, v1.ResourcePods)
 
 		addResource(descNodeStatusAllocatableCPU, n.Status.Allocatable, v1.ResourceCPU)
-		addResource(descNodeStatusAllocatableNvidiaGPU, n.Status.Allocatable, v1.ResourceNvidiaGPU)
 		addResource(descNodeStatusAllocatableMemory, n.Status.Allocatable, v1.ResourceMemory)
 		addResource(descNodeStatusAllocatablePods, n.Status.Allocatable, v1.ResourcePods)
 	}
@@ -308,8 +292,6 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 			fallthrough
 		case v1.ResourceMemory:
 			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-		case v1.ResourceNvidiaGPU:
-			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 		case v1.ResourcePods:
 			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 		default:
@@ -332,8 +314,6 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 			fallthrough
 		case v1.ResourceMemory:
 			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-		case v1.ResourceNvidiaGPU:
-			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 		case v1.ResourcePods:
 			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 		default:

@@ -454,6 +454,10 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 					addGauge(descPodContainerResourceRequests, float64(val.Value()),
 						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 				}
+				if helper.IsAttachableVolumeResourceName(resourceName) {
+					addGauge(descPodContainerResourceRequests, float64(val.Value()),
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+				}
 				if helper.IsExtendedResourceName(resourceName) {
 					addGauge(descPodContainerResourceRequests, float64(val.Value()),
 						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
@@ -475,6 +479,10 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 					c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 			default:
 				if helper.IsHugePageResourceName(resourceName) {
+					addGauge(descPodContainerResourceLimits, float64(val.Value()),
+						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+				}
+				if helper.IsAttachableVolumeResourceName(resourceName) {
 					addGauge(descPodContainerResourceLimits, float64(val.Value()),
 						c.Name, nodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 				}

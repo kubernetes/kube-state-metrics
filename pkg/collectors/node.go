@@ -298,6 +298,9 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 			if helper.IsHugePageResourceName(resourceName) {
 				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 			}
+			if helper.IsAttachableVolumeResourceName(resourceName) {
+				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+			}
 			if helper.IsExtendedResourceName(resourceName) {
 				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 			}
@@ -318,6 +321,9 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
 		default:
 			if helper.IsHugePageResourceName(resourceName) {
+				addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
+			}
+			if helper.IsAttachableVolumeResourceName(resourceName) {
 				addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
 			}
 			if helper.IsExtendedResourceName(resourceName) {

@@ -57,8 +57,6 @@ func TestNodeCollector(t *testing.T) {
 		# HELP kube_node_status_capacity_pods The total pod resources of the node.
 		# TYPE kube_node_status_capacity_cpu_cores gauge
 		# HELP kube_node_status_capacity_cpu_cores The total CPU resources of the node.
-		# HELP kube_node_status_capacity_nvidia_gpu_cards The total Nvidia GPU resources of the node.
-		# TYPE kube_node_status_capacity_nvidia_gpu_cards gauge
 		# TYPE kube_node_status_capacity_memory_bytes gauge
 		# HELP kube_node_status_capacity_memory_bytes The total memory resources of the node.
 		# TYPE kube_node_status_allocatable gauge
@@ -67,8 +65,6 @@ func TestNodeCollector(t *testing.T) {
 		# HELP kube_node_status_allocatable_pods The pod resources of a node that are available for scheduling.
 		# TYPE kube_node_status_allocatable_cpu_cores gauge
 		# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
-		# HELP kube_node_status_allocatable_nvidia_gpu_cards The Nvidia GPU resources of a node that are available for scheduling.
-		# TYPE kube_node_status_allocatable_nvidia_gpu_cards gauge
 		# TYPE kube_node_status_allocatable_memory_bytes gauge
 		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
 		# HELP kube_node_status_condition The condition of a cluster node.
@@ -131,7 +127,6 @@ func TestNodeCollector(t *testing.T) {
 						},
 						Capacity: v1.ResourceList{
 							v1.ResourceCPU:                    resource.MustParse("4.3"),
-							v1.ResourceNvidiaGPU:              resource.MustParse("4"),
 							v1.ResourceMemory:                 resource.MustParse("2G"),
 							v1.ResourcePods:                   resource.MustParse("1000"),
 							v1.ResourceStorage:                resource.MustParse("3G"),
@@ -140,7 +135,6 @@ func TestNodeCollector(t *testing.T) {
 						},
 						Allocatable: v1.ResourceList{
 							v1.ResourceCPU:                    resource.MustParse("3"),
-							v1.ResourceNvidiaGPU:              resource.MustParse("2"),
 							v1.ResourceMemory:                 resource.MustParse("1G"),
 							v1.ResourcePods:                   resource.MustParse("555"),
 							v1.ResourceStorage:                resource.MustParse("2G"),
@@ -156,25 +150,21 @@ func TestNodeCollector(t *testing.T) {
 				kube_node_labels{label_type="master",node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 1
 				kube_node_status_capacity{node="127.0.0.1",resource="cpu",unit="core"} 4.3
-				kube_node_status_capacity{node="127.0.0.1",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 4
 				kube_node_status_capacity{node="127.0.0.1",resource="memory",unit="byte"}2e9
 				kube_node_status_capacity{node="127.0.0.1",resource="pods",unit="integer"} 1000
 				kube_node_status_capacity{node="127.0.0.1",resource="nvidia_com_gpu",unit="integer"} 4
 				kube_node_status_capacity{node="127.0.0.1",resource="storage",unit="byte"} 3e9
 				kube_node_status_capacity{node="127.0.0.1",resource="ephemeral_storage",unit="byte"} 4e9
 				kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4.3
-				kube_node_status_capacity_nvidia_gpu_cards{node="127.0.0.1"} 4
 				kube_node_status_capacity_memory_bytes{node="127.0.0.1"} 2e9
 				kube_node_status_capacity_pods{node="127.0.0.1"} 1000
 				kube_node_status_allocatable{node="127.0.0.1",resource="cpu",unit="core"} 3
-				kube_node_status_allocatable{node="127.0.0.1",resource="alpha_kubernetes_io_nvidia_gpu",unit="integer"} 2
 				kube_node_status_allocatable{node="127.0.0.1",resource="memory",unit="byte"} 1e9
 				kube_node_status_allocatable{node="127.0.0.1",resource="pods",unit="integer"} 555
-				kube_node_status_allocatable{node="127.0.0.1",resource="nvidia_com_gpu",unit="integer"} 1
 				kube_node_status_allocatable{node="127.0.0.1",resource="storage",unit="byte"} 2e9
+				kube_node_status_allocatable{node="127.0.0.1",resource="nvidia_com_gpu",unit="integer"} 1
 				kube_node_status_allocatable{node="127.0.0.1",resource="ephemeral_storage",unit="byte"} 3e9
 				kube_node_status_allocatable_cpu_cores{node="127.0.0.1"} 3
-				kube_node_status_allocatable_nvidia_gpu_cards{node="127.0.0.1"} 2
 				kube_node_status_allocatable_memory_bytes{node="127.0.0.1"} 1e9
 				kube_node_status_allocatable_pods{node="127.0.0.1"} 555
 			`,

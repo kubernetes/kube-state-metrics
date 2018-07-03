@@ -17,7 +17,7 @@
 set -e
 set -o pipefail
 
-KUBERNETES_VERSION=v1.8.0
+KUBERNETES_VERSION=v1.10.0
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
 PROMETHEUS_VERSION=2.0.0
@@ -141,7 +141,7 @@ kubectl proxy &
 
 # this for loop waits until kube-state-metrics is running by accessing the healthz endpoint
 for i in {1..30}; do # timeout for 1 minutes
-    KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/healthz")
+    KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
     if [ "$KUBE_STATE_METRICS_STATUS" == "ok" ]; then
         is_kube_state_metrics_running="true"
         break
@@ -162,7 +162,7 @@ set -e
 echo "kube-state-metrics is up and running"
 
 echo "access kube-state-metrics metrics endpoint"
-curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/metrics" >$KUBE_STATE_METRICS_LOG_DIR/metrics
+curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >$KUBE_STATE_METRICS_LOG_DIR/metrics
 
 echo "check metrics format with promtool"
 [ -n "$E2E_SETUP_PROMTOOL" ] && setup_promtool
@@ -175,7 +175,7 @@ for collector in $collectors; do
     grep "^kube_${collector}_" $KUBE_STATE_METRICS_LOG_DIR/metrics
 done
 
-KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/proxy/namespaces/kube-system/services/kube-state-metrics:8080/healthz")
+KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
 if [ "$KUBE_STATE_METRICS_STATUS" == "ok" ]; then
     echo "kube-state-metrics is still running after accessing metrics endpoint"
     exit 0

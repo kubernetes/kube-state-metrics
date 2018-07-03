@@ -9,12 +9,10 @@
 | kube_node_status_phase| Gauge | `node`=&lt;node-address&gt; <br> `phase`=&lt;Pending\|Running\|Terminated&gt; | STABLE |
 | kube_node_status_capacity | Gauge | `node`=&lt;node-address&gt; <br> `resource`=&lt;resource-name&gt; <br> `unit=`&lt;resource-unit&gt;| STABLE |
 | kube_node_status_capacity_cpu_cores | Gauge | `node`=&lt;node-address&gt;| STABLE |
-| kube_node_status_capacity_nvidia_gpu_cards | Gauge | `node`=&lt;node-address&gt;| EXPERIMENTAL |
 | kube_node_status_capacity_memory_bytes | Gauge | `node`=&lt;node-address&gt;| STABLE |
 | kube_node_status_capacity_pods | Gauge | `node`=&lt;node-address&gt;| STABLE |
 | kube_node_status_allocatable | Gauge | `node`=&lt;node-address&gt; <br> `resource`=&lt;resource-name&gt; <br> `unit=`&lt;resource-unit&gt;| STABLE |
 | kube_node_status_allocatable_cpu_cores | Gauge | `node`=&lt;node-address&gt;| STABLE |
-| kube_node_status_allocatable_nvidia_gpu_cards | Gauge | `node`=&lt;node-address&gt;| EXPERIMENTAL |
 | kube_node_status_allocatable_memory_bytes | Gauge | `node`=&lt;node-address&gt;| STABLE |
 | kube_node_status_allocatable_pods | Gauge | `node`=&lt;node-address&gt;| STABLE |
 | kube_node_status_condition | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;node-condition&gt; <br> `status`=&lt;true\|false\|unknown&gt; | STABLE |

@@ -18,10 +18,11 @@ package proto
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
-	openapi_v2 "github.com/googleapis/gnostic/OpenAPIv2"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/googleapis/gnostic/OpenAPIv2"
+	"gopkg.in/yaml.v2"
 )
 
 func newSchemaError(path *Path, format string, a ...interface{}) error {
@@ -55,20 +56,18 @@ func VendorExtensionToMap(e []*openapi_v2.NamedAny) map[string]interface{} {
 	return values
 }
 
-// Definitions is an implementation of `Resources`. It looks for
-// resources in an openapi Schema.
+// Definitions is an implementation of `Models`. It looks for
+// models in an openapi Schema.
 type Definitions struct {
-	models    map[string]Schema
-	resources map[string]string
+	models map[string]Schema
 }
 
-var _ Resources = &Definitions{}
+var _ Models = &Definitions{}
 
-// NewOpenAPIData creates a new `Resources` out of the openapi document.
-func NewOpenAPIData(doc *openapi_v2.Document, getIdFromSchema func(s *openapi_v2.Schema) string) (Resources, error) {
+// NewOpenAPIData creates a new `Models` out of the openapi document.
+func NewOpenAPIData(doc *openapi_v2.Document) (Models, error) {
 	definitions := Definitions{
-		models:    map[string]Schema{},
-		resources: map[string]string{},
+		models: map[string]Schema{},
 	}
 
 	// Save the list of all models first. This will allow us to
@@ -85,8 +84,6 @@ func NewOpenAPIData(doc *openapi_v2.Document, getIdFromSchema func(s *openapi_v2
 			return nil, err
 		}
 		definitions.models[namedSchema.GetName()] = schema
-		id := getIdFromSchema(namedSchema.GetValue())
-		definitions.resources[id] = namedSchema.GetName()
 	}
 
 	return &definitions, nil
@@ -129,12 +126,17 @@ func (d *Definitions) parseMap(s *openapi_v2.Schema, path *Path) (Schema, error)
 	if len(s.GetType().GetValue()) != 0 && s.GetType().GetValue()[0] != object {
 		return nil, newSchemaError(path, "invalid object type")
 	}
+	var sub Schema
 	if s.GetAdditionalProperties().GetSchema() == nil {
-		return nil, newSchemaError(path, "invalid object doesn't have additional properties")
-	}
-	sub, err := d.ParseSchema(s.GetAdditionalProperties().GetSchema(), path)
-	if err != nil {
-		return nil, err
+		sub = &Arbitrary{
+			BaseSchema: d.parseBaseSchema(s, path),
+		}
+	} else {
+		var err error
+		sub, err = d.ParseSchema(s.GetAdditionalProperties().GetSchema(), path)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &Map{
 		BaseSchema: d.parseBaseSchema(s, path),
@@ -151,12 +153,10 @@ func (d *Definitions) parsePrimitive(s *openapi_v2.Schema, path *Path) (Schema, 
 		t = s.GetType().GetValue()[0]
 	}
 	switch t {
-	case String:
-	case Number:
-	case Integer:
-	case Boolean:
-	case "": // Some models are completely empty, and can be safely ignored.
-		// Do nothing
+	case String: // do nothing
+	case Number: // do nothing
+	case Integer: // do nothing
+	case Boolean: // do nothing
 	default:
 		return nil, newSchemaError(path, "Unknown primitive type: %q", t)
 	}
@@ -213,40 +213,64 @@ func (d *Definitions) parseKind(s *openapi_v2.Schema, path *Path) (Schema, error
 	}, nil
 }
 
+func (d *Definitions) parseArbitrary(s *openapi_v2.Schema, path *Path) (Schema, error) {
+	return &Arbitrary{
+		BaseSchema: d.parseBaseSchema(s, path),
+	}, nil
+}
+
 // ParseSchema creates a walkable Schema from an openapi schema. While
 // this function is public, it doesn't leak through the interface.
 func (d *Definitions) ParseSchema(s *openapi_v2.Schema, path *Path) (Schema, error) {
-	if len(s.GetType().GetValue()) == 1 {
-		t := s.GetType().GetValue()[0]
-		switch t {
-		case object:
-			return d.parseMap(s, path)
-		case array:
-			return d.parseArray(s, path)
-		}
-
-	}
 	if s.GetXRef() != "" {
 		return d.parseReference(s, path)
 	}
-	if s.GetProperties() != nil {
-		return d.parseKind(s, path)
+	objectTypes := s.GetType().GetValue()
+	switch len(objectTypes) {
+	case 0:
+		// in the OpenAPI schema served by older k8s versions, object definitions created from structs did not include
+		// the type:object property (they only included the "properties" property), so we need to handle this case
+		if s.GetProperties() != nil {
+			return d.parseKind(s, path)
+		} else {
+			// Definition has no type and no properties. Treat it as an arbitrary value
+			// TODO: what if it has additionalProperties or patternProperties?
+			return d.parseArbitrary(s, path)
+		}
+	case 1:
+		t := objectTypes[0]
+		switch t {
+		case object:
+			if s.GetProperties() != nil {
+				return d.parseKind(s, path)
+			} else {
+				return d.parseMap(s, path)
+			}
+		case array:
+			return d.parseArray(s, path)
+		}
+		return d.parsePrimitive(s, path)
+	default:
+		// the OpenAPI generator never generates (nor it ever did in the past) OpenAPI type definitions with multiple types
+		return nil, newSchemaError(path, "definitions with multiple types aren't supported")
 	}
-	return d.parsePrimitive(s, path)
 }
 
-// LookupResource is public through the interface of Resources. It
-// returns a visitable schema from the given group-version-kind.
-func (d *Definitions) LookupResource(gvk string) Schema {
-	modelName, found := d.resources[gvk]
-	if !found {
-		return nil
+// LookupModel is public through the interface of Models. It
+// returns a visitable schema from the given model name.
+func (d *Definitions) LookupModel(model string) Schema {
+	return d.models[model]
+}
+
+func (d *Definitions) ListModels() []string {
+	models := []string{}
+
+	for model := range d.models {
+		models = append(models, model)
 	}
-	model, found := d.models[modelName]
-	if !found {
-		return nil
-	}
-	return model
+
+	sort.Strings(models)
+	return models
 }
 
 type Ref struct {

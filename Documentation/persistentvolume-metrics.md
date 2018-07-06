@@ -1,4 +1,4 @@
-# PersistentVolumeClaim Metrics
+# PersistentVolume Metrics
 
 | Metric name| Metric type | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------- |

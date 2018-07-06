@@ -28,7 +28,7 @@ import (
 var (
 	descJobLabelsName          = "kube_job_labels"
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descJobLabelsDefaultLabels = []string{"namespace", "job"}
+	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 
 	descJobLabels = prometheus.NewDesc(
 		descJobLabelsName,

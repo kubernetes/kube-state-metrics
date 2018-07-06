@@ -34,6 +34,8 @@ type Options struct {
 	TelemetryHost                        string
 	Collectors                           CollectorSet
 	Namespaces                           NamespaceList
+	MetricBlacklist                      MetricSet
+	MetricWhitelist                      MetricSet
 	Version                              bool
 	DisablePodNonGenericResourceMetrics  bool
 	DisableNodeNonGenericResourceMetrics bool
@@ -43,7 +45,9 @@ type Options struct {
 
 func NewOptions() *Options {
 	return &Options{
-		Collectors: CollectorSet{},
+		Collectors:      CollectorSet{},
+		MetricWhitelist: MetricSet{},
+		MetricBlacklist: MetricSet{},
 	}
 }
 
@@ -69,6 +73,8 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.TelemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
 	o.flags.Var(&o.Collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &DefaultCollectors))
 	o.flags.Var(&o.Namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
+	o.flags.Var(&o.MetricWhitelist, "metric-whitelist", "Comma-separated list of metrics to be exposed. The whitelist and blacklist are mutually exclusive.")
+	o.flags.Var(&o.MetricBlacklist, "metric-blacklist", "Comma-separated list of metrics not to be enabled. The whitelist and blacklist are mutually exclusive.")
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
 	o.flags.BoolVarP(&o.DisablePodNonGenericResourceMetrics, "disable-pod-non-generic-resource-metrics", "", false, "Disable pod non generic resource request and limit metrics")
 	o.flags.BoolVarP(&o.DisableNodeNonGenericResourceMetrics, "disable-node-non-generic-resource-metrics", "", false, "Disable node non generic resource request and limit metrics")

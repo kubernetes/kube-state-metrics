@@ -1,6 +1,7 @@
 ## Unreleased
 
 * [CHANGE] `kube_job_status_start_time` and `kube_job_status_completion_time` metric types changed from counter to gauge.
+* [CHANGE] `job` label to `job_name` as this collides with the Prometheus `job` label.
 
 ## v1.3.1 / 2018-04-12
 

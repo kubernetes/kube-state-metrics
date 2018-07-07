@@ -184,71 +184,71 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			want: metadata + `
-				kube_job_created{job="RunningJob1",namespace="ns1"} 1.5e+09
+				kube_job_created{job_name="RunningJob1",namespace="ns1"} 1.5e+09
 				
-				kube_job_complete{condition="false",job="SuccessfulJob1",namespace="ns1"} 0
-				kube_job_complete{condition="false",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_complete{condition="false",job_name="SuccessfulJob1",namespace="ns1"} 0
+				kube_job_complete{condition="false",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 
-				kube_job_complete{condition="true",job="SuccessfulJob1",namespace="ns1"} 1
-				kube_job_complete{condition="true",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_complete{condition="true",job_name="SuccessfulJob1",namespace="ns1"} 1
+				kube_job_complete{condition="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 
-				kube_job_complete{condition="unknown",job="SuccessfulJob1",namespace="ns1"} 0
-				kube_job_complete{condition="unknown",job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_complete{condition="unknown",job_name="SuccessfulJob1",namespace="ns1"} 0
+				kube_job_complete{condition="unknown",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 
-				kube_job_failed{condition="false",job="FailedJob1",namespace="ns1"} 0
+				kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
 
-				kube_job_failed{condition="true",job="FailedJob1",namespace="ns1"} 1
+				kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
 
-				kube_job_failed{condition="unknown",job="FailedJob1",namespace="ns1"} 0
+				kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
 
-				kube_job_info{job="RunningJob1",namespace="ns1"} 1
-				kube_job_info{job="SuccessfulJob1",namespace="ns1"} 1
-				kube_job_info{job="FailedJob1",namespace="ns1"} 1
-				kube_job_info{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_info{job_name="RunningJob1",namespace="ns1"} 1
+				kube_job_info{job_name="SuccessfulJob1",namespace="ns1"} 1
+				kube_job_info{job_name="FailedJob1",namespace="ns1"} 1
+				kube_job_info{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 
-				kube_job_labels{job="FailedJob1",label_app="example-failed-1",namespace="ns1"} 1
-				kube_job_labels{job="RunningJob1",label_app="example-running-1",namespace="ns1"} 1
-				kube_job_labels{job="SuccessfulJob1",label_app="example-successful-1",namespace="ns1"} 1
-				kube_job_labels{job="SuccessfulJob2NoActiveDeadlineSeconds",label_app="example-successful-2",namespace="ns1"} 1
+				kube_job_labels{job_name="FailedJob1",label_app="example-failed-1",namespace="ns1"} 1
+				kube_job_labels{job_name="RunningJob1",label_app="example-running-1",namespace="ns1"} 1
+				kube_job_labels{job_name="SuccessfulJob1",label_app="example-successful-1",namespace="ns1"} 1
+				kube_job_labels{job_name="SuccessfulJob2NoActiveDeadlineSeconds",label_app="example-successful-2",namespace="ns1"} 1
 
 
-				kube_job_spec_active_deadline_seconds{job="RunningJob1",namespace="ns1"} 900
-				kube_job_spec_active_deadline_seconds{job="SuccessfulJob1",namespace="ns1"} 900
-				kube_job_spec_active_deadline_seconds{job="FailedJob1",namespace="ns1"} 900
+				kube_job_spec_active_deadline_seconds{job_name="RunningJob1",namespace="ns1"} 900
+				kube_job_spec_active_deadline_seconds{job_name="SuccessfulJob1",namespace="ns1"} 900
+				kube_job_spec_active_deadline_seconds{job_name="FailedJob1",namespace="ns1"} 900
 
-				kube_job_spec_completions{job="RunningJob1",namespace="ns1"} 1
-				kube_job_spec_completions{job="SuccessfulJob1",namespace="ns1"} 1
-				kube_job_spec_completions{job="FailedJob1",namespace="ns1"} 1
-				kube_job_spec_completions{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_spec_completions{job_name="RunningJob1",namespace="ns1"} 1
+				kube_job_spec_completions{job_name="SuccessfulJob1",namespace="ns1"} 1
+				kube_job_spec_completions{job_name="FailedJob1",namespace="ns1"} 1
+				kube_job_spec_completions{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 
-				kube_job_spec_parallelism{job="RunningJob1",namespace="ns1"} 1
-				kube_job_spec_parallelism{job="SuccessfulJob1",namespace="ns1"} 1
-				kube_job_spec_parallelism{job="FailedJob1",namespace="ns1"} 1
-				kube_job_spec_parallelism{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_spec_parallelism{job_name="RunningJob1",namespace="ns1"} 1
+				kube_job_spec_parallelism{job_name="SuccessfulJob1",namespace="ns1"} 1
+				kube_job_spec_parallelism{job_name="FailedJob1",namespace="ns1"} 1
+				kube_job_spec_parallelism{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 
-				kube_job_status_active{job="RunningJob1",namespace="ns1"} 1
-				kube_job_status_active{job="SuccessfulJob1",namespace="ns1"} 0
-				kube_job_status_active{job="FailedJob1",namespace="ns1"} 0
-				kube_job_status_active{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_active{job_name="RunningJob1",namespace="ns1"} 1
+				kube_job_status_active{job_name="SuccessfulJob1",namespace="ns1"} 0
+				kube_job_status_active{job_name="FailedJob1",namespace="ns1"} 0
+				kube_job_status_active{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 
-				kube_job_status_completion_time{job="SuccessfulJob1",namespace="ns1"} 1.495803607e+09
-				kube_job_status_completion_time{job="FailedJob1",namespace="ns1"} 1.495810807e+09
-				kube_job_status_completion_time{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495804207e+09
+				kube_job_status_completion_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495803607e+09
+				kube_job_status_completion_time{job_name="FailedJob1",namespace="ns1"} 1.495810807e+09
+				kube_job_status_completion_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495804207e+09
 
-				kube_job_status_failed{job="RunningJob1",namespace="ns1"} 0
-				kube_job_status_failed{job="SuccessfulJob1",namespace="ns1"} 0
-				kube_job_status_failed{job="FailedJob1",namespace="ns1"} 1
-				kube_job_status_failed{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_failed{job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_status_failed{job_name="SuccessfulJob1",namespace="ns1"} 0
+				kube_job_status_failed{job_name="FailedJob1",namespace="ns1"} 1
+				kube_job_status_failed{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 
-				kube_job_status_start_time{job="RunningJob1",namespace="ns1"} 1.495800007e+09
-				kube_job_status_start_time{job="SuccessfulJob1",namespace="ns1"} 1.495800007e+09
-				kube_job_status_start_time{job="FailedJob1",namespace="ns1"} 1.495807207e+09
-				kube_job_status_start_time{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
+				kube_job_status_start_time{job_name="RunningJob1",namespace="ns1"} 1.495800007e+09
+				kube_job_status_start_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495800007e+09
+				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
+				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 
-				kube_job_status_succeeded{job="RunningJob1",namespace="ns1"} 0
-				kube_job_status_succeeded{job="SuccessfulJob1",namespace="ns1"} 1
-				kube_job_status_succeeded{job="FailedJob1",namespace="ns1"} 0
-				kube_job_status_succeeded{job="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_status_succeeded{job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_status_succeeded{job_name="SuccessfulJob1",namespace="ns1"} 1
+				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
+				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 			`,
 		},
 	}

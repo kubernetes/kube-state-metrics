@@ -166,7 +166,7 @@ var (
 	)
 	descPodContainerResourceRequestsMemoryBytes = prometheus.NewDesc(
 		"kube_pod_container_resource_requests_memory_bytes",
-		"The number of requested memory bytes  by a container.",
+		"The number of requested memory bytes by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)

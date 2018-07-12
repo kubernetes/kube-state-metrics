@@ -113,7 +113,14 @@ kube-state-metrics exposes its own metrics under `--telemetry-host` and `--telem
 
 ### Resource recommendation
 
-Resource usage changes with the size of the cluster. As a general rule, you should allocate
+Resource usage for kube-state-metrics changes with the Kubernetes objects(Pods/Nodes/Deployments/Secrects etc.) size of the cluster.
+To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
+[addon-resizer](https://github.com/kubernetes/autoscaler/tree/master/addon-resizer)
+can watch and automatically vertically scale the dependent container up and down based on the number of nodes.
+Thus kube-state-metrics uses `addon-resizer` to automatically scale its resource request. As for the detailed usage about
+`addon-resizer` please go to its [ReadMe](https://github.com/kubernetes/autoscaler/tree/master/addon-resizer#nanny-program-and-arguments).
+
+As a general rule, you should allocate
 
 * 200MiB memory
 * 0.1 cores

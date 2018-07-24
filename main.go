@@ -31,10 +31,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientset "k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
 )
@@ -91,6 +92,19 @@ func main() {
 		glog.Infof("Using %s namespaces", namespaces)
 	}
 
+	if opts.MetricWhitelist.IsEmpty() && opts.MetricBlacklist.IsEmpty() {
+		glog.Info("No metric whitelist or blacklist set. No filtering of metrics will be done.")
+	}
+	if !opts.MetricWhitelist.IsEmpty() && !opts.MetricBlacklist.IsEmpty() {
+		glog.Fatal("Whitelist and blacklist are both set. They are mutually exclusive, only one of them can be set.")
+	}
+	if !opts.MetricWhitelist.IsEmpty() {
+		glog.Infof("A metric whitelist has been configured. Only the following metrics will be exposed: %s.", opts.MetricWhitelist.String())
+	}
+	if !opts.MetricBlacklist.IsEmpty() {
+		glog.Infof("A metric blacklist has been configured. The following metrics will not be exposed: %s.", opts.MetricBlacklist.String())
+	}
+
 	proc.StartReaper()
 
 	kubeClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)
@@ -107,7 +121,7 @@ func main() {
 
 	registry := prometheus.NewRegistry()
 	registerCollectors(registry, kubeClient, collectors, namespaces, opts)
-	metricsServer(registry, opts.Host, opts.Port)
+	metricsServer(metrics.FilteredGatherer(registry, opts.MetricWhitelist, opts.MetricBlacklist), opts.Host, opts.Port)
 }
 
 func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {

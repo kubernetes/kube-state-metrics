@@ -25,6 +25,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type MetricSet map[string]struct{}
+
+func (ms *MetricSet) String() string {
+	s := *ms
+	ss := s.asSlice()
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
+}
+
+func (ms *MetricSet) Set(value string) error {
+	s := *ms
+	metrics := strings.Split(value, ",")
+	for _, metric := range metrics {
+		metric = strings.TrimSpace(metric)
+		if len(metric) != 0 {
+			s[metric] = struct{}{}
+		}
+	}
+	return nil
+}
+
+func (ms MetricSet) asSlice() []string {
+	metrics := []string{}
+	for metric := range ms {
+		metrics = append(metrics, metric)
+	}
+	return metrics
+}
+
+func (ms MetricSet) IsEmpty() bool {
+	return len(ms.asSlice()) == 0
+}
+
+func (ms *MetricSet) Type() string {
+	return "string"
+}
+
 type CollectorSet map[string]struct{}
 
 func (c *CollectorSet) String() string {

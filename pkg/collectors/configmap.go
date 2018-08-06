@@ -21,7 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
@@ -56,14 +57,14 @@ func (l ConfigMapLister) List() ([]v1.ConfigMap, error) {
 	return l()
 }
 
-func RegisterConfigMapCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.CoreV1().RESTClient()
-	glog.Infof("collect configmap with %s", client.APIVersion())
-
-	cminfs := NewSharedInformerList(client, "configmaps", namespaces, &v1.ConfigMap{})
+func RegisterConfigMapCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Core().V1().ConfigMaps().Informer().(cache.SharedInformer))
+	}
 
 	configMapLister := ConfigMapLister(func() (configMaps []v1.ConfigMap, err error) {
-		for _, cminf := range *cminfs {
+		for _, cminf := range infs {
 			for _, m := range cminf.GetStore().List() {
 				configMaps = append(configMaps, *m.(*v1.ConfigMap))
 			}
@@ -72,7 +73,7 @@ func RegisterConfigMapCollector(registry prometheus.Registerer, kubeClient kuber
 	})
 
 	registry.MustRegister(&configMapCollector{store: configMapLister, opts: opts})
-	cminfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type configMapStore interface {

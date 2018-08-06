@@ -23,7 +23,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
@@ -74,14 +75,15 @@ func (l EndpointLister) List() ([]v1.Endpoints, error) {
 	return l()
 }
 
-func RegisterEndpointCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.CoreV1().RESTClient()
-	glog.Infof("collect endpoint with %s", client.APIVersion())
+func RegisterEndpointCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	sinfs := NewSharedInformerList(client, "endpoints", namespaces, &v1.Endpoints{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Core().V1().Endpoints().Informer().(cache.SharedInformer))
+	}
 
 	endpointLister := EndpointLister(func() (endpoints []v1.Endpoints, err error) {
-		for _, sinf := range *sinfs {
+		for _, sinf := range infs {
 			for _, m := range sinf.GetStore().List() {
 				endpoints = append(endpoints, *m.(*v1.Endpoints))
 			}
@@ -90,7 +92,7 @@ func RegisterEndpointCollector(registry prometheus.Registerer, kubeClient kubern
 	})
 
 	registry.MustRegister(&endpointCollector{store: endpointLister, opts: opts})
-	sinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type endpointStore interface {

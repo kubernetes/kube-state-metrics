@@ -22,7 +22,8 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
@@ -118,14 +119,15 @@ func (l DeploymentLister) List() ([]v1beta1.Deployment, error) {
 	return l()
 }
 
-func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	glog.Infof("collect deployment with %s", client.APIVersion())
+func RegisterDeploymentCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	dinfs := NewSharedInformerList(client, "deployments", namespaces, &v1beta1.Deployment{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Extensions().V1beta1().Deployments().Informer().(cache.SharedInformer))
+	}
 
 	dplLister := DeploymentLister(func() (deployments []v1beta1.Deployment, err error) {
-		for _, dinf := range *dinfs {
+		for _, dinf := range infs {
 			for _, c := range dinf.GetStore().List() {
 				deployments = append(deployments, *(c.(*v1beta1.Deployment)))
 			}
@@ -134,7 +136,7 @@ func RegisterDeploymentCollector(registry prometheus.Registerer, kubeClient kube
 	})
 
 	registry.MustRegister(&deploymentCollector{store: dplLister, opts: opts})
-	dinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type deploymentStore interface {

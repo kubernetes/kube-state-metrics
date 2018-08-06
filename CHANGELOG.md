@@ -1,8 +1,18 @@
 ## Unreleased
 
+## v1.4.0-rc.0 / 2018-08-06
+
 * [CHANGE] `kube_job_status_start_time` and `kube_job_status_completion_time` metric types changed from counter to gauge.
 * [CHANGE] `job` label to `job_name` as this collides with the Prometheus `job` label.
 * [FEATURE] Allow white- and black-listing metrics to be exposed.
+* [FEATURE] Add `kube_node_status_capacity` and `kube_node_status_allocatable` metrics.
+* [FEATURE] Add `kube_pod_status_scheduled_time` metric.
+* [FEATURE] Add `kube_pod_container_status_waiting_reason` and `kube_pod_container_status_terminated_reason` metrics.
+* [ENHANCEMENT] Add generic resource metrics for Pods, `kube_pod_container_resource_requests` and `kube_pod_container_resource_limits`. This deprecates the old resource metrics for Pods.
+* [ENHANCEMENT] Prefer protobuf over json when communicating with the Kubernetes API.
+* [ENHANCEMENT] Add dynamic volume support.
+* [ENHANCEMENT] Properly set kube-state-metrics user agent when performing requests against the Kubernetes API.
+* [BUGFIX] Fix incrorrect HPA metric labels.
 
 ## v1.3.1 / 2018-04-12
 

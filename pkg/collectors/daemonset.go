@@ -21,7 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
@@ -98,14 +99,15 @@ func (l DaemonSetLister) List() ([]v1beta1.DaemonSet, error) {
 	return l()
 }
 
-func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	glog.Infof("collect daemonset with %s", client.APIVersion())
+func RegisterDaemonSetCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	dsinfs := NewSharedInformerList(client, "daemonsets", namespaces, &v1beta1.DaemonSet{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Extensions().V1beta1().DaemonSets().Informer().(cache.SharedInformer))
+	}
 
 	dsLister := DaemonSetLister(func() (daemonsets []v1beta1.DaemonSet, err error) {
-		for _, dsinf := range *dsinfs {
+		for _, dsinf := range infs {
 			for _, c := range dsinf.GetStore().List() {
 				daemonsets = append(daemonsets, *(c.(*v1beta1.DaemonSet)))
 			}
@@ -114,7 +116,7 @@ func RegisterDaemonSetCollector(registry prometheus.Registerer, kubeClient kuber
 	})
 
 	registry.MustRegister(&daemonsetCollector{store: dsLister, opts: opts})
-	dsinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type daemonsetStore interface {

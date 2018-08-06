@@ -25,7 +25,8 @@ import (
 	"github.com/robfig/cron"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	"k8s.io/kube-state-metrics/pkg/options"
@@ -92,15 +93,16 @@ func (l CronJobLister) List() ([]batchv1beta1.CronJob, error) {
 	return l()
 }
 
-func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.BatchV1beta1().RESTClient()
-	glog.Infof("collect cronjob with %s", client.APIVersion())
+func RegisterCronJobCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	cjinfs := NewSharedInformerList(client, "cronjobs", namespaces, &batchv1beta1.CronJob{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Batch().V1beta1().CronJobs().Informer().(cache.SharedInformer))
+	}
 
 	cronJobLister := CronJobLister(func() (cronjobs []batchv1beta1.CronJob, err error) {
-		for _, cjinf := range *cjinfs {
-			for _, c := range cjinf.GetStore().List() {
+		for _, inf := range infs {
+			for _, c := range inf.GetStore().List() {
 				cronjobs = append(cronjobs, *(c.(*batchv1beta1.CronJob)))
 			}
 		}
@@ -108,7 +110,7 @@ func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kuberne
 	})
 
 	registry.MustRegister(&cronJobCollector{store: cronJobLister, opts: opts})
-	cjinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type cronJobStore interface {

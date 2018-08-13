@@ -15,5 +15,5 @@
   * kube-state-metrics image tag used in Kubernetes deployment yaml config
 * cut the new release branch, i.e., `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on
 * cut the new release tag, i.e., `v1.2.0-rc.0`
-* ping Googlers(@loburm/@piosz) to build and push newest image to `staging-k8s.gcr.io`
+* ping Googlers(@loburm/@piosz) to build and push newest image to `k8s.gcr.io` (or to `staging-k8s.gcr.io` in case of release candidates)
 * build and push newest image to `quay.io`(@brancz)

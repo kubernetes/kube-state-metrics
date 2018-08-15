@@ -20,16 +20,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/robfig/cron"
-	"golang.org/x/net/context"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	"k8s.io/kube-state-metrics/pkg/options"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/robfig/cron"
 )
 
 var (
@@ -37,49 +37,49 @@ var (
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
 
-	descCronJobLabels = prometheus.NewDesc(
+	descCronJobLabels = newMetricFamilyDef(
 		descCronJobLabelsName,
 		descCronJobLabelsHelp,
 		descCronJobLabelsDefaultLabels, nil,
 	)
 
-	descCronJobInfo = prometheus.NewDesc(
+	descCronJobInfo = newMetricFamilyDef(
 		"kube_cronjob_info",
 		"Info about cronjob.",
 		append(descCronJobLabelsDefaultLabels, "schedule", "concurrency_policy"),
 		nil,
 	)
-	descCronJobCreated = prometheus.NewDesc(
+	descCronJobCreated = newMetricFamilyDef(
 		"kube_cronjob_created",
 		"Unix creation timestamp",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobStatusActive = prometheus.NewDesc(
+	descCronJobStatusActive = newMetricFamilyDef(
 		"kube_cronjob_status_active",
 		"Active holds pointers to currently running jobs.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobStatusLastScheduleTime = prometheus.NewDesc(
+	descCronJobStatusLastScheduleTime = newMetricFamilyDef(
 		"kube_cronjob_status_last_schedule_time",
 		"LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobSpecSuspend = prometheus.NewDesc(
+	descCronJobSpecSuspend = newMetricFamilyDef(
 		"kube_cronjob_spec_suspend",
 		"Suspend flag tells the controller to suspend subsequent executions.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobSpecStartingDeadlineSeconds = prometheus.NewDesc(
+	descCronJobSpecStartingDeadlineSeconds = newMetricFamilyDef(
 		"kube_cronjob_spec_starting_deadline_seconds",
 		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobNextScheduledTime = prometheus.NewDesc(
+	descCronJobNextScheduledTime = newMetricFamilyDef(
 		"kube_cronjob_next_schedule_time",
 		"Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
 		descCronJobLabelsDefaultLabels,
@@ -87,70 +87,15 @@ var (
 	)
 )
 
-type CronJobLister func() ([]batchv1beta1.CronJob, error)
-
-func (l CronJobLister) List() ([]batchv1beta1.CronJob, error) {
-	return l()
-}
-
-func RegisterCronJobCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Batch().V1beta1().CronJobs().Informer().(cache.SharedInformer))
+func createCronJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.BatchV1beta1().CronJobs(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.BatchV1beta1().CronJobs(ns).Watch(opts)
+		},
 	}
-
-	cronJobLister := CronJobLister(func() (cronjobs []batchv1beta1.CronJob, err error) {
-		for _, inf := range infs {
-			for _, c := range inf.GetStore().List() {
-				cronjobs = append(cronjobs, *(c.(*batchv1beta1.CronJob)))
-			}
-		}
-		return cronjobs, nil
-	})
-
-	registry.MustRegister(&cronJobCollector{store: cronJobLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type cronJobStore interface {
-	List() (cronjobs []batchv1beta1.CronJob, err error)
-}
-
-// cronJobCollector collects metrics about all cronjobs in the cluster.
-type cronJobCollector struct {
-	store cronJobStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descCronJobInfo
-	ch <- descCronJobCreated
-	ch <- descCronJobLabels
-	ch <- descCronJobStatusActive
-	ch <- descCronJobStatusLastScheduleTime
-	ch <- descCronJobSpecSuspend
-	ch <- descCronJobSpecStartingDeadlineSeconds
-	ch <- descCronJobNextScheduledTime
-}
-
-// Collect implements the prometheus.Collector interface.
-func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
-	cronjobs, err := cjc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "cronjob"}).Inc()
-		glog.Errorf("listing cronjobs failed: %s", err)
-		return
-	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "cronjob"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "cronjob"}).Observe(float64(len(cronjobs)))
-	for _, cj := range cronjobs {
-		cjc.collectCronJob(ch, cj)
-	}
-
-	glog.V(4).Infof("collected %d cronjobs", len(cronjobs))
 }
 
 func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {
@@ -167,8 +112,8 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
 }
 
-func cronJobLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func cronJobLabelsDesc(labelKeys []string) *metricFamilyDef {
+	return newMetricFamilyDef(
 		descCronJobLabelsName,
 		descCronJobLabelsHelp,
 		append(descCronJobLabelsDefaultLabels, labelKeys...),
@@ -176,10 +121,22 @@ func cronJobLabelsDesc(labelKeys []string) *prometheus.Desc {
 	)
 }
 
-func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j batchv1beta1.CronJob) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
+func generateCronJobMetrics(obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
+
+	// TODO: Refactor
+	jPointer := obj.(*batchv1beta1.CronJob)
+	j := *jPointer
+
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
+		}
+
+		ms = append(ms, m)
 	}
 
 	if j.Spec.StartingDeadlineSeconds != nil {
@@ -189,7 +146,7 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j batchv
 	// If the cron job is suspended, don't track the next scheduled time
 	nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
 	if err != nil {
-		glog.Errorf("%s", err)
+		panic(err)
 	} else if !*j.Spec.Suspend {
 		addGauge(descCronJobNextScheduledTime, float64(nextScheduledTime.Unix()))
 	}
@@ -210,4 +167,6 @@ func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j batchv
 	if j.Status.LastScheduleTime != nil {
 		addGauge(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))
 	}
+
+	return ms
 }

@@ -19,60 +19,61 @@ package collectors
 import (
 	"strconv"
 
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
 	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
-	descReplicaSetCreated             = prometheus.NewDesc(
+	descReplicaSetCreated             = newMetricFamilyDef(
 		"kube_replicaset_created",
 		"Unix creation timestamp",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusReplicas = prometheus.NewDesc(
+	descReplicaSetStatusReplicas = newMetricFamilyDef(
 		"kube_replicaset_status_replicas",
 		"The number of replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusFullyLabeledReplicas = prometheus.NewDesc(
+	descReplicaSetStatusFullyLabeledReplicas = newMetricFamilyDef(
 		"kube_replicaset_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusReadyReplicas = prometheus.NewDesc(
+	descReplicaSetStatusReadyReplicas = newMetricFamilyDef(
 		"kube_replicaset_status_ready_replicas",
 		"The number of ready replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusObservedGeneration = prometheus.NewDesc(
+	descReplicaSetStatusObservedGeneration = newMetricFamilyDef(
 		"kube_replicaset_status_observed_generation",
 		"The generation observed by the ReplicaSet controller.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetSpecReplicas = prometheus.NewDesc(
+	descReplicaSetSpecReplicas = newMetricFamilyDef(
 		"kube_replicaset_spec_replicas",
 		"Number of desired pods for a ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetMetadataGeneration = prometheus.NewDesc(
+	descReplicaSetMetadataGeneration = newMetricFamilyDef(
 		"kube_replicaset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetOwner = prometheus.NewDesc(
+	descReplicaSetOwner = newMetricFamilyDef(
 		"kube_replicaset_owner",
 		"Information about the ReplicaSet's owner.",
 		append(descReplicaSetLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
@@ -80,82 +81,39 @@ var (
 	)
 )
 
-type ReplicaSetLister func() ([]v1beta1.ReplicaSet, error)
-
-func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
-	return l()
+func createReplicaSetListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.ExtensionsV1beta1().ReplicaSets(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.ExtensionsV1beta1().ReplicaSets(ns).Watch(opts)
+		},
+	}
 }
 
-func RegisterReplicaSetCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func generateReplicaSetMetrics(obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
 
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Extensions().V1beta1().ReplicaSets().Informer().(cache.SharedInformer))
-	}
+	// TODO: Refactor
+	rPointer := obj.(*v1beta1.ReplicaSet)
+	r := *rPointer
 
-	replicaSetLister := ReplicaSetLister(func() (replicasets []v1beta1.ReplicaSet, err error) {
-		for _, rsinf := range infs {
-			for _, c := range rsinf.GetStore().List() {
-				replicasets = append(replicasets, *(c.(*v1beta1.ReplicaSet)))
-			}
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+		lv = append([]string{r.Namespace, r.Name}, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
 		}
-		return replicasets, nil
-	})
 
-	registry.MustRegister(&replicasetCollector{store: replicaSetLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type replicasetStore interface {
-	List() (replicasets []v1beta1.ReplicaSet, err error)
-}
-
-// replicasetCollector collects metrics about all replicasets in the cluster.
-type replicasetCollector struct {
-	store replicasetStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (rsc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descReplicaSetCreated
-	ch <- descReplicaSetStatusReplicas
-	ch <- descReplicaSetStatusFullyLabeledReplicas
-	ch <- descReplicaSetStatusReadyReplicas
-	ch <- descReplicaSetStatusObservedGeneration
-	ch <- descReplicaSetSpecReplicas
-	ch <- descReplicaSetMetadataGeneration
-	ch <- descReplicaSetOwner
-}
-
-// Collect implements the prometheus.Collector interface.
-func (rsc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
-	rss, err := rsc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicaset"}).Inc()
-		glog.Errorf("listing replicasets failed: %s", err)
-		return
+		ms = append(ms, m)
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicaset"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicaset"}).Observe(float64(len(rss)))
-	for _, d := range rss {
-		rsc.collectReplicaSet(ch, d)
+	if !r.CreationTimestamp.IsZero() {
+		addGauge(descReplicaSetCreated, float64(r.CreationTimestamp.Unix()))
 	}
 
-	glog.V(4).Infof("collected %d replicasets", len(rss))
-}
-
-func (rsc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{d.Namespace, d.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	if !d.CreationTimestamp.IsZero() {
-		addGauge(descReplicaSetCreated, float64(d.CreationTimestamp.Unix()))
-	}
-
-	owners := d.GetOwnerReferences()
+	owners := r.GetOwnerReferences()
 	if len(owners) == 0 {
 		addGauge(descReplicaSetOwner, 1, "<none>", "<none>", "<none>")
 	} else {
@@ -168,12 +126,14 @@ func (rsc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d
 		}
 	}
 
-	addGauge(descReplicaSetStatusReplicas, float64(d.Status.Replicas))
-	addGauge(descReplicaSetStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
-	addGauge(descReplicaSetStatusReadyReplicas, float64(d.Status.ReadyReplicas))
-	addGauge(descReplicaSetStatusObservedGeneration, float64(d.Status.ObservedGeneration))
-	if d.Spec.Replicas != nil {
-		addGauge(descReplicaSetSpecReplicas, float64(*d.Spec.Replicas))
+	addGauge(descReplicaSetStatusReplicas, float64(r.Status.Replicas))
+	addGauge(descReplicaSetStatusFullyLabeledReplicas, float64(r.Status.FullyLabeledReplicas))
+	addGauge(descReplicaSetStatusReadyReplicas, float64(r.Status.ReadyReplicas))
+	addGauge(descReplicaSetStatusObservedGeneration, float64(r.Status.ObservedGeneration))
+	if r.Spec.Replicas != nil {
+		addGauge(descReplicaSetSpecReplicas, float64(*r.Spec.Replicas))
 	}
-	addGauge(descReplicaSetMetadataGeneration, float64(d.ObjectMeta.Generation))
+	addGauge(descReplicaSetMetadataGeneration, float64(r.ObjectMeta.Generation))
+
+	return ms
 }

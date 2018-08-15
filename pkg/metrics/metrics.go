@@ -17,11 +17,72 @@ limitations under the License.
 package metrics
 
 import (
+	"errors"
+	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
 	"k8s.io/kube-state-metrics/pkg/options"
 )
+
+// Metric represents a single line entry in the /metrics export format
+type Metric string
+
+// NewMetric returns a new Metric
+func NewMetric(name string, labelKeys []string, labelValues []string, value float64) (*Metric, error) {
+	if len(labelKeys) != len(labelValues) {
+		return nil, errors.New("expected labelKeys to be of same length as labelValues")
+	}
+
+	m := ""
+
+	m = m + name
+
+	m = m + labelsToString(labelKeys, labelValues)
+
+	m = m + fmt.Sprintf(" %v", value)
+
+	m = m + "\n"
+
+	metric := Metric(m)
+
+	return &metric, nil
+}
+
+func labelsToString(keys, values []string) string {
+	if len(keys) > 0 {
+		labels := []string{}
+		for i := 0; i < len(keys); i++ {
+			labels = append(
+				labels,
+				fmt.Sprintf(`%s="%s"`, keys[i], escapeString(values[i])),
+			)
+		}
+		// TODO: Do labels need to be sorted. As of now, this is only needed to
+		// make output deterministic between test runs.
+		sort.Strings(labels)
+		return "{" + strings.Join(labels, ",") + "}"
+	}
+
+	return ""
+}
+
+var (
+	escapeWithDoubleQuote = strings.NewReplacer("\\", `\\`, "\n", `\n`, "\"", `\"`)
+)
+
+// escapeString replaces '\' by '\\', new line character by '\n', and - if
+// includeDoubleQuote is true - '"' by '\"'.
+// TODO: Taken from github.com/prometheus/common/expfmt/text_create.go, should be better referenced?
+func escapeString(v string) string {
+	return escapeWithDoubleQuote.Replace(v)
+}
+
+// MetricFamilyDesc represents the HELP and TYPE string above a metric family list
+type MetricFamilyDesc string
 
 type gathererFunc func() ([]*dto.MetricFamily, error)
 
@@ -31,6 +92,7 @@ func (f gathererFunc) Gather() ([]*dto.MetricFamily, error) {
 
 // FilteredGatherer wraps a prometheus.Gatherer to filter metrics based on a
 // white or blacklist. Whitelist and blacklist are mutually exclusive.
+// TODO: Bring white and blacklisting back
 func FilteredGatherer(r prometheus.Gatherer, whitelist options.MetricSet, blacklist options.MetricSet) prometheus.Gatherer {
 	whitelistEnabled := !whitelist.IsEmpty()
 	blacklistEnabled := !blacklist.IsEmpty()

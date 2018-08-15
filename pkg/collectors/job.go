@@ -17,13 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	v1batch "k8s.io/api/batch/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -31,80 +32,80 @@ var (
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 
-	descJobLabels = prometheus.NewDesc(
+	descJobLabels = newMetricFamilyDef(
 		descJobLabelsName,
 		descJobLabelsHelp,
 		descJobLabelsDefaultLabels,
 		nil,
 	)
 
-	descJobInfo = prometheus.NewDesc(
+	descJobInfo = newMetricFamilyDef(
 		"kube_job_info",
 		"Information about job.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobCreated = prometheus.NewDesc(
+	descJobCreated = newMetricFamilyDef(
 		"kube_job_created",
 		"Unix creation timestamp",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobSpecParallelism = prometheus.NewDesc(
+	descJobSpecParallelism = newMetricFamilyDef(
 		"kube_job_spec_parallelism",
 		"The maximum desired number of pods the job should run at any given time.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobSpecCompletions = prometheus.NewDesc(
+	descJobSpecCompletions = newMetricFamilyDef(
 		"kube_job_spec_completions",
 		"The desired number of successfully finished pods the job should be run with.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobSpecActiveDeadlineSeconds = prometheus.NewDesc(
+	descJobSpecActiveDeadlineSeconds = newMetricFamilyDef(
 		"kube_job_spec_active_deadline_seconds",
 		"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusSucceeded = prometheus.NewDesc(
+	descJobStatusSucceeded = newMetricFamilyDef(
 		"kube_job_status_succeeded",
 		"The number of pods which reached Phase Succeeded.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusFailed = prometheus.NewDesc(
+	descJobStatusFailed = newMetricFamilyDef(
 		"kube_job_status_failed",
 		"The number of pods which reached Phase Failed.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusActive = prometheus.NewDesc(
+	descJobStatusActive = newMetricFamilyDef(
 		"kube_job_status_active",
 		"The number of actively running pods.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobConditionComplete = prometheus.NewDesc(
+	descJobConditionComplete = newMetricFamilyDef(
 		"kube_job_complete",
 		"The job has completed its execution.",
 		append(descJobLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descJobConditionFailed = prometheus.NewDesc(
+	descJobConditionFailed = newMetricFamilyDef(
 		"kube_job_failed",
 		"The job has failed its execution.",
 		append(descJobLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descJobStatusStartTime = prometheus.NewDesc(
+	descJobStatusStartTime = newMetricFamilyDef(
 		"kube_job_status_start_time",
 		"StartTime represents time when the job was acknowledged by the Job Manager.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusCompletionTime = prometheus.NewDesc(
+	descJobStatusCompletionTime = newMetricFamilyDef(
 		"kube_job_status_completion_time",
 		"CompletionTime represents time when the job was completed.",
 		descJobLabelsDefaultLabels,
@@ -112,79 +113,19 @@ var (
 	)
 )
 
-type JobLister func() ([]v1batch.Job, error)
-
-func (l JobLister) List() ([]v1batch.Job, error) {
-	return l()
-}
-
-func RegisterJobCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Batch().V1().Jobs().Informer().(cache.SharedInformer))
+func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.BatchV1().Jobs(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.BatchV1().Jobs(ns).Watch(opts)
+		},
 	}
-
-	jobLister := JobLister(func() (jobs []v1batch.Job, err error) {
-		for _, jinf := range infs {
-			for _, c := range jinf.GetStore().List() {
-				jobs = append(jobs, *(c.(*v1batch.Job)))
-			}
-		}
-		return jobs, nil
-	})
-
-	registry.MustRegister(&jobCollector{store: jobLister, opts: opts})
-	infs.Run(context.Background().Done())
 }
 
-type jobStore interface {
-	List() (jobs []v1batch.Job, err error)
-}
-
-// jobCollector collects metrics about all jobs in the cluster.
-type jobCollector struct {
-	store jobStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (dc *jobCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descJobInfo
-	ch <- descJobCreated
-	ch <- descJobLabels
-	ch <- descJobSpecParallelism
-	ch <- descJobSpecCompletions
-	ch <- descJobSpecActiveDeadlineSeconds
-	ch <- descJobStatusSucceeded
-	ch <- descJobStatusFailed
-	ch <- descJobStatusActive
-	ch <- descJobConditionComplete
-	ch <- descJobConditionFailed
-	ch <- descJobStatusStartTime
-	ch <- descJobStatusCompletionTime
-}
-
-// Collect implements the prometheus.Collector interface.
-func (jc *jobCollector) Collect(ch chan<- prometheus.Metric) {
-	jobs, err := jc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "job"}).Inc()
-		glog.Errorf("listing jobs failed: %s", err)
-		return
-	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "job"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "job"}).Observe(float64(len(jobs)))
-	for _, j := range jobs {
-		jc.collectJob(ch, j)
-	}
-
-	glog.V(4).Infof("collected %d jobs", len(jobs))
-}
-
-func jobLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func jobLabelsDesc(labelKeys []string) *metricFamilyDef {
+	return newMetricFamilyDef(
 		descJobLabelsName,
 		descJobLabelsHelp,
 		append(descJobLabelsDefaultLabels, labelKeys...),
@@ -192,10 +133,22 @@ func jobLabelsDesc(labelKeys []string) *prometheus.Desc {
 	)
 }
 
-func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
+func generateJobMetrics(obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
+
+	// TODO: Refactor
+	jPointer := obj.(*v1batch.Job)
+	j := *jPointer
+
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
+		}
+
+		ms = append(ms, m)
 	}
 
 	addGauge(descJobInfo, 1)
@@ -233,9 +186,10 @@ func (jc *jobCollector) collectJob(ch chan<- prometheus.Metric, j v1batch.Job) {
 	for _, c := range j.Status.Conditions {
 		switch c.Type {
 		case v1batch.JobComplete:
-			addConditionMetrics(ch, descJobConditionComplete, c.Status, j.Namespace, j.Name)
+			ms = append(ms, addConditionMetrics(descJobConditionComplete, c.Status, j.Namespace, j.Name)...)
 		case v1batch.JobFailed:
-			addConditionMetrics(ch, descJobConditionFailed, c.Status, j.Namespace, j.Name)
+			ms = append(ms, addConditionMetrics(descJobConditionFailed, c.Status, j.Namespace, j.Name)...)
 		}
 	}
+	return ms
 }

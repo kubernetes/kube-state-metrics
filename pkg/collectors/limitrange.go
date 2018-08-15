@@ -17,25 +17,26 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
 	descLimitRangeLabelsDefaultLabels = []string{"limitrange", "namespace"}
-	descLimitRange                    = prometheus.NewDesc(
+	descLimitRange                    = newMetricFamilyDef(
 		"kube_limitrange",
 		"Information about limit range.",
 		append(descLimitRangeLabelsDefaultLabels, "resource", "type", "constraint"),
 		nil,
 	)
 
-	descLimitRangeCreated = prometheus.NewDesc(
+	descLimitRangeCreated = newMetricFamilyDef(
 		"kube_limitrange_created",
 		"Unix creation timestamp",
 		descLimitRangeLabelsDefaultLabels,
@@ -43,76 +44,38 @@ var (
 	)
 )
 
-type LimitRangeLister func() (v1.LimitRangeList, error)
-
-func (l LimitRangeLister) List() (v1.LimitRangeList, error) {
-	return l()
-}
-
-func RegisterLimitRangeCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().LimitRanges().Informer().(cache.SharedInformer))
+func createLimitRangeListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().LimitRanges(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().LimitRanges(ns).Watch(opts)
+		},
 	}
+}
+func generateLimitRangeMetrics(obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
 
-	limitRangeLister := LimitRangeLister(func() (ranges v1.LimitRangeList, err error) {
-		for _, rqinf := range infs {
-			for _, rq := range rqinf.GetStore().List() {
-				ranges.Items = append(ranges.Items, *(rq.(*v1.LimitRange)))
-			}
+	// TODO: Refactor
+	lPointer := obj.(*v1.LimitRange)
+	l := *lPointer
+
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+		lv = append([]string{l.Name, l.Namespace}, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
 		}
-		return ranges, nil
-	})
 
-	registry.MustRegister(&limitRangeCollector{store: limitRangeLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type limitRangeStore interface {
-	List() (v1.LimitRangeList, error)
-}
-
-// limitRangeCollector collects metrics about all limit ranges in the cluster.
-type limitRangeCollector struct {
-	store limitRangeStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (lrc *limitRangeCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descLimitRange
-	ch <- descLimitRangeCreated
-}
-
-// Collect implements the prometheus.Collector interface.
-func (lrc *limitRangeCollector) Collect(ch chan<- prometheus.Metric) {
-	limitRangeCollector, err := lrc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "limitrange"}).Inc()
-		glog.Errorf("listing limit ranges failed: %s", err)
-		return
+		ms = append(ms, m)
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "limitrange"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "limitrange"}).Observe(float64(len(limitRangeCollector.Items)))
-	for _, rq := range limitRangeCollector.Items {
-		lrc.collectLimitRange(ch, rq)
+	if !l.CreationTimestamp.IsZero() {
+		addGauge(descLimitRangeCreated, float64(l.CreationTimestamp.Unix()))
 	}
 
-	glog.V(4).Infof("collected %d limitranges", len(limitRangeCollector.Items))
-}
-
-func (lrc *limitRangeCollector) collectLimitRange(ch chan<- prometheus.Metric, rq v1.LimitRange) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{rq.Name, rq.Namespace}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	if !rq.CreationTimestamp.IsZero() {
-		addGauge(descLimitRangeCreated, float64(rq.CreationTimestamp.Unix()))
-	}
-
-	rawLimitRanges := rq.Spec.Limits
+	rawLimitRanges := l.Spec.Limits
 	for _, rawLimitRange := range rawLimitRanges {
 		for resource, min := range rawLimitRange.Min {
 			addGauge(descLimitRange, float64(min.MilliValue())/1000, string(resource), string(rawLimitRange.Type), "min")
@@ -136,4 +99,5 @@ func (lrc *limitRangeCollector) collectLimitRange(ch chan<- prometheus.Metric, r
 
 	}
 
+	return ms
 }

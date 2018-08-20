@@ -11,7 +11,7 @@ Any contribution to improving this documentation or adding sample usages will be
 - [Exposed Metrics](#exposed-metrics)
 
 ## Metrics Stages
-Stages about metrics are grouped into three categoriges：
+Stages about metrics are grouped into three categories：
 
 | Stage | Description |
 | ----------- | ----------- |

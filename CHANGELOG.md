@@ -1,5 +1,9 @@
 ## Unreleased
 
+## v1.4.0 / 2018-08-22
+
+After a testing period of 16 days, there were no additional bugs found or features introduced.
+
 ## v1.4.0-rc.0 / 2018-08-06
 
 * [CHANGE] `kube_job_status_start_time` and `kube_job_status_completion_time` metric types changed from counter to gauge.

@@ -22,7 +22,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
@@ -81,13 +82,15 @@ func (l HPALister) List() (autoscaling.HorizontalPodAutoscalerList, error) {
 	return l()
 }
 
-func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.AutoscalingV2beta1().RESTClient()
-	glog.Infof("collect hpa with %s", client.APIVersion())
-	hpainfs := NewSharedInformerList(client, "horizontalpodautoscalers", namespaces, &autoscaling.HorizontalPodAutoscaler{})
+func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Autoscaling().V2beta1().HorizontalPodAutoscalers().Informer().(cache.SharedInformer))
+	}
 
 	hpaLister := HPALister(func() (hpas autoscaling.HorizontalPodAutoscalerList, err error) {
-		for _, hpainf := range *hpainfs {
+		for _, hpainf := range infs {
 			for _, h := range hpainf.GetStore().List() {
 				hpas.Items = append(hpas.Items, *(h.(*autoscaling.HorizontalPodAutoscaler)))
 			}
@@ -96,7 +99,7 @@ func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, ku
 	})
 
 	registry.MustRegister(&hpaCollector{store: hpaLister, opts: opts})
-	hpainfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type hpaStore interface {

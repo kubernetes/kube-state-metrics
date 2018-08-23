@@ -30,6 +30,7 @@ import (
 	"github.com/openshift/origin/pkg/util/proc"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
@@ -219,11 +220,20 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
 func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors options.CollectorSet, namespaces options.NamespaceList, opts *options.Options) {
+	informerFactories := []informers.SharedInformerFactory{}
+	for _, ns := range namespaces {
+		informerFactories = append(
+			informerFactories,
+			informers.NewSharedInformerFactoryWithOptions(
+				kubeClient, 0, informers.WithNamespace(ns),
+			),
+		)
+	}
 	activeCollectors := []string{}
 	for c := range enabledCollectors {
 		f, ok := kcollectors.AvailableCollectors[c]
 		if ok {
-			f(registry, kubeClient, namespaces, opts)
+			f(registry, informerFactories, opts)
 			activeCollectors = append(activeCollectors, c)
 		}
 	}

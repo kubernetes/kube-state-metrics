@@ -24,7 +24,8 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
@@ -202,14 +203,15 @@ func (l PodLister) List() ([]v1.Pod, error) {
 	return l()
 }
 
-func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.CoreV1().RESTClient()
-	glog.Infof("collect pod with %s", client.APIVersion())
+func RegisterPodCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	pinfs := NewSharedInformerList(client, "pods", namespaces, &v1.Pod{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Core().V1().Pods().Informer().(cache.SharedInformer))
+	}
 
 	podLister := PodLister(func() (pods []v1.Pod, err error) {
-		for _, pinf := range *pinfs {
+		for _, pinf := range infs {
 			for _, m := range pinf.GetStore().List() {
 				pods = append(pods, *m.(*v1.Pod))
 			}
@@ -218,7 +220,7 @@ func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.
 	})
 
 	registry.MustRegister(&podCollector{store: podLister, opts: opts})
-	pinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type podStore interface {

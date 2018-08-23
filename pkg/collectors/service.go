@@ -21,7 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
@@ -65,14 +66,15 @@ func (l ServiceLister) List() ([]v1.Service, error) {
 	return l()
 }
 
-func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.CoreV1().RESTClient()
-	glog.Infof("collect service with %s", client.APIVersion())
+func RegisterServiceCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	sinfs := NewSharedInformerList(client, "services", namespaces, &v1.Service{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Core().V1().Services().Informer().(cache.SharedInformer))
+	}
 
 	serviceLister := ServiceLister(func() (services []v1.Service, err error) {
-		for _, sinf := range *sinfs {
+		for _, sinf := range infs {
 			for _, m := range sinf.GetStore().List() {
 				services = append(services, *m.(*v1.Service))
 			}
@@ -81,7 +83,7 @@ func RegisterServiceCollector(registry prometheus.Registerer, kubeClient kuberne
 	})
 
 	registry.MustRegister(&serviceCollector{store: serviceLister, opts: opts})
-	sinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type serviceStore interface {

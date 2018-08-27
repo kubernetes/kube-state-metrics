@@ -17,6 +17,8 @@ limitations under the License.
 package collectors
 
 import (
+	"strconv"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
@@ -70,6 +72,12 @@ var (
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
+	descReplicaSetOwner = prometheus.NewDesc(
+		"kube_replicaset_owner",
+		"Information about the ReplicaSet's owner.",
+		append(descReplicaSetLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
+		nil,
+	)
 )
 
 type ReplicaSetLister func() ([]v1beta1.ReplicaSet, error)
@@ -109,7 +117,7 @@ type replicasetCollector struct {
 }
 
 // Describe implements the prometheus.Collector interface.
-func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
+func (rsc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descReplicaSetCreated
 	ch <- descReplicaSetStatusReplicas
 	ch <- descReplicaSetStatusFullyLabeledReplicas
@@ -117,11 +125,12 @@ func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descReplicaSetStatusObservedGeneration
 	ch <- descReplicaSetSpecReplicas
 	ch <- descReplicaSetMetadataGeneration
+	ch <- descReplicaSetOwner
 }
 
 // Collect implements the prometheus.Collector interface.
-func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
-	rss, err := dc.store.List()
+func (rsc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
+	rss, err := rsc.store.List()
 	if err != nil {
 		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicaset"}).Inc()
 		glog.Errorf("listing replicasets failed: %s", err)
@@ -131,13 +140,13 @@ func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicaset"}).Observe(float64(len(rss)))
 	for _, d := range rss {
-		dc.collectReplicaSet(ch, d)
+		rsc.collectReplicaSet(ch, d)
 	}
 
 	glog.V(4).Infof("collected %d replicasets", len(rss))
 }
 
-func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {
+func (rsc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
@@ -145,6 +154,20 @@ func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d 
 	if !d.CreationTimestamp.IsZero() {
 		addGauge(descReplicaSetCreated, float64(d.CreationTimestamp.Unix()))
 	}
+
+	owners := d.GetOwnerReferences()
+	if len(owners) == 0 {
+		addGauge(descReplicaSetOwner, 1, "<none>", "<none>", "<none>")
+	} else {
+		for _, owner := range owners {
+			if owner.Controller != nil {
+				addGauge(descReplicaSetOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			} else {
+				addGauge(descReplicaSetOwner, 1, owner.Kind, owner.Name, "false")
+			}
+		}
+	}
+
 	addGauge(descReplicaSetStatusReplicas, float64(d.Status.Replicas))
 	addGauge(descReplicaSetStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
 	addGauge(descReplicaSetStatusReadyReplicas, float64(d.Status.ReadyReplicas))

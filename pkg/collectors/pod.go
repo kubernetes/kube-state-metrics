@@ -42,7 +42,7 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"),
+		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "uid", "node", "created_by_kind", "created_by_name"),
 		nil,
 	)
 	descPodStartTime = prometheus.NewDesc(
@@ -322,7 +322,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodStartTime, float64((*(p.Status.StartTime)).Unix()))
 	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, createdByKind, createdByName)
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, string(p.UID), nodeName, createdByKind, createdByName)
 
 	owners := p.GetOwnerReferences()
 	if len(owners) == 0 {

@@ -202,6 +202,48 @@ var (
 		append(descPodLabelsDefaultLabels, "volume", "persistentvolumeclaim"),
 		nil,
 	)
+	descPodInitContainerInfo = prometheus.NewDesc(
+		"kube_pod_init_container_info",
+		"Information about an init container in a pod.",
+		append(descPodLabelsDefaultLabels, "container", "image", "image_id", "container_id"),
+		nil,
+	)
+	descPodInitContainerStatusWaiting = prometheus.NewDesc(
+		"kube_pod_init_container_status_waiting",
+		"Describes whether the init container is currently in waiting state.",
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
+	)
+	descPodInitContainerStatusWaitingReason = prometheus.NewDesc(
+		"kube_pod_init_container_status_waiting_reason",
+		"Describes the reason the init container is currently in waiting state.",
+		append(descPodLabelsDefaultLabels, "container", "reason"),
+		nil,
+	)
+	descPodInitContainerStatusRunning = prometheus.NewDesc(
+		"kube_pod_init_container_status_running",
+		"Describes whether the init container is currently in running state.",
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
+	)
+	descPodInitContainerStatusTerminated = prometheus.NewDesc(
+		"kube_pod_init_container_status_terminated",
+		"Describes whether the init container is currently in terminated state.",
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
+	)
+	descPodInitContainerStatusTerminatedReason = prometheus.NewDesc(
+		"kube_pod_init_container_status_terminated_reason",
+		"Describes the reason the init container is currently in terminated state.",
+		append(descPodLabelsDefaultLabels, "container", "reason"),
+		nil,
+	)
+	descPodInitContainerStatusRestarts = prometheus.NewDesc(
+		"kube_pod_init_container_status_restarts_total",
+		"The number of init container restarts per container.",
+		append(descPodLabelsDefaultLabels, "container"),
+		nil,
+	)
 )
 
 type PodLister func() ([]v1.Pod, error)
@@ -261,6 +303,13 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusLastTerminatedReason
 	ch <- descPodContainerStatusReady
 	ch <- descPodContainerStatusRestarts
+	ch <- descPodInitContainerInfo
+	ch <- descPodInitContainerStatusWaiting
+	ch <- descPodInitContainerStatusWaitingReason
+	ch <- descPodInitContainerStatusRunning
+	ch <- descPodInitContainerStatusTerminated
+	ch <- descPodInitContainerStatusTerminatedReason
+	ch <- descPodInitContainerStatusRestarts
 	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
 	ch <- descPodSpecVolumesPersistentVolumeClaimsReadOnly
 	ch <- descPodContainerResourceRequests
@@ -397,24 +446,52 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 
 	var lastFinishTime float64
 
-	for _, cs := range p.Status.ContainerStatuses {
-		addGauge(descPodContainerInfo, 1,
+	collectContainerStatusMetric := func(cs v1.ContainerStatus, descs map[string]*prometheus.Desc) {
+		addGauge(descs["info"], 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
 		)
-		addGauge(descPodContainerStatusWaiting, boolFloat64(cs.State.Waiting != nil), cs.Name)
+		addGauge(descs["waiting"], boolFloat64(cs.State.Waiting != nil), cs.Name)
 		for _, reason := range containerWaitingReasons {
-			addGauge(descPodContainerStatusWaitingReason, boolFloat64(waitingReason(cs, reason)), cs.Name, reason)
+			addGauge(descs["waitingReason"], boolFloat64(waitingReason(cs, reason)), cs.Name, reason)
 		}
-		addGauge(descPodContainerStatusRunning, boolFloat64(cs.State.Running != nil), cs.Name)
-		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
+		addGauge(descs["running"], boolFloat64(cs.State.Running != nil), cs.Name)
+		addGauge(descs["terminated"], boolFloat64(cs.State.Terminated != nil), cs.Name)
 		for _, reason := range containerTerminatedReasons {
-			addGauge(descPodContainerStatusTerminatedReason, boolFloat64(terminationReason(cs, reason)), cs.Name, reason)
+			addGauge(descs["terminatedReason"], boolFloat64(terminationReason(cs, reason)), cs.Name, reason)
 		}
+		addCounter(descs["restarts"], float64(cs.RestartCount), cs.Name)
+	}
+
+	for _, cs := range p.Status.InitContainerStatuses {
+		descs := map[string]*prometheus.Desc{
+			"info":             descPodInitContainerInfo,
+			"waiting":          descPodInitContainerStatusWaiting,
+			"waitingReason":    descPodInitContainerStatusWaitingReason,
+			"running":          descPodInitContainerStatusRunning,
+			"terminated":       descPodInitContainerStatusTerminated,
+			"terminatedReason": descPodInitContainerStatusTerminatedReason,
+			"restarts":         descPodInitContainerStatusRestarts,
+		}
+		collectContainerStatusMetric(cs, descs)
+	}
+
+	for _, cs := range p.Status.ContainerStatuses {
+		descs := map[string]*prometheus.Desc{
+			"info":             descPodContainerInfo,
+			"waiting":          descPodContainerStatusWaiting,
+			"waitingReason":    descPodContainerStatusWaitingReason,
+			"running":          descPodContainerStatusRunning,
+			"terminated":       descPodContainerStatusTerminated,
+			"terminatedReason": descPodContainerStatusTerminatedReason,
+			"restarts":         descPodContainerStatusRestarts,
+		}
+		collectContainerStatusMetric(cs, descs)
+
 		for _, reason := range containerTerminatedReasons {
 			addGauge(descPodContainerStatusLastTerminatedReason, boolFloat64(lastTerminationReason(cs, reason)), cs.Name, reason)
 		}
+
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
-		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
 
 		if cs.State.Terminated != nil {
 			if lastFinishTime == 0 || lastFinishTime < float64(cs.State.Terminated.FinishedAt.Unix()) {

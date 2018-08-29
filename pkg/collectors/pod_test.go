@@ -17,15 +17,17 @@ limitations under the License.
 package collectors
 
 import (
-	"testing"
-	"time"
-
+	"fmt"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kubernetes/pkg/util/node"
+	"strings"
+	"testing"
+	"text/template"
+	"time"
 )
 
 type mockPodStore struct {
@@ -49,24 +51,38 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_created gauge
 		# HELP kube_pod_container_info Information about a container in a pod.
 		# TYPE kube_pod_container_info gauge
+		# HELP kube_pod_init_container_info Information about an init container in a pod.
+		# TYPE kube_pod_init_container_info gauge
 		# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_pod_labels gauge
 		# HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
 		# TYPE kube_pod_container_status_ready gauge
 		# HELP kube_pod_container_status_restarts_total The number of container restarts per container.
 		# TYPE kube_pod_container_status_restarts_total counter
+		# HELP kube_pod_init_container_status_restarts_total The number of init container restarts per container.
+		# TYPE kube_pod_init_container_status_restarts_total counter
 		# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 		# TYPE kube_pod_container_status_running gauge
+		# HELP kube_pod_init_container_status_running Describes whether the init container is currently in running state.
+		# TYPE kube_pod_init_container_status_running gauge
 		# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 		# TYPE kube_pod_container_status_terminated gauge
+		# HELP kube_pod_init_container_status_terminated Describes whether the init container is currently in terminated state.
+		# TYPE kube_pod_init_container_status_terminated gauge
 		# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 		# TYPE kube_pod_container_status_terminated_reason gauge
 		# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 		# TYPE kube_pod_container_status_last_terminated_reason gauge
+		# HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
+		# TYPE kube_pod_init_container_status_terminated_reason gauge
 		# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 		# TYPE kube_pod_container_status_waiting gauge
+		# HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
+		# TYPE kube_pod_init_container_status_waiting gauge
 		# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
 		# TYPE kube_pod_container_status_waiting_reason gauge
+		# HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
+		# TYPE kube_pod_init_container_status_waiting_reason gauge
 		# HELP kube_pod_info Information about pod.
 		# TYPE kube_pod_info gauge
 		# HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
@@ -100,363 +116,403 @@ func TestPodCollector(t *testing.T) {
 		# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
 		# TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 	`
-	cases := []struct {
+
+	type csToProm func(cs v1.ContainerStatus, ns string, pod string) string
+
+	podToProm := func(p v1.Pod, fn_cs csToProm, fn_ics csToProm) string {
+		var sb strings.Builder
+		if p.Status.ContainerStatuses != nil {
+			for _, cs := range p.Status.ContainerStatuses {
+				sb.WriteString(fn_cs(cs, p.Namespace, p.Name))
+				sb.WriteString("\n")
+			}
+		}
+
+		if p.Status.InitContainerStatuses != nil {
+			for _, ics := range p.Status.InitContainerStatuses {
+				sb.WriteString(fn_ics(ics, p.Namespace, p.Name))
+				sb.WriteString("\n")
+			}
+		}
+		return sb.String()
+	}
+
+	mkCs := func(name string, id int, ready bool, rc int32) v1.ContainerStatus {
+		return v1.ContainerStatus{
+			Name:         fmt.Sprintf("%s%d", name, id),
+			Image:        fmt.Sprintf("k8s.gcr.io/hyperkube%d", id),
+			ImageID:      "docker://sha256:aaa",
+			ContainerID:  "docker://ab123",
+			Ready:        ready,
+			RestartCount: rc,
+		}
+	}
+
+	mkPod := func(cses []v1.ContainerStatus, icses []v1.ContainerStatus, name string, ns string) v1.Pod {
+		return v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+			},
+			Status: v1.PodStatus{
+				ContainerStatuses:     cses,
+				InitContainerStatuses: icses,
+			},
+		}
+	}
+
+	mkPod1 := func(cs v1.ContainerStatus, ics v1.ContainerStatus) v1.Pod {
+		return mkPod([]v1.ContainerStatus{cs}, []v1.ContainerStatus{ics}, "pod1", "ns1")
+	}
+
+	mkPod2 := func(cses []v1.ContainerStatus, icses []v1.ContainerStatus) v1.Pod {
+		return mkPod(cses, icses, "pod2", "ns2")
+	}
+
+	cs1 := mkCs("container", 1, true, 0)
+	ics1 := mkCs("initcontainer", 1, true, 0)
+
+	cs2 := mkCs("container", 2, true, 0)
+	ics2 := mkCs("initcontainer", 2, true, 0)
+
+	cs3 := mkCs("container", 3, false, 1)
+	ics3 := mkCs("initcontainer", 3, false, 1)
+
+	type Case struct {
 		pods    []v1.Pod
 		metrics []string
 		want    string
-	}{
-		{
+	}
+
+	mkCsInfoCase := func() Case {
+		mkCsi := func(cs v1.ContainerStatus) v1.ContainerStatus {
+			return v1.ContainerStatus{
+				Name:        cs.Name,
+				Image:       cs.Image,
+				ImageID:     cs.ImageID,
+				ContainerID: cs.ContainerID,
+			}
+		}
+
+		p1 := mkPod1(mkCsi(cs1), mkCsi(ics1))
+		p2 := mkPod2([]v1.ContainerStatus{mkCsi(cs2), mkCsi(cs3)}, []v1.ContainerStatus{mkCsi(ics2), mkCsi(ics3)})
+
+		csToProm := func(cs v1.ContainerStatus, ns string, pod string) string {
+			return fmt.Sprintf(`kube_pod_container_info{container="%s",container_id="%s",image="%s",image_id="%s",namespace="%s",pod="%s"} 1`, cs.Name, cs.ContainerID, cs.Image, cs.ImageID, ns, pod)
+		}
+
+		icsToProm := func(cs v1.ContainerStatus, ns string, pod string) string {
+			return fmt.Sprintf(`kube_pod_init_container_info{container="%s",container_id="%s",image="%s",image_id="%s",namespace="%s",pod="%s"} 1`, cs.Name, cs.ContainerID, cs.Image, cs.ImageID, ns, pod)
+		}
+
+		return Case{
 			pods: []v1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
-						Namespace: "ns1",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name:        "container1",
-								Image:       "k8s.gcr.io/hyperkube1",
-								ImageID:     "docker://sha256:aaa",
-								ContainerID: "docker://ab123",
-							},
-						},
-					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod2",
-						Namespace: "ns2",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name:        "container2",
-								Image:       "k8s.gcr.io/hyperkube2",
-								ImageID:     "docker://sha256:bbb",
-								ContainerID: "docker://cd456",
-							},
-							v1.ContainerStatus{
-								Name:        "container3",
-								Image:       "k8s.gcr.io/hyperkube3",
-								ImageID:     "docker://sha256:ccc",
-								ContainerID: "docker://ef789",
-							},
-						},
-					},
-				},
+				p1, p2,
+			},
+			want:    metadata + podToProm(p1, csToProm, icsToProm) + podToProm(p2, csToProm, icsToProm),
+			metrics: []string{"kube_pod_container_info", "kube_pod_init_container_info"},
+		}
+	}
+
+	// ready
+	mkCsrCase := func() Case {
+		mk_csr := func(cs v1.ContainerStatus) v1.ContainerStatus {
+			return v1.ContainerStatus{
+				Name:  cs.Name,
+				Ready: cs.Ready,
+			}
+		}
+
+		return Case{
+			pods: []v1.Pod{
+				mkPod1(mk_csr(cs1), mk_csr(ics1)),
+				mkPod2([]v1.ContainerStatus{mk_csr(cs2), mk_csr(cs3)}, []v1.ContainerStatus{mk_csr(ics2), mk_csr(ics3)}),
 			},
 			want: metadata + `
-				kube_pod_container_info{container="container1",container_id="docker://ab123",image="k8s.gcr.io/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_info{container="container2",container_id="docker://cd456",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_info{container="container3",container_id="docker://ef789",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
-				`,
-			metrics: []string{"kube_pod_container_info"},
-		}, {
-			pods: []v1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
-						Namespace: "ns1",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name:  "container1",
-								Ready: true,
-							},
-						},
-					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod2",
-						Namespace: "ns2",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name:  "container2",
-								Ready: true,
-							},
-							v1.ContainerStatus{
-								Name:  "container3",
-								Ready: false,
-							},
-						},
-					},
-				},
-			},
-			want: metadata + `
-				kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
-				`,
+                   kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1
+                   kube_pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
+                   kube_pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
+                   `,
 			metrics: []string{"kube_pod_container_status_ready"},
-		}, {
+		}
+	}
+
+	mkCsRcCase := func() Case {
+		mk_cs_rc := func(cs v1.ContainerStatus) v1.ContainerStatus {
+			return v1.ContainerStatus{
+				Name:         cs.Name,
+				RestartCount: cs.RestartCount,
+			}
+		}
+
+		p1 := mkPod1(mk_cs_rc(cs1), mk_cs_rc(ics1))
+		p2 := mkPod2([]v1.ContainerStatus{mk_cs_rc(cs2), mk_cs_rc(cs3)}, []v1.ContainerStatus{mk_cs_rc(ics2), mk_cs_rc(ics3)})
+
+		csToProm := func(cs v1.ContainerStatus, ns string, pod string) string {
+			return fmt.Sprintf(`kube_pod_container_status_restarts_total{container="%s",namespace="%s",pod="%s"} %d`, cs.Name, ns, pod, cs.RestartCount)
+		}
+
+		icsToProm := func(cs v1.ContainerStatus, ns string, pod string) string {
+			return fmt.Sprintf(`kube_pod_init_container_status_restarts_total{container="%s",namespace="%s",pod="%s"} %d`, cs.Name, ns, pod, cs.RestartCount)
+		}
+
+		return Case{
 			pods: []v1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
-						Namespace: "ns1",
+				p1, p2,
+			},
+			want:    metadata + podToProm(p1, csToProm, icsToProm) + podToProm(p2, csToProm, icsToProm),
+			metrics: []string{"kube_pod_container_status_restarts_total", "kube_pod_init_container_status_restarts_total"},
+		}
+	}
+
+	mkCsAllCase := func() Case {
+		p1 := mkPod(
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "container1",
+					State: v1.ContainerState{
+						Running: &v1.ContainerStateRunning{},
 					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name:         "container1",
-								RestartCount: 0,
-							},
+				},
+			},
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "init_container1",
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "Completed",
 						},
 					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod2",
-						Namespace: "ns2",
+				},
+			}, "pod1", "ns1")
+
+		p2 := mkPod(
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "container2",
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "OOMKilled",
+						},
 					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name:         "container2",
-								RestartCount: 0,
-							},
-							v1.ContainerStatus{
-								Name:         "container3",
-								RestartCount: 1,
-							},
+				},
+				v1.ContainerStatus{
+					Name: "container3",
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason: "ContainerCreating",
 						},
 					},
 				},
 			},
-			want: metadata + `
-				kube_pod_container_status_restarts_total{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_restarts_total{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_restarts_total{container="container3",namespace="ns2",pod="pod2"} 1
-				`,
-			metrics: []string{"kube_pod_container_status_restarts_total"},
-		}, {
-			pods: []v1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
-						Namespace: "ns1",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name: "container1",
-								State: v1.ContainerState{
-									Running: &v1.ContainerStateRunning{},
-								},
-							},
-						},
-					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod2",
-						Namespace: "ns2",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name: "container2",
-								State: v1.ContainerState{
-									Terminated: &v1.ContainerStateTerminated{
-										Reason: "OOMKilled",
-									},
-								},
-							},
-							v1.ContainerStatus{
-								Name: "container3",
-								State: v1.ContainerState{
-									Waiting: &v1.ContainerStateWaiting{
-										Reason: "ContainerCreating",
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod3",
-						Namespace: "ns3",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name: "container4",
-								State: v1.ContainerState{
-									Waiting: &v1.ContainerStateWaiting{
-										Reason: "CrashLoopBackOff",
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod4",
-						Namespace: "ns4",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name: "container5",
-								State: v1.ContainerState{
-									Waiting: &v1.ContainerStateWaiting{
-										Reason: "ImagePullBackOff",
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod5",
-						Namespace: "ns5",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name: "container6",
-								State: v1.ContainerState{
-									Waiting: &v1.ContainerStateWaiting{
-										Reason: "ErrImagePull",
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod6",
-						Namespace: "ns6",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name: "container7",
-								State: v1.ContainerState{
-									Running: &v1.ContainerStateRunning{},
-								},
-								LastTerminationState: v1.ContainerState{
-									Terminated: &v1.ContainerStateTerminated{
-										Reason: "OOMKilled",
-									},
-								},
-							},
+			[]v1.ContainerStatus{}, "pod2", "ns2")
+
+		p3 := mkPod(
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "container4",
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason: "CrashLoopBackOff",
 						},
 					},
 				},
 			},
-			want: metadata + `
-				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_running{container="container4",namespace="ns3",pod="pod3"} 0
-				kube_pod_container_status_running{container="container5",namespace="ns4",pod="pod4"} 0
-				kube_pod_container_status_running{container="container6",namespace="ns5",pod="pod5"} 0
-				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_running{container="container7",namespace="ns6",pod="pod6"} 1
-				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3"} 0
-				kube_pod_container_status_terminated{container="container5",namespace="ns4",pod="pod4"} 0
-				kube_pod_container_status_terminated{container="container6",namespace="ns5",pod="pod5"} 0
-				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled"} 1
-				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled"} 0
-				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3"} 1
-				kube_pod_container_status_waiting{container="container5",namespace="ns4",pod="pod4"} 1
-				kube_pod_container_status_waiting{container="container6",namespace="ns5",pod="pod5"} 1
-				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff"} 1
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ImagePullBackOff"} 1
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ErrImagePull"} 1
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCreating"} 1
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ErrImagePull"} 0
-				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled"} 1
-				`,
+			[]v1.ContainerStatus{}, "pod3", "ns3")
+
+		p4 := mkPod(
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "container5",
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason: "ImagePullBackOff",
+						},
+					},
+				},
+			},
+			[]v1.ContainerStatus{}, "pod4", "ns4")
+
+		p5 := mkPod(
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "container6",
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason: "ErrImagePull",
+						},
+					},
+				},
+			},
+			[]v1.ContainerStatus{}, "pod5", "ns5")
+
+		p7 := mkPod(
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "container7",
+					State: v1.ContainerState{
+						Running: &v1.ContainerStateRunning{},
+					},
+					LastTerminationState: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "OOMKilled",
+						},
+					},
+				},
+			},
+			[]v1.ContainerStatus{}, "pod7", "ns7")
+
+		p6 := mkPod(
+			[]v1.ContainerStatus{},
+			[]v1.ContainerStatus{
+				v1.ContainerStatus{
+					Name: "init_container2",
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "OOMKilled",
+						},
+					},
+				},
+				v1.ContainerStatus{
+					Name: "init_container3",
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason: "ContainerCreating",
+						},
+					},
+				},
+				v1.ContainerStatus{
+					Name: "init_container4",
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason: "ErrImagePull",
+						},
+					},
+				},
+				v1.ContainerStatus{
+					Name: "init_container5",
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "Error",
+						},
+					},
+				},
+			}, "pod6", "ns3")
+
+		toProm := func(cs v1.ContainerStatus, ns string, pod string, typ string) string {
+			data := map[string]interface{}{
+				"Name":       cs.Name,
+				"Pod":        pod,
+				"Ns":         ns,
+				"Type":       typ,
+				"Running":    0,
+				"Terminated": 0,
+				"TR_C":       0,
+				"TR_CCR":     0,
+				"TR_E":       0,
+				"TR_O":       0,
+				"Waiting":    0,
+				"WR_CC":      0,
+				"WR_IP":      0,
+				"WR_CL":      0,
+				"WR_EI":      0,
+				"LTR_C":      0,
+				"LTR_CCR":    0,
+				"LTR_E":      0,
+				"LTR_O":      0,
+			}
+
+			if cs.State.Running != nil {
+				data["Running"] = 1
+			} else if cs.State.Terminated != nil {
+				data["Terminated"] = 1
+				switch cs.State.Terminated.Reason {
+				case "Completed":
+					data["TR_C"] = 1
+				case "ContainerCannotRun":
+					data["TR_CCR"] = 1
+				case "Error":
+					data["TR_E"] = 1
+				case "OOMKilled":
+					data["TR_O"] = 1
+				}
+			} else if cs.State.Waiting != nil {
+				data["Waiting"] = 1
+				switch cs.State.Waiting.Reason {
+				case "ContainerCreating":
+					data["WR_CC"] = 1
+				case "ImagePullBackOff":
+					data["WR_IP"] = 1
+				case "CrashLoopBackOff":
+					data["WR_CL"] = 1
+				case "ErrImagePull":
+					data["WR_EI"] = 1
+				}
+			}
+
+			if cs.LastTerminationState.Terminated != nil {
+				switch cs.LastTerminationState.Terminated.Reason {
+				case "Completed":
+					data["LTR_C"] = 1
+				case "ContainerCannotRun":
+					data["LTR_CCR"] = 1
+				case "Error":
+					data["LTR_E"] = 1
+				case "OOMKilled":
+					data["LTR_O"] = 1
+				}
+			}
+
+			tmpl := `
+				kube_pod_{{ .Type }}_status_running{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}"} {{ .Running }}
+				kube_pod_{{ .Type }}_status_terminated{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}"} {{ .Terminated }}
+				kube_pod_{{ .Type }}_status_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="Completed"} {{ .TR_C }}
+				kube_pod_{{ .Type }}_status_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="ContainerCannotRun"} {{ .TR_CCR }}
+				kube_pod_{{ .Type }}_status_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="Error"} {{ .TR_E }}
+				kube_pod_{{ .Type }}_status_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="OOMKilled"} {{ .TR_O }}
+				kube_pod_{{ .Type }}_status_waiting{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}"} {{ .Waiting }}
+				kube_pod_{{ .Type }}_status_waiting_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="ContainerCreating"} {{ .WR_CC }}
+				kube_pod_{{ .Type }}_status_waiting_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="ImagePullBackOff"} {{ .WR_IP }}
+				kube_pod_{{ .Type }}_status_waiting_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="CrashLoopBackOff"} {{ .WR_CL }}
+				kube_pod_{{ .Type }}_status_waiting_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="ErrImagePull"} {{ .WR_EI }}
+            `
+			if typ == "container" {
+				tmpl = tmpl + `
+                kube_pod_{{ .Type }}_status_last_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="Completed"} {{ .LTR_C }}
+				kube_pod_{{ .Type }}_status_last_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="ContainerCannotRun"} {{ .LTR_CCR }}
+				kube_pod_{{ .Type }}_status_last_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="Error"} {{ .LTR_E }}
+				kube_pod_{{ .Type }}_status_last_terminated_reason{container="{{ .Name }}",namespace="{{ .Ns }}",pod="{{ .Pod }}",reason="OOMKilled"} {{ .LTR_O }}
+                `
+			}
+
+			t := template.Must(template.New("prom").Parse(tmpl))
+			builder := &strings.Builder{}
+			if err := t.Execute(builder, data); err != nil {
+				panic(err)
+			}
+			return builder.String()
+		}
+
+		csToProm := func(cs v1.ContainerStatus, ns string, pod string) string {
+			return toProm(cs, ns, pod, "container")
+		}
+
+		icsToProm := func(cs v1.ContainerStatus, ns string, pod string) string {
+			return toProm(cs, ns, pod, "init_container")
+		}
+
+		return Case{
+			pods: []v1.Pod{
+				p1, p2, p3, p4, p5, p6, p7,
+			},
+			want: metadata +
+				podToProm(p1, csToProm, icsToProm) +
+				podToProm(p2, csToProm, icsToProm) +
+				podToProm(p3, csToProm, icsToProm) +
+				podToProm(p4, csToProm, icsToProm) +
+				podToProm(p5, csToProm, icsToProm) +
+				podToProm(p6, csToProm, icsToProm) +
+				podToProm(p7, csToProm, icsToProm),
 			metrics: []string{
 				"kube_pod_container_status_running",
 				"kube_pod_container_status_waiting",
@@ -464,8 +520,21 @@ func TestPodCollector(t *testing.T) {
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_last_terminated_reason",
+				"kube_pod_init_container_status_running",
+				"kube_pod_init_container_status_waiting",
+				"kube_pod_init_container_status_waiting_reason",
+				"kube_pod_init_container_status_terminated",
+				"kube_pod_init_container_status_terminated_reason",
 			},
-		}, {
+		}
+	}
+
+	cases := []Case{
+		mkCsInfoCase(),
+		mkCsrCase(),
+		mkCsRcCase(),
+		mkCsAllCase(),
+		{
 			pods: []v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{

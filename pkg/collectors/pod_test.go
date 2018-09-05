@@ -61,6 +61,8 @@ func TestPodCollector(t *testing.T) {
 		# TYPE kube_pod_container_status_terminated gauge
 		# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 		# TYPE kube_pod_container_status_terminated_reason gauge
+		# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
+		# TYPE kube_pod_container_status_last_terminated_reason gauge
 		# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 		# TYPE kube_pod_container_status_waiting gauge
 		# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
@@ -326,6 +328,27 @@ func TestPodCollector(t *testing.T) {
 						},
 					},
 				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod6",
+						Namespace: "ns6",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
+								Name: "container7",
+								State: v1.ContainerState{
+									Running: &v1.ContainerStateRunning{},
+								},
+								LastTerminationState: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										Reason: "OOMKilled",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			want: metadata + `
 				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
@@ -334,12 +357,14 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_running{container="container6",namespace="ns5",pod="pod5"} 0
 				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_running{container="container7",namespace="ns6",pod="pod6"} 1
 				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3"} 0
 				kube_pod_container_status_terminated{container="container5",namespace="ns4",pod="pod4"} 0
 				kube_pod_container_status_terminated{container="container6",namespace="ns5",pod="pod5"} 0
 				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
 				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
@@ -364,12 +389,17 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
 				kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
+				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
+				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
+				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled"} 0
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
 				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3"} 1
 				kube_pod_container_status_waiting{container="container5",namespace="ns4",pod="pod4"} 1
 				kube_pod_container_status_waiting{container="container6",namespace="ns5",pod="pod5"} 1
+				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ImagePullBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff"} 0
@@ -394,6 +424,38 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ImagePullBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCreating"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ImagePullBackOff"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CrashLoopBackOff"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ErrImagePull"} 0
+				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
+				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
+				kube_pod_container_status_last_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
+				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
+				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
+				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
+				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Completed"} 0
+				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Error"} 0
+				kube_pod_container_status_last_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="OOMKilled"} 0
+				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Completed"} 0
+				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Error"} 0
+				kube_pod_container_status_last_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="OOMKilled"} 0
+				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Completed"} 0
+				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Error"} 0
+				kube_pod_container_status_last_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
+				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Completed"} 0
+				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
+				kube_pod_container_status_last_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
+				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
+				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
+				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled"} 1
 				`,
 			metrics: []string{
 				"kube_pod_container_status_running",
@@ -401,6 +463,7 @@ func TestPodCollector(t *testing.T) {
 				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
+				"kube_pod_container_status_last_terminated_reason",
 			},
 		}, {
 			pods: []v1.Pod{

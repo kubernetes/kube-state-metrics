@@ -409,7 +409,6 @@ func TestPodCollector(t *testing.T) {
 						Name:              "pod1",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:         "ns1",
-						UID:               "abc-123-xxx",
 					},
 					Spec: v1.PodSpec{
 						NodeName: "node1",
@@ -423,7 +422,6 @@ func TestPodCollector(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pod2",
 						Namespace: "ns2",
-						UID:       "abc-456-xxx",
 						OwnerReferences: []metav1.OwnerReference{
 							{
 								Kind:       "ReplicaSet",
@@ -484,8 +482,8 @@ func TestPodCollector(t *testing.T) {
 			},
 			want: metadata + `
 				kube_pod_created{namespace="ns1",pod="pod1"} 1.5e+09
-				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 1
-				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5",uid="abc-456-xxx"} 1
+				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",pod="pod1",node="node1",pod_ip="1.2.3.4"} 1
+				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",pod="pod2",node="node2",pod_ip="2.3.4.5"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1"} 1501569018
 				kube_pod_completion_time{namespace="ns2",pod="pod2"} 1501888018
 				kube_pod_owner{namespace="ns1",pod="pod1",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1

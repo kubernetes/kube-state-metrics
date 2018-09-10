@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
@@ -57,10 +58,20 @@ func (l ConfigMapLister) List() ([]v1.ConfigMap, error) {
 	return l()
 }
 
-func RegisterConfigMapCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func RegisterConfigMapCollector(registry prometheus.Registerer, informerFactories map[string][]interface{}, opts *options.Options) {
 	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().ConfigMaps().Informer().(cache.SharedInformer))
+	gvr := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "configmaps",
+	}
+	for _, f := range informerFactories["general"] {
+		crdinformer, err := f.(informers.SharedInformerFactory).ForResource(gvr)
+		if err != nil {
+			glog.Errorf("create customresourcedefinition GenericInformer failed: %s", err)
+			continue
+		}
+		infs = append(infs, crdinformer.Informer().(cache.SharedInformer))
 	}
 
 	configMapLister := ConfigMapLister(func() (configMaps []v1.ConfigMap, err error) {

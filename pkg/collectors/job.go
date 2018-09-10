@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	v1batch "k8s.io/api/batch/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
@@ -118,11 +119,21 @@ func (l JobLister) List() ([]v1batch.Job, error) {
 	return l()
 }
 
-func RegisterJobCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func RegisterJobCollector(registry prometheus.Registerer, informerFactories map[string][]interface{}, opts *options.Options) {
 
 	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Batch().V1().Jobs().Informer().(cache.SharedInformer))
+	gvr := schema.GroupVersionResource{
+		Group:    "batch",
+		Version:  "v1",
+		Resource: "jobs",
+	}
+	for _, f := range informerFactories["general"] {
+		crdinformer, err := f.(informers.SharedInformerFactory).ForResource(gvr)
+		if err != nil {
+			glog.Errorf("create customresourcedefinition GenericInformer failed: %s", err)
+			continue
+		}
+		infs = append(infs, crdinformer.Informer().(cache.SharedInformer))
 	}
 
 	jobLister := JobLister(func() (jobs []v1batch.Job, err error) {

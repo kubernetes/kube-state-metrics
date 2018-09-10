@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
@@ -49,11 +50,21 @@ func (l LimitRangeLister) List() (v1.LimitRangeList, error) {
 	return l()
 }
 
-func RegisterLimitRangeCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func RegisterLimitRangeCollector(registry prometheus.Registerer, informerFactories map[string][]interface{}, opts *options.Options) {
 
 	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().LimitRanges().Informer().(cache.SharedInformer))
+	gvr := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "limitranges",
+	}
+	for _, f := range informerFactories["general"] {
+		crdinformer, err := f.(informers.SharedInformerFactory).ForResource(gvr)
+		if err != nil {
+			glog.Errorf("create customresourcedefinition GenericInformer failed: %s", err)
+			continue
+		}
+		infs = append(infs, crdinformer.Informer().(cache.SharedInformer))
 	}
 
 	limitRangeLister := LimitRangeLister(func() (ranges v1.LimitRangeList, err error) {

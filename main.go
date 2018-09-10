@@ -39,6 +39,9 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metrics"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
+
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiextensionsInformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 )
 
 const (
@@ -125,10 +128,10 @@ func main() {
 	metricsServer(metrics.FilteredGatherer(registry, opts.MetricWhitelist, opts.MetricBlacklist), opts.Host, opts.Port)
 }
 
-func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
+func createKubeClient(apiserver string, kubeconfig string) (kcollectors.ClientSet, error) {
 	config, err := clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
 	if err != nil {
-		return nil, err
+		return kcollectors.ClientSet{}, err
 	}
 
 	config.UserAgent = version.GetVersion().String()
@@ -137,7 +140,7 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 
 	kubeClient, err := clientset.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return kcollectors.ClientSet{}, err
 	}
 
 	// Informers don't seem to do a good job logging error messages when it
@@ -146,13 +149,19 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	glog.Infof("Testing communication with server")
 	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
-		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
+		return kcollectors.ClientSet{}, fmt.Errorf("ERROR communicating with apiserver: %v", err)
 	}
+
+	crdClient, err := apiextensionsclient.NewForConfig(config)
+	if err != nil {
+		return kcollectors.ClientSet{}, err
+	}
+
 	glog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
 		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)
 	glog.Infof("Communication with server successful")
 
-	return kubeClient, nil
+	return kcollectors.ClientSet{kubeClient, crdClient}, nil
 }
 
 func telemetryServer(registry prometheus.Gatherer, host string, port int) {
@@ -219,13 +228,19 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 
 // registerCollectors creates and starts informers and initializes and
 // registers metrics for collection.
-func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors options.CollectorSet, namespaces options.NamespaceList, opts *options.Options) {
-	informerFactories := []informers.SharedInformerFactory{}
+func registerCollectors(registry prometheus.Registerer, kubeClient kcollectors.ClientSet, enabledCollectors options.CollectorSet, namespaces options.NamespaceList, opts *options.Options) {
+	informerFactories := map[string][]interface{}{}
 	for _, ns := range namespaces {
-		informerFactories = append(
-			informerFactories,
+		informerFactories["general"] = append(
+			informerFactories["general"],
 			informers.NewSharedInformerFactoryWithOptions(
-				kubeClient, 0, informers.WithNamespace(ns),
+				kubeClient.KubeClient, 0, informers.WithNamespace(ns),
+			),
+		)
+		informerFactories["crd"] = append(
+			informerFactories["crd"],
+			apiextensionsInformers.NewSharedInformerFactoryWithOptions(
+				kubeClient.CRDClient, 0, apiextensionsInformers.WithNamespace(ns),
 			),
 		)
 	}

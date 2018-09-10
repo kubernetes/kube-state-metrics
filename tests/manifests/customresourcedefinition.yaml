@@ -1,0 +1,15 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: helmreleases.helm.arenanet.cmss.com
+spec:
+  group: helm.arenanet.cmss.com
+  names:
+    kind: HelmRelease
+    listKind: HelmReleaseList
+    plural: helmreleases
+    shortNames:
+    - hrls
+    singular: helmrelease
+  scope: Namespaced
+  version: v1alpha1

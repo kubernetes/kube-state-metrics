@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
@@ -82,11 +83,21 @@ func (l HPALister) List() (autoscaling.HorizontalPodAutoscalerList, error) {
 	return l()
 }
 
-func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, informerFactories map[string][]interface{}, opts *options.Options) {
 
 	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Autoscaling().V2beta1().HorizontalPodAutoscalers().Informer().(cache.SharedInformer))
+	gvr := schema.GroupVersionResource{
+		Group:    "autoscaling",
+		Version:  "v2beta1",
+		Resource: "horizontalpodautoscalers",
+	}
+	for _, f := range informerFactories["general"] {
+		crdinformer, err := f.(informers.SharedInformerFactory).ForResource(gvr)
+		if err != nil {
+			glog.Errorf("create customresourcedefinition GenericInformer failed: %s", err)
+			continue
+		}
+		infs = append(infs, crdinformer.Informer().(cache.SharedInformer))
 	}
 
 	hpaLister := HPALister(func() (hpas autoscaling.HorizontalPodAutoscalerList, err error) {

@@ -22,11 +22,11 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/kube-state-metrics/pkg/options"
-
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
+	"k8s.io/kube-state-metrics/pkg/options"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -44,7 +44,7 @@ func BenchmarkKubeStateMetrics(t *testing.B) {
 	namespaces := options.DefaultNamespaces
 
 	registry := prometheus.NewRegistry()
-	registerCollectors(registry, kubeClient, collectors, namespaces, opts)
+	registerCollectors(registry, kcollectors.ClientSet{kubeClient, nil}, collectors, namespaces, opts)
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}})
 
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)

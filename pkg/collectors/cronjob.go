@@ -25,6 +25,7 @@ import (
 	"github.com/robfig/cron"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
@@ -93,11 +94,21 @@ func (l CronJobLister) List() ([]batchv1beta1.CronJob, error) {
 	return l()
 }
 
-func RegisterCronJobCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func RegisterCronJobCollector(registry prometheus.Registerer, informerFactories map[string][]interface{}, opts *options.Options) {
 
 	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Batch().V1beta1().CronJobs().Informer().(cache.SharedInformer))
+	gvr := schema.GroupVersionResource{
+		Group:    "batch",
+		Version:  "v1beta1",
+		Resource: "cronjobs",
+	}
+	for _, f := range informerFactories["general"] {
+		crdinformer, err := f.(informers.SharedInformerFactory).ForResource(gvr)
+		if err != nil {
+			glog.Errorf("create customresourcedefinition GenericInformer failed: %s", err)
+			continue
+		}
+		infs = append(infs, crdinformer.Informer().(cache.SharedInformer))
 	}
 
 	cronJobLister := CronJobLister(func() (cronjobs []batchv1beta1.CronJob, err error) {

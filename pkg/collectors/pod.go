@@ -24,6 +24,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/constant"
@@ -42,7 +43,7 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "uid", "node", "created_by_kind", "created_by_name"),
+		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"),
 		nil,
 	)
 	descPodStartTime = prometheus.NewDesc(
@@ -203,11 +204,21 @@ func (l PodLister) List() ([]v1.Pod, error) {
 	return l()
 }
 
-func RegisterPodCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func RegisterPodCollector(registry prometheus.Registerer, informerFactories map[string][]interface{}, opts *options.Options) {
 
 	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Pods().Informer().(cache.SharedInformer))
+	gvr := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "pods",
+	}
+	for _, f := range informerFactories["general"] {
+		crdinformer, err := f.(informers.SharedInformerFactory).ForResource(gvr)
+		if err != nil {
+			glog.Errorf("create customresourcedefinition GenericInformer failed: %s", err)
+			continue
+		}
+		infs = append(infs, crdinformer.Informer().(cache.SharedInformer))
 	}
 
 	podLister := PodLister(func() (pods []v1.Pod, err error) {
@@ -322,7 +333,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodStartTime, float64((*(p.Status.StartTime)).Unix()))
 	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, string(p.UID), nodeName, createdByKind, createdByName)
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, createdByKind, createdByName)
 
 	owners := p.GetOwnerReferences()
 	if len(owners) == 0 {

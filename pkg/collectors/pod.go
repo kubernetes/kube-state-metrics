@@ -136,6 +136,13 @@ var (
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
+	descPodContainerStatusLastTerminatedReason = prometheus.NewDesc(
+		"kube_pod_container_status_last_terminated_reason",
+		"Describes the last reason the container was in terminated state.",
+		append(descPodLabelsDefaultLabels, "container", "reason"),
+		nil,
+	)
+
 	descPodContainerStatusReady = prometheus.NewDesc(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
@@ -262,6 +269,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusRunning
 	ch <- descPodContainerStatusTerminated
 	ch <- descPodContainerStatusTerminatedReason
+	ch <- descPodContainerStatusLastTerminatedReason
 	ch <- descPodContainerStatusReady
 	ch <- descPodContainerStatusRestarts
 	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
@@ -391,6 +399,13 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		return cs.State.Terminated.Reason == reason
 	}
 
+	lastTerminationReason := func(cs v1.ContainerStatus, reason string) bool {
+		if cs.LastTerminationState.Terminated == nil {
+			return false
+		}
+		return cs.LastTerminationState.Terminated.Reason == reason
+	}
+
 	var lastFinishTime float64
 
 	for _, cs := range p.Status.ContainerStatuses {
@@ -405,6 +420,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
 		for _, reason := range containerTerminatedReasons {
 			addGauge(descPodContainerStatusTerminatedReason, boolFloat64(terminationReason(cs, reason)), cs.Name, reason)
+		}
+		for _, reason := range containerTerminatedReasons {
+			addGauge(descPodContainerStatusLastTerminatedReason, boolFloat64(lastTerminationReason(cs, reason)), cs.Name, reason)
 		}
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)

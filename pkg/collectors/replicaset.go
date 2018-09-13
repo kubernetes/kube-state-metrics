@@ -17,11 +17,14 @@ limitations under the License.
 package collectors
 
 import (
+	"strconv"
+
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
@@ -69,6 +72,12 @@ var (
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
+	descReplicaSetOwner = prometheus.NewDesc(
+		"kube_replicaset_owner",
+		"Information about the ReplicaSet's owner.",
+		append(descReplicaSetLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
+		nil,
+	)
 )
 
 type ReplicaSetLister func() ([]v1beta1.ReplicaSet, error)
@@ -77,14 +86,15 @@ func (l ReplicaSetLister) List() ([]v1beta1.ReplicaSet, error) {
 	return l()
 }
 
-func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.ExtensionsV1beta1().RESTClient()
-	glog.Infof("collect replicaset with %s", client.APIVersion())
+func RegisterReplicaSetCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	rsinfs := NewSharedInformerList(client, "replicasets", namespaces, &v1beta1.ReplicaSet{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Extensions().V1beta1().ReplicaSets().Informer().(cache.SharedInformer))
+	}
 
 	replicaSetLister := ReplicaSetLister(func() (replicasets []v1beta1.ReplicaSet, err error) {
-		for _, rsinf := range *rsinfs {
+		for _, rsinf := range infs {
 			for _, c := range rsinf.GetStore().List() {
 				replicasets = append(replicasets, *(c.(*v1beta1.ReplicaSet)))
 			}
@@ -93,7 +103,7 @@ func RegisterReplicaSetCollector(registry prometheus.Registerer, kubeClient kube
 	})
 
 	registry.MustRegister(&replicasetCollector{store: replicaSetLister, opts: opts})
-	rsinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type replicasetStore interface {
@@ -107,7 +117,7 @@ type replicasetCollector struct {
 }
 
 // Describe implements the prometheus.Collector interface.
-func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
+func (rsc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descReplicaSetCreated
 	ch <- descReplicaSetStatusReplicas
 	ch <- descReplicaSetStatusFullyLabeledReplicas
@@ -115,11 +125,12 @@ func (dc *replicasetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descReplicaSetStatusObservedGeneration
 	ch <- descReplicaSetSpecReplicas
 	ch <- descReplicaSetMetadataGeneration
+	ch <- descReplicaSetOwner
 }
 
 // Collect implements the prometheus.Collector interface.
-func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
-	rss, err := dc.store.List()
+func (rsc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
+	rss, err := rsc.store.List()
 	if err != nil {
 		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicaset"}).Inc()
 		glog.Errorf("listing replicasets failed: %s", err)
@@ -129,13 +140,13 @@ func (dc *replicasetCollector) Collect(ch chan<- prometheus.Metric) {
 
 	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicaset"}).Observe(float64(len(rss)))
 	for _, d := range rss {
-		dc.collectReplicaSet(ch, d)
+		rsc.collectReplicaSet(ch, d)
 	}
 
 	glog.V(4).Infof("collected %d replicasets", len(rss))
 }
 
-func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {
+func (rsc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d v1beta1.ReplicaSet) {
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
@@ -143,6 +154,20 @@ func (dc *replicasetCollector) collectReplicaSet(ch chan<- prometheus.Metric, d 
 	if !d.CreationTimestamp.IsZero() {
 		addGauge(descReplicaSetCreated, float64(d.CreationTimestamp.Unix()))
 	}
+
+	owners := d.GetOwnerReferences()
+	if len(owners) == 0 {
+		addGauge(descReplicaSetOwner, 1, "<none>", "<none>", "<none>")
+	} else {
+		for _, owner := range owners {
+			if owner.Controller != nil {
+				addGauge(descReplicaSetOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
+			} else {
+				addGauge(descReplicaSetOwner, 1, owner.Kind, owner.Name, "false")
+			}
+		}
+	}
+
 	addGauge(descReplicaSetStatusReplicas, float64(d.Status.Replicas))
 	addGauge(descReplicaSetStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
 	addGauge(descReplicaSetStatusReadyReplicas, float64(d.Status.ReadyReplicas))

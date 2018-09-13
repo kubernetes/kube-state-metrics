@@ -24,7 +24,8 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
@@ -41,7 +42,7 @@ var (
 	descPodInfo = prometheus.NewDesc(
 		"kube_pod_info",
 		"Information about pod.",
-		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "node", "created_by_kind", "created_by_name"),
+		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "uid", "node", "created_by_kind", "created_by_name"),
 		nil,
 	)
 	descPodStartTime = prometheus.NewDesc(
@@ -134,6 +135,13 @@ var (
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
+	descPodContainerStatusLastTerminatedReason = prometheus.NewDesc(
+		"kube_pod_container_status_last_terminated_reason",
+		"Describes the last reason the container was in terminated state.",
+		append(descPodLabelsDefaultLabels, "container", "reason"),
+		nil,
+	)
+
 	descPodContainerStatusReady = prometheus.NewDesc(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
@@ -202,14 +210,15 @@ func (l PodLister) List() ([]v1.Pod, error) {
 	return l()
 }
 
-func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options) {
-	client := kubeClient.CoreV1().RESTClient()
-	glog.Infof("collect pod with %s", client.APIVersion())
+func RegisterPodCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
 
-	pinfs := NewSharedInformerList(client, "pods", namespaces, &v1.Pod{})
+	infs := SharedInformerList{}
+	for _, f := range informerFactories {
+		infs = append(infs, f.Core().V1().Pods().Informer().(cache.SharedInformer))
+	}
 
 	podLister := PodLister(func() (pods []v1.Pod, err error) {
-		for _, pinf := range *pinfs {
+		for _, pinf := range infs {
 			for _, m := range pinf.GetStore().List() {
 				pods = append(pods, *m.(*v1.Pod))
 			}
@@ -218,7 +227,7 @@ func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.
 	})
 
 	registry.MustRegister(&podCollector{store: podLister, opts: opts})
-	pinfs.Run(context.Background().Done())
+	infs.Run(context.Background().Done())
 }
 
 type podStore interface {
@@ -249,6 +258,7 @@ func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodContainerStatusRunning
 	ch <- descPodContainerStatusTerminated
 	ch <- descPodContainerStatusTerminatedReason
+	ch <- descPodContainerStatusLastTerminatedReason
 	ch <- descPodContainerStatusReady
 	ch <- descPodContainerStatusRestarts
 	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
@@ -320,7 +330,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodStartTime, float64((*(p.Status.StartTime)).Unix()))
 	}
 
-	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, nodeName, createdByKind, createdByName)
+	addGauge(descPodInfo, 1, p.Status.HostIP, p.Status.PodIP, string(p.UID), nodeName, createdByKind, createdByName)
 
 	owners := p.GetOwnerReferences()
 	if len(owners) == 0 {
@@ -378,6 +388,13 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		return cs.State.Terminated.Reason == reason
 	}
 
+	lastTerminationReason := func(cs v1.ContainerStatus, reason string) bool {
+		if cs.LastTerminationState.Terminated == nil {
+			return false
+		}
+		return cs.LastTerminationState.Terminated.Reason == reason
+	}
+
 	var lastFinishTime float64
 
 	for _, cs := range p.Status.ContainerStatuses {
@@ -392,6 +409,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodContainerStatusTerminated, boolFloat64(cs.State.Terminated != nil), cs.Name)
 		for _, reason := range containerTerminatedReasons {
 			addGauge(descPodContainerStatusTerminatedReason, boolFloat64(terminationReason(cs, reason)), cs.Name, reason)
+		}
+		for _, reason := range containerTerminatedReasons {
+			addGauge(descPodContainerStatusLastTerminatedReason, boolFloat64(lastTerminationReason(cs, reason)), cs.Name, reason)
 		}
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)

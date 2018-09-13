@@ -42,6 +42,8 @@ func (rs mockReplicaSetStore) List() (replicasets []v1beta1.ReplicaSet, err erro
 func TestReplicaSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
+	var test = true
+
 	const metadata = `
 		# HELP kube_replicaset_created Unix creation timestamp
 		# TYPE kube_replicaset_created gauge
@@ -57,6 +59,8 @@ func TestReplicaSetCollector(t *testing.T) {
 		# TYPE kube_replicaset_status_observed_generation gauge
 		# HELP kube_replicaset_spec_replicas Number of desired pods for a ReplicaSet.
 		# TYPE kube_replicaset_spec_replicas gauge
+		# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
+		# TYPE kube_replicaset_owner gauge
 	`
 	cases := []struct {
 		rss  []v1beta1.ReplicaSet
@@ -70,6 +74,13 @@ func TestReplicaSetCollector(t *testing.T) {
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						Namespace:         "ns1",
 						Generation:        21,
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Kind:       "Deployment",
+								Name:       "dp-name",
+								Controller: &test,
+							},
+						},
 					},
 					Status: v1beta1.ReplicaSetStatus{
 						Replicas:             5,
@@ -111,6 +122,8 @@ func TestReplicaSetCollector(t *testing.T) {
 				kube_replicaset_status_ready_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_spec_replicas{namespace="ns1",replicaset="rs1"} 5
 				kube_replicaset_spec_replicas{namespace="ns2",replicaset="rs2"} 0
+				kube_replicaset_owner{namespace="ns1",replicaset="rs1",owner_kind="Deployment",owner_name="dp-name",owner_is_controller="true"} 1
+				kube_replicaset_owner{namespace="ns2",replicaset="rs2",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
 			`,
 		},
 	}

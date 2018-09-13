@@ -23,10 +23,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/options"
 )
@@ -53,7 +50,7 @@ var (
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 )
 
-var AvailableCollectors = map[string]func(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string, opts *options.Options){
+var AvailableCollectors = map[string]func(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options){
 	"cronjobs":                 RegisterCronJobCollector,
 	"daemonsets":               RegisterDaemonSetCollector,
 	"deployments":              RegisterDeploymentCollector,
@@ -76,15 +73,6 @@ var AvailableCollectors = map[string]func(registry prometheus.Registerer, kubeCl
 }
 
 type SharedInformerList []cache.SharedInformer
-
-func NewSharedInformerList(client rest.Interface, resource string, namespaces []string, objType runtime.Object) *SharedInformerList {
-	sinfs := SharedInformerList{}
-	for _, namespace := range namespaces {
-		slw := cache.NewListWatchFromClient(client, resource, namespace, fields.Everything())
-		sinfs = append(sinfs, cache.NewSharedInformer(slw, objType, resyncPeriod))
-	}
-	return &sinfs
-}
 
 func (sil SharedInformerList) Run(stopCh <-chan struct{}) {
 	for _, sinf := range sil {

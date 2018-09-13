@@ -36,7 +36,7 @@ func BenchmarkKubeStateMetrics(t *testing.B) {
 	kubeClient := fake.NewSimpleClientset()
 
 	if err := injectFixtures(kubeClient, 1000); err != nil {
-		t.Errorf("error injecting pod add: %v", err)
+		t.Errorf("error injecting resources: %v", err)
 	}
 
 	opts := options.NewOptions()

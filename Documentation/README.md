@@ -9,6 +9,7 @@ Any contribution to improving this documentation or adding sample usages will be
 - [Metrics Stages](#metrics-stages)
 - [Metrics Deprecation](#metrics-deprecation)
 - [Exposed Metrics](#exposed-metrics)
+- [Join Metrics](#join-metrics)
 
 ## Metrics Stages
 Stages about metrics are grouped into three categories：
@@ -59,3 +60,15 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [Endpoint Metrics](endpoint-metrics.md)
 * [Secret Metrics](secret-metrics.md)
 * [ConfigMap Metrics](configmap-metrics.md)
+
+
+## Join Metrics
+When an additional, not provided by default label is needed a [Prometheus matching operator](https://prometheus.io/docs/prometheus/latest/querying/operators/#vector-matching) 
+can be used to extend metrics output.
+
+This example adds `label_release` to the set of default labels of the `kube_pod_status_ready` metric: 
+
+```
+kube_pod_status_ready * on (namespace, pod) group_left(label_release)  kube_pod_labels
+```
+   

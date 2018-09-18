@@ -66,7 +66,8 @@ Per group of metrics there is one file for each metrics. See each file for speci
 When an additional, not provided by default label is needed, a [Prometheus matching operator](https://prometheus.io/docs/prometheus/latest/querying/operators/#vector-matching) 
 can be used to extend single metrics output.
 
-This example adds `label_release` to the set of default labels of the `kube_pod_status_ready` metric: 
+This example adds `label_release` to the set of default labels of the `kube_pod_status_ready` metric 
+and allows you select or group the metrics by helm release label: 
 
 ```
 kube_pod_status_ready * on (namespace, pod) group_left(label_release)  kube_pod_labels

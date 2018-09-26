@@ -85,6 +85,18 @@ var (
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
+	descStatefulSetCurrentRevision = prometheus.NewDesc(
+		"kube_statefulset_status_current_revision",
+		"Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
+		append(descStatefulSetLabelsDefaultLabels, "revision"),
+		nil,
+	)
+	descStatefulSetUpdateRevision = prometheus.NewDesc(
+		"kube_statefulset_status_update_revision",
+		"Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",
+		append(descStatefulSetLabelsDefaultLabels, "revision"),
+		nil,
+	)
 )
 
 type StatefulSetLister func() ([]v1beta1.StatefulSet, error)
@@ -133,6 +145,8 @@ func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descStatefulSetSpecReplicas
 	ch <- descStatefulSetMetadataGeneration
 	ch <- descStatefulSetLabels
+	ch <- descStatefulSetCurrentRevision
+	ch <- descStatefulSetUpdateRevision
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -185,4 +199,7 @@ func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, 
 
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(statefulSet.Labels)
 	addGauge(statefulSetLabelsDesc(labelKeys), 1, labelValues...)
+
+	addGauge(descStatefulSetCurrentRevision, 1, statefulSet.Status.CurrentRevision)
+	addGauge(descStatefulSetUpdateRevision, 1, statefulSet.Status.UpdateRevision)
 }

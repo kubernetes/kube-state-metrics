@@ -49,6 +49,8 @@ func TestStatefuleSetCollector(t *testing.T) {
 	const metadata = `
 		# HELP kube_statefulset_created Unix creation timestamp
 		# TYPE kube_statefulset_created gauge
+		# HELP kube_statefulset_status_current_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
+		# TYPE kube_statefulset_status_current_revision gauge
  		# HELP kube_statefulset_status_replicas The number of replicas per StatefulSet.
  		# TYPE kube_statefulset_status_replicas gauge
 		# HELP kube_statefulset_status_replicas_current The number of current replicas per StatefulSet.
@@ -59,6 +61,8 @@ func TestStatefuleSetCollector(t *testing.T) {
 		# TYPE kube_statefulset_status_replicas_updated gauge
  		# HELP kube_statefulset_status_observed_generation The generation observed by the StatefulSet controller.
  		# TYPE kube_statefulset_status_observed_generation gauge
+		# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
+		# TYPE kube_statefulset_status_update_revision gauge
  		# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
  		# TYPE kube_statefulset_replicas gauge
  		# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
@@ -89,6 +93,8 @@ func TestStatefuleSetCollector(t *testing.T) {
 					Status: v1beta1.StatefulSetStatus{
 						ObservedGeneration: &statefulSet1ObservedGeneration,
 						Replicas:           2,
+						CurrentRevision:    "cr1",
+						UpdateRevision:     "ur1",
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -109,6 +115,8 @@ func TestStatefuleSetCollector(t *testing.T) {
 						ReadyReplicas:      5,
 						Replicas:           5,
 						UpdatedReplicas:    3,
+						CurrentRevision:    "cr2",
+						UpdateRevision:     "ur2",
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -126,11 +134,16 @@ func TestStatefuleSetCollector(t *testing.T) {
 					Status: v1beta1.StatefulSetStatus{
 						ObservedGeneration: nil,
 						Replicas:           7,
+						CurrentRevision:    "cr3",
+						UpdateRevision:     "ur3",
 					},
 				},
 			},
 			want: metadata + `
 				kube_statefulset_created{namespace="ns1",statefulset="statefulset1"} 1.5e+09
+				kube_statefulset_status_current_revision{namespace="ns1",revision="cr1",statefulset="statefulset1"} 1
+				kube_statefulset_status_current_revision{namespace="ns2",revision="cr2",statefulset="statefulset2"} 1
+				kube_statefulset_status_current_revision{namespace="ns3",revision="cr3",statefulset="statefulset3"} 1
  				kube_statefulset_status_replicas{namespace="ns1",statefulset="statefulset1"} 2
  				kube_statefulset_status_replicas{namespace="ns2",statefulset="statefulset2"} 5
  				kube_statefulset_status_replicas{namespace="ns3",statefulset="statefulset3"} 7
@@ -145,6 +158,9 @@ func TestStatefuleSetCollector(t *testing.T) {
 				kube_statefulset_status_replicas_updated{namespace="ns3",statefulset="statefulset3"} 0
  				kube_statefulset_status_observed_generation{namespace="ns1",statefulset="statefulset1"} 1
  				kube_statefulset_status_observed_generation{namespace="ns2",statefulset="statefulset2"} 2
+				kube_statefulset_status_update_revision{namespace="ns1",revision="ur1",statefulset="statefulset1"} 1
+				kube_statefulset_status_update_revision{namespace="ns2",revision="ur2",statefulset="statefulset2"} 1
+				kube_statefulset_status_update_revision{namespace="ns3",revision="ur3",statefulset="statefulset3"} 1
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_replicas{namespace="ns2",statefulset="statefulset2"} 6
  				kube_statefulset_replicas{namespace="ns3",statefulset="statefulset3"} 9

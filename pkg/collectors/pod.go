@@ -396,8 +396,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	}
 
 	var lastFinishTime float64
+	allContainerStatuses := append(p.Status.ContainerStatuses, p.Status.InitContainerStatuses...)
 
-	for _, cs := range p.Status.ContainerStatuses {
+	for _, cs := range allContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
 		)

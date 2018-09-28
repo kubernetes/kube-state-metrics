@@ -142,6 +142,14 @@ func TestPodCollector(t *testing.T) {
 								ContainerID: "docker://ef789",
 							},
 						},
+						InitContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
+								Name:        "container4",
+								Image:       "k8s.gcr.io/hyperkube4",
+								ImageID:     "docker://sha256:ddd",
+								ContainerID: "docker://gh012",
+							},
+						},
 					},
 				},
 			},
@@ -149,6 +157,7 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_info{container="container1",container_id="docker://ab123",image="k8s.gcr.io/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1
 				kube_pod_container_info{container="container2",container_id="docker://cd456",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
 				kube_pod_container_info{container="container3",container_id="docker://ef789",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_info{container="container4",container_id="docker://gh012",image="k8s.gcr.io/hyperkube4",image_id="docker://sha256:ddd",namespace="ns2",pod="pod2"} 1
 				`,
 			metrics: []string{"kube_pod_container_info"},
 		}, {
@@ -182,6 +191,12 @@ func TestPodCollector(t *testing.T) {
 								Ready: false,
 							},
 						},
+						InitContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
+								Name:  "container4",
+								Ready: false,
+							},
+						},
 					},
 				},
 			},
@@ -189,6 +204,7 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1
 				kube_pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
 				kube_pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
+				kube_pod_container_status_ready{container="container4",namespace="ns2",pod="pod2"} 0
 				`,
 			metrics: []string{"kube_pod_container_status_ready"},
 		}, {
@@ -222,6 +238,12 @@ func TestPodCollector(t *testing.T) {
 								RestartCount: 1,
 							},
 						},
+						InitContainerStatuses: []v1.ContainerStatus{
+							v1.ContainerStatus{
+								Name:  "container4",
+								RestartCount: 0,
+							},
+						},
 					},
 				},
 			},
@@ -229,6 +251,7 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_restarts_total{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_restarts_total{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_restarts_total{container="container3",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_status_restarts_total{container="container4",namespace="ns2",pod="pod2"} 0
 				`,
 			metrics: []string{"kube_pod_container_status_restarts_total"},
 		}, {

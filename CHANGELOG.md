@@ -29,6 +29,10 @@ After a testing period of 12 days, there were no additional bugs found or featur
 
 ## v1.3.0-rc.0 / 2018-03-23
 
+* [CHANGE] Removed `--in-cluster` flag in [#371](https://github.com/kubernetes/kube-state-metrics/pull/371).
+  Users can no longer specify `--apiserver` with `--in-cluster=true`. To
+  emulate this behaviour in future releases, set the `KUBERNETES_SERVICE_HOST`
+  environment variable to the value of the `--apiserver` argument.
 * [FEATURE] Allow to specify multiple namespace.
 * [FEATURE] Add `kube_pod_completion_time`, `kube_pod_spec_volumes_persistentvolumeclaims_info`, and `kube_pod_spec_volumes_persistentvolumeclaims_readonly` metrics to the Pod collector.
 * [FEATURE] Add `kube_node_spec_taint` metric.

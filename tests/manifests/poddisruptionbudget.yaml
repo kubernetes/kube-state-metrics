@@ -1,0 +1,9 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: pdb
+spec:
+  minAvailable: "50%"
+  selector:
+      matchLabels:
+        name: pdb

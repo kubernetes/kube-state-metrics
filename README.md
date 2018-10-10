@@ -35,7 +35,7 @@ the raw metrics.
 - [Metrics Documentation](#metrics-documentation)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
-- [kube-state-metrics vs. Heapster(metrics-server)](#kube-state-metrics-vs-heapster)
+- [kube-state-metrics vs. Heapster(metrics-server)](#kube-state-metrics-vs-heapstermetrics-server)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)

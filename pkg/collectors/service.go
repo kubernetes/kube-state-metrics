@@ -53,10 +53,38 @@ var (
 		nil,
 	)
 
+	descServiceExternalName = metrics.NewMetricFamilyDef(
+		"kube_service_external_name",
+		"Service external name",
+		append(descServiceLabelsDefaultLabels, "external_name"),
+		nil,
+	)
+
+	descServiceLoadBalancerIP = metrics.NewMetricFamilyDef(
+		"kube_service_load_balancer_ip",
+		"Load balancer IP of service",
+		append(descServiceLabelsDefaultLabels, "load_balancer_ip"),
+		nil,
+	)
+
+	descServiceSpecExternalIP = metrics.NewMetricFamilyDef(
+		"kube_service_spec_external_ip",
+		"Service external ips. One series for each ip",
+		append(descServiceLabelsDefaultLabels, "external_ip"),
+		nil,
+	)
+
 	descServiceLabels = metrics.NewMetricFamilyDef(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
 		descServiceLabelsDefaultLabels,
+		nil,
+	)
+
+	descServiceStatusLoadBalancerIngress = metrics.NewMetricFamilyDef(
+		"kube_service_status_load_balancer_ingress",
+		"Service load balancer ingress status",
+		append(descServiceLabelsDefaultLabels, "ip", "hostname"),
 		nil,
 	)
 )
@@ -109,6 +137,34 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 	}
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 	addGauge(serviceLabelsDesc(labelKeys), 1, labelValues...)
+
+	if s.Spec.ExternalName != "" {
+		addGauge(descServiceExternalName, 1, s.Spec.ExternalName)
+	} else {
+		addGauge(descServiceExternalName, 0, s.Spec.ExternalName)
+	}
+
+	if s.Spec.LoadBalancerIP != "" {
+		addGauge(descServiceLoadBalancerIP, 1, s.Spec.LoadBalancerIP)
+	} else {
+		addGauge(descServiceLoadBalancerIP, 0, s.Spec.LoadBalancerIP)
+	}
+
+	if len(s.Status.LoadBalancer.Ingress) > 0 {
+		for _, ingress := range s.Status.LoadBalancer.Ingress {
+			addGauge(descServiceStatusLoadBalancerIngress, 1, ingress.IP, ingress.Hostname)
+		}
+	} else {
+		addGauge(descServiceStatusLoadBalancerIngress, 0, "", "") // Add empty for completeness
+	}
+
+	if len(s.Spec.ExternalIPs) > 0 {
+		for _, external_ip := range s.Spec.ExternalIPs {
+			addGauge(descServiceSpecExternalIP, 1, external_ip)
+		}
+	} else {
+		addGauge(descServiceSpecExternalIP, 0, "") // Add empty for completeness
+	}
 
 	return ms
 }

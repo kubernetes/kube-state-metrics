@@ -166,9 +166,16 @@ curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state
 
 echo "check metrics format with promtool"
 [ -n "$E2E_SETUP_PROMTOOL" ] && setup_promtool
-cat $KUBE_STATE_METRICS_LOG_DIR/metrics | promtool check metrics
+# kube-state-metrics does not expose the HELP lines for each metric family on
+# its /metrics endpoint. In order to still check for other issues raised by
+# promtool, filter out the HELP text warnings.
+# `grep -v` fails when it returns an empty string. This is inverted at the
+# beginning via `!`.
+set +o pipefail
+! cat $KUBE_STATE_METRICS_LOG_DIR/metrics | promtool check metrics 2>&1 | grep -v "no help text"
+set -o pipefail
 
-collectors=$(find pkg/collectors/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "collectors.go" | xargs -n1 basename | awk -F. '{print $1}')
+collectors=$(find pkg/collectors/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "collectors.go" -not -name "builder.go" -not -name "testutils.go" | xargs -n1 basename | awk -F. '{print $1}')
 echo "available collectors: $collectors"
 for collector in $collectors; do
     echo "checking that kube_${collector}* metrics exists"

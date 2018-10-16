@@ -23,9 +23,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 )
 
 var (
@@ -50,34 +48,35 @@ var (
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 )
 
-var AvailableCollectors = map[string]func(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options){
-	"cronjobs":                 RegisterCronJobCollector,
-	"daemonsets":               RegisterDaemonSetCollector,
-	"deployments":              RegisterDeploymentCollector,
-	"jobs":                     RegisterJobCollector,
-	"limitranges":              RegisterLimitRangeCollector,
-	"nodes":                    RegisterNodeCollector,
-	"pods":                     RegisterPodCollector,
-	"replicasets":              RegisterReplicaSetCollector,
-	"replicationcontrollers":   RegisterReplicationControllerCollector,
-	"resourcequotas":           RegisterResourceQuotaCollector,
-	"services":                 RegisterServiceCollector,
-	"statefulsets":             RegisterStatefulSetCollector,
-	"persistentvolumes":        RegisterPersistentVolumeCollector,
-	"persistentvolumeclaims":   RegisterPersistentVolumeClaimCollector,
-	"namespaces":               RegisterNamespaceCollector,
-	"horizontalpodautoscalers": RegisterHorizontalPodAutoScalerCollector,
-	"endpoints":                RegisterEndpointCollector,
-	"secrets":                  RegisterSecretCollector,
-	"configmaps":               RegisterConfigMapCollector,
+type store interface {
+	GetAll() []*metrics.Metric
 }
 
-type SharedInformerList []cache.SharedInformer
+// Collector represents a kube-state-metrics metric collector. It is stripped
+// down version of the Prometheus client_golang collector.
+type Collector struct {
+	store store
+}
 
-func (sil SharedInformerList) Run(stopCh <-chan struct{}) {
-	for _, sinf := range sil {
-		go sinf.Run(stopCh)
-	}
+func newCollector(s store) *Collector {
+	return &Collector{s}
+}
+
+// Collect returns all metrics of the underlying store of the collector.
+func (c *Collector) Collect() []*metrics.Metric {
+	return c.store.GetAll()
+}
+
+func newMetricFamilyDef(name, help string, labelKeys []string, constLabels prometheus.Labels) *metricFamilyDef {
+	return &metricFamilyDef{name, help, labelKeys, constLabels}
+}
+
+// metricFamilyDef represents a metric family definition
+type metricFamilyDef struct {
+	Name        string
+	Help        string
+	LabelKeys   []string
+	ConstLabels prometheus.Labels
 }
 
 func boolFloat64(b bool) float64 {
@@ -90,19 +89,25 @@ func boolFloat64(b bool) float64 {
 // addConditionMetrics generates one metric for each possible node condition
 // status. For this function to work properly, the last label in the metric
 // description must be the condition.
-func addConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, cs v1.ConditionStatus, lv ...string) {
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionTrue),
-		append(lv, "true")...,
-	)
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionFalse),
-		append(lv, "false")...,
-	)
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionUnknown),
-		append(lv, "unknown")...,
-	)
+func addConditionMetrics(desc *metricFamilyDef, cs v1.ConditionStatus, lv ...string) []*metrics.Metric {
+	ms := []*metrics.Metric{}
+	m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "true"), boolFloat64(cs == v1.ConditionTrue))
+	if err != nil {
+		panic(err)
+	}
+	ms = append(ms, m)
+	m, err = metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "false"), boolFloat64(cs == v1.ConditionFalse))
+	if err != nil {
+		panic(err)
+	}
+	ms = append(ms, m)
+	m, err = metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "unknown"), boolFloat64(cs == v1.ConditionUnknown))
+	if err != nil {
+		panic(err)
+	}
+	ms = append(ms, m)
+
+	return ms
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {

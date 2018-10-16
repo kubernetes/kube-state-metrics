@@ -17,15 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"golang.org/x/net/context"
-
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -33,35 +32,35 @@ var (
 	descEndpointLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 
-	descEndpointInfo = prometheus.NewDesc(
+	descEndpointInfo = newMetricFamilyDef(
 		"kube_endpoint_info",
 		"Information about endpoint.",
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointCreated = prometheus.NewDesc(
+	descEndpointCreated = newMetricFamilyDef(
 		"kube_endpoint_created",
 		"Unix creation timestamp",
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointLabels = prometheus.NewDesc(
+	descEndpointLabels = newMetricFamilyDef(
 		descEndpointLabelsName,
 		descEndpointLabelsHelp,
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointAddressAvailable = prometheus.NewDesc(
+	descEndpointAddressAvailable = newMetricFamilyDef(
 		"kube_endpoint_address_available",
 		"Number of addresses available in endpoint.",
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointAddressNotReady = prometheus.NewDesc(
+	descEndpointAddressNotReady = newMetricFamilyDef(
 		"kube_endpoint_address_not_ready",
 		"Number of addresses not ready in endpoint",
 		descEndpointLabelsDefaultLabels,
@@ -69,76 +68,36 @@ var (
 	)
 )
 
-type EndpointLister func() ([]v1.Endpoints, error)
-
-func (l EndpointLister) List() ([]v1.Endpoints, error) {
-	return l()
-}
-
-func RegisterEndpointCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Endpoints().Informer().(cache.SharedInformer))
+func createEndpointsListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Endpoints(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Endpoints(ns).Watch(opts)
+		},
 	}
-
-	endpointLister := EndpointLister(func() (endpoints []v1.Endpoints, err error) {
-		for _, sinf := range infs {
-			for _, m := range sinf.GetStore().List() {
-				endpoints = append(endpoints, *m.(*v1.Endpoints))
-			}
-		}
-		return endpoints, nil
-	})
-
-	registry.MustRegister(&endpointCollector{store: endpointLister, opts: opts})
-	infs.Run(context.Background().Done())
 }
 
-type endpointStore interface {
-	List() (endpoints []v1.Endpoints, err error)
-}
+func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
 
-// endpointCollector collects metrics about all endpoints in the cluster.
-type endpointCollector struct {
-	store endpointStore
-	opts  *options.Options
-}
+	// TODO: Refactor
+	ePointer := obj.(*v1.Endpoints)
+	e := *ePointer
 
-// Describe implements the prometheus.Collector interface.
-func (pc *endpointCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descEndpointInfo
-	ch <- descEndpointLabels
-	ch <- descEndpointCreated
-	ch <- descEndpointAddressAvailable
-	ch <- descEndpointAddressNotReady
-}
-
-// Collect implements the prometheus.Collector interface.
-func (ec *endpointCollector) Collect(ch chan<- prometheus.Metric) {
-	endpoints, err := ec.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "endpoint"}).Inc()
-		glog.Errorf("listing endpoints failed: %s", err)
-		return
-	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "endpoint"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "endpoint"}).Observe(float64(len(endpoints)))
-	for _, e := range endpoints {
-		ec.collectEndpoints(ch, e)
-	}
-
-	glog.V(4).Infof("collected %d endpoints", len(endpoints))
-}
-
-func (ec *endpointCollector) collectEndpoints(ch chan<- prometheus.Metric, e v1.Endpoints) {
-	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
+	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{e.Namespace, e.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
+		}
+
+		ms = append(ms, m)
 	}
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+		addConstMetric(desc, v, lv...)
 	}
 
 	addGauge(descEndpointInfo, 1)
@@ -159,10 +118,12 @@ func (ec *endpointCollector) collectEndpoints(ch chan<- prometheus.Metric, e v1.
 		notReady += len(s.NotReadyAddresses) * len(s.Ports)
 	}
 	addGauge(descEndpointAddressNotReady, float64(notReady))
+
+	return ms
 }
 
-func endpointLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func endpointLabelsDesc(labelKeys []string) *metricFamilyDef {
+	return newMetricFamilyDef(
 		descEndpointLabelsName,
 		descEndpointLabelsHelp,
 		append(descEndpointLabelsDefaultLabels, labelKeys...),

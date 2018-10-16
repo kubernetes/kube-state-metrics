@@ -19,19 +19,20 @@ package collectors
 import (
 	"strconv"
 
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/constant"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/constant"
-	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/util/node"
 )
 
+// TODO: Can't we use const instead?
 var (
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
@@ -39,164 +40,164 @@ var (
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "ErrImagePull", "ImagePullBackOff"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
-	descPodInfo = prometheus.NewDesc(
+	descPodInfo = newMetricFamilyDef(
 		"kube_pod_info",
 		"Information about pod.",
 		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "uid", "node", "created_by_kind", "created_by_name"),
 		nil,
 	)
-	descPodStartTime = prometheus.NewDesc(
+	descPodStartTime = newMetricFamilyDef(
 		"kube_pod_start_time",
 		"Start time in unix timestamp for a pod.",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodCompletionTime = prometheus.NewDesc(
+	descPodCompletionTime = newMetricFamilyDef(
 		"kube_pod_completion_time",
 		"Completion time in unix timestamp for a pod.",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodOwner = prometheus.NewDesc(
+	descPodOwner = newMetricFamilyDef(
 		"kube_pod_owner",
 		"Information about the Pod's owner.",
 		append(descPodLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
 		nil,
 	)
-	descPodLabels = prometheus.NewDesc(
+	descPodLabels = newMetricFamilyDef(
 		descPodLabelsName,
 		descPodLabelsHelp,
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodCreated = prometheus.NewDesc(
+	descPodCreated = newMetricFamilyDef(
 		"kube_pod_created",
 		"Unix creation timestamp",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodStatusScheduledTime = prometheus.NewDesc(
+	descPodStatusScheduledTime = newMetricFamilyDef(
 		"kube_pod_status_scheduled_time",
 		"Unix timestamp when pod moved into scheduled status",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodStatusPhase = prometheus.NewDesc(
+	descPodStatusPhase = newMetricFamilyDef(
 		"kube_pod_status_phase",
 		"The pods current phase.",
 		append(descPodLabelsDefaultLabels, "phase"),
 		nil,
 	)
-	descPodStatusReady = prometheus.NewDesc(
+	descPodStatusReady = newMetricFamilyDef(
 		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
 		append(descPodLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descPodStatusScheduled = prometheus.NewDesc(
+	descPodStatusScheduled = newMetricFamilyDef(
 		"kube_pod_status_scheduled",
 		"Describes the status of the scheduling process for the pod.",
 		append(descPodLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descPodContainerInfo = prometheus.NewDesc(
+	descPodContainerInfo = newMetricFamilyDef(
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
 		append(descPodLabelsDefaultLabels, "container", "image", "image_id", "container_id"),
 		nil,
 	)
-	descPodContainerStatusWaiting = prometheus.NewDesc(
+	descPodContainerStatusWaiting = newMetricFamilyDef(
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusWaitingReason = prometheus.NewDesc(
+	descPodContainerStatusWaitingReason = newMetricFamilyDef(
 		"kube_pod_container_status_waiting_reason",
 		"Describes the reason the container is currently in waiting state.",
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
-	descPodContainerStatusRunning = prometheus.NewDesc(
+	descPodContainerStatusRunning = newMetricFamilyDef(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusTerminated = prometheus.NewDesc(
+	descPodContainerStatusTerminated = newMetricFamilyDef(
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusTerminatedReason = prometheus.NewDesc(
+	descPodContainerStatusTerminatedReason = newMetricFamilyDef(
 		"kube_pod_container_status_terminated_reason",
 		"Describes the reason the container is currently in terminated state.",
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
-	descPodContainerStatusLastTerminatedReason = prometheus.NewDesc(
+	descPodContainerStatusLastTerminatedReason = newMetricFamilyDef(
 		"kube_pod_container_status_last_terminated_reason",
 		"Describes the last reason the container was in terminated state.",
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
 
-	descPodContainerStatusReady = prometheus.NewDesc(
+	descPodContainerStatusReady = newMetricFamilyDef(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusRestarts = prometheus.NewDesc(
+	descPodContainerStatusRestarts = newMetricFamilyDef(
 		"kube_pod_container_status_restarts_total",
 		"The number of container restarts per container.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerResourceRequests = prometheus.NewDesc(
+	descPodContainerResourceRequests = newMetricFamilyDef(
 		"kube_pod_container_resource_requests",
 		"The number of requested request resource by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node", "resource", "unit"),
 		nil,
 	)
-	descPodContainerResourceLimits = prometheus.NewDesc(
+	descPodContainerResourceLimits = newMetricFamilyDef(
 		"kube_pod_container_resource_limits",
 		"The number of requested limit resource by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node", "resource", "unit"),
 		nil,
 	)
-	descPodContainerResourceRequestsCPUCores = prometheus.NewDesc(
+	descPodContainerResourceRequestsCPUCores = newMetricFamilyDef(
 		"kube_pod_container_resource_requests_cpu_cores",
 		"The number of requested cpu cores by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodContainerResourceRequestsMemoryBytes = prometheus.NewDesc(
+	descPodContainerResourceRequestsMemoryBytes = newMetricFamilyDef(
 		"kube_pod_container_resource_requests_memory_bytes",
 		"The number of requested memory bytes by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodContainerResourceLimitsCPUCores = prometheus.NewDesc(
+	descPodContainerResourceLimitsCPUCores = newMetricFamilyDef(
 		"kube_pod_container_resource_limits_cpu_cores",
 		"The limit on cpu cores to be used by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodContainerResourceLimitsMemoryBytes = prometheus.NewDesc(
+	descPodContainerResourceLimitsMemoryBytes = newMetricFamilyDef(
 		"kube_pod_container_resource_limits_memory_bytes",
 		"The limit on memory to be used by a container in bytes.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodSpecVolumesPersistentVolumeClaimsInfo = prometheus.NewDesc(
+	descPodSpecVolumesPersistentVolumeClaimsInfo = newMetricFamilyDef(
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
 		"Information about persistentvolumeclaim volumes in a pod.",
 		append(descPodLabelsDefaultLabels, "volume", "persistentvolumeclaim"),
 		nil,
 	)
-	descPodSpecVolumesPersistentVolumeClaimsReadOnly = prometheus.NewDesc(
+	descPodSpecVolumesPersistentVolumeClaimsReadOnly = newMetricFamilyDef(
 		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 		"Describes whether a persistentvolumeclaim is mounted read only.",
 		append(descPodLabelsDefaultLabels, "volume", "persistentvolumeclaim"),
@@ -204,96 +205,54 @@ var (
 	)
 )
 
-type PodLister func() ([]v1.Pod, error)
-
-func (l PodLister) List() ([]v1.Pod, error) {
-	return l()
-}
-
-func RegisterPodCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Pods().Informer().(cache.SharedInformer))
+func createPodListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Pods(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Pods(ns).Watch(opts)
+		},
 	}
-
-	podLister := PodLister(func() (pods []v1.Pod, err error) {
-		for _, pinf := range infs {
-			for _, m := range pinf.GetStore().List() {
-				pods = append(pods, *m.(*v1.Pod))
-			}
-		}
-		return pods, nil
-	})
-
-	registry.MustRegister(&podCollector{store: podLister, opts: opts})
-	infs.Run(context.Background().Done())
 }
 
-type podStore interface {
-	List() (pods []v1.Pod, err error)
-}
-
-// podCollector collects metrics about all pods in the cluster.
-type podCollector struct {
-	store podStore
-	opts  *options.Options
-}
-
+// TODO: Not necessary without HELP and TYPE line
 // Describe implements the prometheus.Collector interface.
-func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descPodInfo
-	ch <- descPodStartTime
-	ch <- descPodCompletionTime
-	ch <- descPodOwner
-	ch <- descPodLabels
-	ch <- descPodCreated
-	ch <- descPodStatusScheduledTime
-	ch <- descPodStatusPhase
-	ch <- descPodStatusReady
-	ch <- descPodStatusScheduled
-	ch <- descPodContainerInfo
-	ch <- descPodContainerStatusWaiting
-	ch <- descPodContainerStatusWaitingReason
-	ch <- descPodContainerStatusRunning
-	ch <- descPodContainerStatusTerminated
-	ch <- descPodContainerStatusTerminatedReason
-	ch <- descPodContainerStatusLastTerminatedReason
-	ch <- descPodContainerStatusReady
-	ch <- descPodContainerStatusRestarts
-	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
-	ch <- descPodSpecVolumesPersistentVolumeClaimsReadOnly
-	ch <- descPodContainerResourceRequests
-	ch <- descPodContainerResourceLimits
+// func (c *podCollector) Describe(ch chan<- *desc) {
+// 	ch <- descPodInfo
+// 	ch <- descPodStartTime
+// 	ch <- descPodCompletionTime
+// 	ch <- descPodOwner
+// 	ch <- descPodLabels
+// 	ch <- descPodCreated
+// 	ch <- descPodStatusScheduledTime
+// 	ch <- descPodStatusPhase
+// 	ch <- descPodStatusReady
+// 	ch <- descPodStatusScheduled
+// 	ch <- descPodContainerInfo
+// 	ch <- descPodContainerStatusWaiting
+// 	ch <- descPodContainerStatusWaitingReason
+// 	ch <- descPodContainerStatusRunning
+// 	ch <- descPodContainerStatusTerminated
+// 	ch <- descPodContainerStatusTerminatedReason
+// 	ch <- descPodContainerStatusReady
+// 	ch <- descPodContainerStatusRestarts
+// 	ch <- descPodSpecVolumesPersistentVolumeClaimsInfo
+// 	ch <- descPodSpecVolumesPersistentVolumeClaimsReadOnly
+// 	ch <- descPodContainerResourceRequests
+// 	ch <- descPodContainerResourceLimits
+// 	ch <- descPodContainerStatusLastTerminatedReason
+//
+// 	if !c.opts.DisablePodNonGenericResourceMetrics {
+// 		ch <- descPodContainerResourceRequestsCPUCores
+// 		ch <- descPodContainerResourceRequestsMemoryBytes
+// 		ch <- descPodContainerResourceLimitsCPUCores
+// 		ch <- descPodContainerResourceLimitsMemoryBytes
+// 	}
+// }
 
-	if !pc.opts.DisablePodNonGenericResourceMetrics {
-		ch <- descPodContainerResourceRequestsCPUCores
-		ch <- descPodContainerResourceRequestsMemoryBytes
-		ch <- descPodContainerResourceLimitsCPUCores
-		ch <- descPodContainerResourceLimitsMemoryBytes
-	}
-}
-
-// Collect implements the prometheus.Collector interface.
-func (pc *podCollector) Collect(ch chan<- prometheus.Metric) {
-	pods, err := pc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "pod"}).Inc()
-		glog.Errorf("listing pods failed: %s", err)
-		return
-	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "pod"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "pod"}).Observe(float64(len(pods)))
-	for _, p := range pods {
-		pc.collectPod(ch, p)
-	}
-
-	glog.V(4).Infof("collected %d pods", len(pods))
-}
-
-func podLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func podLabelsDesc(labelKeys []string) *metricFamilyDef {
+	return newMetricFamilyDef(
 		descPodLabelsName,
 		descPodLabelsHelp,
 		append(descPodLabelsDefaultLabels, labelKeys...),
@@ -301,17 +260,29 @@ func podLabelsDesc(labelKeys []string) *prometheus.Desc {
 	)
 }
 
-func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
+func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
+
+	// TODO: Refactor
+	pPointer := obj.(*v1.Pod)
+	p := *pPointer
+
 	nodeName := p.Spec.NodeName
-	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
+	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Namespace, p.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
+		}
+
+		ms = append(ms, m)
 	}
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+		addConstMetric(desc, v, lv...)
 	}
-	addCounter := func(desc *prometheus.Desc, v float64, lv ...string) {
-		addConstMetric(desc, prometheus.CounterValue, v, lv...)
+	addCounter := func(desc *metricFamilyDef, v float64, lv ...string) {
+		addConstMetric(desc, v, lv...)
 	}
 
 	createdBy := metav1.GetControllerOf(&p)
@@ -365,9 +336,9 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	for _, c := range p.Status.Conditions {
 		switch c.Type {
 		case v1.PodReady:
-			addConditionMetrics(ch, descPodStatusReady, c.Status, p.Namespace, p.Name)
+			ms = append(ms, addConditionMetrics(descPodStatusReady, c.Status, p.Namespace, p.Name)...)
 		case v1.PodScheduled:
-			addConditionMetrics(ch, descPodStatusScheduled, c.Status, p.Namespace, p.Name)
+			ms = append(ms, addConditionMetrics(descPodStatusScheduled, c.Status, p.Namespace, p.Name)...)
 			if c.Status == v1.ConditionTrue {
 				addGauge(descPodStatusScheduledTime, float64(c.LastTransitionTime.Unix()))
 			}
@@ -427,7 +398,7 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		addGauge(descPodCompletionTime, lastFinishTime)
 	}
 
-	if !pc.opts.DisablePodNonGenericResourceMetrics {
+	if !disablePodNonGenericResourceMetrics {
 		for _, c := range p.Spec.Containers {
 			req := c.Resources.Requests
 			lim := c.Resources.Limits
@@ -524,4 +495,6 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 			addGauge(descPodSpecVolumesPersistentVolumeClaimsReadOnly, readOnly, v.Name, v.PersistentVolumeClaim.ClaimName)
 		}
 	}
+
+	return ms
 }

@@ -17,13 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -35,25 +36,25 @@ var (
 	descNamespaceAnnotationsHelp          = "Kubernetes annotations converted to Prometheus labels."
 	descNamespaceAnnotationsDefaultLabels = []string{"namespace"}
 
-	descNamespaceCreated = prometheus.NewDesc(
+	descNamespaceCreated = newMetricFamilyDef(
 		"kube_namespace_created",
 		"Unix creation timestamp",
 		descNamespaceLabelsDefaultLabels,
 		nil,
 	)
-	descNamespaceLabels = prometheus.NewDesc(
+	descNamespaceLabels = newMetricFamilyDef(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		descNamespaceLabelsDefaultLabels,
 		nil,
 	)
-	descNamespaceAnnotations = prometheus.NewDesc(
+	descNamespaceAnnotations = newMetricFamilyDef(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,
 		descNamespaceAnnotationsDefaultLabels,
 		nil,
 	)
-	descNamespacePhase = prometheus.NewDesc(
+	descNamespacePhase = newMetricFamilyDef(
 		"kube_namespace_status_phase",
 		"kubernetes namespace status phase.",
 		append(descNamespaceLabelsDefaultLabels, "phase"),
@@ -61,93 +62,53 @@ var (
 	)
 )
 
-// NamespaceLister define NamespaceLister type
-type NamespaceLister func() ([]v1.Namespace, error)
-
-// List return namespace list
-func (l NamespaceLister) List() ([]v1.Namespace, error) {
-	return l()
+func createNamespaceListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Namespaces().List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Namespaces().Watch(opts)
+		},
+	}
 }
 
-// RegisterNamespaceCollector registry namespace collector
-func RegisterNamespaceCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
+func generateNamespaceMetrics(obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
 
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Namespaces().Informer().(cache.SharedInformer))
-	}
+	// TODO: Refactor
+	nPointer := obj.(*v1.Namespace)
+	n := *nPointer
 
-	namespaceLister := NamespaceLister(func() (namespaces []v1.Namespace, err error) {
-		for _, nsinf := range infs {
-			for _, ns := range nsinf.GetStore().List() {
-				namespaces = append(namespaces, *(ns.(*v1.Namespace)))
-			}
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+		lv = append([]string{n.Name}, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
 		}
-		return namespaces, nil
-	})
 
-	registry.MustRegister(&namespaceCollector{store: namespaceLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type namespaceStore interface {
-	List() ([]v1.Namespace, error)
-}
-
-// namespaceCollector collects metrics about all namespace in the cluster.
-type namespaceCollector struct {
-	store namespaceStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (nsc *namespaceCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descNamespaceCreated
-	ch <- descNamespaceLabels
-	ch <- descNamespaceAnnotations
-	ch <- descNamespacePhase
-}
-
-// Collect implements the prometheus.Collector interface.
-func (nsc *namespaceCollector) Collect(ch chan<- prometheus.Metric) {
-	nsls, err := nsc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "namespace"}).Inc()
-		glog.Errorf("listing namespace failed: %s", err)
-		return
-	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "namespace"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "namespace"}).Observe(float64(len(nsls)))
-	for _, rq := range nsls {
-		nsc.collectNamespace(ch, rq)
+		ms = append(ms, m)
 	}
 
-	glog.V(4).Infof("collected %d namespaces", len(nsls))
-}
+	addGauge(descNamespacePhase, boolFloat64(n.Status.Phase == v1.NamespaceActive), string(v1.NamespaceActive))
+	addGauge(descNamespacePhase, boolFloat64(n.Status.Phase == v1.NamespaceTerminating), string(v1.NamespaceTerminating))
 
-func (nsc *namespaceCollector) collectNamespace(ch chan<- prometheus.Metric, ns v1.Namespace) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{ns.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
+	if !n.CreationTimestamp.IsZero() {
+		addGauge(descNamespaceCreated, float64(n.CreationTimestamp.Unix()))
 	}
 
-	addGauge(descNamespacePhase, boolFloat64(ns.Status.Phase == v1.NamespaceActive), string(v1.NamespaceActive))
-	addGauge(descNamespacePhase, boolFloat64(ns.Status.Phase == v1.NamespaceTerminating), string(v1.NamespaceTerminating))
-
-	if !ns.CreationTimestamp.IsZero() {
-		addGauge(descNamespaceCreated, float64(ns.CreationTimestamp.Unix()))
-	}
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(ns.Labels)
+	labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
 	addGauge(namespaceLabelsDesc(labelKeys), 1, labelValues...)
 
-	annnotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(ns.Annotations)
+	annnotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
 	addGauge(namespaceAnnotationsDesc(annnotationKeys), 1, annotationValues...)
+
+	return ms
 }
 
-func namespaceLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func namespaceLabelsDesc(labelKeys []string) *metricFamilyDef {
+	return newMetricFamilyDef(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		append(descNamespaceLabelsDefaultLabels, labelKeys...),
@@ -155,8 +116,8 @@ func namespaceLabelsDesc(labelKeys []string) *prometheus.Desc {
 	)
 }
 
-func namespaceAnnotationsDesc(annotationKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func namespaceAnnotationsDesc(annotationKeys []string) *metricFamilyDef {
+	return newMetricFamilyDef(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,
 		append(descNamespaceAnnotationsDefaultLabels, annotationKeys...),

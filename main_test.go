@@ -17,6 +17,9 @@ limitations under the License.
 package main
 
 import (
+	// "fmt"
+	// "io/ioutil"
+	"context"
 	"net/http/httptest"
 	"strconv"
 	"testing"
@@ -27,36 +30,53 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
 )
 
 func BenchmarkKubeStateMetrics(t *testing.B) {
+	fixtureMultiplier := 1000
+	requestCount := 100
+
+	t.Logf(
+		"starting kube-state-metrics benchmark with fixtureMultiplier %v and requestCount %v",
+		fixtureMultiplier,
+		requestCount,
+	)
+
 	kubeClient := fake.NewSimpleClientset()
 
-	if err := injectFixtures(kubeClient, 1000); err != nil {
+	if err := injectFixtures(kubeClient, fixtureMultiplier); err != nil {
 		t.Errorf("error injecting resources: %v", err)
 	}
 
 	opts := options.NewOptions()
-	collectors := options.DefaultCollectors
-	namespaces := options.DefaultNamespaces
 
-	registry := prometheus.NewRegistry()
-	registerCollectors(registry, kubeClient, collectors, namespaces, opts)
-	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}})
+	builder := kcollectors.NewBuilder(context.TODO(), opts)
+	builder.WithEnabledCollectors(options.DefaultCollectors)
+	builder.WithKubeClient(kubeClient)
+	builder.WithNamespaces(options.DefaultNamespaces)
+
+	collectors := builder.Build()
+
+	handler := metricHandler{collectors}
 
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	// Wait for informers to sync
 	time.Sleep(time.Second)
 
-	amountRequests := 10
-	for i := 0; i < amountRequests; i++ {
-		w := httptest.NewRecorder()
+	var w *httptest.ResponseRecorder
+	for i := 0; i < requestCount; i++ {
+		w = httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 	}
+
+	// resp := w.Result()
+	// body, _ := ioutil.ReadAll(resp.Body)
+
+	// fmt.Println(resp.StatusCode)
+	// fmt.Println(resp.Header.Get("Content-Type"))
+	// fmt.Println(string(body))
 }
 
 func injectFixtures(client *fake.Clientset, multiplier int) error {

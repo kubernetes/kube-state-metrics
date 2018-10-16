@@ -17,14 +17,15 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/constant"
-	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 )
 
@@ -33,7 +34,7 @@ var (
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
 
-	descNodeInfo = prometheus.NewDesc(
+	descNodeInfo = newMetricFamilyDef(
 		"kube_node_info",
 		"Information about a cluster node.",
 		append(descNodeLabelsDefaultLabels,
@@ -45,85 +46,85 @@ var (
 			"provider_id"),
 		nil,
 	)
-	descNodeCreated = prometheus.NewDesc(
+	descNodeCreated = newMetricFamilyDef(
 		"kube_node_created",
 		"Unix creation timestamp",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeLabels = prometheus.NewDesc(
+	descNodeLabels = newMetricFamilyDef(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeSpecUnschedulable = prometheus.NewDesc(
+	descNodeSpecUnschedulable = newMetricFamilyDef(
 		"kube_node_spec_unschedulable",
 		"Whether a node can schedule new pods.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeSpecTaint = prometheus.NewDesc(
+	descNodeSpecTaint = newMetricFamilyDef(
 		"kube_node_spec_taint",
 		"The taint of a cluster node.",
 		append(descNodeLabelsDefaultLabels, "key", "value", "effect"),
 		nil,
 	)
-	descNodeStatusCondition = prometheus.NewDesc(
+	descNodeStatusCondition = newMetricFamilyDef(
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
 		append(descNodeLabelsDefaultLabels, "condition", "status"),
 		nil,
 	)
-	descNodeStatusPhase = prometheus.NewDesc(
+	descNodeStatusPhase = newMetricFamilyDef(
 		"kube_node_status_phase",
 		"The phase the node is currently in.",
 		append(descNodeLabelsDefaultLabels, "phase"),
 		nil,
 	)
-	descNodeStatusCapacity = prometheus.NewDesc(
+	descNodeStatusCapacity = newMetricFamilyDef(
 		"kube_node_status_capacity",
 		"The capacity for different resources of a node.",
 		append(descNodeLabelsDefaultLabels, "resource", "unit"),
 		nil,
 	)
-	descNodeStatusCapacityPods = prometheus.NewDesc(
+	descNodeStatusCapacityPods = newMetricFamilyDef(
 		"kube_node_status_capacity_pods",
 		"The total pod resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusCapacityCPU = prometheus.NewDesc(
+	descNodeStatusCapacityCPU = newMetricFamilyDef(
 		"kube_node_status_capacity_cpu_cores",
 		"The total CPU resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusCapacityMemory = prometheus.NewDesc(
+	descNodeStatusCapacityMemory = newMetricFamilyDef(
 		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatable = prometheus.NewDesc(
+	descNodeStatusAllocatable = newMetricFamilyDef(
 		"kube_node_status_allocatable",
 		"The allocatable for different resources of a node that are available for scheduling.",
 		append(descNodeLabelsDefaultLabels, "resource", "unit"),
 		nil,
 	)
-	descNodeStatusAllocatablePods = prometheus.NewDesc(
+	descNodeStatusAllocatablePods = newMetricFamilyDef(
 		"kube_node_status_allocatable_pods",
 		"The pod resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatableCPU = prometheus.NewDesc(
+	descNodeStatusAllocatableCPU = newMetricFamilyDef(
 		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatableMemory = prometheus.NewDesc(
+	descNodeStatusAllocatableMemory = newMetricFamilyDef(
 		"kube_node_status_allocatable_memory_bytes",
 		"The memory resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
@@ -131,83 +132,19 @@ var (
 	)
 )
 
-type NodeLister func() (v1.NodeList, error)
-
-func (l NodeLister) List() (v1.NodeList, error) {
-	return l()
-}
-
-func RegisterNodeCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Nodes().Informer().(cache.SharedInformer))
-	}
-
-	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
-		for _, ninf := range infs {
-			for _, m := range ninf.GetStore().List() {
-				machines.Items = append(machines.Items, *(m.(*v1.Node)))
-			}
-		}
-		return machines, nil
-	})
-
-	registry.MustRegister(&nodeCollector{store: nodeLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type nodeStore interface {
-	List() (v1.NodeList, error)
-}
-
-// nodeCollector collects metrics about all nodes in the cluster.
-type nodeCollector struct {
-	store nodeStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descNodeInfo
-	ch <- descNodeCreated
-	ch <- descNodeLabels
-	ch <- descNodeSpecUnschedulable
-	ch <- descNodeSpecTaint
-	ch <- descNodeStatusCondition
-	ch <- descNodeStatusPhase
-	ch <- descNodeStatusCapacity
-	ch <- descNodeStatusAllocatable
-
-	if !nc.opts.DisableNodeNonGenericResourceMetrics {
-		ch <- descNodeStatusCapacityCPU
-		ch <- descNodeStatusCapacityMemory
-		ch <- descNodeStatusCapacityPods
-		ch <- descNodeStatusAllocatableCPU
-		ch <- descNodeStatusAllocatableMemory
-		ch <- descNodeStatusAllocatablePods
+func createNodeListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Nodes().List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Nodes().Watch(opts)
+		},
 	}
 }
 
-// Collect implements the prometheus.Collector interface.
-func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
-	nodes, err := nc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "node"}).Inc()
-		glog.Errorf("listing nodes failed: %s", err)
-		return
-	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "node"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "node"}).Observe(float64(len(nodes.Items)))
-	for _, n := range nodes.Items {
-		nc.collectNode(ch, n)
-	}
-
-	glog.V(4).Infof("collected %d nodes", len(nodes.Items))
-}
-
-func nodeLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func nodeLabelsDesc(labelKeys []string) *metricFamilyDef {
+	return newMetricFamilyDef(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		append(descNodeLabelsDefaultLabels, labelKeys...),
@@ -215,10 +152,22 @@ func nodeLabelsDesc(labelKeys []string) *prometheus.Desc {
 	)
 }
 
-func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
+func generateNodeMetrics(disableNodeNonGenericResourceMetrics bool, obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
+
+	// TODO: Refactor
+	nPointer := obj.(*v1.Node)
+	n := *nPointer
+
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{n.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
+		}
+
+		ms = append(ms, m)
 	}
 	// NOTE: the instrumentation API requires providing label values in order of declaration
 	// in the metric descriptor. Be careful when making modifications.
@@ -252,7 +201,7 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		// Third party plugin may report customized condition for cluster node
 		// (e.g. node-problem-detector), and Kubernetes may add new core
 		// conditions in future.
-		addConditionMetrics(ch, descNodeStatusCondition, c.Status, n.Name, string(c.Type))
+		ms = append(ms, addConditionMetrics(descNodeStatusCondition, c.Status, n.Name, string(c.Type))...)
 	}
 
 	// Set current phase to 1, others to 0 if it is set.
@@ -262,9 +211,9 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		addGauge(descNodeStatusPhase, boolFloat64(p == v1.NodeTerminated), string(v1.NodeTerminated))
 	}
 
-	if !nc.opts.DisableNodeNonGenericResourceMetrics {
+	if !disableNodeNonGenericResourceMetrics {
 		// Add capacity and allocatable resources if they are set.
-		addResource := func(d *prometheus.Desc, res v1.ResourceList, n v1.ResourceName) {
+		addResource := func(d *metricFamilyDef, res v1.ResourceList, n v1.ResourceName) {
 			if v, ok := res[n]; ok {
 				addGauge(d, float64(v.MilliValue())/1000)
 			}
@@ -332,4 +281,5 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 		}
 	}
 
+	return ms
 }

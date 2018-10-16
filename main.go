@@ -17,7 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"compress/gzip"
+	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -30,13 +33,11 @@ import (
 	"github.com/openshift/origin/pkg/util/proc"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
 	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
-	"k8s.io/kube-state-metrics/pkg/metrics"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
 )
@@ -50,7 +51,7 @@ const (
 type promLogger struct{}
 
 func (pl promLogger) Println(v ...interface{}) {
-	glog.Error(v)
+	glog.Error(v...)
 }
 
 func main() {
@@ -72,25 +73,26 @@ func main() {
 		os.Exit(0)
 	}
 
-	var collectors options.CollectorSet
+	// TODO: Probably not necessary to pass all of opts into builder, right?
+	collectorBuilder := kcollectors.NewBuilder(context.TODO(), opts)
+
 	if len(opts.Collectors) == 0 {
 		glog.Info("Using default collectors")
-		collectors = options.DefaultCollectors
+		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors)
 	} else {
-		collectors = opts.Collectors
+		collectorBuilder.WithEnabledCollectors(opts.Collectors)
 	}
 
-	var namespaces options.NamespaceList
 	if len(opts.Namespaces) == 0 {
-		namespaces = options.DefaultNamespaces
-	} else {
-		namespaces = opts.Namespaces
-	}
-
-	if namespaces.IsAllNamespaces() {
 		glog.Info("Using all namespace")
+		collectorBuilder.WithNamespaces(options.DefaultNamespaces)
 	} else {
-		glog.Infof("Using %s namespaces", namespaces)
+		if opts.Namespaces.IsAllNamespaces() {
+			glog.Info("Using all namespace")
+		} else {
+			glog.Infof("Using %s namespaces", opts.Namespaces)
+		}
+		collectorBuilder.WithNamespaces(opts.Namespaces)
 	}
 
 	if opts.MetricWhitelist.IsEmpty() && opts.MetricBlacklist.IsEmpty() {
@@ -112,6 +114,7 @@ func main() {
 	if err != nil {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
+	collectorBuilder.WithKubeClient(kubeClient)
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.Register(kcollectors.ResourcesPerScrapeMetric)
@@ -120,9 +123,11 @@ func main() {
 	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 
-	registry := prometheus.NewRegistry()
-	registerCollectors(registry, kubeClient, collectors, namespaces, opts)
-	metricsServer(metrics.FilteredGatherer(registry, opts.MetricWhitelist, opts.MetricBlacklist), opts.Host, opts.Port)
+	collectors := collectorBuilder.Build()
+
+	// TODO: Reenable white and blacklisting
+	// metricsServer(metrics.FilteredGatherer(registry, opts.MetricWhitelist, opts.MetricBlacklist), opts.Host, opts.Port)
+	serveMetrics(collectors, opts.Host, opts.Port)
 }
 
 func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
@@ -180,7 +185,8 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
-func metricsServer(registry prometheus.Gatherer, host string, port int) {
+// TODO: How about accepting an interface Collector instead?
+func serveMetrics(collectors []*kcollectors.Collector, host string, port int) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
@@ -188,6 +194,7 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 
 	mux := http.NewServeMux()
 
+	// TODO: This doesn't belong into serveMetrics
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
@@ -195,7 +202,7 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	// Add metricsPath
-	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}}))
+	mux.Handle(metricsPath, &metricHandler{collectors})
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -217,26 +224,40 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
-// registerCollectors creates and starts informers and initializes and
-// registers metrics for collection.
-func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors options.CollectorSet, namespaces options.NamespaceList, opts *options.Options) {
-	informerFactories := []informers.SharedInformerFactory{}
-	for _, ns := range namespaces {
-		informerFactories = append(
-			informerFactories,
-			informers.NewSharedInformerFactoryWithOptions(
-				kubeClient, 0, informers.WithNamespace(ns),
-			),
-		)
-	}
-	activeCollectors := []string{}
-	for c := range enabledCollectors {
-		f, ok := kcollectors.AvailableCollectors[c]
-		if ok {
-			f(registry, informerFactories, opts)
-			activeCollectors = append(activeCollectors, c)
+type metricHandler struct {
+	c []*kcollectors.Collector
+}
+
+func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	resHeader := w.Header()
+	var writer io.Writer = w
+
+	resHeader.Set("Content-Type", `text/plain; version=`+"0.0.4")
+
+	// Gzip response if requested. Taken from
+	// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
+	reqHeader := r.Header.Get("Accept-Encoding")
+	parts := strings.Split(reqHeader, ",")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "gzip" || strings.HasPrefix(part, "gzip;") {
+			writer = gzip.NewWriter(writer)
+			resHeader.Set("Content-Encoding", "gzip")
 		}
 	}
 
-	glog.Infof("Active collectors: %s", strings.Join(activeCollectors, ","))
+	for _, c := range m.c {
+		for _, m := range c.Collect() {
+			_, err := fmt.Fprint(writer, *m)
+			if err != nil {
+				// TODO: Handle panic
+				panic(err)
+			}
+		}
+	}
+
+	// In case we gziped the response, we have to close the writer.
+	if closer, ok := writer.(io.Closer); ok {
+		closer.Close()
+	}
 }

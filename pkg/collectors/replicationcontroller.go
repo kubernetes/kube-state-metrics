@@ -17,62 +17,62 @@ limitations under the License.
 package collectors
 
 import (
-	"context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
-	descReplicationControllerCreated = prometheus.NewDesc(
+	descReplicationControllerCreated = newMetricFamilyDef(
 		"kube_replicationcontroller_created",
 		"Unix creation timestamp",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusReplicas = prometheus.NewDesc(
+	descReplicationControllerStatusReplicas = newMetricFamilyDef(
 		"kube_replicationcontroller_status_replicas",
 		"The number of replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusFullyLabeledReplicas = prometheus.NewDesc(
+	descReplicationControllerStatusFullyLabeledReplicas = newMetricFamilyDef(
 		"kube_replicationcontroller_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusReadyReplicas = prometheus.NewDesc(
+	descReplicationControllerStatusReadyReplicas = newMetricFamilyDef(
 		"kube_replicationcontroller_status_ready_replicas",
 		"The number of ready replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusAvailableReplicas = prometheus.NewDesc(
+	descReplicationControllerStatusAvailableReplicas = newMetricFamilyDef(
 		"kube_replicationcontroller_status_available_replicas",
 		"The number of available replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusObservedGeneration = prometheus.NewDesc(
+	descReplicationControllerStatusObservedGeneration = newMetricFamilyDef(
 		"kube_replicationcontroller_status_observed_generation",
 		"The generation observed by the ReplicationController controller.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerSpecReplicas = prometheus.NewDesc(
+	descReplicationControllerSpecReplicas = newMetricFamilyDef(
 		"kube_replicationcontroller_spec_replicas",
 		"Number of desired pods for a ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerMetadataGeneration = prometheus.NewDesc(
+	descReplicationControllerMetadataGeneration = newMetricFamilyDef(
 		"kube_replicationcontroller_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descReplicationControllerLabelsDefaultLabels,
@@ -80,86 +80,45 @@ var (
 	)
 )
 
-type ReplicationControllerLister func() ([]v1.ReplicationController, error)
-
-func (l ReplicationControllerLister) List() ([]v1.ReplicationController, error) {
-	return l()
-}
-
-func RegisterReplicationControllerCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().ReplicationControllers().Informer().(cache.SharedInformer))
+func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().ReplicationControllers(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().ReplicationControllers(ns).Watch(opts)
+		},
 	}
+}
+func generateReplicationControllerMetrics(obj interface{}) []*metrics.Metric {
+	ms := []*metrics.Metric{}
 
-	replicationControllerLister := ReplicationControllerLister(func() (rcs []v1.ReplicationController, err error) {
-		for _, rcinf := range infs {
-			for _, c := range rcinf.GetStore().List() {
-				rcs = append(rcs, *(c.(*v1.ReplicationController)))
-			}
+	// TODO: Refactor
+	rPointer := obj.(*v1.ReplicationController)
+	r := *rPointer
+
+	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+		lv = append([]string{r.Namespace, r.Name}, lv...)
+
+		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
+		if err != nil {
+			panic(err)
 		}
-		return rcs, nil
-	})
 
-	registry.MustRegister(&replicationcontrollerCollector{store: replicationControllerLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type replicationcontrollerStore interface {
-	List() (replicationcontrollers []v1.ReplicationController, err error)
-}
-
-type replicationcontrollerCollector struct {
-	store replicationcontrollerStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (dc *replicationcontrollerCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descReplicationControllerCreated
-	ch <- descReplicationControllerStatusReplicas
-	ch <- descReplicationControllerStatusFullyLabeledReplicas
-	ch <- descReplicationControllerStatusReadyReplicas
-	ch <- descReplicationControllerStatusAvailableReplicas
-	ch <- descReplicationControllerStatusObservedGeneration
-	ch <- descReplicationControllerSpecReplicas
-	ch <- descReplicationControllerMetadataGeneration
-}
-
-// Collect implements the prometheus.Collector interface.
-func (dc *replicationcontrollerCollector) Collect(ch chan<- prometheus.Metric) {
-	rcs, err := dc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Inc()
-		glog.Errorf("listing replicationcontrollers failed: %s", err)
-		return
+		ms = append(ms, m)
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Add(0)
+	if !r.CreationTimestamp.IsZero() {
+		addGauge(descReplicationControllerCreated, float64(r.CreationTimestamp.Unix()))
+	}
+	addGauge(descReplicationControllerStatusReplicas, float64(r.Status.Replicas))
+	addGauge(descReplicationControllerStatusFullyLabeledReplicas, float64(r.Status.FullyLabeledReplicas))
+	addGauge(descReplicationControllerStatusReadyReplicas, float64(r.Status.ReadyReplicas))
+	addGauge(descReplicationControllerStatusAvailableReplicas, float64(r.Status.AvailableReplicas))
+	addGauge(descReplicationControllerStatusObservedGeneration, float64(r.Status.ObservedGeneration))
+	if r.Spec.Replicas != nil {
+		addGauge(descReplicationControllerSpecReplicas, float64(*r.Spec.Replicas))
+	}
+	addGauge(descReplicationControllerMetadataGeneration, float64(r.ObjectMeta.Generation))
 
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Observe(float64(len(rcs)))
-	for _, d := range rcs {
-		dc.collectReplicationController(ch, d)
-	}
-
-	glog.V(4).Infof("collected %d replicationcontrollers", len(rcs))
-}
-
-func (dc *replicationcontrollerCollector) collectReplicationController(ch chan<- prometheus.Metric, d v1.ReplicationController) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{d.Namespace, d.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	if !d.CreationTimestamp.IsZero() {
-		addGauge(descReplicationControllerCreated, float64(d.CreationTimestamp.Unix()))
-	}
-	addGauge(descReplicationControllerStatusReplicas, float64(d.Status.Replicas))
-	addGauge(descReplicationControllerStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
-	addGauge(descReplicationControllerStatusReadyReplicas, float64(d.Status.ReadyReplicas))
-	addGauge(descReplicationControllerStatusAvailableReplicas, float64(d.Status.AvailableReplicas))
-	addGauge(descReplicationControllerStatusObservedGeneration, float64(d.Status.ObservedGeneration))
-	if d.Spec.Replicas != nil {
-		addGauge(descReplicationControllerSpecReplicas, float64(*d.Spec.Replicas))
-	}
-	addGauge(descReplicationControllerMetadataGeneration, float64(d.ObjectMeta.Generation))
+	return ms
 }

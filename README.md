@@ -55,9 +55,9 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most 5 kube-state-metrics releases will be recorded below.
 
-| kube-state-metrics | client-go | **Kubernetes 1.8** | **Kubernetes 1.9** | **Kubernetes 1.10** | **Kubernetes 1.11** |
+| kube-state-metrics | client-go | **Kubernetes 1.9** | **Kubernetes 1.10** | **Kubernetes 1.11** | **Kubernetes 1.12** |
 |--------------------|-----------|--------------------|--------------------|--------------------|--------------------|
-| **v1.1.0** |  release-5.0      |         ✓          |         ✓          |         ✓          |         -          |
+| **v1.1.0** |  release-5.0      |         ✓          |         ✓          |         -          |         -          |
 | **v1.2.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.3.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.3.1** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |

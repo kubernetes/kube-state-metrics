@@ -58,7 +58,7 @@ func BenchmarkKubeStateMetrics(t *testing.B) {
 
 	collectors := builder.Build()
 
-	handler := metricHandler{collectors}
+	handler := metricHandler{collectors, false}
 
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 

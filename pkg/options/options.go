@@ -40,6 +40,8 @@ type Options struct {
 	DisablePodNonGenericResourceMetrics  bool
 	DisableNodeNonGenericResourceMetrics bool
 
+	EnableGZIPEncoding bool
+
 	flags *pflag.FlagSet
 }
 
@@ -78,6 +80,7 @@ func (o *Options) AddFlags() {
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
 	o.flags.BoolVarP(&o.DisablePodNonGenericResourceMetrics, "disable-pod-non-generic-resource-metrics", "", false, "Disable pod non generic resource request and limit metrics")
 	o.flags.BoolVarP(&o.DisableNodeNonGenericResourceMetrics, "disable-node-non-generic-resource-metrics", "", false, "Disable node non generic resource request and limit metrics")
+	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
 }
 
 func (o *Options) Parse() error {

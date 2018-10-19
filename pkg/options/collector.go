@@ -28,6 +28,7 @@ var (
 		"limitranges":              struct{}{},
 		"nodes":                    struct{}{},
 		"pods":                     struct{}{},
+		"poddisruptionbudgets":     struct{}{},
 		"replicasets":              struct{}{},
 		"replicationcontrollers":   struct{}{},
 		"resourcequotas":           struct{}{},

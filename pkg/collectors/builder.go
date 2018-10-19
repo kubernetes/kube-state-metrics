@@ -29,6 +29,7 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/metrics"
@@ -106,6 +107,7 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"nodes":                  func(b *Builder) *Collector { return b.buildNodeCollector() },
 	"persistentvolumeclaims": func(b *Builder) *Collector { return b.buildPersistentVolumeClaimCollector() },
 	"persistentvolumes":      func(b *Builder) *Collector { return b.buildPersistentVolumeCollector() },
+	"poddisruptionbudgets":   func(b *Builder) *Collector { return b.buildPodDisruptionBudgetCollector() },
 	"pods":                   func(b *Builder) *Collector { return b.buildPodCollector() },
 	"replicasets":            func(b *Builder) *Collector { return b.buildReplicaSetCollector() },
 	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
@@ -208,6 +210,13 @@ func (b *Builder) buildPersistentVolumeCollector() *Collector {
 func (b *Builder) buildPersistentVolumeClaimCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generatePersistentVolumeClaimMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolumeClaim{}, store, b.namespaces, createPersistentVolumeClaimListWatch)
+
+	return newCollector(store)
+}
+
+func (b *Builder) buildPodDisruptionBudgetCollector() *Collector {
+	store := metricsstore.NewMetricsStore(generatePodDisruptionBudgetMetrics)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1beta1.PodDisruptionBudget{}, store, b.namespaces, createPodDisruptionBudgetListWatch)
 
 	return newCollector(store)
 }

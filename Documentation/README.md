@@ -50,6 +50,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [PersistentVolume Metrics](persistentvolume-metrics.md)
 * [PersistentVolumeClaim Metrics](persistentvolumeclaim-metrics.md)
 * [Pod Metrics](pod-metrics.md)
+* [Pod Disruption Budget Metrics](poddisruptionbudget-metrics.md)
 * [ReplicaSet Metrics](replicaset-metrics.md)
 * [ReplicationController Metrics](replicationcontroller-metrics.md)
 * [ResourceQuota Metrics](resourcequota-metrics.md)

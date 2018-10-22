@@ -17,12 +17,10 @@ certain heuristics to display comprehensible messages. kube-state-metrics
 exposes raw data unmodified from the Kubernetes API, this way users have all the
 data they require and perform heuristics as they see fit.
 
-The metrics are exported through the [Prometheus golang
-client](https://github.com/prometheus/client_golang) on the HTTP endpoint `/metrics` on
-the listening port (default 80). They are served either as plaintext or
-protobuf depending on the `Accept` header. They are designed to be consumed
-either by Prometheus itself or by a scraper that is compatible with scraping
-a Prometheus client endpoint. You can also open `/metrics` in a browser to see
+The metrics are exported on the HTTP endpoint `/metrics` on the listening port
+(default 80). They are served as plaintext. They are designed to be consumed
+either by Prometheus itself or by a scraper that is compatible with scraping a
+Prometheus client endpoint. You can also open `/metrics` in a browser to see
 the raw metrics.
 
 ## Table of Contents

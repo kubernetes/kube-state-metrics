@@ -18,14 +18,28 @@ package metrics
 
 import (
 	"errors"
-	"fmt"
-	"sort"
+	"math"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
 	"k8s.io/kube-state-metrics/pkg/options"
+)
+
+const (
+	initialNumBufSize = 24
+)
+
+var (
+	numBufPool = sync.Pool{
+		New: func() interface{} {
+			b := make([]byte, 0, initialNumBufSize)
+			return &b
+		},
+	}
 )
 
 // Metric represents a single line entry in the /metrics export format
@@ -37,48 +51,75 @@ func NewMetric(name string, labelKeys []string, labelValues []string, value floa
 		return nil, errors.New("expected labelKeys to be of same length as labelValues")
 	}
 
-	m := ""
+	m := strings.Builder{}
 
-	m = m + name
+	m.WriteString(name)
 
-	m = m + labelsToString(labelKeys, labelValues)
+	labelsToString(&m, labelKeys, labelValues)
 
-	m = m + fmt.Sprintf(" %v", value)
+	m.WriteByte(' ')
 
-	m = m + "\n"
+	writeFloat(&m, value)
 
-	metric := Metric(m)
+	m.WriteString("\n")
+
+	metric := Metric(m.String())
 
 	return &metric, nil
 }
 
-func labelsToString(keys, values []string) string {
+func labelsToString(m *strings.Builder, keys, values []string) {
 	if len(keys) > 0 {
-		labels := []string{}
-		for i := 0; i < len(keys); i++ {
-			labels = append(
-				labels,
-				fmt.Sprintf(`%s="%s"`, keys[i], escapeString(values[i])),
-			)
-		}
-		// TODO: Do labels need to be sorted. As of now, this is only needed to
-		// make output deterministic between test runs.
-		sort.Strings(labels)
-		return "{" + strings.Join(labels, ",") + "}"
-	}
+		var separator byte = '{'
 
-	return ""
+		for i := 0; i < len(keys); i++ {
+			m.WriteByte(separator)
+			m.WriteString(keys[i])
+			m.WriteString("=\"")
+			escapeString(m, values[i])
+			m.WriteByte('"')
+			separator = ','
+		}
+
+		m.WriteByte('}')
+	}
 }
 
 var (
 	escapeWithDoubleQuote = strings.NewReplacer("\\", `\\`, "\n", `\n`, "\"", `\"`)
 )
 
-// escapeString replaces '\' by '\\', new line character by '\n', and - if
-// includeDoubleQuote is true - '"' by '\"'.
-// TODO: Taken from github.com/prometheus/common/expfmt/text_create.go, should be better referenced?
-func escapeString(v string) string {
-	return escapeWithDoubleQuote.Replace(v)
+// escapeString replaces '\' by '\\', new line character by '\n', and '"' by
+// '\"'.
+// Taken from github.com/prometheus/common/expfmt/text_create.go.
+func escapeString(m *strings.Builder, v string) {
+	escapeWithDoubleQuote.WriteString(m, v)
+}
+
+// writeFloat is equivalent to fmt.Fprint with a float64 argument but hardcodes
+// a few common cases for increased efficiency. For non-hardcoded cases, it uses
+// strconv.AppendFloat to avoid allocations, similar to writeInt.
+// Taken from github.com/prometheus/common/expfmt/text_create.go.
+func writeFloat(w *strings.Builder, f float64) {
+	switch {
+	case f == 1:
+		w.WriteByte('1')
+	case f == 0:
+		w.WriteByte('0')
+	case f == -1:
+		w.WriteString("-1")
+	case math.IsNaN(f):
+		w.WriteString("NaN")
+	case math.IsInf(f, +1):
+		w.WriteString("+Inf")
+	case math.IsInf(f, -1):
+		w.WriteString("-Inf")
+	default:
+		bp := numBufPool.Get().(*[]byte)
+		*bp = strconv.AppendFloat((*bp)[:0], f, 'g', -1, 64)
+		w.Write(*bp)
+		numBufPool.Put(bp)
+	}
 }
 
 // MetricFamilyDesc represents the HELP and TYPE string above a metric family list

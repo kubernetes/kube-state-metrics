@@ -104,10 +104,10 @@ func (s *MetricsStore) Resync() error {
 }
 
 func (s *MetricsStore) GetAll() []*metrics.Metric {
-	m := []*metrics.Metric{}
-
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
+
+	m := make([]*metrics.Metric, 0, len(s.metrics))
 
 	for _, metrics := range s.metrics {
 		m = append(m, metrics...)

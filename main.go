@@ -127,7 +127,7 @@ func main() {
 
 	// TODO: Reenable white and blacklisting
 	// metricsServer(metrics.FilteredGatherer(registry, opts.MetricWhitelist, opts.MetricBlacklist), opts.Host, opts.Port)
-	serveMetrics(collectors, opts.Host, opts.Port)
+	serveMetrics(collectors, opts.Host, opts.Port, opts.EnableGZIPEncoding)
 }
 
 func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
@@ -186,7 +186,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 }
 
 // TODO: How about accepting an interface Collector instead?
-func serveMetrics(collectors []*kcollectors.Collector, host string, port int) {
+func serveMetrics(collectors []*kcollectors.Collector, host string, port int, enableGZIPEncoding bool) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
@@ -202,7 +202,7 @@ func serveMetrics(collectors []*kcollectors.Collector, host string, port int) {
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	// Add metricsPath
-	mux.Handle(metricsPath, &metricHandler{collectors})
+	mux.Handle(metricsPath, &metricHandler{collectors, enableGZIPEncoding})
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -225,7 +225,8 @@ func serveMetrics(collectors []*kcollectors.Collector, host string, port int) {
 }
 
 type metricHandler struct {
-	c []*kcollectors.Collector
+	c                  []*kcollectors.Collector
+	enableGZIPEncoding bool
 }
 
 func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -234,15 +235,17 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resHeader.Set("Content-Type", `text/plain; version=`+"0.0.4")
 
-	// Gzip response if requested. Taken from
-	// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
-	reqHeader := r.Header.Get("Accept-Encoding")
-	parts := strings.Split(reqHeader, ",")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "gzip" || strings.HasPrefix(part, "gzip;") {
-			writer = gzip.NewWriter(writer)
-			resHeader.Set("Content-Encoding", "gzip")
+	if m.enableGZIPEncoding {
+		// Gzip response if requested. Taken from
+		// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
+		reqHeader := r.Header.Get("Accept-Encoding")
+		parts := strings.Split(reqHeader, ",")
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
+				writer = gzip.NewWriter(writer)
+				resHeader.Set("Content-Encoding", "gzip")
+			}
 		}
 	}
 

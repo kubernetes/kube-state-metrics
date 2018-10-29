@@ -44,17 +44,50 @@ func (testCase *generateMetricsTestCase) run() error {
 		out += string(*m)
 	}
 
-	out = removeUnusedWhitespace(out)
-	out = sortByLine(out)
-
-	want := removeUnusedWhitespace(testCase.Want)
-	want = sortByLine(want)
-
-	if out != want {
-		return fmt.Errorf("expected %v\nbut got %v", want, out)
+	if err := compareOutput(testCase.Want, out); err != nil {
+		return fmt.Errorf("expected wanted output to equal output: %v", err.Error())
 	}
 
 	return nil
+}
+
+func compareOutput(a, b string) error {
+	entities := []string{a, b}
+
+	// Align a and b
+	for i := 0; i < len(entities); i++ {
+		for _, f := range []func(string) string{removeUnusedWhitespace, sortLabels, sortByLine} {
+			entities[i] = f(entities[i])
+		}
+	}
+
+	if entities[0] != entities[1] {
+		return fmt.Errorf("expected a to equal b but got:\n%v\nand:\n%v", entities[0], entities[1])
+	}
+
+	return nil
+}
+
+// sortLabels sorts the order of labels in each line of the given metrics. The
+// Prometheus exposition format does not force ordering of labels. Hence a test
+// should not fail due to different metric orders.
+func sortLabels(s string) string {
+	sorted := []string{}
+
+	for _, line := range strings.Split(s, "\n") {
+		split := strings.Split(line, "{")
+		name := split[0]
+
+		split = strings.Split(split[1], "}")
+		value := split[1]
+
+		labels := strings.Split(split[0], ",")
+		sort.Strings(labels)
+
+		sorted = append(sorted, fmt.Sprintf("%v{%v}%v", name, strings.Join(labels, ","), value))
+	}
+
+	return strings.Join(sorted, "\n")
 }
 
 func sortByLine(s string) string {
@@ -106,7 +139,5 @@ func removeUnusedWhitespace(s string) string {
 		}
 	}
 
-	// The Prometheus metrics representation parser expects an empty line at the
-	// end otherwise fails with an unexpected EOF error.
-	return strings.Join(trimmedLines, "\n") + "\n"
+	return strings.Join(trimmedLines, "\n")
 }

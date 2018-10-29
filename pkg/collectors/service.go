@@ -35,7 +35,7 @@ var (
 	descServiceInfo = metrics.NewMetricFamilyDef(
 		"kube_service_info",
 		"Information about service.",
-		append(descServiceLabelsDefaultLabels, "cluster_ip"),
+		append(descServiceLabelsDefaultLabels, "cluster_ip", "external_name", "load_balancer_ip"),
 		nil,
 	)
 
@@ -131,39 +131,23 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 	}
 	addGauge(descServiceSpecType, 1, string(s.Spec.Type))
 
-	addGauge(descServiceInfo, 1, s.Spec.ClusterIP)
+	addGauge(descServiceInfo, 1, s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP)
 	if !s.CreationTimestamp.IsZero() {
 		addGauge(descServiceCreated, float64(s.CreationTimestamp.Unix()))
 	}
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 	addGauge(serviceLabelsDesc(labelKeys), 1, labelValues...)
 
-	if s.Spec.ExternalName != "" {
-		addGauge(descServiceExternalName, 1, s.Spec.ExternalName)
-	} else {
-		addGauge(descServiceExternalName, 0, s.Spec.ExternalName)
-	}
-
-	if s.Spec.LoadBalancerIP != "" {
-		addGauge(descServiceLoadBalancerIP, 1, s.Spec.LoadBalancerIP)
-	} else {
-		addGauge(descServiceLoadBalancerIP, 0, s.Spec.LoadBalancerIP)
-	}
-
 	if len(s.Status.LoadBalancer.Ingress) > 0 {
 		for _, ingress := range s.Status.LoadBalancer.Ingress {
 			addGauge(descServiceStatusLoadBalancerIngress, 1, ingress.IP, ingress.Hostname)
 		}
-	} else {
-		addGauge(descServiceStatusLoadBalancerIngress, 0, "", "") // Add empty for completeness
 	}
 
 	if len(s.Spec.ExternalIPs) > 0 {
 		for _, external_ip := range s.Spec.ExternalIPs {
 			addGauge(descServiceSpecExternalIP, 1, external_ip)
 		}
-	} else {
-		addGauge(descServiceSpecExternalIP, 0, "") // Add empty for completeness
 	}
 
 	return ms

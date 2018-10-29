@@ -61,7 +61,7 @@ func NewMetric(name string, labelKeys []string, labelValues []string, value floa
 
 	writeFloat(&m, value)
 
-	m.WriteString("\n")
+	m.WriteByte('\n')
 
 	metric := Metric(m.String())
 

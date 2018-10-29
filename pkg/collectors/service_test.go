@@ -36,6 +36,10 @@ func TestServiceCollector(t *testing.T) {
 		# TYPE kube_service_labels gauge
 		# HELP kube_service_spec_type Type about service.
 		# TYPE kube_service_spec_type gauge
+		# HELP kube_service_spec_external_ip Service external ips. One series for each ip
+		# TYPE kube_service_spec_external_ip gauge
+		# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status
+		# TYPE kube_service_status_load_balancer_ingress gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -55,7 +59,7 @@ func TestServiceCollector(t *testing.T) {
 			},
 			Want: `
 				kube_service_created{namespace="default",service="test-service1"} 1.5e+09
-				kube_service_info{cluster_ip="1.2.3.4",namespace="default",service="test-service1"} 1
+				kube_service_info{cluster_ip="1.2.3.4",external_name="",load_balancer_ip="",namespace="default",service="test-service1"} 1
 				kube_service_labels{label_app="example1",namespace="default",service="test-service1"} 1
 				kube_service_spec_type{namespace="default",service="test-service1",type="ClusterIP"} 1
 `,
@@ -84,7 +88,7 @@ func TestServiceCollector(t *testing.T) {
 			},
 			Want: `
 				kube_service_created{namespace="default",service="test-service2"} 1.5e+09
-				kube_service_info{cluster_ip="1.2.3.5",namespace="default",service="test-service2"} 1
+				kube_service_info{cluster_ip="1.2.3.5",external_name="",load_balancer_ip="",namespace="default",service="test-service2"} 1
 				kube_service_labels{label_app="example2",namespace="default",service="test-service2"} 1
 				kube_service_spec_type{namespace="default",service="test-service2",type="NodePort"} 1
 `,
@@ -100,13 +104,14 @@ func TestServiceCollector(t *testing.T) {
 					},
 				},
 				Spec: v1.ServiceSpec{
-					ClusterIP: "1.2.3.6",
-					Type:      v1.ServiceTypeLoadBalancer,
+					ClusterIP:      "1.2.3.6",
+					LoadBalancerIP: "1.2.3.7",
+					Type:           v1.ServiceTypeLoadBalancer,
 				},
 			},
 			Want: `
 				kube_service_created{namespace="default",service="test-service3"} 1.5e+09
-				kube_service_info{cluster_ip="1.2.3.6",namespace="default",service="test-service3"} 1		
+				kube_service_info{cluster_ip="1.2.3.6",external_name="",load_balancer_ip="1.2.3.7",namespace="default",service="test-service3"} 1
 				kube_service_labels{label_app="example3",namespace="default",service="test-service3"} 1
 				kube_service_spec_type{namespace="default",service="test-service3",type="LoadBalancer"} 1
 `,
@@ -122,14 +127,74 @@ func TestServiceCollector(t *testing.T) {
 					},
 				},
 				Spec: v1.ServiceSpec{
-					Type: v1.ServiceTypeExternalName,
+					ExternalName: "www.example.com",
+					Type:         v1.ServiceTypeExternalName,
 				},
 			},
-			Want: `	
-				kube_service_created{namespace="default",service="test-service4"} 1.5e+09		
-				kube_service_info{cluster_ip="",namespace="default",service="test-service4"} 1
+			Want: `
+				kube_service_created{namespace="default",service="test-service4"} 1.5e+09
+				kube_service_info{cluster_ip="",external_name="www.example.com",load_balancer_ip="",namespace="default",service="test-service4"} 1
 				kube_service_labels{label_app="example4",namespace="default",service="test-service4"} 1
 				kube_service_spec_type{namespace="default",service="test-service4",type="ExternalName"} 1
+			`,
+		},
+		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service5",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					Labels: map[string]string{
+						"app": "example5",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					Type: v1.ServiceTypeLoadBalancer,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{
+							v1.LoadBalancerIngress{
+								IP:       "1.2.3.8",
+								Hostname: "www.example.com",
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				kube_service_created{namespace="default",service="test-service5"} 1.5e+09
+				kube_service_info{cluster_ip="",external_name="",load_balancer_ip="",namespace="default",service="test-service5"} 1
+				kube_service_labels{label_app="example5",namespace="default",service="test-service5"} 1
+				kube_service_spec_type{namespace="default",service="test-service5",type="LoadBalancer"} 1
+				kube_service_status_load_balancer_ingress{hostname="www.example.com",ip="1.2.3.8",namespace="default",service="test-service5"} 1
+			`,
+		},
+		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service6",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					Labels: map[string]string{
+						"app": "example6",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					Type: v1.ServiceTypeClusterIP,
+					ExternalIPs: []string{
+						"1.2.3.9",
+						"1.2.3.10",
+					},
+				},
+			},
+			Want: `
+				kube_service_created{namespace="default",service="test-service6"} 1.5e+09
+				kube_service_info{cluster_ip="",external_name="",load_balancer_ip="",namespace="default",service="test-service6"} 1
+				kube_service_labels{label_app="example6",namespace="default",service="test-service6"} 1
+				kube_service_spec_type{namespace="default",service="test-service6",type="ClusterIP"} 1
+				kube_service_spec_external_ip{external_ip="1.2.3.9",namespace="default",service="test-service6"} 1
+				kube_service_spec_external_ip{external_ip="1.2.3.10",namespace="default",service="test-service6"} 1
 			`,
 		},
 	}

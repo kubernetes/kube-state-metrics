@@ -17,7 +17,6 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/kube-state-metrics/pkg/metrics"
 )
 
@@ -38,16 +37,4 @@ func NewCollector(s Store) *Collector {
 // Collect returns all metrics of the underlying store of the collector.
 func (c *Collector) Collect() []*metrics.Metric {
 	return c.Store.GetAll()
-}
-
-func NewMetricFamilyDef(name, help string, labelKeys []string, constLabels prometheus.Labels) *MetricFamilyDef {
-	return &MetricFamilyDef{name, help, labelKeys, constLabels}
-}
-
-// MetricFamilyDef represents a metric family definition
-type MetricFamilyDef struct {
-	Name        string
-	Help        string
-	LabelKeys   []string
-	ConstLabels prometheus.Labels
 }

@@ -36,25 +36,25 @@ var (
 	descNamespaceAnnotationsHelp          = "Kubernetes annotations converted to Prometheus labels."
 	descNamespaceAnnotationsDefaultLabels = []string{"namespace"}
 
-	descNamespaceCreated = NewMetricFamilyDef(
+	descNamespaceCreated = metrics.NewMetricFamilyDef(
 		"kube_namespace_created",
 		"Unix creation timestamp",
 		descNamespaceLabelsDefaultLabels,
 		nil,
 	)
-	descNamespaceLabels = NewMetricFamilyDef(
+	descNamespaceLabels = metrics.NewMetricFamilyDef(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		descNamespaceLabelsDefaultLabels,
 		nil,
 	)
-	descNamespaceAnnotations = NewMetricFamilyDef(
+	descNamespaceAnnotations = metrics.NewMetricFamilyDef(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,
 		descNamespaceAnnotationsDefaultLabels,
 		nil,
 	)
-	descNamespacePhase = NewMetricFamilyDef(
+	descNamespacePhase = metrics.NewMetricFamilyDef(
 		"kube_namespace_status_phase",
 		"kubernetes namespace status phase.",
 		append(descNamespaceLabelsDefaultLabels, "phase"),
@@ -80,7 +80,7 @@ func generateNamespaceMetrics(obj interface{}) []*metrics.Metric {
 	nPointer := obj.(*v1.Namespace)
 	n := *nPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{n.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -107,8 +107,8 @@ func generateNamespaceMetrics(obj interface{}) []*metrics.Metric {
 	return ms
 }
 
-func namespaceLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func namespaceLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		append(descNamespaceLabelsDefaultLabels, labelKeys...),
@@ -116,8 +116,8 @@ func namespaceLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	)
 }
 
-func namespaceAnnotationsDesc(annotationKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func namespaceAnnotationsDesc(annotationKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,
 		append(descNamespaceAnnotationsDefaultLabels, annotationKeys...),

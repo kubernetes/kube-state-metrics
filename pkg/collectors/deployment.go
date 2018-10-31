@@ -33,81 +33,81 @@ var (
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 
-	descDeploymentCreated = NewMetricFamilyDef(
+	descDeploymentCreated = metrics.NewMetricFamilyDef(
 		"kube_deployment_created",
 		"Unix creation timestamp",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStatusReplicas = NewMetricFamilyDef(
+	descDeploymentStatusReplicas = metrics.NewMetricFamilyDef(
 		"kube_deployment_status_replicas",
 		"The number of replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
-	descDeploymentStatusReplicasAvailable = NewMetricFamilyDef(
+	descDeploymentStatusReplicasAvailable = metrics.NewMetricFamilyDef(
 		"kube_deployment_status_replicas_available",
 		"The number of available replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
-	descDeploymentStatusReplicasUnavailable = NewMetricFamilyDef(
+	descDeploymentStatusReplicasUnavailable = metrics.NewMetricFamilyDef(
 		"kube_deployment_status_replicas_unavailable",
 		"The number of unavailable replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
-	descDeploymentStatusReplicasUpdated = NewMetricFamilyDef(
+	descDeploymentStatusReplicasUpdated = metrics.NewMetricFamilyDef(
 		"kube_deployment_status_replicas_updated",
 		"The number of updated replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStatusObservedGeneration = NewMetricFamilyDef(
+	descDeploymentStatusObservedGeneration = metrics.NewMetricFamilyDef(
 		"kube_deployment_status_observed_generation",
 		"The generation observed by the deployment controller.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentSpecReplicas = NewMetricFamilyDef(
+	descDeploymentSpecReplicas = metrics.NewMetricFamilyDef(
 		"kube_deployment_spec_replicas",
 		"Number of desired pods for a deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentSpecPaused = NewMetricFamilyDef(
+	descDeploymentSpecPaused = metrics.NewMetricFamilyDef(
 		"kube_deployment_spec_paused",
 		"Whether the deployment is paused and will not be processed by the deployment controller.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStrategyRollingUpdateMaxUnavailable = NewMetricFamilyDef(
+	descDeploymentStrategyRollingUpdateMaxUnavailable = metrics.NewMetricFamilyDef(
 		"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
 		"Maximum number of unavailable replicas during a rolling update of a deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStrategyRollingUpdateMaxSurge = NewMetricFamilyDef(
+	descDeploymentStrategyRollingUpdateMaxSurge = metrics.NewMetricFamilyDef(
 		"kube_deployment_spec_strategy_rollingupdate_max_surge",
 		"Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentMetadataGeneration = NewMetricFamilyDef(
+	descDeploymentMetadataGeneration = metrics.NewMetricFamilyDef(
 		"kube_deployment_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentLabels = NewMetricFamilyDef(
+	descDeploymentLabels = metrics.NewMetricFamilyDef(
 		descDeploymentLabelsName,
 		descDeploymentLabelsHelp,
 		descDeploymentLabelsDefaultLabels, nil,
@@ -125,8 +125,8 @@ func createDeploymentListWatch(kubeClient clientset.Interface, ns string) cache.
 	}
 }
 
-func deploymentLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func deploymentLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descDeploymentLabelsName,
 		descDeploymentLabelsHelp,
 		append(descDeploymentLabelsDefaultLabels, labelKeys...),
@@ -141,7 +141,7 @@ func generateDeploymentMetrics(obj interface{}) []*metrics.Metric {
 	dPointer := obj.(*v1beta1.Deployment)
 	d := *dPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

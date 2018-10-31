@@ -32,19 +32,19 @@ var (
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 
-	descPersistentVolumeLabels = NewMetricFamilyDef(
+	descPersistentVolumeLabels = metrics.NewMetricFamilyDef(
 		descPersistentVolumeLabelsName,
 		descPersistentVolumeLabelsHelp,
 		descPersistentVolumeLabelsDefaultLabels,
 		nil,
 	)
-	descPersistentVolumeStatusPhase = NewMetricFamilyDef(
+	descPersistentVolumeStatusPhase = metrics.NewMetricFamilyDef(
 		"kube_persistentvolume_status_phase",
 		"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
 		append(descPersistentVolumeLabelsDefaultLabels, "phase"),
 		nil,
 	)
-	descPersistentVolumeInfo = NewMetricFamilyDef(
+	descPersistentVolumeInfo = metrics.NewMetricFamilyDef(
 		"kube_persistentvolume_info",
 		"Information about persistentvolume.",
 		append(descPersistentVolumeLabelsDefaultLabels, "storageclass"),
@@ -63,8 +63,8 @@ func createPersistentVolumeListWatch(kubeClient clientset.Interface, ns string) 
 	}
 }
 
-func persistentVolumeLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func persistentVolumeLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descPersistentVolumeLabelsName,
 		descPersistentVolumeLabelsHelp,
 		append(descPersistentVolumeLabelsDefaultLabels, labelKeys...),
@@ -79,7 +79,7 @@ func generatePersistentVolumeMetrics(obj interface{}) []*metrics.Metric {
 	pPointer := obj.(*v1.PersistentVolume)
 	p := *pPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

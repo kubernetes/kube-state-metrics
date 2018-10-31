@@ -26,53 +26,31 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metrics"
 )
 
-var (
-	resyncPeriod = 5 * time.Minute
-
-	ScrapeErrorTotalMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "ksm_scrape_error_total",
-			Help: "Total scrape errors encountered when scraping a resource",
-		},
-		[]string{"resource"},
-	)
-
-	ResourcesPerScrapeMetric = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Name: "ksm_resources_per_scrape",
-			Help: "Number of resources returned per scrape",
-		},
-		[]string{"resource"},
-	)
-
-	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-)
-
-type store interface {
+type Store interface {
 	GetAll() []*metrics.Metric
 }
 
 // Collector represents a kube-state-metrics metric collector. It is stripped
 // down version of the Prometheus client_golang collector.
 type Collector struct {
-	store store
+	Store Store
 }
 
-func newCollector(s store) *Collector {
+func NewCollector(s Store) *Collector {
 	return &Collector{s}
 }
 
 // Collect returns all metrics of the underlying store of the collector.
 func (c *Collector) Collect() []*metrics.Metric {
-	return c.store.GetAll()
+	return c.Store.GetAll()
 }
 
-func newMetricFamilyDef(name, help string, labelKeys []string, constLabels prometheus.Labels) *metricFamilyDef {
-	return &metricFamilyDef{name, help, labelKeys, constLabels}
+func NewMetricFamilyDef(name, help string, labelKeys []string, constLabels prometheus.Labels) *MetricFamilyDef {
+	return &MetricFamilyDef{name, help, labelKeys, constLabels}
 }
 
-// metricFamilyDef represents a metric family definition
-type metricFamilyDef struct {
+// MetricFamilyDef represents a metric family definition
+type MetricFamilyDef struct {
 	Name        string
 	Help        string
 	LabelKeys   []string

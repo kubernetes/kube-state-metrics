@@ -70,7 +70,7 @@ func generateConfigMapMetrics(obj interface{}) []*metrics.Metric {
 	mPointer := obj.(*v1.ConfigMap)
 	m := *mPointer
 
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{m.Namespace, m.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -80,7 +80,7 @@ func generateConfigMapMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 	addGauge(descConfigMapInfo, 1)

@@ -80,7 +80,7 @@ func generateNamespaceMetrics(obj interface{}) []*metrics.Metric {
 	nPointer := obj.(*v1.Namespace)
 	n := *nPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{n.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -107,7 +107,7 @@ func generateNamespaceMetrics(obj interface{}) []*metrics.Metric {
 	return ms
 }
 
-func namespaceLabelsDesc(labelKeys []string) *metricFamilyDef {
+func namespaceLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
@@ -116,7 +116,7 @@ func namespaceLabelsDesc(labelKeys []string) *metricFamilyDef {
 	)
 }
 
-func namespaceAnnotationsDesc(annotationKeys []string) *metricFamilyDef {
+func namespaceAnnotationsDesc(annotationKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,

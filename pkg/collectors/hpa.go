@@ -87,7 +87,7 @@ func createHPAListWatch(kubeClient clientset.Interface, ns string) cache.ListWat
 	}
 }
 
-func hpaLabelsDesc(labelKeys []string) *metricFamilyDef {
+func hpaLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descHorizontalPodAutoscalerLabelsName,
 		descHorizontalPodAutoscalerLabelsHelp,
@@ -104,7 +104,7 @@ func generateHPAMetrics(obj interface{}) []*metrics.Metric {
 	hPointer := obj.(*autoscaling.HorizontalPodAutoscaler)
 	h := *hPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{h.Namespace, h.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

@@ -96,7 +96,7 @@ var (
 
 // TODO: Not necessary without HELP and TYPE line
 // // Describe implements the prometheus.Collector interface.
-// func (dc *daemonsetCollector) Describe(ch chan<- *metricFamilyDef) {
+// func (dc *daemonsetCollector) Describe(ch chan<- *MetricFamilyDef) {
 // 	ch <- descDaemonSetCreated
 // 	ch <- descDaemonSetCurrentNumberScheduled
 // 	ch <- descDaemonSetNumberAvailable
@@ -120,7 +120,7 @@ func createDaemonSetListWatch(kubeClient clientset.Interface, ns string) cache.L
 	}
 }
 
-func DaemonSetLabelsDesc(labelKeys []string) *metricFamilyDef {
+func DaemonSetLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descDaemonSetLabelsName,
 		descDaemonSetLabelsHelp,
@@ -136,7 +136,7 @@ func generateDaemonSetMetrics(obj interface{}) []*metrics.Metric {
 	dPointer := obj.(*v1beta1.DaemonSet)
 	d := *dPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

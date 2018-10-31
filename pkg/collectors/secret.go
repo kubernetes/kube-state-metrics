@@ -78,7 +78,7 @@ func createSecretListWatch(kubeClient clientset.Interface, ns string) cache.List
 		},
 	}
 }
-func secretLabelsDesc(labelKeys []string) *metricFamilyDef {
+func secretLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descSecretLabelsName,
 		descSecretLabelsHelp,
@@ -94,7 +94,7 @@ func generateSecretMetrics(obj interface{}) []*metrics.Metric {
 	sPointer := obj.(*v1.Secret)
 	s := *sPointer
 
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{s.Namespace, s.Name}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {
@@ -103,7 +103,7 @@ func generateSecretMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 	addGauge(descSecretInfo, 1)

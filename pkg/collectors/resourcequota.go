@@ -64,7 +64,7 @@ func generateResourceQuotaMetrics(obj interface{}) []*metrics.Metric {
 	rPointer := obj.(*v1.ResourceQuota)
 	r := *rPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{r.Name, r.Namespace}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {

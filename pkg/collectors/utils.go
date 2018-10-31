@@ -58,7 +58,7 @@ func boolFloat64(b bool) float64 {
 // addConditionMetrics generates one metric for each possible node condition
 // status. For this function to work properly, the last label in the metric
 // description must be the condition.
-func addConditionMetrics(desc *metricFamilyDef, cs v1.ConditionStatus, lv ...string) []*metrics.Metric {
+func addConditionMetrics(desc *MetricFamilyDef, cs v1.ConditionStatus, lv ...string) []*metrics.Metric {
 	ms := []*metrics.Metric{}
 	m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "true"), boolFloat64(cs == v1.ConditionTrue))
 	if err != nil {

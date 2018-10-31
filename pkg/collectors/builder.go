@@ -124,70 +124,70 @@ func (b *Builder) buildPodCollector() *Collector {
 	store := metricsstore.NewMetricsStore(genFunc)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Pod{}, store, b.namespaces, createPodListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildCronJobCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateCronJobMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1beta1.CronJob{}, store, b.namespaces, createCronJobListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildConfigMapCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateConfigMapMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ConfigMap{}, store, b.namespaces, createConfigMapListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildDaemonSetCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateDaemonSetMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.DaemonSet{}, store, b.namespaces, createDaemonSetListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildDeploymentCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateDeploymentMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Deployment{}, store, b.namespaces, createDeploymentListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildEndpointsCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateEndpointsMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Endpoints{}, store, b.namespaces, createEndpointsListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildHPACollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateHPAMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &autoscaling.HorizontalPodAutoscaler{}, store, b.namespaces, createHPAListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildJobCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateJobMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1.Job{}, store, b.namespaces, createJobListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildLimitRangeCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateLimitRangeMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildNamespaceCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateNamespaceMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Namespace{}, store, b.namespaces, createNamespaceListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildNodeCollector() *Collector {
@@ -197,70 +197,70 @@ func (b *Builder) buildNodeCollector() *Collector {
 	store := metricsstore.NewMetricsStore(genFunc)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Node{}, store, b.namespaces, createNodeListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildPersistentVolumeCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generatePersistentVolumeMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolume{}, store, b.namespaces, createPersistentVolumeListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildPersistentVolumeClaimCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generatePersistentVolumeClaimMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolumeClaim{}, store, b.namespaces, createPersistentVolumeClaimListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildPodDisruptionBudgetCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generatePodDisruptionBudgetMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1beta1.PodDisruptionBudget{}, store, b.namespaces, createPodDisruptionBudgetListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildReplicaSetCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateReplicaSetMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.ReplicaSet{}, store, b.namespaces, createReplicaSetListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildReplicationControllerCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateReplicationControllerMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ReplicationController{}, store, b.namespaces, createReplicationControllerListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildResourceQuotaCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateResourceQuotaMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ResourceQuota{}, store, b.namespaces, createResourceQuotaListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildSecretCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateSecretMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Secret{}, store, b.namespaces, createSecretListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildServiceCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateServiceMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Service{}, store, b.namespaces, createServiceListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func (b *Builder) buildStatefulSetCollector() *Collector {
 	store := metricsstore.NewMetricsStore(generateStatefulSetMetrics)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &apps.StatefulSet{}, store, b.namespaces, createStatefulSetListWatch)
 
-	return newCollector(store)
+	return NewCollector(store)
 }
 
 func reflectorPerNamespace(

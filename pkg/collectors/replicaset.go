@@ -99,7 +99,7 @@ func generateReplicaSetMetrics(obj interface{}) []*metrics.Metric {
 	rPointer := obj.(*v1beta1.ReplicaSet)
 	r := *rPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{r.Namespace, r.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

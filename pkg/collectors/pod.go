@@ -251,7 +251,7 @@ func createPodListWatch(kubeClient clientset.Interface, ns string) cache.ListWat
 // 	}
 // }
 
-func podLabelsDesc(labelKeys []string) *metricFamilyDef {
+func podLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descPodLabelsName,
 		descPodLabelsHelp,
@@ -268,7 +268,7 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 	p := *pPointer
 
 	nodeName := p.Spec.NodeName
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Namespace, p.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -278,10 +278,10 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
-	addCounter := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addCounter := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 

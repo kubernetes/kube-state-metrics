@@ -143,7 +143,7 @@ func createNodeListWatch(kubeClient clientset.Interface, ns string) cache.ListWa
 	}
 }
 
-func nodeLabelsDesc(labelKeys []string) *metricFamilyDef {
+func nodeLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
@@ -159,7 +159,7 @@ func generateNodeMetrics(disableNodeNonGenericResourceMetrics bool, obj interfac
 	nPointer := obj.(*v1.Node)
 	n := *nPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{n.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -213,7 +213,7 @@ func generateNodeMetrics(disableNodeNonGenericResourceMetrics bool, obj interfac
 
 	if !disableNodeNonGenericResourceMetrics {
 		// Add capacity and allocatable resources if they are set.
-		addResource := func(d *metricFamilyDef, res v1.ResourceList, n v1.ResourceName) {
+		addResource := func(d *MetricFamilyDef, res v1.ResourceList, n v1.ResourceName) {
 			if v, ok := res[n]; ok {
 				addGauge(d, float64(v.MilliValue())/1000)
 			}

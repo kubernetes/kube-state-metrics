@@ -86,7 +86,7 @@ func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
 	ePointer := obj.(*v1.Endpoints)
 	e := *ePointer
 
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{e.Namespace, e.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -96,7 +96,7 @@ func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 
@@ -122,7 +122,7 @@ func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
 	return ms
 }
 
-func endpointLabelsDesc(labelKeys []string) *metricFamilyDef {
+func endpointLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descEndpointLabelsName,
 		descEndpointLabelsHelp,

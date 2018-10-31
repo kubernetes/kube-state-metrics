@@ -72,7 +72,7 @@ func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.Lis
 	}
 }
 
-func serviceLabelsDesc(labelKeys []string) *metricFamilyDef {
+func serviceLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
@@ -88,7 +88,7 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{s.Namespace, s.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -98,7 +98,7 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 	addGauge(descServiceSpecType, 1, string(s.Spec.Type))

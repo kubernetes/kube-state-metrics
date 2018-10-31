@@ -63,7 +63,7 @@ func createPersistentVolumeListWatch(kubeClient clientset.Interface, ns string) 
 	}
 }
 
-func persistentVolumeLabelsDesc(labelKeys []string) *metricFamilyDef {
+func persistentVolumeLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descPersistentVolumeLabelsName,
 		descPersistentVolumeLabelsHelp,
@@ -79,7 +79,7 @@ func generatePersistentVolumeMetrics(obj interface{}) []*metrics.Metric {
 	pPointer := obj.(*v1.PersistentVolume)
 	p := *pPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

@@ -125,7 +125,7 @@ func createDeploymentListWatch(kubeClient clientset.Interface, ns string) cache.
 	}
 }
 
-func deploymentLabelsDesc(labelKeys []string) *metricFamilyDef {
+func deploymentLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descDeploymentLabelsName,
 		descDeploymentLabelsHelp,
@@ -141,7 +141,7 @@ func generateDeploymentMetrics(obj interface{}) []*metrics.Metric {
 	dPointer := obj.(*v1beta1.Deployment)
 	d := *dPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

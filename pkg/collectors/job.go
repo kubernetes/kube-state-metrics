@@ -124,7 +124,7 @@ func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWat
 	}
 }
 
-func jobLabelsDesc(labelKeys []string) *metricFamilyDef {
+func jobLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descJobLabelsName,
 		descJobLabelsHelp,
@@ -140,7 +140,7 @@ func generateJobMetrics(obj interface{}) []*metrics.Metric {
 	jPointer := obj.(*v1batch.Job)
 	j := *jPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

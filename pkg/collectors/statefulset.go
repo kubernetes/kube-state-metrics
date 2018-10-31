@@ -111,7 +111,7 @@ func createStatefulSetListWatch(kubeClient clientset.Interface, ns string) cache
 	}
 }
 
-func statefulSetLabelsDesc(labelKeys []string) *metricFamilyDef {
+func statefulSetLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descStatefulSetLabelsName,
 		descStatefulSetLabelsHelp,
@@ -127,7 +127,7 @@ func generateStatefulSetMetrics(obj interface{}) []*metrics.Metric {
 	sPointer := obj.(*v1beta1.StatefulSet)
 	s := *sPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{s.Namespace, s.Name}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {

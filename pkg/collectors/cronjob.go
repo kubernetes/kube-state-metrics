@@ -112,7 +112,7 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
 }
 
-func cronJobLabelsDesc(labelKeys []string) *metricFamilyDef {
+func cronJobLabelsDesc(labelKeys []string) *MetricFamilyDef {
 	return newMetricFamilyDef(
 		descCronJobLabelsName,
 		descCronJobLabelsHelp,
@@ -128,7 +128,7 @@ func generateCronJobMetrics(obj interface{}) []*metrics.Metric {
 	jPointer := obj.(*batchv1beta1.CronJob)
 	j := *jPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

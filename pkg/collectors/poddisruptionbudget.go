@@ -87,7 +87,7 @@ func generatePodDisruptionBudgetMetrics(obj interface{}) []*metrics.Metric {
 	pPointer := obj.(*v1beta1.PodDisruptionBudget)
 	p := *pPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Name, p.Namespace}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {

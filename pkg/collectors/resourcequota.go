@@ -30,13 +30,13 @@ import (
 var (
 	descResourceQuotaLabelsDefaultLabels = []string{"resourcequota", "namespace"}
 
-	descResourceQuotaCreated = NewMetricFamilyDef(
+	descResourceQuotaCreated = metrics.NewMetricFamilyDef(
 		"kube_resourcequota_created",
 		"Unix creation timestamp",
 		descResourceQuotaLabelsDefaultLabels,
 		nil,
 	)
-	descResourceQuota = NewMetricFamilyDef(
+	descResourceQuota = metrics.NewMetricFamilyDef(
 		"kube_resourcequota",
 		"Information about resource quota.",
 		append(descResourceQuotaLabelsDefaultLabels,
@@ -64,7 +64,7 @@ func generateResourceQuotaMetrics(obj interface{}) []*metrics.Metric {
 	rPointer := obj.(*v1.ResourceQuota)
 	r := *rPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{r.Name, r.Namespace}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {

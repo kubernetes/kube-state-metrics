@@ -30,49 +30,49 @@ import (
 var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
-	descReplicationControllerCreated = NewMetricFamilyDef(
+	descReplicationControllerCreated = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_created",
 		"Unix creation timestamp",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusReplicas = NewMetricFamilyDef(
+	descReplicationControllerStatusReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_status_replicas",
 		"The number of replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusFullyLabeledReplicas = NewMetricFamilyDef(
+	descReplicationControllerStatusFullyLabeledReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusReadyReplicas = NewMetricFamilyDef(
+	descReplicationControllerStatusReadyReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_status_ready_replicas",
 		"The number of ready replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusAvailableReplicas = NewMetricFamilyDef(
+	descReplicationControllerStatusAvailableReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_status_available_replicas",
 		"The number of available replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusObservedGeneration = NewMetricFamilyDef(
+	descReplicationControllerStatusObservedGeneration = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_status_observed_generation",
 		"The generation observed by the ReplicationController controller.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerSpecReplicas = NewMetricFamilyDef(
+	descReplicationControllerSpecReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_spec_replicas",
 		"Number of desired pods for a ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerMetadataGeneration = NewMetricFamilyDef(
+	descReplicationControllerMetadataGeneration = metrics.NewMetricFamilyDef(
 		"kube_replicationcontroller_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descReplicationControllerLabelsDefaultLabels,
@@ -97,7 +97,7 @@ func generateReplicationControllerMetrics(obj interface{}) []*metrics.Metric {
 	rPointer := obj.(*v1.ReplicationController)
 	r := *rPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{r.Namespace, r.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

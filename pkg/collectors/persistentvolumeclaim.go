@@ -32,25 +32,25 @@ var (
 	descPersistentVolumeClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
 
-	descPersistentVolumeClaimLabels = NewMetricFamilyDef(
+	descPersistentVolumeClaimLabels = metrics.NewMetricFamilyDef(
 		descPersistentVolumeClaimLabelsName,
 		descPersistentVolumeClaimLabelsHelp,
 		descPersistentVolumeClaimLabelsDefaultLabels,
 		nil,
 	)
-	descPersistentVolumeClaimInfo = NewMetricFamilyDef(
+	descPersistentVolumeClaimInfo = metrics.NewMetricFamilyDef(
 		"kube_persistentvolumeclaim_info",
 		"Information about persistent volume claim.",
 		append(descPersistentVolumeClaimLabelsDefaultLabels, "storageclass", "volumename"),
 		nil,
 	)
-	descPersistentVolumeClaimStatusPhase = NewMetricFamilyDef(
+	descPersistentVolumeClaimStatusPhase = metrics.NewMetricFamilyDef(
 		"kube_persistentvolumeclaim_status_phase",
 		"The phase the persistent volume claim is currently in.",
 		append(descPersistentVolumeClaimLabelsDefaultLabels, "phase"),
 		nil,
 	)
-	descPersistentVolumeClaimResourceRequestsStorage = NewMetricFamilyDef(
+	descPersistentVolumeClaimResourceRequestsStorage = metrics.NewMetricFamilyDef(
 		"kube_persistentvolumeclaim_resource_requests_storage_bytes",
 		"The capacity of storage requested by the persistent volume claim.",
 		descPersistentVolumeClaimLabelsDefaultLabels,
@@ -68,8 +68,8 @@ func createPersistentVolumeClaimListWatch(kubeClient clientset.Interface, ns str
 		},
 	}
 }
-func persistentVolumeClaimLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func persistentVolumeClaimLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descPersistentVolumeClaimLabelsName,
 		descPersistentVolumeClaimLabelsHelp,
 		append(descPersistentVolumeClaimLabelsDefaultLabels, labelKeys...),
@@ -100,7 +100,7 @@ func generatePersistentVolumeClaimMetrics(obj interface{}) []*metrics.Metric {
 	pPointer := obj.(*v1.PersistentVolumeClaim)
 	p := *pPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Namespace, p.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

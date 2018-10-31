@@ -32,35 +32,35 @@ var (
 	descEndpointLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 
-	descEndpointInfo = NewMetricFamilyDef(
+	descEndpointInfo = metrics.NewMetricFamilyDef(
 		"kube_endpoint_info",
 		"Information about endpoint.",
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointCreated = NewMetricFamilyDef(
+	descEndpointCreated = metrics.NewMetricFamilyDef(
 		"kube_endpoint_created",
 		"Unix creation timestamp",
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointLabels = NewMetricFamilyDef(
+	descEndpointLabels = metrics.NewMetricFamilyDef(
 		descEndpointLabelsName,
 		descEndpointLabelsHelp,
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointAddressAvailable = NewMetricFamilyDef(
+	descEndpointAddressAvailable = metrics.NewMetricFamilyDef(
 		"kube_endpoint_address_available",
 		"Number of addresses available in endpoint.",
 		descEndpointLabelsDefaultLabels,
 		nil,
 	)
 
-	descEndpointAddressNotReady = NewMetricFamilyDef(
+	descEndpointAddressNotReady = metrics.NewMetricFamilyDef(
 		"kube_endpoint_address_not_ready",
 		"Number of addresses not ready in endpoint",
 		descEndpointLabelsDefaultLabels,
@@ -86,7 +86,7 @@ func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
 	ePointer := obj.(*v1.Endpoints)
 	e := *ePointer
 
-	addConstMetric := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{e.Namespace, e.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -96,7 +96,7 @@ func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 
@@ -122,8 +122,8 @@ func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
 	return ms
 }
 
-func endpointLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func endpointLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descEndpointLabelsName,
 		descEndpointLabelsHelp,
 		append(descEndpointLabelsDefaultLabels, labelKeys...),

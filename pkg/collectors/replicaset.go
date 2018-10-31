@@ -31,49 +31,49 @@ import (
 
 var (
 	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
-	descReplicaSetCreated             = NewMetricFamilyDef(
+	descReplicaSetCreated             = metrics.NewMetricFamilyDef(
 		"kube_replicaset_created",
 		"Unix creation timestamp",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusReplicas = NewMetricFamilyDef(
+	descReplicaSetStatusReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicaset_status_replicas",
 		"The number of replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusFullyLabeledReplicas = NewMetricFamilyDef(
+	descReplicaSetStatusFullyLabeledReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicaset_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusReadyReplicas = NewMetricFamilyDef(
+	descReplicaSetStatusReadyReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicaset_status_ready_replicas",
 		"The number of ready replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusObservedGeneration = NewMetricFamilyDef(
+	descReplicaSetStatusObservedGeneration = metrics.NewMetricFamilyDef(
 		"kube_replicaset_status_observed_generation",
 		"The generation observed by the ReplicaSet controller.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetSpecReplicas = NewMetricFamilyDef(
+	descReplicaSetSpecReplicas = metrics.NewMetricFamilyDef(
 		"kube_replicaset_spec_replicas",
 		"Number of desired pods for a ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetMetadataGeneration = NewMetricFamilyDef(
+	descReplicaSetMetadataGeneration = metrics.NewMetricFamilyDef(
 		"kube_replicaset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetOwner = NewMetricFamilyDef(
+	descReplicaSetOwner = metrics.NewMetricFamilyDef(
 		"kube_replicaset_owner",
 		"Information about the ReplicaSet's owner.",
 		append(descReplicaSetLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
@@ -99,7 +99,7 @@ func generateReplicaSetMetrics(obj interface{}) []*metrics.Metric {
 	rPointer := obj.(*v1beta1.ReplicaSet)
 	r := *rPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{r.Namespace, r.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

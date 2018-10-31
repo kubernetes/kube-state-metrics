@@ -32,67 +32,67 @@ var (
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 
-	descStatefulSetCreated = NewMetricFamilyDef(
+	descStatefulSetCreated = metrics.NewMetricFamilyDef(
 		"kube_statefulset_created",
 		"Unix creation timestamp",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicas = NewMetricFamilyDef(
+	descStatefulSetStatusReplicas = metrics.NewMetricFamilyDef(
 		"kube_statefulset_status_replicas",
 		"The number of replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicasCurrent = NewMetricFamilyDef(
+	descStatefulSetStatusReplicasCurrent = metrics.NewMetricFamilyDef(
 		"kube_statefulset_status_replicas_current",
 		"The number of current replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicasReady = NewMetricFamilyDef(
+	descStatefulSetStatusReplicasReady = metrics.NewMetricFamilyDef(
 		"kube_statefulset_status_replicas_ready",
 		"The number of ready replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicasUpdated = NewMetricFamilyDef(
+	descStatefulSetStatusReplicasUpdated = metrics.NewMetricFamilyDef(
 		"kube_statefulset_status_replicas_updated",
 		"The number of updated replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusObservedGeneration = NewMetricFamilyDef(
+	descStatefulSetStatusObservedGeneration = metrics.NewMetricFamilyDef(
 		"kube_statefulset_status_observed_generation",
 		"The generation observed by the StatefulSet controller.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetSpecReplicas = NewMetricFamilyDef(
+	descStatefulSetSpecReplicas = metrics.NewMetricFamilyDef(
 		"kube_statefulset_replicas",
 		"Number of desired pods for a StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetMetadataGeneration = NewMetricFamilyDef(
+	descStatefulSetMetadataGeneration = metrics.NewMetricFamilyDef(
 		"kube_statefulset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state for the StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetLabels = NewMetricFamilyDef(
+	descStatefulSetLabels = metrics.NewMetricFamilyDef(
 		descStatefulSetLabelsName,
 		descStatefulSetLabelsHelp,
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetCurrentRevision = NewMetricFamilyDef(
+	descStatefulSetCurrentRevision = metrics.NewMetricFamilyDef(
 		"kube_statefulset_status_current_revision",
 		"Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
 		append(descStatefulSetLabelsDefaultLabels, "revision"),
 		nil,
 	)
-	descStatefulSetUpdateRevision = NewMetricFamilyDef(
+	descStatefulSetUpdateRevision = metrics.NewMetricFamilyDef(
 		"kube_statefulset_status_update_revision",
 		"Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",
 		append(descStatefulSetLabelsDefaultLabels, "revision"),
@@ -111,8 +111,8 @@ func createStatefulSetListWatch(kubeClient clientset.Interface, ns string) cache
 	}
 }
 
-func statefulSetLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func statefulSetLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descStatefulSetLabelsName,
 		descStatefulSetLabelsHelp,
 		append(descStatefulSetLabelsDefaultLabels, labelKeys...),
@@ -127,7 +127,7 @@ func generateStatefulSetMetrics(obj interface{}) []*metrics.Metric {
 	sPointer := obj.(*v1beta1.StatefulSet)
 	s := *sPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{s.Namespace, s.Name}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {

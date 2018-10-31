@@ -34,7 +34,7 @@ var (
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
 
-	descNodeInfo = NewMetricFamilyDef(
+	descNodeInfo = metrics.NewMetricFamilyDef(
 		"kube_node_info",
 		"Information about a cluster node.",
 		append(descNodeLabelsDefaultLabels,
@@ -46,85 +46,85 @@ var (
 			"provider_id"),
 		nil,
 	)
-	descNodeCreated = NewMetricFamilyDef(
+	descNodeCreated = metrics.NewMetricFamilyDef(
 		"kube_node_created",
 		"Unix creation timestamp",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeLabels = NewMetricFamilyDef(
+	descNodeLabels = metrics.NewMetricFamilyDef(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeSpecUnschedulable = NewMetricFamilyDef(
+	descNodeSpecUnschedulable = metrics.NewMetricFamilyDef(
 		"kube_node_spec_unschedulable",
 		"Whether a node can schedule new pods.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeSpecTaint = NewMetricFamilyDef(
+	descNodeSpecTaint = metrics.NewMetricFamilyDef(
 		"kube_node_spec_taint",
 		"The taint of a cluster node.",
 		append(descNodeLabelsDefaultLabels, "key", "value", "effect"),
 		nil,
 	)
-	descNodeStatusCondition = NewMetricFamilyDef(
+	descNodeStatusCondition = metrics.NewMetricFamilyDef(
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
 		append(descNodeLabelsDefaultLabels, "condition", "status"),
 		nil,
 	)
-	descNodeStatusPhase = NewMetricFamilyDef(
+	descNodeStatusPhase = metrics.NewMetricFamilyDef(
 		"kube_node_status_phase",
 		"The phase the node is currently in.",
 		append(descNodeLabelsDefaultLabels, "phase"),
 		nil,
 	)
-	descNodeStatusCapacity = NewMetricFamilyDef(
+	descNodeStatusCapacity = metrics.NewMetricFamilyDef(
 		"kube_node_status_capacity",
 		"The capacity for different resources of a node.",
 		append(descNodeLabelsDefaultLabels, "resource", "unit"),
 		nil,
 	)
-	descNodeStatusCapacityPods = NewMetricFamilyDef(
+	descNodeStatusCapacityPods = metrics.NewMetricFamilyDef(
 		"kube_node_status_capacity_pods",
 		"The total pod resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusCapacityCPU = NewMetricFamilyDef(
+	descNodeStatusCapacityCPU = metrics.NewMetricFamilyDef(
 		"kube_node_status_capacity_cpu_cores",
 		"The total CPU resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusCapacityMemory = NewMetricFamilyDef(
+	descNodeStatusCapacityMemory = metrics.NewMetricFamilyDef(
 		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatable = NewMetricFamilyDef(
+	descNodeStatusAllocatable = metrics.NewMetricFamilyDef(
 		"kube_node_status_allocatable",
 		"The allocatable for different resources of a node that are available for scheduling.",
 		append(descNodeLabelsDefaultLabels, "resource", "unit"),
 		nil,
 	)
-	descNodeStatusAllocatablePods = NewMetricFamilyDef(
+	descNodeStatusAllocatablePods = metrics.NewMetricFamilyDef(
 		"kube_node_status_allocatable_pods",
 		"The pod resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatableCPU = NewMetricFamilyDef(
+	descNodeStatusAllocatableCPU = metrics.NewMetricFamilyDef(
 		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatableMemory = NewMetricFamilyDef(
+	descNodeStatusAllocatableMemory = metrics.NewMetricFamilyDef(
 		"kube_node_status_allocatable_memory_bytes",
 		"The memory resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
@@ -143,8 +143,8 @@ func createNodeListWatch(kubeClient clientset.Interface, ns string) cache.ListWa
 	}
 }
 
-func nodeLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return NewMetricFamilyDef(
+func nodeLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		append(descNodeLabelsDefaultLabels, labelKeys...),
@@ -159,7 +159,7 @@ func generateNodeMetrics(disableNodeNonGenericResourceMetrics bool, obj interfac
 	nPointer := obj.(*v1.Node)
 	n := *nPointer
 
-	addGauge := func(desc *MetricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{n.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -213,7 +213,7 @@ func generateNodeMetrics(disableNodeNonGenericResourceMetrics bool, obj interfac
 
 	if !disableNodeNonGenericResourceMetrics {
 		// Add capacity and allocatable resources if they are set.
-		addResource := func(d *MetricFamilyDef, res v1.ResourceList, n v1.ResourceName) {
+		addResource := func(d *metrics.MetricFamilyDef, res v1.ResourceList, n v1.ResourceName) {
 			if v, ok := res[n]; ok {
 				addGauge(d, float64(v.MilliValue())/1000)
 			}

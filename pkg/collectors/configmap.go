@@ -30,21 +30,21 @@ import (
 var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 
-	descConfigMapInfo = newMetricFamilyDef(
+	descConfigMapInfo = NewMetricFamilyDef(
 		"kube_configmap_info",
 		"Information about configmap.",
 		descConfigMapLabelsDefaultLabels,
 		nil,
 	)
 
-	descConfigMapCreated = newMetricFamilyDef(
+	descConfigMapCreated = NewMetricFamilyDef(
 		"kube_configmap_created",
 		"Unix creation timestamp",
 		descConfigMapLabelsDefaultLabels,
 		nil,
 	)
 
-	descConfigMapMetadataResourceVersion = newMetricFamilyDef(
+	descConfigMapMetadataResourceVersion = NewMetricFamilyDef(
 		"kube_configmap_metadata_resource_version",
 		"Resource version representing a specific version of the configmap.",
 		append(descConfigMapLabelsDefaultLabels, "resource_version"),

@@ -36,25 +36,25 @@ var (
 	descNamespaceAnnotationsHelp          = "Kubernetes annotations converted to Prometheus labels."
 	descNamespaceAnnotationsDefaultLabels = []string{"namespace"}
 
-	descNamespaceCreated = newMetricFamilyDef(
+	descNamespaceCreated = NewMetricFamilyDef(
 		"kube_namespace_created",
 		"Unix creation timestamp",
 		descNamespaceLabelsDefaultLabels,
 		nil,
 	)
-	descNamespaceLabels = newMetricFamilyDef(
+	descNamespaceLabels = NewMetricFamilyDef(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		descNamespaceLabelsDefaultLabels,
 		nil,
 	)
-	descNamespaceAnnotations = newMetricFamilyDef(
+	descNamespaceAnnotations = NewMetricFamilyDef(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,
 		descNamespaceAnnotationsDefaultLabels,
 		nil,
 	)
-	descNamespacePhase = newMetricFamilyDef(
+	descNamespacePhase = NewMetricFamilyDef(
 		"kube_namespace_status_phase",
 		"kubernetes namespace status phase.",
 		append(descNamespaceLabelsDefaultLabels, "phase"),
@@ -108,7 +108,7 @@ func generateNamespaceMetrics(obj interface{}) []*metrics.Metric {
 }
 
 func namespaceLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descNamespaceLabelsName,
 		descNamespaceLabelsHelp,
 		append(descNamespaceLabelsDefaultLabels, labelKeys...),
@@ -117,7 +117,7 @@ func namespaceLabelsDesc(labelKeys []string) *MetricFamilyDef {
 }
 
 func namespaceAnnotationsDesc(annotationKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descNamespaceAnnotationsName,
 		descNamespaceAnnotationsHelp,
 		append(descNamespaceAnnotationsDefaultLabels, annotationKeys...),

@@ -33,81 +33,81 @@ var (
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 
-	descDeploymentCreated = newMetricFamilyDef(
+	descDeploymentCreated = NewMetricFamilyDef(
 		"kube_deployment_created",
 		"Unix creation timestamp",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStatusReplicas = newMetricFamilyDef(
+	descDeploymentStatusReplicas = NewMetricFamilyDef(
 		"kube_deployment_status_replicas",
 		"The number of replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
-	descDeploymentStatusReplicasAvailable = newMetricFamilyDef(
+	descDeploymentStatusReplicasAvailable = NewMetricFamilyDef(
 		"kube_deployment_status_replicas_available",
 		"The number of available replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
-	descDeploymentStatusReplicasUnavailable = newMetricFamilyDef(
+	descDeploymentStatusReplicasUnavailable = NewMetricFamilyDef(
 		"kube_deployment_status_replicas_unavailable",
 		"The number of unavailable replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
-	descDeploymentStatusReplicasUpdated = newMetricFamilyDef(
+	descDeploymentStatusReplicasUpdated = NewMetricFamilyDef(
 		"kube_deployment_status_replicas_updated",
 		"The number of updated replicas per deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStatusObservedGeneration = newMetricFamilyDef(
+	descDeploymentStatusObservedGeneration = NewMetricFamilyDef(
 		"kube_deployment_status_observed_generation",
 		"The generation observed by the deployment controller.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentSpecReplicas = newMetricFamilyDef(
+	descDeploymentSpecReplicas = NewMetricFamilyDef(
 		"kube_deployment_spec_replicas",
 		"Number of desired pods for a deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentSpecPaused = newMetricFamilyDef(
+	descDeploymentSpecPaused = NewMetricFamilyDef(
 		"kube_deployment_spec_paused",
 		"Whether the deployment is paused and will not be processed by the deployment controller.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStrategyRollingUpdateMaxUnavailable = newMetricFamilyDef(
+	descDeploymentStrategyRollingUpdateMaxUnavailable = NewMetricFamilyDef(
 		"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
 		"Maximum number of unavailable replicas during a rolling update of a deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentStrategyRollingUpdateMaxSurge = newMetricFamilyDef(
+	descDeploymentStrategyRollingUpdateMaxSurge = NewMetricFamilyDef(
 		"kube_deployment_spec_strategy_rollingupdate_max_surge",
 		"Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentMetadataGeneration = newMetricFamilyDef(
+	descDeploymentMetadataGeneration = NewMetricFamilyDef(
 		"kube_deployment_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descDeploymentLabelsDefaultLabels,
 		nil,
 	)
 
-	descDeploymentLabels = newMetricFamilyDef(
+	descDeploymentLabels = NewMetricFamilyDef(
 		descDeploymentLabelsName,
 		descDeploymentLabelsHelp,
 		descDeploymentLabelsDefaultLabels, nil,
@@ -126,7 +126,7 @@ func createDeploymentListWatch(kubeClient clientset.Interface, ns string) cache.
 }
 
 func deploymentLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descDeploymentLabelsName,
 		descDeploymentLabelsHelp,
 		append(descDeploymentLabelsDefaultLabels, labelKeys...),

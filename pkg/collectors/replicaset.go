@@ -31,49 +31,49 @@ import (
 
 var (
 	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
-	descReplicaSetCreated             = newMetricFamilyDef(
+	descReplicaSetCreated             = NewMetricFamilyDef(
 		"kube_replicaset_created",
 		"Unix creation timestamp",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusReplicas = newMetricFamilyDef(
+	descReplicaSetStatusReplicas = NewMetricFamilyDef(
 		"kube_replicaset_status_replicas",
 		"The number of replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusFullyLabeledReplicas = newMetricFamilyDef(
+	descReplicaSetStatusFullyLabeledReplicas = NewMetricFamilyDef(
 		"kube_replicaset_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusReadyReplicas = newMetricFamilyDef(
+	descReplicaSetStatusReadyReplicas = NewMetricFamilyDef(
 		"kube_replicaset_status_ready_replicas",
 		"The number of ready replicas per ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetStatusObservedGeneration = newMetricFamilyDef(
+	descReplicaSetStatusObservedGeneration = NewMetricFamilyDef(
 		"kube_replicaset_status_observed_generation",
 		"The generation observed by the ReplicaSet controller.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetSpecReplicas = newMetricFamilyDef(
+	descReplicaSetSpecReplicas = NewMetricFamilyDef(
 		"kube_replicaset_spec_replicas",
 		"Number of desired pods for a ReplicaSet.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetMetadataGeneration = newMetricFamilyDef(
+	descReplicaSetMetadataGeneration = NewMetricFamilyDef(
 		"kube_replicaset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descReplicaSetLabelsDefaultLabels,
 		nil,
 	)
-	descReplicaSetOwner = newMetricFamilyDef(
+	descReplicaSetOwner = NewMetricFamilyDef(
 		"kube_replicaset_owner",
 		"Information about the ReplicaSet's owner.",
 		append(descReplicaSetLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),

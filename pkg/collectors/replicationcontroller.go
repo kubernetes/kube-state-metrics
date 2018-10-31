@@ -30,49 +30,49 @@ import (
 var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
-	descReplicationControllerCreated = newMetricFamilyDef(
+	descReplicationControllerCreated = NewMetricFamilyDef(
 		"kube_replicationcontroller_created",
 		"Unix creation timestamp",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusReplicas = newMetricFamilyDef(
+	descReplicationControllerStatusReplicas = NewMetricFamilyDef(
 		"kube_replicationcontroller_status_replicas",
 		"The number of replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusFullyLabeledReplicas = newMetricFamilyDef(
+	descReplicationControllerStatusFullyLabeledReplicas = NewMetricFamilyDef(
 		"kube_replicationcontroller_status_fully_labeled_replicas",
 		"The number of fully labeled replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusReadyReplicas = newMetricFamilyDef(
+	descReplicationControllerStatusReadyReplicas = NewMetricFamilyDef(
 		"kube_replicationcontroller_status_ready_replicas",
 		"The number of ready replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusAvailableReplicas = newMetricFamilyDef(
+	descReplicationControllerStatusAvailableReplicas = NewMetricFamilyDef(
 		"kube_replicationcontroller_status_available_replicas",
 		"The number of available replicas per ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerStatusObservedGeneration = newMetricFamilyDef(
+	descReplicationControllerStatusObservedGeneration = NewMetricFamilyDef(
 		"kube_replicationcontroller_status_observed_generation",
 		"The generation observed by the ReplicationController controller.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerSpecReplicas = newMetricFamilyDef(
+	descReplicationControllerSpecReplicas = NewMetricFamilyDef(
 		"kube_replicationcontroller_spec_replicas",
 		"Number of desired pods for a ReplicationController.",
 		descReplicationControllerLabelsDefaultLabels,
 		nil,
 	)
-	descReplicationControllerMetadataGeneration = newMetricFamilyDef(
+	descReplicationControllerMetadataGeneration = NewMetricFamilyDef(
 		"kube_replicationcontroller_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descReplicationControllerLabelsDefaultLabels,

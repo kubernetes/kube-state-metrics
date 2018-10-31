@@ -29,14 +29,14 @@ import (
 
 var (
 	descLimitRangeLabelsDefaultLabels = []string{"limitrange", "namespace"}
-	descLimitRange                    = newMetricFamilyDef(
+	descLimitRange                    = NewMetricFamilyDef(
 		"kube_limitrange",
 		"Information about limit range.",
 		append(descLimitRangeLabelsDefaultLabels, "resource", "type", "constraint"),
 		nil,
 	)
 
-	descLimitRangeCreated = newMetricFamilyDef(
+	descLimitRangeCreated = NewMetricFamilyDef(
 		"kube_limitrange_created",
 		"Unix creation timestamp",
 		descLimitRangeLabelsDefaultLabels,

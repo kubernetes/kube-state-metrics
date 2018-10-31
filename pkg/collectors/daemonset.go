@@ -32,61 +32,61 @@ var (
 	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 
-	descDaemonSetCreated = newMetricFamilyDef(
+	descDaemonSetCreated = NewMetricFamilyDef(
 		"kube_daemonset_created",
 		"Unix creation timestamp",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetCurrentNumberScheduled = newMetricFamilyDef(
+	descDaemonSetCurrentNumberScheduled = NewMetricFamilyDef(
 		"kube_daemonset_status_current_number_scheduled",
 		"The number of nodes running at least one daemon pod and are supposed to.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetDesiredNumberScheduled = newMetricFamilyDef(
+	descDaemonSetDesiredNumberScheduled = NewMetricFamilyDef(
 		"kube_daemonset_status_desired_number_scheduled",
 		"The number of nodes that should be running the daemon pod.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberAvailable = newMetricFamilyDef(
+	descDaemonSetNumberAvailable = NewMetricFamilyDef(
 		"kube_daemonset_status_number_available",
 		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberMisscheduled = newMetricFamilyDef(
+	descDaemonSetNumberMisscheduled = NewMetricFamilyDef(
 		"kube_daemonset_status_number_misscheduled",
 		"The number of nodes running a daemon pod but are not supposed to.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberReady = newMetricFamilyDef(
+	descDaemonSetNumberReady = NewMetricFamilyDef(
 		"kube_daemonset_status_number_ready",
 		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberUnavailable = newMetricFamilyDef(
+	descDaemonSetNumberUnavailable = NewMetricFamilyDef(
 		"kube_daemonset_status_number_unavailable",
 		"The number of nodes that should be running the daemon pod and have none of the daemon pod running and available",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetUpdatedNumberScheduled = newMetricFamilyDef(
+	descDaemonSetUpdatedNumberScheduled = NewMetricFamilyDef(
 		"kube_daemonset_updated_number_scheduled",
 		"The total number of nodes that are running updated daemon pod",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetMetadataGeneration = newMetricFamilyDef(
+	descDaemonSetMetadataGeneration = NewMetricFamilyDef(
 		"kube_daemonset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetLabels = newMetricFamilyDef(
+	descDaemonSetLabels = NewMetricFamilyDef(
 		descDaemonSetLabelsName,
 		descDaemonSetLabelsHelp,
 		descDaemonSetLabelsDefaultLabels,
@@ -121,7 +121,7 @@ func createDaemonSetListWatch(kubeClient clientset.Interface, ns string) cache.L
 }
 
 func DaemonSetLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descDaemonSetLabelsName,
 		descDaemonSetLabelsHelp,
 		append(descDaemonSetLabelsDefaultLabels, labelKeys...),

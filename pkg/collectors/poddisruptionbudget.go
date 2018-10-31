@@ -30,38 +30,38 @@ import (
 var (
 	descPodDisruptionBudgetLabelsDefaultLabels = []string{"poddisruptionbudget", "namespace"}
 
-	descPodDisruptionBudgetCreated = newMetricFamilyDef(
+	descPodDisruptionBudgetCreated = NewMetricFamilyDef(
 		"kube_poddisruptionbudget_created",
 		"Unix creation timestamp",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
 
-	descPodDisruptionBudgetStatusCurrentHealthy = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusCurrentHealthy = NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_current_healthy",
 		"Current number of healthy pods",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusDesiredHealthy = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusDesiredHealthy = NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_desired_healthy",
 		"Minimum desired number of healthy pods",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusPodDisruptionsAllowed = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusPodDisruptionsAllowed = NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_pod_disruptions_allowed",
 		"Number of pod disruptions that are currently allowed",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusExpectedPods = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusExpectedPods = NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_expected_pods",
 		"Total number of pods counted by this disruption budget",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusObservedGeneration = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusObservedGeneration = NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_observed_generation",
 		"Most recent generation observed when updating this PDB status",
 		descPodDisruptionBudgetLabelsDefaultLabels,

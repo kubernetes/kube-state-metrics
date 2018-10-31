@@ -34,7 +34,7 @@ var (
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
 
-	descNodeInfo = newMetricFamilyDef(
+	descNodeInfo = NewMetricFamilyDef(
 		"kube_node_info",
 		"Information about a cluster node.",
 		append(descNodeLabelsDefaultLabels,
@@ -46,85 +46,85 @@ var (
 			"provider_id"),
 		nil,
 	)
-	descNodeCreated = newMetricFamilyDef(
+	descNodeCreated = NewMetricFamilyDef(
 		"kube_node_created",
 		"Unix creation timestamp",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeLabels = newMetricFamilyDef(
+	descNodeLabels = NewMetricFamilyDef(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeSpecUnschedulable = newMetricFamilyDef(
+	descNodeSpecUnschedulable = NewMetricFamilyDef(
 		"kube_node_spec_unschedulable",
 		"Whether a node can schedule new pods.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeSpecTaint = newMetricFamilyDef(
+	descNodeSpecTaint = NewMetricFamilyDef(
 		"kube_node_spec_taint",
 		"The taint of a cluster node.",
 		append(descNodeLabelsDefaultLabels, "key", "value", "effect"),
 		nil,
 	)
-	descNodeStatusCondition = newMetricFamilyDef(
+	descNodeStatusCondition = NewMetricFamilyDef(
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
 		append(descNodeLabelsDefaultLabels, "condition", "status"),
 		nil,
 	)
-	descNodeStatusPhase = newMetricFamilyDef(
+	descNodeStatusPhase = NewMetricFamilyDef(
 		"kube_node_status_phase",
 		"The phase the node is currently in.",
 		append(descNodeLabelsDefaultLabels, "phase"),
 		nil,
 	)
-	descNodeStatusCapacity = newMetricFamilyDef(
+	descNodeStatusCapacity = NewMetricFamilyDef(
 		"kube_node_status_capacity",
 		"The capacity for different resources of a node.",
 		append(descNodeLabelsDefaultLabels, "resource", "unit"),
 		nil,
 	)
-	descNodeStatusCapacityPods = newMetricFamilyDef(
+	descNodeStatusCapacityPods = NewMetricFamilyDef(
 		"kube_node_status_capacity_pods",
 		"The total pod resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusCapacityCPU = newMetricFamilyDef(
+	descNodeStatusCapacityCPU = NewMetricFamilyDef(
 		"kube_node_status_capacity_cpu_cores",
 		"The total CPU resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusCapacityMemory = newMetricFamilyDef(
+	descNodeStatusCapacityMemory = NewMetricFamilyDef(
 		"kube_node_status_capacity_memory_bytes",
 		"The total memory resources of the node.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatable = newMetricFamilyDef(
+	descNodeStatusAllocatable = NewMetricFamilyDef(
 		"kube_node_status_allocatable",
 		"The allocatable for different resources of a node that are available for scheduling.",
 		append(descNodeLabelsDefaultLabels, "resource", "unit"),
 		nil,
 	)
-	descNodeStatusAllocatablePods = newMetricFamilyDef(
+	descNodeStatusAllocatablePods = NewMetricFamilyDef(
 		"kube_node_status_allocatable_pods",
 		"The pod resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatableCPU = newMetricFamilyDef(
+	descNodeStatusAllocatableCPU = NewMetricFamilyDef(
 		"kube_node_status_allocatable_cpu_cores",
 		"The CPU resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
 		nil,
 	)
-	descNodeStatusAllocatableMemory = newMetricFamilyDef(
+	descNodeStatusAllocatableMemory = NewMetricFamilyDef(
 		"kube_node_status_allocatable_memory_bytes",
 		"The memory resources of a node that are available for scheduling.",
 		descNodeLabelsDefaultLabels,
@@ -144,7 +144,7 @@ func createNodeListWatch(kubeClient clientset.Interface, ns string) cache.ListWa
 }
 
 func nodeLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		append(descNodeLabelsDefaultLabels, labelKeys...),

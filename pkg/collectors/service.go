@@ -32,28 +32,28 @@ var (
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
-	descServiceInfo = newMetricFamilyDef(
+	descServiceInfo = NewMetricFamilyDef(
 		"kube_service_info",
 		"Information about service.",
 		append(descServiceLabelsDefaultLabels, "cluster_ip"),
 		nil,
 	)
 
-	descServiceCreated = newMetricFamilyDef(
+	descServiceCreated = NewMetricFamilyDef(
 		"kube_service_created",
 		"Unix creation timestamp",
 		descServiceLabelsDefaultLabels,
 		nil,
 	)
 
-	descServiceSpecType = newMetricFamilyDef(
+	descServiceSpecType = NewMetricFamilyDef(
 		"kube_service_spec_type",
 		"Type about service.",
 		append(descServiceLabelsDefaultLabels, "type"),
 		nil,
 	)
 
-	descServiceLabels = newMetricFamilyDef(
+	descServiceLabels = NewMetricFamilyDef(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
 		descServiceLabelsDefaultLabels,
@@ -73,7 +73,7 @@ func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.Lis
 }
 
 func serviceLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
 		append(descServiceLabelsDefaultLabels, labelKeys...),

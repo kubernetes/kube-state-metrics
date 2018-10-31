@@ -32,67 +32,67 @@ var (
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 
-	descStatefulSetCreated = newMetricFamilyDef(
+	descStatefulSetCreated = NewMetricFamilyDef(
 		"kube_statefulset_created",
 		"Unix creation timestamp",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicas = newMetricFamilyDef(
+	descStatefulSetStatusReplicas = NewMetricFamilyDef(
 		"kube_statefulset_status_replicas",
 		"The number of replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicasCurrent = newMetricFamilyDef(
+	descStatefulSetStatusReplicasCurrent = NewMetricFamilyDef(
 		"kube_statefulset_status_replicas_current",
 		"The number of current replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicasReady = newMetricFamilyDef(
+	descStatefulSetStatusReplicasReady = NewMetricFamilyDef(
 		"kube_statefulset_status_replicas_ready",
 		"The number of ready replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusReplicasUpdated = newMetricFamilyDef(
+	descStatefulSetStatusReplicasUpdated = NewMetricFamilyDef(
 		"kube_statefulset_status_replicas_updated",
 		"The number of updated replicas per StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetStatusObservedGeneration = newMetricFamilyDef(
+	descStatefulSetStatusObservedGeneration = NewMetricFamilyDef(
 		"kube_statefulset_status_observed_generation",
 		"The generation observed by the StatefulSet controller.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetSpecReplicas = newMetricFamilyDef(
+	descStatefulSetSpecReplicas = NewMetricFamilyDef(
 		"kube_statefulset_replicas",
 		"Number of desired pods for a StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetMetadataGeneration = newMetricFamilyDef(
+	descStatefulSetMetadataGeneration = NewMetricFamilyDef(
 		"kube_statefulset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state for the StatefulSet.",
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetLabels = newMetricFamilyDef(
+	descStatefulSetLabels = NewMetricFamilyDef(
 		descStatefulSetLabelsName,
 		descStatefulSetLabelsHelp,
 		descStatefulSetLabelsDefaultLabels,
 		nil,
 	)
-	descStatefulSetCurrentRevision = newMetricFamilyDef(
+	descStatefulSetCurrentRevision = NewMetricFamilyDef(
 		"kube_statefulset_status_current_revision",
 		"Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
 		append(descStatefulSetLabelsDefaultLabels, "revision"),
 		nil,
 	)
-	descStatefulSetUpdateRevision = newMetricFamilyDef(
+	descStatefulSetUpdateRevision = NewMetricFamilyDef(
 		"kube_statefulset_status_update_revision",
 		"Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",
 		append(descStatefulSetLabelsDefaultLabels, "revision"),
@@ -112,7 +112,7 @@ func createStatefulSetListWatch(kubeClient clientset.Interface, ns string) cache
 }
 
 func statefulSetLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descStatefulSetLabelsName,
 		descStatefulSetLabelsHelp,
 		append(descStatefulSetLabelsDefaultLabels, labelKeys...),

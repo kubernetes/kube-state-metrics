@@ -30,13 +30,13 @@ import (
 var (
 	descResourceQuotaLabelsDefaultLabels = []string{"resourcequota", "namespace"}
 
-	descResourceQuotaCreated = newMetricFamilyDef(
+	descResourceQuotaCreated = NewMetricFamilyDef(
 		"kube_resourcequota_created",
 		"Unix creation timestamp",
 		descResourceQuotaLabelsDefaultLabels,
 		nil,
 	)
-	descResourceQuota = newMetricFamilyDef(
+	descResourceQuota = NewMetricFamilyDef(
 		"kube_resourcequota",
 		"Information about resource quota.",
 		append(descResourceQuotaLabelsDefaultLabels,

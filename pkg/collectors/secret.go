@@ -32,35 +32,35 @@ var (
 	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 
-	descSecretInfo = newMetricFamilyDef(
+	descSecretInfo = NewMetricFamilyDef(
 		"kube_secret_info",
 		"Information about secret.",
 		descSecretLabelsDefaultLabels,
 		nil,
 	)
 
-	descSecretType = newMetricFamilyDef(
+	descSecretType = NewMetricFamilyDef(
 		"kube_secret_type",
 		"Type about secret.",
 		append(descSecretLabelsDefaultLabels, "type"),
 		nil,
 	)
 
-	descSecretLabels = newMetricFamilyDef(
+	descSecretLabels = NewMetricFamilyDef(
 		descSecretLabelsName,
 		descSecretLabelsHelp,
 		descSecretLabelsDefaultLabels,
 		nil,
 	)
 
-	descSecretCreated = newMetricFamilyDef(
+	descSecretCreated = NewMetricFamilyDef(
 		"kube_secret_created",
 		"Unix creation timestamp",
 		descSecretLabelsDefaultLabels,
 		nil,
 	)
 
-	descSecretMetadataResourceVersion = newMetricFamilyDef(
+	descSecretMetadataResourceVersion = NewMetricFamilyDef(
 		"kube_secret_metadata_resource_version",
 		"Resource version representing a specific version of secret.",
 		append(descSecretLabelsDefaultLabels, "resource_version"),
@@ -79,7 +79,7 @@ func createSecretListWatch(kubeClient clientset.Interface, ns string) cache.List
 	}
 }
 func secretLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descSecretLabelsName,
 		descSecretLabelsHelp,
 		append(descSecretLabelsDefaultLabels, labelKeys...),

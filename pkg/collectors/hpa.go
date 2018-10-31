@@ -32,43 +32,43 @@ var (
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "hpa"}
 
-	descHorizontalPodAutoscalerMetadataGeneration = newMetricFamilyDef(
+	descHorizontalPodAutoscalerMetadataGeneration = NewMetricFamilyDef(
 		"kube_hpa_metadata_generation",
 		"The generation observed by the HorizontalPodAutoscaler controller.",
 		descHorizontalPodAutoscalerLabelsDefaultLabels,
 		nil,
 	)
-	descHorizontalPodAutoscalerSpecMaxReplicas = newMetricFamilyDef(
+	descHorizontalPodAutoscalerSpecMaxReplicas = NewMetricFamilyDef(
 		"kube_hpa_spec_max_replicas",
 		"Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
 		descHorizontalPodAutoscalerLabelsDefaultLabels,
 		nil,
 	)
-	descHorizontalPodAutoscalerSpecMinReplicas = newMetricFamilyDef(
+	descHorizontalPodAutoscalerSpecMinReplicas = NewMetricFamilyDef(
 		"kube_hpa_spec_min_replicas",
 		"Lower limit for the number of pods that can be set by the autoscaler, default 1.",
 		descHorizontalPodAutoscalerLabelsDefaultLabels,
 		nil,
 	)
-	descHorizontalPodAutoscalerStatusCurrentReplicas = newMetricFamilyDef(
+	descHorizontalPodAutoscalerStatusCurrentReplicas = NewMetricFamilyDef(
 		"kube_hpa_status_current_replicas",
 		"Current number of replicas of pods managed by this autoscaler.",
 		descHorizontalPodAutoscalerLabelsDefaultLabels,
 		nil,
 	)
-	descHorizontalPodAutoscalerStatusDesiredReplicas = newMetricFamilyDef(
+	descHorizontalPodAutoscalerStatusDesiredReplicas = NewMetricFamilyDef(
 		"kube_hpa_status_desired_replicas",
 		"Desired number of replicas of pods managed by this autoscaler.",
 		descHorizontalPodAutoscalerLabelsDefaultLabels,
 		nil,
 	)
-	descHorizontalPodAutoscalerLabels = newMetricFamilyDef(
+	descHorizontalPodAutoscalerLabels = NewMetricFamilyDef(
 		descHorizontalPodAutoscalerLabelsName,
 		descHorizontalPodAutoscalerLabelsHelp,
 		descHorizontalPodAutoscalerLabelsDefaultLabels,
 		nil,
 	)
-	descHorizontalPodAutoscalerCondition = newMetricFamilyDef(
+	descHorizontalPodAutoscalerCondition = NewMetricFamilyDef(
 		"kube_hpa_status_condition",
 		"The condition of this autoscaler.",
 		append(descHorizontalPodAutoscalerLabelsDefaultLabels, "condition", "status"),
@@ -88,7 +88,7 @@ func createHPAListWatch(kubeClient clientset.Interface, ns string) cache.ListWat
 }
 
 func hpaLabelsDesc(labelKeys []string) *MetricFamilyDef {
-	return newMetricFamilyDef(
+	return NewMetricFamilyDef(
 		descHorizontalPodAutoscalerLabelsName,
 		descHorizontalPodAutoscalerLabelsHelp,
 		append(descHorizontalPodAutoscalerLabelsDefaultLabels, labelKeys...),

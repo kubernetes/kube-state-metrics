@@ -32,35 +32,35 @@ var (
 	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 
-	descSecretInfo = newMetricFamilyDef(
+	descSecretInfo = metrics.NewMetricFamilyDef(
 		"kube_secret_info",
 		"Information about secret.",
 		descSecretLabelsDefaultLabels,
 		nil,
 	)
 
-	descSecretType = newMetricFamilyDef(
+	descSecretType = metrics.NewMetricFamilyDef(
 		"kube_secret_type",
 		"Type about secret.",
 		append(descSecretLabelsDefaultLabels, "type"),
 		nil,
 	)
 
-	descSecretLabels = newMetricFamilyDef(
+	descSecretLabels = metrics.NewMetricFamilyDef(
 		descSecretLabelsName,
 		descSecretLabelsHelp,
 		descSecretLabelsDefaultLabels,
 		nil,
 	)
 
-	descSecretCreated = newMetricFamilyDef(
+	descSecretCreated = metrics.NewMetricFamilyDef(
 		"kube_secret_created",
 		"Unix creation timestamp",
 		descSecretLabelsDefaultLabels,
 		nil,
 	)
 
-	descSecretMetadataResourceVersion = newMetricFamilyDef(
+	descSecretMetadataResourceVersion = metrics.NewMetricFamilyDef(
 		"kube_secret_metadata_resource_version",
 		"Resource version representing a specific version of secret.",
 		append(descSecretLabelsDefaultLabels, "resource_version"),
@@ -78,8 +78,8 @@ func createSecretListWatch(kubeClient clientset.Interface, ns string) cache.List
 		},
 	}
 }
-func secretLabelsDesc(labelKeys []string) *metricFamilyDef {
-	return newMetricFamilyDef(
+func secretLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descSecretLabelsName,
 		descSecretLabelsHelp,
 		append(descSecretLabelsDefaultLabels, labelKeys...),
@@ -94,7 +94,7 @@ func generateSecretMetrics(obj interface{}) []*metrics.Metric {
 	sPointer := obj.(*v1.Secret)
 	s := *sPointer
 
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{s.Namespace, s.Name}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {
@@ -103,7 +103,7 @@ func generateSecretMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 	addGauge(descSecretInfo, 1)

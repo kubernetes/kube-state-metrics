@@ -29,14 +29,14 @@ import (
 
 var (
 	descLimitRangeLabelsDefaultLabels = []string{"limitrange", "namespace"}
-	descLimitRange                    = newMetricFamilyDef(
+	descLimitRange                    = metrics.NewMetricFamilyDef(
 		"kube_limitrange",
 		"Information about limit range.",
 		append(descLimitRangeLabelsDefaultLabels, "resource", "type", "constraint"),
 		nil,
 	)
 
-	descLimitRangeCreated = newMetricFamilyDef(
+	descLimitRangeCreated = metrics.NewMetricFamilyDef(
 		"kube_limitrange_created",
 		"Unix creation timestamp",
 		descLimitRangeLabelsDefaultLabels,
@@ -61,7 +61,7 @@ func generateLimitRangeMetrics(obj interface{}) []*metrics.Metric {
 	lPointer := obj.(*v1.LimitRange)
 	l := *lPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{l.Name, l.Namespace}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

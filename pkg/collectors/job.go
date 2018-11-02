@@ -32,80 +32,80 @@ var (
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 
-	descJobLabels = newMetricFamilyDef(
+	descJobLabels = metrics.NewMetricFamilyDef(
 		descJobLabelsName,
 		descJobLabelsHelp,
 		descJobLabelsDefaultLabels,
 		nil,
 	)
 
-	descJobInfo = newMetricFamilyDef(
+	descJobInfo = metrics.NewMetricFamilyDef(
 		"kube_job_info",
 		"Information about job.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobCreated = newMetricFamilyDef(
+	descJobCreated = metrics.NewMetricFamilyDef(
 		"kube_job_created",
 		"Unix creation timestamp",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobSpecParallelism = newMetricFamilyDef(
+	descJobSpecParallelism = metrics.NewMetricFamilyDef(
 		"kube_job_spec_parallelism",
 		"The maximum desired number of pods the job should run at any given time.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobSpecCompletions = newMetricFamilyDef(
+	descJobSpecCompletions = metrics.NewMetricFamilyDef(
 		"kube_job_spec_completions",
 		"The desired number of successfully finished pods the job should be run with.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobSpecActiveDeadlineSeconds = newMetricFamilyDef(
+	descJobSpecActiveDeadlineSeconds = metrics.NewMetricFamilyDef(
 		"kube_job_spec_active_deadline_seconds",
 		"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusSucceeded = newMetricFamilyDef(
+	descJobStatusSucceeded = metrics.NewMetricFamilyDef(
 		"kube_job_status_succeeded",
 		"The number of pods which reached Phase Succeeded.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusFailed = newMetricFamilyDef(
+	descJobStatusFailed = metrics.NewMetricFamilyDef(
 		"kube_job_status_failed",
 		"The number of pods which reached Phase Failed.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusActive = newMetricFamilyDef(
+	descJobStatusActive = metrics.NewMetricFamilyDef(
 		"kube_job_status_active",
 		"The number of actively running pods.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobConditionComplete = newMetricFamilyDef(
+	descJobConditionComplete = metrics.NewMetricFamilyDef(
 		"kube_job_complete",
 		"The job has completed its execution.",
 		append(descJobLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descJobConditionFailed = newMetricFamilyDef(
+	descJobConditionFailed = metrics.NewMetricFamilyDef(
 		"kube_job_failed",
 		"The job has failed its execution.",
 		append(descJobLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descJobStatusStartTime = newMetricFamilyDef(
+	descJobStatusStartTime = metrics.NewMetricFamilyDef(
 		"kube_job_status_start_time",
 		"StartTime represents time when the job was acknowledged by the Job Manager.",
 		descJobLabelsDefaultLabels,
 		nil,
 	)
-	descJobStatusCompletionTime = newMetricFamilyDef(
+	descJobStatusCompletionTime = metrics.NewMetricFamilyDef(
 		"kube_job_status_completion_time",
 		"CompletionTime represents time when the job was completed.",
 		descJobLabelsDefaultLabels,
@@ -124,8 +124,8 @@ func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWat
 	}
 }
 
-func jobLabelsDesc(labelKeys []string) *metricFamilyDef {
-	return newMetricFamilyDef(
+func jobLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descJobLabelsName,
 		descJobLabelsHelp,
 		append(descJobLabelsDefaultLabels, labelKeys...),
@@ -140,7 +140,7 @@ func generateJobMetrics(obj interface{}) []*metrics.Metric {
 	jPointer := obj.(*v1batch.Job)
 	j := *jPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

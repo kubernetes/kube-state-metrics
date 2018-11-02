@@ -32,28 +32,28 @@ var (
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
-	descServiceInfo = newMetricFamilyDef(
+	descServiceInfo = metrics.NewMetricFamilyDef(
 		"kube_service_info",
 		"Information about service.",
 		append(descServiceLabelsDefaultLabels, "cluster_ip"),
 		nil,
 	)
 
-	descServiceCreated = newMetricFamilyDef(
+	descServiceCreated = metrics.NewMetricFamilyDef(
 		"kube_service_created",
 		"Unix creation timestamp",
 		descServiceLabelsDefaultLabels,
 		nil,
 	)
 
-	descServiceSpecType = newMetricFamilyDef(
+	descServiceSpecType = metrics.NewMetricFamilyDef(
 		"kube_service_spec_type",
 		"Type about service.",
 		append(descServiceLabelsDefaultLabels, "type"),
 		nil,
 	)
 
-	descServiceLabels = newMetricFamilyDef(
+	descServiceLabels = metrics.NewMetricFamilyDef(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
 		descServiceLabelsDefaultLabels,
@@ -72,8 +72,8 @@ func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.Lis
 	}
 }
 
-func serviceLabelsDesc(labelKeys []string) *metricFamilyDef {
-	return newMetricFamilyDef(
+func serviceLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
 		append(descServiceLabelsDefaultLabels, labelKeys...),
@@ -88,7 +88,7 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{s.Namespace, s.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -98,7 +98,7 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 	addGauge(descServiceSpecType, 1, string(s.Spec.Type))

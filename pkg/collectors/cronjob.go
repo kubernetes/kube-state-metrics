@@ -37,49 +37,49 @@ var (
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
 
-	descCronJobLabels = newMetricFamilyDef(
+	descCronJobLabels = metrics.NewMetricFamilyDef(
 		descCronJobLabelsName,
 		descCronJobLabelsHelp,
 		descCronJobLabelsDefaultLabels, nil,
 	)
 
-	descCronJobInfo = newMetricFamilyDef(
+	descCronJobInfo = metrics.NewMetricFamilyDef(
 		"kube_cronjob_info",
 		"Info about cronjob.",
 		append(descCronJobLabelsDefaultLabels, "schedule", "concurrency_policy"),
 		nil,
 	)
-	descCronJobCreated = newMetricFamilyDef(
+	descCronJobCreated = metrics.NewMetricFamilyDef(
 		"kube_cronjob_created",
 		"Unix creation timestamp",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobStatusActive = newMetricFamilyDef(
+	descCronJobStatusActive = metrics.NewMetricFamilyDef(
 		"kube_cronjob_status_active",
 		"Active holds pointers to currently running jobs.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobStatusLastScheduleTime = newMetricFamilyDef(
+	descCronJobStatusLastScheduleTime = metrics.NewMetricFamilyDef(
 		"kube_cronjob_status_last_schedule_time",
 		"LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobSpecSuspend = newMetricFamilyDef(
+	descCronJobSpecSuspend = metrics.NewMetricFamilyDef(
 		"kube_cronjob_spec_suspend",
 		"Suspend flag tells the controller to suspend subsequent executions.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobSpecStartingDeadlineSeconds = newMetricFamilyDef(
+	descCronJobSpecStartingDeadlineSeconds = metrics.NewMetricFamilyDef(
 		"kube_cronjob_spec_starting_deadline_seconds",
 		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
 		descCronJobLabelsDefaultLabels,
 		nil,
 	)
-	descCronJobNextScheduledTime = newMetricFamilyDef(
+	descCronJobNextScheduledTime = metrics.NewMetricFamilyDef(
 		"kube_cronjob_next_schedule_time",
 		"Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
 		descCronJobLabelsDefaultLabels,
@@ -112,8 +112,8 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
 }
 
-func cronJobLabelsDesc(labelKeys []string) *metricFamilyDef {
-	return newMetricFamilyDef(
+func cronJobLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descCronJobLabelsName,
 		descCronJobLabelsHelp,
 		append(descCronJobLabelsDefaultLabels, labelKeys...),
@@ -128,7 +128,7 @@ func generateCronJobMetrics(obj interface{}) []*metrics.Metric {
 	jPointer := obj.(*batchv1beta1.CronJob)
 	j := *jPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{j.Namespace, j.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

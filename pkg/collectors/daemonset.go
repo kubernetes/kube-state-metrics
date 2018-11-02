@@ -32,61 +32,61 @@ var (
 	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 
-	descDaemonSetCreated = newMetricFamilyDef(
+	descDaemonSetCreated = metrics.NewMetricFamilyDef(
 		"kube_daemonset_created",
 		"Unix creation timestamp",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetCurrentNumberScheduled = newMetricFamilyDef(
+	descDaemonSetCurrentNumberScheduled = metrics.NewMetricFamilyDef(
 		"kube_daemonset_status_current_number_scheduled",
 		"The number of nodes running at least one daemon pod and are supposed to.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetDesiredNumberScheduled = newMetricFamilyDef(
+	descDaemonSetDesiredNumberScheduled = metrics.NewMetricFamilyDef(
 		"kube_daemonset_status_desired_number_scheduled",
 		"The number of nodes that should be running the daemon pod.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberAvailable = newMetricFamilyDef(
+	descDaemonSetNumberAvailable = metrics.NewMetricFamilyDef(
 		"kube_daemonset_status_number_available",
 		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberMisscheduled = newMetricFamilyDef(
+	descDaemonSetNumberMisscheduled = metrics.NewMetricFamilyDef(
 		"kube_daemonset_status_number_misscheduled",
 		"The number of nodes running a daemon pod but are not supposed to.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberReady = newMetricFamilyDef(
+	descDaemonSetNumberReady = metrics.NewMetricFamilyDef(
 		"kube_daemonset_status_number_ready",
 		"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetNumberUnavailable = newMetricFamilyDef(
+	descDaemonSetNumberUnavailable = metrics.NewMetricFamilyDef(
 		"kube_daemonset_status_number_unavailable",
 		"The number of nodes that should be running the daemon pod and have none of the daemon pod running and available",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetUpdatedNumberScheduled = newMetricFamilyDef(
+	descDaemonSetUpdatedNumberScheduled = metrics.NewMetricFamilyDef(
 		"kube_daemonset_updated_number_scheduled",
 		"The total number of nodes that are running updated daemon pod",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetMetadataGeneration = newMetricFamilyDef(
+	descDaemonSetMetadataGeneration = metrics.NewMetricFamilyDef(
 		"kube_daemonset_metadata_generation",
 		"Sequence number representing a specific generation of the desired state.",
 		descDaemonSetLabelsDefaultLabels,
 		nil,
 	)
-	descDaemonSetLabels = newMetricFamilyDef(
+	descDaemonSetLabels = metrics.NewMetricFamilyDef(
 		descDaemonSetLabelsName,
 		descDaemonSetLabelsHelp,
 		descDaemonSetLabelsDefaultLabels,
@@ -96,7 +96,7 @@ var (
 
 // TODO: Not necessary without HELP and TYPE line
 // // Describe implements the prometheus.Collector interface.
-// func (dc *daemonsetCollector) Describe(ch chan<- *metricFamilyDef) {
+// func (dc *daemonsetCollector) Describe(ch chan<- *metrics.MetricFamilyDef) {
 // 	ch <- descDaemonSetCreated
 // 	ch <- descDaemonSetCurrentNumberScheduled
 // 	ch <- descDaemonSetNumberAvailable
@@ -120,8 +120,8 @@ func createDaemonSetListWatch(kubeClient clientset.Interface, ns string) cache.L
 	}
 }
 
-func DaemonSetLabelsDesc(labelKeys []string) *metricFamilyDef {
-	return newMetricFamilyDef(
+func DaemonSetLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descDaemonSetLabelsName,
 		descDaemonSetLabelsHelp,
 		append(descDaemonSetLabelsDefaultLabels, labelKeys...),
@@ -136,7 +136,7 @@ func generateDaemonSetMetrics(obj interface{}) []*metrics.Metric {
 	dPointer := obj.(*v1beta1.DaemonSet)
 	d := *dPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{d.Namespace, d.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)

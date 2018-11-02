@@ -30,38 +30,38 @@ import (
 var (
 	descPodDisruptionBudgetLabelsDefaultLabels = []string{"poddisruptionbudget", "namespace"}
 
-	descPodDisruptionBudgetCreated = newMetricFamilyDef(
+	descPodDisruptionBudgetCreated = metrics.NewMetricFamilyDef(
 		"kube_poddisruptionbudget_created",
 		"Unix creation timestamp",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
 
-	descPodDisruptionBudgetStatusCurrentHealthy = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusCurrentHealthy = metrics.NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_current_healthy",
 		"Current number of healthy pods",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusDesiredHealthy = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusDesiredHealthy = metrics.NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_desired_healthy",
 		"Minimum desired number of healthy pods",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusPodDisruptionsAllowed = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusPodDisruptionsAllowed = metrics.NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_pod_disruptions_allowed",
 		"Number of pod disruptions that are currently allowed",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusExpectedPods = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusExpectedPods = metrics.NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_expected_pods",
 		"Total number of pods counted by this disruption budget",
 		descPodDisruptionBudgetLabelsDefaultLabels,
 		nil,
 	)
-	descPodDisruptionBudgetStatusObservedGeneration = newMetricFamilyDef(
+	descPodDisruptionBudgetStatusObservedGeneration = metrics.NewMetricFamilyDef(
 		"kube_poddisruptionbudget_status_observed_generation",
 		"Most recent generation observed when updating this PDB status",
 		descPodDisruptionBudgetLabelsDefaultLabels,
@@ -87,7 +87,7 @@ func generatePodDisruptionBudgetMetrics(obj interface{}) []*metrics.Metric {
 	pPointer := obj.(*v1beta1.PodDisruptionBudget)
 	p := *pPointer
 
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Name, p.Namespace}, lv...)
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {

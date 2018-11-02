@@ -17,123 +17,24 @@ limitations under the License.
 package collectors
 
 import (
-	"time"
-
-	"regexp"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/api/core/v1"
 	"k8s.io/kube-state-metrics/pkg/metrics"
 )
 
-var (
-	resyncPeriod = 5 * time.Minute
-
-	ScrapeErrorTotalMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "ksm_scrape_error_total",
-			Help: "Total scrape errors encountered when scraping a resource",
-		},
-		[]string{"resource"},
-	)
-
-	ResourcesPerScrapeMetric = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Name: "ksm_resources_per_scrape",
-			Help: "Number of resources returned per scrape",
-		},
-		[]string{"resource"},
-	)
-
-	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-)
-
-type store interface {
+type Store interface {
 	GetAll() []*metrics.Metric
 }
 
 // Collector represents a kube-state-metrics metric collector. It is stripped
 // down version of the Prometheus client_golang collector.
 type Collector struct {
-	store store
+	Store Store
 }
 
-func newCollector(s store) *Collector {
+func NewCollector(s Store) *Collector {
 	return &Collector{s}
 }
 
 // Collect returns all metrics of the underlying store of the collector.
 func (c *Collector) Collect() []*metrics.Metric {
-	return c.store.GetAll()
-}
-
-func newMetricFamilyDef(name, help string, labelKeys []string, constLabels prometheus.Labels) *metricFamilyDef {
-	return &metricFamilyDef{name, help, labelKeys, constLabels}
-}
-
-// metricFamilyDef represents a metric family definition
-type metricFamilyDef struct {
-	Name        string
-	Help        string
-	LabelKeys   []string
-	ConstLabels prometheus.Labels
-}
-
-func boolFloat64(b bool) float64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-// addConditionMetrics generates one metric for each possible node condition
-// status. For this function to work properly, the last label in the metric
-// description must be the condition.
-func addConditionMetrics(desc *metricFamilyDef, cs v1.ConditionStatus, lv ...string) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-	m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "true"), boolFloat64(cs == v1.ConditionTrue))
-	if err != nil {
-		panic(err)
-	}
-	ms = append(ms, m)
-	m, err = metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "false"), boolFloat64(cs == v1.ConditionFalse))
-	if err != nil {
-		panic(err)
-	}
-	ms = append(ms, m)
-	m, err = metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "unknown"), boolFloat64(cs == v1.ConditionUnknown))
-	if err != nil {
-		panic(err)
-	}
-	ms = append(ms, m)
-
-	return ms
-}
-
-func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
-	labelKeys := make([]string, len(labels))
-	labelValues := make([]string, len(labels))
-	i := 0
-	for k, v := range labels {
-		labelKeys[i] = "label_" + sanitizeLabelName(k)
-		labelValues[i] = v
-		i++
-	}
-	return labelKeys, labelValues
-}
-
-func kubeAnnotationsToPrometheusAnnotations(annotations map[string]string) ([]string, []string) {
-	annotationKeys := make([]string, len(annotations))
-	annotationValues := make([]string, len(annotations))
-	i := 0
-	for k, v := range annotations {
-		annotationKeys[i] = "annotation_" + sanitizeLabelName(k)
-		annotationValues[i] = v
-		i++
-	}
-	return annotationKeys, annotationValues
-}
-
-func sanitizeLabelName(s string) string {
-	return invalidLabelCharRE.ReplaceAllString(s, "_")
+	return c.Store.GetAll()
 }

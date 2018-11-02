@@ -30,21 +30,21 @@ import (
 var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 
-	descConfigMapInfo = newMetricFamilyDef(
+	descConfigMapInfo = metrics.NewMetricFamilyDef(
 		"kube_configmap_info",
 		"Information about configmap.",
 		descConfigMapLabelsDefaultLabels,
 		nil,
 	)
 
-	descConfigMapCreated = newMetricFamilyDef(
+	descConfigMapCreated = metrics.NewMetricFamilyDef(
 		"kube_configmap_created",
 		"Unix creation timestamp",
 		descConfigMapLabelsDefaultLabels,
 		nil,
 	)
 
-	descConfigMapMetadataResourceVersion = newMetricFamilyDef(
+	descConfigMapMetadataResourceVersion = metrics.NewMetricFamilyDef(
 		"kube_configmap_metadata_resource_version",
 		"Resource version representing a specific version of the configmap.",
 		append(descConfigMapLabelsDefaultLabels, "resource_version"),
@@ -70,7 +70,7 @@ func generateConfigMapMetrics(obj interface{}) []*metrics.Metric {
 	mPointer := obj.(*v1.ConfigMap)
 	m := *mPointer
 
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{m.Namespace, m.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -80,7 +80,7 @@ func generateConfigMapMetrics(obj interface{}) []*metrics.Metric {
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 	addGauge(descConfigMapInfo, 1)

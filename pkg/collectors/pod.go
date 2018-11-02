@@ -40,164 +40,164 @@ var (
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "ErrImagePull", "ImagePullBackOff"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
-	descPodInfo = newMetricFamilyDef(
+	descPodInfo = metrics.NewMetricFamilyDef(
 		"kube_pod_info",
 		"Information about pod.",
 		append(descPodLabelsDefaultLabels, "host_ip", "pod_ip", "uid", "node", "created_by_kind", "created_by_name"),
 		nil,
 	)
-	descPodStartTime = newMetricFamilyDef(
+	descPodStartTime = metrics.NewMetricFamilyDef(
 		"kube_pod_start_time",
 		"Start time in unix timestamp for a pod.",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodCompletionTime = newMetricFamilyDef(
+	descPodCompletionTime = metrics.NewMetricFamilyDef(
 		"kube_pod_completion_time",
 		"Completion time in unix timestamp for a pod.",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodOwner = newMetricFamilyDef(
+	descPodOwner = metrics.NewMetricFamilyDef(
 		"kube_pod_owner",
 		"Information about the Pod's owner.",
 		append(descPodLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
 		nil,
 	)
-	descPodLabels = newMetricFamilyDef(
+	descPodLabels = metrics.NewMetricFamilyDef(
 		descPodLabelsName,
 		descPodLabelsHelp,
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodCreated = newMetricFamilyDef(
+	descPodCreated = metrics.NewMetricFamilyDef(
 		"kube_pod_created",
 		"Unix creation timestamp",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodStatusScheduledTime = newMetricFamilyDef(
+	descPodStatusScheduledTime = metrics.NewMetricFamilyDef(
 		"kube_pod_status_scheduled_time",
 		"Unix timestamp when pod moved into scheduled status",
 		descPodLabelsDefaultLabels,
 		nil,
 	)
-	descPodStatusPhase = newMetricFamilyDef(
+	descPodStatusPhase = metrics.NewMetricFamilyDef(
 		"kube_pod_status_phase",
 		"The pods current phase.",
 		append(descPodLabelsDefaultLabels, "phase"),
 		nil,
 	)
-	descPodStatusReady = newMetricFamilyDef(
+	descPodStatusReady = metrics.NewMetricFamilyDef(
 		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
 		append(descPodLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descPodStatusScheduled = newMetricFamilyDef(
+	descPodStatusScheduled = metrics.NewMetricFamilyDef(
 		"kube_pod_status_scheduled",
 		"Describes the status of the scheduling process for the pod.",
 		append(descPodLabelsDefaultLabels, "condition"),
 		nil,
 	)
-	descPodContainerInfo = newMetricFamilyDef(
+	descPodContainerInfo = metrics.NewMetricFamilyDef(
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
 		append(descPodLabelsDefaultLabels, "container", "image", "image_id", "container_id"),
 		nil,
 	)
-	descPodContainerStatusWaiting = newMetricFamilyDef(
+	descPodContainerStatusWaiting = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusWaitingReason = newMetricFamilyDef(
+	descPodContainerStatusWaitingReason = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_waiting_reason",
 		"Describes the reason the container is currently in waiting state.",
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
-	descPodContainerStatusRunning = newMetricFamilyDef(
+	descPodContainerStatusRunning = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusTerminated = newMetricFamilyDef(
+	descPodContainerStatusTerminated = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusTerminatedReason = newMetricFamilyDef(
+	descPodContainerStatusTerminatedReason = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_terminated_reason",
 		"Describes the reason the container is currently in terminated state.",
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
-	descPodContainerStatusLastTerminatedReason = newMetricFamilyDef(
+	descPodContainerStatusLastTerminatedReason = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_last_terminated_reason",
 		"Describes the last reason the container was in terminated state.",
 		append(descPodLabelsDefaultLabels, "container", "reason"),
 		nil,
 	)
 
-	descPodContainerStatusReady = newMetricFamilyDef(
+	descPodContainerStatusReady = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerStatusRestarts = newMetricFamilyDef(
+	descPodContainerStatusRestarts = metrics.NewMetricFamilyDef(
 		"kube_pod_container_status_restarts_total",
 		"The number of container restarts per container.",
 		append(descPodLabelsDefaultLabels, "container"),
 		nil,
 	)
-	descPodContainerResourceRequests = newMetricFamilyDef(
+	descPodContainerResourceRequests = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_requests",
 		"The number of requested request resource by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node", "resource", "unit"),
 		nil,
 	)
-	descPodContainerResourceLimits = newMetricFamilyDef(
+	descPodContainerResourceLimits = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_limits",
 		"The number of requested limit resource by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node", "resource", "unit"),
 		nil,
 	)
-	descPodContainerResourceRequestsCPUCores = newMetricFamilyDef(
+	descPodContainerResourceRequestsCPUCores = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_requests_cpu_cores",
 		"The number of requested cpu cores by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodContainerResourceRequestsMemoryBytes = newMetricFamilyDef(
+	descPodContainerResourceRequestsMemoryBytes = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_requests_memory_bytes",
 		"The number of requested memory bytes by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodContainerResourceLimitsCPUCores = newMetricFamilyDef(
+	descPodContainerResourceLimitsCPUCores = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_limits_cpu_cores",
 		"The limit on cpu cores to be used by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodContainerResourceLimitsMemoryBytes = newMetricFamilyDef(
+	descPodContainerResourceLimitsMemoryBytes = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_limits_memory_bytes",
 		"The limit on memory to be used by a container in bytes.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
-	descPodSpecVolumesPersistentVolumeClaimsInfo = newMetricFamilyDef(
+	descPodSpecVolumesPersistentVolumeClaimsInfo = metrics.NewMetricFamilyDef(
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
 		"Information about persistentvolumeclaim volumes in a pod.",
 		append(descPodLabelsDefaultLabels, "volume", "persistentvolumeclaim"),
 		nil,
 	)
-	descPodSpecVolumesPersistentVolumeClaimsReadOnly = newMetricFamilyDef(
+	descPodSpecVolumesPersistentVolumeClaimsReadOnly = metrics.NewMetricFamilyDef(
 		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 		"Describes whether a persistentvolumeclaim is mounted read only.",
 		append(descPodLabelsDefaultLabels, "volume", "persistentvolumeclaim"),
@@ -251,8 +251,8 @@ func createPodListWatch(kubeClient clientset.Interface, ns string) cache.ListWat
 // 	}
 // }
 
-func podLabelsDesc(labelKeys []string) *metricFamilyDef {
-	return newMetricFamilyDef(
+func podLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
+	return metrics.NewMetricFamilyDef(
 		descPodLabelsName,
 		descPodLabelsHelp,
 		append(descPodLabelsDefaultLabels, labelKeys...),
@@ -268,7 +268,7 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 	p := *pPointer
 
 	nodeName := p.Spec.NodeName
-	addConstMetric := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		lv = append([]string{p.Namespace, p.Name}, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
@@ -278,10 +278,10 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 
 		ms = append(ms, m)
 	}
-	addGauge := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
-	addCounter := func(desc *metricFamilyDef, v float64, lv ...string) {
+	addCounter := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
 		addConstMetric(desc, v, lv...)
 	}
 

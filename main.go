@@ -227,7 +227,7 @@ func serveMetrics(collectors []*kcollectors.Collector, host string, port int, en
 }
 
 type metricHandler struct {
-	c                  []*kcollectors.Collector
+	collectors         []*kcollectors.Collector
 	enableGZIPEncoding bool
 }
 
@@ -251,14 +251,8 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for _, c := range m.c {
-		for _, m := range c.Collect() {
-			_, err := fmt.Fprint(writer, m)
-			if err != nil {
-				// TODO: Handle panic
-				panic(err)
-			}
-		}
+	for _, c := range m.collectors {
+		c.Collect(w)
 	}
 
 	// In case we gziped the response, we have to close the writer.

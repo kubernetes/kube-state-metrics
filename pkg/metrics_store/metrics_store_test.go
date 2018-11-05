@@ -15,18 +15,19 @@ import (
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDS := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []*metrics.Metric {
+	genFunc := func(obj interface{}) [][]*metrics.Metric {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		metric := metrics.Metric(fmt.Sprintf("kube_service_info{uid=\"%v\"} 1\n", o.GetUID()))
+		metricFamily := []*metrics.Metric{&metric}
 
-		return []*metrics.Metric{&metric}
+		return [][]*metrics.Metric{metricFamily}
 	}
 
-	ms := NewMetricsStore(genFunc)
+	ms := NewMetricsStore([]string{"Information about service."}, genFunc)
 
 	for _, id := range serviceIDS {
 		s := v1.Service{
@@ -45,14 +46,15 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 
 	metrics := ms.GetAll()
 
-	if len(metrics) != 2 {
+	// Expect 3 lines, HELP + 2 metrics
+	if len(metrics) != 3 {
 		t.Fatalf("expected 2 metrics but got %v", len(metrics))
 	}
 
 	for _, id := range serviceIDS {
 		found := false
 		for _, m := range metrics {
-			if strings.Contains(string(*m), fmt.Sprintf("uid=\"%v\"", id)) {
+			if strings.Contains(m, fmt.Sprintf("uid=\"%v\"", id)) {
 				found = true
 			}
 		}

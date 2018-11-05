@@ -40,17 +40,17 @@ func TestAsLibrary(t *testing.T) {
 
 	m := c.Collect()
 
-	if len(m) != 1 {
-		t.Fatalf("expected one metric to be returned but got %v", len(m))
+	if len(m) != 2 {
+		t.Fatalf("expected HELP line and one metric to be returned but got %v", len(m))
 	}
 
-	if !strings.Contains(string(*m[0]), service.ObjectMeta.Name) {
+	if !strings.Contains(string(m[1]), service.ObjectMeta.Name) {
 		t.Fatal("expected string to contain service name")
 	}
 }
 
 func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
-	store := metricsstore.NewMetricsStore(generateServiceMetrics)
+	store := metricsstore.NewMetricsStore([]string{"test_metric describes a test metric"}, generateServiceMetrics)
 
 	lw := cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
@@ -68,7 +68,7 @@ func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
 	return collectors.NewCollector(store)
 }
 
-func generateServiceMetrics(obj interface{}) []*metrics.Metric {
+func generateServiceMetrics(obj interface{}) [][]*metrics.Metric {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
@@ -77,5 +77,7 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 		panic(err)
 	}
 
-	return []*metrics.Metric{m}
+	ms := []*metrics.Metric{m}
+
+	return [][]*metrics.Metric{ms}
 }

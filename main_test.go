@@ -69,6 +69,11 @@ func BenchmarkKubeStateMetrics(t *testing.B) {
 	for i := 0; i < requestCount; i++ {
 		w = httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != 200 {
+			t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+		}
 	}
 
 	// resp := w.Result()

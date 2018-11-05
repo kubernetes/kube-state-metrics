@@ -31,11 +31,16 @@ type generateMetricsTestCase struct {
 	Obj         interface{}
 	MetricNames []string
 	Want        string
-	Func        func(interface{}) []*metrics.Metric
+	Func        func(interface{}) [][]*metrics.Metric
 }
 
 func (testCase *generateMetricsTestCase) run() error {
-	metrics := testCase.Func(testCase.Obj)
+	metricsByFamily := testCase.Func(testCase.Obj)
+
+	metrics := []*metrics.Metric{}
+	for _, m := range metricsByFamily {
+		metrics = append(metrics, m...)
+	}
 
 	metrics = filterMetrics(metrics, testCase.MetricNames)
 

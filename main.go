@@ -253,7 +253,7 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, c := range m.c {
 		for _, m := range c.Collect() {
-			_, err := fmt.Fprint(writer, *m)
+			_, err := fmt.Fprint(writer, m)
 			if err != nil {
 				// TODO: Handle panic
 				panic(err)

@@ -16,12 +16,10 @@ limitations under the License.
 
 package collectors
 
-import (
-	"k8s.io/kube-state-metrics/pkg/metrics"
-)
+import ()
 
 type Store interface {
-	GetAll() []*metrics.Metric
+	GetAll() []string
 }
 
 // Collector represents a kube-state-metrics metric collector. It is stripped
@@ -35,6 +33,6 @@ func NewCollector(s Store) *Collector {
 }
 
 // Collect returns all metrics of the underlying store of the collector.
-func (c *Collector) Collect() []*metrics.Metric {
+func (c *Collector) Collect() []string {
 	return c.Store.GetAll()
 }

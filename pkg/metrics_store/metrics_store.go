@@ -9,21 +9,34 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+var (
+	helpPrefix = "# HELP "
+)
+
 // MetricsStore implements the k8s.io/kubernetes/client-go/tools/cache.Store
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
 // generated based on them.
 type MetricsStore struct {
-	mutex   sync.RWMutex
-	metrics map[types.UID][]*metrics.Metric
+	// Protects metrics
+	mutex sync.RWMutex
+	// metrics is a map indexed by Kubernetes object id, containing a slice of
+	// metric families, containing a slice of metrics. We need to keep metrics
+	// grouped by metric families in order to zip families with their help text in
+	// MetricsStore.WriteAll().
+	metrics map[types.UID][][]*metrics.Metric
+	// helpTexts is later on zipped with with their corresponding metric
+	// families in MetricStore.WriteAll().
+	helpTexts []string
 
-	generateMetricsFunc func(interface{}) []*metrics.Metric
+	generateMetricsFunc func(interface{}) [][]*metrics.Metric
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(generateFunc func(interface{}) []*metrics.Metric) *MetricsStore {
+func NewMetricsStore(helpTexts []string, generateFunc func(interface{}) [][]*metrics.Metric) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
-		metrics:             map[types.UID][]*metrics.Metric{},
+		helpTexts:           helpTexts,
+		metrics:             map[types.UID][][]*metrics.Metric{},
 	}
 }
 
@@ -87,7 +100,7 @@ func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err 
 // TODO: What is 'name' for?
 func (s *MetricsStore) Replace(list []interface{}, name string) error {
 	s.mutex.Lock()
-	s.metrics = map[types.UID][]*metrics.Metric{}
+	s.metrics = map[types.UID][][]*metrics.Metric{}
 	s.mutex.Unlock()
 
 	for _, o := range list {
@@ -104,15 +117,22 @@ func (s *MetricsStore) Resync() error {
 	return nil
 }
 
-func (s *MetricsStore) GetAll() []*metrics.Metric {
+// GetAll returns all metrics of the store, zipped with the help text of each
+// metric family.
+func (s *MetricsStore) GetAll() []string {
+	metrics := []string{}
+
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	m := make([]*metrics.Metric, 0, len(s.metrics))
-
-	for _, metrics := range s.metrics {
-		m = append(m, metrics...)
+	for i, help := range s.helpTexts {
+		metrics = append(metrics, helpPrefix+help+"\n")
+		for _, metricsPerObject := range s.metrics {
+			for _, metric := range metricsPerObject[i] {
+				metrics = append(metrics, string(*metric))
+			}
+		}
 	}
 
-	return m
+	return metrics
 }

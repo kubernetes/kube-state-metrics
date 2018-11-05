@@ -199,7 +199,10 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 func (b *Builder) buildServiceCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.metricWhitelist, b.metricBlacklist, serviceMetricFamilies)
 
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
 	store := metricsstore.NewMetricsStore(
+		helpTexts,
 		composeMetricGenFuncs(filteredMetricFamilies),
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Service{}, store, b.namespaces, createServiceListWatch)
@@ -207,28 +210,29 @@ func (b *Builder) buildServiceCollector() *Collector {
 	return NewCollector(store)
 }
 
-// func (b *Builder) buildNodeCollector() *Collector {
-// 	genFunc := func(obj interface{}) []*metrics.Metric {
-// 		return generateNodeMetrics(b.opts.DisableNodeNonGenericResourceMetrics, obj)
-// 	}
-//
-// 	return newCollector(store)
-// }
+func extractHelpText(families []metrics.MetricFamily) []string {
+	help := make([]string, len(families))
+	for i, f := range families {
+		help[i] = f.Help
+	}
+
+	return help
+}
 
 // composeMetricGenFuncs takes a slice of metric families and returns a function
 // that composes their metric generation functions into a single one.
-func composeMetricGenFuncs(families []metrics.MetricFamily) func(obj interface{}) []*metrics.Metric {
+func composeMetricGenFuncs(families []metrics.MetricFamily) func(obj interface{}) [][]*metrics.Metric {
 	funcs := []func(obj interface{}) []*metrics.Metric{}
 
 	for _, f := range families {
 		funcs = append(funcs, f.GenerateFunc)
 	}
 
-	return func(obj interface{}) []*metrics.Metric {
-		metrics := []*metrics.Metric{}
+	return func(obj interface{}) [][]*metrics.Metric {
+		metrics := make([][]*metrics.Metric, len(funcs))
 
-		for _, f := range funcs {
-			metrics = append(metrics, f(obj)...)
+		for i, f := range funcs {
+			metrics[i] = f(obj)
 		}
 
 		return metrics

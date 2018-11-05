@@ -103,9 +103,11 @@ func main() {
 	}
 	if !opts.MetricWhitelist.IsEmpty() {
 		glog.Infof("A metric whitelist has been configured. Only the following metrics will be exposed: %s.", opts.MetricWhitelist.String())
+		collectorBuilder.WithMetricWhitelist(opts.MetricWhitelist)
 	}
 	if !opts.MetricBlacklist.IsEmpty() {
 		glog.Infof("A metric blacklist has been configured. The following metrics will not be exposed: %s.", opts.MetricBlacklist.String())
+		collectorBuilder.WithMetricBlacklist(opts.MetricBlacklist)
 	}
 
 	proc.StartReaper()

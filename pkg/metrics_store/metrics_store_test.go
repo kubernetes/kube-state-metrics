@@ -44,22 +44,18 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 		}
 	}
 
-	metrics := ms.GetAll()
+	w := strings.Builder{}
+	ms.WriteAll(&w)
+	m := w.String()
 
-	// Expect 3 lines, HELP + 2 metrics
-	if len(metrics) != 3 {
-		t.Fatalf("expected 2 metrics but got %v", len(metrics))
+	// Expect 4 lines, HELP + 2 metrics + newline
+	if len(strings.Split(m, "\n")) != 4 {
+		t.Fatalf("expected 2 metrics but got %v", len(strings.Split(m, "\n")))
 	}
 
 	for _, id := range serviceIDS {
-		found := false
-		for _, m := range metrics {
-			if strings.Contains(m, fmt.Sprintf("uid=\"%v\"", id)) {
-				found = true
-			}
-		}
+		if !strings.Contains(m, fmt.Sprintf("uid=\"%v\"", id)) {
 
-		if !found {
 			t.Fatalf("expected to find metric with uid %v", id)
 		}
 	}

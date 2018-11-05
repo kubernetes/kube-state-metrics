@@ -38,13 +38,11 @@ func TestAsLibrary(t *testing.T) {
 	// Wait for informers to sync
 	time.Sleep(time.Second)
 
-	m := c.Collect()
+	w := strings.Builder{}
+	c.Collect(&w)
+	m := w.String()
 
-	if len(m) != 2 {
-		t.Fatalf("expected HELP line and one metric to be returned but got %v", len(m))
-	}
-
-	if !strings.Contains(string(m[1]), service.ObjectMeta.Name) {
+	if !strings.Contains(m, service.ObjectMeta.Name) {
 		t.Fatal("expected string to contain service name")
 	}
 }

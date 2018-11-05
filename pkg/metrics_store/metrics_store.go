@@ -1,6 +1,7 @@
 package metricsstore
 
 import (
+	"io"
 	"sync"
 
 	"k8s.io/kube-state-metrics/pkg/metrics"
@@ -10,7 +11,7 @@ import (
 )
 
 var (
-	helpPrefix = "# HELP "
+	helpPrefix = []byte("# HELP ")
 )
 
 // MetricsStore implements the k8s.io/kubernetes/client-go/tools/cache.Store
@@ -117,22 +118,19 @@ func (s *MetricsStore) Resync() error {
 	return nil
 }
 
-// GetAll returns all metrics of the store, zipped with the help text of each
-// metric family.
-func (s *MetricsStore) GetAll() []string {
-	metrics := []string{}
-
+// WriteAll writes all metrics of the store into the given writer, zipped with the
+// help text of each metric family.
+func (s *MetricsStore) WriteAll(w io.Writer) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
 	for i, help := range s.helpTexts {
-		metrics = append(metrics, helpPrefix+help+"\n")
+		w.Write(append(helpPrefix, []byte(help)...))
+		w.Write([]byte{'\n'})
 		for _, metricsPerObject := range s.metrics {
 			for _, metric := range metricsPerObject[i] {
-				metrics = append(metrics, string(*metric))
+				w.Write([]byte(*metric))
 			}
 		}
 	}
-
-	return metrics
 }

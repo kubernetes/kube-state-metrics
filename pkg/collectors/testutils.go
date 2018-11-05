@@ -36,6 +36,7 @@ type generateMetricsTestCase struct {
 
 func (testCase *generateMetricsTestCase) run() error {
 	metrics := testCase.Func(testCase.Obj)
+
 	metrics = filterMetrics(metrics, testCase.MetricNames)
 
 	out := ""

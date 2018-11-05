@@ -17,9 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	// "fmt"
 	// "io/ioutil"
-	"context"
 	"net/http/httptest"
 	"strconv"
 	"testing"
@@ -82,6 +82,7 @@ func BenchmarkKubeStateMetrics(t *testing.B) {
 func injectFixtures(client *fake.Clientset, multiplier int) error {
 	creators := []func(*fake.Clientset, int) error{
 		configMap,
+		service,
 		pod,
 	}
 
@@ -108,6 +109,19 @@ func configMap(client *fake.Clientset, index int) error {
 		},
 	}
 	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(&configMap)
+	return err
+}
+
+func service(client *fake.Clientset, index int) error {
+	i := strconv.Itoa(index)
+
+	service := v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "service" + i,
+			ResourceVersion: "123456",
+		},
+	}
+	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(&service)
 	return err
 }
 

@@ -22,11 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
-
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 const (
@@ -41,6 +36,13 @@ var (
 		},
 	}
 )
+
+// MetricFamily represents a set of metrics with the same name and help text.
+type MetricFamily struct {
+	Name         string
+	Help         string
+	GenerateFunc func(obj interface{}) []*Metric
+}
 
 // Metric represents a single line entry in the /metrics export format
 type Metric string
@@ -120,65 +122,4 @@ func writeFloat(w *strings.Builder, f float64) {
 		w.Write(*bp)
 		numBufPool.Put(bp)
 	}
-}
-
-// MetricFamilyDesc represents the HELP and TYPE string above a metric family list
-type MetricFamilyDesc string
-
-type gathererFunc func() ([]*dto.MetricFamily, error)
-
-func (f gathererFunc) Gather() ([]*dto.MetricFamily, error) {
-	return f()
-}
-
-// FilteredGatherer wraps a prometheus.Gatherer to filter metrics based on a
-// white or blacklist. Whitelist and blacklist are mutually exclusive.
-// TODO: Bring white and blacklisting back
-func FilteredGatherer(r prometheus.Gatherer, whitelist options.MetricSet, blacklist options.MetricSet) prometheus.Gatherer {
-	whitelistEnabled := !whitelist.IsEmpty()
-	blacklistEnabled := !blacklist.IsEmpty()
-
-	if whitelistEnabled {
-		return gathererFunc(func() ([]*dto.MetricFamily, error) {
-			metricFamilies, err := r.Gather()
-			if err != nil {
-				return nil, err
-			}
-
-			newMetricFamilies := []*dto.MetricFamily{}
-			for _, metricFamily := range metricFamilies {
-				// deferencing this string may be a performance bottleneck
-				name := *metricFamily.Name
-				_, onWhitelist := whitelist[name]
-				if onWhitelist {
-					newMetricFamilies = append(newMetricFamilies, metricFamily)
-				}
-			}
-
-			return newMetricFamilies, nil
-		})
-	}
-
-	if blacklistEnabled {
-		return gathererFunc(func() ([]*dto.MetricFamily, error) {
-			metricFamilies, err := r.Gather()
-			if err != nil {
-				return nil, err
-			}
-
-			newMetricFamilies := []*dto.MetricFamily{}
-			for _, metricFamily := range metricFamilies {
-				name := *metricFamily.Name
-				_, onBlacklist := blacklist[name]
-				if onBlacklist {
-					continue
-				}
-				newMetricFamilies = append(newMetricFamilies, metricFamily)
-			}
-
-			return newMetricFamilies, nil
-		})
-	}
-
-	return r
 }

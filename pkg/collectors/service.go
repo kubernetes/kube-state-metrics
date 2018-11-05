@@ -32,62 +32,162 @@ var (
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
-	descServiceInfo = metrics.NewMetricFamilyDef(
-		"kube_service_info",
-		"Information about service.",
-		append(descServiceLabelsDefaultLabels, "cluster_ip", "external_name", "load_balancer_ip"),
-		nil,
-	)
+	serviceMetricFamilies = []metrics.MetricFamily{
+		{
+			"kube_service_info",
+			"Information about service.",
+			func(obj interface{}) []*metrics.Metric {
+				sPointer := obj.(*v1.Service)
+				s := *sPointer
 
-	descServiceCreated = metrics.NewMetricFamilyDef(
-		"kube_service_created",
-		"Unix creation timestamp",
-		descServiceLabelsDefaultLabels,
-		nil,
-	)
+				return []*metrics.Metric{
+					newServiceMetric(
+						sPointer,
+						"kube_service_info",
+						[]string{"cluster_ip", "external_name", "load_balancer_ip"},
+						[]string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
+						1,
+					),
+				}
+			},
+		},
+		{
+			"kube_service_created",
+			"Unix creation timestamp",
+			func(obj interface{}) []*metrics.Metric {
+				sPointer := obj.(*v1.Service)
+				s := *sPointer
 
-	descServiceSpecType = metrics.NewMetricFamilyDef(
-		"kube_service_spec_type",
-		"Type about service.",
-		append(descServiceLabelsDefaultLabels, "type"),
-		nil,
-	)
+				if !s.CreationTimestamp.IsZero() {
+					return []*metrics.Metric{
+						newServiceMetric(
+							sPointer,
+							"kube_service_created",
+							nil,
+							nil,
+							float64(s.CreationTimestamp.Unix()),
+						),
+					}
+				}
+				return nil
+			},
+		},
+		{
+			"kube_service_spec_type",
+			"Type about service.",
+			func(obj interface{}) []*metrics.Metric {
+				sPointer := obj.(*v1.Service)
+				s := *sPointer
 
-	descServiceExternalName = metrics.NewMetricFamilyDef(
-		"kube_service_external_name",
-		"Service external name",
-		append(descServiceLabelsDefaultLabels, "external_name"),
-		nil,
-	)
+				return []*metrics.Metric{
+					newServiceMetric(
+						sPointer,
+						"kube_service_spec_type",
+						[]string{"type"},
+						[]string{string(s.Spec.Type)},
+						1,
+					),
+				}
+			},
+		},
+		{
+			descServiceLabelsName,
+			descServiceLabelsHelp,
+			func(obj interface{}) []*metrics.Metric {
+				sPointer := obj.(*v1.Service)
+				s := *sPointer
 
-	descServiceLoadBalancerIP = metrics.NewMetricFamilyDef(
-		"kube_service_load_balancer_ip",
-		"Load balancer IP of service",
-		append(descServiceLabelsDefaultLabels, "load_balancer_ip"),
-		nil,
-	)
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+				return []*metrics.Metric{
+					newServiceMetric(
+						sPointer,
+						descServiceLabelsName,
+						labelKeys,
+						labelValues,
+						1,
+					),
+				}
+			},
+		},
+		// Defined, but not used anywhere. See
+		// https://github.com/kubernetes/kube-state-metrics/pull/571#pullrequestreview-176215628.
+		// {
+		// 	"kube_service_external_name",
+		// 	"Service external name",
+		// 	// []string{"type"},
+		// },
+		// {
+		// 	"kube_service_load_balancer_ip",
+		// 	"Load balancer IP of service",
+		// 	// []string{"load_balancer_ip"},
+		// },
+		{
+			"kube_service_spec_external_ip",
+			"Service external ips. One series for each ip",
+			func(obj interface{}) []*metrics.Metric {
+				sPointer := obj.(*v1.Service)
+				s := *sPointer
 
-	descServiceSpecExternalIP = metrics.NewMetricFamilyDef(
-		"kube_service_spec_external_ip",
-		"Service external ips. One series for each ip",
-		append(descServiceLabelsDefaultLabels, "external_ip"),
-		nil,
-	)
+				metrics := []*metrics.Metric{}
 
-	descServiceLabels = metrics.NewMetricFamilyDef(
-		descServiceLabelsName,
-		descServiceLabelsHelp,
-		descServiceLabelsDefaultLabels,
-		nil,
-	)
+				if len(s.Spec.ExternalIPs) > 0 {
+					for _, externalIP := range s.Spec.ExternalIPs {
+						m := newServiceMetric(
+							sPointer,
+							"kube_service_spec_external_ip",
+							[]string{"external_ip"},
+							[]string{externalIP},
+							1,
+						)
 
-	descServiceStatusLoadBalancerIngress = metrics.NewMetricFamilyDef(
-		"kube_service_status_load_balancer_ingress",
-		"Service load balancer ingress status",
-		append(descServiceLabelsDefaultLabels, "ip", "hostname"),
-		nil,
-	)
+						metrics = append(metrics, m)
+					}
+				}
+
+				return metrics
+			},
+		},
+		{
+			"kube_service_status_load_balancer_ingress",
+			"Service load balancer ingress status",
+			func(obj interface{}) []*metrics.Metric {
+				sPointer := obj.(*v1.Service)
+				s := *sPointer
+
+				metrics := []*metrics.Metric{}
+
+				if len(s.Status.LoadBalancer.Ingress) > 0 {
+					for _, ingress := range s.Status.LoadBalancer.Ingress {
+						m := newServiceMetric(
+							sPointer,
+							"kube_service_status_load_balancer_ingress",
+							[]string{"ip", "hostname"},
+							[]string{ingress.IP, ingress.Hostname},
+							1,
+						)
+
+						metrics = append(metrics, m)
+					}
+				}
+
+				return metrics
+			},
+		},
+	}
 )
+
+func newServiceMetric(s *v1.Service, name string, lk []string, lv []string, v float64) *metrics.Metric {
+	lk = append(descServiceLabelsDefaultLabels, lk...)
+	lv = append([]string{s.Namespace, s.Name}, lv...)
+
+	m, err := metrics.NewMetric(name, lk, lv, v)
+	if err != nil {
+		// TODO: Move this panic into metrics.NewMetric
+		panic(err)
+	}
+
+	return m
+}
 
 func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -98,57 +198,4 @@ func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.Lis
 			return kubeClient.CoreV1().Services(ns).Watch(opts)
 		},
 	}
-}
-
-func serviceLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descServiceLabelsName,
-		descServiceLabelsHelp,
-		append(descServiceLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func generateServiceMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	sPointer := obj.(*v1.Service)
-	s := *sPointer
-
-	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{s.Namespace, s.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		addConstMetric(desc, v, lv...)
-	}
-	addGauge(descServiceSpecType, 1, string(s.Spec.Type))
-
-	addGauge(descServiceInfo, 1, s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP)
-	if !s.CreationTimestamp.IsZero() {
-		addGauge(descServiceCreated, float64(s.CreationTimestamp.Unix()))
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-	addGauge(serviceLabelsDesc(labelKeys), 1, labelValues...)
-
-	if len(s.Status.LoadBalancer.Ingress) > 0 {
-		for _, ingress := range s.Status.LoadBalancer.Ingress {
-			addGauge(descServiceStatusLoadBalancerIngress, 1, ingress.IP, ingress.Hostname)
-		}
-	}
-
-	if len(s.Spec.ExternalIPs) > 0 {
-		for _, external_ip := range s.Spec.ExternalIPs {
-			addGauge(descServiceSpecExternalIP, 1, external_ip)
-		}
-	}
-
-	return ms
 }

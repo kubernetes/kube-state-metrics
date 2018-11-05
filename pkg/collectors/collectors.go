@@ -16,10 +16,12 @@ limitations under the License.
 
 package collectors
 
-import ()
+import (
+	"io"
+)
 
 type Store interface {
-	GetAll() []string
+	WriteAll(io.Writer)
 }
 
 // Collector represents a kube-state-metrics metric collector. It is stripped
@@ -33,6 +35,6 @@ func NewCollector(s Store) *Collector {
 }
 
 // Collect returns all metrics of the underlying store of the collector.
-func (c *Collector) Collect() []string {
-	return c.Store.GetAll()
+func (c *Collector) Collect(w io.Writer) {
+	c.Store.WriteAll(w)
 }

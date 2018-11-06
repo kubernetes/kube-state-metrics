@@ -510,34 +510,34 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ErrImagePull"} 1
 				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CreateContainerConfigError"} 0
 `,
-				MetricNames: []string{
-					"kube_pod_container_status_running",
-					"kube_pod_container_status_waiting",
-					"kube_pod_container_status_waiting_reason",
-					"kube_pod_container_status_terminated",
-					"kube_pod_container_status_terminated_reason",
-				},
+			MetricNames: []string{
+				"kube_pod_container_status_running",
+				"kube_pod_container_status_waiting",
+				"kube_pod_container_status_waiting_reason",
+				"kube_pod_container_status_terminated",
+				"kube_pod_container_status_terminated_reason",
 			},
-			{
-				Obj: &v1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod7",
-						Namespace: "ns7",
-					},
-					Status: v1.PodStatus{
-						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{
-								Name: "container8",
-								State: v1.ContainerState{
-									Waiting: &v1.ContainerStateWaiting{
-										Reason: "CreateContainerConfigError",
-									},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod7",
+					Namespace: "ns7",
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						v1.ContainerStatus{
+							Name: "container8",
+							State: v1.ContainerState{
+								Waiting: &v1.ContainerStateWaiting{
+									Reason: "CreateContainerConfigError",
 								},
 							},
 						},
 					},
 				},
-				Want: `
+			},
+			Want: `
 					kube_pod_container_status_running{container="container8",namespace="ns7",pod="pod7"} 0
 					kube_pod_container_status_terminated{container="container8",namespace="ns7",pod="pod7"} 0
 					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Completed"} 0

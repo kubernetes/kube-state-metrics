@@ -37,7 +37,7 @@ var (
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "ErrImagePull", "ImagePullBackOff"}
+	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
 	descPodInfo = metrics.NewMetricFamilyDef(

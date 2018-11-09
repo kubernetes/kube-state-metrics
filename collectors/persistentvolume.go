@@ -21,9 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -59,21 +57,23 @@ func (pvl PersistentVolumeLister) List() (v1.PersistentVolumeList, error) {
 	return pvl()
 }
 
-func RegisterPersistentVolumeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterPersistentVolumeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect persistentvolume with %s", client.APIVersion())
-	pvlw := cache.NewListWatchFromClient(client, "persistentvolumes", v1.NamespaceAll, fields.Everything())
-	pvinf := cache.NewSharedInformer(pvlw, &v1.PersistentVolume{}, resyncPeriod)
+
+	pvinfs := NewSharedInformerList(client, "persistentvolumes", []string{v1.NamespaceAll}, &v1.PersistentVolume{})
 
 	persistentVolumeLister := PersistentVolumeLister(func() (pvs v1.PersistentVolumeList, err error) {
-		for _, pv := range pvinf.GetStore().List() {
-			pvs.Items = append(pvs.Items, *(pv.(*v1.PersistentVolume)))
+		for _, pvinf := range *pvinfs {
+			for _, pv := range pvinf.GetStore().List() {
+				pvs.Items = append(pvs.Items, *(pv.(*v1.PersistentVolume)))
+			}
 		}
 		return pvs, nil
 	})
 
 	registry.MustRegister(&persistentVolumeCollector{store: persistentVolumeLister})
-	go pvinf.Run(context.Background().Done())
+	pvinfs.Run(context.Background().Done())
 }
 
 type persistentVolumeStore interface {

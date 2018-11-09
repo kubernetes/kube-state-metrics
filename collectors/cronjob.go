@@ -28,8 +28,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -86,21 +84,23 @@ func (l CronJobLister) List() ([]batchv1beta1.CronJob, error) {
 	return l()
 }
 
-func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterCronJobCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.BatchV1beta1().RESTClient()
 	glog.Infof("collect cronjob with %s", client.APIVersion())
-	cjlw := cache.NewListWatchFromClient(client, "cronjobs", namespace, fields.Everything())
-	cjinf := cache.NewSharedInformer(cjlw, &batchv1beta1.CronJob{}, resyncPeriod)
+
+	cjinfs := NewSharedInformerList(client, "cronjobs", namespaces, &batchv1beta1.CronJob{})
 
 	cronJobLister := CronJobLister(func() (cronjobs []batchv1beta1.CronJob, err error) {
-		for _, c := range cjinf.GetStore().List() {
-			cronjobs = append(cronjobs, *(c.(*batchv1beta1.CronJob)))
+		for _, cjinf := range *cjinfs {
+			for _, c := range cjinf.GetStore().List() {
+				cronjobs = append(cronjobs, *(c.(*batchv1beta1.CronJob)))
+			}
 		}
 		return cronjobs, nil
 	})
 
 	registry.MustRegister(&cronJobCollector{store: cronJobLister})
-	go cjinf.Run(context.Background().Done())
+	cjinfs.Run(context.Background().Done())
 }
 
 type cronJobStore interface {
@@ -143,7 +143,7 @@ func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {
-	sched, err := cron.Parse(schedule)
+	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
 	}

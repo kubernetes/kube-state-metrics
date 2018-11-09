@@ -22,9 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var (
@@ -62,6 +60,12 @@ var (
 		"kube_node_spec_unschedulable",
 		"Whether a node can schedule new pods.",
 		[]string{"node"}, nil,
+	)
+
+	descNodeSpecTaint = prometheus.NewDesc(
+		"kube_node_spec_taint",
+		"The taint of a cluster node.",
+		[]string{"node", "key", "value", "effect"}, nil,
 	)
 
 	descNodeStatusCondition = prometheus.NewDesc(
@@ -125,21 +129,23 @@ func (l NodeLister) List() (v1.NodeList, error) {
 	return l()
 }
 
-func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterNodeCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect node with %s", client.APIVersion())
-	nlw := cache.NewListWatchFromClient(client, "nodes", metav1.NamespaceAll, fields.Everything())
-	ninf := cache.NewSharedInformer(nlw, &v1.Node{}, resyncPeriod)
+
+	ninfs := NewSharedInformerList(client, "nodes", []string{metav1.NamespaceAll}, &v1.Node{})
 
 	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
-		for _, m := range ninf.GetStore().List() {
-			machines.Items = append(machines.Items, *(m.(*v1.Node)))
+		for _, ninf := range *ninfs {
+			for _, m := range ninf.GetStore().List() {
+				machines.Items = append(machines.Items, *(m.(*v1.Node)))
+			}
 		}
 		return machines, nil
 	})
 
 	registry.MustRegister(&nodeCollector{store: nodeLister})
-	go ninf.Run(context.Background().Done())
+	ninfs.Run(context.Background().Done())
 }
 
 type nodeStore interface {
@@ -157,6 +163,7 @@ func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descNodeCreated
 	ch <- descNodeLabels
 	ch <- descNodeSpecUnschedulable
+	ch <- descNodeSpecTaint
 	ch <- descNodeStatusCondition
 	ch <- descNodeStatusPhase
 	ch <- descNodeStatusCapacityCPU
@@ -218,6 +225,14 @@ func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
 	addGauge(nodeLabelsDesc(labelKeys), 1, labelValues...)
 
 	addGauge(descNodeSpecUnschedulable, boolFloat64(n.Spec.Unschedulable))
+
+	// Collect node taints
+	for _, taint := range n.Spec.Taints {
+		// Taints are applied to repel pods from nodes that do not have a corresponding
+		// toleration.  Many node conditions are optionally reflected as taints
+		// by the node controller in order to simplify scheduling constraints.
+		addGauge(descNodeSpecTaint, 1, taint.Key, taint.Value, string(taint.Effect))
+	}
 
 	// Collect node conditions and while default to false.
 	for _, c := range n.Status.Conditions {

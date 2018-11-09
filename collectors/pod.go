@@ -25,9 +25,8 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/kubernetes/pkg/util/node"
 )
 
 var (
@@ -47,6 +46,12 @@ var (
 	descPodStartTime = prometheus.NewDesc(
 		"kube_pod_start_time",
 		"Start time in unix timestamp for a pod.",
+		[]string{"namespace", "pod"}, nil,
+	)
+
+	descPodCompletionTime = prometheus.NewDesc(
+		"kube_pod_completion_time",
+		"Completion time in unix timestamp for a pod.",
 		[]string{"namespace", "pod"}, nil,
 	)
 
@@ -189,21 +194,23 @@ func (l PodLister) List() ([]v1.Pod, error) {
 	return l()
 }
 
-func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespace string) {
+func RegisterPodCollector(registry prometheus.Registerer, kubeClient kubernetes.Interface, namespaces []string) {
 	client := kubeClient.CoreV1().RESTClient()
 	glog.Infof("collect pod with %s", client.APIVersion())
-	plw := cache.NewListWatchFromClient(client, "pods", namespace, fields.Everything())
-	pinf := cache.NewSharedInformer(plw, &v1.Pod{}, resyncPeriod)
+
+	pinfs := NewSharedInformerList(client, "pods", namespaces, &v1.Pod{})
 
 	podLister := PodLister(func() (pods []v1.Pod, err error) {
-		for _, m := range pinf.GetStore().List() {
-			pods = append(pods, *m.(*v1.Pod))
+		for _, pinf := range *pinfs {
+			for _, m := range pinf.GetStore().List() {
+				pods = append(pods, *m.(*v1.Pod))
+			}
 		}
 		return pods, nil
 	})
 
 	registry.MustRegister(&podCollector{store: podLister})
-	go pinf.Run(context.Background().Done())
+	pinfs.Run(context.Background().Done())
 }
 
 type podStore interface {
@@ -219,6 +226,7 @@ type podCollector struct {
 func (pc *podCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descPodInfo
 	ch <- descPodStartTime
+	ch <- descPodCompletionTime
 	ch <- descPodOwner
 	ch <- descPodLabels
 	ch <- descPodCreated
@@ -345,12 +353,14 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
 	addGauge(podLabelsDesc(labelKeys), 1, labelValues...)
 
-	if p := p.Status.Phase; p != "" {
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodPending), string(v1.PodPending))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodRunning), string(v1.PodRunning))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodSucceeded), string(v1.PodSucceeded))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodFailed), string(v1.PodFailed))
-		addGauge(descPodStatusPhase, boolFloat64(p == v1.PodUnknown), string(v1.PodUnknown))
+	if phase := p.Status.Phase; phase != "" {
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodPending), string(v1.PodPending))
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodSucceeded), string(v1.PodSucceeded))
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodFailed), string(v1.PodFailed))
+		// This logic is directly copied from: https://github.com/kubernetes/kubernetes/blob/d39bfa0d138368bbe72b0eaf434501dcb4ec9908/pkg/printers/internalversion/printers.go#L597-L601
+		// For more info, please go to: https://github.com/kubernetes/kube-state-metrics/issues/410
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodRunning && !(p.DeletionTimestamp != nil && p.Status.Reason == node.NodeUnreachablePodReason)), string(v1.PodRunning))
+		addGauge(descPodStatusPhase, boolFloat64(phase == v1.PodUnknown || (p.DeletionTimestamp != nil && p.Status.Reason == node.NodeUnreachablePodReason)), string(v1.PodUnknown))
 	}
 
 	if !p.CreationTimestamp.IsZero() {
@@ -380,6 +390,8 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		return cs.State.Terminated.Reason == reason
 	}
 
+	var lastFinishTime float64
+
 	for _, cs := range p.Status.ContainerStatuses {
 		addGauge(descPodContainerInfo, 1,
 			cs.Name, cs.Image, cs.ImageID, cs.ContainerID,
@@ -395,6 +407,16 @@ func (pc *podCollector) collectPod(ch chan<- prometheus.Metric, p v1.Pod) {
 		}
 		addGauge(descPodContainerStatusReady, boolFloat64(cs.Ready), cs.Name)
 		addCounter(descPodContainerStatusRestarts, float64(cs.RestartCount), cs.Name)
+
+		if cs.State.Terminated != nil {
+			if lastFinishTime == 0 || lastFinishTime < float64(cs.State.Terminated.FinishedAt.Unix()) {
+				lastFinishTime = float64(cs.State.Terminated.FinishedAt.Unix())
+			}
+		}
+	}
+
+	if lastFinishTime > 0 {
+		addGauge(descPodCompletionTime, lastFinishTime)
 	}
 
 	for _, c := range p.Spec.Containers {

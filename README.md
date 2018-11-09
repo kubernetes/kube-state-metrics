@@ -48,11 +48,11 @@ At most 5 kube-state-metrics releases will be recorded below.
 
 | kube-state-metrics | client-go | **Kubernetes 1.4**  | **Kubernetes 1.5** | **Kubernetes 1.6** | **Kubernetes 1.7** | **Kubernetes 1.8** | **Kubernetes 1.9** |
 |--------------------|-----------|---------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
-| **v0.4.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |         -          |
 | **v0.5.0** |  v2.0.0-alpha.1   |          ✓          |         ✓          |        -           |         -          |         -          |         -          |
 | **v1.0.x** |  4.0.0-beta.0     |          ✓          |         ✓          |        ✓           |         ✓          |         -          |         -          |
 | **v1.1.0** |  release-5.0      |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         -          |
 | **v1.2.0** |  v6.0.0           |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         ✓          |
+| **v1.3.0** |  v6.0.0           |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         ✓          |
 | **master** |  v6.0.0           |          ✓          |         ✓          |        ✓           |         ✓          |         ✓          |         ✓          |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
@@ -65,8 +65,8 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v1.2.0`
-* `k8s.gcr.io/kube-state-metrics:v1.2.0`
+* `quay.io/coreos/kube-state-metrics:v1.3.0`
+* `k8s.gcr.io/kube-state-metrics:v1.3.0`
 
 **Note**:
 The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on
@@ -87,14 +87,7 @@ additional metrics!
 >	* kube_node_status_capacity_nvidia_gpu_cards
 >	* kube_node_status_allocatable_nvidia_gpu_cards
 >
->	are in alpha stage and will be deprecated when the kubernetes gpu support is final in 1.9 version.
->
-> **collectors**
-> * v2alpha1/cronjob
->
-> If users want to enable this feature when kubernetes version larger than 1.7,
-> It must be configured, with the following parameter setting for apiserver.
-> `--runtime-config=batch/v2alpha1=true`
+>	are in alpha stage and will be deprecated when the kubernetes accelerator feature support is deprecated in version v1.11.
 >
 > Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.
@@ -176,7 +169,7 @@ service account token that has read-only access to the Kubernetes cluster.
 #### Kubernetes Deployment
 
 To deploy this project, you can simply run `kubectl apply -f kubernetes` and a
-Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kuberentes cluster's version is not 1.8+, check the yaml file for more information). The service already has a
+Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information). The service already has a
 `prometheus.io/scrape: 'true'` annotation and if you added the recommended
 Prometheus service-endpoint scraping [configuration](https://raw.githubusercontent.com/prometheus/prometheus/master/documentation/examples/prometheus-kubernetes.yml), Prometheus will pick it up automatically and you can start using the generated
 metrics right away.

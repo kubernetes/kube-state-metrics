@@ -35,7 +35,7 @@ var (
 	descServiceInfo = metrics.NewMetricFamilyDef(
 		"kube_service_info",
 		"Information about service.",
-		append(descServiceLabelsDefaultLabels, "cluster_ip"),
+		append(descServiceLabelsDefaultLabels, "cluster_ip", "external_name", "load_balancer_ip"),
 		nil,
 	)
 
@@ -53,10 +53,38 @@ var (
 		nil,
 	)
 
+	descServiceExternalName = metrics.NewMetricFamilyDef(
+		"kube_service_external_name",
+		"Service external name",
+		append(descServiceLabelsDefaultLabels, "external_name"),
+		nil,
+	)
+
+	descServiceLoadBalancerIP = metrics.NewMetricFamilyDef(
+		"kube_service_load_balancer_ip",
+		"Load balancer IP of service",
+		append(descServiceLabelsDefaultLabels, "load_balancer_ip"),
+		nil,
+	)
+
+	descServiceSpecExternalIP = metrics.NewMetricFamilyDef(
+		"kube_service_spec_external_ip",
+		"Service external ips. One series for each ip",
+		append(descServiceLabelsDefaultLabels, "external_ip"),
+		nil,
+	)
+
 	descServiceLabels = metrics.NewMetricFamilyDef(
 		descServiceLabelsName,
 		descServiceLabelsHelp,
 		descServiceLabelsDefaultLabels,
+		nil,
+	)
+
+	descServiceStatusLoadBalancerIngress = metrics.NewMetricFamilyDef(
+		"kube_service_status_load_balancer_ingress",
+		"Service load balancer ingress status",
+		append(descServiceLabelsDefaultLabels, "ip", "hostname"),
 		nil,
 	)
 )
@@ -103,12 +131,24 @@ func generateServiceMetrics(obj interface{}) []*metrics.Metric {
 	}
 	addGauge(descServiceSpecType, 1, string(s.Spec.Type))
 
-	addGauge(descServiceInfo, 1, s.Spec.ClusterIP)
+	addGauge(descServiceInfo, 1, s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP)
 	if !s.CreationTimestamp.IsZero() {
 		addGauge(descServiceCreated, float64(s.CreationTimestamp.Unix()))
 	}
 	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 	addGauge(serviceLabelsDesc(labelKeys), 1, labelValues...)
+
+	if len(s.Status.LoadBalancer.Ingress) > 0 {
+		for _, ingress := range s.Status.LoadBalancer.Ingress {
+			addGauge(descServiceStatusLoadBalancerIngress, 1, ingress.IP, ingress.Hostname)
+		}
+	}
+
+	if len(s.Spec.ExternalIPs) > 0 {
+		for _, external_ip := range s.Spec.ExternalIPs {
+			addGauge(descServiceSpecExternalIP, 1, external_ip)
+		}
+	}
 
 	return ms
 }

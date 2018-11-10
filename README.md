@@ -38,7 +38,7 @@ the raw metrics.
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)
   - [Kubernetes Deployment](#kubernetes-deployment)
-  - [Deployment](#deployment)
+  - [Development](#development)
 
 ### Versioning
 

@@ -30,7 +30,7 @@ SUDO=${SUDO-sudo}
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
 
 function finish() {
-    echo "calling cleaup function"
+    echo "calling cleanup function"
     # kill kubectl proxy in background
     kill %1 || true
     kubectl delete -f kubernetes/ || true

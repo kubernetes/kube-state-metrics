@@ -7,51 +7,65 @@ import (
 
 func TestFamilyString(t *testing.T) {
 	m := Metric{
-		Name:        "kube_service_info",
-		LabelKeys:   []string{"name"},
-		LabelValues: []string{"a"},
+		Name:        "kube_pod_info",
+		LabelKeys:   []string{"namespace"},
+		LabelValues: []string{"default"},
 		Value:       1,
 	}
 
 	f := Family{&m}
 
-	expected := "kube_service_info{name=\"a\"} 1"
-	s := strings.TrimSpace(f.String())
+	expected := "kube_pod_info{namespace=\"default\"} 1"
+	got := strings.TrimSpace(f.String())
 
-	if expected != s {
-		t.Fatalf("expected %v but got %v", expected, s)
+	if got != expected {
+		t.Fatalf("expected %v but got %v", expected, got)
 	}
 }
 
-func BenchmarkNewMetric(b *testing.B) {
+func BenchmarkMetricWrite(b *testing.B) {
 	tests := []struct {
-		testName    string
-		metricName  string
-		labelKeys   []string
-		labelValues []string
-		value       float64
+		testName       string
+		metric         Metric
+		expectedLength int
 	}{
 		{
-			testName:    "value-1",
-			metricName:  "kube_pod_container_info",
-			labelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
-			labelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
-			value:       float64(1),
+			testName: "value-1",
+			metric: Metric{
+				Name:        "kube_pod_container_info",
+				LabelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
+				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
+				Value:       float64(1),
+			},
+			expectedLength: 168,
 		},
 		{
-			testName:    "value-35.7",
-			metricName:  "kube_pod_container_info",
-			labelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
-			labelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
-			value:       float64(35.7),
+			testName: "value-35.7",
+			metric: Metric{
+				Name:        "kube_pod_container_info",
+				LabelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
+				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
+				Value:       float64(35.7),
+			},
+			expectedLength: 171,
 		},
 	}
 
 	for _, test := range tests {
 		b.Run(test.testName, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				m := Metric{test.metricName, test.labelKeys, test.labelValues, test.value}
-				m.String()
+				builder := strings.Builder{}
+
+				test.metric.Write(&builder)
+
+				s := builder.String()
+
+				// Ensuring that the string is actually build, not optimized
+				// away by compilation.
+				got := len(s)
+				if test.expectedLength != got {
+					b.Fatalf("expected string of length %v but got %v", test.expectedLength, got)
+				}
 			}
 		})
 	}

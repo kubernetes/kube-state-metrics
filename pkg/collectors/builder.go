@@ -198,19 +198,20 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 // }
 func (b *Builder) buildServiceCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.metricWhitelist, b.metricBlacklist, serviceMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
 	helpTexts := extractHelpText(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
 		helpTexts,
-		composeMetricGenFuncs(filteredMetricFamilies),
+		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Service{}, store, b.namespaces, createServiceListWatch)
 
 	return NewCollector(store)
 }
 
-func extractHelpText(families []metrics.MetricFamily) []string {
+func extractHelpText(families []metrics.FamilyGenerator) []string {
 	help := make([]string, len(families))
 	for i, f := range families {
 		help[i] = f.Help
@@ -221,32 +222,32 @@ func extractHelpText(families []metrics.MetricFamily) []string {
 
 // composeMetricGenFuncs takes a slice of metric families and returns a function
 // that composes their metric generation functions into a single one.
-func composeMetricGenFuncs(families []metrics.MetricFamily) func(obj interface{}) [][]*metrics.Metric {
-	funcs := []func(obj interface{}) []*metrics.Metric{}
+func composeMetricGenFuncs(families []metrics.FamilyGenerator) func(obj interface{}) []metricsstore.FamilyStringer {
+	funcs := []func(obj interface{}) metrics.Family{}
 
 	for _, f := range families {
 		funcs = append(funcs, f.GenerateFunc)
 	}
 
-	return func(obj interface{}) [][]*metrics.Metric {
-		metrics := make([][]*metrics.Metric, len(funcs))
+	return func(obj interface{}) []metricsstore.FamilyStringer {
+		families := make([]metricsstore.FamilyStringer, len(funcs))
 
 		for i, f := range funcs {
-			metrics[i] = f(obj)
+			families[i] = f(obj)
 		}
 
-		return metrics
+		return families
 	}
 }
 
 // filterMetricFamilies takes a white- and a blacklist and a slice of metric
 // families and returns a filtered slice.
-func filterMetricFamilies(white, black map[string]struct{}, families []metrics.MetricFamily) []metrics.MetricFamily {
+func filterMetricFamilies(white, black map[string]struct{}, families []metrics.FamilyGenerator) []metrics.FamilyGenerator {
 	if len(white) != 0 && len(black) != 0 {
 		panic("Whitelist and blacklist are both set. They are mutually exclusive, only one of them can be set.")
 	}
 
-	filtered := []metrics.MetricFamily{}
+	filtered := []metrics.FamilyGenerator{}
 
 	if len(white) != 0 {
 		for _, f := range families {

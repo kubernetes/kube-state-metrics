@@ -1,7 +1,6 @@
 package metricsstore
 
 import (
-	"fmt"
 	"io"
 	"sync"
 
@@ -63,8 +62,8 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	families := s.generateMetricsFunc(obj)
 	familyStrings := make([]string, len(families))
 
-	for _, f := range families {
-		familyStrings = append(familyStrings, f.String())
+	for i, f := range families {
+		familyStrings[i] = f.String()
 	}
 
 	s.metrics[o.GetUID()] = familyStrings
@@ -135,8 +134,6 @@ func (s *MetricsStore) Resync() error {
 func (s *MetricsStore) WriteAll(w io.Writer) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-
-	fmt.Println(s.metrics["a"][0])
 
 	for i, help := range s.helpTexts {
 		w.Write(append(helpPrefix, []byte(help)...))

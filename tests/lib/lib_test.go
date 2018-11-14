@@ -66,7 +66,7 @@ func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
 	return collectors.NewCollector(store)
 }
 
-func generateServiceMetrics(obj interface{}) []string {
+func generateServiceMetrics(obj interface{}) []metricsstore.FamilyStringer {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
@@ -77,5 +77,7 @@ func generateServiceMetrics(obj interface{}) []string {
 		Value:       1,
 	}
 
-	return []string{m.String()}
+	family := metrics.Family{&m}
+
+	return []metricsstore.FamilyStringer{family}
 }

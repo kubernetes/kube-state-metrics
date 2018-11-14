@@ -18,10 +18,10 @@ package main
 
 import (
 	"context"
-	// "fmt"
-	// "io/ioutil"
+	"io/ioutil"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,11 +33,12 @@ import (
 	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
 )
 
-func BenchmarkKubeStateMetrics(t *testing.B) {
+func BenchmarkKubeStateMetrics(b *testing.B) {
+	var collectors []*kcollectors.Collector
 	fixtureMultiplier := 1000
-	requestCount := 100
+	requestCount := 1000
 
-	t.Logf(
+	b.Logf(
 		"starting kube-state-metrics benchmark with fixtureMultiplier %v and requestCount %v",
 		fixtureMultiplier,
 		requestCount,
@@ -46,7 +47,60 @@ func BenchmarkKubeStateMetrics(t *testing.B) {
 	kubeClient := fake.NewSimpleClientset()
 
 	if err := injectFixtures(kubeClient, fixtureMultiplier); err != nil {
-		t.Errorf("error injecting resources: %v", err)
+		b.Errorf("error injecting resources: %v", err)
+	}
+
+	opts := options.NewOptions()
+
+	builder := kcollectors.NewBuilder(context.TODO(), opts)
+	builder.WithEnabledCollectors(options.DefaultCollectors)
+	builder.WithKubeClient(kubeClient)
+	builder.WithNamespaces(options.DefaultNamespaces)
+
+	// This test is not suitable to be compared in terms of time, as it includes
+	// a one second wait. Use for memory allocation comparisons, profiling, ...
+	b.Run("GenerateMetrics", func(b *testing.B) {
+		collectors = builder.Build()
+
+		// Wait for caches to fill
+		time.Sleep(time.Second)
+	})
+
+	handler := metricHandler{collectors, false}
+	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
+
+	b.Run("MakeRequests", func(b *testing.B) {
+		var accumulatedContentLength int64
+
+		for i := 0; i < requestCount; i++ {
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			resp := w.Result()
+			if resp.StatusCode != 200 {
+				b.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+			}
+
+			if resp.ContentLength == -1 {
+				b.Fatal("expected content length of response not to be unknown")
+			}
+			accumulatedContentLength += resp.ContentLength
+		}
+
+		b.SetBytes(accumulatedContentLength)
+	})
+}
+
+// TestFullScrapeCycle is a simple smoke test covering the entire cycle from
+// cache filling to scraping.
+func TestFullScrapeCycle(t *testing.T) {
+	t.Parallel()
+
+	kubeClient := fake.NewSimpleClientset()
+
+	err := service(kubeClient, 0)
+	if err != nil {
+		t.Fatalf("failed to insert sample pod %v", err.Error())
 	}
 
 	opts := options.NewOptions()
@@ -58,30 +112,36 @@ func BenchmarkKubeStateMetrics(t *testing.B) {
 
 	collectors := builder.Build()
 
-	handler := metricHandler{collectors, false}
-
-	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
-
-	// Wait for informers to sync
+	// Wait for caches to fill
 	time.Sleep(time.Second)
 
-	var w *httptest.ResponseRecorder
-	for i := 0; i < requestCount; i++ {
-		w = httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
+	handler := metricHandler{collectors, false}
+	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
-		resp := w.Result()
-		if resp.StatusCode != 200 {
-			t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
-		}
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
 	}
 
-	// resp := w.Result()
-	// body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
-	// fmt.Println(resp.StatusCode)
-	// fmt.Println(resp.Header.Get("Content-Type"))
-	// fmt.Println(string(body))
+	expected := `# HELP kube_service_info Information about service.
+kube_service_info{namespace="default",service="service0",cluster_ip="",external_name="",load_balancer_ip=""} 1
+# HELP kube_service_created Unix creation timestamp
+# HELP kube_service_spec_type Type about service.
+kube_service_spec_type{namespace="default",service="service0",type=""} 1
+# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
+kube_service_labels{namespace="default",service="service0"} 1
+# HELP kube_service_spec_external_ip Service external ips. One series for each ip
+# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status`
+	got := strings.TrimSpace(string(body))
+
+	if expected != got {
+		t.Fatalf("expected:\n%v\nbut got:\n%v", expected, got)
+	}
 }
 
 func injectFixtures(client *fake.Clientset, multiplier int) error {

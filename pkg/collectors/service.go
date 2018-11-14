@@ -89,34 +89,20 @@ var (
 				return metrics.Family{&m}
 			}),
 		},
-		// Defined, but not used anywhere. See
-		// https://github.com/kubernetes/kube-state-metrics/pull/571#pullrequestreview-176215628.
-		// {
-		// 	"kube_service_external_name",
-		// 	"Service external name",
-		// 	// []string{"type"},
-		// },
-		// {
-		// 	"kube_service_load_balancer_ip",
-		// 	"Load balancer IP of service",
-		// 	// []string{"load_balancer_ip"},
-		// },
 		{
 			Name: "kube_service_spec_external_ip",
 			Help: "Service external ips. One series for each ip",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
-				family := []metrics.Family{}
+				family := metrics.Family{}
 
 				if len(s.Spec.ExternalIPs) > 0 {
 					for _, externalIP := range s.Spec.ExternalIPs {
-						m := metrics.Metric{
+						family = append(family, &metrics.Metric{
 							Name:        "kube_service_spec_external_ip",
 							LabelKeys:   []string{"external_ip"},
 							LabelValues: []string{externalIP},
 							Value:       1,
-						}
-
-						family = append(family, m)
+						})
 					}
 				}
 
@@ -131,14 +117,13 @@ var (
 
 				if len(s.Status.LoadBalancer.Ingress) > 0 {
 					for _, ingress := range s.Status.LoadBalancer.Ingress {
-						m := metrics.Metric{
+						family = append(family, &metrics.Metric{
 							Name:        "kube_service_status_load_balancer_ingress",
 							LabelKeys:   []string{"ip", "hostname"},
 							LabelValues: []string{ingress.IP, ingress.Hostname},
 							Value:       1,
-						}
+						})
 
-						family = append(family, m)
 					}
 				}
 

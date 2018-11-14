@@ -23,19 +23,25 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"k8s.io/kube-state-metrics/pkg/metrics_store"
 )
 
 type generateMetricsTestCase struct {
 	Obj         interface{}
 	MetricNames []string
 	Want        string
-	Func        func(interface{}) []string
+	Func        func(interface{}) []metricsstore.FamilyStringer
 }
 
 func (testCase *generateMetricsTestCase) run() error {
 	metricFamilies := testCase.Func(testCase.Obj)
+	metricFamilyStrings := []string{}
+	for _, f := range metricFamilies {
+		metricFamilyStrings = append(metricFamilyStrings, f.String())
+	}
 
-	metrics := strings.Split(strings.Join(metricFamilies, ""), "\n")
+	metrics := strings.Split(strings.Join(metricFamilyStrings, ""), "\n")
 
 	metrics = filterMetrics(metrics, testCase.MetricNames)
 

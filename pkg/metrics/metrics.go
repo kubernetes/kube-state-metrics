@@ -65,8 +65,7 @@ type Metric struct {
 	Value       float64
 }
 
-// Write writes the given Metric in its string representation into the strings.Builder.
-func (m *Metric) Write(s *strings.Builder) string {
+func (m *Metric) Write(s *strings.Builder) {
 	if len(m.LabelKeys) != len(m.LabelValues) {
 		panic("expected labelKeys to be of same length as labelValues")
 	}
@@ -76,8 +75,6 @@ func (m *Metric) Write(s *strings.Builder) string {
 	s.WriteByte(' ')
 	writeFloat(s, m.Value)
 	s.WriteByte('\n')
-
-	return s.String()
 }
 
 func labelsToString(m *strings.Builder, keys, values []string) {

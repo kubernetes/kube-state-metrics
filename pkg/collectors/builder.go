@@ -214,7 +214,7 @@ func (b *Builder) buildServiceCollector() *Collector {
 func extractHelpText(families []metrics.FamilyGenerator) []string {
 	help := make([]string, len(families))
 	for i, f := range families {
-		help[i] = f.Help
+		help[i] = f.Name + " " + f.Help
 	}
 
 	return help

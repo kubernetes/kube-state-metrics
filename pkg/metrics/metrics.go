@@ -17,7 +17,6 @@ limitations under the License.
 package metrics
 
 import (
-	"errors"
 	"math"
 	"strconv"
 	"strings"
@@ -37,37 +36,48 @@ var (
 	}
 )
 
-// MetricFamily represents a set of metrics with the same name and help text.
-type MetricFamily struct {
+// FamilyGenerator provides everything needed to generate a metric family with a
+// Kubernetes object.
+type FamilyGenerator struct {
 	Name         string
 	Help         string
-	GenerateFunc func(obj interface{}) []*Metric
+	GenerateFunc func(obj interface{}) Family
 }
 
-// Metric represents a single line entry in the /metrics export format
-type Metric string
+// Family represents a set of metrics with the same name and help text.
+type Family []*Metric
 
-// NewMetric returns a new Metric
-func NewMetric(name string, labelKeys []string, labelValues []string, value float64) (*Metric, error) {
-	if len(labelKeys) != len(labelValues) {
-		return nil, errors.New("expected labelKeys to be of same length as labelValues")
+// String returns the given Family in its string representation.
+func (f Family) String() string {
+	b := strings.Builder{}
+	for _, m := range f {
+		m.Write(&b)
 	}
 
-	m := strings.Builder{}
+	return b.String()
+}
 
-	m.WriteString(name)
+// Metric represents a single time series.
+type Metric struct {
+	Name        string
+	LabelKeys   []string
+	LabelValues []string
+	Value       float64
+}
 
-	labelsToString(&m, labelKeys, labelValues)
+// Write writes the given Metric in its string representation into the strings.Builder.
+func (m *Metric) Write(s *strings.Builder) string {
+	if len(m.LabelKeys) != len(m.LabelValues) {
+		panic("expected labelKeys to be of same length as labelValues")
+	}
 
-	m.WriteByte(' ')
+	s.WriteString(m.Name)
+	labelsToString(s, m.LabelKeys, m.LabelValues)
+	s.WriteByte(' ')
+	writeFloat(s, m.Value)
+	s.WriteByte('\n')
 
-	writeFloat(&m, value)
-
-	m.WriteByte('\n')
-
-	metric := Metric(m.String())
-
-	return &metric, nil
+	return s.String()
 }
 
 func labelsToString(m *strings.Builder, keys, values []string) {

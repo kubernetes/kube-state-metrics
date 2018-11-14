@@ -66,16 +66,16 @@ func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
 	return collectors.NewCollector(store)
 }
 
-func generateServiceMetrics(obj interface{}) [][]*metrics.Metric {
+func generateServiceMetrics(obj interface{}) []string {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
-	m, err := metrics.NewMetric("test_metric", []string{"name"}, []string{s.Name}, 1)
-	if err != nil {
-		panic(err)
+	m := metrics.Metric{
+		Name:        "test_metric",
+		LabelKeys:   []string{"name"},
+		LabelValues: []string{s.Name},
+		Value:       1,
 	}
 
-	ms := []*metrics.Metric{m}
-
-	return [][]*metrics.Metric{ms}
+	return []string{m.String()}
 }

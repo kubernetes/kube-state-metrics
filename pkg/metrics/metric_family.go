@@ -20,6 +20,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// TODO: Remove or move family over here.
+
 func NewMetricFamilyDef(name, help string, labelKeys []string, constLabels prometheus.Labels) *MetricFamilyDef {
 	return &MetricFamilyDef{name, help, labelKeys, constLabels}
 }

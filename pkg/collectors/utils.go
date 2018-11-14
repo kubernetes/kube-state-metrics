@@ -60,21 +60,30 @@ func boolFloat64(b bool) float64 {
 // description must be the condition.
 func addConditionMetrics(desc *metrics.MetricFamilyDef, cs v1.ConditionStatus, lv ...string) []*metrics.Metric {
 	ms := []*metrics.Metric{}
-	m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "true"), boolFloat64(cs == v1.ConditionTrue))
-	if err != nil {
-		panic(err)
+
+	m := metrics.Metric{
+		Name:        desc.Name,
+		LabelKeys:   desc.LabelKeys,
+		LabelValues: append(lv, "true"),
+		Value:       boolFloat64(cs == v1.ConditionTrue),
 	}
-	ms = append(ms, m)
-	m, err = metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "false"), boolFloat64(cs == v1.ConditionFalse))
-	if err != nil {
-		panic(err)
+	ms = append(ms, &m)
+
+	m = metrics.Metric{
+		Name:        desc.Name,
+		LabelKeys:   desc.LabelKeys,
+		LabelValues: append(lv, "false"),
+		Value:       boolFloat64(cs == v1.ConditionFalse),
 	}
-	ms = append(ms, m)
-	m, err = metrics.NewMetric(desc.Name, desc.LabelKeys, append(lv, "unknown"), boolFloat64(cs == v1.ConditionUnknown))
-	if err != nil {
-		panic(err)
+	ms = append(ms, &m)
+
+	m = metrics.Metric{
+		Name:        desc.Name,
+		LabelKeys:   desc.LabelKeys,
+		LabelValues: append(lv, "unknown"),
+		Value:       boolFloat64(cs == v1.ConditionUnknown),
 	}
-	ms = append(ms, m)
+	ms = append(ms, &m)
 
 	return ms
 }

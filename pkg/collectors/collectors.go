@@ -20,16 +20,19 @@ import (
 	"io"
 )
 
+// Store represents a metrics store e.g.
+// k8s.io/kube-state-metrics/pkg/metrics_store.
 type Store interface {
 	WriteAll(io.Writer)
 }
 
-// Collector represents a kube-state-metrics metric collector. It is stripped
+// Collector represents a kube-state-metrics metric collector. It is a stripped
 // down version of the Prometheus client_golang collector.
 type Collector struct {
 	Store Store
 }
 
+// NewCollector constructs a collector with the given Store.
 func NewCollector(s Store) *Collector {
 	return &Collector{s}
 }

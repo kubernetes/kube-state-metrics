@@ -32,82 +32,62 @@ var (
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
-	serviceMetricFamilies = []metrics.MetricFamily{
-		{
-			"kube_service_info",
-			"Information about service.",
-			func(obj interface{}) []*metrics.Metric {
-				sPointer := obj.(*v1.Service)
-				s := *sPointer
-
-				return []*metrics.Metric{
-					newServiceMetric(
-						sPointer,
-						"kube_service_info",
-						[]string{"cluster_ip", "external_name", "load_balancer_ip"},
-						[]string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
-						1,
-					),
+	serviceMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_service_info",
+			Help: "Information about service.",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				m := metrics.Metric{
+					Name:        "kube_service_info",
+					LabelKeys:   []string{"cluster_ip", "external_name", "load_balancer_ip"},
+					LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
+					Value:       1,
 				}
-			},
+				return metrics.Family{&m}
+			}),
 		},
-		{
-			"kube_service_created",
-			"Unix creation timestamp",
-			func(obj interface{}) []*metrics.Metric {
-				sPointer := obj.(*v1.Service)
-				s := *sPointer
-
+		metrics.FamilyGenerator{
+			Name: "kube_service_created",
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
 				if !s.CreationTimestamp.IsZero() {
-					return []*metrics.Metric{
-						newServiceMetric(
-							sPointer,
-							"kube_service_created",
-							nil,
-							nil,
-							float64(s.CreationTimestamp.Unix()),
-						),
+					m := metrics.Metric{
+						Name:        "kube_service_created",
+						LabelKeys:   nil,
+						LabelValues: nil,
+						Value:       float64(s.CreationTimestamp.Unix()),
 					}
+					return metrics.Family{&m}
 				}
 				return nil
-			},
+			}),
 		},
-		{
-			"kube_service_spec_type",
-			"Type about service.",
-			func(obj interface{}) []*metrics.Metric {
-				sPointer := obj.(*v1.Service)
-				s := *sPointer
-
-				return []*metrics.Metric{
-					newServiceMetric(
-						sPointer,
-						"kube_service_spec_type",
-						[]string{"type"},
-						[]string{string(s.Spec.Type)},
-						1,
-					),
+		metrics.FamilyGenerator{
+			Name: "kube_service_spec_type",
+			Help: "Type about service.",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				m := metrics.Metric{
+					Name:        "kube_service_spec_type",
+					LabelKeys:   []string{"type"},
+					LabelValues: []string{string(s.Spec.Type)},
+					Value:       1,
 				}
-			},
+				return metrics.Family{&m}
+			}),
 		},
-		{
-			descServiceLabelsName,
-			descServiceLabelsHelp,
-			func(obj interface{}) []*metrics.Metric {
-				sPointer := obj.(*v1.Service)
-				s := *sPointer
-
+		metrics.FamilyGenerator{
+			Name: descServiceLabelsName,
+			Help: descServiceLabelsHelp,
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-				return []*metrics.Metric{
-					newServiceMetric(
-						sPointer,
-						descServiceLabelsName,
-						labelKeys,
-						labelValues,
-						1,
-					),
+				m := metrics.Metric{
+					Name:        descServiceLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
 				}
-			},
+				return metrics.Family{&m}
+			}),
 		},
 		// Defined, but not used anywhere. See
 		// https://github.com/kubernetes/kube-state-metrics/pull/571#pullrequestreview-176215628.
@@ -122,71 +102,65 @@ var (
 		// 	// []string{"load_balancer_ip"},
 		// },
 		{
-			"kube_service_spec_external_ip",
-			"Service external ips. One series for each ip",
-			func(obj interface{}) []*metrics.Metric {
-				sPointer := obj.(*v1.Service)
-				s := *sPointer
-
-				metrics := []*metrics.Metric{}
+			Name: "kube_service_spec_external_ip",
+			Help: "Service external ips. One series for each ip",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				family := []metrics.Family{}
 
 				if len(s.Spec.ExternalIPs) > 0 {
 					for _, externalIP := range s.Spec.ExternalIPs {
-						m := newServiceMetric(
-							sPointer,
-							"kube_service_spec_external_ip",
-							[]string{"external_ip"},
-							[]string{externalIP},
-							1,
-						)
+						m := metrics.Metric{
+							Name:        "kube_service_spec_external_ip",
+							LabelKeys:   []string{"external_ip"},
+							LabelValues: []string{externalIP},
+							Value:       1,
+						}
 
-						metrics = append(metrics, m)
+						family = append(family, m)
 					}
 				}
 
-				return metrics
-			},
+				return family
+			}),
 		},
 		{
-			"kube_service_status_load_balancer_ingress",
-			"Service load balancer ingress status",
-			func(obj interface{}) []*metrics.Metric {
-				sPointer := obj.(*v1.Service)
-				s := *sPointer
-
-				metrics := []*metrics.Metric{}
+			Name: "kube_service_status_load_balancer_ingress",
+			Help: "Service load balancer ingress status",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				family := metrics.Family{}
 
 				if len(s.Status.LoadBalancer.Ingress) > 0 {
 					for _, ingress := range s.Status.LoadBalancer.Ingress {
-						m := newServiceMetric(
-							sPointer,
-							"kube_service_status_load_balancer_ingress",
-							[]string{"ip", "hostname"},
-							[]string{ingress.IP, ingress.Hostname},
-							1,
-						)
+						m := metrics.Metric{
+							Name:        "kube_service_status_load_balancer_ingress",
+							LabelKeys:   []string{"ip", "hostname"},
+							LabelValues: []string{ingress.IP, ingress.Hostname},
+							Value:       1,
+						}
 
-						metrics = append(metrics, m)
+						family = append(family, m)
 					}
 				}
 
-				return metrics
-			},
+				return family
+			}),
 		},
 	}
 )
 
-func newServiceMetric(s *v1.Service, name string, lk []string, lv []string, v float64) *metrics.Metric {
-	lk = append(descServiceLabelsDefaultLabels, lk...)
-	lv = append([]string{s.Namespace, s.Name}, lv...)
+func wrapSvcFunc(f func(*v1.Service) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		svc := obj.(*v1.Service)
 
-	m, err := metrics.NewMetric(name, lk, lv, v)
-	if err != nil {
-		// TODO: Move this panic into metrics.NewMetric
-		panic(err)
+		metricFamily := f(svc)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descServiceLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{svc.Namespace, svc.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
 	}
-
-	return m
 }
 
 func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {

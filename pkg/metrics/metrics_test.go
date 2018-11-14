@@ -1,8 +1,27 @@
 package metrics
 
 import (
+	"strings"
 	"testing"
 )
+
+func TestFamilyString(t *testing.T) {
+	m := Metric{
+		Name:        "kube_service_info",
+		LabelKeys:   []string{"name"},
+		LabelValues: []string{"a"},
+		Value:       1,
+	}
+
+	f := Family{&m}
+
+	expected := "kube_service_info{name=\"a\"} 1"
+	s := strings.TrimSpace(f.String())
+
+	if expected != s {
+		t.Fatalf("expected %v but got %v", expected, s)
+	}
+}
 
 func BenchmarkNewMetric(b *testing.B) {
 	tests := []struct {
@@ -31,10 +50,8 @@ func BenchmarkNewMetric(b *testing.B) {
 	for _, test := range tests {
 		b.Run(test.testName, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				_, err := NewMetric(test.metricName, test.labelKeys, test.labelValues, test.value)
-				if err != nil {
-					b.Fatal(err)
-				}
+				m := Metric{test.metricName, test.labelKeys, test.labelValues, test.value}
+				m.String()
 			}
 		})
 	}

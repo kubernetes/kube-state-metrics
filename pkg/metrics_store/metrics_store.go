@@ -6,6 +6,7 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metrics"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // MetricsStore implements the k8s.io/kubernetes/client-go/tools/cache.Store
@@ -13,7 +14,7 @@ import (
 // generated based on them.
 type MetricsStore struct {
 	mutex   sync.RWMutex
-	metrics map[string][]*metrics.Metric
+	metrics map[types.UID][]*metrics.Metric
 
 	generateMetricsFunc func(interface{}) []*metrics.Metric
 }
@@ -22,7 +23,7 @@ type MetricsStore struct {
 func NewMetricsStore(generateFunc func(interface{}) []*metrics.Metric) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
-		metrics:             map[string][]*metrics.Metric{},
+		metrics:             map[types.UID][]*metrics.Metric{},
 	}
 }
 
@@ -38,7 +39,7 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	s.metrics[o.GetName()] = s.generateMetricsFunc(obj)
+	s.metrics[o.GetUID()] = s.generateMetricsFunc(obj)
 
 	return nil
 }
@@ -58,7 +59,7 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	delete(s.metrics, o.GetName())
+	delete(s.metrics, o.GetUID())
 
 	return nil
 }
@@ -86,7 +87,7 @@ func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err 
 // TODO: What is 'name' for?
 func (s *MetricsStore) Replace(list []interface{}, name string) error {
 	s.mutex.Lock()
-	s.metrics = map[string][]*metrics.Metric{}
+	s.metrics = map[types.UID][]*metrics.Metric{}
 	s.mutex.Unlock()
 
 	for _, o := range list {

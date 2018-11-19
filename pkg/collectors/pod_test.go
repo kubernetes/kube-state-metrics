@@ -23,7 +23,6 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/metrics"
 	"k8s.io/kubernetes/pkg/util/node"
 )
 
@@ -1057,9 +1056,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 	}
 
 	for i, c := range cases {
-		c.Func = func(obj interface{}) []*metrics.Metric {
-			return generatePodMetrics(false, obj)
-		}
+		c.Func = composeMetricGenFuncs(podMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

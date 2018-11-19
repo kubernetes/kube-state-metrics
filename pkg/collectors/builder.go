@@ -122,24 +122,15 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"persistentvolumeclaims": func(b *Builder) *Collector { return b.buildPersistentVolumeClaimCollector() },
 	// 	"persistentvolumes":      func(b *Builder) *Collector { return b.buildPersistentVolumeCollector() },
 	// 	"poddisruptionbudgets":   func(b *Builder) *Collector { return b.buildPodDisruptionBudgetCollector() },
-	// 	"pods":                   func(b *Builder) *Collector { return b.buildPodCollector() },
 	// 	"replicasets":            func(b *Builder) *Collector { return b.buildReplicaSetCollector() },
 	// 	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
 	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
 	// 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	"services": func(b *Builder) *Collector { return b.buildServiceCollector() },
+	"pods":     func(b *Builder) *Collector { return b.buildPodCollector() },
 	//	"statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 }
 
-// func (b *Builder) buildPodCollector() *Collector {
-// 	genFunc := func(obj interface{}) []*metrics.Metric {
-// 		return generatePodMetrics(b.opts.DisablePodNonGenericResourceMetrics, obj)
-// 	}
-// 	store := metricsstore.NewMetricsStore(genFunc)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Pod{}, store, b.namespaces, createPodListWatch)
-//
-// 	return NewCollector(store)
-// }
 //
 // func (b *Builder) buildCronJobCollector() *Collector {
 // 	store := metricsstore.NewMetricsStore(generateCronJobMetrics)
@@ -207,6 +198,21 @@ func (b *Builder) buildServiceCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Service{}, store, b.namespaces, createServiceListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildPodCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.metricWhitelist, b.metricBlacklist, podMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Pod{}, store, b.namespaces, createPodListWatch)
 
 	return NewCollector(store)
 }

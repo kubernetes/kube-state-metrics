@@ -24,25 +24,28 @@ import (
 	"sort"
 	"strings"
 
-	"k8s.io/kube-state-metrics/pkg/metrics"
+	"k8s.io/kube-state-metrics/pkg/metrics_store"
 )
 
 type generateMetricsTestCase struct {
 	Obj         interface{}
 	MetricNames []string
 	Want        string
-	Func        func(interface{}) []*metrics.Metric
+	Func        func(interface{}) []metricsstore.FamilyStringer
 }
 
 func (testCase *generateMetricsTestCase) run() error {
-	metrics := testCase.Func(testCase.Obj)
+	metricFamilies := testCase.Func(testCase.Obj)
+	metricFamilyStrings := []string{}
+	for _, f := range metricFamilies {
+		metricFamilyStrings = append(metricFamilyStrings, f.String())
+	}
+
+	metrics := strings.Split(strings.Join(metricFamilyStrings, ""), "\n")
+
 	metrics = filterMetrics(metrics, testCase.MetricNames)
 
-	out := ""
-
-	for _, m := range metrics {
-		out += string(*m)
-	}
+	out := strings.Join(metrics, "\n")
 
 	if err := compareOutput(testCase.Want, out); err != nil {
 		return fmt.Errorf("expected wanted output to equal output: %v", err.Error())
@@ -96,13 +99,13 @@ func sortByLine(s string) string {
 	return strings.Join(split, "\n")
 }
 
-func filterMetrics(ms []*metrics.Metric, names []string) []*metrics.Metric {
+func filterMetrics(ms []string, names []string) []string {
 	// In case the test case is based on all returned metrics, MetricNames does
 	// not need to me defined.
 	if names == nil {
 		return ms
 	}
-	filtered := []*metrics.Metric{}
+	filtered := []string{}
 
 	regexps := []*regexp.Regexp{}
 	for _, n := range names {
@@ -112,7 +115,7 @@ func filterMetrics(ms []*metrics.Metric, names []string) []*metrics.Metric {
 	for _, m := range ms {
 		drop := true
 		for _, r := range regexps {
-			if r.MatchString(string(*m)) {
+			if r.MatchString(m) {
 				drop = false
 				break
 			}

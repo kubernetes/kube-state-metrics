@@ -40,6 +40,7 @@ import (
 	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
+	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
 const (
@@ -95,20 +96,23 @@ func main() {
 		collectorBuilder.WithNamespaces(opts.Namespaces)
 	}
 
-	if opts.MetricWhitelist.IsEmpty() && opts.MetricBlacklist.IsEmpty() {
-		glog.Info("No metric whitelist or blacklist set. No filtering of metrics will be done.")
+	whiteBlackList, err := whiteblacklist.New(opts.MetricWhitelist, opts.MetricBlacklist)
+	if err != nil {
+		glog.Fatal(err)
 	}
-	if !opts.MetricWhitelist.IsEmpty() && !opts.MetricBlacklist.IsEmpty() {
-		glog.Fatal("Whitelist and blacklist are both set. They are mutually exclusive, only one of them can be set.")
+
+	if opts.DisablePodNonGenericResourceMetrics {
+		whiteBlackList.Exclude([]string{
+			"kube_pod_container_resource_requests_cpu_cores",
+			"kube_pod_container_resource_requests_memory_bytes",
+			"kube_pod_container_resource_limits_cpu_cores",
+			"kube_pod_container_resource_limits_memory_bytes",
+		})
 	}
-	if !opts.MetricWhitelist.IsEmpty() {
-		glog.Infof("A metric whitelist has been configured. Only the following metrics will be exposed: %s.", opts.MetricWhitelist.String())
-		collectorBuilder.WithMetricWhitelist(opts.MetricWhitelist)
-	}
-	if !opts.MetricBlacklist.IsEmpty() {
-		glog.Infof("A metric blacklist has been configured. The following metrics will not be exposed: %s.", opts.MetricBlacklist.String())
-		collectorBuilder.WithMetricBlacklist(opts.MetricBlacklist)
-	}
+
+	glog.Infof("metric white- blacklisting: %v", whiteBlackList.Status())
+
+	collectorBuilder.WithWhiteBlackList(whiteBlackList)
 
 	proc.StartReaper()
 
@@ -127,8 +131,6 @@ func main() {
 
 	collectors := collectorBuilder.Build()
 
-	// TODO: Reenable white and blacklisting
-	// metricsServer(metrics.FilteredGatherer(registry, opts.MetricWhitelist, opts.MetricBlacklist), opts.Host, opts.Port)
 	serveMetrics(collectors, opts.Host, opts.Port, opts.EnableGZIPEncoding)
 }
 

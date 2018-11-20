@@ -37,16 +37,21 @@ import (
 	"k8s.io/kube-state-metrics/pkg/options"
 )
 
+type whiteBlackLister interface {
+	IsIncluded(string) bool
+	IsExcluded(string) bool
+}
+
 // Builder helps to build collectors. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
-	kubeClient        clientset.Interface
-	namespaces        options.NamespaceList
+	kubeClient clientset.Interface
+	namespaces options.NamespaceList
+	// TODO: Are opts still needed anywhere?
 	opts              *options.Options
 	ctx               context.Context
 	enabledCollectors options.CollectorSet
-	metricWhitelist   map[string]struct{}
-	metricBlacklist   map[string]struct{}
+	whiteBlackList    whiteBlackLister
 }
 
 // NewBuilder returns a new builder.
@@ -75,20 +80,17 @@ func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.kubeClient = c
 }
 
-// WithMetricWhitelist configures the whitelisted metrics to be exposed by the
-// collectors build by the Builder
-func (b *Builder) WithMetricWhitelist(l map[string]struct{}) {
-	b.metricWhitelist = l
-}
-
-// WithMetricBlacklist configures the blacklisted metrics to be exposed by the
-// collectors build by the Builder
-func (b *Builder) WithMetricBlacklist(l map[string]struct{}) {
-	b.metricBlacklist = l
+// WithWhiteBlackList configures the white or blacklisted metrics to be exposed
+// by the collectors build by the Builder
+func (b *Builder) WithWhiteBlackList(l whiteBlackLister) {
+	b.whiteBlackList = l
 }
 
 // Build initializes and registers all enabled collectors.
 func (b *Builder) Build() []*Collector {
+	if b.whiteBlackList == nil {
+		panic("whiteBlackList should not be nil")
+	}
 
 	collectors := []*Collector{}
 	activeCollectorNames := []string{}
@@ -188,7 +190,7 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 // 	return NewCollector(store)
 // }
 func (b *Builder) buildServiceCollector() *Collector {
-	filteredMetricFamilies := filterMetricFamilies(b.metricWhitelist, b.metricBlacklist, serviceMetricFamilies)
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, serviceMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
 	helpTexts := extractHelpText(filteredMetricFamilies)
@@ -203,7 +205,7 @@ func (b *Builder) buildServiceCollector() *Collector {
 }
 
 func (b *Builder) buildPodCollector() *Collector {
-	filteredMetricFamilies := filterMetricFamilies(b.metricWhitelist, b.metricBlacklist, podMetricFamilies)
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, podMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
 	helpTexts := extractHelpText(filteredMetricFamilies)
@@ -248,25 +250,11 @@ func composeMetricGenFuncs(families []metrics.FamilyGenerator) func(obj interfac
 
 // filterMetricFamilies takes a white- and a blacklist and a slice of metric
 // families and returns a filtered slice.
-func filterMetricFamilies(white, black map[string]struct{}, families []metrics.FamilyGenerator) []metrics.FamilyGenerator {
-	if len(white) != 0 && len(black) != 0 {
-		panic("Whitelist and blacklist are both set. They are mutually exclusive, only one of them can be set.")
-	}
-
+func filterMetricFamilies(l whiteBlackLister, families []metrics.FamilyGenerator) []metrics.FamilyGenerator {
 	filtered := []metrics.FamilyGenerator{}
 
-	if len(white) != 0 {
-		for _, f := range families {
-			if _, whitelisted := white[f.Name]; whitelisted {
-				filtered = append(filtered, f)
-			}
-		}
-
-		return filtered
-	}
-
 	for _, f := range families {
-		if _, blacklisted := black[f.Name]; !blacklisted {
+		if l.IsIncluded(f.Name) {
 			filtered = append(filtered, f)
 		}
 	}

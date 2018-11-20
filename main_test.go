@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
+	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
 func BenchmarkKubeStateMetrics(b *testing.B) {
@@ -56,6 +57,12 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithEnabledCollectors(options.DefaultCollectors)
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
+
+	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		b.Fatal(err)
+	}
+	builder.WithWhiteBlackList(l)
 
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
@@ -109,6 +116,12 @@ func TestFullScrapeCycle(t *testing.T) {
 	builder.WithEnabledCollectors(options.DefaultCollectors)
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
+
+	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	builder.WithWhiteBlackList(l)
 
 	collectors := builder.Build()
 

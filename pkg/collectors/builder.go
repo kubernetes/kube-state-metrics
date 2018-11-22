@@ -120,14 +120,13 @@ func (b *Builder) Build() []*Collector {
 }
 
 var availableCollectors = map[string]func(f *Builder) *Collector{
-	"daemonsets": func(b *Builder) *Collector { return b.buildDaemonSetCollector() },
-	"pods":       func(b *Builder) *Collector { return b.buildPodCollector() },
-	"services":   func(b *Builder) *Collector { return b.buildServiceCollector() },
-	//	"statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
+	"daemonsets":  func(b *Builder) *Collector { return b.buildDaemonSetCollector() },
+	"deployments": func(b *Builder) *Collector { return b.buildDeploymentCollector() },
+	"pods":        func(b *Builder) *Collector { return b.buildPodCollector() },
+	"services":    func(b *Builder) *Collector { return b.buildServiceCollector() },
 	//	"statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
 	// 	"cronjobs":                 func(b *Builder) *Collector { return b.buildCronJobCollector() },
-	// 	"deployments":              func(b *Builder) *Collector { return b.buildDeploymentCollector() },
 	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	// 	"horizontalpodautoscalers": func(b *Builder) *Collector { return b.buildHPACollector() },
 	// 	"jobs":                   func(b *Builder) *Collector { return b.buildJobCollector() },
@@ -158,13 +157,6 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 // 	return NewCollector(store)
 // }
 //
-//
-// func (b *Builder) buildDeploymentCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateDeploymentMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Deployment{}, store, b.namespaces, createDeploymentListWatch)
-//
-// 	return NewCollector(store)
-// }
 //
 // func (b *Builder) buildEndpointsCollector() *Collector {
 // 	store := metricsstore.NewMetricsStore(generateEndpointsMetrics)
@@ -205,6 +197,21 @@ func (b *Builder) buildDaemonSetCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.DaemonSet{}, store, b.namespaces, createDaemonSetListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildDeploymentCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, deploymentMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Deployment{}, store, b.namespaces, createDeploymentListWatch)
 
 	return NewCollector(store)
 }

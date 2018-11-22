@@ -120,6 +120,7 @@ func (b *Builder) Build() []*Collector {
 }
 
 var availableCollectors = map[string]func(f *Builder) *Collector{
+	"configmaps":  func(b *Builder) *Collector { return b.buildConfigMapCollector() },
 	"daemonsets":  func(b *Builder) *Collector { return b.buildDaemonSetCollector() },
 	"deployments": func(b *Builder) *Collector { return b.buildDeploymentCollector() },
 	"jobs":        func(b *Builder) *Collector { return b.buildJobCollector() },
@@ -142,6 +143,21 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
 	// 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	//  "statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
+}
+
+func (b *Builder) buildConfigMapCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, configMapMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ConfigMap{}, store, b.namespaces, createConfigMapListWatch)
+
+	return NewCollector(store)
 }
 
 func (b *Builder) buildDaemonSetCollector() *Collector {

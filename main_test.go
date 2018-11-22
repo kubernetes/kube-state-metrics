@@ -144,7 +144,10 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	expected := `# HELP kube_daemonset_created Unix creation timestamp
+	expected := `# HELP kube_configmap_info Information about configmap.
+# HELP kube_configmap_created Unix creation timestamp
+# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
+# HELP kube_daemonset_created Unix creation timestamp
 # HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
 # HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
 # HELP kube_daemonset_status_number_available The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available

@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"context"
 	"io/ioutil"
 	"net/http/httptest"
@@ -25,12 +26,13 @@ import (
 	"testing"
 	"time"
 
+	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
 	"k8s.io/kube-state-metrics/pkg/options"
 
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
 	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
@@ -77,7 +79,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	b.Run("MakeRequests", func(b *testing.B) {
-		var accumulatedContentLength int64
+		var accumulatedContentLength int
 
 		for i := 0; i < requestCount; i++ {
 			w := httptest.NewRecorder()
@@ -88,13 +90,14 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 				b.Fatalf("expected 200 status code but got %v", resp.StatusCode)
 			}
 
-			if resp.ContentLength == -1 {
-				b.Fatal("expected content length of response not to be unknown")
-			}
-			accumulatedContentLength += resp.ContentLength
+			b.StopTimer()
+			buf := bytes.Buffer{}
+			buf.ReadFrom(resp.Body)
+			accumulatedContentLength += buf.Len()
+			b.StartTimer()
 		}
 
-		b.SetBytes(accumulatedContentLength)
+		b.SetBytes(int64(accumulatedContentLength))
 	})
 }
 
@@ -236,15 +239,74 @@ func pod(client *fake.Clientset, index int) error {
 
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "pod" + i,
+			Name:              "pod" + i,
+			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+			Namespace:         "default",
+			UID:               "abc-123-xxx",
+		},
+		Spec: v1.PodSpec{
+			NodeName: "node1",
+			Containers: []v1.Container{
+				v1.Container{
+					Name: "pod1_con1",
+					Resources: v1.ResourceRequirements{
+						Requests: map[v1.ResourceName]resource.Quantity{
+							v1.ResourceCPU:                    resource.MustParse("200m"),
+							v1.ResourceMemory:                 resource.MustParse("100M"),
+							v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
+							v1.ResourceStorage:                resource.MustParse("400M"),
+							v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+						},
+						Limits: map[v1.ResourceName]resource.Quantity{
+							v1.ResourceCPU:                    resource.MustParse("200m"),
+							v1.ResourceMemory:                 resource.MustParse("100M"),
+							v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
+							v1.ResourceStorage:                resource.MustParse("400M"),
+							v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+						},
+					},
+				},
+				v1.Container{
+					Name: "pod1_con2",
+					Resources: v1.ResourceRequirements{
+						Requests: map[v1.ResourceName]resource.Quantity{
+							v1.ResourceCPU:    resource.MustParse("300m"),
+							v1.ResourceMemory: resource.MustParse("200M"),
+						},
+						Limits: map[v1.ResourceName]resource.Quantity{
+							v1.ResourceCPU:    resource.MustParse("300m"),
+							v1.ResourceMemory: resource.MustParse("200M"),
+						},
+					},
+				},
+			},
 		},
 		Status: v1.PodStatus{
+			HostIP: "1.1.1.1",
+			PodIP:  "1.2.3.4",
+			Phase:  v1.PodRunning,
 			ContainerStatuses: []v1.ContainerStatus{
 				v1.ContainerStatus{
-					Name:        "container1",
-					Image:       "k8s.gcr.io/hyperkube1",
-					ImageID:     "docker://sha256:aaa",
-					ContainerID: "docker://ab123",
+					Name:        "container2",
+					Image:       "k8s.gcr.io/hyperkube2",
+					ImageID:     "docker://sha256:bbb",
+					ContainerID: "docker://cd456",
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason: "CrashLoopBackOff",
+						},
+					},
+					LastTerminationState: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "OOMKilled",
+						},
+					},
+				},
+				v1.ContainerStatus{
+					Name:        "container3",
+					Image:       "k8s.gcr.io/hyperkube3",
+					ImageID:     "docker://sha256:ccc",
+					ContainerID: "docker://ef789",
 				},
 			},
 		},

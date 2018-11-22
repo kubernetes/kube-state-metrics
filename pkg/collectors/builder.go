@@ -18,6 +18,7 @@ limitations under the License.
 package collectors
 
 import (
+	"sort"
 	"strings"
 
 	// 	apps "k8s.io/api/apps/v1beta1"
@@ -50,7 +51,7 @@ type Builder struct {
 	// TODO: Are opts still needed anywhere?
 	opts              *options.Options
 	ctx               context.Context
-	enabledCollectors options.CollectorSet
+	enabledCollectors []string
 	whiteBlackList    whiteBlackLister
 }
 
@@ -66,8 +67,15 @@ func NewBuilder(
 }
 
 // WithEnabledCollectors sets the enabledCollectors property of a Builder.
-func (b *Builder) WithEnabledCollectors(c options.CollectorSet) {
-	b.enabledCollectors = c
+func (b *Builder) WithEnabledCollectors(c []string) {
+	copy := []string{}
+	for _, s := range c {
+		copy = append(copy, s)
+	}
+
+	sort.Strings(copy)
+
+	b.enabledCollectors = copy
 }
 
 // WithNamespaces sets the namespaces property of a Builder.
@@ -95,7 +103,7 @@ func (b *Builder) Build() []*Collector {
 	collectors := []*Collector{}
 	activeCollectorNames := []string{}
 
-	for c := range b.enabledCollectors {
+	for _, c := range b.enabledCollectors {
 		constructor, ok := availableCollectors[c]
 		if ok {
 			collector := constructor(b)

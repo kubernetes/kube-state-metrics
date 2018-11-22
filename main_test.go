@@ -147,6 +147,14 @@ func TestFullScrapeCycle(t *testing.T) {
 	expected := `# HELP kube_configmap_info Information about configmap.
 # HELP kube_configmap_created Unix creation timestamp
 # HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
+# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_cronjob_info Info about cronjob.
+# HELP kube_cronjob_created Unix creation timestamp
+# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
+# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
+# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
+# HELP kube_cronjob_next_schedule_time Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 # HELP kube_daemonset_created Unix creation timestamp
 # HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
 # HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.

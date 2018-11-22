@@ -144,7 +144,17 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	expected := `# HELP kube_pod_info Information about pod.
+	expected := `# HELP kube_daemonset_created Unix creation timestamp
+# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
+# HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
+# HELP kube_daemonset_status_number_available The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
+# HELP kube_daemonset_status_number_misscheduled The number of nodes running a daemon pod but are not supposed to.
+# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
+# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
+# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
+# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
+# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
 # HELP kube_pod_owner Information about the Pod's owner.

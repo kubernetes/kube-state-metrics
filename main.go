@@ -79,9 +79,9 @@ func main() {
 
 	if len(opts.Collectors) == 0 {
 		glog.Info("Using default collectors")
-		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors)
+		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	} else {
-		collectorBuilder.WithEnabledCollectors(opts.Collectors)
+		collectorBuilder.WithEnabledCollectors(opts.Collectors.AsSlice())
 	}
 
 	if len(opts.Namespaces) == 0 {

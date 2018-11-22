@@ -54,7 +54,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	opts := options.NewOptions()
 
 	builder := kcollectors.NewBuilder(context.TODO(), opts)
-	builder.WithEnabledCollectors(options.DefaultCollectors)
+	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
@@ -113,7 +113,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	opts := options.NewOptions()
 
 	builder := kcollectors.NewBuilder(context.TODO(), opts)
-	builder.WithEnabledCollectors(options.DefaultCollectors)
+	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 

@@ -166,6 +166,19 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_deployment_spec_strategy_rollingupdate_max_surge Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
 # HELP kube_deployment_metadata_generation Sequence number representing a specific generation of the desired state.
 # HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_job_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_job_info Information about job.
+# HELP kube_job_created Unix creation timestamp
+# HELP kube_job_spec_parallelism The maximum desired number of pods the job should run at any given time.
+# HELP kube_job_spec_completions The desired number of successfully finished pods the job should be run with.
+# HELP kube_job_spec_active_deadline_seconds The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
+# HELP kube_job_status_succeeded The number of pods which reached Phase Succeeded.
+# HELP kube_job_status_failed The number of pods which reached Phase Failed.
+# HELP kube_job_status_active The number of actively running pods.
+# HELP kube_job_complete The job has completed its execution.
+# HELP kube_job_failed The job has failed its execution.
+# HELP kube_job_status_start_time StartTime represents time when the job was acknowledged by the Job Manager.
+# HELP kube_job_status_completion_time CompletionTime represents time when the job was completed.
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.

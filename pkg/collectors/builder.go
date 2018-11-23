@@ -27,8 +27,8 @@ import (
 
 	// apps "k8s.io/api/apps/v1beta1"
 	// 	autoscaling "k8s.io/api/autoscaling/v2beta1"
-	// 	batchv1 "k8s.io/api/batch/v1"
 	// 	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	// "k8s.io/api/policy/v1beta1"
@@ -122,9 +122,10 @@ func (b *Builder) Build() []*Collector {
 var availableCollectors = map[string]func(f *Builder) *Collector{
 	"daemonsets":  func(b *Builder) *Collector { return b.buildDaemonSetCollector() },
 	"deployments": func(b *Builder) *Collector { return b.buildDeploymentCollector() },
+	"jobs":        func(b *Builder) *Collector { return b.buildJobCollector() },
+	"limitranges": func(b *Builder) *Collector { return b.buildLimitRangeCollector() },
 	"pods":        func(b *Builder) *Collector { return b.buildPodCollector() },
 	"services":    func(b *Builder) *Collector { return b.buildServiceCollector() },
-	//	"statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
 	// 	"cronjobs":                 func(b *Builder) *Collector { return b.buildCronJobCollector() },
 	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
@@ -140,51 +141,8 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
 	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
 	// 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
+	//  "statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 }
-
-//
-// func (b *Builder) buildCronJobCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateCronJobMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1beta1.CronJob{}, store, b.namespaces, createCronJobListWatch)
-//
-// 	return NewCollector(store)
-// }
-//
-// func (b *Builder) buildConfigMapCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateConfigMapMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ConfigMap{}, store, b.namespaces, createConfigMapListWatch)
-//
-// 	return NewCollector(store)
-// }
-//
-//
-// func (b *Builder) buildEndpointsCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateEndpointsMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Endpoints{}, store, b.namespaces, createEndpointsListWatch)
-//
-// 	return NewCollector(store)
-// }
-//
-// func (b *Builder) buildHPACollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateHPAMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &autoscaling.HorizontalPodAutoscaler{}, store, b.namespaces, createHPAListWatch)
-//
-// 	return NewCollector(store)
-// }
-//
-// func (b *Builder) buildJobCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateJobMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1.Job{}, store, b.namespaces, createJobListWatch)
-//
-// 	return NewCollector(store)
-// }
-//
-// func (b *Builder) buildLimitRangeCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateLimitRangeMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
-//
-// 	return NewCollector(store)
-// }
 
 func (b *Builder) buildDaemonSetCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, daemonSetMetricFamilies)
@@ -212,6 +170,36 @@ func (b *Builder) buildDeploymentCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Deployment{}, store, b.namespaces, createDeploymentListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildJobCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, jobMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1.Job{}, store, b.namespaces, createJobListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildLimitRangeCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, limitRangeMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
 
 	return NewCollector(store)
 }

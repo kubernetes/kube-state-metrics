@@ -179,6 +179,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_job_failed The job has failed its execution.
 # HELP kube_job_status_start_time StartTime represents time when the job was acknowledged by the Job Manager.
 # HELP kube_job_status_completion_time CompletionTime represents time when the job was completed.
+# HELP kube_limitrange Information about limit range.
+# HELP kube_limitrange_created Unix creation timestamp
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.

@@ -123,6 +123,7 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"daemonsets":  func(b *Builder) *Collector { return b.buildDaemonSetCollector() },
 	"deployments": func(b *Builder) *Collector { return b.buildDeploymentCollector() },
 	"jobs":        func(b *Builder) *Collector { return b.buildJobCollector() },
+	"limitranges": func(b *Builder) *Collector { return b.buildLimitRangeCollector() },
 	"pods":        func(b *Builder) *Collector { return b.buildPodCollector() },
 	"services":    func(b *Builder) *Collector { return b.buildServiceCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
@@ -142,13 +143,6 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	//  "statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 }
-
-// func (b *Builder) buildLimitRangeCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateLimitRangeMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
-//
-// 	return NewCollector(store)
-// }
 
 func (b *Builder) buildDaemonSetCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, daemonSetMetricFamilies)
@@ -191,6 +185,21 @@ func (b *Builder) buildJobCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1.Job{}, store, b.namespaces, createJobListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildLimitRangeCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, limitRangeMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
 
 	return NewCollector(store)
 }

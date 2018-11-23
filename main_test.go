@@ -178,6 +178,13 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_endpoint_address_available Number of addresses available in endpoint.
 # HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
+# HELP kube_hpa_metadata_generation The generation observed by the HorizontalPodAutoscaler controller.
+# HELP kube_hpa_spec_max_replicas Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
+# HELP kube_hpa_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
+# HELP kube_hpa_status_current_replicas Current number of replicas of pods managed by this autoscaler.
+# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
+# HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_hpa_status_condition The condition of this autoscaler.
 # HELP kube_job_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_job_info Information about job.
 # HELP kube_job_created Unix creation timestamp

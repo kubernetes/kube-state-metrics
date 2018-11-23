@@ -120,6 +120,7 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"cronjobs":               func(b *Builder) *Collector { return b.buildCronJobCollector() },
 	"daemonsets":             func(b *Builder) *Collector { return b.buildDaemonSetCollector() },
 	"deployments":            func(b *Builder) *Collector { return b.buildDeploymentCollector() },
+	"endpoints":              func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	"jobs":                   func(b *Builder) *Collector { return b.buildJobCollector() },
 	"limitranges":            func(b *Builder) *Collector { return b.buildLimitRangeCollector() },
 	"namespaces":             func(b *Builder) *Collector { return b.buildNamespaceCollector() },
@@ -134,7 +135,6 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	"services":               func(b *Builder) *Collector { return b.buildServiceCollector() },
 	"statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
-	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	// 	"horizontalpodautoscalers": func(b *Builder) *Collector { return b.buildHPACollector() },
 }
 
@@ -194,6 +194,21 @@ func (b *Builder) buildDeploymentCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Deployment{}, store, b.namespaces, createDeploymentListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildEndpointsCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, endpointMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Endpoints{}, store, b.namespaces, createEndpointsListWatch)
 
 	return NewCollector(store)
 }

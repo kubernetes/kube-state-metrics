@@ -173,6 +173,11 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_deployment_spec_strategy_rollingupdate_max_surge Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
 # HELP kube_deployment_metadata_generation Sequence number representing a specific generation of the desired state.
 # HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_endpoint_info Information about endpoint.
+# HELP kube_endpoint_created Unix creation timestamp
+# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_endpoint_address_available Number of addresses available in endpoint.
+# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
 # HELP kube_job_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_job_info Information about job.
 # HELP kube_job_created Unix creation timestamp

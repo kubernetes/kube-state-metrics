@@ -192,6 +192,10 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_job_status_completion_time CompletionTime represents time when the job was completed.
 # HELP kube_limitrange Information about limit range.
 # HELP kube_limitrange_created Unix creation timestamp
+# HELP kube_namespace_created Unix creation timestamp
+# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
+# HELP kube_namespace_status_phase kubernetes namespace status phase.
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.

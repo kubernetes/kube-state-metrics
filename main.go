@@ -74,8 +74,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	// TODO: Probably not necessary to pass all of opts into builder, right?
-	collectorBuilder := kcollectors.NewBuilder(context.TODO(), opts)
+	collectorBuilder := kcollectors.NewBuilder(context.TODO())
 
 	if len(opts.Collectors) == 0 {
 		glog.Info("Using default collectors")
@@ -107,6 +106,17 @@ func main() {
 			"kube_pod_container_resource_requests_memory_bytes",
 			"kube_pod_container_resource_limits_cpu_cores",
 			"kube_pod_container_resource_limits_memory_bytes",
+		})
+	}
+
+	if opts.DisableNodeNonGenericResourceMetrics {
+		whiteBlackList.Exclude([]string{
+			"kube_node_status_capacity_cpu_cores",
+			"kube_node_status_capacity_memory_bytes",
+			"kube_node_status_capacity_pods",
+			"kube_node_status_allocatable_cpu_cores",
+			"kube_node_status_allocatable_memory_bytes",
+			"kube_node_status_allocatable_pods",
 		})
 	}
 

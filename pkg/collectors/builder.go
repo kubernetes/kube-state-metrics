@@ -124,6 +124,7 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"deployments": func(b *Builder) *Collector { return b.buildDeploymentCollector() },
 	"jobs":        func(b *Builder) *Collector { return b.buildJobCollector() },
 	"limitranges": func(b *Builder) *Collector { return b.buildLimitRangeCollector() },
+	"namespaces":  func(b *Builder) *Collector { return b.buildNamespaceCollector() },
 	"pods":        func(b *Builder) *Collector { return b.buildPodCollector() },
 	"services":    func(b *Builder) *Collector { return b.buildServiceCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
@@ -131,8 +132,6 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	// 	"horizontalpodautoscalers": func(b *Builder) *Collector { return b.buildHPACollector() },
 	// 	"jobs":                   func(b *Builder) *Collector { return b.buildJobCollector() },
-	// 	"limitranges":            func(b *Builder) *Collector { return b.buildLimitRangeCollector() },
-	// 	"namespaces":             func(b *Builder) *Collector { return b.buildNamespaceCollector() },
 	// 	"nodes":                  func(b *Builder) *Collector { return b.buildNodeCollector() },
 	// 	"persistentvolumeclaims": func(b *Builder) *Collector { return b.buildPersistentVolumeClaimCollector() },
 	// 	"persistentvolumes":      func(b *Builder) *Collector { return b.buildPersistentVolumeCollector() },
@@ -200,6 +199,21 @@ func (b *Builder) buildLimitRangeCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildNamespaceCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, namespaceMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Namespace{}, store, b.namespaces, createNamespaceListWatch)
 
 	return NewCollector(store)
 }

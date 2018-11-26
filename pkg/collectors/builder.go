@@ -47,10 +47,8 @@ type whiteBlackLister interface {
 // Builder helps to build collectors. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
-	kubeClient clientset.Interface
-	namespaces options.NamespaceList
-	// TODO: Are opts still needed anywhere?
-	opts              *options.Options
+	kubeClient        clientset.Interface
+	namespaces        options.NamespaceList
 	ctx               context.Context
 	enabledCollectors []string
 	whiteBlackList    whiteBlackLister
@@ -59,11 +57,9 @@ type Builder struct {
 // NewBuilder returns a new builder.
 func NewBuilder(
 	ctx context.Context,
-	opts *options.Options,
 ) *Builder {
 	return &Builder{
-		opts: opts,
-		ctx:  ctx,
+		ctx: ctx,
 	}
 }
 
@@ -125,6 +121,7 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"jobs":        func(b *Builder) *Collector { return b.buildJobCollector() },
 	"limitranges": func(b *Builder) *Collector { return b.buildLimitRangeCollector() },
 	"namespaces":  func(b *Builder) *Collector { return b.buildNamespaceCollector() },
+	"nodes":       func(b *Builder) *Collector { return b.buildNodeCollector() },
 	"pods":        func(b *Builder) *Collector { return b.buildPodCollector() },
 	"services":    func(b *Builder) *Collector { return b.buildServiceCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
@@ -132,7 +129,6 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	// 	"horizontalpodautoscalers": func(b *Builder) *Collector { return b.buildHPACollector() },
 	// 	"jobs":                   func(b *Builder) *Collector { return b.buildJobCollector() },
-	// 	"nodes":                  func(b *Builder) *Collector { return b.buildNodeCollector() },
 	// 	"persistentvolumeclaims": func(b *Builder) *Collector { return b.buildPersistentVolumeClaimCollector() },
 	// 	"persistentvolumes":      func(b *Builder) *Collector { return b.buildPersistentVolumeCollector() },
 	// 	"poddisruptionbudgets":   func(b *Builder) *Collector { return b.buildPodDisruptionBudgetCollector() },
@@ -214,6 +210,21 @@ func (b *Builder) buildNamespaceCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Namespace{}, store, b.namespaces, createNamespaceListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildNodeCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, nodeMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Node{}, store, b.namespaces, createNodeListWatch)
 
 	return NewCollector(store)
 }

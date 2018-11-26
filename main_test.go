@@ -53,9 +53,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 		b.Errorf("error injecting resources: %v", err)
 	}
 
-	opts := options.NewOptions()
-
-	builder := kcollectors.NewBuilder(context.TODO(), opts)
+	builder := kcollectors.NewBuilder(context.TODO())
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -113,9 +111,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatalf("failed to insert sample pod %v", err.Error())
 	}
 
-	opts := options.NewOptions()
-
-	builder := kcollectors.NewBuilder(context.TODO(), opts)
+	builder := kcollectors.NewBuilder(context.TODO())
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -185,6 +181,21 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
 # HELP kube_namespace_status_phase kubernetes namespace status phase.
+# HELP kube_node_info Information about a cluster node.
+# HELP kube_node_created Unix creation timestamp
+# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
+# HELP kube_node_spec_taint The taint of a cluster node.
+# HELP kube_node_status_condition The condition of a cluster node.
+# HELP kube_node_status_phase The phase the node is currently in.
+# HELP kube_node_status_capacity The capacity for different resources of a node.
+# HELP kube_node_status_capacity_pods The total pod resources of the node.
+# HELP kube_node_status_capacity_cpu_cores The total CPU resources of the node.
+# HELP kube_node_status_capacity_memory_bytes The total memory resources of the node.
+# HELP kube_node_status_allocatable The allocatable for different resources of a node that are available for scheduling.
+# HELP kube_node_status_allocatable_pods The pod resources of a node that are available for scheduling.
+# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
+# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.

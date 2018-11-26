@@ -79,6 +79,9 @@ func sortLabels(s string) string {
 
 	for _, line := range strings.Split(s, "\n") {
 		split := strings.Split(line, "{")
+		if len(split) != 2 {
+			panic(fmt.Sprintf("failed to sort labels in \"%v\"", line))
+		}
 		name := split[0]
 
 		split = strings.Split(split[1], "}")

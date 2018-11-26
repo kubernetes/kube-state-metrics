@@ -211,6 +211,9 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
 # HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
 # HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
+# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+# HELP kube_persistentvolume_info Information about persistentvolume.
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.

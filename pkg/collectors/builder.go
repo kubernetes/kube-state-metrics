@@ -27,11 +27,10 @@ import (
 
 	// apps "k8s.io/api/apps/v1beta1"
 	// 	autoscaling "k8s.io/api/autoscaling/v2beta1"
-	// 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	"k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
-	// "k8s.io/api/policy/v1beta1"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -116,6 +115,8 @@ func (b *Builder) Build() []*Collector {
 }
 
 var availableCollectors = map[string]func(f *Builder) *Collector{
+	"configmaps":  func(b *Builder) *Collector { return b.buildConfigMapCollector() },
+	"cronjobs":    func(b *Builder) *Collector { return b.buildCronJobCollector() },
 	"daemonsets":  func(b *Builder) *Collector { return b.buildDaemonSetCollector() },
 	"deployments": func(b *Builder) *Collector { return b.buildDeploymentCollector() },
 	"jobs":        func(b *Builder) *Collector { return b.buildJobCollector() },
@@ -137,6 +138,36 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
 	// 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	//  "statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
+}
+
+func (b *Builder) buildConfigMapCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, configMapMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ConfigMap{}, store, b.namespaces, createConfigMapListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildCronJobCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, cronJobMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1beta1.CronJob{}, store, b.namespaces, createCronJobListWatch)
+
+	return NewCollector(store)
 }
 
 func (b *Builder) buildDaemonSetCollector() *Collector {

@@ -214,6 +214,12 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
 # HELP kube_persistentvolume_info Information about persistentvolume.
+# HELP kube_poddisruptionbudget_created Unix creation timestamp
+# HELP kube_poddisruptionbudget_status_current_healthy Current number of healthy pods
+# HELP kube_poddisruptionbudget_status_desired_healthy Minimum desired number of healthy pods
+# HELP kube_poddisruptionbudget_status_pod_disruptions_allowed Number of pod disruptions that are currently allowed
+# HELP kube_poddisruptionbudget_status_expected_pods Total number of pods counted by this disruption budget
+# HELP kube_poddisruptionbudget_status_observed_generation Most recent generation observed when updating this PDB status
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.

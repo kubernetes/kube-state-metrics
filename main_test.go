@@ -263,6 +263,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_replicationcontroller_status_observed_generation The generation observed by the ReplicationController controller.
 # HELP kube_replicationcontroller_spec_replicas Number of desired pods for a ReplicationController.
 # HELP kube_replicationcontroller_metadata_generation Sequence number representing a specific generation of the desired state.
+# HELP kube_resourcequota_created Unix creation timestamp
+# HELP kube_resourcequota Information about resource quota.
 # HELP kube_secret_info Information about secret.
 # HELP kube_secret_type Type about secret.
 # HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.

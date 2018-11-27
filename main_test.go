@@ -247,6 +247,14 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
+# HELP kube_replicaset_created Unix creation timestamp
+# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
+# HELP kube_replicaset_status_fully_labeled_replicas The number of fully labeled replicas per ReplicaSet.
+# HELP kube_replicaset_status_ready_replicas The number of ready replicas per ReplicaSet.
+# HELP kube_replicaset_status_observed_generation The generation observed by the ReplicaSet controller.
+# HELP kube_replicaset_spec_replicas Number of desired pods for a ReplicaSet.
+# HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
+# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
 # HELP kube_service_info Information about service.
 kube_service_info{namespace="default",service="service0",cluster_ip="",external_name="",load_balancer_ip=""} 1
 # HELP kube_service_created Unix creation timestamp

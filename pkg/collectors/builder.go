@@ -31,6 +31,7 @@ import (
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	"k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
+	policy "k8s.io/api/policy/v1beta1"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -125,15 +126,15 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"nodes":                  func(b *Builder) *Collector { return b.buildNodeCollector() },
 	"persistentvolumeclaims": func(b *Builder) *Collector { return b.buildPersistentVolumeClaimCollector() },
 	"persistentvolumes":      func(b *Builder) *Collector { return b.buildPersistentVolumeCollector() },
+	"poddisruptionbudgets":   func(b *Builder) *Collector { return b.buildPodDisruptionBudgetCollector() },
 	"pods":                   func(b *Builder) *Collector { return b.buildPodCollector() },
+	"replicasets":            func(b *Builder) *Collector { return b.buildReplicaSetCollector() },
 	"services":               func(b *Builder) *Collector { return b.buildServiceCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
 	// 	"cronjobs":                 func(b *Builder) *Collector { return b.buildCronJobCollector() },
 	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	// 	"horizontalpodautoscalers": func(b *Builder) *Collector { return b.buildHPACollector() },
 	// 	"jobs":                   func(b *Builder) *Collector { return b.buildJobCollector() },
-	// 	"poddisruptionbudgets":   func(b *Builder) *Collector { return b.buildPodDisruptionBudgetCollector() },
-	// 	"replicasets":            func(b *Builder) *Collector { return b.buildReplicaSetCollector() },
 	// 	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
 	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
 	// 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
@@ -286,6 +287,36 @@ func (b *Builder) buildPersistentVolumeCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolume{}, store, b.namespaces, createPersistentVolumeListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildPodDisruptionBudgetCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, podDisruptionBudgetMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &policy.PodDisruptionBudget{}, store, b.namespaces, createPodDisruptionBudgetListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildReplicaSetCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, replicaSetMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.ReplicaSet{}, store, b.namespaces, createReplicaSetListWatch)
 
 	return NewCollector(store)
 }

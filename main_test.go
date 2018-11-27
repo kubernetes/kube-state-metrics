@@ -214,6 +214,12 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
 # HELP kube_persistentvolume_info Information about persistentvolume.
+# HELP kube_poddisruptionbudget_created Unix creation timestamp
+# HELP kube_poddisruptionbudget_status_current_healthy Current number of healthy pods
+# HELP kube_poddisruptionbudget_status_desired_healthy Minimum desired number of healthy pods
+# HELP kube_poddisruptionbudget_status_pod_disruptions_allowed Number of pod disruptions that are currently allowed
+# HELP kube_poddisruptionbudget_status_expected_pods Total number of pods counted by this disruption budget
+# HELP kube_poddisruptionbudget_status_observed_generation Most recent generation observed when updating this PDB status
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
@@ -241,6 +247,14 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
+# HELP kube_replicaset_created Unix creation timestamp
+# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
+# HELP kube_replicaset_status_fully_labeled_replicas The number of fully labeled replicas per ReplicaSet.
+# HELP kube_replicaset_status_ready_replicas The number of ready replicas per ReplicaSet.
+# HELP kube_replicaset_status_observed_generation The generation observed by the ReplicaSet controller.
+# HELP kube_replicaset_spec_replicas Number of desired pods for a ReplicaSet.
+# HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
+# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
 # HELP kube_service_info Information about service.
 kube_service_info{namespace="default",service="service0",cluster_ip="",external_name="",load_balancer_ip=""} 1
 # HELP kube_service_created Unix creation timestamp

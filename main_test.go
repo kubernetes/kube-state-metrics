@@ -255,6 +255,14 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_replicaset_spec_replicas Number of desired pods for a ReplicaSet.
 # HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
 # HELP kube_replicaset_owner Information about the ReplicaSet's owner.
+# HELP kube_replicationcontroller_created Unix creation timestamp
+# HELP kube_replicationcontroller_status_replicas The number of replicas per ReplicationController.
+# HELP kube_replicationcontroller_status_fully_labeled_replicas The number of fully labeled replicas per ReplicationController.
+# HELP kube_replicationcontroller_status_ready_replicas The number of ready replicas per ReplicationController.
+# HELP kube_replicationcontroller_status_available_replicas The number of available replicas per ReplicationController.
+# HELP kube_replicationcontroller_status_observed_generation The generation observed by the ReplicationController controller.
+# HELP kube_replicationcontroller_spec_replicas Number of desired pods for a ReplicationController.
+# HELP kube_replicationcontroller_metadata_generation Sequence number representing a specific generation of the desired state.
 # HELP kube_secret_info Information about secret.
 # HELP kube_secret_type Type about secret.
 # HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.

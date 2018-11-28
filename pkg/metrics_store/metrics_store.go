@@ -8,10 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var (
-	helpPrefix = []byte("# HELP ")
-)
-
 // FamilyStringer represents a metric family that can be converted to its string
 // representation.
 type FamilyStringer interface {
@@ -29,9 +25,10 @@ type MetricsStore struct {
 	// grouped by metric families in order to zip families with their help text in
 	// MetricsStore.WriteAll().
 	metrics map[types.UID][]string
-	// helpTexts is later on zipped with with their corresponding metric
-	// families in MetricStore.WriteAll().
-	helpTexts []string
+	// headers contains the header (TYPE and HELP) of each metric family. It is
+	// later on zipped with with their corresponding metric families in
+	// MetricStore.WriteAll().
+	headers []string
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
@@ -39,10 +36,10 @@ type MetricsStore struct {
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(helpTexts []string, generateFunc func(interface{}) []FamilyStringer) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilyStringer) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
-		helpTexts:           helpTexts,
+		headers:             headers,
 		metrics:             map[types.UID][]string{},
 	}
 }
@@ -135,8 +132,8 @@ func (s *MetricsStore) WriteAll(w io.Writer) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	for i, help := range s.helpTexts {
-		w.Write(append(helpPrefix, []byte(help)...))
+	for i, help := range s.headers {
+		w.Write([]byte(help))
 		w.Write([]byte{'\n'})
 		for _, metricFamilies := range s.metrics {
 			w.Write([]byte(metricFamilies[i]))

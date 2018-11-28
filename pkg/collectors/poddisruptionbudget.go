@@ -33,6 +33,7 @@ var (
 	podDisruptionBudgetMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_poddisruptionbudget_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metrics.Family {
 				f := metrics.Family{}
@@ -49,6 +50,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_poddisruptionbudget_status_current_healthy",
+			Type: metrics.MetricTypeGauge,
 			Help: "Current number of healthy pods",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -59,6 +61,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_poddisruptionbudget_status_desired_healthy",
+			Type: metrics.MetricTypeGauge,
 			Help: "Minimum desired number of healthy pods",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -69,6 +72,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_poddisruptionbudget_status_pod_disruptions_allowed",
+			Type: metrics.MetricTypeGauge,
 			Help: "Number of pod disruptions that are currently allowed",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -79,6 +83,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_poddisruptionbudget_status_expected_pods",
+			Type: metrics.MetricTypeGauge,
 			Help: "Total number of pods counted by this disruption budget",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -89,6 +94,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_poddisruptionbudget_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
 			Help: "Most recent generation observed when updating this PDB status",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metrics.Family {
 				return metrics.Family{&metrics.Metric{

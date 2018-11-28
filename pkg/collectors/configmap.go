@@ -33,6 +33,7 @@ var (
 	configMapMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_configmap_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about configmap.",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metrics.Family {
 				return metrics.Family{
@@ -47,6 +48,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_configmap_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metrics.Family {
 				f := metrics.Family{}
@@ -65,6 +67,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_configmap_metadata_resource_version",
+			Type: metrics.MetricTypeGauge,
 			Help: "Resource version representing a specific version of the configmap.",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metrics.Family {
 				return metrics.Family{

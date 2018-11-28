@@ -36,6 +36,7 @@ var (
 	deploymentMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				f := metrics.Family{}
@@ -52,6 +53,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_status_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of replicas per deployment.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -62,6 +64,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_status_replicas_available",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of available replicas per deployment.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -72,6 +75,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_status_replicas_unavailable",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of unavailable replicas per deployment.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -82,6 +86,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_status_replicas_updated",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of updated replicas per deployment.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -92,6 +97,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
 			Help: "The generation observed by the deployment controller.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -102,6 +108,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_spec_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "Number of desired pods for a deployment.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -112,6 +119,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_spec_paused",
+			Type: metrics.MetricTypeGauge,
 			Help: "Whether the deployment is paused and will not be processed by the deployment controller.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -122,6 +130,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+			Type: metrics.MetricTypeGauge,
 			Help: "Maximum number of unavailable replicas during a rolling update of a deployment.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				if d.Spec.Strategy.RollingUpdate == nil {
@@ -141,6 +150,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_spec_strategy_rollingupdate_max_surge",
+			Type: metrics.MetricTypeGauge,
 			Help: "Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				if d.Spec.Strategy.RollingUpdate == nil {
@@ -160,6 +170,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_deployment_metadata_generation",
+			Type: metrics.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -170,6 +181,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: descDeploymentLabelsName,
+			Type: metrics.MetricTypeGauge,
 			Help: descDeploymentLabelsHelp,
 			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)

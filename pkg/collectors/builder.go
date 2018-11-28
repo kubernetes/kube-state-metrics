@@ -129,15 +129,13 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"poddisruptionbudgets":   func(b *Builder) *Collector { return b.buildPodDisruptionBudgetCollector() },
 	"pods":                   func(b *Builder) *Collector { return b.buildPodCollector() },
 	"replicasets":            func(b *Builder) *Collector { return b.buildReplicaSetCollector() },
+	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
+	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	"services":               func(b *Builder) *Collector { return b.buildServiceCollector() },
 	"statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
-	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
-	// 	"cronjobs":                 func(b *Builder) *Collector { return b.buildCronJobCollector() },
 	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	// 	"horizontalpodautoscalers": func(b *Builder) *Collector { return b.buildHPACollector() },
-	// 	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
-	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
 }
 
 func (b *Builder) buildConfigMapCollector() *Collector {
@@ -316,6 +314,36 @@ func (b *Builder) buildReplicaSetCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.ReplicaSet{}, store, b.namespaces, createReplicaSetListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildReplicationControllerCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, replicationControllerMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ReplicationController{}, store, b.namespaces, createReplicationControllerListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildResourceQuotaCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, resourceQuotaMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ResourceQuota{}, store, b.namespaces, createResourceQuotaListWatch)
 
 	return NewCollector(store)
 }

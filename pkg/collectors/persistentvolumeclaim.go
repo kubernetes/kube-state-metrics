@@ -35,6 +35,7 @@ var (
 	persistentVolumeClaimMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: descPersistentVolumeClaimLabelsName,
+			Type: metrics.MetricTypeGauge,
 			Help: descPersistentVolumeClaimLabelsHelp,
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
@@ -48,6 +49,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_persistentvolumeclaim_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about persistent volume claim.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
 				storageClassName := getPersistentVolumeClaimClass(p)
@@ -62,6 +64,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_persistentvolumeclaim_status_phase",
+			Type: metrics.MetricTypeGauge,
 			Help: "The phase the persistent volume claim is currently in.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
 				f := metrics.Family{}
@@ -93,6 +96,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_persistentvolumeclaim_resource_requests_storage_bytes",
+			Type: metrics.MetricTypeGauge,
 			Help: "The capacity of storage requested by the persistent volume claim.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
 				f := metrics.Family{}

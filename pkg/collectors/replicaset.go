@@ -35,6 +35,7 @@ var (
 	replicaSetMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				f := metrics.Family{}
@@ -51,6 +52,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_status_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of replicas per ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -61,6 +63,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_status_fully_labeled_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of fully labeled replicas per ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -71,6 +74,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_status_ready_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of ready replicas per ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -81,6 +85,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
 			Help: "The generation observed by the ReplicaSet controller.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -91,6 +96,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_spec_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "Number of desired pods for a ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				f := metrics.Family{}
@@ -107,6 +113,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_metadata_generation",
+			Type: metrics.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -117,6 +124,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicaset_owner",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about the ReplicaSet's owner.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
 				f := metrics.Family{}

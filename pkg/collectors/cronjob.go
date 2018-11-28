@@ -40,6 +40,7 @@ var (
 	cronJobMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: descCronJobLabelsName,
+			Type: metrics.MetricTypeGauge,
 			Help: descCronJobLabelsHelp,
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
@@ -55,6 +56,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_cronjob_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Info about cronjob.",
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				return metrics.Family{
@@ -69,6 +71,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_cronjob_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				f := metrics.Family{}
@@ -86,6 +89,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_cronjob_status_active",
+			Type: metrics.MetricTypeGauge,
 			Help: "Active holds pointers to currently running jobs.",
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				return metrics.Family{
@@ -100,6 +104,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_cronjob_status_last_schedule_time",
+			Type: metrics.MetricTypeGauge,
 			Help: "LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				f := metrics.Family{}
@@ -118,6 +123,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_cronjob_spec_suspend",
+			Type: metrics.MetricTypeGauge,
 			Help: "Suspend flag tells the controller to suspend subsequent executions.",
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				f := metrics.Family{}
@@ -136,6 +142,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_cronjob_spec_starting_deadline_seconds",
+			Type: metrics.MetricTypeGauge,
 			Help: "Deadline in seconds for starting the job if it misses scheduled time for any reason.",
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				f := metrics.Family{}
@@ -155,6 +162,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_cronjob_next_schedule_time",
+			Type: metrics.MetricTypeGauge,
 			Help: "Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
 			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
 				f := metrics.Family{}

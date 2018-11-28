@@ -33,6 +33,7 @@ var (
 	resourceQuotaMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_resourcequota_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metrics.Family {
 				f := metrics.Family{}
@@ -49,6 +50,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_resourcequota",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about resource quota.",
 			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metrics.Family {
 				f := metrics.Family{}

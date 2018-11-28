@@ -35,6 +35,7 @@ var (
 	jobMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: descJobLabelsName,
+			Type: metrics.MetricTypeGauge,
 			Help: descJobLabelsHelp,
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
@@ -48,6 +49,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about job.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -58,6 +60,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}
@@ -74,6 +77,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_spec_parallelism",
+			Type: metrics.MetricTypeGauge,
 			Help: "The maximum desired number of pods the job should run at any given time.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}
@@ -90,6 +94,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_spec_completions",
+			Type: metrics.MetricTypeGauge,
 			Help: "The desired number of successfully finished pods the job should be run with.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}
@@ -106,6 +111,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_spec_active_deadline_seconds",
+			Type: metrics.MetricTypeGauge,
 			Help: "The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}
@@ -122,6 +128,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_status_succeeded",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of pods which reached Phase Succeeded.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -132,6 +139,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_status_failed",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of pods which reached Phase Failed.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -142,6 +150,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_status_active",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of actively running pods.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -152,6 +161,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_complete",
+			Type: metrics.MetricTypeGauge,
 			Help: "The job has completed its execution.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}
@@ -172,6 +182,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_failed",
+			Type: metrics.MetricTypeGauge,
 			Help: "The job has failed its execution.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}
@@ -193,6 +204,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_status_start_time",
+			Type: metrics.MetricTypeGauge,
 			Help: "StartTime represents time when the job was acknowledged by the Job Manager.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}
@@ -209,6 +221,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_job_status_completion_time",
+			Type: metrics.MetricTypeGauge,
 			Help: "CompletionTime represents time when the job was completed.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
 				f := metrics.Family{}

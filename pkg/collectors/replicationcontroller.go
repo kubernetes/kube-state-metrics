@@ -33,6 +33,7 @@ var (
 	replicationControllerMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				f := metrics.Family{}
@@ -49,6 +50,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_status_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -59,6 +61,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_status_fully_labeled_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of fully labeled replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -69,6 +72,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_status_ready_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of ready replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -79,6 +83,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_status_available_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of available replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -89,6 +94,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
 			Help: "The generation observed by the ReplicationController controller.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -99,6 +105,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_spec_replicas",
+			Type: metrics.MetricTypeGauge,
 			Help: "Number of desired pods for a ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				f := metrics.Family{}
@@ -115,6 +122,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_replicationcontroller_metadata_generation",
+			Type: metrics.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
 				return metrics.Family{&metrics.Metric{

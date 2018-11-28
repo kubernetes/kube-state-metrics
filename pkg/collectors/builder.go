@@ -142,10 +142,10 @@ func (b *Builder) buildConfigMapCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, configMapMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ConfigMap{}, store, b.namespaces, createConfigMapListWatch)
@@ -157,10 +157,10 @@ func (b *Builder) buildCronJobCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, cronJobMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1beta1.CronJob{}, store, b.namespaces, createCronJobListWatch)
@@ -172,10 +172,10 @@ func (b *Builder) buildDaemonSetCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, daemonSetMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.DaemonSet{}, store, b.namespaces, createDaemonSetListWatch)
@@ -187,10 +187,10 @@ func (b *Builder) buildDeploymentCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, deploymentMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Deployment{}, store, b.namespaces, createDeploymentListWatch)
@@ -202,10 +202,10 @@ func (b *Builder) buildEndpointsCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, endpointMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Endpoints{}, store, b.namespaces, createEndpointsListWatch)
@@ -217,10 +217,10 @@ func (b *Builder) buildHPACollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, hpaMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &autoscaling.HorizontalPodAutoscaler{}, store, b.namespaces, createHPAListWatch)
@@ -232,10 +232,10 @@ func (b *Builder) buildJobCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, jobMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1.Job{}, store, b.namespaces, createJobListWatch)
@@ -247,10 +247,10 @@ func (b *Builder) buildLimitRangeCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, limitRangeMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
@@ -262,10 +262,10 @@ func (b *Builder) buildNamespaceCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, namespaceMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Namespace{}, store, b.namespaces, createNamespaceListWatch)
@@ -277,10 +277,10 @@ func (b *Builder) buildNodeCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, nodeMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Node{}, store, b.namespaces, createNodeListWatch)
@@ -292,10 +292,10 @@ func (b *Builder) buildPersistentVolumeClaimCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, persistentVolumeClaimMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolumeClaim{}, store, b.namespaces, createPersistentVolumeClaimListWatch)
@@ -307,10 +307,10 @@ func (b *Builder) buildPersistentVolumeCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, persistentVolumeMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolume{}, store, b.namespaces, createPersistentVolumeListWatch)
@@ -322,10 +322,10 @@ func (b *Builder) buildPodDisruptionBudgetCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, podDisruptionBudgetMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &policy.PodDisruptionBudget{}, store, b.namespaces, createPodDisruptionBudgetListWatch)
@@ -337,10 +337,10 @@ func (b *Builder) buildReplicaSetCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, replicaSetMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.ReplicaSet{}, store, b.namespaces, createReplicaSetListWatch)
@@ -352,10 +352,10 @@ func (b *Builder) buildReplicationControllerCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, replicationControllerMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ReplicationController{}, store, b.namespaces, createReplicationControllerListWatch)
@@ -367,10 +367,10 @@ func (b *Builder) buildResourceQuotaCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, resourceQuotaMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ResourceQuota{}, store, b.namespaces, createResourceQuotaListWatch)
@@ -382,10 +382,10 @@ func (b *Builder) buildSecretCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, secretMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Secret{}, store, b.namespaces, createSecretListWatch)
@@ -397,10 +397,10 @@ func (b *Builder) buildServiceCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, serviceMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Service{}, store, b.namespaces, createServiceListWatch)
@@ -412,10 +412,10 @@ func (b *Builder) buildStatefulSetCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, statefulSetMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &apps.StatefulSet{}, store, b.namespaces, createStatefulSetListWatch)
@@ -427,10 +427,10 @@ func (b *Builder) buildPodCollector() *Collector {
 	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, podMetricFamilies)
 	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
 
-	helpTexts := extractHelpText(filteredMetricFamilies)
+	familyHeaders := extractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
-		helpTexts,
+		familyHeaders,
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Pod{}, store, b.namespaces, createPodListWatch)
@@ -438,13 +438,26 @@ func (b *Builder) buildPodCollector() *Collector {
 	return NewCollector(store)
 }
 
-func extractHelpText(families []metrics.FamilyGenerator) []string {
-	help := make([]string, len(families))
+func extractMetricFamilyHeaders(families []metrics.FamilyGenerator) []string {
+	headers := make([]string, len(families))
+
 	for i, f := range families {
-		help[i] = f.Name + " " + f.Help
+		header := strings.Builder{}
+
+		header.WriteString("# HELP ")
+		header.WriteString(f.Name)
+		header.WriteByte(' ')
+		header.WriteString(f.Help)
+		header.WriteByte('\n')
+		header.WriteString("# TYPE ")
+		header.WriteString(f.Name)
+		header.WriteByte(' ')
+		header.WriteString(string(f.Type))
+
+		headers[i] = header.String()
 	}
 
-	return help
+	return headers
 }
 
 // composeMetricGenFuncs takes a slice of metric families and returns a function

@@ -37,6 +37,7 @@ var (
 	nodeMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_node_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -63,6 +64,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -79,6 +81,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: descNodeLabelsName,
+			Type: metrics.MetricTypeGauge,
 			Help: descNodeLabelsHelp,
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
@@ -92,6 +95,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_spec_unschedulable",
+			Type: metrics.MetricTypeGauge,
 			Help: "Whether a node can schedule new pods.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				return metrics.Family{&metrics.Metric{
@@ -102,6 +106,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_spec_taint",
+			Type: metrics.MetricTypeGauge,
 			Help: "The taint of a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -127,6 +132,7 @@ var (
 		// conditions in future.
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_condition",
+			Type: metrics.MetricTypeGauge,
 			Help: "The condition of a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -147,6 +153,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_phase",
+			Type: metrics.MetricTypeGauge,
 			Help: "The phase the node is currently in.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -179,6 +186,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_capacity",
+			Type: metrics.MetricTypeGauge,
 			Help: "The capacity for different resources of a node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -255,6 +263,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_capacity_pods",
+			Type: metrics.MetricTypeGauge,
 			Help: "The total pod resources of the node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -272,6 +281,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_capacity_cpu_cores",
+			Type: metrics.MetricTypeGauge,
 			Help: "The total CPU resources of the node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -289,6 +299,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_capacity_memory_bytes",
+			Type: metrics.MetricTypeGauge,
 			Help: "The total memory resources of the node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -306,6 +317,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_allocatable",
+			Type: metrics.MetricTypeGauge,
 			Help: "The allocatable for different resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -383,6 +395,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_allocatable_pods",
+			Type: metrics.MetricTypeGauge,
 			Help: "The pod resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -400,6 +413,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_allocatable_cpu_cores",
+			Type: metrics.MetricTypeGauge,
 			Help: "The CPU resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}
@@ -417,6 +431,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_node_status_allocatable_memory_bytes",
+			Type: metrics.MetricTypeGauge,
 			Help: "The memory resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
 				f := metrics.Family{}

@@ -268,7 +268,18 @@ kube_service_spec_type{namespace="default",service="service0",type=""} 1
 # HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
 kube_service_labels{namespace="default",service="service0"} 1
 # HELP kube_service_spec_external_ip Service external ips. One series for each ip
-# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status`
+# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status
+# HELP kube_statefulset_created Unix creation timestamp
+# HELP kube_statefulset_status_replicas The number of replicas per StatefulSet.
+# HELP kube_statefulset_status_replicas_current The number of current replicas per StatefulSet.
+# HELP kube_statefulset_status_replicas_ready The number of ready replicas per StatefulSet.
+# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
+# HELP kube_statefulset_status_observed_generation The generation observed by the StatefulSet controller.
+# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
+# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
+# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_statefulset_status_current_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
+# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)`
 
 	got := strings.TrimSpace(string(body))
 

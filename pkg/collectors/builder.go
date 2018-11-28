@@ -129,6 +129,7 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"poddisruptionbudgets":   func(b *Builder) *Collector { return b.buildPodDisruptionBudgetCollector() },
 	"pods":                   func(b *Builder) *Collector { return b.buildPodCollector() },
 	"replicasets":            func(b *Builder) *Collector { return b.buildReplicaSetCollector() },
+	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	"services":               func(b *Builder) *Collector { return b.buildServiceCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
 	// 	"cronjobs":                 func(b *Builder) *Collector { return b.buildCronJobCollector() },
@@ -137,7 +138,6 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	// 	"jobs":                   func(b *Builder) *Collector { return b.buildJobCollector() },
 	// 	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
 	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
-	// 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	//  "statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 }
 
@@ -317,6 +317,21 @@ func (b *Builder) buildReplicaSetCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.ReplicaSet{}, store, b.namespaces, createReplicaSetListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildSecretCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, secretMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Secret{}, store, b.namespaces, createSecretListWatch)
 
 	return NewCollector(store)
 }

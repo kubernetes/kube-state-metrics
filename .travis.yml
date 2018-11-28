@@ -2,6 +2,9 @@ sudo: required
 
 language: go
 
+go:
+    - "1.10.3"
+
 install:
 - mkdir -p $HOME/gopath/src/k8s.io
 - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/kube-state-metrics

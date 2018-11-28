@@ -25,7 +25,7 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
 
-	// apps "k8s.io/api/apps/v1beta1"
+	apps "k8s.io/api/apps/v1beta1"
 	// 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
@@ -131,14 +131,13 @@ var availableCollectors = map[string]func(f *Builder) *Collector{
 	"replicasets":            func(b *Builder) *Collector { return b.buildReplicaSetCollector() },
 	"secrets":                func(b *Builder) *Collector { return b.buildSecretCollector() },
 	"services":               func(b *Builder) *Collector { return b.buildServiceCollector() },
+	"statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 	// 	"configmaps":               func(b *Builder) *Collector { return b.buildConfigMapCollector() },
 	// 	"cronjobs":                 func(b *Builder) *Collector { return b.buildCronJobCollector() },
 	// 	"endpoints":                func(b *Builder) *Collector { return b.buildEndpointsCollector() },
 	// 	"horizontalpodautoscalers": func(b *Builder) *Collector { return b.buildHPACollector() },
-	// 	"jobs":                   func(b *Builder) *Collector { return b.buildJobCollector() },
 	// 	"replicationcontrollers": func(b *Builder) *Collector { return b.buildReplicationControllerCollector() },
 	// 	"resourcequotas":         func(b *Builder) *Collector { return b.buildResourceQuotaCollector() },
-	//  "statefulsets":           func(b *Builder) *Collector { return b.buildStatefulSetCollector() },
 }
 
 func (b *Builder) buildConfigMapCollector() *Collector {
@@ -347,6 +346,21 @@ func (b *Builder) buildServiceCollector() *Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Service{}, store, b.namespaces, createServiceListWatch)
+
+	return NewCollector(store)
+}
+
+func (b *Builder) buildStatefulSetCollector() *Collector {
+	filteredMetricFamilies := filterMetricFamilies(b.whiteBlackList, statefulSetMetricFamilies)
+	composedMetricGenFuncs := composeMetricGenFuncs(filteredMetricFamilies)
+
+	helpTexts := extractHelpText(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		helpTexts,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &apps.StatefulSet{}, store, b.namespaces, createStatefulSetListWatch)
 
 	return NewCollector(store)
 }

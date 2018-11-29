@@ -205,7 +205,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generateStatefulSetMetrics
+		c.Func = composeMetricGenFuncs(statefulSetMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -17,16 +17,10 @@ limitations under the License.
 package metrics
 
 import (
-	"errors"
 	"math"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
-
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 const (
@@ -42,30 +36,56 @@ var (
 	}
 )
 
-// Metric represents a single line entry in the /metrics export format
-type Metric string
+// FamilyGenerator provides everything needed to generate a metric family with a
+// Kubernetes object.
+type FamilyGenerator struct {
+	Name         string
+	Help         string
+	Type         MetricType
+	GenerateFunc func(obj interface{}) Family
+}
 
-// NewMetric returns a new Metric
-func NewMetric(name string, labelKeys []string, labelValues []string, value float64) (*Metric, error) {
-	if len(labelKeys) != len(labelValues) {
-		return nil, errors.New("expected labelKeys to be of same length as labelValues")
+// Family represents a set of metrics with the same name and help text.
+type Family []*Metric
+
+// String returns the given Family in its string representation.
+func (f Family) String() string {
+	b := strings.Builder{}
+	for _, m := range f {
+		m.Write(&b)
 	}
 
-	m := strings.Builder{}
+	return b.String()
+}
 
-	m.WriteString(name)
+// MetricType represents the type of a metric e.g. a counter. See
+// https://prometheus.io/docs/concepts/metric_types/.
+type MetricType string
 
-	labelsToString(&m, labelKeys, labelValues)
+// MetricTypeGauge defines a Prometheus gauge.
+var MetricTypeGauge MetricType = "gauge"
 
-	m.WriteByte(' ')
+// MetricTypeCounter defines a Prometheus counter.
+var MetricTypeCounter MetricType = "counter"
 
-	writeFloat(&m, value)
+// Metric represents a single time series.
+type Metric struct {
+	Name        string
+	LabelKeys   []string
+	LabelValues []string
+	Value       float64
+}
 
-	m.WriteByte('\n')
+func (m *Metric) Write(s *strings.Builder) {
+	if len(m.LabelKeys) != len(m.LabelValues) {
+		panic("expected labelKeys to be of same length as labelValues")
+	}
 
-	metric := Metric(m.String())
-
-	return &metric, nil
+	s.WriteString(m.Name)
+	labelsToString(s, m.LabelKeys, m.LabelValues)
+	s.WriteByte(' ')
+	writeFloat(s, m.Value)
+	s.WriteByte('\n')
 }
 
 func labelsToString(m *strings.Builder, keys, values []string) {
@@ -120,65 +140,4 @@ func writeFloat(w *strings.Builder, f float64) {
 		w.Write(*bp)
 		numBufPool.Put(bp)
 	}
-}
-
-// MetricFamilyDesc represents the HELP and TYPE string above a metric family list
-type MetricFamilyDesc string
-
-type gathererFunc func() ([]*dto.MetricFamily, error)
-
-func (f gathererFunc) Gather() ([]*dto.MetricFamily, error) {
-	return f()
-}
-
-// FilteredGatherer wraps a prometheus.Gatherer to filter metrics based on a
-// white or blacklist. Whitelist and blacklist are mutually exclusive.
-// TODO: Bring white and blacklisting back
-func FilteredGatherer(r prometheus.Gatherer, whitelist options.MetricSet, blacklist options.MetricSet) prometheus.Gatherer {
-	whitelistEnabled := !whitelist.IsEmpty()
-	blacklistEnabled := !blacklist.IsEmpty()
-
-	if whitelistEnabled {
-		return gathererFunc(func() ([]*dto.MetricFamily, error) {
-			metricFamilies, err := r.Gather()
-			if err != nil {
-				return nil, err
-			}
-
-			newMetricFamilies := []*dto.MetricFamily{}
-			for _, metricFamily := range metricFamilies {
-				// deferencing this string may be a performance bottleneck
-				name := *metricFamily.Name
-				_, onWhitelist := whitelist[name]
-				if onWhitelist {
-					newMetricFamilies = append(newMetricFamilies, metricFamily)
-				}
-			}
-
-			return newMetricFamilies, nil
-		})
-	}
-
-	if blacklistEnabled {
-		return gathererFunc(func() ([]*dto.MetricFamily, error) {
-			metricFamilies, err := r.Gather()
-			if err != nil {
-				return nil, err
-			}
-
-			newMetricFamilies := []*dto.MetricFamily{}
-			for _, metricFamily := range metricFamilies {
-				name := *metricFamily.Name
-				_, onBlacklist := blacklist[name]
-				if onBlacklist {
-					continue
-				}
-				newMetricFamilies = append(newMetricFamilies, metricFamily)
-			}
-
-			return newMetricFamilies, nil
-		})
-	}
-
-	return r
 }

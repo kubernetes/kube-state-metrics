@@ -154,7 +154,7 @@ func TestDeploymentCollector(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = generateDeploymentMetrics
+		c.Func = composeMetricGenFuncs(deploymentMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -32,73 +32,170 @@ var (
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 
-	descStatefulSetCreated = metrics.NewMetricFamilyDef(
-		"kube_statefulset_created",
-		"Unix creation timestamp",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicas = metrics.NewMetricFamilyDef(
-		"kube_statefulset_status_replicas",
-		"The number of replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicasCurrent = metrics.NewMetricFamilyDef(
-		"kube_statefulset_status_replicas_current",
-		"The number of current replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicasReady = metrics.NewMetricFamilyDef(
-		"kube_statefulset_status_replicas_ready",
-		"The number of ready replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicasUpdated = metrics.NewMetricFamilyDef(
-		"kube_statefulset_status_replicas_updated",
-		"The number of updated replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusObservedGeneration = metrics.NewMetricFamilyDef(
-		"kube_statefulset_status_observed_generation",
-		"The generation observed by the StatefulSet controller.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetSpecReplicas = metrics.NewMetricFamilyDef(
-		"kube_statefulset_replicas",
-		"Number of desired pods for a StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetMetadataGeneration = metrics.NewMetricFamilyDef(
-		"kube_statefulset_metadata_generation",
-		"Sequence number representing a specific generation of the desired state for the StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetLabels = metrics.NewMetricFamilyDef(
-		descStatefulSetLabelsName,
-		descStatefulSetLabelsHelp,
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetCurrentRevision = metrics.NewMetricFamilyDef(
-		"kube_statefulset_status_current_revision",
-		"Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
-		append(descStatefulSetLabelsDefaultLabels, "revision"),
-		nil,
-	)
-	descStatefulSetUpdateRevision = metrics.NewMetricFamilyDef(
-		"kube_statefulset_status_update_revision",
-		"Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",
-		append(descStatefulSetLabelsDefaultLabels, "revision"),
-		nil,
-	)
+	statefulSetMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				f := metrics.Family{}
+
+				if !s.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_statefulset_created",
+						Value: float64(s.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas",
+					Value: float64(s.Status.Replicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas_current",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of current replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas_current",
+					Value: float64(s.Status.CurrentReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas_ready",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of ready replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas_ready",
+					Value: float64(s.Status.ReadyReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas_updated",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of updated replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas_updated",
+					Value: float64(s.Status.UpdatedReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "The generation observed by the StatefulSet controller.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				f := metrics.Family{}
+
+				if s.Status.ObservedGeneration != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_statefulset_status_observed_generation",
+						Value: float64(*s.Status.ObservedGeneration),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of desired pods for a StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				f := metrics.Family{}
+
+				if s.Spec.Replicas != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_statefulset_replicas",
+						Value: float64(*s.Spec.Replicas),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_metadata_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "Sequence number representing a specific generation of the desired state for the StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_metadata_generation",
+					Value: float64(s.ObjectMeta.Generation),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descStatefulSetLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descStatefulSetLabelsHelp,
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descStatefulSetLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_current_revision",
+			Type: metrics.MetricTypeGauge,
+			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_statefulset_status_current_revision",
+					LabelKeys:   []string{"revision"},
+					LabelValues: []string{s.Status.CurrentRevision},
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_update_revision",
+			Type: metrics.MetricTypeGauge,
+			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_statefulset_status_update_revision",
+					LabelKeys:   []string{"revision"},
+					LabelValues: []string{s.Status.UpdateRevision},
+					Value:       1,
+				}}
+			}),
+		},
+	}
 )
+
+func wrapStatefulSetFunc(f func(*v1beta1.StatefulSet) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		statefulSet := obj.(*v1beta1.StatefulSet)
+
+		metricFamily := f(statefulSet)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descStatefulSetLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{statefulSet.Namespace, statefulSet.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createStatefulSetListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -109,53 +206,4 @@ func createStatefulSetListWatch(kubeClient clientset.Interface, ns string) cache
 			return kubeClient.AppsV1beta1().StatefulSets(ns).Watch(opts)
 		},
 	}
-}
-
-func statefulSetLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descStatefulSetLabelsName,
-		descStatefulSetLabelsHelp,
-		append(descStatefulSetLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func generateStatefulSetMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	sPointer := obj.(*v1beta1.StatefulSet)
-	s := *sPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{s.Namespace, s.Name}, lv...)
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-	if !s.CreationTimestamp.IsZero() {
-		addGauge(descStatefulSetCreated, float64(s.CreationTimestamp.Unix()))
-	}
-	addGauge(descStatefulSetStatusReplicas, float64(s.Status.Replicas))
-	addGauge(descStatefulSetStatusReplicasCurrent, float64(s.Status.CurrentReplicas))
-	addGauge(descStatefulSetStatusReplicasReady, float64(s.Status.ReadyReplicas))
-	addGauge(descStatefulSetStatusReplicasUpdated, float64(s.Status.UpdatedReplicas))
-	if s.Status.ObservedGeneration != nil {
-		addGauge(descStatefulSetStatusObservedGeneration, float64(*s.Status.ObservedGeneration))
-	}
-
-	if s.Spec.Replicas != nil {
-		addGauge(descStatefulSetSpecReplicas, float64(*s.Spec.Replicas))
-	}
-	addGauge(descStatefulSetMetadataGeneration, float64(s.ObjectMeta.Generation))
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-	addGauge(statefulSetLabelsDesc(labelKeys), 1, labelValues...)
-
-	addGauge(descStatefulSetCurrentRevision, 1, s.Status.CurrentRevision)
-	addGauge(descStatefulSetUpdateRevision, 1, s.Status.UpdateRevision)
-	return ms
 }

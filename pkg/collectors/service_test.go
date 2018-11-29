@@ -199,7 +199,7 @@ func TestServiceCollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generateServiceMetrics
+		c.Func = composeMetricGenFuncs(serviceMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

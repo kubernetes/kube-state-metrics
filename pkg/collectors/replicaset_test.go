@@ -118,7 +118,7 @@ func TestReplicaSetCollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generateReplicaSetMetrics
+		c.Func = composeMetricGenFuncs(replicaSetMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

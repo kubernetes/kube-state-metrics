@@ -28,23 +28,71 @@ import (
 )
 
 var (
-	descResourceQuotaLabelsDefaultLabels = []string{"resourcequota", "namespace"}
+	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
-	descResourceQuotaCreated = metrics.NewMetricFamilyDef(
-		"kube_resourcequota_created",
-		"Unix creation timestamp",
-		descResourceQuotaLabelsDefaultLabels,
-		nil,
-	)
-	descResourceQuota = metrics.NewMetricFamilyDef(
-		"kube_resourcequota",
-		"Information about resource quota.",
-		append(descResourceQuotaLabelsDefaultLabels,
-			"resource",
-			"type",
-		), nil,
-	)
+	resourceQuotaMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_resourcequota_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metrics.Family {
+				f := metrics.Family{}
+
+				if !r.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_resourcequota_created",
+						Value: float64(r.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_resourcequota",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about resource quota.",
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metrics.Family {
+				f := metrics.Family{}
+
+				for res, qty := range r.Status.Hard {
+					f = append(f, &metrics.Metric{
+						LabelValues: []string{string(res), "hard"},
+						Value:       float64(qty.MilliValue()) / 1000,
+					})
+				}
+				for res, qty := range r.Status.Used {
+					f = append(f, &metrics.Metric{
+						LabelValues: []string{string(res), "used"},
+						Value:       float64(qty.MilliValue()) / 1000,
+					})
+				}
+
+				for _, m := range f {
+					m.Name = "kube_resourcequota"
+					m.LabelKeys = []string{"resource", "type"}
+				}
+
+				return f
+			}),
+		},
+	}
 )
+
+func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		resourceQuota := obj.(*v1.ResourceQuota)
+
+		metricFamily := f(resourceQuota)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descResourceQuotaLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -55,34 +103,4 @@ func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string) cac
 			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(opts)
 		},
 	}
-}
-
-func generateResourceQuotaMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	rPointer := obj.(*v1.ResourceQuota)
-	r := *rPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{r.Name, r.Namespace}, lv...)
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-
-	if !r.CreationTimestamp.IsZero() {
-		addGauge(descResourceQuotaCreated, float64(r.CreationTimestamp.Unix()))
-	}
-	for res, qty := range r.Status.Hard {
-		addGauge(descResourceQuota, float64(qty.MilliValue())/1000, string(res), "hard")
-	}
-	for res, qty := range r.Status.Used {
-		addGauge(descResourceQuota, float64(qty.MilliValue())/1000, string(res), "used")
-	}
-
-	return ms
 }

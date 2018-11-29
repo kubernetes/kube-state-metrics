@@ -28,21 +28,96 @@ import (
 )
 
 var (
-	descLimitRangeLabelsDefaultLabels = []string{"limitrange", "namespace"}
-	descLimitRange                    = metrics.NewMetricFamilyDef(
-		"kube_limitrange",
-		"Information about limit range.",
-		append(descLimitRangeLabelsDefaultLabels, "resource", "type", "constraint"),
-		nil,
-	)
+	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
 
-	descLimitRangeCreated = metrics.NewMetricFamilyDef(
-		"kube_limitrange_created",
-		"Unix creation timestamp",
-		descLimitRangeLabelsDefaultLabels,
-		nil,
-	)
+	limitRangeMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_limitrange",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about limit range.",
+			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metrics.Family {
+				f := metrics.Family{}
+
+				rawLimitRanges := r.Spec.Limits
+				for _, rawLimitRange := range rawLimitRanges {
+					for resource, min := range rawLimitRange.Min {
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{string(resource), string(rawLimitRange.Type), "min"},
+							Value:       float64(min.MilliValue()) / 1000,
+						})
+					}
+
+					for resource, max := range rawLimitRange.Max {
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{string(resource), string(rawLimitRange.Type), "max"},
+							Value:       float64(max.MilliValue()) / 1000,
+						})
+					}
+
+					for resource, df := range rawLimitRange.Default {
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{string(resource), string(rawLimitRange.Type), "default"},
+							Value:       float64(df.MilliValue()) / 1000,
+						})
+					}
+
+					for resource, dfR := range rawLimitRange.DefaultRequest {
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{string(resource), string(rawLimitRange.Type), "defaultRequest"},
+							Value:       float64(dfR.MilliValue()) / 1000,
+						})
+					}
+
+					for resource, mLR := range rawLimitRange.MaxLimitRequestRatio {
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{string(resource), string(rawLimitRange.Type), "maxLimitRequestRatio"},
+							Value:       float64(mLR.MilliValue()) / 1000,
+						})
+					}
+				}
+
+				for _, m := range f {
+					m.Name = "kube_limitrange"
+					m.LabelKeys = []string{"resource", "type", "constraint"}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_limitrange_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metrics.Family {
+				f := metrics.Family{}
+
+				if !r.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_limitrange_created",
+						Value: float64(r.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+	}
 )
+
+func wrapLimitRangeFunc(f func(*v1.LimitRange) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		limitRange := obj.(*v1.LimitRange)
+
+		metricFamily := f(limitRange)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descLimitRangeLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{limitRange.Namespace, limitRange.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createLimitRangeListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -53,51 +128,4 @@ func createLimitRangeListWatch(kubeClient clientset.Interface, ns string) cache.
 			return kubeClient.CoreV1().LimitRanges(ns).Watch(opts)
 		},
 	}
-}
-func generateLimitRangeMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	lPointer := obj.(*v1.LimitRange)
-	l := *lPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{l.Name, l.Namespace}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-	if !l.CreationTimestamp.IsZero() {
-		addGauge(descLimitRangeCreated, float64(l.CreationTimestamp.Unix()))
-	}
-
-	rawLimitRanges := l.Spec.Limits
-	for _, rawLimitRange := range rawLimitRanges {
-		for resource, min := range rawLimitRange.Min {
-			addGauge(descLimitRange, float64(min.MilliValue())/1000, string(resource), string(rawLimitRange.Type), "min")
-		}
-
-		for resource, max := range rawLimitRange.Max {
-			addGauge(descLimitRange, float64(max.MilliValue())/1000, string(resource), string(rawLimitRange.Type), "max")
-		}
-
-		for resource, df := range rawLimitRange.Default {
-			addGauge(descLimitRange, float64(df.MilliValue())/1000, string(resource), string(rawLimitRange.Type), "default")
-		}
-
-		for resource, dfR := range rawLimitRange.DefaultRequest {
-			addGauge(descLimitRange, float64(dfR.MilliValue())/1000, string(resource), string(rawLimitRange.Type), "defaultRequest")
-		}
-
-		for resource, mLR := range rawLimitRange.MaxLimitRequestRatio {
-			addGauge(descLimitRange, float64(mLR.MilliValue())/1000, string(resource), string(rawLimitRange.Type), "maxLimitRequestRatio")
-		}
-
-	}
-
-	return ms
 }

@@ -32,41 +32,97 @@ var (
 	descEndpointLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 
-	descEndpointInfo = metrics.NewMetricFamilyDef(
-		"kube_endpoint_info",
-		"Information about endpoint.",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+	endpointMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about endpoint.",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_endpoint_info",
+					Value: 1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				f := metrics.Family{}
 
-	descEndpointCreated = metrics.NewMetricFamilyDef(
-		"kube_endpoint_created",
-		"Unix creation timestamp",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+				if !e.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_endpoint_created",
+						Value: float64(e.CreationTimestamp.Unix()),
+					})
+				}
 
-	descEndpointLabels = metrics.NewMetricFamilyDef(
-		descEndpointLabelsName,
-		descEndpointLabelsHelp,
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descEndpointLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descEndpointLabelsHelp,
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descEndpointLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_address_available",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of addresses available in endpoint.",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				var available int
+				for _, s := range e.Subsets {
+					available += len(s.Addresses) * len(s.Ports)
+				}
 
-	descEndpointAddressAvailable = metrics.NewMetricFamilyDef(
-		"kube_endpoint_address_available",
-		"Number of addresses available in endpoint.",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
-
-	descEndpointAddressNotReady = metrics.NewMetricFamilyDef(
-		"kube_endpoint_address_not_ready",
-		"Number of addresses not ready in endpoint",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_endpoint_address_available",
+					Value: float64(available),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_address_not_ready",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of addresses not ready in endpoint",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				var notReady int
+				for _, s := range e.Subsets {
+					notReady += len(s.NotReadyAddresses) * len(s.Ports)
+				}
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_endpoint_address_not_ready",
+					Value: float64(notReady),
+				}}
+			}),
+		},
+	}
 )
+
+func wrapEndpointFunc(f func(*v1.Endpoints) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		endpoint := obj.(*v1.Endpoints)
+
+		metricFamily := f(endpoint)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descEndpointLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{endpoint.Namespace, endpoint.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createEndpointsListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -77,56 +133,4 @@ func createEndpointsListWatch(kubeClient clientset.Interface, ns string) cache.L
 			return kubeClient.CoreV1().Endpoints(ns).Watch(opts)
 		},
 	}
-}
-
-func generateEndpointsMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	ePointer := obj.(*v1.Endpoints)
-	e := *ePointer
-
-	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{e.Namespace, e.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		addConstMetric(desc, v, lv...)
-	}
-
-	addGauge(descEndpointInfo, 1)
-	if !e.CreationTimestamp.IsZero() {
-		addGauge(descEndpointCreated, float64(e.CreationTimestamp.Unix()))
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
-	addGauge(endpointLabelsDesc(labelKeys), 1, labelValues...)
-
-	var available int
-	for _, s := range e.Subsets {
-		available += len(s.Addresses) * len(s.Ports)
-	}
-	addGauge(descEndpointAddressAvailable, float64(available))
-
-	var notReady int
-	for _, s := range e.Subsets {
-		notReady += len(s.NotReadyAddresses) * len(s.Ports)
-	}
-	addGauge(descEndpointAddressNotReady, float64(notReady))
-
-	return ms
-}
-
-func endpointLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descEndpointLabelsName,
-		descEndpointLabelsHelp,
-		append(descEndpointLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
 }

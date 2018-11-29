@@ -35,7 +35,7 @@ func TestReplicationControllerCollector(t *testing.T) {
 	const metadata = `
 		# HELP kube_replicationcontroller_created Unix creation timestamp
 		# TYPE kube_replicationcontroller_created gauge
-	  # HELP kube_replicationcontroller_metadata_generation Sequence number representing a specific generation of the desired state.
+		# HELP kube_replicationcontroller_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicationcontroller_metadata_generation gauge
 		# HELP kube_replicationcontroller_status_replicas The number of replicas per ReplicationController.
 		# TYPE kube_replicationcontroller_status_replicas gauge
@@ -111,7 +111,7 @@ func TestReplicationControllerCollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generateReplicationControllerMetrics
+		c.Func = composeMetricGenFuncs(replicationControllerMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

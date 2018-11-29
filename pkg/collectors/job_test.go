@@ -237,7 +237,7 @@ func TestJobCollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generateJobMetrics
+		c.Func = composeMetricGenFuncs(jobMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

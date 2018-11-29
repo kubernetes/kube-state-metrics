@@ -30,26 +30,57 @@ import (
 var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 
-	descConfigMapInfo = metrics.NewMetricFamilyDef(
-		"kube_configmap_info",
-		"Information about configmap.",
-		descConfigMapLabelsDefaultLabels,
-		nil,
-	)
+	configMapMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_configmap_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about configmap.",
+			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metrics.Family {
+				return metrics.Family{
+					&metrics.Metric{
+						Name:        "kube_configmap_info",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       1,
+					},
+				}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_configmap_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metrics.Family {
+				f := metrics.Family{}
 
-	descConfigMapCreated = metrics.NewMetricFamilyDef(
-		"kube_configmap_created",
-		"Unix creation timestamp",
-		descConfigMapLabelsDefaultLabels,
-		nil,
-	)
+				if !c.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:        "kube_configmap_created",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(c.CreationTimestamp.Unix()),
+					})
+				}
 
-	descConfigMapMetadataResourceVersion = metrics.NewMetricFamilyDef(
-		"kube_configmap_metadata_resource_version",
-		"Resource version representing a specific version of the configmap.",
-		append(descConfigMapLabelsDefaultLabels, "resource_version"),
-		nil,
-	)
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_configmap_metadata_resource_version",
+			Type: metrics.MetricTypeGauge,
+			Help: "Resource version representing a specific version of the configmap.",
+			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metrics.Family {
+				return metrics.Family{
+					&metrics.Metric{
+						Name:        "kube_configmap_metadata_resource_version",
+						LabelKeys:   []string{"resource_version"},
+						LabelValues: []string{string(c.ObjectMeta.ResourceVersion)},
+						Value:       1,
+					},
+				}
+			}),
+		},
+	}
 )
 
 func createConfigMapListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
@@ -63,33 +94,17 @@ func createConfigMapListWatch(kubeClient clientset.Interface, ns string) cache.L
 	}
 }
 
-func generateConfigMapMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
+func wrapConfigMapFunc(f func(*v1.ConfigMap) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		configMap := obj.(*v1.ConfigMap)
 
-	// TODO: Refactor
-	mPointer := obj.(*v1.ConfigMap)
-	m := *mPointer
+		metricFamily := f(configMap)
 
-	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{m.Namespace, m.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descConfigMapLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{configMap.Namespace, configMap.Name}, m.LabelValues...)
 		}
 
-		ms = append(ms, m)
+		return metricFamily
 	}
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		addConstMetric(desc, v, lv...)
-	}
-	addGauge(descConfigMapInfo, 1)
-
-	if !m.CreationTimestamp.IsZero() {
-		addGauge(descConfigMapCreated, float64(m.CreationTimestamp.Unix()))
-	}
-
-	addGauge(descConfigMapMetadataResourceVersion, 1, string(m.ObjectMeta.ResourceVersion))
-
-	return ms
 }

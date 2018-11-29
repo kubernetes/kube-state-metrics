@@ -40,6 +40,7 @@ import (
 	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
+	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
 const (
@@ -73,14 +74,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	// TODO: Probably not necessary to pass all of opts into builder, right?
-	collectorBuilder := kcollectors.NewBuilder(context.TODO(), opts)
+	collectorBuilder := kcollectors.NewBuilder(context.TODO())
 
 	if len(opts.Collectors) == 0 {
 		glog.Info("Using default collectors")
-		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors)
+		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	} else {
-		collectorBuilder.WithEnabledCollectors(opts.Collectors)
+		collectorBuilder.WithEnabledCollectors(opts.Collectors.AsSlice())
 	}
 
 	if len(opts.Namespaces) == 0 {
@@ -95,18 +95,34 @@ func main() {
 		collectorBuilder.WithNamespaces(opts.Namespaces)
 	}
 
-	if opts.MetricWhitelist.IsEmpty() && opts.MetricBlacklist.IsEmpty() {
-		glog.Info("No metric whitelist or blacklist set. No filtering of metrics will be done.")
+	whiteBlackList, err := whiteblacklist.New(opts.MetricWhitelist, opts.MetricBlacklist)
+	if err != nil {
+		glog.Fatal(err)
 	}
-	if !opts.MetricWhitelist.IsEmpty() && !opts.MetricBlacklist.IsEmpty() {
-		glog.Fatal("Whitelist and blacklist are both set. They are mutually exclusive, only one of them can be set.")
+
+	if opts.DisablePodNonGenericResourceMetrics {
+		whiteBlackList.Exclude([]string{
+			"kube_pod_container_resource_requests_cpu_cores",
+			"kube_pod_container_resource_requests_memory_bytes",
+			"kube_pod_container_resource_limits_cpu_cores",
+			"kube_pod_container_resource_limits_memory_bytes",
+		})
 	}
-	if !opts.MetricWhitelist.IsEmpty() {
-		glog.Infof("A metric whitelist has been configured. Only the following metrics will be exposed: %s.", opts.MetricWhitelist.String())
+
+	if opts.DisableNodeNonGenericResourceMetrics {
+		whiteBlackList.Exclude([]string{
+			"kube_node_status_capacity_cpu_cores",
+			"kube_node_status_capacity_memory_bytes",
+			"kube_node_status_capacity_pods",
+			"kube_node_status_allocatable_cpu_cores",
+			"kube_node_status_allocatable_memory_bytes",
+			"kube_node_status_allocatable_pods",
+		})
 	}
-	if !opts.MetricBlacklist.IsEmpty() {
-		glog.Infof("A metric blacklist has been configured. The following metrics will not be exposed: %s.", opts.MetricBlacklist.String())
-	}
+
+	glog.Infof("metric white- blacklisting: %v", whiteBlackList.Status())
+
+	collectorBuilder.WithWhiteBlackList(whiteBlackList)
 
 	proc.StartReaper()
 
@@ -125,8 +141,6 @@ func main() {
 
 	collectors := collectorBuilder.Build()
 
-	// TODO: Reenable white and blacklisting
-	// metricsServer(metrics.FilteredGatherer(registry, opts.MetricWhitelist, opts.MetricBlacklist), opts.Host, opts.Port)
 	serveMetrics(collectors, opts.Host, opts.Port, opts.EnableGZIPEncoding)
 }
 
@@ -225,7 +239,7 @@ func serveMetrics(collectors []*kcollectors.Collector, host string, port int, en
 }
 
 type metricHandler struct {
-	c                  []*kcollectors.Collector
+	collectors         []*kcollectors.Collector
 	enableGZIPEncoding bool
 }
 
@@ -249,14 +263,8 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for _, c := range m.c {
-		for _, m := range c.Collect() {
-			_, err := fmt.Fprint(writer, *m)
-			if err != nil {
-				// TODO: Handle panic
-				panic(err)
-			}
-		}
+	for _, c := range m.collectors {
+		c.Collect(w)
 	}
 
 	// In case we gziped the response, we have to close the writer.

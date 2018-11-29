@@ -31,55 +31,149 @@ import (
 
 var (
 	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
-	descReplicaSetCreated             = metrics.NewMetricFamilyDef(
-		"kube_replicaset_created",
-		"Unix creation timestamp",
-		descReplicaSetLabelsDefaultLabels,
-		nil,
-	)
-	descReplicaSetStatusReplicas = metrics.NewMetricFamilyDef(
-		"kube_replicaset_status_replicas",
-		"The number of replicas per ReplicaSet.",
-		descReplicaSetLabelsDefaultLabels,
-		nil,
-	)
-	descReplicaSetStatusFullyLabeledReplicas = metrics.NewMetricFamilyDef(
-		"kube_replicaset_status_fully_labeled_replicas",
-		"The number of fully labeled replicas per ReplicaSet.",
-		descReplicaSetLabelsDefaultLabels,
-		nil,
-	)
-	descReplicaSetStatusReadyReplicas = metrics.NewMetricFamilyDef(
-		"kube_replicaset_status_ready_replicas",
-		"The number of ready replicas per ReplicaSet.",
-		descReplicaSetLabelsDefaultLabels,
-		nil,
-	)
-	descReplicaSetStatusObservedGeneration = metrics.NewMetricFamilyDef(
-		"kube_replicaset_status_observed_generation",
-		"The generation observed by the ReplicaSet controller.",
-		descReplicaSetLabelsDefaultLabels,
-		nil,
-	)
-	descReplicaSetSpecReplicas = metrics.NewMetricFamilyDef(
-		"kube_replicaset_spec_replicas",
-		"Number of desired pods for a ReplicaSet.",
-		descReplicaSetLabelsDefaultLabels,
-		nil,
-	)
-	descReplicaSetMetadataGeneration = metrics.NewMetricFamilyDef(
-		"kube_replicaset_metadata_generation",
-		"Sequence number representing a specific generation of the desired state.",
-		descReplicaSetLabelsDefaultLabels,
-		nil,
-	)
-	descReplicaSetOwner = metrics.NewMetricFamilyDef(
-		"kube_replicaset_owner",
-		"Information about the ReplicaSet's owner.",
-		append(descReplicaSetLabelsDefaultLabels, "owner_kind", "owner_name", "owner_is_controller"),
-		nil,
-	)
+
+	replicaSetMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				f := metrics.Family{}
+
+				if !r.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_replicaset_created",
+						Value: float64(r.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_status_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of replicas per ReplicaSet.",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicaset_status_replicas",
+					Value: float64(r.Status.Replicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_status_fully_labeled_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of fully labeled replicas per ReplicaSet.",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicaset_status_fully_labeled_replicas",
+					Value: float64(r.Status.FullyLabeledReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_status_ready_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of ready replicas per ReplicaSet.",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicaset_status_ready_replicas",
+					Value: float64(r.Status.ReadyReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "The generation observed by the ReplicaSet controller.",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicaset_status_observed_generation",
+					Value: float64(r.Status.ObservedGeneration),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_spec_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of desired pods for a ReplicaSet.",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				f := metrics.Family{}
+
+				if r.Spec.Replicas != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_replicaset_spec_replicas",
+						Value: float64(*r.Spec.Replicas),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_metadata_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "Sequence number representing a specific generation of the desired state.",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicaset_metadata_generation",
+					Value: float64(r.ObjectMeta.Generation),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicaset_owner",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about the ReplicaSet's owner.",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metrics.Family {
+				f := metrics.Family{}
+
+				owners := r.GetOwnerReferences()
+				if len(owners) == 0 {
+					f = append(f, &metrics.Metric{
+						LabelValues: []string{"<none>", "<none>", "<none>"},
+					})
+				} else {
+					for _, owner := range owners {
+						if owner.Controller != nil {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+							})
+						} else {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{owner.Kind, owner.Name, "false"},
+							})
+						}
+					}
+				}
+
+				for _, m := range f {
+					m.Name = "kube_replicaset_owner"
+					m.LabelKeys = []string{"owner_kind", "owner_name", "owner_is_controller"}
+					m.Value = 1
+				}
+
+				return f
+			}),
+		},
+	}
 )
+
+func wrapReplicaSetFunc(f func(*v1beta1.ReplicaSet) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		replicaSet := obj.(*v1beta1.ReplicaSet)
+
+		metricFamily := f(replicaSet)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descReplicaSetLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{replicaSet.Namespace, replicaSet.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createReplicaSetListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -90,50 +184,4 @@ func createReplicaSetListWatch(kubeClient clientset.Interface, ns string) cache.
 			return kubeClient.ExtensionsV1beta1().ReplicaSets(ns).Watch(opts)
 		},
 	}
-}
-
-func generateReplicaSetMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	rPointer := obj.(*v1beta1.ReplicaSet)
-	r := *rPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{r.Namespace, r.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-	if !r.CreationTimestamp.IsZero() {
-		addGauge(descReplicaSetCreated, float64(r.CreationTimestamp.Unix()))
-	}
-
-	owners := r.GetOwnerReferences()
-	if len(owners) == 0 {
-		addGauge(descReplicaSetOwner, 1, "<none>", "<none>", "<none>")
-	} else {
-		for _, owner := range owners {
-			if owner.Controller != nil {
-				addGauge(descReplicaSetOwner, 1, owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller))
-			} else {
-				addGauge(descReplicaSetOwner, 1, owner.Kind, owner.Name, "false")
-			}
-		}
-	}
-
-	addGauge(descReplicaSetStatusReplicas, float64(r.Status.Replicas))
-	addGauge(descReplicaSetStatusFullyLabeledReplicas, float64(r.Status.FullyLabeledReplicas))
-	addGauge(descReplicaSetStatusReadyReplicas, float64(r.Status.ReadyReplicas))
-	addGauge(descReplicaSetStatusObservedGeneration, float64(r.Status.ObservedGeneration))
-	if r.Spec.Replicas != nil {
-		addGauge(descReplicaSetSpecReplicas, float64(*r.Spec.Replicas))
-	}
-	addGauge(descReplicaSetMetadataGeneration, float64(r.ObjectMeta.Generation))
-
-	return ms
 }

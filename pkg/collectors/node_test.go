@@ -23,7 +23,6 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/metrics"
 )
 
 func TestNodeCollector(t *testing.T) {
@@ -303,9 +302,7 @@ func TestNodeCollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = func(obj interface{}) []*metrics.Metric {
-			return generateNodeMetrics(false, obj)
-		}
+		c.Func = composeMetricGenFuncs(nodeMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

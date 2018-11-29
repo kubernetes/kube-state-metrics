@@ -219,7 +219,7 @@ func TestCronJobCollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generateCronJobMetrics
+		c.Func = composeMetricGenFuncs(cronJobMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

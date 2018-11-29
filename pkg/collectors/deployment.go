@@ -33,86 +33,183 @@ var (
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 
-	descDeploymentCreated = metrics.NewMetricFamilyDef(
-		"kube_deployment_created",
-		"Unix creation timestamp",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
+	deploymentMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				f := metrics.Family{}
 
-	descDeploymentStatusReplicas = metrics.NewMetricFamilyDef(
-		"kube_deployment_status_replicas",
-		"The number of replicas per deployment.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
-	descDeploymentStatusReplicasAvailable = metrics.NewMetricFamilyDef(
-		"kube_deployment_status_replicas_available",
-		"The number of available replicas per deployment.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
-	descDeploymentStatusReplicasUnavailable = metrics.NewMetricFamilyDef(
-		"kube_deployment_status_replicas_unavailable",
-		"The number of unavailable replicas per deployment.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
-	descDeploymentStatusReplicasUpdated = metrics.NewMetricFamilyDef(
-		"kube_deployment_status_replicas_updated",
-		"The number of updated replicas per deployment.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
+				if !d.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_deployment_created",
+						Value: float64(d.CreationTimestamp.Unix()),
+					})
+				}
 
-	descDeploymentStatusObservedGeneration = metrics.NewMetricFamilyDef(
-		"kube_deployment_status_observed_generation",
-		"The generation observed by the deployment controller.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_status_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of replicas per deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_status_replicas",
+					Value: float64(d.Status.Replicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_status_replicas_available",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of available replicas per deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_status_replicas_available",
+					Value: float64(d.Status.AvailableReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_status_replicas_unavailable",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of unavailable replicas per deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_status_replicas_unavailable",
+					Value: float64(d.Status.UnavailableReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_status_replicas_updated",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of updated replicas per deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_status_replicas_updated",
+					Value: float64(d.Status.UpdatedReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "The generation observed by the deployment controller.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_status_observed_generation",
+					Value: float64(d.Status.ObservedGeneration),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_spec_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of desired pods for a deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_spec_replicas",
+					Value: float64(*d.Spec.Replicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_spec_paused",
+			Type: metrics.MetricTypeGauge,
+			Help: "Whether the deployment is paused and will not be processed by the deployment controller.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_spec_paused",
+					Value: boolFloat64(d.Spec.Paused),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+			Type: metrics.MetricTypeGauge,
+			Help: "Maximum number of unavailable replicas during a rolling update of a deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				if d.Spec.Strategy.RollingUpdate == nil {
+					return metrics.Family{}
+				}
 
-	descDeploymentSpecReplicas = metrics.NewMetricFamilyDef(
-		"kube_deployment_spec_replicas",
-		"Number of desired pods for a deployment.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
+				maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), true)
+				if err != nil {
+					panic(err)
+				}
 
-	descDeploymentSpecPaused = metrics.NewMetricFamilyDef(
-		"kube_deployment_spec_paused",
-		"Whether the deployment is paused and will not be processed by the deployment controller.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+					Value: float64(maxUnavailable),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_spec_strategy_rollingupdate_max_surge",
+			Type: metrics.MetricTypeGauge,
+			Help: "Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				if d.Spec.Strategy.RollingUpdate == nil {
+					return metrics.Family{}
+				}
 
-	descDeploymentStrategyRollingUpdateMaxUnavailable = metrics.NewMetricFamilyDef(
-		"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
-		"Maximum number of unavailable replicas during a rolling update of a deployment.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
+				maxSurge, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
+				if err != nil {
+					panic(err)
+				}
 
-	descDeploymentStrategyRollingUpdateMaxSurge = metrics.NewMetricFamilyDef(
-		"kube_deployment_spec_strategy_rollingupdate_max_surge",
-		"Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
-
-	descDeploymentMetadataGeneration = metrics.NewMetricFamilyDef(
-		"kube_deployment_metadata_generation",
-		"Sequence number representing a specific generation of the desired state.",
-		descDeploymentLabelsDefaultLabels,
-		nil,
-	)
-
-	descDeploymentLabels = metrics.NewMetricFamilyDef(
-		descDeploymentLabelsName,
-		descDeploymentLabelsHelp,
-		descDeploymentLabelsDefaultLabels, nil,
-	)
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_spec_strategy_rollingupdate_max_surge",
+					Value: float64(maxSurge),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_deployment_metadata_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "Sequence number representing a specific generation of the desired state.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_deployment_metadata_generation",
+					Value: float64(d.ObjectMeta.Generation),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descDeploymentLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descDeploymentLabelsHelp,
+			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descDeploymentLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+	}
 )
+
+func wrapDeploymentFunc(f func(*v1beta1.Deployment) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		deployment := obj.(*v1beta1.Deployment)
+
+		metricFamily := f(deployment)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descDeploymentLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{deployment.Namespace, deployment.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createDeploymentListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -123,66 +220,4 @@ func createDeploymentListWatch(kubeClient clientset.Interface, ns string) cache.
 			return kubeClient.ExtensionsV1beta1().Deployments(ns).Watch(opts)
 		},
 	}
-}
-
-func deploymentLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descDeploymentLabelsName,
-		descDeploymentLabelsHelp,
-		append(descDeploymentLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func generateDeploymentMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	dPointer := obj.(*v1beta1.Deployment)
-	d := *dPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{d.Namespace, d.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			// TODO: Handle!
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
-	addGauge(deploymentLabelsDesc(labelKeys), 1, labelValues...)
-	if !d.CreationTimestamp.IsZero() {
-		addGauge(descDeploymentCreated, float64(d.CreationTimestamp.Unix()))
-	}
-	addGauge(descDeploymentStatusReplicas, float64(d.Status.Replicas))
-	addGauge(descDeploymentStatusReplicasAvailable, float64(d.Status.AvailableReplicas))
-	addGauge(descDeploymentStatusReplicasUnavailable, float64(d.Status.UnavailableReplicas))
-	addGauge(descDeploymentStatusReplicasUpdated, float64(d.Status.UpdatedReplicas))
-	addGauge(descDeploymentStatusObservedGeneration, float64(d.Status.ObservedGeneration))
-	addGauge(descDeploymentSpecPaused, boolFloat64(d.Spec.Paused))
-	addGauge(descDeploymentSpecReplicas, float64(*d.Spec.Replicas))
-	addGauge(descDeploymentMetadataGeneration, float64(d.ObjectMeta.Generation))
-
-	if d.Spec.Strategy.RollingUpdate == nil {
-		return nil
-	}
-
-	maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), true)
-	if err != nil {
-		panic(err)
-	} else {
-		addGauge(descDeploymentStrategyRollingUpdateMaxUnavailable, float64(maxUnavailable))
-	}
-
-	maxSurge, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
-	if err != nil {
-		panic(err)
-	} else {
-		addGauge(descDeploymentStrategyRollingUpdateMaxSurge, float64(maxSurge))
-	}
-
-	return ms
 }

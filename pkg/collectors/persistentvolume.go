@@ -32,25 +32,92 @@ var (
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 
-	descPersistentVolumeLabels = metrics.NewMetricFamilyDef(
-		descPersistentVolumeLabelsName,
-		descPersistentVolumeLabelsHelp,
-		descPersistentVolumeLabelsDefaultLabels,
-		nil,
-	)
-	descPersistentVolumeStatusPhase = metrics.NewMetricFamilyDef(
-		"kube_persistentvolume_status_phase",
-		"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
-		append(descPersistentVolumeLabelsDefaultLabels, "phase"),
-		nil,
-	)
-	descPersistentVolumeInfo = metrics.NewMetricFamilyDef(
-		"kube_persistentvolume_info",
-		"Information about persistentvolume.",
-		append(descPersistentVolumeLabelsDefaultLabels, "storageclass"),
-		nil,
-	)
+	persistentVolumeMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: descPersistentVolumeLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descPersistentVolumeLabelsHelp,
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descPersistentVolumeLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolume_status_phase",
+			Type: metrics.MetricTypeGauge,
+			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metrics.Family {
+				f := metrics.Family{}
+
+				// Set current phase to 1, others to 0 if it is set.
+				if p := p.Status.Phase; p != "" {
+					f = append(f,
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumePending)},
+							Value:       boolFloat64(p == v1.VolumePending),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeAvailable)},
+							Value:       boolFloat64(p == v1.VolumeAvailable),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeBound)},
+							Value:       boolFloat64(p == v1.VolumeBound),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeReleased)},
+							Value:       boolFloat64(p == v1.VolumeReleased),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeFailed)},
+							Value:       boolFloat64(p == v1.VolumeFailed),
+						},
+					)
+				}
+
+				for _, m := range f {
+					m.Name = "kube_persistentvolume_status_phase"
+					m.LabelKeys = []string{"phase"}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolume_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about persistentvolume.",
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_persistentvolume_info",
+					LabelKeys:   []string{"storageclass"},
+					LabelValues: []string{p.Spec.StorageClassName},
+					Value:       1,
+				}}
+			}),
+		},
+	}
 )
+
+func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		persistentVolume := obj.(*v1.PersistentVolume)
+
+		metricFamily := f(persistentVolume)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descPersistentVolumeLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{persistentVolume.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createPersistentVolumeListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -61,47 +128,4 @@ func createPersistentVolumeListWatch(kubeClient clientset.Interface, ns string) 
 			return kubeClient.CoreV1().PersistentVolumes().Watch(opts)
 		},
 	}
-}
-
-func persistentVolumeLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descPersistentVolumeLabelsName,
-		descPersistentVolumeLabelsHelp,
-		append(descPersistentVolumeLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func generatePersistentVolumeMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	pPointer := obj.(*v1.PersistentVolume)
-	p := *pPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{p.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
-	addGauge(persistentVolumeLabelsDesc(labelKeys), 1, labelValues...)
-
-	addGauge(descPersistentVolumeInfo, 1, p.Spec.StorageClassName)
-	// Set current phase to 1, others to 0 if it is set.
-	if p := p.Status.Phase; p != "" {
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumePending), string(v1.VolumePending))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeAvailable), string(v1.VolumeAvailable))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeBound), string(v1.VolumeBound))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeReleased), string(v1.VolumeReleased))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeFailed), string(v1.VolumeFailed))
-	}
-
-	return ms
 }

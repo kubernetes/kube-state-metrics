@@ -15,18 +15,24 @@ import (
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDS := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []*metrics.Metric {
+	genFunc := func(obj interface{}) []FamilyStringer {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		metric := metrics.Metric(fmt.Sprintf("kube_service_info{uid=\"%v\"} 1\n", o.GetUID()))
+		metric := metrics.Metric{
+			Name:        "kube_service_info",
+			LabelKeys:   []string{"uid"},
+			LabelValues: []string{string(o.GetUID())},
+			Value:       1,
+		}
+		metricFamily := metrics.Family{&metric}
 
-		return []*metrics.Metric{&metric}
+		return []FamilyStringer{metricFamily}
 	}
 
-	ms := NewMetricsStore(genFunc)
+	ms := NewMetricsStore([]string{"Information about service."}, genFunc)
 
 	for _, id := range serviceIDS {
 		s := v1.Service{
@@ -43,21 +49,12 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 		}
 	}
 
-	metrics := ms.GetAll()
-
-	if len(metrics) != 2 {
-		t.Fatalf("expected 2 metrics but got %v", len(metrics))
-	}
+	w := strings.Builder{}
+	ms.WriteAll(&w)
+	m := w.String()
 
 	for _, id := range serviceIDS {
-		found := false
-		for _, m := range metrics {
-			if strings.Contains(string(*m), fmt.Sprintf("uid=\"%v\"", id)) {
-				found = true
-			}
-		}
-
-		if !found {
+		if !strings.Contains(m, fmt.Sprintf("uid=\"%v\"", id)) {
 			t.Fatalf("expected to find metric with uid %v", id)
 		}
 	}

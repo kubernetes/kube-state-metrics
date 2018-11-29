@@ -32,41 +32,93 @@ var (
 	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 
-	descSecretInfo = metrics.NewMetricFamilyDef(
-		"kube_secret_info",
-		"Information about secret.",
-		descSecretLabelsDefaultLabels,
-		nil,
-	)
+	secretMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_secret_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about secret.",
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_secret_info",
+					Value: 1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_secret_type",
+			Type: metrics.MetricTypeGauge,
+			Help: "Type about secret.",
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_secret_type",
+					LabelKeys:   []string{"type"},
+					LabelValues: []string{string(s.Type)},
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descSecretLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descSecretLabelsHelp,
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descSecretLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
 
-	descSecretType = metrics.NewMetricFamilyDef(
-		"kube_secret_type",
-		"Type about secret.",
-		append(descSecretLabelsDefaultLabels, "type"),
-		nil,
-	)
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_secret_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metrics.Family {
+				f := metrics.Family{}
 
-	descSecretLabels = metrics.NewMetricFamilyDef(
-		descSecretLabelsName,
-		descSecretLabelsHelp,
-		descSecretLabelsDefaultLabels,
-		nil,
-	)
+				if !s.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_secret_created",
+						Value: float64(s.CreationTimestamp.Unix()),
+					})
+				}
 
-	descSecretCreated = metrics.NewMetricFamilyDef(
-		"kube_secret_created",
-		"Unix creation timestamp",
-		descSecretLabelsDefaultLabels,
-		nil,
-	)
-
-	descSecretMetadataResourceVersion = metrics.NewMetricFamilyDef(
-		"kube_secret_metadata_resource_version",
-		"Resource version representing a specific version of secret.",
-		append(descSecretLabelsDefaultLabels, "resource_version"),
-		nil,
-	)
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_secret_metadata_resource_version",
+			Type: metrics.MetricTypeGauge,
+			Help: "Resource version representing a specific version of secret.",
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_secret_metadata_resource_version",
+					LabelKeys:   []string{"resource_version"},
+					LabelValues: []string{string(s.ObjectMeta.ResourceVersion)},
+					Value:       1,
+				}}
+			}),
+		},
+	}
 )
+
+func wrapSecretFunc(f func(*v1.Secret) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		secret := obj.(*v1.Secret)
+
+		metricFamily := f(secret)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descSecretLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{secret.Namespace, secret.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createSecretListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -77,45 +129,4 @@ func createSecretListWatch(kubeClient clientset.Interface, ns string) cache.List
 			return kubeClient.CoreV1().Secrets(ns).Watch(opts)
 		},
 	}
-}
-func secretLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descSecretLabelsName,
-		descSecretLabelsHelp,
-		append(descSecretLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func generateSecretMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	sPointer := obj.(*v1.Secret)
-	s := *sPointer
-
-	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{s.Namespace, s.Name}, lv...)
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		addConstMetric(desc, v, lv...)
-	}
-	addGauge(descSecretInfo, 1)
-
-	addGauge(descSecretType, 1, string(s.Type))
-	if !s.CreationTimestamp.IsZero() {
-		addGauge(descSecretCreated, float64(s.CreationTimestamp.Unix()))
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-	addGauge(secretLabelsDesc(labelKeys), 1, labelValues...)
-
-	addGauge(descSecretMetadataResourceVersion, 1, string(s.ObjectMeta.ResourceVersion))
-
-	return ms
 }

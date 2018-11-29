@@ -32,31 +32,101 @@ var (
 	descPersistentVolumeClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
 
-	descPersistentVolumeClaimLabels = metrics.NewMetricFamilyDef(
-		descPersistentVolumeClaimLabelsName,
-		descPersistentVolumeClaimLabelsHelp,
-		descPersistentVolumeClaimLabelsDefaultLabels,
-		nil,
-	)
-	descPersistentVolumeClaimInfo = metrics.NewMetricFamilyDef(
-		"kube_persistentvolumeclaim_info",
-		"Information about persistent volume claim.",
-		append(descPersistentVolumeClaimLabelsDefaultLabels, "storageclass", "volumename"),
-		nil,
-	)
-	descPersistentVolumeClaimStatusPhase = metrics.NewMetricFamilyDef(
-		"kube_persistentvolumeclaim_status_phase",
-		"The phase the persistent volume claim is currently in.",
-		append(descPersistentVolumeClaimLabelsDefaultLabels, "phase"),
-		nil,
-	)
-	descPersistentVolumeClaimResourceRequestsStorage = metrics.NewMetricFamilyDef(
-		"kube_persistentvolumeclaim_resource_requests_storage_bytes",
-		"The capacity of storage requested by the persistent volume claim.",
-		descPersistentVolumeClaimLabelsDefaultLabels,
-		nil,
-	)
+	persistentVolumeClaimMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: descPersistentVolumeClaimLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descPersistentVolumeClaimLabelsHelp,
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descPersistentVolumeClaimLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolumeclaim_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about persistent volume claim.",
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
+				storageClassName := getPersistentVolumeClaimClass(p)
+				volumeName := p.Spec.VolumeName
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_persistentvolumeclaim_info",
+					LabelKeys:   []string{"storageclass", "volumename"},
+					LabelValues: []string{storageClassName, volumeName},
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolumeclaim_status_phase",
+			Type: metrics.MetricTypeGauge,
+			Help: "The phase the persistent volume claim is currently in.",
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
+				f := metrics.Family{}
+				// Set current phase to 1, others to 0 if it is set.
+				if p := p.Status.Phase; p != "" {
+					f = append(f,
+						&metrics.Metric{
+							LabelValues: []string{string(v1.ClaimLost)},
+							Value:       boolFloat64(p == v1.ClaimLost),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.ClaimBound)},
+							Value:       boolFloat64(p == v1.ClaimBound),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.ClaimPending)},
+							Value:       boolFloat64(p == v1.ClaimPending),
+						},
+					)
+				}
+
+				for _, m := range f {
+					m.Name = "kube_persistentvolumeclaim_status_phase"
+					m.LabelKeys = []string{"phase"}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolumeclaim_resource_requests_storage_bytes",
+			Type: metrics.MetricTypeGauge,
+			Help: "The capacity of storage requested by the persistent volume claim.",
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
+				f := metrics.Family{}
+				if storage, ok := p.Spec.Resources.Requests[v1.ResourceStorage]; ok {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_persistentvolumeclaim_resource_requests_storage_bytes",
+						Value: float64(storage.Value()),
+					})
+				}
+
+				return f
+			}),
+		},
+	}
 )
+
+func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		persistentVolumeClaim := obj.(*v1.PersistentVolumeClaim)
+
+		metricFamily := f(persistentVolumeClaim)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descPersistentVolumeClaimLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{persistentVolumeClaim.Namespace, persistentVolumeClaim.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createPersistentVolumeClaimListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -67,14 +137,6 @@ func createPersistentVolumeClaimListWatch(kubeClient clientset.Interface, ns str
 			return kubeClient.CoreV1().PersistentVolumeClaims(ns).Watch(opts)
 		},
 	}
-}
-func persistentVolumeClaimLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descPersistentVolumeClaimLabelsName,
-		descPersistentVolumeClaimLabelsHelp,
-		append(descPersistentVolumeClaimLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
 }
 
 // getPersistentVolumeClaimClass returns StorageClassName. If no storage class was
@@ -91,43 +153,4 @@ func getPersistentVolumeClaimClass(claim *v1.PersistentVolumeClaim) string {
 
 	// Special non-empty string to indicate absence of storage class.
 	return "<none>"
-}
-
-func generatePersistentVolumeClaimMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	pPointer := obj.(*v1.PersistentVolumeClaim)
-	p := *pPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{p.Namespace, p.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
-	addGauge(persistentVolumeClaimLabelsDesc(labelKeys), 1, labelValues...)
-
-	storageClassName := getPersistentVolumeClaimClass(&p)
-	volumeName := p.Spec.VolumeName
-	addGauge(descPersistentVolumeClaimInfo, 1, storageClassName, volumeName)
-
-	// Set current phase to 1, others to 0 if it is set.
-	if p := p.Status.Phase; p != "" {
-		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimLost), string(v1.ClaimLost))
-		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimBound), string(v1.ClaimBound))
-		addGauge(descPersistentVolumeClaimStatusPhase, boolFloat64(p == v1.ClaimPending), string(v1.ClaimPending))
-	}
-
-	if storage, ok := p.Spec.Resources.Requests[v1.ResourceStorage]; ok {
-		addGauge(descPersistentVolumeClaimResourceRequestsStorage, float64(storage.Value()))
-	}
-
-	return ms
 }

@@ -82,7 +82,7 @@ func TestHPACollector(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generateHPAMetrics
+		c.Func = composeMetricGenFuncs(hpaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

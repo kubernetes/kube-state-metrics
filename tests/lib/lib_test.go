@@ -38,19 +38,17 @@ func TestAsLibrary(t *testing.T) {
 	// Wait for informers to sync
 	time.Sleep(time.Second)
 
-	m := c.Collect()
+	w := strings.Builder{}
+	c.Collect(&w)
+	m := w.String()
 
-	if len(m) != 1 {
-		t.Fatalf("expected one metric to be returned but got %v", len(m))
-	}
-
-	if !strings.Contains(string(*m[0]), service.ObjectMeta.Name) {
+	if !strings.Contains(m, service.ObjectMeta.Name) {
 		t.Fatal("expected string to contain service name")
 	}
 }
 
 func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
-	store := metricsstore.NewMetricsStore(generateServiceMetrics)
+	store := metricsstore.NewMetricsStore([]string{"test_metric describes a test metric"}, generateServiceMetrics)
 
 	lw := cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
@@ -68,14 +66,18 @@ func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
 	return collectors.NewCollector(store)
 }
 
-func generateServiceMetrics(obj interface{}) []*metrics.Metric {
+func generateServiceMetrics(obj interface{}) []metricsstore.FamilyStringer {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
-	m, err := metrics.NewMetric("test_metric", []string{"name"}, []string{s.Name}, 1)
-	if err != nil {
-		panic(err)
+	m := metrics.Metric{
+		Name:        "test_metric",
+		LabelKeys:   []string{"name"},
+		LabelValues: []string{s.Name},
+		Value:       1,
 	}
 
-	return []*metrics.Metric{m}
+	family := metrics.Family{&m}
+
+	return []metricsstore.FamilyStringer{family}
 }

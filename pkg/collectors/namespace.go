@@ -36,31 +36,92 @@ var (
 	descNamespaceAnnotationsHelp          = "Kubernetes annotations converted to Prometheus labels."
 	descNamespaceAnnotationsDefaultLabels = []string{"namespace"}
 
-	descNamespaceCreated = metrics.NewMetricFamilyDef(
-		"kube_namespace_created",
-		"Unix creation timestamp",
-		descNamespaceLabelsDefaultLabels,
-		nil,
-	)
-	descNamespaceLabels = metrics.NewMetricFamilyDef(
-		descNamespaceLabelsName,
-		descNamespaceLabelsHelp,
-		descNamespaceLabelsDefaultLabels,
-		nil,
-	)
-	descNamespaceAnnotations = metrics.NewMetricFamilyDef(
-		descNamespaceAnnotationsName,
-		descNamespaceAnnotationsHelp,
-		descNamespaceAnnotationsDefaultLabels,
-		nil,
-	)
-	descNamespacePhase = metrics.NewMetricFamilyDef(
-		"kube_namespace_status_phase",
-		"kubernetes namespace status phase.",
-		append(descNamespaceLabelsDefaultLabels, "phase"),
-		nil,
-	)
+	namespaceMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_namespace_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
+				f := metrics.Family{}
+				if !n.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_namespace_created",
+						Value: float64(n.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descNamespaceLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descNamespaceLabelsHelp,
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descNamespaceLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descNamespaceAnnotationsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descNamespaceAnnotationsHelp,
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
+				return metrics.Family{&metrics.Metric{
+					Name:        descNamespaceAnnotationsName,
+					LabelKeys:   annotationKeys,
+					LabelValues: annotationValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_namespace_status_phase",
+			Type: metrics.MetricTypeGauge,
+			Help: "kubernetes namespace status phase.",
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
+				families := metrics.Family{
+					&metrics.Metric{
+						LabelValues: []string{string(v1.NamespaceActive)},
+						Value:       boolFloat64(n.Status.Phase == v1.NamespaceActive),
+					},
+					&metrics.Metric{
+						LabelValues: []string{string(v1.NamespaceTerminating)},
+						Value:       boolFloat64(n.Status.Phase == v1.NamespaceTerminating),
+					},
+				}
+
+				for _, f := range families {
+					f.Name = "kube_namespace_status_phase"
+					f.LabelKeys = []string{"phase"}
+				}
+
+				return families
+			}),
+		},
+	}
 )
+
+func wrapNamespaceFunc(f func(*v1.Namespace) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		namespace := obj.(*v1.Namespace)
+
+		metricFamily := f(namespace)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descNamespaceLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{namespace.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createNamespaceListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -71,56 +132,4 @@ func createNamespaceListWatch(kubeClient clientset.Interface, ns string) cache.L
 			return kubeClient.CoreV1().Namespaces().Watch(opts)
 		},
 	}
-}
-
-func generateNamespaceMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	nPointer := obj.(*v1.Namespace)
-	n := *nPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{n.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-
-	addGauge(descNamespacePhase, boolFloat64(n.Status.Phase == v1.NamespaceActive), string(v1.NamespaceActive))
-	addGauge(descNamespacePhase, boolFloat64(n.Status.Phase == v1.NamespaceTerminating), string(v1.NamespaceTerminating))
-
-	if !n.CreationTimestamp.IsZero() {
-		addGauge(descNamespaceCreated, float64(n.CreationTimestamp.Unix()))
-	}
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
-	addGauge(namespaceLabelsDesc(labelKeys), 1, labelValues...)
-
-	annnotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
-	addGauge(namespaceAnnotationsDesc(annnotationKeys), 1, annotationValues...)
-
-	return ms
-}
-
-func namespaceLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descNamespaceLabelsName,
-		descNamespaceLabelsHelp,
-		append(descNamespaceLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func namespaceAnnotationsDesc(annotationKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descNamespaceAnnotationsName,
-		descNamespaceAnnotationsHelp,
-		append(descNamespaceAnnotationsDefaultLabels, annotationKeys...),
-		nil,
-	)
 }

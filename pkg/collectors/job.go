@@ -32,86 +32,226 @@ var (
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 
-	descJobLabels = metrics.NewMetricFamilyDef(
-		descJobLabelsName,
-		descJobLabelsHelp,
-		descJobLabelsDefaultLabels,
-		nil,
-	)
+	jobMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: descJobLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descJobLabelsHelp,
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descJobLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about job.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_job_info",
+					Value: 1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
 
-	descJobInfo = metrics.NewMetricFamilyDef(
-		"kube_job_info",
-		"Information about job.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobCreated = metrics.NewMetricFamilyDef(
-		"kube_job_created",
-		"Unix creation timestamp",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobSpecParallelism = metrics.NewMetricFamilyDef(
-		"kube_job_spec_parallelism",
-		"The maximum desired number of pods the job should run at any given time.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobSpecCompletions = metrics.NewMetricFamilyDef(
-		"kube_job_spec_completions",
-		"The desired number of successfully finished pods the job should be run with.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobSpecActiveDeadlineSeconds = metrics.NewMetricFamilyDef(
-		"kube_job_spec_active_deadline_seconds",
-		"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobStatusSucceeded = metrics.NewMetricFamilyDef(
-		"kube_job_status_succeeded",
-		"The number of pods which reached Phase Succeeded.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobStatusFailed = metrics.NewMetricFamilyDef(
-		"kube_job_status_failed",
-		"The number of pods which reached Phase Failed.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobStatusActive = metrics.NewMetricFamilyDef(
-		"kube_job_status_active",
-		"The number of actively running pods.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobConditionComplete = metrics.NewMetricFamilyDef(
-		"kube_job_complete",
-		"The job has completed its execution.",
-		append(descJobLabelsDefaultLabels, "condition"),
-		nil,
-	)
-	descJobConditionFailed = metrics.NewMetricFamilyDef(
-		"kube_job_failed",
-		"The job has failed its execution.",
-		append(descJobLabelsDefaultLabels, "condition"),
-		nil,
-	)
-	descJobStatusStartTime = metrics.NewMetricFamilyDef(
-		"kube_job_status_start_time",
-		"StartTime represents time when the job was acknowledged by the Job Manager.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
-	descJobStatusCompletionTime = metrics.NewMetricFamilyDef(
-		"kube_job_status_completion_time",
-		"CompletionTime represents time when the job was completed.",
-		descJobLabelsDefaultLabels,
-		nil,
-	)
+				if !j.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_job_created",
+						Value: float64(j.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_spec_parallelism",
+			Type: metrics.MetricTypeGauge,
+			Help: "The maximum desired number of pods the job should run at any given time.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
+
+				if j.Spec.Parallelism != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_job_spec_parallelism",
+						Value: float64(*j.Spec.Parallelism),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_spec_completions",
+			Type: metrics.MetricTypeGauge,
+			Help: "The desired number of successfully finished pods the job should be run with.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
+
+				if j.Spec.Completions != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_job_spec_completions",
+						Value: float64(*j.Spec.Completions),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_spec_active_deadline_seconds",
+			Type: metrics.MetricTypeGauge,
+			Help: "The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
+
+				if j.Spec.ActiveDeadlineSeconds != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_job_spec_active_deadline_seconds",
+						Value: float64(*j.Spec.ActiveDeadlineSeconds),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_status_succeeded",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of pods which reached Phase Succeeded.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_job_status_succeeded",
+					Value: float64(j.Status.Succeeded),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_status_failed",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of pods which reached Phase Failed.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_job_status_failed",
+					Value: float64(j.Status.Failed),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_status_active",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of actively running pods.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_job_status_active",
+					Value: float64(j.Status.Active),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_complete",
+			Type: metrics.MetricTypeGauge,
+			Help: "The job has completed its execution.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
+				for _, c := range j.Status.Conditions {
+					if c.Type == v1batch.JobComplete {
+						metrics := addConditionMetrics(c.Status)
+						for _, m := range metrics {
+							metric := m
+							metric.Name = "kube_job_complete"
+							metric.LabelKeys = []string{"condition"}
+							f = append(f, metric)
+						}
+					}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_failed",
+			Type: metrics.MetricTypeGauge,
+			Help: "The job has failed its execution.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
+
+				for _, c := range j.Status.Conditions {
+					if c.Type == v1batch.JobFailed {
+						metrics := addConditionMetrics(c.Status)
+						for _, m := range metrics {
+							metric := m
+							metric.Name = "kube_job_failed"
+							metric.LabelKeys = []string{"condition"}
+							f = append(f, m)
+						}
+					}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_status_start_time",
+			Type: metrics.MetricTypeGauge,
+			Help: "StartTime represents time when the job was acknowledged by the Job Manager.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
+
+				if j.Status.StartTime != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_job_status_start_time",
+						Value: float64(j.Status.StartTime.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_job_status_completion_time",
+			Type: metrics.MetricTypeGauge,
+			Help: "CompletionTime represents time when the job was completed.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metrics.Family {
+				f := metrics.Family{}
+				if j.Status.CompletionTime != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_job_status_completion_time",
+						Value: float64(j.Status.CompletionTime.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+	}
 )
+
+func wrapJobFunc(f func(*v1batch.Job) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		job := obj.(*v1batch.Job)
+
+		metricFamily := f(job)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descJobLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{job.Namespace, job.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
 
 func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
@@ -122,74 +262,4 @@ func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWat
 			return kubeClient.BatchV1().Jobs(ns).Watch(opts)
 		},
 	}
-}
-
-func jobLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
-	return metrics.NewMetricFamilyDef(
-		descJobLabelsName,
-		descJobLabelsHelp,
-		append(descJobLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func generateJobMetrics(obj interface{}) []*metrics.Metric {
-	ms := []*metrics.Metric{}
-
-	// TODO: Refactor
-	jPointer := obj.(*v1batch.Job)
-	j := *jPointer
-
-	addGauge := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{j.Namespace, j.Name}, lv...)
-
-		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
-		if err != nil {
-			panic(err)
-		}
-
-		ms = append(ms, m)
-	}
-
-	addGauge(descJobInfo, 1)
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
-	addGauge(jobLabelsDesc(labelKeys), 1, labelValues...)
-
-	if j.Spec.Parallelism != nil {
-		addGauge(descJobSpecParallelism, float64(*j.Spec.Parallelism))
-	}
-
-	if j.Spec.Completions != nil {
-		addGauge(descJobSpecCompletions, float64(*j.Spec.Completions))
-	}
-	if !j.CreationTimestamp.IsZero() {
-		addGauge(descJobCreated, float64(j.CreationTimestamp.Unix()))
-	}
-
-	if j.Spec.ActiveDeadlineSeconds != nil {
-		addGauge(descJobSpecActiveDeadlineSeconds, float64(*j.Spec.ActiveDeadlineSeconds))
-	}
-
-	addGauge(descJobStatusSucceeded, float64(j.Status.Succeeded))
-	addGauge(descJobStatusFailed, float64(j.Status.Failed))
-	addGauge(descJobStatusActive, float64(j.Status.Active))
-
-	if j.Status.StartTime != nil {
-		addGauge(descJobStatusStartTime, float64(j.Status.StartTime.Unix()))
-	}
-
-	if j.Status.CompletionTime != nil {
-		addGauge(descJobStatusCompletionTime, float64(j.Status.CompletionTime.Unix()))
-	}
-
-	for _, c := range j.Status.Conditions {
-		switch c.Type {
-		case v1batch.JobComplete:
-			ms = append(ms, addConditionMetrics(descJobConditionComplete, c.Status, j.Namespace, j.Name)...)
-		case v1batch.JobFailed:
-			ms = append(ms, addConditionMetrics(descJobConditionFailed, c.Status, j.Namespace, j.Name)...)
-		}
-	}
-	return ms
 }

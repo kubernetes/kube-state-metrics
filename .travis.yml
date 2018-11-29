@@ -13,9 +13,8 @@ jobs:
   include:
     # Go fmt
     - script: make gofmtcheck
-    # TODO: Re-enable once all collectors are refactored.
     # Check that all metrics are documented
-    # - script: make doccheck
+    - script: make doccheck
     # Unit Test
     - script: make test-unit
     # Build

@@ -39,6 +39,7 @@ var (
 	namespaceMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_namespace_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
 				f := metrics.Family{}
@@ -54,6 +55,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: descNamespaceLabelsName,
+			Type: metrics.MetricTypeGauge,
 			Help: descNamespaceLabelsHelp,
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
@@ -67,6 +69,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: descNamespaceAnnotationsName,
+			Type: metrics.MetricTypeGauge,
 			Help: descNamespaceAnnotationsHelp,
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
 				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
@@ -80,6 +83,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_namespace_status_phase",
+			Type: metrics.MetricTypeGauge,
 			Help: "kubernetes namespace status phase.",
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metrics.Family {
 				families := metrics.Family{

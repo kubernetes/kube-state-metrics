@@ -33,6 +33,7 @@ var (
 	limitRangeMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_limitrange",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about limit range.",
 			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metrics.Family {
 				f := metrics.Family{}
@@ -85,6 +86,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_limitrange_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metrics.Family {
 				f := metrics.Family{}

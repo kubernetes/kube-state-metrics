@@ -40,6 +40,7 @@ var (
 	podMetricFamilies = []metrics.FamilyGenerator{
 		metrics.FamilyGenerator{
 			Name: "kube_pod_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				createdBy := metav1.GetControllerOf(p)
@@ -66,6 +67,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_start_time",
+			Type: metrics.MetricTypeGauge,
 			Help: "Start time in unix timestamp for a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -84,6 +86,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_completion_time",
+			Type: metrics.MetricTypeGauge,
 			Help: "Completion time in unix timestamp for a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -111,6 +114,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_owner",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about the Pod's owner.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
@@ -149,6 +153,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_labels",
+			Type: metrics.MetricTypeGauge,
 			Help: "Kubernetes labels converted to Prometheus labels.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
@@ -163,6 +168,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_created",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -179,6 +185,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_status_scheduled_time",
+			Type: metrics.MetricTypeGauge,
 			Help: "Unix timestamp when pod moved into scheduled status",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -202,6 +209,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_status_phase",
+			Type: metrics.MetricTypeGauge,
 			Help: "The pods current phase.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -238,6 +246,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_status_ready",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the pod is ready to serve requests.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -261,6 +270,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_status_scheduled",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes the status of the scheduling process for the pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -284,6 +294,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about a container in a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -303,6 +314,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_waiting",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the container is currently in waiting state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -321,6 +333,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_waiting_reason",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes the reason the container is currently in waiting state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -341,6 +354,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_running",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the container is currently in running state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -359,6 +373,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_terminated",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the container is currently in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -377,6 +392,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_terminated_reason",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes the reason the container is currently in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -397,6 +413,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_last_terminated_reason",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes the last reason the container was in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -417,6 +434,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_ready",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the containers readiness check succeeded.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -435,6 +453,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_status_restarts_total",
+			Type: metrics.MetricTypeCounter,
 			Help: "The number of container restarts per container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -453,6 +472,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_resource_requests",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested request resource by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -509,6 +529,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_resource_limits",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested limit resource by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -565,6 +586,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_resource_requests_cpu_cores",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested cpu cores by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -586,6 +608,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_resource_requests_memory_bytes",
+			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested memory bytes by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -607,6 +630,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_resource_limits_cpu_cores",
+			Type: metrics.MetricTypeGauge,
 			Help: "The limit on cpu cores to be used by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -628,6 +652,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_container_resource_limits_memory_bytes",
+			Type: metrics.MetricTypeGauge,
 			Help: "The limit on memory to be used by a container in bytes.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -650,6 +675,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_spec_volumes_persistentvolumeclaims_info",
+			Type: metrics.MetricTypeGauge,
 			Help: "Information about persistentvolumeclaim volumes in a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}
@@ -670,6 +696,7 @@ var (
 		},
 		metrics.FamilyGenerator{
 			Name: "kube_pod_spec_volumes_persistentvolumeclaims_readonly",
+			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether a persistentvolumeclaim is mounted read only.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metrics.Family {
 				f := metrics.Family{}

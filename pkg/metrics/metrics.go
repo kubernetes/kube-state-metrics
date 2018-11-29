@@ -41,6 +41,7 @@ var (
 type FamilyGenerator struct {
 	Name         string
 	Help         string
+	Type         MetricType
 	GenerateFunc func(obj interface{}) Family
 }
 
@@ -56,6 +57,16 @@ func (f Family) String() string {
 
 	return b.String()
 }
+
+// MetricType represents the type of a metric e.g. a counter. See
+// https://prometheus.io/docs/concepts/metric_types/.
+type MetricType string
+
+// MetricTypeGauge defines a Prometheus gauge.
+var MetricTypeGauge MetricType = "gauge"
+
+// MetricTypeCounter defines a Prometheus counter.
+var MetricTypeCounter MetricType = "counter"
 
 // Metric represents a single time series.
 type Metric struct {

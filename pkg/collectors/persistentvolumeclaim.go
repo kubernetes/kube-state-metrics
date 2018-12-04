@@ -110,6 +110,37 @@ var (
 				return f
 			}),
 		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolumeclaim_spec_accessmodes",
+			Type: metrics.MetricTypeGauge,
+			Help: "The accessmodes requested by the persistent volume claim.",
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metrics.Family {
+				f := metrics.Family{}
+				for _, a := range p.Spec.AccessModes {
+					f = append(f,
+						&metrics.Metric{
+							LabelValues: []string{string(v1.ReadWriteOnce)},
+							Value:       boolFloat64(a == v1.ReadWriteOnce),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.ReadOnlyMany)},
+							Value:       boolFloat64(a == v1.ReadOnlyMany),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.ReadWriteMany)},
+							Value:       boolFloat64(a == v1.ReadWriteMany),
+						},
+					)
+				}
+
+				for _, m := range f {
+					m.Name = "kube_persistentvolumeclaim_spec_accessmodes"
+					m.LabelKeys = []string{"accessmodes"}
+				}
+
+				return f
+			}),
+		},
 	}
 )
 

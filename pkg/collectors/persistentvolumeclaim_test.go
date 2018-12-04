@@ -36,6 +36,8 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 		# TYPE kube_persistentvolumeclaim_status_phase gauge
 		# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
 		# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
+		# HELP kube_persistentvolumeclaim_spec_accessmodes The accessmodes requested by the persistent volume claim.
+		# TYPE kube_persistentvolumeclaim_spec_accessmodes gauge
 	`
 	storageClassName := "rbd"
 	cases := []generateMetricsTestCase{
@@ -56,7 +58,8 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 							v1.ResourceStorage: resource.MustParse("1Gi"),
 						},
 					},
-					VolumeName: "pvc-mysql-data",
+					VolumeName:  "pvc-mysql-data",
+					AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimBound,
@@ -69,8 +72,11 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Pending"} 0
 				kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace="default",persistentvolumeclaim="mysql-data"} 1.073741824e+09
 				kube_persistentvolumeclaim_labels{label_app="mysql-server",namespace="default",persistentvolumeclaim="mysql-data"} 1
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="default",persistentvolumeclaim="mysql-data",accessmodes="ReadWriteOnce"} 0
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="default",persistentvolumeclaim="mysql-data",accessmodes="ReadOnlyMany"} 0
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="default",persistentvolumeclaim="mysql-data",accessmodes="ReadWriteMany"} 1
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_spec_accessmodes"},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
@@ -81,6 +87,7 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				Spec: v1.PersistentVolumeClaimSpec{
 					StorageClassName: &storageClassName,
 					VolumeName:       "pvc-prometheus-data",
+					AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimPending,
@@ -92,13 +99,19 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Pending"} 1
 				kube_persistentvolumeclaim_labels{namespace="default",persistentvolumeclaim="prometheus-data"} 1
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="default",persistentvolumeclaim="prometheus-data",accessmodes="ReadWriteOnce"} 1
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="default",persistentvolumeclaim="prometheus-data",accessmodes="ReadOnlyMany"} 0
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="default",persistentvolumeclaim="prometheus-data",accessmodes="ReadWriteMany"} 0
 			`,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_spec_accessmodes"},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "mongo-data",
+				},
+				Spec: v1.PersistentVolumeClaimSpec{
+					AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadOnlyMany},
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimLost,
@@ -110,8 +123,11 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Lost"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Pending"} 0
 				kube_persistentvolumeclaim_labels{namespace="",persistentvolumeclaim="mongo-data"} 1
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="",persistentvolumeclaim="mongo-data",accessmodes="ReadWriteOnce"} 0
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="",persistentvolumeclaim="mongo-data",accessmodes="ReadOnlyMany"} 1
+				kube_persistentvolumeclaim_spec_accessmodes{namespace="",persistentvolumeclaim="mongo-data",accessmodes="ReadWriteMany"} 0
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_spec_accessmodes"},
 		},
 	}
 	for i, c := range cases {

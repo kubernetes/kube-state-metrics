@@ -35,6 +35,9 @@ the raw metrics.
 - [Resource recommendation](#resource-recommendation)
 - [A note on costing](#a-note-on-costing)
 - [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
+- [Scaling kube-state-metrics](#scaling-kube-state-metrics)
+  - [Resource recommendation](#resource-recommendation)
+  - [Horizontal scaling (sharding)](#horizontal-scaling-sharding)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)
@@ -118,7 +121,11 @@ kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
 kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
 ```
 
-### Resource recommendation
+### Scaling kube-state-metrics
+
+#### Resource recommendation
+
+> Note: These recommendations are based on scalability tests done over a year ago. They may differ significantly today.
 
 Resource usage for kube-state-metrics changes with the Kubernetes objects(Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
 To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
@@ -162,6 +169,17 @@ metric-server it too is not responsibile for exporting its metrics anywhere.
 
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
+
+#### Horizontal scaling (sharding)
+
+In order to horizontally scale kube-state-metrics some automated sharding capabilities have been implemented. It is configured with the following flags:
+
+* `--shard` (zero indexed)
+* `--total-shards`
+
+Sharding is done by taking an md5 sum of the Kubernetes Object's UID and performing a modulo operation on it, with the total number of shards. The configured shard decides whether the object is handled by the respective instance of kube-state-metrics or not. Note that this means all instances of kube-state-metrics even if sharded will have the network traffic and the resource consumption for unmarshaling objects for all objects, not just the ones it is responsible for. To optimize this further, the Kubernetes API would need to support sharded list/watch capabilities. Overall memory consumption should be 1/n th of each shard compared to an unsharded setup. Typically kube-state-metrics needs to be memory and latency optimized in order for it to return its metrics rather quickly to Prometheus.
+
+Sharding should be used carefully, and additional monitoring should be set up in order to ensure that sharding is setup as expected (eg. instances for each shard out of the total shards are configured).
 
 ### Setup
 

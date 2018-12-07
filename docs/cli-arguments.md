@@ -44,11 +44,13 @@ Usage of ./kube-state-metrics:
       --metric-whitelist string                     Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The whitelist and blacklist are mutually exclusive.
       --namespace string                            Comma-separated list of namespaces to be enabled. Defaults to ""
       --port int                                    Port to expose metrics on. (default 80)
+      --shard int32                                 The instances shard nominal (zero indexed) within the total number of shards. (default 0)
       --skip_headers                                If true, avoid header prefixes in the log messages
       --skip_log_headers                            If true, avoid headers when opening log files
       --stderrthreshold severity                    logs at or above this threshold go to stderr (default 2)
       --telemetry-host string                       Host to expose kube-state-metrics self metrics on. (default "0.0.0.0")
       --telemetry-port int                          Port to expose kube-state-metrics self metrics on. (default 81)
+      --total-shards int                            The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
   -v, --v Level                                     number for the log level verbosity
       --version                                     kube-state-metrics build version information
       --vmodule moduleSpec                          comma-separated list of pattern=N settings for file-filtered logging

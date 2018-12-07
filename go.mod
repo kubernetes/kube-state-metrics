@@ -1,6 +1,7 @@
 module k8s.io/kube-state-metrics
 
 require (
+	github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
 	github.com/evanphx/json-patch v4.1.0+incompatible // indirect
 	github.com/gogo/protobuf v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect

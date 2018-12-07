@@ -324,7 +324,7 @@ kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",c
 	sort.Strings(gotFiltered)
 
 	if len(expectedSplit) != len(gotFiltered) {
-		t.Fatal("expected different output length")
+		t.Fatalf("expected different output length, expected %d got %d", len(expectedSplit), len(gotFiltered))
 	}
 
 	for i := 0; i < len(expectedSplit); i++ {

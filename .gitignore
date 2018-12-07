@@ -2,10 +2,6 @@ kube-state-metrics
 documented_metrics
 code_metrics
 
-all-sharded-sorted.metrics
-all-sharded.metrics
-all.metrics
-
 # Created by https://www.gitignore.io/api/go
 
 ### Go ###

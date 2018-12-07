@@ -42,8 +42,8 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
-	"k8s.io/kube-state-metrics/pkg/watch"
 	"k8s.io/kube-state-metrics/pkg/sharding"
+	"k8s.io/kube-state-metrics/pkg/watch"
 )
 
 type whiteBlackLister interface {
@@ -60,20 +60,13 @@ type Builder struct {
 	ctx              context.Context
 	enabledResources []string
 	whiteBlackList   whiteBlackLister
-<<<<<<< HEAD
 	metrics          *watch.ListWatchMetrics
-=======
 	shard            int32
 	totalShards      int
->>>>>>> Introduce sharding
 }
 
 // NewBuilder returns a new builder.
-func NewBuilder(ctx context.Context) *Builder {
-	return &Builder{
-		ctx: ctx,
-	}
-}
+func NewBuilder() *Builder { return &Builder{} }
 
 // WithMetrics sets the metrics property of a Builder.
 func (b *Builder) WithMetrics(r *prometheus.Registry) {
@@ -107,6 +100,11 @@ func (b *Builder) WithNamespaces(n options.NamespaceList) {
 func (b *Builder) WithSharding(shard int32, totalShards int) {
 	b.shard = shard
 	b.totalShards = totalShards
+}
+
+// WithContext sets the ctx property of a Builder.
+func (b *Builder) WithContext(ctx context.Context) {
+	b.ctx = ctx
 }
 
 // WithKubeClient sets the kubeClient property of a Builder.

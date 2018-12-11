@@ -21,17 +21,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
-
-type mockPersistentVolumeStore struct {
-	list func() (v1.PersistentVolumeList, error)
-}
-
-func (ns mockPersistentVolumeStore) List() (v1.PersistentVolumeList, error) {
-	return ns.list()
-}
 
 func TestPersistentVolumeCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
@@ -44,155 +34,177 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			# HELP kube_persistentvolume_info Information about persistentvolume.
 			# TYPE kube_persistentvolume_info gauge
 	`
-	cases := []struct {
-		pvs     []v1.PersistentVolume
-		metrics []string // which metrics should be checked
-		want    string
-	}{
+	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
-			pvs: []v1.PersistentVolume{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-pv-pending",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumePending,
-					},
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-pending",
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-pv-available",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumeAvailable,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-pv-bound",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumeBound,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-pv-released",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumeReleased,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-pv-failed",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumeFailed,
-					},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumePending,
 				},
 			},
-			want: metadata + `
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Available"} 1
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Bound"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Failed"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Pending"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Released"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Available"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Bound"} 1
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Failed"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Pending"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Released"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Available"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Bound"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Failed"} 1
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Pending"} 0
-					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Released"} 0
+			Want: `
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Bound"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Failed"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Pending"} 1
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Released"} 0
+`,
+			MetricNames: []string{
+				"kube_persistentvolume_status_phase",
+			},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Available"} 1
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Bound"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Failed"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Pending"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Released"} 0
+`,
+			MetricNames: []string{"kube_persistentvolume_status_phase"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-bound",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeBound,
+				},
+			},
+			Want: `
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Available"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Bound"} 1
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Failed"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Pending"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Released"} 0
+`,
+			MetricNames: []string{"kube_persistentvolume_status_phase"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-released",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeReleased,
+				},
+			},
+			Want: `
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Bound"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Failed"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Pending"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Released"} 1
-				`,
-			metrics: []string{"kube_persistentvolume_status_phase"},
+`,
+			MetricNames: []string{"kube_persistentvolume_status_phase"},
 		},
 		{
-			pvs: []v1.PersistentVolume{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-pv-pending",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumePending,
-					},
-					Spec: v1.PersistentVolumeSpec{
-						StorageClassName: "test",
-					},
+
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-failed",
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-pv-available",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumeAvailable,
-					},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeFailed,
 				},
 			},
-			want: metadata + `
+			Want: `
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Available"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Bound"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Failed"} 1
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Pending"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Released"} 0
+`,
+			MetricNames: []string{"kube_persistentvolume_status_phase"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-pending",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumePending,
+				},
+				Spec: v1.PersistentVolumeSpec{
+					StorageClassName: "test",
+				},
+			},
+			Want: `
+				kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Available"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Bound"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Failed"} 0
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Pending"} 1
+					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Released"} 0
+`,
+			MetricNames: []string{
+				"kube_persistentvolume_status_phase",
+			},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
 					kube_persistentvolume_info{persistentvolume="test-pv-available",storageclass=""} 1
-					kube_persistentvolume_info{persistentvolume="test-pv-pending",storageclass="test"} 1
 				`,
-			metrics: []string{"kube_persistentvolume_info"},
+			MetricNames: []string{"kube_persistentvolume_info"},
 		},
 		{
-			pvs: []v1.PersistentVolume{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-labeled-pv",
-						Labels: map[string]string{
-							"app": "mysql-server",
-						},
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumePending,
-					},
-					Spec: v1.PersistentVolumeSpec{
-						StorageClassName: "test",
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-labeled-pv",
+					Labels: map[string]string{
+						"app": "mysql-server",
 					},
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-unlabeled-pv",
-					},
-					Status: v1.PersistentVolumeStatus{
-						Phase: v1.VolumeAvailable,
-					},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumePending,
+				},
+				Spec: v1.PersistentVolumeSpec{
+					StorageClassName: "test",
 				},
 			},
-			want: metadata + `
-					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
+			Want: `
 					kube_persistentvolume_labels{label_app="mysql-server",persistentvolume="test-labeled-pv"} 1
 				`,
-			metrics: []string{"kube_persistentvolume_labels"},
+			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
-	}
-	for _, c := range cases {
-		dc := &persistentVolumeCollector{
-			store: &mockPersistentVolumeStore{
-				list: func() (v1.PersistentVolumeList, error) {
-					return v1.PersistentVolumeList{Items: c.pvs}, nil
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-unlabeled-pv",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
 				},
 			},
-			opts: &options.Options{},
-		}
-		if err := testutils.GatherAndCompare(dc, c.want, c.metrics); err != nil {
-			t.Errorf("unexpected collecting result:\n%s", err)
+			Want: `
+					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_labels"},
+		},
+	}
+	for i, c := range cases {
+		c.Func = composeMetricGenFuncs(persistentVolumeMetricFamilies)
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
 }

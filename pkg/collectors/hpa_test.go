@@ -21,21 +21,11 @@ import (
 
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
 	hpa1MinReplicas int32 = 2
 )
-
-type mockHPAStore struct {
-	list func() (autoscaling.HorizontalPodAutoscalerList, error)
-}
-
-func (hs mockHPAStore) List() (autoscaling.HorizontalPodAutoscalerList, error) {
-	return hs.list()
-}
 
 func TestHPACollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
@@ -52,43 +42,37 @@ func TestHPACollector(t *testing.T) {
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
 		# TYPE kube_hpa_status_desired_replicas gauge
 	`
-	cases := []struct {
-		hpas    []autoscaling.HorizontalPodAutoscaler
-		metrics []string // which metrics should be checked
-		want    string
-	}{
-		// Verify populating base metrics.
+	cases := []generateMetricsTestCase{
 		{
-			hpas: []autoscaling.HorizontalPodAutoscaler{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 2,
-						Name:       "hpa1",
-						Namespace:  "ns1",
-					},
-					Spec: autoscaling.HorizontalPodAutoscalerSpec{
-						MaxReplicas: 4,
-						MinReplicas: &hpa1MinReplicas,
-						ScaleTargetRef: autoscaling.CrossVersionObjectReference{
-							APIVersion: "extensions/v1beta1",
-							Kind:       "Deployment",
-							Name:       "deployment1",
-						},
-					},
-					Status: autoscaling.HorizontalPodAutoscalerStatus{
-						CurrentReplicas: 2,
-						DesiredReplicas: 2,
+			// Verify populating base metrics.
+			Obj: &autoscaling.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Generation: 2,
+					Name:       "hpa1",
+					Namespace:  "ns1",
+				},
+				Spec: autoscaling.HorizontalPodAutoscalerSpec{
+					MaxReplicas: 4,
+					MinReplicas: &hpa1MinReplicas,
+					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
+						APIVersion: "extensions/v1beta1",
+						Kind:       "Deployment",
+						Name:       "deployment1",
 					},
 				},
+				Status: autoscaling.HorizontalPodAutoscalerStatus{
+					CurrentReplicas: 2,
+					DesiredReplicas: 2,
+				},
 			},
-			want: metadata + `
+			Want: `
 				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
 				kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
 			`,
-			metrics: []string{
+			MetricNames: []string{
 				"kube_hpa_metadata_generation",
 				"kube_hpa_spec_max_replicas",
 				"kube_hpa_spec_min_replicas",
@@ -97,17 +81,10 @@ func TestHPACollector(t *testing.T) {
 			},
 		},
 	}
-	for _, c := range cases {
-		hc := &hpaCollector{
-			store: &mockHPAStore{
-				list: func() (autoscaling.HorizontalPodAutoscalerList, error) {
-					return autoscaling.HorizontalPodAutoscalerList{Items: c.hpas}, nil
-				},
-			},
-			opts: &options.Options{},
-		}
-		if err := testutils.GatherAndCompare(hc, c.want, c.metrics); err != nil {
-			t.Errorf("unexpected collecting result:\n%s", err)
+	for i, c := range cases {
+		c.Func = composeMetricGenFuncs(hpaMetricFamilies)
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
 }

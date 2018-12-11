@@ -1,137 +1,72 @@
 package metrics
 
 import (
+	"strings"
 	"testing"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
-func TestFiltererdGatherer(t *testing.T) {
-	r := prometheus.NewRegistry()
-	c1 := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "test1",
-			Help: "test1 help",
-		},
-	)
-	c2 := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "test2",
-			Help: "test2 help",
-		},
-	)
-	c1.Inc()
-	c1.Inc()
-	c2.Inc()
-	r.MustRegister(c1)
-	r.MustRegister(c2)
-
-	res, err := FilteredGatherer(r, nil, nil).Gather()
-	if err != nil {
-		t.Fatal(err)
+func TestFamilyString(t *testing.T) {
+	m := Metric{
+		Name:        "kube_pod_info",
+		LabelKeys:   []string{"namespace"},
+		LabelValues: []string{"default"},
+		Value:       1,
 	}
 
-	found1 := false
-	found2 := false
-	for _, mf := range res {
-		if *mf.Name == "test1" {
-			found1 = true
-		}
-		if *mf.Name == "test2" {
-			found2 = true
-		}
-	}
+	f := Family{&m}
 
-	if !found1 || !found2 {
-		t.Fatal("No results expected to be filtered, but results were filtered.")
+	expected := "kube_pod_info{namespace=\"default\"} 1"
+	got := strings.TrimSpace(f.String())
+
+	if got != expected {
+		t.Fatalf("expected %v but got %v", expected, got)
 	}
 }
 
-func TestFiltererdGathererWhitelist(t *testing.T) {
-	r := prometheus.NewRegistry()
-	c1 := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "test1",
-			Help: "test1 help",
+func BenchmarkMetricWrite(b *testing.B) {
+	tests := []struct {
+		testName       string
+		metric         Metric
+		expectedLength int
+	}{
+		{
+			testName: "value-1",
+			metric: Metric{
+				Name:        "kube_pod_container_info",
+				LabelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
+				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
+				Value:       float64(1),
+			},
+			expectedLength: 168,
 		},
-	)
-	c2 := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "test2",
-			Help: "test2 help",
+		{
+			testName: "value-35.7",
+			metric: Metric{
+				Name:        "kube_pod_container_info",
+				LabelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
+				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
+				Value:       float64(35.7),
+			},
+			expectedLength: 171,
 		},
-	)
-	c1.Inc()
-	c1.Inc()
-	c2.Inc()
-	r.MustRegister(c1)
-	r.MustRegister(c2)
-
-	whitelist := options.MetricSet{}
-	whitelist.Set("test1")
-
-	res, err := FilteredGatherer(r, whitelist, nil).Gather()
-	if err != nil {
-		t.Fatal(err)
 	}
 
-	found1 := false
-	found2 := false
-	for _, mf := range res {
-		if *mf.Name == "test1" {
-			found1 = true
-		}
-		if *mf.Name == "test2" {
-			found2 = true
-		}
-	}
+	for _, test := range tests {
+		b.Run(test.testName, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				builder := strings.Builder{}
 
-	if !found1 || found2 {
-		t.Fatalf("Expected `test2` to be filtered and `test1` not. `test1`: %t ; `test2`: %t.", found1, found2)
-	}
-}
+				test.metric.Write(&builder)
 
-func TestFiltererdGathererBlacklist(t *testing.T) {
-	r := prometheus.NewRegistry()
-	c1 := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "test1",
-			Help: "test1 help",
-		},
-	)
-	c2 := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "test2",
-			Help: "test2 help",
-		},
-	)
-	c1.Inc()
-	c1.Inc()
-	c2.Inc()
-	r.MustRegister(c1)
-	r.MustRegister(c2)
+				s := builder.String()
 
-	blacklist := options.MetricSet{}
-	blacklist.Set("test1")
-
-	res, err := FilteredGatherer(r, nil, blacklist).Gather()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	found1 := false
-	found2 := false
-	for _, mf := range res {
-		if *mf.Name == "test1" {
-			found1 = true
-		}
-		if *mf.Name == "test2" {
-			found2 = true
-		}
-	}
-
-	if found1 || !found2 {
-		t.Fatalf("Expected `test1` to be filtered and `test2` not. `test1`: %t ; `test2`: %t.", found1, found2)
+				// Ensuring that the string is actually build, not optimized
+				// away by compilation.
+				got := len(s)
+				if test.expectedLength != got {
+					b.Fatalf("expected string of length %v but got %v", test.expectedLength, got)
+				}
+			}
+		})
 	}
 }

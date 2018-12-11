@@ -17,108 +17,90 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
-	descResourceQuotaLabelsDefaultLabels = []string{"resourcequota", "namespace"}
+	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
-	descResourceQuotaCreated = prometheus.NewDesc(
-		"kube_resourcequota_created",
-		"Unix creation timestamp",
-		descResourceQuotaLabelsDefaultLabels,
-		nil,
-	)
-	descResourceQuota = prometheus.NewDesc(
-		"kube_resourcequota",
-		"Information about resource quota.",
-		append(descResourceQuotaLabelsDefaultLabels,
-			"resource",
-			"type",
-		), nil,
-	)
+	resourceQuotaMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_resourcequota_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metrics.Family {
+				f := metrics.Family{}
+
+				if !r.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_resourcequota_created",
+						Value: float64(r.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_resourcequota",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about resource quota.",
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metrics.Family {
+				f := metrics.Family{}
+
+				for res, qty := range r.Status.Hard {
+					f = append(f, &metrics.Metric{
+						LabelValues: []string{string(res), "hard"},
+						Value:       float64(qty.MilliValue()) / 1000,
+					})
+				}
+				for res, qty := range r.Status.Used {
+					f = append(f, &metrics.Metric{
+						LabelValues: []string{string(res), "used"},
+						Value:       float64(qty.MilliValue()) / 1000,
+					})
+				}
+
+				for _, m := range f {
+					m.Name = "kube_resourcequota"
+					m.LabelKeys = []string{"resource", "type"}
+				}
+
+				return f
+			}),
+		},
+	}
 )
 
-type ResourceQuotaLister func() (v1.ResourceQuotaList, error)
+func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		resourceQuota := obj.(*v1.ResourceQuota)
 
-func (l ResourceQuotaLister) List() (v1.ResourceQuotaList, error) {
-	return l()
-}
+		metricFamily := f(resourceQuota)
 
-func RegisterResourceQuotaCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().ResourceQuotas().Informer().(cache.SharedInformer))
-	}
-
-	resourceQuotaLister := ResourceQuotaLister(func() (quotas v1.ResourceQuotaList, err error) {
-		for _, rqinf := range infs {
-			for _, rq := range rqinf.GetStore().List() {
-				quotas.Items = append(quotas.Items, *(rq.(*v1.ResourceQuota)))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descResourceQuotaLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelValues...)
 		}
-		return quotas, nil
-	})
 
-	registry.MustRegister(&resourceQuotaCollector{store: resourceQuotaLister, opts: opts})
-	infs.Run(context.Background().Done())
+		return metricFamily
+	}
 }
 
-type resourceQuotaStore interface {
-	List() (v1.ResourceQuotaList, error)
-}
-
-// resourceQuotaCollector collects metrics about all resource quotas in the cluster.
-type resourceQuotaCollector struct {
-	store resourceQuotaStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (rqc *resourceQuotaCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descResourceQuotaCreated
-	ch <- descResourceQuota
-}
-
-// Collect implements the prometheus.Collector interface.
-func (rqc *resourceQuotaCollector) Collect(ch chan<- prometheus.Metric) {
-	resourceQuota, err := rqc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "resourcequota"}).Inc()
-		glog.Errorf("listing resource quotas failed: %s", err)
-		return
+func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().ResourceQuotas(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(opts)
+		},
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "resourcequota"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "resourcequota"}).Observe(float64(len(resourceQuota.Items)))
-	for _, rq := range resourceQuota.Items {
-		rqc.collectResourceQuota(ch, rq)
-	}
-
-	glog.V(4).Infof("collected %d resourcequotas", len(resourceQuota.Items))
-}
-
-func (rqc *resourceQuotaCollector) collectResourceQuota(ch chan<- prometheus.Metric, rq v1.ResourceQuota) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{rq.Name, rq.Namespace}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-
-	if !rq.CreationTimestamp.IsZero() {
-		addGauge(descResourceQuotaCreated, float64(rq.CreationTimestamp.Unix()))
-	}
-	for res, qty := range rq.Status.Hard {
-		addGauge(descResourceQuota, float64(qty.MilliValue())/1000, string(res), "hard")
-	}
-	for res, qty := range rq.Status.Used {
-		addGauge(descResourceQuota, float64(qty.MilliValue())/1000, string(res), "used")
-	}
-
 }

@@ -17,13 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -31,112 +32,100 @@ var (
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 
-	descPersistentVolumeLabels = prometheus.NewDesc(
-		descPersistentVolumeLabelsName,
-		descPersistentVolumeLabelsHelp,
-		descPersistentVolumeLabelsDefaultLabels,
-		nil,
-	)
-	descPersistentVolumeStatusPhase = prometheus.NewDesc(
-		"kube_persistentvolume_status_phase",
-		"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
-		append(descPersistentVolumeLabelsDefaultLabels, "phase"),
-		nil,
-	)
-	descPersistentVolumeInfo = prometheus.NewDesc(
-		"kube_persistentvolume_info",
-		"Information about persistentvolume.",
-		append(descPersistentVolumeLabelsDefaultLabels, "storageclass"),
-		nil,
-	)
+	persistentVolumeMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: descPersistentVolumeLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descPersistentVolumeLabelsHelp,
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descPersistentVolumeLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolume_status_phase",
+			Type: metrics.MetricTypeGauge,
+			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metrics.Family {
+				f := metrics.Family{}
+
+				// Set current phase to 1, others to 0 if it is set.
+				if p := p.Status.Phase; p != "" {
+					f = append(f,
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumePending)},
+							Value:       boolFloat64(p == v1.VolumePending),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeAvailable)},
+							Value:       boolFloat64(p == v1.VolumeAvailable),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeBound)},
+							Value:       boolFloat64(p == v1.VolumeBound),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeReleased)},
+							Value:       boolFloat64(p == v1.VolumeReleased),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.VolumeFailed)},
+							Value:       boolFloat64(p == v1.VolumeFailed),
+						},
+					)
+				}
+
+				for _, m := range f {
+					m.Name = "kube_persistentvolume_status_phase"
+					m.LabelKeys = []string{"phase"}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_persistentvolume_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about persistentvolume.",
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_persistentvolume_info",
+					LabelKeys:   []string{"storageclass"},
+					LabelValues: []string{p.Spec.StorageClassName},
+					Value:       1,
+				}}
+			}),
+		},
+	}
 )
 
-type PersistentVolumeLister func() (v1.PersistentVolumeList, error)
+func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		persistentVolume := obj.(*v1.PersistentVolume)
 
-func (pvl PersistentVolumeLister) List() (v1.PersistentVolumeList, error) {
-	return pvl()
-}
+		metricFamily := f(persistentVolume)
 
-func RegisterPersistentVolumeCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().PersistentVolumes().Informer().(cache.SharedInformer))
-	}
-
-	persistentVolumeLister := PersistentVolumeLister(func() (pvs v1.PersistentVolumeList, err error) {
-		for _, pvinf := range infs {
-			for _, pv := range pvinf.GetStore().List() {
-				pvs.Items = append(pvs.Items, *(pv.(*v1.PersistentVolume)))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descPersistentVolumeLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{persistentVolume.Name}, m.LabelValues...)
 		}
-		return pvs, nil
-	})
 
-	registry.MustRegister(&persistentVolumeCollector{store: persistentVolumeLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type persistentVolumeStore interface {
-	List() (v1.PersistentVolumeList, error)
-}
-
-// persistentVolumeCollector collects metrics about all persistentVolumes in the cluster.
-type persistentVolumeCollector struct {
-	store persistentVolumeStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (collector *persistentVolumeCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descPersistentVolumeStatusPhase
-	ch <- descPersistentVolumeInfo
-	ch <- descPersistentVolumeLabels
-}
-
-func persistentVolumeLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
-		descPersistentVolumeLabelsName,
-		descPersistentVolumeLabelsHelp,
-		append(descPersistentVolumeLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-// Collect implements the prometheus.Collector interface.
-func (collector *persistentVolumeCollector) Collect(ch chan<- prometheus.Metric) {
-	persistentVolumeCollector, err := collector.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "persistentvolume"}).Inc()
-		glog.Errorf("listing persistentVolume failed: %s", err)
-		return
+		return metricFamily
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "persistentvolume"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "persistentvolume"}).Observe(float64(len(persistentVolumeCollector.Items)))
-	for _, pv := range persistentVolumeCollector.Items {
-		collector.collectPersistentVolume(ch, pv)
-	}
-
-	glog.V(4).Infof("collected %d persistentvolumes", len(persistentVolumeCollector.Items))
 }
 
-func (collector *persistentVolumeCollector) collectPersistentVolume(ch chan<- prometheus.Metric, pv v1.PersistentVolume) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{pv.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(pv.Labels)
-	addGauge(persistentVolumeLabelsDesc(labelKeys), 1, labelValues...)
-
-	addGauge(descPersistentVolumeInfo, 1, pv.Spec.StorageClassName)
-	// Set current phase to 1, others to 0 if it is set.
-	if p := pv.Status.Phase; p != "" {
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumePending), string(v1.VolumePending))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeAvailable), string(v1.VolumeAvailable))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeBound), string(v1.VolumeBound))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeReleased), string(v1.VolumeReleased))
-		addGauge(descPersistentVolumeStatusPhase, boolFloat64(p == v1.VolumeFailed), string(v1.VolumeFailed))
+func createPersistentVolumeListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().PersistentVolumes().List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().PersistentVolumes().Watch(opts)
+		},
 	}
 }

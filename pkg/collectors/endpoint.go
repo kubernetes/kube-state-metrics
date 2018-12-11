@@ -17,15 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"golang.org/x/net/context"
-
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -33,139 +32,105 @@ var (
 	descEndpointLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 
-	descEndpointInfo = prometheus.NewDesc(
-		"kube_endpoint_info",
-		"Information about endpoint.",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+	endpointMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about endpoint.",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_endpoint_info",
+					Value: 1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				f := metrics.Family{}
 
-	descEndpointCreated = prometheus.NewDesc(
-		"kube_endpoint_created",
-		"Unix creation timestamp",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+				if !e.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_endpoint_created",
+						Value: float64(e.CreationTimestamp.Unix()),
+					})
+				}
 
-	descEndpointLabels = prometheus.NewDesc(
-		descEndpointLabelsName,
-		descEndpointLabelsHelp,
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descEndpointLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descEndpointLabelsHelp,
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descEndpointLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_address_available",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of addresses available in endpoint.",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				var available int
+				for _, s := range e.Subsets {
+					available += len(s.Addresses) * len(s.Ports)
+				}
 
-	descEndpointAddressAvailable = prometheus.NewDesc(
-		"kube_endpoint_address_available",
-		"Number of addresses available in endpoint.",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
-
-	descEndpointAddressNotReady = prometheus.NewDesc(
-		"kube_endpoint_address_not_ready",
-		"Number of addresses not ready in endpoint",
-		descEndpointLabelsDefaultLabels,
-		nil,
-	)
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_endpoint_address_available",
+					Value: float64(available),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_endpoint_address_not_ready",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of addresses not ready in endpoint",
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metrics.Family {
+				var notReady int
+				for _, s := range e.Subsets {
+					notReady += len(s.NotReadyAddresses) * len(s.Ports)
+				}
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_endpoint_address_not_ready",
+					Value: float64(notReady),
+				}}
+			}),
+		},
+	}
 )
 
-type EndpointLister func() ([]v1.Endpoints, error)
+func wrapEndpointFunc(f func(*v1.Endpoints) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		endpoint := obj.(*v1.Endpoints)
 
-func (l EndpointLister) List() ([]v1.Endpoints, error) {
-	return l()
-}
+		metricFamily := f(endpoint)
 
-func RegisterEndpointCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Endpoints().Informer().(cache.SharedInformer))
-	}
-
-	endpointLister := EndpointLister(func() (endpoints []v1.Endpoints, err error) {
-		for _, sinf := range infs {
-			for _, m := range sinf.GetStore().List() {
-				endpoints = append(endpoints, *m.(*v1.Endpoints))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descEndpointLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{endpoint.Namespace, endpoint.Name}, m.LabelValues...)
 		}
-		return endpoints, nil
-	})
 
-	registry.MustRegister(&endpointCollector{store: endpointLister, opts: opts})
-	infs.Run(context.Background().Done())
+		return metricFamily
+	}
 }
 
-type endpointStore interface {
-	List() (endpoints []v1.Endpoints, err error)
-}
-
-// endpointCollector collects metrics about all endpoints in the cluster.
-type endpointCollector struct {
-	store endpointStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (pc *endpointCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descEndpointInfo
-	ch <- descEndpointLabels
-	ch <- descEndpointCreated
-	ch <- descEndpointAddressAvailable
-	ch <- descEndpointAddressNotReady
-}
-
-// Collect implements the prometheus.Collector interface.
-func (ec *endpointCollector) Collect(ch chan<- prometheus.Metric) {
-	endpoints, err := ec.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "endpoint"}).Inc()
-		glog.Errorf("listing endpoints failed: %s", err)
-		return
+func createEndpointsListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Endpoints(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Endpoints(ns).Watch(opts)
+		},
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "endpoint"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "endpoint"}).Observe(float64(len(endpoints)))
-	for _, e := range endpoints {
-		ec.collectEndpoints(ch, e)
-	}
-
-	glog.V(4).Infof("collected %d endpoints", len(endpoints))
-}
-
-func (ec *endpointCollector) collectEndpoints(ch chan<- prometheus.Metric, e v1.Endpoints) {
-	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
-		lv = append([]string{e.Namespace, e.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
-	}
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-
-	addGauge(descEndpointInfo, 1)
-	if !e.CreationTimestamp.IsZero() {
-		addGauge(descEndpointCreated, float64(e.CreationTimestamp.Unix()))
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
-	addGauge(endpointLabelsDesc(labelKeys), 1, labelValues...)
-
-	var available int
-	for _, s := range e.Subsets {
-		available += len(s.Addresses) * len(s.Ports)
-	}
-	addGauge(descEndpointAddressAvailable, float64(available))
-
-	var notReady int
-	for _, s := range e.Subsets {
-		notReady += len(s.NotReadyAddresses) * len(s.Ports)
-	}
-	addGauge(descEndpointAddressNotReady, float64(notReady))
-}
-
-func endpointLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
-		descEndpointLabelsName,
-		descEndpointLabelsHelp,
-		append(descEndpointLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
 }

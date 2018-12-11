@@ -17,12 +17,10 @@ certain heuristics to display comprehensible messages. kube-state-metrics
 exposes raw data unmodified from the Kubernetes API, this way users have all the
 data they require and perform heuristics as they see fit.
 
-The metrics are exported through the [Prometheus golang
-client](https://github.com/prometheus/client_golang) on the HTTP endpoint `/metrics` on
-the listening port (default 80). They are served either as plaintext or
-protobuf depending on the `Accept` header. They are designed to be consumed
-either by Prometheus itself or by a scraper that is compatible with scraping
-a Prometheus client endpoint. You can also open `/metrics` in a browser to see
+The metrics are exported on the HTTP endpoint `/metrics` on the listening port
+(default 80). They are served as plaintext. They are designed to be consumed
+either by Prometheus itself or by a scraper that is compatible with scraping a
+Prometheus client endpoint. You can also open `/metrics` in a browser to see
 the raw metrics.
 
 ## Table of Contents
@@ -35,12 +33,12 @@ the raw metrics.
 - [Metrics Documentation](#metrics-documentation)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
-- [kube-state-metrics vs. Heapster(metrics-server)](#kube-state-metrics-vs-heapster)
+- [kube-state-metrics vs. Heapster(metrics-server)](#kube-state-metrics-vs-heapstermetrics-server)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)
   - [Kubernetes Deployment](#kubernetes-deployment)
-  - [Deployment](#deployment)
+  - [Development](#development)
 
 ### Versioning
 
@@ -55,9 +53,9 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most 5 kube-state-metrics releases will be recorded below.
 
-| kube-state-metrics | client-go | **Kubernetes 1.8** | **Kubernetes 1.9** | **Kubernetes 1.10** | **Kubernetes 1.11** |
+| kube-state-metrics | client-go | **Kubernetes 1.9** | **Kubernetes 1.10** | **Kubernetes 1.11** | **Kubernetes 1.12** |
 |--------------------|-----------|--------------------|--------------------|--------------------|--------------------|
-| **v1.1.0** |  release-5.0      |         ✓          |         ✓          |         ✓          |         -          |
+| **v1.1.0** |  release-5.0      |         ✓          |         ✓          |         -          |         -          |
 | **v1.2.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.3.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.3.1** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
@@ -197,6 +195,8 @@ metrics right away.
 ```
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info | grep Account | cut -d '[' -f 2 | cut -d ']' -f 1)
 ```
+
+Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and kubectl apply -f kubernetes, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
 

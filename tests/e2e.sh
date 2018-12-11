@@ -30,7 +30,7 @@ SUDO=${SUDO-sudo}
 mkdir -p $KUBE_STATE_METRICS_LOG_DIR
 
 function finish() {
-    echo "calling cleaup function"
+    echo "calling cleanup function"
     # kill kubectl proxy in background
     kill %1 || true
     kubectl delete -f kubernetes/ || true
@@ -168,7 +168,7 @@ echo "check metrics format with promtool"
 [ -n "$E2E_SETUP_PROMTOOL" ] && setup_promtool
 cat $KUBE_STATE_METRICS_LOG_DIR/metrics | promtool check metrics
 
-collectors=$(find pkg/collectors/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "collectors.go" | xargs -n1 basename | awk -F. '{print $1}')
+collectors=$(find pkg/collectors/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "collectors.go" -not -name "builder.go" -not -name "testutils.go" -not -name "utils.go" | xargs -n1 basename | awk -F. '{print $1}')
 echo "available collectors: $collectors"
 for collector in $collectors; do
     echo "checking that kube_${collector}* metrics exists"

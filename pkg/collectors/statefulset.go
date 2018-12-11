@@ -17,13 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/apps/v1beta1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -31,158 +32,178 @@ var (
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 
-	descStatefulSetCreated = prometheus.NewDesc(
-		"kube_statefulset_created",
-		"Unix creation timestamp",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicas = prometheus.NewDesc(
-		"kube_statefulset_status_replicas",
-		"The number of replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicasCurrent = prometheus.NewDesc(
-		"kube_statefulset_status_replicas_current",
-		"The number of current replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicasReady = prometheus.NewDesc(
-		"kube_statefulset_status_replicas_ready",
-		"The number of ready replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusReplicasUpdated = prometheus.NewDesc(
-		"kube_statefulset_status_replicas_updated",
-		"The number of updated replicas per StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetStatusObservedGeneration = prometheus.NewDesc(
-		"kube_statefulset_status_observed_generation",
-		"The generation observed by the StatefulSet controller.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetSpecReplicas = prometheus.NewDesc(
-		"kube_statefulset_replicas",
-		"Number of desired pods for a StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetMetadataGeneration = prometheus.NewDesc(
-		"kube_statefulset_metadata_generation",
-		"Sequence number representing a specific generation of the desired state for the StatefulSet.",
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
-	descStatefulSetLabels = prometheus.NewDesc(
-		descStatefulSetLabelsName,
-		descStatefulSetLabelsHelp,
-		descStatefulSetLabelsDefaultLabels,
-		nil,
-	)
+	statefulSetMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				f := metrics.Family{}
+
+				if !s.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_statefulset_created",
+						Value: float64(s.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas",
+					Value: float64(s.Status.Replicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas_current",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of current replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas_current",
+					Value: float64(s.Status.CurrentReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas_ready",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of ready replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas_ready",
+					Value: float64(s.Status.ReadyReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_replicas_updated",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of updated replicas per StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_status_replicas_updated",
+					Value: float64(s.Status.UpdatedReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "The generation observed by the StatefulSet controller.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				f := metrics.Family{}
+
+				if s.Status.ObservedGeneration != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_statefulset_status_observed_generation",
+						Value: float64(*s.Status.ObservedGeneration),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of desired pods for a StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				f := metrics.Family{}
+
+				if s.Spec.Replicas != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_statefulset_replicas",
+						Value: float64(*s.Spec.Replicas),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_metadata_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "Sequence number representing a specific generation of the desired state for the StatefulSet.",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_statefulset_metadata_generation",
+					Value: float64(s.ObjectMeta.Generation),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descStatefulSetLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descStatefulSetLabelsHelp,
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descStatefulSetLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_current_revision",
+			Type: metrics.MetricTypeGauge,
+			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_statefulset_status_current_revision",
+					LabelKeys:   []string{"revision"},
+					LabelValues: []string{s.Status.CurrentRevision},
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_statefulset_status_update_revision",
+			Type: metrics.MetricTypeGauge,
+			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",
+			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:        "kube_statefulset_status_update_revision",
+					LabelKeys:   []string{"revision"},
+					LabelValues: []string{s.Status.UpdateRevision},
+					Value:       1,
+				}}
+			}),
+		},
+	}
 )
 
-type StatefulSetLister func() ([]v1beta1.StatefulSet, error)
+func wrapStatefulSetFunc(f func(*v1beta1.StatefulSet) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		statefulSet := obj.(*v1beta1.StatefulSet)
 
-func (l StatefulSetLister) List() ([]v1beta1.StatefulSet, error) {
-	return l()
-}
+		metricFamily := f(statefulSet)
 
-func RegisterStatefulSetCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Apps().V1beta1().StatefulSets().Informer().(cache.SharedInformer))
-	}
-
-	statefulSetLister := StatefulSetLister(func() (statefulSets []v1beta1.StatefulSet, err error) {
-		for _, dinf := range infs {
-			for _, c := range dinf.GetStore().List() {
-				statefulSets = append(statefulSets, *(c.(*v1beta1.StatefulSet)))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descStatefulSetLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{statefulSet.Namespace, statefulSet.Name}, m.LabelValues...)
 		}
-		return statefulSets, nil
-	})
 
-	registry.MustRegister(&statefulSetCollector{store: statefulSetLister, opts: opts})
-	infs.Run(context.Background().Done())
+		return metricFamily
+	}
 }
 
-type statefulSetStore interface {
-	List() (statefulSets []v1beta1.StatefulSet, err error)
-}
-
-type statefulSetCollector struct {
-	store statefulSetStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (dc *statefulSetCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descStatefulSetCreated
-	ch <- descStatefulSetStatusReplicas
-	ch <- descStatefulSetStatusReplicasCurrent
-	ch <- descStatefulSetStatusReplicasReady
-	ch <- descStatefulSetStatusReplicasUpdated
-	ch <- descStatefulSetStatusObservedGeneration
-	ch <- descStatefulSetSpecReplicas
-	ch <- descStatefulSetMetadataGeneration
-	ch <- descStatefulSetLabels
-}
-
-// Collect implements the prometheus.Collector interface.
-func (sc *statefulSetCollector) Collect(ch chan<- prometheus.Metric) {
-	sss, err := sc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "statefulset"}).Inc()
-		glog.Errorf("listing statefulsets failed: %s", err)
-		return
+func createStatefulSetListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.AppsV1beta1().StatefulSets(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.AppsV1beta1().StatefulSets(ns).Watch(opts)
+		},
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "statefulset"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "statefulset"}).Observe(float64(len(sss)))
-	for _, d := range sss {
-		sc.collectStatefulSet(ch, d)
-	}
-
-	glog.V(4).Infof("collected %d statefulsets", len(sss))
-}
-
-func statefulSetLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
-		descStatefulSetLabelsName,
-		descStatefulSetLabelsHelp,
-		append(descStatefulSetLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func (dc *statefulSetCollector) collectStatefulSet(ch chan<- prometheus.Metric, statefulSet v1beta1.StatefulSet) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{statefulSet.Namespace, statefulSet.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	if !statefulSet.CreationTimestamp.IsZero() {
-		addGauge(descStatefulSetCreated, float64(statefulSet.CreationTimestamp.Unix()))
-	}
-	addGauge(descStatefulSetStatusReplicas, float64(statefulSet.Status.Replicas))
-	addGauge(descStatefulSetStatusReplicasCurrent, float64(statefulSet.Status.CurrentReplicas))
-	addGauge(descStatefulSetStatusReplicasReady, float64(statefulSet.Status.ReadyReplicas))
-	addGauge(descStatefulSetStatusReplicasUpdated, float64(statefulSet.Status.UpdatedReplicas))
-	if statefulSet.Status.ObservedGeneration != nil {
-		addGauge(descStatefulSetStatusObservedGeneration, float64(*statefulSet.Status.ObservedGeneration))
-	}
-
-	if statefulSet.Spec.Replicas != nil {
-		addGauge(descStatefulSetSpecReplicas, float64(*statefulSet.Spec.Replicas))
-	}
-	addGauge(descStatefulSetMetadataGeneration, float64(statefulSet.ObjectMeta.Generation))
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(statefulSet.Labels)
-	addGauge(statefulSetLabelsDesc(labelKeys), 1, labelValues...)
 }

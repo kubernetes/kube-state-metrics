@@ -23,17 +23,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
-
-type mockLimitRangeStore struct {
-	list func() (v1.LimitRangeList, error)
-}
-
-func (ns mockLimitRangeStore) List() (v1.LimitRangeList, error) {
-	return ns.list()
-}
 
 func TestLimitRangeollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
@@ -46,64 +36,52 @@ func TestLimitRangeollector(t *testing.T) {
 	# HELP kube_limitrange Information about limit range.
 	# TYPE kube_limitrange gauge
 	`
-	cases := []struct {
-		ranges  []v1.LimitRange
-		metrics []string // which metrics should be checked
-		want    string
-	}{
+	cases := []generateMetricsTestCase{
 		{
-			ranges: []v1.LimitRange{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "quotaTest",
-						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:         "testNS",
-					},
-					Spec: v1.LimitRangeSpec{
-						Limits: []v1.LimitRangeItem{
-							{
-								Type: v1.LimitTypePod,
-								Max: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								Min: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								Default: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								DefaultRequest: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
-								MaxLimitRequestRatio: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceMemory: testMemoryQuantity,
-								},
+			Obj: &v1.LimitRange{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "quotaTest",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "testNS",
+				},
+				Spec: v1.LimitRangeSpec{
+					Limits: []v1.LimitRangeItem{
+						{
+							Type: v1.LimitTypePod,
+							Max: map[v1.ResourceName]resource.Quantity{
+								v1.ResourceMemory: testMemoryQuantity,
+							},
+							Min: map[v1.ResourceName]resource.Quantity{
+								v1.ResourceMemory: testMemoryQuantity,
+							},
+							Default: map[v1.ResourceName]resource.Quantity{
+								v1.ResourceMemory: testMemoryQuantity,
+							},
+							DefaultRequest: map[v1.ResourceName]resource.Quantity{
+								v1.ResourceMemory: testMemoryQuantity,
+							},
+							MaxLimitRequestRatio: map[v1.ResourceName]resource.Quantity{
+								v1.ResourceMemory: testMemoryQuantity,
 							},
 						},
 					},
 				},
 			},
-			want: metadata + `
-		kube_limitrange_created{limitrange="quotaTest",namespace="testNS"} 1.5e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="min"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="max"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="default"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="defaultRequest"} 2.1e+09
-		kube_limitrange{limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod",constraint="maxLimitRequestRatio"} 2.1e+09
+			Want: `
+        kube_limitrange_created{limitrange="quotaTest",namespace="testNS"} 1.5e+09
+        kube_limitrange{constraint="default",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
+        kube_limitrange{constraint="defaultRequest",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
+        kube_limitrange{constraint="max",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
+        kube_limitrange{constraint="maxLimitRequestRatio",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
+        kube_limitrange{constraint="min",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
+
 		`,
 		},
 	}
-	for _, c := range cases {
-		dc := &limitRangeCollector{
-			store: &mockLimitRangeStore{
-				list: func() (v1.LimitRangeList, error) {
-					return v1.LimitRangeList{Items: c.ranges}, nil
-				},
-			},
-			opts: &options.Options{},
-		}
-		if err := testutils.GatherAndCompare(dc, c.want, c.metrics); err != nil {
-			t.Errorf("unexpected collecting result:\n%s", err)
+	for i, c := range cases {
+		c.Func = composeMetricGenFuncs(limitRangeMetricFamilies)
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
 }

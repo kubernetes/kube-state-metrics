@@ -1,3 +1,7 @@
+## v1.5.0-beta.0 / 2018-12-11
+
+After a testing period of 11 days, there were no additional bugs found or features introduced.
+
 ## v1.5.0-alpha.0 / 2018-11-30
 
 * [CHANGE] Disable gzip compression of kube-state-metrics responses by default. Can be re-enabled via `--enable-gzip-encoding`. See #563 for more details.

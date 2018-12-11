@@ -17,13 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -31,119 +32,135 @@ var (
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
-	descServiceInfo = prometheus.NewDesc(
-		"kube_service_info",
-		"Information about service.",
-		append(descServiceLabelsDefaultLabels, "cluster_ip"),
-		nil,
-	)
+	serviceMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_service_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about service.",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				m := metrics.Metric{
+					Name:        "kube_service_info",
+					LabelKeys:   []string{"cluster_ip", "external_name", "load_balancer_ip"},
+					LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
+					Value:       1,
+				}
+				return metrics.Family{&m}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_service_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				if !s.CreationTimestamp.IsZero() {
+					m := metrics.Metric{
+						Name:        "kube_service_created",
+						LabelKeys:   nil,
+						LabelValues: nil,
+						Value:       float64(s.CreationTimestamp.Unix()),
+					}
+					return metrics.Family{&m}
+				}
+				return nil
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_service_spec_type",
+			Type: metrics.MetricTypeGauge,
+			Help: "Type about service.",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				m := metrics.Metric{
+					Name:        "kube_service_spec_type",
+					LabelKeys:   []string{"type"},
+					LabelValues: []string{string(s.Spec.Type)},
+					Value:       1,
+				}
+				return metrics.Family{&m}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descServiceLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descServiceLabelsHelp,
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+				m := metrics.Metric{
+					Name:        descServiceLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}
+				return metrics.Family{&m}
+			}),
+		},
+		{
+			Name: "kube_service_spec_external_ip",
+			Type: metrics.MetricTypeGauge,
+			Help: "Service external ips. One series for each ip",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				family := metrics.Family{}
 
-	descServiceCreated = prometheus.NewDesc(
-		"kube_service_created",
-		"Unix creation timestamp",
-		descServiceLabelsDefaultLabels,
-		nil,
-	)
+				if len(s.Spec.ExternalIPs) > 0 {
+					for _, externalIP := range s.Spec.ExternalIPs {
+						family = append(family, &metrics.Metric{
+							Name:        "kube_service_spec_external_ip",
+							LabelKeys:   []string{"external_ip"},
+							LabelValues: []string{externalIP},
+							Value:       1,
+						})
+					}
+				}
 
-	descServiceSpecType = prometheus.NewDesc(
-		"kube_service_spec_type",
-		"Type about service.",
-		append(descServiceLabelsDefaultLabels, "type"),
-		nil,
-	)
+				return family
+			}),
+		},
+		{
+			Name: "kube_service_status_load_balancer_ingress",
+			Type: metrics.MetricTypeGauge,
+			Help: "Service load balancer ingress status",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) metrics.Family {
+				family := metrics.Family{}
 
-	descServiceLabels = prometheus.NewDesc(
-		descServiceLabelsName,
-		descServiceLabelsHelp,
-		descServiceLabelsDefaultLabels,
-		nil,
-	)
+				if len(s.Status.LoadBalancer.Ingress) > 0 {
+					for _, ingress := range s.Status.LoadBalancer.Ingress {
+						family = append(family, &metrics.Metric{
+							Name:        "kube_service_status_load_balancer_ingress",
+							LabelKeys:   []string{"ip", "hostname"},
+							LabelValues: []string{ingress.IP, ingress.Hostname},
+							Value:       1,
+						})
+
+					}
+				}
+
+				return family
+			}),
+		},
+	}
 )
 
-type ServiceLister func() ([]v1.Service, error)
+func wrapSvcFunc(f func(*v1.Service) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		svc := obj.(*v1.Service)
 
-func (l ServiceLister) List() ([]v1.Service, error) {
-	return l()
-}
+		metricFamily := f(svc)
 
-func RegisterServiceCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Services().Informer().(cache.SharedInformer))
-	}
-
-	serviceLister := ServiceLister(func() (services []v1.Service, err error) {
-		for _, sinf := range infs {
-			for _, m := range sinf.GetStore().List() {
-				services = append(services, *m.(*v1.Service))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descServiceLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{svc.Namespace, svc.Name}, m.LabelValues...)
 		}
-		return services, nil
-	})
 
-	registry.MustRegister(&serviceCollector{store: serviceLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type serviceStore interface {
-	List() (services []v1.Service, err error)
-}
-
-// serviceCollector collects metrics about all services in the cluster.
-type serviceCollector struct {
-	store serviceStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (pc *serviceCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descServiceInfo
-	ch <- descServiceLabels
-	ch <- descServiceCreated
-	ch <- descServiceSpecType
-}
-
-// Collect implements the prometheus.Collector interface.
-func (sc *serviceCollector) Collect(ch chan<- prometheus.Metric) {
-	services, err := sc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "service"}).Inc()
-		glog.Errorf("listing services failed: %s", err)
-		return
+		return metricFamily
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "service"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "service"}).Observe(float64(len(services)))
-	for _, s := range services {
-		sc.collectService(ch, s)
-	}
-	glog.V(4).Infof("collected %d services", len(services))
 }
 
-func serviceLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
-		descServiceLabelsName,
-		descServiceLabelsHelp,
-		append(descServiceLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func (sc *serviceCollector) collectService(ch chan<- prometheus.Metric, s v1.Service) {
-	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
-		lv = append([]string{s.Namespace, s.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
+func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Services(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Services(ns).Watch(opts)
+		},
 	}
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	addGauge(descServiceSpecType, 1, string(s.Spec.Type))
-
-	addGauge(descServiceInfo, 1, s.Spec.ClusterIP)
-	if !s.CreationTimestamp.IsZero() {
-		addGauge(descServiceCreated, float64(s.CreationTimestamp.Unix()))
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-	addGauge(serviceLabelsDesc(labelKeys), 1, labelValues...)
 }

@@ -17,14 +17,15 @@ limitations under the License.
 package collectors
 
 import (
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/constant"
-	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/metrics"
+
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 )
 
@@ -33,303 +34,444 @@ var (
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
 
-	descNodeInfo = prometheus.NewDesc(
-		"kube_node_info",
-		"Information about a cluster node.",
-		append(descNodeLabelsDefaultLabels,
-			"kernel_version",
-			"os_image",
-			"container_runtime_version",
-			"kubelet_version",
-			"kubeproxy_version",
-			"provider_id"),
-		nil,
-	)
-	descNodeCreated = prometheus.NewDesc(
-		"kube_node_created",
-		"Unix creation timestamp",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeLabels = prometheus.NewDesc(
-		descNodeLabelsName,
-		descNodeLabelsHelp,
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeSpecUnschedulable = prometheus.NewDesc(
-		"kube_node_spec_unschedulable",
-		"Whether a node can schedule new pods.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeSpecTaint = prometheus.NewDesc(
-		"kube_node_spec_taint",
-		"The taint of a cluster node.",
-		append(descNodeLabelsDefaultLabels, "key", "value", "effect"),
-		nil,
-	)
-	descNodeStatusCondition = prometheus.NewDesc(
-		"kube_node_status_condition",
-		"The condition of a cluster node.",
-		append(descNodeLabelsDefaultLabels, "condition", "status"),
-		nil,
-	)
-	descNodeStatusPhase = prometheus.NewDesc(
-		"kube_node_status_phase",
-		"The phase the node is currently in.",
-		append(descNodeLabelsDefaultLabels, "phase"),
-		nil,
-	)
-	descNodeStatusCapacity = prometheus.NewDesc(
-		"kube_node_status_capacity",
-		"The capacity for different resources of a node.",
-		append(descNodeLabelsDefaultLabels, "resource", "unit"),
-		nil,
-	)
-	descNodeStatusCapacityPods = prometheus.NewDesc(
-		"kube_node_status_capacity_pods",
-		"The total pod resources of the node.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeStatusCapacityCPU = prometheus.NewDesc(
-		"kube_node_status_capacity_cpu_cores",
-		"The total CPU resources of the node.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeStatusCapacityMemory = prometheus.NewDesc(
-		"kube_node_status_capacity_memory_bytes",
-		"The total memory resources of the node.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeStatusAllocatable = prometheus.NewDesc(
-		"kube_node_status_allocatable",
-		"The allocatable for different resources of a node that are available for scheduling.",
-		append(descNodeLabelsDefaultLabels, "resource", "unit"),
-		nil,
-	)
-	descNodeStatusAllocatablePods = prometheus.NewDesc(
-		"kube_node_status_allocatable_pods",
-		"The pod resources of a node that are available for scheduling.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeStatusAllocatableCPU = prometheus.NewDesc(
-		"kube_node_status_allocatable_cpu_cores",
-		"The CPU resources of a node that are available for scheduling.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-	descNodeStatusAllocatableMemory = prometheus.NewDesc(
-		"kube_node_status_allocatable_memory_bytes",
-		"The memory resources of a node that are available for scheduling.",
-		descNodeLabelsDefaultLabels,
-		nil,
-	)
-)
+	nodeMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_node_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Information about a cluster node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name: "kube_node_info",
+					LabelKeys: []string{
+						"kernel_version",
+						"os_image",
+						"container_runtime_version",
+						"kubelet_version",
+						"kubeproxy_version",
+						"provider_id",
+					},
+					LabelValues: []string{
+						n.Status.NodeInfo.KernelVersion,
+						n.Status.NodeInfo.OSImage,
+						n.Status.NodeInfo.ContainerRuntimeVersion,
+						n.Status.NodeInfo.KubeletVersion,
+						n.Status.NodeInfo.KubeProxyVersion,
+						n.Spec.ProviderID,
+					},
+					Value: 1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
 
-type NodeLister func() (v1.NodeList, error)
+				if !n.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_node_created",
+						Value: float64(n.CreationTimestamp.Unix()),
+					})
+				}
 
-func (l NodeLister) List() (v1.NodeList, error) {
-	return l()
-}
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descNodeLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descNodeLabelsHelp,
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descNodeLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_spec_unschedulable",
+			Type: metrics.MetricTypeGauge,
+			Help: "Whether a node can schedule new pods.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_node_spec_unschedulable",
+					Value: boolFloat64(n.Spec.Unschedulable),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_spec_taint",
+			Type: metrics.MetricTypeGauge,
+			Help: "The taint of a cluster node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
 
-func RegisterNodeCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().Nodes().Informer().(cache.SharedInformer))
-	}
+				for _, taint := range n.Spec.Taints {
+					// Taints are applied to repel pods from nodes that do not have a corresponding
+					// toleration.  Many node conditions are optionally reflected as taints
+					// by the node controller in order to simplify scheduling constraints.
+					f = append(f, &metrics.Metric{
+						Name:        "kube_node_spec_taint",
+						LabelKeys:   []string{"key", "value", "effect"},
+						LabelValues: []string{taint.Key, taint.Value, string(taint.Effect)},
+						Value:       1,
+					})
+				}
 
-	nodeLister := NodeLister(func() (machines v1.NodeList, err error) {
-		for _, ninf := range infs {
-			for _, m := range ninf.GetStore().List() {
-				machines.Items = append(machines.Items, *(m.(*v1.Node)))
-			}
-		}
-		return machines, nil
-	})
-
-	registry.MustRegister(&nodeCollector{store: nodeLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type nodeStore interface {
-	List() (v1.NodeList, error)
-}
-
-// nodeCollector collects metrics about all nodes in the cluster.
-type nodeCollector struct {
-	store nodeStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (nc *nodeCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descNodeInfo
-	ch <- descNodeCreated
-	ch <- descNodeLabels
-	ch <- descNodeSpecUnschedulable
-	ch <- descNodeSpecTaint
-	ch <- descNodeStatusCondition
-	ch <- descNodeStatusPhase
-	ch <- descNodeStatusCapacity
-	ch <- descNodeStatusAllocatable
-
-	if !nc.opts.DisableNodeNonGenericResourceMetrics {
-		ch <- descNodeStatusCapacityCPU
-		ch <- descNodeStatusCapacityMemory
-		ch <- descNodeStatusCapacityPods
-		ch <- descNodeStatusAllocatableCPU
-		ch <- descNodeStatusAllocatableMemory
-		ch <- descNodeStatusAllocatablePods
-	}
-}
-
-// Collect implements the prometheus.Collector interface.
-func (nc *nodeCollector) Collect(ch chan<- prometheus.Metric) {
-	nodes, err := nc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "node"}).Inc()
-		glog.Errorf("listing nodes failed: %s", err)
-		return
-	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "node"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "node"}).Observe(float64(len(nodes.Items)))
-	for _, n := range nodes.Items {
-		nc.collectNode(ch, n)
-	}
-
-	glog.V(4).Infof("collected %d nodes", len(nodes.Items))
-}
-
-func nodeLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
-		descNodeLabelsName,
-		descNodeLabelsHelp,
-		append(descNodeLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func (nc *nodeCollector) collectNode(ch chan<- prometheus.Metric, n v1.Node) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{n.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	// NOTE: the instrumentation API requires providing label values in order of declaration
-	// in the metric descriptor. Be careful when making modifications.
-	addGauge(descNodeInfo, 1,
-		n.Status.NodeInfo.KernelVersion,
-		n.Status.NodeInfo.OSImage,
-		n.Status.NodeInfo.ContainerRuntimeVersion,
-		n.Status.NodeInfo.KubeletVersion,
-		n.Status.NodeInfo.KubeProxyVersion,
-		n.Spec.ProviderID,
-	)
-	if !n.CreationTimestamp.IsZero() {
-		addGauge(descNodeCreated, float64(n.CreationTimestamp.Unix()))
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
-	addGauge(nodeLabelsDesc(labelKeys), 1, labelValues...)
-
-	addGauge(descNodeSpecUnschedulable, boolFloat64(n.Spec.Unschedulable))
-
-	// Collect node taints
-	for _, taint := range n.Spec.Taints {
-		// Taints are applied to repel pods from nodes that do not have a corresponding
-		// toleration.  Many node conditions are optionally reflected as taints
-		// by the node controller in order to simplify scheduling constraints.
-		addGauge(descNodeSpecTaint, 1, taint.Key, taint.Value, string(taint.Effect))
-	}
-
-	// Collect node conditions and while default to false.
-	for _, c := range n.Status.Conditions {
+				return f
+			}),
+		},
 		// This all-in-one metric family contains all conditions for extensibility.
 		// Third party plugin may report customized condition for cluster node
 		// (e.g. node-problem-detector), and Kubernetes may add new core
 		// conditions in future.
-		addConditionMetrics(ch, descNodeStatusCondition, c.Status, n.Name, string(c.Type))
-	}
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_condition",
+			Type: metrics.MetricTypeGauge,
+			Help: "The condition of a cluster node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
 
-	// Set current phase to 1, others to 0 if it is set.
-	if p := n.Status.Phase; p != "" {
-		addGauge(descNodeStatusPhase, boolFloat64(p == v1.NodePending), string(v1.NodePending))
-		addGauge(descNodeStatusPhase, boolFloat64(p == v1.NodeRunning), string(v1.NodeRunning))
-		addGauge(descNodeStatusPhase, boolFloat64(p == v1.NodeTerminated), string(v1.NodeTerminated))
-	}
+				// Collect node conditions and while default to false.
+				for _, c := range n.Status.Conditions {
+					ms := addConditionMetrics(c.Status)
+					for _, metric := range ms {
+						metric.Name = "kube_node_status_condition"
+						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+					}
+					f = append(f, ms...)
+				}
 
-	if !nc.opts.DisableNodeNonGenericResourceMetrics {
-		// Add capacity and allocatable resources if they are set.
-		addResource := func(d *prometheus.Desc, res v1.ResourceList, n v1.ResourceName) {
-			if v, ok := res[n]; ok {
-				addGauge(d, float64(v.MilliValue())/1000)
-			}
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_phase",
+			Type: metrics.MetricTypeGauge,
+			Help: "The phase the node is currently in.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				// Set current phase to 1, others to 0 if it is set.
+				if p := n.Status.Phase; p != "" {
+					f = append(f,
+						&metrics.Metric{
+							LabelValues: []string{string(v1.NodePending)},
+							Value:       boolFloat64(p == v1.NodePending),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.NodeRunning)},
+							Value:       boolFloat64(p == v1.NodeRunning),
+						},
+						&metrics.Metric{
+							LabelValues: []string{string(v1.NodeTerminated)},
+							Value:       boolFloat64(p == v1.NodeTerminated),
+						},
+					)
+				}
+
+				for _, metric := range f {
+					metric.Name = "kube_node_status_phase"
+					metric.LabelKeys = []string{"phase"}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_capacity",
+			Type: metrics.MetricTypeGauge,
+			Help: "The capacity for different resources of a node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				capacity := n.Status.Capacity
+				for resourceName, val := range capacity {
+					switch resourceName {
+					case v1.ResourceCPU:
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{
+								sanitizeLabelName(string(resourceName)),
+								string(constant.UnitCore),
+							},
+							Value: float64(val.MilliValue()) / 1000,
+						})
+					case v1.ResourceStorage:
+						fallthrough
+					case v1.ResourceEphemeralStorage:
+						fallthrough
+					case v1.ResourceMemory:
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{
+								sanitizeLabelName(string(resourceName)),
+								string(constant.UnitByte),
+							},
+							Value: float64(val.MilliValue()) / 1000,
+						})
+					case v1.ResourcePods:
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{
+								sanitizeLabelName(string(resourceName)),
+								string(constant.UnitInteger),
+							},
+							Value: float64(val.MilliValue()) / 1000,
+						})
+					default:
+						if helper.IsHugePageResourceName(resourceName) {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{
+									sanitizeLabelName(string(resourceName)),
+									string(constant.UnitByte),
+								},
+								Value: float64(val.MilliValue()) / 1000,
+							})
+						}
+						if helper.IsAttachableVolumeResourceName(resourceName) {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{
+									sanitizeLabelName(string(resourceName)),
+									string(constant.UnitByte),
+								},
+								Value: float64(val.MilliValue()) / 1000,
+							})
+						}
+						if helper.IsExtendedResourceName(resourceName) {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{
+									sanitizeLabelName(string(resourceName)),
+									string(constant.UnitInteger),
+								},
+								Value: float64(val.MilliValue()) / 1000,
+							})
+						}
+					}
+				}
+
+				for _, metric := range f {
+					metric.Name = "kube_node_status_capacity"
+					metric.LabelKeys = []string{"resource", "unit"}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_capacity_pods",
+			Type: metrics.MetricTypeGauge,
+			Help: "The total pod resources of the node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				// Add capacity and allocatable resources if they are set.
+				if v, ok := n.Status.Capacity[v1.ResourcePods]; ok {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_node_status_capacity_pods",
+						Value: float64(v.MilliValue()) / 1000,
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_capacity_cpu_cores",
+			Type: metrics.MetricTypeGauge,
+			Help: "The total CPU resources of the node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				// Add capacity and allocatable resources if they are set.
+				if v, ok := n.Status.Capacity[v1.ResourceCPU]; ok {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_node_status_capacity_cpu_cores",
+						Value: float64(v.MilliValue()) / 1000,
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_capacity_memory_bytes",
+			Type: metrics.MetricTypeGauge,
+			Help: "The total memory resources of the node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				// Add capacity and allocatable resources if they are set.
+				if v, ok := n.Status.Capacity[v1.ResourceMemory]; ok {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_node_status_capacity_memory_bytes",
+						Value: float64(v.MilliValue()) / 1000,
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_allocatable",
+			Type: metrics.MetricTypeGauge,
+			Help: "The allocatable for different resources of a node that are available for scheduling.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				allocatable := n.Status.Allocatable
+
+				for resourceName, val := range allocatable {
+					switch resourceName {
+					case v1.ResourceCPU:
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{
+								sanitizeLabelName(string(resourceName)),
+								string(constant.UnitCore),
+							},
+							Value: float64(val.MilliValue()) / 1000,
+						})
+					case v1.ResourceStorage:
+						fallthrough
+					case v1.ResourceEphemeralStorage:
+						fallthrough
+					case v1.ResourceMemory:
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{
+								sanitizeLabelName(string(resourceName)),
+								string(constant.UnitByte),
+							},
+							Value: float64(val.MilliValue()) / 1000,
+						})
+					case v1.ResourcePods:
+						f = append(f, &metrics.Metric{
+							LabelValues: []string{
+								sanitizeLabelName(string(resourceName)),
+								string(constant.UnitInteger),
+							},
+							Value: float64(val.MilliValue()) / 1000,
+						})
+					default:
+						if helper.IsHugePageResourceName(resourceName) {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{
+									sanitizeLabelName(string(resourceName)),
+									string(constant.UnitByte),
+								},
+								Value: float64(val.MilliValue()) / 1000,
+							})
+						}
+						if helper.IsAttachableVolumeResourceName(resourceName) {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{
+									sanitizeLabelName(string(resourceName)),
+									string(constant.UnitByte),
+								},
+								Value: float64(val.MilliValue()) / 1000,
+							})
+						}
+						if helper.IsExtendedResourceName(resourceName) {
+							f = append(f, &metrics.Metric{
+								LabelValues: []string{
+									sanitizeLabelName(string(resourceName)),
+									string(constant.UnitInteger),
+								},
+								Value: float64(val.MilliValue()) / 1000,
+							})
+						}
+					}
+				}
+
+				for _, m := range f {
+					m.Name = "kube_node_status_allocatable"
+					m.LabelKeys = []string{"resource", "unit"}
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_allocatable_pods",
+			Type: metrics.MetricTypeGauge,
+			Help: "The pod resources of a node that are available for scheduling.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				// Add capacity and allocatable resources if they are set.
+				if v, ok := n.Status.Allocatable[v1.ResourcePods]; ok {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_node_status_allocatable_pods",
+						Value: float64(v.MilliValue()) / 1000,
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_allocatable_cpu_cores",
+			Type: metrics.MetricTypeGauge,
+			Help: "The CPU resources of a node that are available for scheduling.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				// Add capacity and allocatable resources if they are set.
+				if v, ok := n.Status.Allocatable[v1.ResourceCPU]; ok {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_node_status_allocatable_cpu_cores",
+						Value: float64(v.MilliValue()) / 1000,
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_node_status_allocatable_memory_bytes",
+			Type: metrics.MetricTypeGauge,
+			Help: "The memory resources of a node that are available for scheduling.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) metrics.Family {
+				f := metrics.Family{}
+
+				// Add capacity and allocatable resources if they are set.
+				if v, ok := n.Status.Allocatable[v1.ResourceMemory]; ok {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_node_status_allocatable_memory_bytes",
+						Value: float64(v.MilliValue()) / 1000,
+					})
+				}
+
+				return f
+			}),
+		},
+	}
+)
+
+func wrapNodeFunc(f func(*v1.Node) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		node := obj.(*v1.Node)
+
+		metricFamily := f(node)
+
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descNodeLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{node.Name}, m.LabelValues...)
 		}
 
-		addResource(descNodeStatusCapacityCPU, n.Status.Capacity, v1.ResourceCPU)
-		addResource(descNodeStatusCapacityMemory, n.Status.Capacity, v1.ResourceMemory)
-		addResource(descNodeStatusCapacityPods, n.Status.Capacity, v1.ResourcePods)
-
-		addResource(descNodeStatusAllocatableCPU, n.Status.Allocatable, v1.ResourceCPU)
-		addResource(descNodeStatusAllocatableMemory, n.Status.Allocatable, v1.ResourceMemory)
-		addResource(descNodeStatusAllocatablePods, n.Status.Allocatable, v1.ResourcePods)
+		return metricFamily
 	}
+}
 
-	capacity := n.Status.Capacity
-	allocatable := n.Status.Allocatable
-
-	for resourceName, val := range capacity {
-		switch resourceName {
-		case v1.ResourceCPU:
-			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitCore))
-		case v1.ResourceStorage:
-			fallthrough
-		case v1.ResourceEphemeralStorage:
-			fallthrough
-		case v1.ResourceMemory:
-			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-		case v1.ResourcePods:
-			addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
-		default:
-			if helper.IsHugePageResourceName(resourceName) {
-				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-			}
-			if helper.IsAttachableVolumeResourceName(resourceName) {
-				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-			}
-			if helper.IsExtendedResourceName(resourceName) {
-				addGauge(descNodeStatusCapacity, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
-			}
-		}
+func createNodeListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Nodes().List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Nodes().Watch(opts)
+		},
 	}
-
-	for resourceName, val := range allocatable {
-		switch resourceName {
-		case v1.ResourceCPU:
-			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitCore))
-		case v1.ResourceStorage:
-			fallthrough
-		case v1.ResourceEphemeralStorage:
-			fallthrough
-		case v1.ResourceMemory:
-			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-		case v1.ResourcePods:
-			addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
-		default:
-			if helper.IsHugePageResourceName(resourceName) {
-				addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-			}
-			if helper.IsAttachableVolumeResourceName(resourceName) {
-				addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitByte))
-			}
-			if helper.IsExtendedResourceName(resourceName) {
-				addGauge(descNodeStatusAllocatable, float64(val.MilliValue())/1000, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger))
-			}
-		}
-	}
-
 }

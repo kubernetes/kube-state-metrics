@@ -22,17 +22,7 @@ import (
 
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
-
-type mockDaemonSetStore struct {
-	f func() ([]v1beta1.DaemonSet, error)
-}
-
-func (ds mockDaemonSetStore) List() (daemonsets []v1beta1.DaemonSet, err error) {
-	return ds.f()
-}
 
 func TestDaemonSetCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
@@ -59,106 +49,141 @@ func TestDaemonSetCollector(t *testing.T) {
 		# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_daemonset_labels gauge
 `
-	cases := []struct {
-		dss  []v1beta1.DaemonSet
-		want string
-	}{
+	cases := []generateMetricsTestCase{
 		{
-			dss: []v1beta1.DaemonSet{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "ds1",
-						Namespace: "ns1",
-						Labels: map[string]string{
-							"app": "example1",
-						},
-						Generation: 21,
+			Obj: &v1beta1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ds1",
+					Namespace: "ns1",
+					Labels: map[string]string{
+						"app": "example1",
 					},
-					Status: v1beta1.DaemonSetStatus{
-						CurrentNumberScheduled: 15,
-						NumberMisscheduled:     10,
-						DesiredNumberScheduled: 5,
-						NumberReady:            5,
-					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "ds2",
-						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:         "ns2",
-						Labels: map[string]string{
-							"app": "example2",
-						},
-						Generation: 14,
-					},
-					Status: v1beta1.DaemonSetStatus{
-						CurrentNumberScheduled: 10,
-						NumberMisscheduled:     5,
-						DesiredNumberScheduled: 0,
-						NumberReady:            0,
-					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "ds3",
-						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:         "ns3",
-						Labels: map[string]string{
-							"app": "example3",
-						},
-						Generation: 15,
-					},
-					Status: v1beta1.DaemonSetStatus{
-						CurrentNumberScheduled: 10,
-						NumberMisscheduled:     5,
-						DesiredNumberScheduled: 15,
-						NumberReady:            5,
-						NumberAvailable:        5,
-						NumberUnavailable:      5,
-						UpdatedNumberScheduled: 5,
-					},
+					Generation: 21,
+				},
+				Status: v1beta1.DaemonSetStatus{
+					CurrentNumberScheduled: 15,
+					NumberMisscheduled:     10,
+					DesiredNumberScheduled: 5,
+					NumberReady:            5,
 				},
 			},
-			want: metadata + `
-				kube_daemonset_created{daemonset="ds2",namespace="ns2"} 1.5e+09
-				kube_daemonset_created{daemonset="ds3",namespace="ns3"} 1.5e+09
-				kube_daemonset_metadata_generation{namespace="ns1",daemonset="ds1"} 21
-				kube_daemonset_metadata_generation{namespace="ns2",daemonset="ds2"} 14
-				kube_daemonset_metadata_generation{namespace="ns3",daemonset="ds3"} 15
-				kube_daemonset_status_current_number_scheduled{namespace="ns1",daemonset="ds1"} 15
-				kube_daemonset_status_current_number_scheduled{namespace="ns2",daemonset="ds2"} 10
-				kube_daemonset_status_current_number_scheduled{namespace="ns3",daemonset="ds3"} 10
-				kube_daemonset_status_desired_number_scheduled{namespace="ns1",daemonset="ds1"} 5
-				kube_daemonset_status_desired_number_scheduled{namespace="ns2",daemonset="ds2"} 0
-				kube_daemonset_status_desired_number_scheduled{namespace="ns3",daemonset="ds3"} 15
+			Want: `
+				kube_daemonset_metadata_generation{daemonset="ds1",namespace="ns1"} 21
+				kube_daemonset_status_current_number_scheduled{daemonset="ds1",namespace="ns1"} 15
+				kube_daemonset_status_desired_number_scheduled{daemonset="ds1",namespace="ns1"} 5
 				kube_daemonset_status_number_available{daemonset="ds1",namespace="ns1"} 0
-				kube_daemonset_status_number_available{daemonset="ds2",namespace="ns2"} 0
-				kube_daemonset_status_number_available{daemonset="ds3",namespace="ns3"} 5
-				kube_daemonset_status_number_misscheduled{namespace="ns1",daemonset="ds1"} 10
-				kube_daemonset_status_number_misscheduled{namespace="ns2",daemonset="ds2"} 5
-				kube_daemonset_status_number_misscheduled{namespace="ns3",daemonset="ds3"} 5
-				kube_daemonset_status_number_ready{namespace="ns1",daemonset="ds1"} 5
-				kube_daemonset_status_number_ready{namespace="ns2",daemonset="ds2"} 0
-				kube_daemonset_status_number_ready{namespace="ns3",daemonset="ds3"} 5
+				kube_daemonset_status_number_misscheduled{daemonset="ds1",namespace="ns1"} 10
+				kube_daemonset_status_number_ready{daemonset="ds1",namespace="ns1"} 5
 				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
-				kube_daemonset_status_number_unavailable{daemonset="ds2",namespace="ns2"} 0
-				kube_daemonset_status_number_unavailable{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
+				kube_daemonset_labels{daemonset="ds1",label_app="example1",namespace="ns1"} 1
+`,
+			MetricNames: []string{
+				"kube_daemonset_labels",
+				"kube_daemonset_metadata_generation",
+				"kube_daemonset_status_current_number_scheduled",
+				"kube_daemonset_status_desired_number_scheduled",
+				"kube_daemonset_status_number_available",
+				"kube_daemonset_status_number_misscheduled",
+				"kube_daemonset_status_number_ready",
+				"kube_daemonset_status_number_unavailable",
+				"kube_daemonset_updated_number_scheduled",
+			},
+		},
+		{
+			Obj: &v1beta1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ds2",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "ns2",
+					Labels: map[string]string{
+						"app": "example2",
+					},
+					Generation: 14,
+				},
+				Status: v1beta1.DaemonSetStatus{
+					CurrentNumberScheduled: 10,
+					NumberMisscheduled:     5,
+					DesiredNumberScheduled: 0,
+					NumberReady:            0,
+				},
+			},
+			Want: `
+				kube_daemonset_created{daemonset="ds2",namespace="ns2"} 1.5e+09
+				kube_daemonset_metadata_generation{daemonset="ds2",namespace="ns2"} 14
+				kube_daemonset_status_current_number_scheduled{daemonset="ds2",namespace="ns2"} 10
+				kube_daemonset_status_desired_number_scheduled{daemonset="ds2",namespace="ns2"} 0
+				kube_daemonset_status_number_available{daemonset="ds2",namespace="ns2"} 0
+				kube_daemonset_status_number_misscheduled{daemonset="ds2",namespace="ns2"} 5
+				kube_daemonset_status_number_ready{daemonset="ds2",namespace="ns2"} 0
+				kube_daemonset_status_number_unavailable{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
+				kube_daemonset_labels{daemonset="ds2",label_app="example2",namespace="ns2"} 1
+`,
+			MetricNames: []string{
+				"kube_daemonset_created",
+				"kube_daemonset_labels",
+				"kube_daemonset_metadata_generation",
+				"kube_daemonset_status_current_number_scheduled",
+				"kube_daemonset_status_desired_number_scheduled",
+				"kube_daemonset_status_number_available",
+				"kube_daemonset_status_number_misscheduled",
+				"kube_daemonset_status_number_ready",
+				"kube_daemonset_status_number_unavailable",
+				"kube_daemonset_updated_number_scheduled",
+			},
+		},
+		{
+			Obj: &v1beta1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ds3",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "ns3",
+					Labels: map[string]string{
+						"app": "example3",
+					},
+					Generation: 15,
+				},
+				Status: v1beta1.DaemonSetStatus{
+					CurrentNumberScheduled: 10,
+					NumberMisscheduled:     5,
+					DesiredNumberScheduled: 15,
+					NumberReady:            5,
+					NumberAvailable:        5,
+					NumberUnavailable:      5,
+					UpdatedNumberScheduled: 5,
+				},
+			},
+			Want: `
+				kube_daemonset_created{daemonset="ds3",namespace="ns3"} 1.5e+09
+				kube_daemonset_metadata_generation{daemonset="ds3",namespace="ns3"} 15
+				kube_daemonset_status_current_number_scheduled{daemonset="ds3",namespace="ns3"} 10
+				kube_daemonset_status_desired_number_scheduled{daemonset="ds3",namespace="ns3"} 15
+				kube_daemonset_status_number_available{daemonset="ds3",namespace="ns3"} 5
+				kube_daemonset_status_number_misscheduled{daemonset="ds3",namespace="ns3"} 5
+				kube_daemonset_status_number_ready{daemonset="ds3",namespace="ns3"} 5
+				kube_daemonset_status_number_unavailable{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_updated_number_scheduled{daemonset="ds3",namespace="ns3"} 5
-				kube_daemonset_labels{label_app="example1",namespace="ns1",daemonset="ds1"} 1
-				kube_daemonset_labels{label_app="example2",namespace="ns2",daemonset="ds2"} 1
-				kube_daemonset_labels{label_app="example3",namespace="ns3",daemonset="ds3"} 1
-			`,
+				kube_daemonset_labels{daemonset="ds3",label_app="example3",namespace="ns3"} 1
+`,
+			MetricNames: []string{
+				"kube_daemonset_created",
+				"kube_daemonset_labels",
+				"kube_daemonset_metadata_generation",
+				"kube_daemonset_status_current_number_scheduled",
+				"kube_daemonset_status_desired_number_scheduled",
+				"kube_daemonset_status_number_available",
+				"kube_daemonset_status_number_misscheduled",
+				"kube_daemonset_status_number_ready",
+				"kube_daemonset_status_number_unavailable",
+				"kube_daemonset_updated_number_scheduled",
+			},
 		},
 	}
-	for _, c := range cases {
-		dc := &daemonsetCollector{
-			store: mockDaemonSetStore{
-				f: func() ([]v1beta1.DaemonSet, error) { return c.dss, nil },
-			},
-			opts: &options.Options{},
-		}
-		if err := testutils.GatherAndCompare(dc, c.want, nil); err != nil {
-			t.Errorf("unexpected collecting result:\n%s", err)
+	for i, c := range cases {
+		c.Func = composeMetricGenFuncs(daemonSetMetricFamilies)
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
 }

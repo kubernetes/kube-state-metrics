@@ -1,4 +1,16 @@
-## Unreleased
+## v1.5.0-alpha.0 / 2018-11-30
+
+* [CHANGE] Disable gzip compression of kube-state-metrics responses by default. Can be re-enabled via `--enable-gzip-encoding`. See #563 for more details.
+* [FEATURE] Add `kube_replicatset_owner` metric (#520).
+* [FEATURE] Add `kube_pod_container_status_last_terminated_reason` metric (#535).
+* [FEATURE] Add `stateful_set_status.{current,update}_revision` metric (#545).
+* [FEATURE] Add pod disruption budget collector (#551).
+* [FEATURE] Make kube-state-metrics usable as a library (#575).
+* [FEATURE] Add `kube_service_spec_external_ip` metric and add `external_name` and `load_balancer_ip` label to `kube_service_info` metric (#571).
+* [ENHANCEMENT] Add uid info in `kube_pod_info` metric (#508).
+* [ENHANCEMENT] Update addon-resizer to 1.8.3 and increase resource limits (#552).
+* [ENHANCEMENT] Improve metric caching and rendering performance (#498).
+* [ENHANCEMENT] Adding CreateContainerConfigError as possible reason for container not starting (#578).
 
 ## v1.4.0 / 2018-08-22
 
@@ -29,6 +41,10 @@ After a testing period of 12 days, there were no additional bugs found or featur
 
 ## v1.3.0-rc.0 / 2018-03-23
 
+* [CHANGE] Removed `--in-cluster` flag in [#371](https://github.com/kubernetes/kube-state-metrics/pull/371).
+  Users can no longer specify `--apiserver` with `--in-cluster=true`. To
+  emulate this behaviour in future releases, set the `KUBERNETES_SERVICE_HOST`
+  environment variable to the value of the `--apiserver` argument.
 * [FEATURE] Allow to specify multiple namespace.
 * [FEATURE] Add `kube_pod_completion_time`, `kube_pod_spec_volumes_persistentvolumeclaims_info`, and `kube_pod_spec_volumes_persistentvolumeclaims_readonly` metrics to the Pod collector.
 * [FEATURE] Add `kube_node_spec_taint` metric.

@@ -17,14 +17,14 @@ limitations under the License.
 package collectors
 
 import (
-	"context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
@@ -32,137 +32,123 @@ var (
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "hpa"}
 
-	descHorizontalPodAutoscalerMetadataGeneration = prometheus.NewDesc(
-		"kube_hpa_metadata_generation",
-		"The generation observed by the HorizontalPodAutoscaler controller.",
-		descHorizontalPodAutoscalerLabelsDefaultLabels,
-		nil,
-	)
-	descHorizontalPodAutoscalerSpecMaxReplicas = prometheus.NewDesc(
-		"kube_hpa_spec_max_replicas",
-		"Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
-		descHorizontalPodAutoscalerLabelsDefaultLabels,
-		nil,
-	)
-	descHorizontalPodAutoscalerSpecMinReplicas = prometheus.NewDesc(
-		"kube_hpa_spec_min_replicas",
-		"Lower limit for the number of pods that can be set by the autoscaler, default 1.",
-		descHorizontalPodAutoscalerLabelsDefaultLabels,
-		nil,
-	)
-	descHorizontalPodAutoscalerStatusCurrentReplicas = prometheus.NewDesc(
-		"kube_hpa_status_current_replicas",
-		"Current number of replicas of pods managed by this autoscaler.",
-		descHorizontalPodAutoscalerLabelsDefaultLabels,
-		nil,
-	)
-	descHorizontalPodAutoscalerStatusDesiredReplicas = prometheus.NewDesc(
-		"kube_hpa_status_desired_replicas",
-		"Desired number of replicas of pods managed by this autoscaler.",
-		descHorizontalPodAutoscalerLabelsDefaultLabels,
-		nil,
-	)
-	descHorizontalPodAutoscalerLabels = prometheus.NewDesc(
-		descHorizontalPodAutoscalerLabelsName,
-		descHorizontalPodAutoscalerLabelsHelp,
-		descHorizontalPodAutoscalerLabelsDefaultLabels,
-		nil,
-	)
-	descHorizontalPodAutoscalerCondition = prometheus.NewDesc(
-		"kube_hpa_status_condition",
-		"The condition of this autoscaler.",
-		append(descHorizontalPodAutoscalerLabelsDefaultLabels, "condition", "status"),
-		nil,
-	)
+	hpaMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_hpa_metadata_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "The generation observed by the HorizontalPodAutoscaler controller.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_hpa_metadata_generation",
+					Value: float64(a.ObjectMeta.Generation),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_hpa_spec_max_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_hpa_spec_max_replicas",
+					Value: float64(a.Spec.MaxReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_hpa_spec_min_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Lower limit for the number of pods that can be set by the autoscaler, default 1.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_hpa_spec_min_replicas",
+					Value: float64(*a.Spec.MinReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_hpa_status_current_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Current number of replicas of pods managed by this autoscaler.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_hpa_status_current_replicas",
+					Value: float64(a.Status.CurrentReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_hpa_status_desired_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Desired number of replicas of pods managed by this autoscaler.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_hpa_status_desired_replicas",
+					Value: float64(a.Status.DesiredReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: descHorizontalPodAutoscalerLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descHorizontalPodAutoscalerLabelsHelp,
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(a.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descHorizontalPodAutoscalerLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_hpa_status_condition",
+			Type: metrics.MetricTypeGauge,
+			Help: "The condition of this autoscaler.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metrics.Family {
+				f := metrics.Family{}
+
+				for _, c := range a.Status.Conditions {
+					metrics := addConditionMetrics(c.Status)
+
+					for _, m := range metrics {
+						metric := m
+						metric.Name = "kube_hpa_status_condition"
+						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelValues = append(metric.LabelValues, string(c.Type))
+						f = append(f, metric)
+					}
+				}
+
+				return f
+			}),
+		},
+	}
 )
 
-type HPALister func() (autoscaling.HorizontalPodAutoscalerList, error)
+func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		hpa := obj.(*autoscaling.HorizontalPodAutoscaler)
 
-func (l HPALister) List() (autoscaling.HorizontalPodAutoscalerList, error) {
-	return l()
-}
+		metricFamily := f(hpa)
 
-func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Autoscaling().V2beta1().HorizontalPodAutoscalers().Informer().(cache.SharedInformer))
-	}
-
-	hpaLister := HPALister(func() (hpas autoscaling.HorizontalPodAutoscalerList, err error) {
-		for _, hpainf := range infs {
-			for _, h := range hpainf.GetStore().List() {
-				hpas.Items = append(hpas.Items, *(h.(*autoscaling.HorizontalPodAutoscaler)))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descHorizontalPodAutoscalerLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{hpa.Namespace, hpa.Name}, m.LabelValues...)
 		}
-		return hpas, nil
-	})
 
-	registry.MustRegister(&hpaCollector{store: hpaLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type hpaStore interface {
-	List() (hpas autoscaling.HorizontalPodAutoscalerList, err error)
-}
-
-// hpaCollector collects metrics about all Horizontal Pod Austoscalers in the cluster.
-type hpaCollector struct {
-	store hpaStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (hc *hpaCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descHorizontalPodAutoscalerMetadataGeneration
-	ch <- descHorizontalPodAutoscalerSpecMaxReplicas
-	ch <- descHorizontalPodAutoscalerSpecMinReplicas
-	ch <- descHorizontalPodAutoscalerStatusCurrentReplicas
-	ch <- descHorizontalPodAutoscalerStatusDesiredReplicas
-	ch <- descHorizontalPodAutoscalerLabels
-}
-
-// Collect implements the prometheus.Collector interface.
-func (hc *hpaCollector) Collect(ch chan<- prometheus.Metric) {
-	hpas, err := hc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "horizontalpodautoscaler"}).Inc()
-		glog.Errorf("listing HorizontalPodAutoscalers failed: %s", err)
-		return
+		return metricFamily
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "horizontalpodautoscaler"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "horizontalpodautoscaler"}).Observe(float64(len(hpas.Items)))
-	for _, h := range hpas.Items {
-		hc.collectHPA(ch, h)
-	}
-
-	glog.V(4).Infof("collected %d hpas", len(hpas.Items))
 }
 
-func hpaLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
-		descHorizontalPodAutoscalerLabelsName,
-		descHorizontalPodAutoscalerLabelsHelp,
-		append(descHorizontalPodAutoscalerLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func (hc *hpaCollector) collectHPA(ch chan<- prometheus.Metric, h autoscaling.HorizontalPodAutoscaler) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{h.Namespace, h.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(h.Labels)
-	addGauge(hpaLabelsDesc(labelKeys), 1, labelValues...)
-	addGauge(descHorizontalPodAutoscalerMetadataGeneration, float64(h.ObjectMeta.Generation))
-	addGauge(descHorizontalPodAutoscalerSpecMaxReplicas, float64(h.Spec.MaxReplicas))
-	addGauge(descHorizontalPodAutoscalerSpecMinReplicas, float64(*h.Spec.MinReplicas))
-	addGauge(descHorizontalPodAutoscalerStatusCurrentReplicas, float64(h.Status.CurrentReplicas))
-	addGauge(descHorizontalPodAutoscalerStatusDesiredReplicas, float64(h.Status.DesiredReplicas))
-
-	for _, c := range h.Status.Conditions {
-		addConditionMetrics(ch, descHorizontalPodAutoscalerCondition, c.Status, h.Namespace, h.Name, string(c.Type))
+func createHPAListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Watch(opts)
+		},
 	}
 }

@@ -21,17 +21,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
-
-type mockConfigMapStore struct {
-	f func() ([]v1.ConfigMap, error)
-}
-
-func (ds mockConfigMapStore) List() (configMaps []v1.ConfigMap, err error) {
-	return ds.f()
-}
 
 func TestConfigMapCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
@@ -48,48 +38,42 @@ func TestConfigMapCollector(t *testing.T) {
 		# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
 		# TYPE kube_configmap_metadata_resource_version gauge
 	`
-	cases := []struct {
-		configMaps []v1.ConfigMap
-		metrics    []string
-		want       string
-	}{
+	cases := []generateMetricsTestCase{
 		{
-			configMaps: []v1.ConfigMap{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "configmap1",
-						Namespace:       "ns1",
-						ResourceVersion: "123456",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "configmap2",
-						Namespace:         "ns2",
-						CreationTimestamp: metav1StartTime,
-						ResourceVersion:   "abcdef",
-					},
+			Obj: &v1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "configmap1",
+					Namespace:       "ns1",
+					ResourceVersion: "123456",
 				},
 			},
-			want: metadata + `
+			Want: `
 				kube_configmap_info{configmap="configmap1",namespace="ns1"} 1
+				kube_configmap_metadata_resource_version{configmap="configmap1",namespace="ns1",resource_version="123456"} 1
+`,
+			MetricNames: []string{"kube_configmap_info", "kube_configmap_metadata_resource_version"},
+		},
+		{
+			Obj: &v1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "configmap2",
+					Namespace:         "ns2",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "abcdef",
+				},
+			},
+			Want: `
 				kube_configmap_info{configmap="configmap2",namespace="ns2"} 1
 				kube_configmap_created{configmap="configmap2",namespace="ns2"} 1.501569018e+09
-				kube_configmap_metadata_resource_version{configmap="configmap1",namespace="ns1",resource_version="123456"} 1
 				kube_configmap_metadata_resource_version{configmap="configmap2",namespace="ns2",resource_version="abcdef"} 1
 				`,
-			metrics: []string{"kube_configmap_info", "kube_configmap_created", "kube_configmap_metadata_resource_version"},
+			MetricNames: []string{"kube_configmap_info", "kube_configmap_created", "kube_configmap_metadata_resource_version"},
 		},
 	}
-	for _, c := range cases {
-		cmc := &configMapCollector{
-			store: mockConfigMapStore{
-				f: func() ([]v1.ConfigMap, error) { return c.configMaps, nil },
-			},
-			opts: &options.Options{},
-		}
-		if err := testutils.GatherAndCompare(cmc, c.want, c.metrics); err != nil {
-			t.Errorf("unexpected collecting result:\n%s", err)
+	for i, c := range cases {
+		c.Func = composeMetricGenFuncs(configMapMetricFamilies)
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
 }

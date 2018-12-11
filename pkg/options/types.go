@@ -66,7 +66,7 @@ type CollectorSet map[string]struct{}
 
 func (c *CollectorSet) String() string {
 	s := *c
-	ss := s.asSlice()
+	ss := s.AsSlice()
 	sort.Strings(ss)
 	return strings.Join(ss, ",")
 }
@@ -87,7 +87,7 @@ func (c *CollectorSet) Set(value string) error {
 	return nil
 }
 
-func (c CollectorSet) asSlice() []string {
+func (c CollectorSet) AsSlice() []string {
 	cols := []string{}
 	for col := range c {
 		cols = append(cols, col)
@@ -96,7 +96,7 @@ func (c CollectorSet) asSlice() []string {
 }
 
 func (c CollectorSet) isEmpty() bool {
-	return len(c.asSlice()) == 0
+	return len(c.AsSlice()) == 0
 }
 
 func (c *CollectorSet) Type() string {

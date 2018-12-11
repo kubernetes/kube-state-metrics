@@ -17,149 +17,145 @@ limitations under the License.
 package collectors
 
 import (
-	"context"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
 
 var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
-	descReplicationControllerCreated = prometheus.NewDesc(
-		"kube_replicationcontroller_created",
-		"Unix creation timestamp",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
-	descReplicationControllerStatusReplicas = prometheus.NewDesc(
-		"kube_replicationcontroller_status_replicas",
-		"The number of replicas per ReplicationController.",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
-	descReplicationControllerStatusFullyLabeledReplicas = prometheus.NewDesc(
-		"kube_replicationcontroller_status_fully_labeled_replicas",
-		"The number of fully labeled replicas per ReplicationController.",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
-	descReplicationControllerStatusReadyReplicas = prometheus.NewDesc(
-		"kube_replicationcontroller_status_ready_replicas",
-		"The number of ready replicas per ReplicationController.",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
-	descReplicationControllerStatusAvailableReplicas = prometheus.NewDesc(
-		"kube_replicationcontroller_status_available_replicas",
-		"The number of available replicas per ReplicationController.",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
-	descReplicationControllerStatusObservedGeneration = prometheus.NewDesc(
-		"kube_replicationcontroller_status_observed_generation",
-		"The generation observed by the ReplicationController controller.",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
-	descReplicationControllerSpecReplicas = prometheus.NewDesc(
-		"kube_replicationcontroller_spec_replicas",
-		"Number of desired pods for a ReplicationController.",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
-	descReplicationControllerMetadataGeneration = prometheus.NewDesc(
-		"kube_replicationcontroller_metadata_generation",
-		"Sequence number representing a specific generation of the desired state.",
-		descReplicationControllerLabelsDefaultLabels,
-		nil,
-	)
+	replicationControllerMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				f := metrics.Family{}
+
+				if !r.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_replicationcontroller_created",
+						Value: float64(r.CreationTimestamp.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_status_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of replicas per ReplicationController.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicationcontroller_status_replicas",
+					Value: float64(r.Status.Replicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_status_fully_labeled_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of fully labeled replicas per ReplicationController.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicationcontroller_status_fully_labeled_replicas",
+					Value: float64(r.Status.FullyLabeledReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_status_ready_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of ready replicas per ReplicationController.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicationcontroller_status_ready_replicas",
+					Value: float64(r.Status.ReadyReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_status_available_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "The number of available replicas per ReplicationController.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicationcontroller_status_available_replicas",
+					Value: float64(r.Status.AvailableReplicas),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_status_observed_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "The generation observed by the ReplicationController controller.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicationcontroller_status_observed_generation",
+					Value: float64(r.Status.ObservedGeneration),
+				}}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_spec_replicas",
+			Type: metrics.MetricTypeGauge,
+			Help: "Number of desired pods for a ReplicationController.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				f := metrics.Family{}
+
+				if r.Spec.Replicas != nil {
+					f = append(f, &metrics.Metric{
+						Name:  "kube_replicationcontroller_spec_replicas",
+						Value: float64(*r.Spec.Replicas),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_replicationcontroller_metadata_generation",
+			Type: metrics.MetricTypeGauge,
+			Help: "Sequence number representing a specific generation of the desired state.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metrics.Family {
+				return metrics.Family{&metrics.Metric{
+					Name:  "kube_replicationcontroller_metadata_generation",
+					Value: float64(r.ObjectMeta.Generation),
+				}}
+			}),
+		},
+	}
 )
 
-type ReplicationControllerLister func() ([]v1.ReplicationController, error)
+func wrapReplicationControllerFunc(f func(*v1.ReplicationController) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		replicationController := obj.(*v1.ReplicationController)
 
-func (l ReplicationControllerLister) List() ([]v1.ReplicationController, error) {
-	return l()
-}
+		metricFamily := f(replicationController)
 
-func RegisterReplicationControllerCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Core().V1().ReplicationControllers().Informer().(cache.SharedInformer))
-	}
-
-	replicationControllerLister := ReplicationControllerLister(func() (rcs []v1.ReplicationController, err error) {
-		for _, rcinf := range infs {
-			for _, c := range rcinf.GetStore().List() {
-				rcs = append(rcs, *(c.(*v1.ReplicationController)))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descReplicationControllerLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{replicationController.Namespace, replicationController.Name}, m.LabelValues...)
 		}
-		return rcs, nil
-	})
 
-	registry.MustRegister(&replicationcontrollerCollector{store: replicationControllerLister, opts: opts})
-	infs.Run(context.Background().Done())
+		return metricFamily
+	}
 }
 
-type replicationcontrollerStore interface {
-	List() (replicationcontrollers []v1.ReplicationController, err error)
-}
-
-type replicationcontrollerCollector struct {
-	store replicationcontrollerStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (dc *replicationcontrollerCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descReplicationControllerCreated
-	ch <- descReplicationControllerStatusReplicas
-	ch <- descReplicationControllerStatusFullyLabeledReplicas
-	ch <- descReplicationControllerStatusReadyReplicas
-	ch <- descReplicationControllerStatusAvailableReplicas
-	ch <- descReplicationControllerStatusObservedGeneration
-	ch <- descReplicationControllerSpecReplicas
-	ch <- descReplicationControllerMetadataGeneration
-}
-
-// Collect implements the prometheus.Collector interface.
-func (dc *replicationcontrollerCollector) Collect(ch chan<- prometheus.Metric) {
-	rcs, err := dc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Inc()
-		glog.Errorf("listing replicationcontrollers failed: %s", err)
-		return
+func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().ReplicationControllers(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().ReplicationControllers(ns).Watch(opts)
+		},
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Add(0)
-
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "replicationcontroller"}).Observe(float64(len(rcs)))
-	for _, d := range rcs {
-		dc.collectReplicationController(ch, d)
-	}
-
-	glog.V(4).Infof("collected %d replicationcontrollers", len(rcs))
-}
-
-func (dc *replicationcontrollerCollector) collectReplicationController(ch chan<- prometheus.Metric, d v1.ReplicationController) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{d.Namespace, d.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-	if !d.CreationTimestamp.IsZero() {
-		addGauge(descReplicationControllerCreated, float64(d.CreationTimestamp.Unix()))
-	}
-	addGauge(descReplicationControllerStatusReplicas, float64(d.Status.Replicas))
-	addGauge(descReplicationControllerStatusFullyLabeledReplicas, float64(d.Status.FullyLabeledReplicas))
-	addGauge(descReplicationControllerStatusReadyReplicas, float64(d.Status.ReadyReplicas))
-	addGauge(descReplicationControllerStatusAvailableReplicas, float64(d.Status.AvailableReplicas))
-	addGauge(descReplicationControllerStatusObservedGeneration, float64(d.Status.ObservedGeneration))
-	if d.Spec.Replicas != nil {
-		addGauge(descReplicationControllerSpecReplicas, float64(*d.Spec.Replicas))
-	}
-	addGauge(descReplicationControllerMetadataGeneration, float64(d.ObjectMeta.Generation))
 }

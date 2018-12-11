@@ -22,17 +22,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
-
-type mockNamespaceStore struct {
-	list func() ([]v1.Namespace, error)
-}
-
-func (ns mockNamespaceStore) List() ([]v1.Namespace, error) {
-	return ns.list()
-}
 
 func TestNamespaceCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
@@ -48,103 +38,106 @@ func TestNamespaceCollector(t *testing.T) {
 		# TYPE kube_namespace_status_phase gauge
 	`
 
-	cases := []struct {
-		ns      []v1.Namespace
-		metrics []string // which metrics should be checked
-		want    string
-	}{
+	cases := []generateMetricsTestCase{
 		{
-			ns: []v1.Namespace{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "nsActiveTest",
-					},
-					Spec: v1.NamespaceSpec{
-						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
-					},
-					Status: v1.NamespaceStatus{
-						Phase: v1.NamespaceActive,
-					},
+			Obj: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nsActiveTest",
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "nsTerminateTest",
-					},
-					Spec: v1.NamespaceSpec{
-						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
-					},
-					Status: v1.NamespaceStatus{
-						Phase: v1.NamespaceTerminating,
-					},
+				Spec: v1.NamespaceSpec{
+					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "ns1",
-						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Labels: map[string]string{
-							"app": "example1",
-						},
-						Annotations: map[string]string{
-							"app": "example1",
-						},
-					},
-					Spec: v1.NamespaceSpec{
-						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
-					},
-					Status: v1.NamespaceStatus{
-						Phase: v1.NamespaceActive,
-					},
-				}, {
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "ns2",
-						Labels: map[string]string{
-							"app": "example2",
-							"l2":  "label2",
-						},
-						Annotations: map[string]string{
-							"app": "example2",
-							"l2":  "label2",
-						},
-					},
-					Spec: v1.NamespaceSpec{
-						Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
-					},
-					Status: v1.NamespaceStatus{
-						Phase: v1.NamespaceActive,
-					},
+				Status: v1.NamespaceStatus{
+					Phase: v1.NamespaceActive,
 				},
 			},
-
-			want: metadata + `
-				kube_namespace_created{namespace="ns1"} 1.5e+09
-				kube_namespace_labels{label_app="example1",namespace="ns1"} 1
-				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
+			Want: `
 				kube_namespace_labels{namespace="nsActiveTest"} 1
-				kube_namespace_labels{namespace="nsTerminateTest"} 1
-				kube_namespace_annotations{annotation_app="example1",namespace="ns1"} 1
-				kube_namespace_annotations{annotation_app="example2",annotation_l2="label2",namespace="ns2"} 1
 				kube_namespace_annotations{namespace="nsActiveTest"} 1
-				kube_namespace_annotations{namespace="nsTerminateTest"} 1
-				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
-				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
-				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
-				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Active"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Terminating"} 0
+`,
+		},
+		{
+			Obj: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nsTerminateTest",
+				},
+				Spec: v1.NamespaceSpec{
+					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+				},
+				Status: v1.NamespaceStatus{
+					Phase: v1.NamespaceTerminating,
+				},
+			},
+			Want: `
+				kube_namespace_labels{namespace="nsTerminateTest"} 1
+				kube_namespace_annotations{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Terminating"} 1
-			`,
+`,
+		},
+		{
+
+			Obj: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ns1",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Labels: map[string]string{
+						"app": "example1",
+					},
+					Annotations: map[string]string{
+						"app": "example1",
+					},
+				},
+				Spec: v1.NamespaceSpec{
+					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+				},
+				Status: v1.NamespaceStatus{
+					Phase: v1.NamespaceActive,
+				},
+			},
+			Want: `
+				kube_namespace_created{namespace="ns1"} 1.5e+09
+				kube_namespace_labels{label_app="example1",namespace="ns1"} 1
+				kube_namespace_annotations{annotation_app="example1",namespace="ns1"} 1
+				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
+				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
+`,
+		},
+		{
+			Obj: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "ns2",
+					Labels: map[string]string{
+						"app": "example2",
+						"l2":  "label2",
+					},
+					Annotations: map[string]string{
+						"app": "example2",
+						"l2":  "label2",
+					},
+				},
+				Spec: v1.NamespaceSpec{
+					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+				},
+				Status: v1.NamespaceStatus{
+					Phase: v1.NamespaceActive,
+				},
+			},
+			Want: `
+				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
+				kube_namespace_annotations{annotation_app="example2",annotation_l2="label2",namespace="ns2"} 1
+				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
+				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
+`,
 		},
 	}
-	for _, c := range cases {
-		nsc := &namespaceCollector{
-			store: mockNamespaceStore{
-				list: func() ([]v1.Namespace, error) { return c.ns, nil },
-			},
-			opts: &options.Options{},
-		}
-		if err := testutils.GatherAndCompare(nsc, c.want, c.metrics); err != nil {
-			t.Errorf("unexpected collecting result:\n%s", err)
+
+	for i, c := range cases {
+		c.Func = composeMetricGenFuncs(namespaceMetricFamilies)
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
 }

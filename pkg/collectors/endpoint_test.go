@@ -16,23 +16,15 @@ limitations under the License.
 
 package collectors
 
+// TODO: Shouldn't this file be called endpoints?
+
 import (
 	"testing"
 	"time"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kube-state-metrics/pkg/collectors/testutils"
-	"k8s.io/kube-state-metrics/pkg/options"
 )
-
-type mockEndpointStore struct {
-	list func() ([]v1.Endpoints, error)
-}
-
-func (es mockEndpointStore) List() ([]v1.Endpoints, error) {
-	return es.list()
-}
 
 func TestEndpointCollector(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
@@ -49,55 +41,49 @@ func TestEndpointCollector(t *testing.T) {
 		# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_endpoint_labels gauge
 	`
-	cases := []struct {
-		endpoints []v1.Endpoints
-		metrics   []string // which metrics should be checked
-		want      string
-	}{
+	cases := []generateMetricsTestCase{
 		{
-			endpoints: []v1.Endpoints{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "test-endpoint",
-						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						Namespace:         "default",
-						Labels: map[string]string{
-							"app": "foobar",
+			Obj: &v1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-endpoint",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					Labels: map[string]string{
+						"app": "foobar",
+					},
+				},
+				Subsets: []v1.EndpointSubset{
+					{Addresses: []v1.EndpointAddress{
+						{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
+					},
+						Ports: []v1.EndpointPort{
+							{Port: 8080}, {Port: 8081},
 						},
 					},
-					Subsets: []v1.EndpointSubset{
-						{Addresses: []v1.EndpointAddress{
-							{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
+					{Addresses: []v1.EndpointAddress{
+						{IP: "172.22.23.202"},
+					},
+						Ports: []v1.EndpointPort{
+							{Port: 8443}, {Port: 9090},
 						},
-							Ports: []v1.EndpointPort{
-								{Port: 8080}, {Port: 8081},
-							},
+					},
+					{NotReadyAddresses: []v1.EndpointAddress{
+						{IP: "192.168.1.1"},
+					},
+						Ports: []v1.EndpointPort{
+							{Port: 1234}, {Port: 5678},
 						},
-						{Addresses: []v1.EndpointAddress{
-							{IP: "172.22.23.202"},
-						},
-							Ports: []v1.EndpointPort{
-								{Port: 8443}, {Port: 9090},
-							},
-						},
-						{NotReadyAddresses: []v1.EndpointAddress{
-							{IP: "192.168.1.1"},
-						},
-							Ports: []v1.EndpointPort{
-								{Port: 1234}, {Port: 5678},
-							},
-						},
-						{NotReadyAddresses: []v1.EndpointAddress{
-							{IP: "192.168.1.3"}, {IP: "192.168.2.2"},
-						},
-							Ports: []v1.EndpointPort{
-								{Port: 1234}, {Port: 5678},
-							},
+					},
+					{NotReadyAddresses: []v1.EndpointAddress{
+						{IP: "192.168.1.3"}, {IP: "192.168.2.2"},
+					},
+						Ports: []v1.EndpointPort{
+							{Port: 1234}, {Port: 5678},
 						},
 					},
 				},
 			},
-			want: metadata + `
+			Want: `
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
@@ -106,17 +92,10 @@ func TestEndpointCollector(t *testing.T) {
 			`,
 		},
 	}
-	for _, c := range cases {
-		sc := &endpointCollector{
-			store: &mockEndpointStore{
-				list: func() ([]v1.Endpoints, error) {
-					return c.endpoints, nil
-				},
-			},
-			opts: &options.Options{},
-		}
-		if err := testutils.GatherAndCompare(sc, c.want, c.metrics); err != nil {
-			t.Errorf("unexpected collecting result:\n%s", err)
+	for i, c := range cases {
+		c.Func = composeMetricGenFuncs(endpointMetricFamilies)
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
 }

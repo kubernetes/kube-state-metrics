@@ -20,16 +20,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/robfig/cron"
-	"golang.org/x/net/context"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/kube-state-metrics/pkg/metrics"
 
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	"k8s.io/kube-state-metrics/pkg/options"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/robfig/cron"
 )
 
 var (
@@ -37,120 +37,179 @@ var (
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
 
-	descCronJobLabels = prometheus.NewDesc(
-		descCronJobLabelsName,
-		descCronJobLabelsHelp,
-		descCronJobLabelsDefaultLabels, nil,
-	)
+	cronJobMetricFamilies = []metrics.FamilyGenerator{
+		metrics.FamilyGenerator{
+			Name: descCronJobLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descCronJobLabelsHelp,
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+				return metrics.Family{
+					&metrics.Metric{
+						Name:        descCronJobLabelsName,
+						LabelKeys:   labelKeys,
+						LabelValues: labelValues,
+						Value:       1,
+					},
+				}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_cronjob_info",
+			Type: metrics.MetricTypeGauge,
+			Help: "Info about cronjob.",
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				return metrics.Family{
+					&metrics.Metric{
+						Name:        "kube_cronjob_info",
+						LabelKeys:   []string{"schedule", "concurrency_policy"},
+						LabelValues: []string{j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy)},
+						Value:       1,
+					},
+				}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_cronjob_created",
+			Type: metrics.MetricTypeGauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				f := metrics.Family{}
+				if !j.CreationTimestamp.IsZero() {
+					f = append(f, &metrics.Metric{
+						Name:        "kube_cronjob_created",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(j.CreationTimestamp.Unix()),
+					})
+				}
 
-	descCronJobInfo = prometheus.NewDesc(
-		"kube_cronjob_info",
-		"Info about cronjob.",
-		append(descCronJobLabelsDefaultLabels, "schedule", "concurrency_policy"),
-		nil,
-	)
-	descCronJobCreated = prometheus.NewDesc(
-		"kube_cronjob_created",
-		"Unix creation timestamp",
-		descCronJobLabelsDefaultLabels,
-		nil,
-	)
-	descCronJobStatusActive = prometheus.NewDesc(
-		"kube_cronjob_status_active",
-		"Active holds pointers to currently running jobs.",
-		descCronJobLabelsDefaultLabels,
-		nil,
-	)
-	descCronJobStatusLastScheduleTime = prometheus.NewDesc(
-		"kube_cronjob_status_last_schedule_time",
-		"LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
-		descCronJobLabelsDefaultLabels,
-		nil,
-	)
-	descCronJobSpecSuspend = prometheus.NewDesc(
-		"kube_cronjob_spec_suspend",
-		"Suspend flag tells the controller to suspend subsequent executions.",
-		descCronJobLabelsDefaultLabels,
-		nil,
-	)
-	descCronJobSpecStartingDeadlineSeconds = prometheus.NewDesc(
-		"kube_cronjob_spec_starting_deadline_seconds",
-		"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
-		descCronJobLabelsDefaultLabels,
-		nil,
-	)
-	descCronJobNextScheduledTime = prometheus.NewDesc(
-		"kube_cronjob_next_schedule_time",
-		"Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
-		descCronJobLabelsDefaultLabels,
-		nil,
-	)
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_cronjob_status_active",
+			Type: metrics.MetricTypeGauge,
+			Help: "Active holds pointers to currently running jobs.",
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				return metrics.Family{
+					&metrics.Metric{
+						Name:        "kube_cronjob_status_active",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(len(j.Status.Active)),
+					},
+				}
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_cronjob_status_last_schedule_time",
+			Type: metrics.MetricTypeGauge,
+			Help: "LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				f := metrics.Family{}
+
+				if j.Status.LastScheduleTime != nil {
+					f = append(f, &metrics.Metric{
+						Name:        "kube_cronjob_status_last_schedule_time",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(j.Status.LastScheduleTime.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_cronjob_spec_suspend",
+			Type: metrics.MetricTypeGauge,
+			Help: "Suspend flag tells the controller to suspend subsequent executions.",
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				f := metrics.Family{}
+
+				if j.Spec.Suspend != nil {
+					f = append(f, &metrics.Metric{
+						Name:        "kube_cronjob_spec_suspend",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       boolFloat64(*j.Spec.Suspend),
+					})
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_cronjob_spec_starting_deadline_seconds",
+			Type: metrics.MetricTypeGauge,
+			Help: "Deadline in seconds for starting the job if it misses scheduled time for any reason.",
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				f := metrics.Family{}
+
+				if j.Spec.StartingDeadlineSeconds != nil {
+					f = append(f, &metrics.Metric{
+						Name:        "kube_cronjob_spec_starting_deadline_seconds",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(*j.Spec.StartingDeadlineSeconds),
+					})
+
+				}
+
+				return f
+			}),
+		},
+		metrics.FamilyGenerator{
+			Name: "kube_cronjob_next_schedule_time",
+			Type: metrics.MetricTypeGauge,
+			Help: "Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metrics.Family {
+				f := metrics.Family{}
+
+				// If the cron job is suspended, don't track the next scheduled time
+				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
+				if err != nil {
+					panic(err)
+				} else if !*j.Spec.Suspend {
+					f = append(f, &metrics.Metric{
+						Name:        "kube_cronjob_next_schedule_time",
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(nextScheduledTime.Unix()),
+					})
+				}
+
+				return f
+			}),
+		},
+	}
 )
 
-type CronJobLister func() ([]batchv1beta1.CronJob, error)
+func wrapCronJobFunc(f func(*batchv1beta1.CronJob) metrics.Family) func(interface{}) metrics.Family {
+	return func(obj interface{}) metrics.Family {
+		cronJob := obj.(*batchv1beta1.CronJob)
 
-func (l CronJobLister) List() ([]batchv1beta1.CronJob, error) {
-	return l()
-}
+		metricFamily := f(cronJob)
 
-func RegisterCronJobCollector(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options) {
-
-	infs := SharedInformerList{}
-	for _, f := range informerFactories {
-		infs = append(infs, f.Batch().V1beta1().CronJobs().Informer().(cache.SharedInformer))
-	}
-
-	cronJobLister := CronJobLister(func() (cronjobs []batchv1beta1.CronJob, err error) {
-		for _, inf := range infs {
-			for _, c := range inf.GetStore().List() {
-				cronjobs = append(cronjobs, *(c.(*batchv1beta1.CronJob)))
-			}
+		for _, m := range metricFamily {
+			m.LabelKeys = append(descCronJobLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{cronJob.Namespace, cronJob.Name}, m.LabelValues...)
 		}
-		return cronjobs, nil
-	})
 
-	registry.MustRegister(&cronJobCollector{store: cronJobLister, opts: opts})
-	infs.Run(context.Background().Done())
-}
-
-type cronJobStore interface {
-	List() (cronjobs []batchv1beta1.CronJob, err error)
-}
-
-// cronJobCollector collects metrics about all cronjobs in the cluster.
-type cronJobCollector struct {
-	store cronJobStore
-	opts  *options.Options
-}
-
-// Describe implements the prometheus.Collector interface.
-func (dc *cronJobCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descCronJobInfo
-	ch <- descCronJobCreated
-	ch <- descCronJobLabels
-	ch <- descCronJobStatusActive
-	ch <- descCronJobStatusLastScheduleTime
-	ch <- descCronJobSpecSuspend
-	ch <- descCronJobSpecStartingDeadlineSeconds
-	ch <- descCronJobNextScheduledTime
-}
-
-// Collect implements the prometheus.Collector interface.
-func (cjc *cronJobCollector) Collect(ch chan<- prometheus.Metric) {
-	cronjobs, err := cjc.store.List()
-	if err != nil {
-		ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "cronjob"}).Inc()
-		glog.Errorf("listing cronjobs failed: %s", err)
-		return
+		return metricFamily
 	}
-	ScrapeErrorTotalMetric.With(prometheus.Labels{"resource": "cronjob"}).Add(0)
+}
 
-	ResourcesPerScrapeMetric.With(prometheus.Labels{"resource": "cronjob"}).Observe(float64(len(cronjobs)))
-	for _, cj := range cronjobs {
-		cjc.collectCronJob(ch, cj)
+func createCronJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
+	return cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.BatchV1beta1().CronJobs(ns).List(opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.BatchV1beta1().CronJobs(ns).Watch(opts)
+		},
 	}
-
-	glog.V(4).Infof("collected %d cronjobs", len(cronjobs))
 }
 
 func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {
@@ -165,49 +224,4 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 		return sched.Next(createdTime.Time), nil
 	}
 	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
-}
-
-func cronJobLabelsDesc(labelKeys []string) *prometheus.Desc {
-	return prometheus.NewDesc(
-		descCronJobLabelsName,
-		descCronJobLabelsHelp,
-		append(descCronJobLabelsDefaultLabels, labelKeys...),
-		nil,
-	)
-}
-
-func (jc *cronJobCollector) collectCronJob(ch chan<- prometheus.Metric, j batchv1beta1.CronJob) {
-	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
-		lv = append([]string{j.Namespace, j.Name}, lv...)
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, lv...)
-	}
-
-	if j.Spec.StartingDeadlineSeconds != nil {
-		addGauge(descCronJobSpecStartingDeadlineSeconds, float64(*j.Spec.StartingDeadlineSeconds))
-	}
-
-	// If the cron job is suspended, don't track the next scheduled time
-	nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
-	if err != nil {
-		glog.Errorf("%s", err)
-	} else if !*j.Spec.Suspend {
-		addGauge(descCronJobNextScheduledTime, float64(nextScheduledTime.Unix()))
-	}
-
-	addGauge(descCronJobInfo, 1, j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy))
-
-	labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
-	addGauge(cronJobLabelsDesc(labelKeys), 1, labelValues...)
-
-	if !j.CreationTimestamp.IsZero() {
-		addGauge(descCronJobCreated, float64(j.CreationTimestamp.Unix()))
-	}
-	addGauge(descCronJobStatusActive, float64(len(j.Status.Active)))
-	if j.Spec.Suspend != nil {
-		addGauge(descCronJobSpecSuspend, boolFloat64(*j.Spec.Suspend))
-	}
-
-	if j.Status.LastScheduleTime != nil {
-		addGauge(descCronJobStatusLastScheduleTime, float64(j.Status.LastScheduleTime.Unix()))
-	}
 }

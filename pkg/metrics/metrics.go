@@ -17,65 +17,127 @@ limitations under the License.
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
-
-	"k8s.io/kube-state-metrics/pkg/options"
+	"math"
+	"strconv"
+	"strings"
+	"sync"
 )
 
-type gathererFunc func() ([]*dto.MetricFamily, error)
+const (
+	initialNumBufSize = 24
+)
 
-func (f gathererFunc) Gather() ([]*dto.MetricFamily, error) {
-	return f()
+var (
+	numBufPool = sync.Pool{
+		New: func() interface{} {
+			b := make([]byte, 0, initialNumBufSize)
+			return &b
+		},
+	}
+)
+
+// FamilyGenerator provides everything needed to generate a metric family with a
+// Kubernetes object.
+type FamilyGenerator struct {
+	Name         string
+	Help         string
+	Type         MetricType
+	GenerateFunc func(obj interface{}) Family
 }
 
-// FilteredGatherer wraps a prometheus.Gatherer to filter metrics based on a
-// white or blacklist. Whitelist and blacklist are mutually exclusive.
-func FilteredGatherer(r prometheus.Gatherer, whitelist options.MetricSet, blacklist options.MetricSet) prometheus.Gatherer {
-	whitelistEnabled := !whitelist.IsEmpty()
-	blacklistEnabled := !blacklist.IsEmpty()
+// Family represents a set of metrics with the same name and help text.
+type Family []*Metric
 
-	if whitelistEnabled {
-		return gathererFunc(func() ([]*dto.MetricFamily, error) {
-			metricFamilies, err := r.Gather()
-			if err != nil {
-				return nil, err
-			}
-
-			newMetricFamilies := []*dto.MetricFamily{}
-			for _, metricFamily := range metricFamilies {
-				// deferencing this string may be a performance bottleneck
-				name := *metricFamily.Name
-				_, onWhitelist := whitelist[name]
-				if onWhitelist {
-					newMetricFamilies = append(newMetricFamilies, metricFamily)
-				}
-			}
-
-			return newMetricFamilies, nil
-		})
+// String returns the given Family in its string representation.
+func (f Family) String() string {
+	b := strings.Builder{}
+	for _, m := range f {
+		m.Write(&b)
 	}
 
-	if blacklistEnabled {
-		return gathererFunc(func() ([]*dto.MetricFamily, error) {
-			metricFamilies, err := r.Gather()
-			if err != nil {
-				return nil, err
-			}
+	return b.String()
+}
 
-			newMetricFamilies := []*dto.MetricFamily{}
-			for _, metricFamily := range metricFamilies {
-				name := *metricFamily.Name
-				_, onBlacklist := blacklist[name]
-				if onBlacklist {
-					continue
-				}
-				newMetricFamilies = append(newMetricFamilies, metricFamily)
-			}
+// MetricType represents the type of a metric e.g. a counter. See
+// https://prometheus.io/docs/concepts/metric_types/.
+type MetricType string
 
-			return newMetricFamilies, nil
-		})
+// MetricTypeGauge defines a Prometheus gauge.
+var MetricTypeGauge MetricType = "gauge"
+
+// MetricTypeCounter defines a Prometheus counter.
+var MetricTypeCounter MetricType = "counter"
+
+// Metric represents a single time series.
+type Metric struct {
+	Name        string
+	LabelKeys   []string
+	LabelValues []string
+	Value       float64
+}
+
+func (m *Metric) Write(s *strings.Builder) {
+	if len(m.LabelKeys) != len(m.LabelValues) {
+		panic("expected labelKeys to be of same length as labelValues")
 	}
 
-	return r
+	s.WriteString(m.Name)
+	labelsToString(s, m.LabelKeys, m.LabelValues)
+	s.WriteByte(' ')
+	writeFloat(s, m.Value)
+	s.WriteByte('\n')
+}
+
+func labelsToString(m *strings.Builder, keys, values []string) {
+	if len(keys) > 0 {
+		var separator byte = '{'
+
+		for i := 0; i < len(keys); i++ {
+			m.WriteByte(separator)
+			m.WriteString(keys[i])
+			m.WriteString("=\"")
+			escapeString(m, values[i])
+			m.WriteByte('"')
+			separator = ','
+		}
+
+		m.WriteByte('}')
+	}
+}
+
+var (
+	escapeWithDoubleQuote = strings.NewReplacer("\\", `\\`, "\n", `\n`, "\"", `\"`)
+)
+
+// escapeString replaces '\' by '\\', new line character by '\n', and '"' by
+// '\"'.
+// Taken from github.com/prometheus/common/expfmt/text_create.go.
+func escapeString(m *strings.Builder, v string) {
+	escapeWithDoubleQuote.WriteString(m, v)
+}
+
+// writeFloat is equivalent to fmt.Fprint with a float64 argument but hardcodes
+// a few common cases for increased efficiency. For non-hardcoded cases, it uses
+// strconv.AppendFloat to avoid allocations, similar to writeInt.
+// Taken from github.com/prometheus/common/expfmt/text_create.go.
+func writeFloat(w *strings.Builder, f float64) {
+	switch {
+	case f == 1:
+		w.WriteByte('1')
+	case f == 0:
+		w.WriteByte('0')
+	case f == -1:
+		w.WriteString("-1")
+	case math.IsNaN(f):
+		w.WriteString("NaN")
+	case math.IsInf(f, +1):
+		w.WriteString("+Inf")
+	case math.IsInf(f, -1):
+		w.WriteString("-Inf")
+	default:
+		bp := numBufPool.Get().(*[]byte)
+		*bp = strconv.AppendFloat((*bp)[:0], f, 'g', -1, 64)
+		w.Write(*bp)
+		numBufPool.Put(bp)
+	}
 }

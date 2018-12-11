@@ -17,118 +17,27 @@ limitations under the License.
 package collectors
 
 import (
-	"time"
-
-	"regexp"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/options"
+	"io"
 )
 
-var (
-	resyncPeriod = 5 * time.Minute
-
-	ScrapeErrorTotalMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "ksm_scrape_error_total",
-			Help: "Total scrape errors encountered when scraping a resource",
-		},
-		[]string{"resource"},
-	)
-
-	ResourcesPerScrapeMetric = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Name: "ksm_resources_per_scrape",
-			Help: "Number of resources returned per scrape",
-		},
-		[]string{"resource"},
-	)
-
-	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-)
-
-var AvailableCollectors = map[string]func(registry prometheus.Registerer, informerFactories []informers.SharedInformerFactory, opts *options.Options){
-	"cronjobs":                 RegisterCronJobCollector,
-	"daemonsets":               RegisterDaemonSetCollector,
-	"deployments":              RegisterDeploymentCollector,
-	"jobs":                     RegisterJobCollector,
-	"limitranges":              RegisterLimitRangeCollector,
-	"nodes":                    RegisterNodeCollector,
-	"pods":                     RegisterPodCollector,
-	"replicasets":              RegisterReplicaSetCollector,
-	"replicationcontrollers":   RegisterReplicationControllerCollector,
-	"resourcequotas":           RegisterResourceQuotaCollector,
-	"services":                 RegisterServiceCollector,
-	"statefulsets":             RegisterStatefulSetCollector,
-	"persistentvolumes":        RegisterPersistentVolumeCollector,
-	"persistentvolumeclaims":   RegisterPersistentVolumeClaimCollector,
-	"namespaces":               RegisterNamespaceCollector,
-	"horizontalpodautoscalers": RegisterHorizontalPodAutoScalerCollector,
-	"endpoints":                RegisterEndpointCollector,
-	"secrets":                  RegisterSecretCollector,
-	"configmaps":               RegisterConfigMapCollector,
+// Store represents a metrics store e.g.
+// k8s.io/kube-state-metrics/pkg/metrics_store.
+type Store interface {
+	WriteAll(io.Writer)
 }
 
-type SharedInformerList []cache.SharedInformer
-
-func (sil SharedInformerList) Run(stopCh <-chan struct{}) {
-	for _, sinf := range sil {
-		go sinf.Run(stopCh)
-	}
+// Collector represents a kube-state-metrics metric collector. It is a stripped
+// down version of the Prometheus client_golang collector.
+type Collector struct {
+	Store Store
 }
 
-func boolFloat64(b bool) float64 {
-	if b {
-		return 1
-	}
-	return 0
+// NewCollector constructs a collector with the given Store.
+func NewCollector(s Store) *Collector {
+	return &Collector{s}
 }
 
-// addConditionMetrics generates one metric for each possible node condition
-// status. For this function to work properly, the last label in the metric
-// description must be the condition.
-func addConditionMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, cs v1.ConditionStatus, lv ...string) {
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionTrue),
-		append(lv, "true")...,
-	)
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionFalse),
-		append(lv, "false")...,
-	)
-	ch <- prometheus.MustNewConstMetric(
-		desc, prometheus.GaugeValue, boolFloat64(cs == v1.ConditionUnknown),
-		append(lv, "unknown")...,
-	)
-}
-
-func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
-	labelKeys := make([]string, len(labels))
-	labelValues := make([]string, len(labels))
-	i := 0
-	for k, v := range labels {
-		labelKeys[i] = "label_" + sanitizeLabelName(k)
-		labelValues[i] = v
-		i++
-	}
-	return labelKeys, labelValues
-}
-
-func kubeAnnotationsToPrometheusAnnotations(annotations map[string]string) ([]string, []string) {
-	annotationKeys := make([]string, len(annotations))
-	annotationValues := make([]string, len(annotations))
-	i := 0
-	for k, v := range annotations {
-		annotationKeys[i] = "annotation_" + sanitizeLabelName(k)
-		annotationValues[i] = v
-		i++
-	}
-	return annotationKeys, annotationValues
-}
-
-func sanitizeLabelName(s string) string {
-	return invalidLabelCharRE.ReplaceAllString(s, "_")
+// Collect returns all metrics of the underlying store of the collector.
+func (c *Collector) Collect(w io.Writer) {
+	c.Store.WriteAll(w)
 }

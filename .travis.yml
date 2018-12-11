@@ -3,7 +3,7 @@ sudo: required
 language: go
 
 go:
-    - "1.10.3"
+    - "1.11.2"
 
 install:
 - mkdir -p $HOME/gopath/src/k8s.io

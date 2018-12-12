@@ -15,7 +15,21 @@
 # limitations under the License.
 
 set -e
+set -o nounset
 set -o pipefail
+
+export FLAGS=
+export PKGS=`go list ./... | grep -v /vendor/`
+
+function local_test() {
+    echo "[1]、Go fmt check"
+    make gofmtcheck
+    echo "[2]、doccheck"
+    make doccheck
+    echo "[3] test-unit"
+    make test-unit
+}
+local_test
 
 KUBERNETES_VERSION=v1.10.0
 KUBE_STATE_METRICS_LOG_DIR=./log

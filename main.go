@@ -80,6 +80,7 @@ func main() {
 		glog.Info("Using default collectors")
 		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	} else {
+		glog.Infof("Using collectors %s", opts.Collectors.String())
 		collectorBuilder.WithEnabledCollectors(opts.Collectors.AsSlice())
 	}
 
@@ -120,7 +121,7 @@ func main() {
 		})
 	}
 
-	glog.Infof("metric white- blacklisting: %v", whiteBlackList.Status())
+	glog.Infof("metric white-blacklisting: %v", whiteBlackList.Status())
 
 	collectorBuilder.WithWhiteBlackList(whiteBlackList)
 

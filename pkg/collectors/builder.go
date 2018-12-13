@@ -107,7 +107,6 @@ func (b *Builder) Build() []*Collector {
 			activeCollectorNames = append(activeCollectorNames, c)
 			collectors = append(collectors, collector)
 		}
-		// TODO: What if not ok?
 	}
 
 	glog.Infof("Active collectors: %s", strings.Join(activeCollectorNames, ","))

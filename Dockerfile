@@ -1,21 +1,16 @@
-FROM openshift/origin-base
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.10 AS builder
+WORKDIR /go/src/k8s.io/kube-state-metrics
+COPY . .
+RUN make build
 
-ENV GOPATH /go
-RUN mkdir $GOPATH
-
-COPY . $GOPATH/src/k8s.io/kube-state-metrics
-
-RUN yum install -y golang make git && \
-   cd $GOPATH/src/k8s.io/kube-state-metrics && cat Makefile && \
-   make build && cp $GOPATH/src/k8s.io/kube-state-metrics/kube-state-metrics /usr/bin/ && \
-   yum autoremove -y golang make git && yum clean all
-
+FROM  registry.svc.ci.openshift.org/openshift/origin-v4.0:base
 LABEL io.k8s.display-name="kube-state-metrics" \
       io.k8s.description="This is a component that exposes metrics about Kubernetes objects." \
       io.openshift.tags="kubernetes" \
       maintainer="Frederic Branczyk <fbranczy@redhat.com>"
 
-# doesn't require a root user.
-USER 1001
+ARG FROM_DIRECTORY=/go/src/k8s.io/kube-state-metrics
+COPY --from=builder ${FROM_DIRECTORY}/kube-state-metrics  /usr/bin/kube-state-metrics
 
+USER nobody
 ENTRYPOINT ["/usr/bin/kube-state-metrics"]

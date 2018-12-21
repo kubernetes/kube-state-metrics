@@ -1,4 +1,4 @@
-apiVersion: rbac.authorization.k8s.io/v1 
+apiVersion: rbac.authorization.k8s.io/v1
 # kubernetes versions before 1.8.0 should use rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
@@ -11,4 +11,3 @@ subjects:
 - kind: ServiceAccount
   name: kube-state-metrics
   namespace: kube-system
-

@@ -739,8 +739,14 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
+					UID:       "abc-123-xxx",
+				},
+				Spec: v1.PodSpec{
+					NodeName: "node1",
 				},
 				Status: v1.PodStatus{
+					HostIP: "1.1.1.1",
+					PodIP:  "1.2.3.4",
 					Conditions: []v1.PodCondition{
 						v1.PodCondition{
 							Type:   v1.PodReady,
@@ -750,9 +756,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: metadata + `
-				kube_pod_status_ready{condition="false",namespace="ns1",pod="pod1"} 0
-				kube_pod_status_ready{condition="true",namespace="ns1",pod="pod1"} 1
-				kube_pod_status_ready{condition="unknown",namespace="ns1",pod="pod1"} 0
+				kube_pod_status_ready{condition="false",namespace="ns1",pod="pod1",node="node1",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
+				kube_pod_status_ready{condition="true",namespace="ns1",pod="pod1",node="node1",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 1
+				kube_pod_status_ready{condition="unknown",namespace="ns1",pod="pod1",node="node1",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
 			`,
 			MetricNames: []string{"kube_pod_status_ready"},
 		},
@@ -761,8 +767,14 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
 					Namespace: "ns2",
+					UID:       "abc-123-xxx",
+				},
+				Spec: v1.PodSpec{
+					NodeName: "node1",
 				},
 				Status: v1.PodStatus{
+					HostIP: "1.1.1.1",
+					PodIP:  "1.2.3.4",
 					Conditions: []v1.PodCondition{
 						v1.PodCondition{
 							Type:   v1.PodReady,
@@ -772,9 +784,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: metadata + `
-				kube_pod_status_ready{condition="false",namespace="ns2",pod="pod2"} 1
-				kube_pod_status_ready{condition="true",namespace="ns2",pod="pod2"} 0
-				kube_pod_status_ready{condition="unknown",namespace="ns2",pod="pod2"} 0
+				kube_pod_status_ready{condition="false",namespace="ns2",pod="pod2",node="node1",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 1
+				kube_pod_status_ready{condition="true",namespace="ns2",pod="pod2",node="node1",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
+				kube_pod_status_ready{condition="unknown",namespace="ns2",pod="pod2",node="node1",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
 			`,
 			MetricNames: []string{"kube_pod_status_ready"},
 		},
@@ -783,8 +795,14 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
+					UID:       "abc-123-xxx",
+				},
+				Spec: v1.PodSpec{
+					NodeName: "node1",
 				},
 				Status: v1.PodStatus{
+					HostIP: "1.1.1.1",
+					PodIP:  "1.2.3.4",
 					Conditions: []v1.PodCondition{
 						v1.PodCondition{
 							Type:   v1.PodScheduled,
@@ -798,9 +816,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 			Want: metadata + `
 				kube_pod_status_scheduled_time{namespace="ns1",pod="pod1"} 1.501666018e+09
-				kube_pod_status_scheduled{condition="false",namespace="ns1",pod="pod1"} 0
-				kube_pod_status_scheduled{condition="true",namespace="ns1",pod="pod1"} 1
-				kube_pod_status_scheduled{condition="unknown",namespace="ns1",pod="pod1"} 0
+				kube_pod_status_scheduled{condition="false",namespace="ns1",pod="pod1",host_ip="1.1.1.1",node="node1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
+				kube_pod_status_scheduled{condition="true",namespace="ns1",pod="pod1",host_ip="1.1.1.1",node="node1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 1
+				kube_pod_status_scheduled{condition="unknown",namespace="ns1",pod="pod1",host_ip="1.1.1.1",node="node1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
 			`,
 			MetricNames: []string{"kube_pod_status_scheduled", "kube_pod_status_scheduled_time"},
 		},
@@ -809,8 +827,14 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
 					Namespace: "ns2",
+					UID:       "abc-123-xxx",
+				},
+				Spec: v1.PodSpec{
+					NodeName: "node1",
 				},
 				Status: v1.PodStatus{
+					HostIP: "1.1.1.1",
+					PodIP:  "1.2.3.4",
 					Conditions: []v1.PodCondition{
 						v1.PodCondition{
 							Type:   v1.PodScheduled,
@@ -820,9 +844,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: metadata + `
-				kube_pod_status_scheduled{condition="false",namespace="ns2",pod="pod2"} 1
-				kube_pod_status_scheduled{condition="true",namespace="ns2",pod="pod2"} 0
-				kube_pod_status_scheduled{condition="unknown",namespace="ns2",pod="pod2"} 0
+				kube_pod_status_scheduled{condition="false",namespace="ns2",pod="pod2",host_ip="1.1.1.1",node="node1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 1
+				kube_pod_status_scheduled{condition="true",namespace="ns2",pod="pod2",host_ip="1.1.1.1",node="node1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
+				kube_pod_status_scheduled{condition="unknown",namespace="ns2",pod="pod2",host_ip="1.1.1.1",node="node1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 0
 			`,
 			MetricNames: []string{"kube_pod_status_scheduled", "kube_pod_status_scheduled_time"},
 		},

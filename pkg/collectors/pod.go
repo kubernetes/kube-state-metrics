@@ -259,7 +259,8 @@ var (
 						for _, m := range ms {
 							metric := m
 							metric.Name = "kube_pod_status_ready"
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = []string{"condition", "host_ip", "pod_ip", "uid", "node"}
+							metric.LabelValues = append(metric.LabelValues, []string{p.Status.HostIP, p.Status.PodIP, string(p.UID), p.Spec.NodeName}...)
 							f = append(f, metric)
 						}
 					}
@@ -283,7 +284,8 @@ var (
 						for _, m := range ms {
 							metric := m
 							metric.Name = "kube_pod_status_scheduled"
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = []string{"condition", "host_ip", "pod_ip", "uid", "node"}
+							metric.LabelValues = append(metric.LabelValues, []string{p.Status.HostIP, p.Status.PodIP, string(p.UID), p.Spec.NodeName}...)
 							f = append(f, metric)
 						}
 					}

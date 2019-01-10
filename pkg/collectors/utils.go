@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/api/core/v1"
 
 	"k8s.io/kube-state-metrics/pkg/metrics"
@@ -28,22 +27,6 @@ import (
 
 var (
 	resyncPeriod = 5 * time.Minute
-
-	ScrapeErrorTotalMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "ksm_scrape_error_total",
-			Help: "Total scrape errors encountered when scraping a resource",
-		},
-		[]string{"resource"},
-	)
-
-	ResourcesPerScrapeMetric = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Name: "ksm_resources_per_scrape",
-			Help: "Number of resources returned per scrape",
-		},
-		[]string{"resource"},
-	)
 
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 )

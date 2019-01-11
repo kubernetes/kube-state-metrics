@@ -27,7 +27,8 @@ import (
 	"testing"
 	"time"
 
-	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
+	kcoll "k8s.io/kube-state-metrics/internal/collector"
+	coll "k8s.io/kube-state-metrics/pkg/collector"
 	"k8s.io/kube-state-metrics/pkg/options"
 
 	"k8s.io/api/core/v1"
@@ -38,7 +39,7 @@ import (
 )
 
 func BenchmarkKubeStateMetrics(b *testing.B) {
-	var collectors []*kcollectors.Collector
+	var collectors []*coll.Collector
 	fixtureMultiplier := 1000
 	requestCount := 1000
 
@@ -54,7 +55,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 		b.Errorf("error injecting resources: %v", err)
 	}
 
-	builder := kcollectors.NewBuilder(context.TODO())
+	builder := kcoll.NewBuilder(context.TODO())
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -112,7 +113,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatalf("failed to insert sample pod %v", err.Error())
 	}
 
-	builder := kcollectors.NewBuilder(context.TODO())
+	builder := kcoll.NewBuilder(context.TODO())
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)

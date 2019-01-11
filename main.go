@@ -37,7 +37,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
-	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
+	kcoll "k8s.io/kube-state-metrics/internal/collector"
+	coll "k8s.io/kube-state-metrics/pkg/collector"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
 	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
@@ -74,7 +75,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	collectorBuilder := kcollectors.NewBuilder(context.TODO())
+	collectorBuilder := kcoll.NewBuilder(context.TODO())
 
 	if len(opts.Collectors) == 0 {
 		glog.Info("Using default collectors")
@@ -199,7 +200,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 }
 
 // TODO: How about accepting an interface Collector instead?
-func serveMetrics(collectors []*kcollectors.Collector, host string, port int, enableGZIPEncoding bool) {
+func serveMetrics(collectors []*coll.Collector, host string, port int, enableGZIPEncoding bool) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
@@ -238,7 +239,7 @@ func serveMetrics(collectors []*kcollectors.Collector, host string, port int, en
 }
 
 type metricHandler struct {
-	collectors         []*kcollectors.Collector
+	collectors         []*coll.Collector
 	enableGZIPEncoding bool
 }
 

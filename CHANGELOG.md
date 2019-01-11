@@ -1,3 +1,13 @@
+## v1.5.0 / 2019-01-10
+
+After a testing period of 30 days, there were no additional bugs found or features introduced. Due to no bugs being reported over an in total 41 days period, we feel no more pre-releases are necessary for a stable release.
+
+This release's focus was a large architectural change in order to improve performance and resource usage of kube-state-metrics drastically. Special thanks to @mxinden for his hard work on this! See the changelog of the pre-releases for more detailed information and related pull requests.
+
+An additional change has been requested to be listed in the release notes:
+
+* [CHANGE] Due to removal of the surrounding mechanism the `ksm_resources_per_scrape` and `ksm_scrape_error_total` metrics no longer exists.
+
 ## v1.5.0-beta.0 / 2018-12-11
 
 After a testing period of 11 days, there were no additional bugs found or features introduced.
@@ -5,7 +15,7 @@ After a testing period of 11 days, there were no additional bugs found or featur
 ## v1.5.0-alpha.0 / 2018-11-30
 
 * [CHANGE] Disable gzip compression of kube-state-metrics responses by default. Can be re-enabled via `--enable-gzip-encoding`. See #563 for more details.
-* [FEATURE] Add `kube_replicatset_owner` metric (#520).
+* [FEATURE] Add `kube_replicaset_owner` metric (#520).
 * [FEATURE] Add `kube_pod_container_status_last_terminated_reason` metric (#535).
 * [FEATURE] Add `stateful_set_status.{current,update}_revision` metric (#545).
 * [FEATURE] Add pod disruption budget collector (#551).

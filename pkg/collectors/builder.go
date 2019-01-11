@@ -107,7 +107,6 @@ func (b *Builder) Build() []*Collector {
 			activeCollectorNames = append(activeCollectorNames, c)
 			collectors = append(collectors, collector)
 		}
-		// TODO: What if not ok?
 	}
 
 	glog.Infof("Active collectors: %s", strings.Join(activeCollectorNames, ","))
@@ -493,14 +492,6 @@ func filterMetricFamilies(l whiteBlackLister, families []metrics.FamilyGenerator
 
 	return filtered
 }
-
-//
-// func (b *Builder) buildStatefulSetCollector() *Collector {
-// 	store := metricsstore.NewMetricsStore(generateStatefulSetMetrics)
-// 	reflectorPerNamespace(b.ctx, b.kubeClient, &apps.StatefulSet{}, store, b.namespaces, createStatefulSetListWatch)
-//
-// 	return newCollector(store)
-// }
 
 // reflectorPerNamespace creates a Kubernetes client-go reflector with the given
 // listWatchFunc for each given namespace and registers it with the given store.

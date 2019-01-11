@@ -1,3 +1,49 @@
+## v1.5.0 / 2019-01-10
+
+After a testing period of 30 days, there were no additional bugs found or features introduced. Due to no bugs being reported over an in total 41 days period, we feel no more pre-releases are necessary for a stable release.
+
+This release's focus was a large architectural change in order to improve performance and resource usage of kube-state-metrics drastically. Special thanks to @mxinden for his hard work on this! See the changelog of the pre-releases for more detailed information and related pull requests.
+
+An additional change has been requested to be listed in the release notes:
+
+* [CHANGE] Due to removal of the surrounding mechanism the `ksm_resources_per_scrape` and `ksm_scrape_error_total` metrics no longer exists.
+
+## v1.5.0-beta.0 / 2018-12-11
+
+After a testing period of 11 days, there were no additional bugs found or features introduced.
+
+## v1.5.0-alpha.0 / 2018-11-30
+
+* [CHANGE] Disable gzip compression of kube-state-metrics responses by default. Can be re-enabled via `--enable-gzip-encoding`. See #563 for more details.
+* [FEATURE] Add `kube_replicaset_owner` metric (#520).
+* [FEATURE] Add `kube_pod_container_status_last_terminated_reason` metric (#535).
+* [FEATURE] Add `stateful_set_status.{current,update}_revision` metric (#545).
+* [FEATURE] Add pod disruption budget collector (#551).
+* [FEATURE] Make kube-state-metrics usable as a library (#575).
+* [FEATURE] Add `kube_service_spec_external_ip` metric and add `external_name` and `load_balancer_ip` label to `kube_service_info` metric (#571).
+* [ENHANCEMENT] Add uid info in `kube_pod_info` metric (#508).
+* [ENHANCEMENT] Update addon-resizer to 1.8.3 and increase resource limits (#552).
+* [ENHANCEMENT] Improve metric caching and rendering performance (#498).
+* [ENHANCEMENT] Adding CreateContainerConfigError as possible reason for container not starting (#578).
+
+## v1.4.0 / 2018-08-22
+
+After a testing period of 16 days, there were no additional bugs found or features introduced.
+
+## v1.4.0-rc.0 / 2018-08-06
+
+* [CHANGE] `kube_job_status_start_time` and `kube_job_status_completion_time` metric types changed from counter to gauge.
+* [CHANGE] `job` label to `job_name` as this collides with the Prometheus `job` label.
+* [FEATURE] Allow white- and black-listing metrics to be exposed.
+* [FEATURE] Add `kube_node_status_capacity` and `kube_node_status_allocatable` metrics.
+* [FEATURE] Add `kube_pod_status_scheduled_time` metric.
+* [FEATURE] Add `kube_pod_container_status_waiting_reason` and `kube_pod_container_status_terminated_reason` metrics.
+* [ENHANCEMENT] Add generic resource metrics for Pods, `kube_pod_container_resource_requests` and `kube_pod_container_resource_limits`. This deprecates the old resource metrics for Pods.
+* [ENHANCEMENT] Prefer protobuf over json when communicating with the Kubernetes API.
+* [ENHANCEMENT] Add dynamic volume support.
+* [ENHANCEMENT] Properly set kube-state-metrics user agent when performing requests against the Kubernetes API.
+* [BUGFIX] Fix incrorrect HPA metric labels.
+
 ## v1.3.1 / 2018-04-12
 
 * [BUGFIX] Use Go 1.10.1 fixing TLS and memory issues.
@@ -9,6 +55,10 @@ After a testing period of 12 days, there were no additional bugs found or featur
 
 ## v1.3.0-rc.0 / 2018-03-23
 
+* [CHANGE] Removed `--in-cluster` flag in [#371](https://github.com/kubernetes/kube-state-metrics/pull/371).
+  Users can no longer specify `--apiserver` with `--in-cluster=true`. To
+  emulate this behaviour in future releases, set the `KUBERNETES_SERVICE_HOST`
+  environment variable to the value of the `--apiserver` argument.
 * [FEATURE] Allow to specify multiple namespace.
 * [FEATURE] Add `kube_pod_completion_time`, `kube_pod_spec_volumes_persistentvolumeclaims_info`, and `kube_pod_spec_volumes_persistentvolumeclaims_readonly` metrics to the Pod collector.
 * [FEATURE] Add `kube_node_spec_taint` metric.

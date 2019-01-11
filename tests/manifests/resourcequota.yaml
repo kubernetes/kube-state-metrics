@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: resourcequota
+spec:
+  hard:
+    configmaps: "10"

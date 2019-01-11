@@ -7,8 +7,8 @@ ARCH ?= $(shell go env GOARCH)
 BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
-PKG=k8s.io/kube-state-metrics
-GO_VERSION=1.10.1
+PKG=k8s.io/kube-state-metrics/pkg
+GO_VERSION=1.11.4
 
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
@@ -18,8 +18,8 @@ gofmtcheck:
 
 doccheck:
 	@echo "- Checking if documentation is up to date..."
-	@grep -hoE '(kube_[^ |]+)' Documentation/* | sort -u > documented_metrics
-	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' collectors/*_test.go | sort -u > tested_metrics
+	@grep -hoE '(kube_[^ |]+)' Documentation/* --exclude=README.md| sort -u > documented_metrics
+	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' pkg/collectors/*_test.go | sort -u > tested_metrics
 	@diff -u0 tested_metrics documented_metrics || (echo "ERROR: Metrics with - are present in tests but missing in documentation, metrics with + are documented but not tested."; exit 1)
 	@echo OK
 	@rm -f tested_metrics documented_metrics
@@ -52,24 +52,36 @@ container: .container-$(ARCH)
 	docker run --rm -v "$$PWD":/go/src/k8s.io/kube-state-metrics -w /go/src/k8s.io/kube-state-metrics -e GOOS=linux -e GOARCH=$(ARCH) -e CGO_ENABLED=0 golang:${GO_VERSION} go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
 	cp -r * $(TEMP_DIR)
 	docker build -t $(MULTI_ARCH_IMG):$(TAG) $(TEMP_DIR)
+	docker tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
 
 ifeq ($(ARCH), amd64)
 	# Adding check for amd64
 	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
+	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
 endif
 
+quay-push: .quay-push-$(ARCH)
+.quay-push-$(ARCH): .container-$(ARCH)
+	docker push $(MULTI_ARCH_IMG):$(TAG)
+	docker push $(MULTI_ARCH_IMG):latest
+ifeq ($(ARCH), amd64)
+	docker push $(IMAGE):$(TAG)
+	docker push $(IMAGE):latest
+endif
 
 push: .push-$(ARCH)
 .push-$(ARCH): .container-$(ARCH)
 	gcloud docker -- push $(MULTI_ARCH_IMG):$(TAG)
+	gcloud docker -- push $(MULTI_ARCH_IMG):latest
 ifeq ($(ARCH), amd64)
 	gcloud docker -- push $(IMAGE):$(TAG)
+	gcloud docker -- push $(IMAGE):latest
 endif
 
 clean:
 	rm -f kube-state-metrics
 
 e2e:
-	./scripts/e2e.sh
+	./tests/e2e.sh
 
-.PHONY: all build all-push all-container test-unit container push clean e2e
+.PHONY: all build all-push all-container test-unit container push quay-push clean e2e

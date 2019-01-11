@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job
+  namespace: default
+spec:
+  template:
+    metadata:
+      name: job
+    spec:
+      containers:
+      - name: job
+        image: nonexisting
+      restartPolicy: Never

@@ -60,6 +60,7 @@ At most 5 kube-state-metrics releases will be recorded below.
 | **v1.3.0** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.3.1** |  v6.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **v1.4.0** |  v8.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
+| **v1.5.0** |  v8.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 | **master** |  v8.0.0           |         ✓          |         ✓          |         ✓          |         ✓          |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
@@ -72,8 +73,8 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v1.4.0`
-* `k8s.gcr.io/kube-state-metrics:v1.4.0`
+* `quay.io/coreos/kube-state-metrics:v1.5.0`
+* `k8s.gcr.io/kube-state-metrics:v1.5.0`
 
 **Note**:
 The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on

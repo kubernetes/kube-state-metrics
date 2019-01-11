@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: replicationcontroller
+spec:
+  selector:
+    app: replicationcontroller
+  template:
+    metadata:
+      name: replicationcontroller
+      labels:
+        app: replicationcontroller
+    spec:
+      containers:
+      - name: replicationcontroller
+        image: nonexisting

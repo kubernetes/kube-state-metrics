@@ -38,3 +38,7 @@ rules:
   resources:
   - horizontalpodautoscalers
   verbs: ["list", "watch"]
+- apiGroups: ["policy"]
+  resources:
+  - poddisruptionbudgets
+  verbs: ["list", "watch"]

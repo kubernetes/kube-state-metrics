@@ -1,0 +1,17 @@
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: statefulset
+spec:
+  selector:
+    matchLabels:
+      app: statefulset
+  serviceName: statefulset
+  template:
+    metadata:
+      labels:
+        app: statefulset
+    spec:
+      containers:
+      - name: statefulset
+        image: nonexisting

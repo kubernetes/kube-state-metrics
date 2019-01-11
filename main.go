@@ -17,14 +17,15 @@ limitations under the License.
 package main
 
 import (
-	"flag"
+	"compress/gzip"
+	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -32,13 +33,14 @@ import (
 	"github.com/openshift/origin/pkg/util/proc"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/spf13/pflag"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
-	kcollectors "k8s.io/kube-state-metrics/collectors"
-	"k8s.io/kube-state-metrics/version"
+	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
+	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/version"
+	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
 const (
@@ -46,215 +48,101 @@ const (
 	healthzPath = "/healthz"
 )
 
-var (
-	defaultNamespaces = namespaceList{metav1.NamespaceAll}
-	defaultCollectors = collectorSet{
-		"daemonsets":               struct{}{},
-		"deployments":              struct{}{},
-		"limitranges":              struct{}{},
-		"nodes":                    struct{}{},
-		"pods":                     struct{}{},
-		"replicasets":              struct{}{},
-		"replicationcontrollers":   struct{}{},
-		"resourcequotas":           struct{}{},
-		"services":                 struct{}{},
-		"jobs":                     struct{}{},
-		"cronjobs":                 struct{}{},
-		"statefulsets":             struct{}{},
-		"persistentvolumes":        struct{}{},
-		"persistentvolumeclaims":   struct{}{},
-		"namespaces":               struct{}{},
-		"horizontalpodautoscalers": struct{}{},
-		"endpoints":                struct{}{},
-		"secrets":                  struct{}{},
-		"configmaps":               struct{}{},
-	}
-	availableCollectors = map[string]func(registry prometheus.Registerer, kubeClient clientset.Interface, namespaces []string){
-		"cronjobs":                 kcollectors.RegisterCronJobCollector,
-		"daemonsets":               kcollectors.RegisterDaemonSetCollector,
-		"deployments":              kcollectors.RegisterDeploymentCollector,
-		"jobs":                     kcollectors.RegisterJobCollector,
-		"limitranges":              kcollectors.RegisterLimitRangeCollector,
-		"nodes":                    kcollectors.RegisterNodeCollector,
-		"pods":                     kcollectors.RegisterPodCollector,
-		"replicasets":              kcollectors.RegisterReplicaSetCollector,
-		"replicationcontrollers":   kcollectors.RegisterReplicationControllerCollector,
-		"resourcequotas":           kcollectors.RegisterResourceQuotaCollector,
-		"services":                 kcollectors.RegisterServiceCollector,
-		"statefulsets":             kcollectors.RegisterStatefulSetCollector,
-		"persistentvolumes":        kcollectors.RegisterPersistentVolumeCollector,
-		"persistentvolumeclaims":   kcollectors.RegisterPersistentVolumeClaimCollector,
-		"namespaces":               kcollectors.RegisterNamespaceCollector,
-		"horizontalpodautoscalers": kcollectors.RegisterHorizontalPodAutoScalerCollector,
-		"endpoints":                kcollectors.RegisterEndpointCollector,
-		"secrets":                  kcollectors.RegisterSecretCollector,
-		"configmaps":               kcollectors.RegisterConfigMapCollector,
-	}
-)
-
 // promLogger implements promhttp.Logger
 type promLogger struct{}
 
 func (pl promLogger) Println(v ...interface{}) {
-	glog.Error(v)
-}
-
-type collectorSet map[string]struct{}
-
-func (c *collectorSet) String() string {
-	s := *c
-	ss := s.asSlice()
-	sort.Strings(ss)
-	return strings.Join(ss, ",")
-}
-
-func (c *collectorSet) Set(value string) error {
-	s := *c
-	cols := strings.Split(value, ",")
-	for _, col := range cols {
-		col = strings.TrimSpace(col)
-		if len(col) != 0 {
-			_, ok := availableCollectors[col]
-			if !ok {
-				glog.Fatalf("Collector \"%s\" does not exist", col)
-			}
-			s[col] = struct{}{}
-		}
-	}
-	return nil
-}
-
-func (c collectorSet) asSlice() []string {
-	cols := []string{}
-	for col := range c {
-		cols = append(cols, col)
-	}
-	return cols
-}
-
-func (c collectorSet) isEmpty() bool {
-	return len(c.asSlice()) == 0
-}
-
-func (c *collectorSet) Type() string {
-	return "string"
-}
-
-type namespaceList []string
-
-func (n *namespaceList) String() string {
-	return strings.Join(*n, ",")
-}
-
-func (n *namespaceList) IsAllNamespaces() bool {
-	return len(*n) == 1 && (*n)[0] == metav1.NamespaceAll
-}
-
-func (n *namespaceList) Set(value string) error {
-	splittedNamespaces := strings.Split(value, ",")
-	for _, ns := range splittedNamespaces {
-		ns = strings.TrimSpace(ns)
-		if len(ns) != 0 {
-			*n = append(*n, ns)
-		}
-	}
-	return nil
-}
-
-func (n *namespaceList) Type() string {
-	return "string"
-}
-
-type options struct {
-	apiserver     string
-	kubeconfig    string
-	help          bool
-	port          int
-	host          string
-	telemetryPort int
-	telemetryHost string
-	collectors    collectorSet
-	namespaces    namespaceList
-	version       bool
+	glog.Error(v...)
 }
 
 func main() {
-	options := &options{collectors: make(collectorSet)}
-	flags := pflag.NewFlagSet("", pflag.ExitOnError)
-	// add glog flags
-	flags.AddGoFlagSet(flag.CommandLine)
-	flags.Lookup("logtostderr").Value.Set("true")
-	flags.Lookup("logtostderr").DefValue = "true"
-	flags.Lookup("logtostderr").NoOptDefVal = "true"
-	flags.StringVar(&options.apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
-	flags.StringVar(&options.kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
-	flags.BoolVarP(&options.help, "help", "h", false, "Print help text")
-	flags.IntVar(&options.port, "port", 80, `Port to expose metrics on.`)
-	flags.StringVar(&options.host, "host", "0.0.0.0", `Host to expose metrics on.`)
-	flags.IntVar(&options.telemetryPort, "telemetry-port", 81, `Port to expose kube-state-metrics self metrics on.`)
-	flags.StringVar(&options.telemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
-	flags.Var(&options.collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &defaultCollectors))
-	flags.Var(&options.namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &defaultNamespaces))
-	flags.BoolVarP(&options.version, "version", "", false, "kube-state-metrics build version information")
+	opts := options.NewOptions()
+	opts.AddFlags()
 
-	flags.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		flags.PrintDefaults()
-	}
-
-	err := flags.Parse(os.Args)
+	err := opts.Parse()
 	if err != nil {
 		glog.Fatalf("Error: %s", err)
 	}
 
-	if options.version {
+	if opts.Version {
 		fmt.Printf("%#v\n", version.GetVersion())
 		os.Exit(0)
 	}
 
-	if options.help {
-		flags.Usage()
+	if opts.Help {
+		opts.Usage()
 		os.Exit(0)
 	}
 
-	var collectors collectorSet
-	if len(options.collectors) == 0 {
+	collectorBuilder := kcollectors.NewBuilder(context.TODO())
+
+	if len(opts.Collectors) == 0 {
 		glog.Info("Using default collectors")
-		collectors = defaultCollectors
+		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	} else {
-		collectors = options.collectors
+		glog.Infof("Using collectors %s", opts.Collectors.String())
+		collectorBuilder.WithEnabledCollectors(opts.Collectors.AsSlice())
 	}
 
-	var namespaces namespaceList
-	if len(options.namespaces) == 0 {
-		namespaces = defaultNamespaces
-	} else {
-		namespaces = options.namespaces
-	}
-
-	if namespaces.IsAllNamespaces() {
+	if len(opts.Namespaces) == 0 {
 		glog.Info("Using all namespace")
+		collectorBuilder.WithNamespaces(options.DefaultNamespaces)
 	} else {
-		glog.Infof("Using %s namespaces", namespaces)
+		if opts.Namespaces.IsAllNamespaces() {
+			glog.Info("Using all namespace")
+		} else {
+			glog.Infof("Using %s namespaces", opts.Namespaces)
+		}
+		collectorBuilder.WithNamespaces(opts.Namespaces)
 	}
+
+	whiteBlackList, err := whiteblacklist.New(opts.MetricWhitelist, opts.MetricBlacklist)
+	if err != nil {
+		glog.Fatal(err)
+	}
+
+	if opts.DisablePodNonGenericResourceMetrics {
+		whiteBlackList.Exclude([]string{
+			"kube_pod_container_resource_requests_cpu_cores",
+			"kube_pod_container_resource_requests_memory_bytes",
+			"kube_pod_container_resource_limits_cpu_cores",
+			"kube_pod_container_resource_limits_memory_bytes",
+		})
+	}
+
+	if opts.DisableNodeNonGenericResourceMetrics {
+		whiteBlackList.Exclude([]string{
+			"kube_node_status_capacity_cpu_cores",
+			"kube_node_status_capacity_memory_bytes",
+			"kube_node_status_capacity_pods",
+			"kube_node_status_allocatable_cpu_cores",
+			"kube_node_status_allocatable_memory_bytes",
+			"kube_node_status_allocatable_pods",
+		})
+	}
+
+	glog.Infof("metric white-blacklisting: %v", whiteBlackList.Status())
+
+	collectorBuilder.WithWhiteBlackList(whiteBlackList)
 
 	proc.StartReaper()
 
-	kubeClient, err := createKubeClient(options.apiserver, options.kubeconfig)
+	kubeClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
 		glog.Fatalf("Failed to create client: %v", err)
 	}
+	collectorBuilder.WithKubeClient(kubeClient)
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.Register(kcollectors.ResourcesPerScrapeMetric)
 	ksmMetricsRegistry.Register(kcollectors.ScrapeErrorTotalMetric)
 	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(os.Getpid(), ""))
 	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
-	go telemetryServer(ksmMetricsRegistry, options.telemetryHost, options.telemetryPort)
+	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 
-	registry := prometheus.NewRegistry()
-	registerCollectors(registry, kubeClient, collectors, namespaces)
-	metricsServer(registry, options.host, options.port)
+	collectors := collectorBuilder.Build()
+
+	serveMetrics(collectors, opts.Host, opts.Port, opts.EnableGZIPEncoding)
 }
 
 func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
@@ -262,6 +150,10 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	if err != nil {
 		return nil, err
 	}
+
+	config.UserAgent = version.GetVersion().String()
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
 
 	kubeClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -308,7 +200,8 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
-func metricsServer(registry prometheus.Gatherer, host string, port int) {
+// TODO: How about accepting an interface Collector instead?
+func serveMetrics(collectors []*kcollectors.Collector, host string, port int, enableGZIPEncoding bool) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
@@ -316,6 +209,7 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 
 	mux := http.NewServeMux()
 
+	// TODO: This doesn't belong into serveMetrics
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
@@ -323,7 +217,7 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	// Add metricsPath
-	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}}))
+	mux.Handle(metricsPath, &metricHandler{collectors, enableGZIPEncoding})
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -345,17 +239,37 @@ func metricsServer(registry prometheus.Gatherer, host string, port int) {
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
-// registerCollectors creates and starts informers and initializes and
-// registers metrics for collection.
-func registerCollectors(registry prometheus.Registerer, kubeClient clientset.Interface, enabledCollectors collectorSet, namespaces namespaceList) {
-	activeCollectors := []string{}
-	for c := range enabledCollectors {
-		f, ok := availableCollectors[c]
-		if ok {
-			f(registry, kubeClient, namespaces)
-			activeCollectors = append(activeCollectors, c)
+type metricHandler struct {
+	collectors         []*kcollectors.Collector
+	enableGZIPEncoding bool
+}
+
+func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	resHeader := w.Header()
+	var writer io.Writer = w
+
+	resHeader.Set("Content-Type", `text/plain; version=`+"0.0.4")
+
+	if m.enableGZIPEncoding {
+		// Gzip response if requested. Taken from
+		// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
+		reqHeader := r.Header.Get("Accept-Encoding")
+		parts := strings.Split(reqHeader, ",")
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
+				writer = gzip.NewWriter(writer)
+				resHeader.Set("Content-Encoding", "gzip")
+			}
 		}
 	}
 
-	glog.Infof("Active collectors: %s", strings.Join(activeCollectors, ","))
+	for _, c := range m.collectors {
+		c.Collect(w)
+	}
+
+	// In case we gziped the response, we have to close the writer.
+	if closer, ok := writer.(io.Closer); ok {
+		closer.Close()
+	}
 }

@@ -12,4 +12,3 @@ subjects:
 - kind: ServiceAccount
   name: kube-state-metrics
   namespace: kube-system
-

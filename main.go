@@ -134,8 +134,6 @@ func main() {
 	collectorBuilder.WithKubeClient(kubeClient)
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
-	ksmMetricsRegistry.Register(kcollectors.ResourcesPerScrapeMetric)
-	ksmMetricsRegistry.Register(kcollectors.ScrapeErrorTotalMetric)
 	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(os.Getpid(), ""))
 	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)

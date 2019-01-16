@@ -36,16 +36,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_replicationcontroller_created",
+					ms = append(ms, &metric.Metric{
 						Value: float64(r.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -53,10 +54,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicationcontroller_status_replicas",
-					Value: float64(r.Status.Replicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.Replicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -64,10 +68,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of fully labeled replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicationcontroller_status_fully_labeled_replicas",
-					Value: float64(r.Status.FullyLabeledReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.FullyLabeledReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -75,10 +82,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of ready replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicationcontroller_status_ready_replicas",
-					Value: float64(r.Status.ReadyReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.ReadyReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -86,10 +96,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of available replicas per ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicationcontroller_status_available_replicas",
-					Value: float64(r.Status.AvailableReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.AvailableReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -97,10 +110,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The generation observed by the ReplicationController controller.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicationcontroller_status_observed_generation",
-					Value: float64(r.Status.ObservedGeneration),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.ObservedGeneration),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -108,16 +124,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Number of desired pods for a ReplicationController.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if r.Spec.Replicas != nil {
-					f = append(f, &metric.Metric{
-						Name:  "kube_replicationcontroller_spec_replicas",
+					ms = append(ms, &metric.Metric{
 						Value: float64(*r.Spec.Replicas),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -125,10 +142,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
 			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicationcontroller_metadata_generation",
-					Value: float64(r.ObjectMeta.Generation),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.ObjectMeta.Generation),
+						},
+					},
+				}
 			}),
 		},
 	}
@@ -140,7 +160,7 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) metric.Fami
 
 		metricFamily := f(replicationController)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descReplicationControllerLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{replicationController.Namespace, replicationController.Name}, m.LabelValues...)
 		}

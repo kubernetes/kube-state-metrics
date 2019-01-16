@@ -38,10 +38,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Information about secret.",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_secret_info",
-					Value: 1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: 1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -49,12 +52,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Type about secret.",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_secret_type",
-					LabelKeys:   []string{"type"},
-					LabelValues: []string{string(s.Type)},
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"type"},
+							LabelValues: []string{string(s.Type)},
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -63,12 +69,15 @@ var (
 			Help: descSecretLabelsHelp,
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descSecretLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 
 			}),
 		},
@@ -77,16 +86,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !s.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_secret_created",
+					ms = append(ms, &metric.Metric{
 						Value: float64(s.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -94,12 +104,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Resource version representing a specific version of secret.",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_secret_metadata_resource_version",
-					LabelKeys:   []string{"resource_version"},
-					LabelValues: []string{string(s.ObjectMeta.ResourceVersion)},
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"resource_version"},
+							LabelValues: []string{string(s.ObjectMeta.ResourceVersion)},
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 	}
@@ -111,7 +124,7 @@ func wrapSecretFunc(f func(*v1.Secret) metric.Family) func(interface{}) metric.F
 
 		metricFamily := f(secret)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descSecretLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{secret.Namespace, secret.Name}, m.LabelValues...)
 		}

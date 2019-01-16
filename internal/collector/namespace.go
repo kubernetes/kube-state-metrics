@@ -42,15 +42,16 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 				if !n.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_namespace_created",
+					ms = append(ms, &metric.Metric{
 						Value: float64(n.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -59,12 +60,15 @@ var (
 			Help: descNamespaceLabelsHelp,
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descNamespaceLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -73,12 +77,15 @@ var (
 			Help: descNamespaceAnnotationsHelp,
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
 				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
-				return metric.Family{&metric.Metric{
-					Name:        descNamespaceAnnotationsName,
-					LabelKeys:   annotationKeys,
-					LabelValues: annotationValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -86,23 +93,24 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "kubernetes namespace status phase.",
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
-				families := metric.Family{
-					&metric.Metric{
+				ms := []*metric.Metric{
+					{
 						LabelValues: []string{string(v1.NamespaceActive)},
 						Value:       boolFloat64(n.Status.Phase == v1.NamespaceActive),
 					},
-					&metric.Metric{
+					{
 						LabelValues: []string{string(v1.NamespaceTerminating)},
 						Value:       boolFloat64(n.Status.Phase == v1.NamespaceTerminating),
 					},
 				}
 
-				for _, f := range families {
-					f.Name = "kube_namespace_status_phase"
-					f.LabelKeys = []string{"phase"}
+				for _, metric := range ms {
+					metric.LabelKeys = []string{"phase"}
 				}
 
-				return families
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 	}
@@ -114,7 +122,7 @@ func wrapNamespaceFunc(f func(*v1.Namespace) metric.Family) func(interface{}) me
 
 		metricFamily := f(namespace)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descNamespaceLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{namespace.Name}, m.LabelValues...)
 		}

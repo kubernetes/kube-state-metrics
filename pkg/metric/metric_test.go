@@ -23,13 +23,15 @@ import (
 
 func TestFamilyString(t *testing.T) {
 	m := Metric{
-		Name:        "kube_pod_info",
 		LabelKeys:   []string{"namespace"},
 		LabelValues: []string{"default"},
 		Value:       1,
 	}
 
-	f := Family{&m}
+	f := Family{
+		Name:    "kube_pod_info",
+		Metrics: []*Metric{&m},
+	}
 
 	expected := "kube_pod_info{namespace=\"default\"} 1"
 	got := strings.TrimSpace(f.String())
@@ -48,7 +50,6 @@ func BenchmarkMetricWrite(b *testing.B) {
 		{
 			testName: "value-1",
 			metric: Metric{
-				Name:        "kube_pod_container_info",
 				LabelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
 				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
 				Value:       float64(1),
@@ -58,7 +59,6 @@ func BenchmarkMetricWrite(b *testing.B) {
 		{
 			testName: "value-35.7",
 			metric: Metric{
-				Name:        "kube_pod_container_info",
 				LabelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
 				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
 				Value:       float64(35.7),

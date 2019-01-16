@@ -38,16 +38,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !s.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_statefulset_created",
+					ms = append(ms, &metric.Metric{
 						Value: float64(s.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -55,10 +56,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of replicas per StatefulSet.",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_statefulset_status_replicas",
-					Value: float64(s.Status.Replicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(s.Status.Replicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -66,10 +70,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of current replicas per StatefulSet.",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_statefulset_status_replicas_current",
-					Value: float64(s.Status.CurrentReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(s.Status.CurrentReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -77,10 +84,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of ready replicas per StatefulSet.",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_statefulset_status_replicas_ready",
-					Value: float64(s.Status.ReadyReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(s.Status.ReadyReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -88,10 +98,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of updated replicas per StatefulSet.",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_statefulset_status_replicas_updated",
-					Value: float64(s.Status.UpdatedReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(s.Status.UpdatedReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -99,16 +112,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The generation observed by the StatefulSet controller.",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if s.Status.ObservedGeneration != nil {
-					f = append(f, &metric.Metric{
-						Name:  "kube_statefulset_status_observed_generation",
+					ms = append(ms, &metric.Metric{
 						Value: float64(*s.Status.ObservedGeneration),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -116,16 +130,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Number of desired pods for a StatefulSet.",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if s.Spec.Replicas != nil {
-					f = append(f, &metric.Metric{
-						Name:  "kube_statefulset_replicas",
+					ms = append(ms, &metric.Metric{
 						Value: float64(*s.Spec.Replicas),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -133,10 +148,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state for the StatefulSet.",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_statefulset_metadata_generation",
-					Value: float64(s.ObjectMeta.Generation),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(s.ObjectMeta.Generation),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -145,12 +163,15 @@ var (
 			Help: descStatefulSetLabelsHelp,
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descStatefulSetLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -158,12 +179,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_statefulset_status_current_revision",
-					LabelKeys:   []string{"revision"},
-					LabelValues: []string{s.Status.CurrentRevision},
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"revision"},
+							LabelValues: []string{s.Status.CurrentRevision},
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -171,12 +195,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",
 			GenerateFunc: wrapStatefulSetFunc(func(s *v1beta1.StatefulSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_statefulset_status_update_revision",
-					LabelKeys:   []string{"revision"},
-					LabelValues: []string{s.Status.UpdateRevision},
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"revision"},
+							LabelValues: []string{s.Status.UpdateRevision},
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 	}
@@ -188,7 +215,7 @@ func wrapStatefulSetFunc(f func(*v1beta1.StatefulSet) metric.Family) func(interf
 
 		metricFamily := f(statefulSet)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descStatefulSetLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{statefulSet.Namespace, statefulSet.Name}, m.LabelValues...)
 		}

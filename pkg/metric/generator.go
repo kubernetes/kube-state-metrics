@@ -60,18 +60,15 @@ func ExtractMetricFamilyHeaders(families []FamilyGenerator) []string {
 
 // ComposeMetricGenFuncs takes a slice of metric families and returns a function
 // that composes their metric generation functions into a single one.
-func ComposeMetricGenFuncs(families []FamilyGenerator) func(obj interface{}) []metricsstore.FamilyStringer {
-	funcs := []func(obj interface{}) Family{}
-
-	for _, f := range families {
-		funcs = append(funcs, f.GenerateFunc)
-	}
-
+func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) []metricsstore.FamilyStringer {
 	return func(obj interface{}) []metricsstore.FamilyStringer {
-		families := make([]metricsstore.FamilyStringer, len(funcs))
+		families := make([]metricsstore.FamilyStringer, len(familyGens))
 
-		for i, f := range funcs {
-			families[i] = f(obj)
+		for i, gen := range familyGens {
+			family := gen.GenerateFunc(obj)
+			// Make family aware of its name.
+			family.Name = gen.Name
+			families[i] = &family
 		}
 
 		return families

@@ -14,7 +14,7 @@ type FamilyStringer interface {
 	String() string
 }
 
-// MetricsStore implements the k8s.io/kubernetes/client-go/tools/cache.Store
+// MetricsStore implements the k8s.io/client-go/tools/cache.Store
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
 // generated based on those objects.
 type MetricsStore struct {
@@ -44,7 +44,7 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilySt
 	}
 }
 
-// Implementing k8s.io/kubernetes/client-go/tools/cache.Store interface
+// Implementing k8s.io/client-go/tools/cache.Store interface
 
 // TODO: Proper comments on all functions below.
 func (s *MetricsStore) Add(obj interface{}) error {

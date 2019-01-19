@@ -33,7 +33,7 @@ var (
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
 	serviceMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_service_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about service.",
@@ -47,7 +47,7 @@ var (
 				return metrics.Family{&m}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_service_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -64,7 +64,7 @@ var (
 				return nil
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_service_spec_type",
 			Type: metrics.MetricTypeGauge,
 			Help: "Type about service.",
@@ -78,7 +78,7 @@ var (
 				return metrics.Family{&m}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descServiceLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descServiceLabelsHelp,

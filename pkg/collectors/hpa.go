@@ -33,7 +33,7 @@ var (
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "hpa"}
 
 	hpaMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_hpa_metadata_generation",
 			Type: metrics.MetricTypeGauge,
 			Help: "The generation observed by the HorizontalPodAutoscaler controller.",
@@ -44,7 +44,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_hpa_spec_max_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
@@ -55,7 +55,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_hpa_spec_min_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "Lower limit for the number of pods that can be set by the autoscaler, default 1.",
@@ -66,7 +66,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_hpa_status_current_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "Current number of replicas of pods managed by this autoscaler.",
@@ -77,7 +77,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_hpa_status_desired_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "Desired number of replicas of pods managed by this autoscaler.",
@@ -88,7 +88,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descHorizontalPodAutoscalerLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descHorizontalPodAutoscalerLabelsHelp,
@@ -102,7 +102,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_hpa_status_condition",
 			Type: metrics.MetricTypeGauge,
 			Help: "The condition of this autoscaler.",

@@ -38,7 +38,7 @@ var (
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
 	podMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about pod.",
@@ -65,7 +65,7 @@ var (
 				return metrics.Family{&m}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_start_time",
 			Type: metrics.MetricTypeGauge,
 			Help: "Start time in unix timestamp for a pod.",
@@ -84,7 +84,7 @@ var (
 
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_completion_time",
 			Type: metrics.MetricTypeGauge,
 			Help: "Completion time in unix timestamp for a pod.",
@@ -112,7 +112,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_owner",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about the Pod's owner.",
@@ -151,7 +151,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_labels",
 			Type: metrics.MetricTypeGauge,
 			Help: "Kubernetes labels converted to Prometheus labels.",
@@ -166,7 +166,7 @@ var (
 				return metrics.Family{&m}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -183,7 +183,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_status_scheduled_time",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix timestamp when pod moved into scheduled status",
@@ -207,7 +207,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_status_phase",
 			Type: metrics.MetricTypeGauge,
 			Help: "The pods current phase.",
@@ -244,7 +244,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_status_ready",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the pod is ready to serve requests.",
@@ -268,7 +268,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_status_scheduled",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes the status of the scheduling process for the pod.",
@@ -292,7 +292,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about a container in a pod.",
@@ -312,7 +312,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_waiting",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the container is currently in waiting state.",
@@ -331,7 +331,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_waiting_reason",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes the reason the container is currently in waiting state.",
@@ -352,7 +352,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_running",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the container is currently in running state.",
@@ -371,7 +371,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_terminated",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the container is currently in terminated state.",
@@ -390,7 +390,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_terminated_reason",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes the reason the container is currently in terminated state.",
@@ -411,7 +411,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_last_terminated_reason",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes the last reason the container was in terminated state.",
@@ -432,7 +432,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_ready",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether the containers readiness check succeeded.",
@@ -451,7 +451,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_status_restarts_total",
 			Type: metrics.MetricTypeCounter,
 			Help: "The number of container restarts per container.",
@@ -470,7 +470,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_resource_requests",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested request resource by a container.",
@@ -527,7 +527,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_resource_limits",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested limit resource by a container.",
@@ -584,7 +584,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_resource_requests_cpu_cores",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested cpu cores by a container.",
@@ -606,7 +606,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_resource_requests_memory_bytes",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of requested memory bytes by a container.",
@@ -628,7 +628,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_resource_limits_cpu_cores",
 			Type: metrics.MetricTypeGauge,
 			Help: "The limit on cpu cores to be used by a container.",
@@ -650,7 +650,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_container_resource_limits_memory_bytes",
 			Type: metrics.MetricTypeGauge,
 			Help: "The limit on memory to be used by a container in bytes.",
@@ -673,7 +673,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_spec_volumes_persistentvolumeclaims_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about persistentvolumeclaim volumes in a pod.",
@@ -694,7 +694,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 			Type: metrics.MetricTypeGauge,
 			Help: "Describes whether a persistentvolumeclaim is mounted read only.",

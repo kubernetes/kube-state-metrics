@@ -33,7 +33,7 @@ var (
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 
 	endpointMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_endpoint_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about endpoint.",
@@ -44,7 +44,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_endpoint_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -61,7 +61,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descEndpointLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descEndpointLabelsHelp,
@@ -75,7 +75,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_endpoint_address_available",
 			Type: metrics.MetricTypeGauge,
 			Help: "Number of addresses available in endpoint.",
@@ -91,7 +91,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_endpoint_address_not_ready",
 			Type: metrics.MetricTypeGauge,
 			Help: "Number of addresses not ready in endpoint",

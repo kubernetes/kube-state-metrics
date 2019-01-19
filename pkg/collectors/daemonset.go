@@ -33,7 +33,7 @@ var (
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 
 	daemonSetMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -52,7 +52,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_status_current_number_scheduled",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of nodes running at least one daemon pod and are supposed to.",
@@ -67,7 +67,7 @@ var (
 				}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_status_desired_number_scheduled",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod.",
@@ -80,7 +80,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_status_number_available",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available",
@@ -93,7 +93,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_status_number_misscheduled",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of nodes running a daemon pod but are not supposed to.",
@@ -106,7 +106,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_status_number_ready",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
@@ -119,7 +119,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_status_number_unavailable",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod and have none of the daemon pod running and available",
@@ -132,7 +132,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_updated_number_scheduled",
 			Type: metrics.MetricTypeGauge,
 			Help: "The total number of nodes that are running updated daemon pod",
@@ -143,7 +143,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_daemonset_metadata_generation",
 			Type: metrics.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
@@ -156,7 +156,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descDaemonSetLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descDaemonSetLabelsHelp,

@@ -33,7 +33,7 @@ var (
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 
 	jobMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: descJobLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descJobLabelsHelp,
@@ -47,7 +47,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about job.",
@@ -58,7 +58,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -75,7 +75,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_spec_parallelism",
 			Type: metrics.MetricTypeGauge,
 			Help: "The maximum desired number of pods the job should run at any given time.",
@@ -92,7 +92,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_spec_completions",
 			Type: metrics.MetricTypeGauge,
 			Help: "The desired number of successfully finished pods the job should be run with.",
@@ -109,7 +109,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_spec_active_deadline_seconds",
 			Type: metrics.MetricTypeGauge,
 			Help: "The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
@@ -126,7 +126,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_status_succeeded",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of pods which reached Phase Succeeded.",
@@ -137,7 +137,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_status_failed",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of pods which reached Phase Failed.",
@@ -148,7 +148,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_status_active",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of actively running pods.",
@@ -159,7 +159,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_complete",
 			Type: metrics.MetricTypeGauge,
 			Help: "The job has completed its execution.",
@@ -180,7 +180,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_failed",
 			Type: metrics.MetricTypeGauge,
 			Help: "The job has failed its execution.",
@@ -202,7 +202,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_status_start_time",
 			Type: metrics.MetricTypeGauge,
 			Help: "StartTime represents time when the job was acknowledged by the Job Manager.",
@@ -219,7 +219,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_job_status_completion_time",
 			Type: metrics.MetricTypeGauge,
 			Help: "CompletionTime represents time when the job was completed.",

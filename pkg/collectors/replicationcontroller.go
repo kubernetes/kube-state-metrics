@@ -31,7 +31,7 @@ var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
 	replicationControllerMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -48,7 +48,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_status_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of replicas per ReplicationController.",
@@ -59,7 +59,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_status_fully_labeled_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of fully labeled replicas per ReplicationController.",
@@ -70,7 +70,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_status_ready_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of ready replicas per ReplicationController.",
@@ -81,7 +81,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_status_available_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of available replicas per ReplicationController.",
@@ -92,7 +92,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_status_observed_generation",
 			Type: metrics.MetricTypeGauge,
 			Help: "The generation observed by the ReplicationController controller.",
@@ -103,7 +103,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_spec_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "Number of desired pods for a ReplicationController.",
@@ -120,7 +120,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_replicationcontroller_metadata_generation",
 			Type: metrics.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",

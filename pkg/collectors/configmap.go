@@ -31,7 +31,7 @@ var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 
 	configMapMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_configmap_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about configmap.",
@@ -46,7 +46,7 @@ var (
 				}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_configmap_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -65,7 +65,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_configmap_metadata_resource_version",
 			Type: metrics.MetricTypeGauge,
 			Help: "Resource version representing a specific version of the configmap.",

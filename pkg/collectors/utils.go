@@ -43,15 +43,15 @@ func boolFloat64(b bool) float64 {
 // description must be the condition.
 func addConditionMetrics(cs v1.ConditionStatus) []*metrics.Metric {
 	return []*metrics.Metric{
-		&metrics.Metric{
+		{
 			LabelValues: []string{"true"},
 			Value:       boolFloat64(cs == v1.ConditionTrue),
 		},
-		&metrics.Metric{
+		{
 			LabelValues: []string{"false"},
 			Value:       boolFloat64(cs == v1.ConditionFalse),
 		},
-		&metrics.Metric{
+		{
 			LabelValues: []string{"unknown"},
 			Value:       boolFloat64(cs == v1.ConditionUnknown),
 		},

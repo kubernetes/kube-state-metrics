@@ -33,7 +33,7 @@ var (
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
 
 	persistentVolumeClaimMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: descPersistentVolumeClaimLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descPersistentVolumeClaimLabelsHelp,
@@ -47,7 +47,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_persistentvolumeclaim_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about persistent volume claim.",
@@ -62,7 +62,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_persistentvolumeclaim_status_phase",
 			Type: metrics.MetricTypeGauge,
 			Help: "The phase the persistent volume claim is currently in.",
@@ -94,7 +94,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_persistentvolumeclaim_resource_requests_storage_bytes",
 			Type: metrics.MetricTypeGauge,
 			Help: "The capacity of storage requested by the persistent volume claim.",

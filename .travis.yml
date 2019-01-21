@@ -11,8 +11,8 @@ install:
 
 jobs:
   include:
-    # Go fmt
-    - script: make gofmtcheck
+    # Format
+    - script: make format
     # Check that all metrics are documented
     - script: make doccheck
     # Unit Test

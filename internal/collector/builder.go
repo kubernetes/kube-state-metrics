@@ -119,6 +119,7 @@ var availableCollectors = map[string]func(f *Builder) *coll.Collector{
 	"deployments":              func(b *Builder) *coll.Collector { return b.buildDeploymentCollector() },
 	"endpoints":                func(b *Builder) *coll.Collector { return b.buildEndpointsCollector() },
 	"horizontalpodautoscalers": func(b *Builder) *coll.Collector { return b.buildHPACollector() },
+	"ingress":                  func(b *Builder) *coll.Collector { return b.buildIngressCollector() },
 	"jobs":                     func(b *Builder) *coll.Collector { return b.buildJobCollector() },
 	"limitranges":              func(b *Builder) *coll.Collector { return b.buildLimitRangeCollector() },
 	"namespaces":               func(b *Builder) *coll.Collector { return b.buildNamespaceCollector() },
@@ -221,6 +222,21 @@ func (b *Builder) buildHPACollector() *coll.Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &autoscaling.HorizontalPodAutoscaler{}, store, b.namespaces, createHPAListWatch)
+
+	return coll.NewCollector(store)
+}
+
+func (b *Builder) buildIngressCollector() *coll.Collector {
+	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, ingressMetricFamilies)
+	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
+
+	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		familyHeaders,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Ingress{}, store, b.namespaces, createIngressListWatch)
 
 	return coll.NewCollector(store)
 }

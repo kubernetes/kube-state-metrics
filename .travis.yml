@@ -5,6 +5,14 @@ language: go
 go:
     - "1.11.4"
 
+env:
+  global:
+      - E2E_SETUP_MINIKUBE=yes
+      - E2E_SETUP_KUBECTL=yes
+      - E2E_SETUP_PROMTOOL=yes
+      - MINIKUBE_DRIVER=none
+      - SUDO=sudo
+
 install:
 - mkdir -p $HOME/gopath/src/k8s.io
 - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/kube-state-metrics

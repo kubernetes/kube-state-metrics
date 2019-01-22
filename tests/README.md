@@ -8,12 +8,9 @@ The testsuite is run automatically using Travis.
 
 ## Running locally
 
-In case you need to run e2e test manually on your local machine, you can configure the `e2e.sh` script by few environment variables.
+To run the e2e tests locally run the following command:
 
 ```bash
-export E2E_SETUP_MINIKUBE=        # set to empty string if you have already your own minikube binary, prevents from downloading one
-export E2E_SETUP_KUBECTL=         # set to empty string if you have already your own kubectl binary, prevents from downloading one
 export MINIKUBE_DRIVER=virtualbox # choose minikube's driver of your choice
-export SUDO=                      # if you don't need sudo, you can redefine the SUDO variable from default `sudo`
 ./tests/e2e.sh
 ```

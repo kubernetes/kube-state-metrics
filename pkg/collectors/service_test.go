@@ -154,7 +154,7 @@ func TestServiceCollector(t *testing.T) {
 				Status: v1.ServiceStatus{
 					LoadBalancer: v1.LoadBalancerStatus{
 						Ingress: []v1.LoadBalancerIngress{
-							v1.LoadBalancerIngress{
+							{
 								IP:       "1.2.3.8",
 								Hostname: "www.example.com",
 							},

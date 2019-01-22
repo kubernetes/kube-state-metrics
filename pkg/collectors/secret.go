@@ -33,7 +33,7 @@ var (
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 
 	secretMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_secret_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about secret.",
@@ -44,7 +44,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_secret_type",
 			Type: metrics.MetricTypeGauge,
 			Help: "Type about secret.",
@@ -57,7 +57,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descSecretLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descSecretLabelsHelp,
@@ -72,7 +72,7 @@ var (
 
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_secret_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -89,7 +89,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_secret_metadata_resource_version",
 			Type: metrics.MetricTypeGauge,
 			Help: "Resource version representing a specific version of secret.",

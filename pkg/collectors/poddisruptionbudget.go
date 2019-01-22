@@ -31,7 +31,7 @@ var (
 	descPodDisruptionBudgetLabelsDefaultLabels = []string{"namespace", "poddisruptionbudget"}
 
 	podDisruptionBudgetMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_poddisruptionbudget_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -48,7 +48,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_poddisruptionbudget_status_current_healthy",
 			Type: metrics.MetricTypeGauge,
 			Help: "Current number of healthy pods",
@@ -59,7 +59,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_poddisruptionbudget_status_desired_healthy",
 			Type: metrics.MetricTypeGauge,
 			Help: "Minimum desired number of healthy pods",
@@ -70,7 +70,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_poddisruptionbudget_status_pod_disruptions_allowed",
 			Type: metrics.MetricTypeGauge,
 			Help: "Number of pod disruptions that are currently allowed",
@@ -81,7 +81,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_poddisruptionbudget_status_expected_pods",
 			Type: metrics.MetricTypeGauge,
 			Help: "Total number of pods counted by this disruption budget",
@@ -92,7 +92,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_poddisruptionbudget_status_observed_generation",
 			Type: metrics.MetricTypeGauge,
 			Help: "Most recent generation observed when updating this PDB status",

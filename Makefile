@@ -13,8 +13,9 @@ GO_VERSION=1.11.4
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
-gofmtcheck:
+format:
 	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi
+	./tests/check_license.sh
 
 doccheck:
 	@echo "- Checking if documentation is up to date..."

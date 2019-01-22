@@ -6,7 +6,7 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Run("fails with two non empty maps", func(t *testing.T) {
-		_, err := New(map[string]struct{}{"not-empty": struct{}{}}, map[string]struct{}{"not-empty": struct{}{}})
+		_, err := New(map[string]struct{}{"not-empty": {}}, map[string]struct{}{"not-empty": {}})
 		if err == nil {
 			t.Fatal("expected New() to fail with two non-empty maps")
 		}
@@ -24,7 +24,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("if whitelist set, should be whitelist", func(t *testing.T) {
-		list, err := New(map[string]struct{}{"not-empty": struct{}{}}, map[string]struct{}{})
+		list, err := New(map[string]struct{}{"not-empty": {}}, map[string]struct{}{})
 		if err != nil {
 			t.Fatal("expected New() to not fail")
 		}
@@ -35,7 +35,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("if blacklist set, should be blacklist", func(t *testing.T) {
-		list, err := New(map[string]struct{}{}, map[string]struct{}{"not-empty": struct{}{}})
+		list, err := New(map[string]struct{}{}, map[string]struct{}{"not-empty": {}})
 		if err != nil {
 			t.Fatal("expected New() to not fail")
 		}
@@ -48,7 +48,7 @@ func TestNew(t *testing.T) {
 
 func TestInclude(t *testing.T) {
 	t.Run("adds when whitelist", func(t *testing.T) {
-		whitelist, err := New(map[string]struct{}{"not-empty": struct{}{}}, map[string]struct{}{})
+		whitelist, err := New(map[string]struct{}{"not-empty": {}}, map[string]struct{}{})
 		if err != nil {
 			t.Fatal("expected New() to not fail")
 		}
@@ -61,7 +61,7 @@ func TestInclude(t *testing.T) {
 	})
 	t.Run("removes when blacklist", func(t *testing.T) {
 		item1 := "item1"
-		blacklist, err := New(map[string]struct{}{}, map[string]struct{}{item1: struct{}{}})
+		blacklist, err := New(map[string]struct{}{}, map[string]struct{}{item1: {}})
 		if err != nil {
 			t.Fatal("expected New() to not fail")
 		}
@@ -77,7 +77,7 @@ func TestInclude(t *testing.T) {
 func TestExclude(t *testing.T) {
 	t.Run("removes when whitelist", func(t *testing.T) {
 		item1 := "item1"
-		whitelist, err := New(map[string]struct{}{item1: struct{}{}}, map[string]struct{}{})
+		whitelist, err := New(map[string]struct{}{item1: {}}, map[string]struct{}{})
 		if err != nil {
 			t.Fatal("expected New() to not fail")
 		}
@@ -90,7 +90,7 @@ func TestExclude(t *testing.T) {
 	})
 	t.Run("removes when blacklist", func(t *testing.T) {
 		item1 := "item1"
-		blacklist, err := New(map[string]struct{}{}, map[string]struct{}{"not-empty": struct{}{}})
+		blacklist, err := New(map[string]struct{}{}, map[string]struct{}{"not-empty": {}})
 		if err != nil {
 			t.Fatal("expected New() to not fail")
 		}

@@ -31,7 +31,7 @@ var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
 	resourceQuotaMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_resourcequota_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -48,7 +48,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_resourcequota",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about resource quota.",

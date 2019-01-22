@@ -101,7 +101,7 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name:        "container1",
 							Image:       "k8s.gcr.io/hyperkube1",
 							ImageID:     "docker://sha256:aaa",
@@ -121,13 +121,13 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name:        "container2",
 							Image:       "k8s.gcr.io/hyperkube2",
 							ImageID:     "docker://sha256:bbb",
 							ContainerID: "docker://cd456",
 						},
-						v1.ContainerStatus{
+						{
 							Name:        "container3",
 							Image:       "k8s.gcr.io/hyperkube3",
 							ImageID:     "docker://sha256:ccc",
@@ -148,7 +148,7 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name:  "container1",
 							Ready: true,
 						},
@@ -166,11 +166,11 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name:  "container2",
 							Ready: true,
 						},
-						v1.ContainerStatus{
+						{
 							Name:  "container3",
 							Ready: false,
 						},
@@ -191,7 +191,7 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name:         "container1",
 							RestartCount: 0,
 						},
@@ -209,11 +209,11 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name:         "container2",
 							RestartCount: 0,
 						},
-						v1.ContainerStatus{
+						{
 							Name:         "container3",
 							RestartCount: 1,
 						},
@@ -234,7 +234,7 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name: "container1",
 							State: v1.ContainerState{
 								Running: &v1.ContainerStateRunning{},
@@ -275,7 +275,7 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name: "container2",
 							State: v1.ContainerState{
 								Terminated: &v1.ContainerStateTerminated{
@@ -283,7 +283,7 @@ func TestPodCollector(t *testing.T) {
 								},
 							},
 						},
-						v1.ContainerStatus{
+						{
 							Name: "container3",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -337,7 +337,7 @@ func TestPodCollector(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name: "container4",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -394,7 +394,7 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name: "container7",
 							State: v1.ContainerState{
 								Running: &v1.ContainerStateRunning{},
@@ -443,7 +443,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name: "container5",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -484,7 +484,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name: "container6",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -525,7 +525,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name: "container8",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -606,7 +606,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					HostIP: "1.1.1.1",
 					PodIP:  "2.3.4.5",
 					ContainerStatuses: []v1.ContainerStatus{
-						v1.ContainerStatus{
+						{
 							Name:        "container2_1",
 							Image:       "k8s.gcr.io/hyperkube2",
 							ImageID:     "docker://sha256:bbb",
@@ -619,7 +619,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 								},
 							},
 						},
-						v1.ContainerStatus{
+						{
 							Name:        "container2_2",
 							Image:       "k8s.gcr.io/hyperkube2",
 							ImageID:     "docker://sha256:bbb",
@@ -632,7 +632,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 								},
 							},
 						},
-						v1.ContainerStatus{
+						{
 							Name:        "container2_3",
 							Image:       "k8s.gcr.io/hyperkube2",
 							ImageID:     "docker://sha256:bbb",
@@ -742,7 +742,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
-						v1.PodCondition{
+						{
 							Type:   v1.PodReady,
 							Status: v1.ConditionTrue,
 						},
@@ -764,7 +764,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
-						v1.PodCondition{
+						{
 							Type:   v1.PodReady,
 							Status: v1.ConditionFalse,
 						},
@@ -786,7 +786,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
-						v1.PodCondition{
+						{
 							Type:   v1.PodScheduled,
 							Status: v1.ConditionTrue,
 							LastTransitionTime: metav1.Time{
@@ -812,7 +812,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
-						v1.PodCondition{
+						{
 							Type:   v1.PodScheduled,
 							Status: v1.ConditionFalse,
 						},
@@ -835,7 +835,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				Spec: v1.PodSpec{
 					NodeName: "node1",
 					Containers: []v1.Container{
-						v1.Container{
+						{
 							Name: "pod1_con1",
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
@@ -854,7 +854,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 								},
 							},
 						},
-						v1.Container{
+						{
 							Name: "pod1_con2",
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
@@ -913,7 +913,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				Spec: v1.PodSpec{
 					NodeName: "node2",
 					Containers: []v1.Container{
-						v1.Container{
+						{
 							Name: "pod2_con1",
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
@@ -926,7 +926,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 								},
 							},
 						},
-						v1.Container{
+						{
 							Name: "pod2_con2",
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
@@ -940,7 +940,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 							},
 						},
 						// A container without a resource specicication. No metrics will be emitted for that.
-						v1.Container{
+						{
 							Name: "pod2_con3",
 						},
 					},
@@ -1012,7 +1012,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						v1.Volume{
+						{
 							Name: "myvol",
 							VolumeSource: v1.VolumeSource{
 								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
@@ -1021,7 +1021,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 								},
 							},
 						},
-						v1.Volume{
+						{
 							Name: "my-readonly-vol",
 							VolumeSource: v1.VolumeSource{
 								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
@@ -1030,7 +1030,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 								},
 							},
 						},
-						v1.Volume{
+						{
 							Name: "not-pvc-vol",
 							VolumeSource: v1.VolumeSource{
 								EmptyDir: &v1.EmptyDirVolumeSource{

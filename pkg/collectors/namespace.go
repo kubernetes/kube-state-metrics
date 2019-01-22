@@ -37,7 +37,7 @@ var (
 	descNamespaceAnnotationsDefaultLabels = []string{"namespace"}
 
 	namespaceMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_namespace_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -53,7 +53,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descNamespaceLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descNamespaceLabelsHelp,
@@ -67,7 +67,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descNamespaceAnnotationsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descNamespaceAnnotationsHelp,
@@ -81,7 +81,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_namespace_status_phase",
 			Type: metrics.MetricTypeGauge,
 			Help: "kubernetes namespace status phase.",

@@ -33,7 +33,7 @@ var (
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 
 	statefulSetMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -50,7 +50,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_status_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of replicas per StatefulSet.",
@@ -61,7 +61,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_status_replicas_current",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of current replicas per StatefulSet.",
@@ -72,7 +72,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_status_replicas_ready",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of ready replicas per StatefulSet.",
@@ -83,7 +83,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_status_replicas_updated",
 			Type: metrics.MetricTypeGauge,
 			Help: "The number of updated replicas per StatefulSet.",
@@ -94,7 +94,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_status_observed_generation",
 			Type: metrics.MetricTypeGauge,
 			Help: "The generation observed by the StatefulSet controller.",
@@ -111,7 +111,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_replicas",
 			Type: metrics.MetricTypeGauge,
 			Help: "Number of desired pods for a StatefulSet.",
@@ -128,7 +128,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_metadata_generation",
 			Type: metrics.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state for the StatefulSet.",
@@ -139,7 +139,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descStatefulSetLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descStatefulSetLabelsHelp,
@@ -153,7 +153,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_status_current_revision",
 			Type: metrics.MetricTypeGauge,
 			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
@@ -166,7 +166,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_statefulset_status_update_revision",
 			Type: metrics.MetricTypeGauge,
 			Help: "Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)",

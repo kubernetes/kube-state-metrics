@@ -31,7 +31,7 @@ var (
 	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
 
 	limitRangeMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_limitrange",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about limit range.",
@@ -84,7 +84,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_limitrange_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",

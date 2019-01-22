@@ -349,7 +349,7 @@ func pod(client *fake.Clientset, index int) error {
 		Spec: v1.PodSpec{
 			NodeName: "node1",
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name: "pod1_con1",
 					Resources: v1.ResourceRequirements{
 						Requests: map[v1.ResourceName]resource.Quantity{
@@ -368,7 +368,7 @@ func pod(client *fake.Clientset, index int) error {
 						},
 					},
 				},
-				v1.Container{
+				{
 					Name: "pod1_con2",
 					Resources: v1.ResourceRequirements{
 						Requests: map[v1.ResourceName]resource.Quantity{
@@ -388,7 +388,7 @@ func pod(client *fake.Clientset, index int) error {
 			PodIP:  "1.2.3.4",
 			Phase:  v1.PodRunning,
 			ContainerStatuses: []v1.ContainerStatus{
-				v1.ContainerStatus{
+				{
 					Name:        "container2",
 					Image:       "k8s.gcr.io/hyperkube2",
 					ImageID:     "docker://sha256:bbb",
@@ -404,7 +404,7 @@ func pod(client *fake.Clientset, index int) error {
 						},
 					},
 				},
-				v1.ContainerStatus{
+				{
 					Name:        "container3",
 					Image:       "k8s.gcr.io/hyperkube3",
 					ImageID:     "docker://sha256:ccc",

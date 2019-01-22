@@ -33,7 +33,7 @@ var (
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 
 	persistentVolumeMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: descPersistentVolumeLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descPersistentVolumeLabelsHelp,
@@ -47,7 +47,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_persistentvolume_status_phase",
 			Type: metrics.MetricTypeGauge,
 			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
@@ -88,7 +88,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_persistentvolume_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about persistentvolume.",

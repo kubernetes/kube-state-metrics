@@ -35,7 +35,7 @@ var (
 	descNodeLabelsDefaultLabels = []string{"node"}
 
 	nodeMetricFamilies = []metrics.FamilyGenerator{
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_info",
 			Type: metrics.MetricTypeGauge,
 			Help: "Information about a cluster node.",
@@ -62,7 +62,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_created",
 			Type: metrics.MetricTypeGauge,
 			Help: "Unix creation timestamp",
@@ -79,7 +79,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: descNodeLabelsName,
 			Type: metrics.MetricTypeGauge,
 			Help: descNodeLabelsHelp,
@@ -93,7 +93,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_spec_unschedulable",
 			Type: metrics.MetricTypeGauge,
 			Help: "Whether a node can schedule new pods.",
@@ -104,7 +104,7 @@ var (
 				}}
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_spec_taint",
 			Type: metrics.MetricTypeGauge,
 			Help: "The taint of a cluster node.",
@@ -130,7 +130,7 @@ var (
 		// Third party plugin may report customized condition for cluster node
 		// (e.g. node-problem-detector), and Kubernetes may add new core
 		// conditions in future.
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_condition",
 			Type: metrics.MetricTypeGauge,
 			Help: "The condition of a cluster node.",
@@ -151,7 +151,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_phase",
 			Type: metrics.MetricTypeGauge,
 			Help: "The phase the node is currently in.",
@@ -184,7 +184,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_capacity",
 			Type: metrics.MetricTypeGauge,
 			Help: "The capacity for different resources of a node.",
@@ -261,7 +261,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_capacity_pods",
 			Type: metrics.MetricTypeGauge,
 			Help: "The total pod resources of the node.",
@@ -279,7 +279,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_capacity_cpu_cores",
 			Type: metrics.MetricTypeGauge,
 			Help: "The total CPU resources of the node.",
@@ -297,7 +297,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_capacity_memory_bytes",
 			Type: metrics.MetricTypeGauge,
 			Help: "The total memory resources of the node.",
@@ -315,7 +315,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_allocatable",
 			Type: metrics.MetricTypeGauge,
 			Help: "The allocatable for different resources of a node that are available for scheduling.",
@@ -393,7 +393,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_allocatable_pods",
 			Type: metrics.MetricTypeGauge,
 			Help: "The pod resources of a node that are available for scheduling.",
@@ -411,7 +411,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_allocatable_cpu_cores",
 			Type: metrics.MetricTypeGauge,
 			Help: "The CPU resources of a node that are available for scheduling.",
@@ -429,7 +429,7 @@ var (
 				return f
 			}),
 		},
-		metrics.FamilyGenerator{
+		{
 			Name: "kube_node_status_allocatable_memory_bytes",
 			Type: metrics.MetricTypeGauge,
 			Help: "The memory resources of a node that are available for scheduling.",

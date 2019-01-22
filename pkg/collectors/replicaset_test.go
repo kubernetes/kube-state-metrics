@@ -117,7 +117,7 @@ func TestReplicaSetCollector(t *testing.T) {
 				},
 			},
 			Want: `
-				kube_replicaset_labels{replicaset="rs2",label_app="example2",label_env="ex"} 1
+				kube_replicaset_labels{replicaset="rs2",namespace="ns2",label_app="example2",label_env="ex"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_status_observed_generation{namespace="ns2",replicaset="rs2"} 5

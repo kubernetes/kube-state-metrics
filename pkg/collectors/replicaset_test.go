@@ -51,6 +51,8 @@ func TestReplicaSetCollector(t *testing.T) {
 		# TYPE kube_replicaset_spec_replicas gauge
 		# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
 		# TYPE kube_replicaset_owner gauge
+		# HELP kube_replicaset_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_replicaset_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -67,6 +69,9 @@ func TestReplicaSetCollector(t *testing.T) {
 							Controller: &test,
 						},
 					},
+					Labels: map[string]string{
+						"app": "example1",
+					},
 				},
 				Status: v1beta1.ReplicaSetStatus{
 					Replicas:             5,
@@ -79,6 +84,7 @@ func TestReplicaSetCollector(t *testing.T) {
 				},
 			},
 			Want: `
+				kube_replicaset_labels{replicaset="rs1",label_app="example1"} 1
 				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
 				kube_replicaset_status_replicas{namespace="ns1",replicaset="rs1"} 5
@@ -95,6 +101,10 @@ func TestReplicaSetCollector(t *testing.T) {
 					Name:       "rs2",
 					Namespace:  "ns2",
 					Generation: 14,
+					Labels: map[string]string{
+						"app": "example2",
+						"env": "ex",
+					},
 				},
 				Status: v1beta1.ReplicaSetStatus{
 					Replicas:             0,
@@ -107,6 +117,7 @@ func TestReplicaSetCollector(t *testing.T) {
 				},
 			},
 			Want: `
+				kube_replicaset_labels{replicaset="rs2",label_app="example2",label_env="ex"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_status_observed_generation{namespace="ns2",replicaset="rs2"} 5

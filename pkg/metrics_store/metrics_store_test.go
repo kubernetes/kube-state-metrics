@@ -25,8 +25,18 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kube-state-metrics/pkg/metrics"
 )
+
+// Mock metricFamily instead of importing /pkg/metric to prevent cyclic
+// dependency.
+type metricFamily struct {
+	value string
+}
+
+// Implement FamilyStringer interface.
+func (f *metricFamily) String() string {
+	return f.value
+}
 
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDS := []string{"a", "b"}
@@ -37,15 +47,11 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		metric := metrics.Metric{
-			Name:        "kube_service_info",
-			LabelKeys:   []string{"uid"},
-			LabelValues: []string{string(o.GetUID())},
-			Value:       1,
+		metricFamily := metricFamily{
+			fmt.Sprintf("kube_service_info{uid=\"%v\"} 1", string(o.GetUID())),
 		}
-		metricFamily := metrics.Family{&metric}
 
-		return []FamilyStringer{metricFamily}
+		return []FamilyStringer{&metricFamily}
 	}
 
 	ms := NewMetricsStore([]string{"Information about service."}, genFunc)

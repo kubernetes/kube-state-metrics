@@ -30,6 +30,8 @@ import (
 )
 
 var (
+	descReplicaSetLabelsName          = "kube_replicaset_labels"
+	descReplicaSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
 
 	replicaSetMetricFamilies = []metrics.FamilyGenerator{
@@ -155,6 +157,20 @@ var (
 				}
 
 				return f
+			}),
+		},
+		{
+			Name: descReplicaSetLabelsName,
+			Type: metrics.MetricTypeGauge,
+			Help: descReplicaSetLabelsHelp,
+			GenerateFunc: wrapReplicaSetFunc(func(d *v1beta1.ReplicaSet) metrics.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
+				return metrics.Family{&metrics.Metric{
+					Name:        descReplicaSetLabelsName,
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}}
 			}),
 		},
 	}

@@ -209,3 +209,5 @@ running:
 Then curl the metrics endpoint
 
 	curl localhost:8080/metrics
+
+To run the e2e tests locally see the documention in [tests/README.md](./tests/README.md).

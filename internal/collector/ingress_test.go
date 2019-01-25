@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,9 +32,9 @@ func TestIngressCollector(t *testing.T) {
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
 	const metadata = `
-        # HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_ingress_labels gauge
-        # HELP kube_ingress_info Information about ingress.
+		# HELP kube_ingress_info Information about ingress.
 		# TYPE kube_ingress_info gauge
 		# HELP kube_ingress_created Unix creation timestamp
 		# TYPE kube_ingress_created gauge

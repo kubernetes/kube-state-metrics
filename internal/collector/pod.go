@@ -22,14 +22,12 @@ import (
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
-	"k8s.io/kubernetes/pkg/util/node"
 )
 
 var (
@@ -228,8 +226,8 @@ var (
 					{phase == v1.PodFailed, string(v1.PodFailed)},
 					// This logic is directly copied from: https://github.com/kubernetes/kubernetes/blob/d39bfa0d138368bbe72b0eaf434501dcb4ec9908/pkg/printers/internalversion/printers.go#L597-L601
 					// For more info, please go to: https://github.com/kubernetes/kube-state-metrics/issues/410
-					{phase == v1.PodRunning && !(p.DeletionTimestamp != nil && p.Status.Reason == node.NodeUnreachablePodReason), string(v1.PodRunning)},
-					{phase == v1.PodUnknown || (p.DeletionTimestamp != nil && p.Status.Reason == node.NodeUnreachablePodReason), string(v1.PodUnknown)},
+					{phase == v1.PodRunning && !(p.DeletionTimestamp != nil && p.Status.Reason == "NodeLost"), string(v1.PodRunning)},
+					{phase == v1.PodUnknown || (p.DeletionTimestamp != nil && p.Status.Reason == "NodeLost"), string(v1.PodUnknown)},
 				}
 
 				for _, p := range phases {
@@ -497,19 +495,19 @@ var (
 								Value:       float64(val.Value()),
 							})
 						default:
-							if helper.IsHugePageResourceName(resourceName) {
+							if isHugePageResourceName(resourceName) {
 								f = append(f, &metric.Metric{
 									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 									Value:       float64(val.Value()),
 								})
 							}
-							if helper.IsAttachableVolumeResourceName(resourceName) {
+							if isAttachableVolumeResourceName(resourceName) {
 								f = append(f, &metric.Metric{
 									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 									Value:       float64(val.Value()),
 								})
 							}
-							if helper.IsExtendedResourceName(resourceName) {
+							if isExtendedResourceName(resourceName) {
 								f = append(f, &metric.Metric{
 									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 									Value:       float64(val.Value()),
@@ -554,19 +552,19 @@ var (
 								Value:       float64(val.Value()),
 							})
 						default:
-							if helper.IsHugePageResourceName(resourceName) {
+							if isHugePageResourceName(resourceName) {
 								f = append(f, &metric.Metric{
 									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 									Value:       float64(val.Value()),
 								})
 							}
-							if helper.IsAttachableVolumeResourceName(resourceName) {
+							if isAttachableVolumeResourceName(resourceName) {
 								f = append(f, &metric.Metric{
 									Value:       float64(val.Value()),
 									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								})
 							}
-							if helper.IsExtendedResourceName(resourceName) {
+							if isExtendedResourceName(resourceName) {
 								f = append(f, &metric.Metric{
 									Value:       float64(val.Value()),
 									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},

@@ -20,11 +20,10 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/metric"
-	"k8s.io/kubernetes/pkg/util/node"
 )
 
 func TestPodCollector(t *testing.T) {
@@ -723,7 +722,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
-					Reason: node.NodeUnreachablePodReason,
+					Reason: "NodeLost",
 				},
 			},
 			Want: `

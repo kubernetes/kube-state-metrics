@@ -1488,36 +1488,6 @@
 		{
 			"ImportPath": "k8s.io/kube-openapi/pkg/util/proto",
 			"Rev": "91cfa479c814065e420cee7ed227db0f63a5854e"
-		},
-		{
-			"ImportPath": "k8s.io/kubernetes/pkg/apis/core",
-			"Comment": "v1.11.0",
-			"Rev": "91e7b4fd31fcd3d5f436da26c980becec37ceefe"
-		},
-		{
-			"ImportPath": "k8s.io/kubernetes/pkg/apis/core/helper",
-			"Comment": "v1.11.0",
-			"Rev": "91e7b4fd31fcd3d5f436da26c980becec37ceefe"
-		},
-		{
-			"ImportPath": "k8s.io/kubernetes/pkg/apis/core/v1/helper",
-			"Comment": "v1.11.0",
-			"Rev": "91e7b4fd31fcd3d5f436da26c980becec37ceefe"
-		},
-		{
-			"ImportPath": "k8s.io/kubernetes/pkg/features",
-			"Comment": "v1.11.0",
-			"Rev": "91e7b4fd31fcd3d5f436da26c980becec37ceefe"
-		},
-		{
-			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/apis",
-			"Comment": "v1.11.0",
-			"Rev": "91e7b4fd31fcd3d5f436da26c980becec37ceefe"
-		},
-		{
-			"ImportPath": "k8s.io/kubernetes/pkg/util/node",
-			"Comment": "v1.11.0",
-			"Rev": "91e7b4fd31fcd3d5f436da26c980becec37ceefe"
 		}
 	]
 }

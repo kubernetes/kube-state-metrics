@@ -21,12 +21,16 @@ import (
 )
 
 // Family represents a set of metrics with the same name and help text.
-type Family []*Metric
+type Family struct {
+	Name    string
+	Metrics []*Metric
+}
 
 // String returns the given Family in its string representation.
 func (f Family) String() string {
 	b := strings.Builder{}
-	for _, m := range f {
+	for _, m := range f.Metrics {
+		b.WriteString(f.Name)
 		m.Write(&b)
 	}
 

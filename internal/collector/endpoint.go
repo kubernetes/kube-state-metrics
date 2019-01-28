@@ -38,10 +38,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Information about endpoint.",
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_endpoint_info",
-					Value: 1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: 1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -49,16 +52,18 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !e.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_endpoint_created",
+					ms = append(ms, &metric.Metric{
+
 						Value: float64(e.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -67,12 +72,15 @@ var (
 			Help: descEndpointLabelsHelp,
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descEndpointLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -85,10 +93,13 @@ var (
 					available += len(s.Addresses) * len(s.Ports)
 				}
 
-				return metric.Family{&metric.Metric{
-					Name:  "kube_endpoint_address_available",
-					Value: float64(available),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(available),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -100,10 +111,13 @@ var (
 				for _, s := range e.Subsets {
 					notReady += len(s.NotReadyAddresses) * len(s.Ports)
 				}
-				return metric.Family{&metric.Metric{
-					Name:  "kube_endpoint_address_not_ready",
-					Value: float64(notReady),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(notReady),
+						},
+					},
+				}
 			}),
 		},
 	}
@@ -115,7 +129,7 @@ func wrapEndpointFunc(f func(*v1.Endpoints) metric.Family) func(interface{}) met
 
 		metricFamily := f(endpoint)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descEndpointLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{endpoint.Namespace, endpoint.Name}, m.LabelValues...)
 		}

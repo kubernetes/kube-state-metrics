@@ -38,10 +38,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The generation observed by the HorizontalPodAutoscaler controller.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_hpa_metadata_generation",
-					Value: float64(a.ObjectMeta.Generation),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(a.ObjectMeta.Generation),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -49,10 +52,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_hpa_spec_max_replicas",
-					Value: float64(a.Spec.MaxReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(a.Spec.MaxReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -60,10 +66,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Lower limit for the number of pods that can be set by the autoscaler, default 1.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_hpa_spec_min_replicas",
-					Value: float64(*a.Spec.MinReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(*a.Spec.MinReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -71,10 +80,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Current number of replicas of pods managed by this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_hpa_status_current_replicas",
-					Value: float64(a.Status.CurrentReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(a.Status.CurrentReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -82,10 +94,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Desired number of replicas of pods managed by this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_hpa_status_desired_replicas",
-					Value: float64(a.Status.DesiredReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(a.Status.DesiredReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -94,12 +109,15 @@ var (
 			Help: descHorizontalPodAutoscalerLabelsHelp,
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(a.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descHorizontalPodAutoscalerLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -107,21 +125,22 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The condition of this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				for _, c := range a.Status.Conditions {
-					metric := addConditionMetrics(c.Status)
+					metrics := addConditionMetrics(c.Status)
 
-					for _, m := range metric {
+					for _, m := range metrics {
 						metric := m
-						metric.Name = "kube_hpa_status_condition"
 						metric.LabelKeys = []string{"condition", "status"}
 						metric.LabelValues = append(metric.LabelValues, string(c.Type))
-						f = append(f, metric)
+						ms = append(ms, metric)
 					}
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 	}
@@ -133,7 +152,7 @@ func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) metric.Family) fun
 
 		metricFamily := f(hpa)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descHorizontalPodAutoscalerLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{hpa.Namespace, hpa.Name}, m.LabelValues...)
 		}

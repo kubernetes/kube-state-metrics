@@ -87,13 +87,15 @@ func generateServiceMetrics(obj interface{}) []metricsstore.FamilyStringer {
 	s := *sPointer
 
 	m := metric.Metric{
-		Name:        "test_metric",
 		LabelKeys:   []string{"name"},
 		LabelValues: []string{s.Name},
 		Value:       1,
 	}
 
-	family := metric.Family{&m}
+	family := metric.Family{
+		Name:    "test_metric",
+		Metrics: []*metric.Metric{&m},
+	}
 
-	return []metricsstore.FamilyStringer{family}
+	return []metricsstore.FamilyStringer{&family}
 }

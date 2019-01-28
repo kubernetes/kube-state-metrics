@@ -1,0 +1,19 @@
+commonLabels:
+  app.kubernetes.io/name: kube-state-metrics
+
+imageTags:
+- name: quay.io/coreos/kube-state-metrics
+  newTag: v1.5.0
+- name: k8s.gcr.io/addon-resizer
+  newTag: 1.8.3
+
+namespace: kube-system
+
+resources:
+- kube-state-metrics-cluster-role-binding.yaml
+- kube-state-metrics-cluster-role.yaml
+- kube-state-metrics-deployment.yaml
+- kube-state-metrics-role-binding.yaml
+- kube-state-metrics-role.yaml
+- kube-state-metrics-service-account.yaml
+- kube-state-metrics-service.yaml

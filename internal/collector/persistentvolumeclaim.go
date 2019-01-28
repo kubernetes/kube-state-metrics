@@ -39,12 +39,15 @@ var (
 			Help: descPersistentVolumeClaimLabelsHelp,
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descPersistentVolumeClaimLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -54,12 +57,15 @@ var (
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
 				storageClassName := getPersistentVolumeClaimClass(p)
 				volumeName := p.Spec.VolumeName
-				return metric.Family{&metric.Metric{
-					Name:        "kube_persistentvolumeclaim_info",
-					LabelKeys:   []string{"storageclass", "volumename"},
-					LabelValues: []string{storageClassName, volumeName},
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"storageclass", "volumename"},
+							LabelValues: []string{storageClassName, volumeName},
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -67,10 +73,11 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The phase the persistent volume claim is currently in.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
+
 				// Set current phase to 1, others to 0 if it is set.
 				if p := p.Status.Phase; p != "" {
-					f = append(f,
+					ms = append(ms,
 						&metric.Metric{
 							LabelValues: []string{string(v1.ClaimLost)},
 							Value:       boolFloat64(p == v1.ClaimLost),
@@ -86,12 +93,13 @@ var (
 					)
 				}
 
-				for _, m := range f {
-					m.Name = "kube_persistentvolumeclaim_status_phase"
+				for _, m := range ms {
 					m.LabelKeys = []string{"phase"}
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -99,15 +107,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The capacity of storage requested by the persistent volume claim.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
+
 				if storage, ok := p.Spec.Resources.Requests[v1.ResourceStorage]; ok {
-					f = append(f, &metric.Metric{
-						Name:  "kube_persistentvolumeclaim_resource_requests_storage_bytes",
+					ms = append(ms, &metric.Metric{
 						Value: float64(storage.Value()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 	}
@@ -119,7 +129,7 @@ func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) metric.Fami
 
 		metricFamily := f(persistentVolumeClaim)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descPersistentVolumeClaimLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{persistentVolumeClaim.Namespace, persistentVolumeClaim.Name}, m.LabelValues...)
 		}

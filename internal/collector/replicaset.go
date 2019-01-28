@@ -30,9 +30,9 @@ import (
 )
 
 var (
+	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
 	descReplicaSetLabelsName          = "kube_replicaset_labels"
 	descReplicaSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
 
 	replicaSetMetricFamilies = []metric.FamilyGenerator{
 		{
@@ -40,16 +40,18 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_replicaset_created",
+					ms = append(ms, &metric.Metric{
+
 						Value: float64(r.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -57,10 +59,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of replicas per ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicaset_status_replicas",
-					Value: float64(r.Status.Replicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.Replicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -68,10 +73,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of fully labeled replicas per ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicaset_status_fully_labeled_replicas",
-					Value: float64(r.Status.FullyLabeledReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.FullyLabeledReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -79,10 +87,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of ready replicas per ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicaset_status_ready_replicas",
-					Value: float64(r.Status.ReadyReplicas),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.ReadyReplicas),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -90,10 +101,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The generation observed by the ReplicaSet controller.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicaset_status_observed_generation",
-					Value: float64(r.Status.ObservedGeneration),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.Status.ObservedGeneration),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -101,16 +115,17 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Number of desired pods for a ReplicaSet.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if r.Spec.Replicas != nil {
-					f = append(f, &metric.Metric{
-						Name:  "kube_replicaset_spec_replicas",
+					ms = append(ms, &metric.Metric{
 						Value: float64(*r.Spec.Replicas),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -118,10 +133,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_replicaset_metadata_generation",
-					Value: float64(r.ObjectMeta.Generation),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(r.ObjectMeta.Generation),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -129,34 +147,35 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Information about the ReplicaSet's owner.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				owners := r.GetOwnerReferences()
 				if len(owners) == 0 {
-					f = append(f, &metric.Metric{
+					ms = append(ms, &metric.Metric{
 						LabelValues: []string{"<none>", "<none>", "<none>"},
 					})
 				} else {
 					for _, owner := range owners {
 						if owner.Controller != nil {
-							f = append(f, &metric.Metric{
+							ms = append(ms, &metric.Metric{
 								LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
 							})
 						} else {
-							f = append(f, &metric.Metric{
+							ms = append(ms, &metric.Metric{
 								LabelValues: []string{owner.Kind, owner.Name, "false"},
 							})
 						}
 					}
 				}
 
-				for _, m := range f {
-					m.Name = "kube_replicaset_owner"
+				for _, m := range ms {
 					m.LabelKeys = []string{"owner_kind", "owner_name", "owner_is_controller"}
 					m.Value = 1
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -165,12 +184,15 @@ var (
 			Help: descReplicaSetLabelsHelp,
 			GenerateFunc: wrapReplicaSetFunc(func(d *v1beta1.ReplicaSet) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descReplicaSetLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 	}
@@ -182,7 +204,7 @@ func wrapReplicaSetFunc(f func(*v1beta1.ReplicaSet) metric.Family) func(interfac
 
 		metricFamily := f(replicaSet)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descReplicaSetLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{replicaSet.Namespace, replicaSet.Name}, m.LabelValues...)
 		}

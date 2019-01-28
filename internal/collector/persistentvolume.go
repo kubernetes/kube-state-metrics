@@ -39,12 +39,15 @@ var (
 			Help: descPersistentVolumeLabelsHelp,
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descPersistentVolumeLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -52,11 +55,11 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				// Set current phase to 1, others to 0 if it is set.
 				if p := p.Status.Phase; p != "" {
-					f = append(f,
+					ms = append(ms,
 						&metric.Metric{
 							LabelValues: []string{string(v1.VolumePending)},
 							Value:       boolFloat64(p == v1.VolumePending),
@@ -80,12 +83,13 @@ var (
 					)
 				}
 
-				for _, m := range f {
-					m.Name = "kube_persistentvolume_status_phase"
+				for _, m := range ms {
 					m.LabelKeys = []string{"phase"}
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -93,12 +97,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Information about persistentvolume.",
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_persistentvolume_info",
-					LabelKeys:   []string{"storageclass"},
-					LabelValues: []string{p.Spec.StorageClassName},
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"storageclass"},
+							LabelValues: []string{p.Spec.StorageClassName},
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 	}
@@ -110,7 +117,7 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) metric.Family) func(i
 
 		metricFamily := f(persistentVolume)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descPersistentVolumeLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{persistentVolume.Name}, m.LabelValues...)
 		}

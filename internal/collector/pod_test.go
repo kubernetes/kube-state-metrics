@@ -722,7 +722,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
-					Reason: "NodeLost",
+					Reason: nodeUnreachablePodReason,
 				},
 			},
 			Want: `

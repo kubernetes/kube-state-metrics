@@ -30,6 +30,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const nodeUnreachablePodReason = "NodeLost"
+
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff"}
@@ -237,8 +239,8 @@ var (
 					{phase == v1.PodFailed, string(v1.PodFailed)},
 					// This logic is directly copied from: https://github.com/kubernetes/kubernetes/blob/d39bfa0d138368bbe72b0eaf434501dcb4ec9908/pkg/printers/internalversion/printers.go#L597-L601
 					// For more info, please go to: https://github.com/kubernetes/kube-state-metrics/issues/410
-					{phase == v1.PodRunning && !(p.DeletionTimestamp != nil && p.Status.Reason == "NodeLost"), string(v1.PodRunning)},
-					{phase == v1.PodUnknown || (p.DeletionTimestamp != nil && p.Status.Reason == "NodeLost"), string(v1.PodUnknown)},
+					{phase == v1.PodRunning && !(p.DeletionTimestamp != nil && p.Status.Reason == nodeUnreachablePodReason), string(v1.PodRunning)},
+					{phase == v1.PodUnknown || (p.DeletionTimestamp != nil && p.Status.Reason == nodeUnreachablePodReason), string(v1.PodUnknown)},
 				}
 
 				for _, p := range phases {

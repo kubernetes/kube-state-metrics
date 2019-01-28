@@ -37,9 +37,9 @@ var (
 			Name: descPersistentVolumeLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descPersistentVolumeLabelsHelp,
-			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metric.Family {
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -54,7 +54,7 @@ var (
 			Name: "kube_persistentvolume_status_phase",
 			Type: metric.MetricTypeGauge,
 			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
-			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metric.Family {
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				ms := []*metric.Metric{}
 
 				// Set current phase to 1, others to 0 if it is set.
@@ -87,7 +87,7 @@ var (
 					m.LabelKeys = []string{"phase"}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -96,8 +96,8 @@ var (
 			Name: "kube_persistentvolume_info",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about persistentvolume.",
-			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"storageclass"},
@@ -111,8 +111,8 @@ var (
 	}
 )
 
-func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		persistentVolume := obj.(*v1.PersistentVolume)
 
 		metricFamily := f(persistentVolume)

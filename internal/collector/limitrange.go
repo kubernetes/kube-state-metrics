@@ -35,7 +35,7 @@ var (
 			Name: "kube_limitrange",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about limit range.",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metric.Family {
+			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				rawLimitRanges := r.Spec.Limits
@@ -80,7 +80,7 @@ var (
 					m.LabelKeys = []string{"resource", "type", "constraint"}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -89,7 +89,7 @@ var (
 			Name: "kube_limitrange_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metric.Family {
+			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -99,7 +99,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -107,8 +107,8 @@ var (
 	}
 )
 
-func wrapLimitRangeFunc(f func(*v1.LimitRange) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		limitRange := obj.(*v1.LimitRange)
 
 		metricFamily := f(limitRange)

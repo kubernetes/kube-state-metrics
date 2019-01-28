@@ -41,7 +41,7 @@ var (
 			Name: "kube_namespace_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := []*metric.Metric{}
 				if !n.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
@@ -49,7 +49,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -58,9 +58,9 @@ var (
 			Name: descNamespaceLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descNamespaceLabelsHelp,
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -75,9 +75,9 @@ var (
 			Name: descNamespaceAnnotationsName,
 			Type: metric.MetricTypeGauge,
 			Help: descNamespaceAnnotationsHelp,
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   annotationKeys,
@@ -92,7 +92,7 @@ var (
 			Name: "kube_namespace_status_phase",
 			Type: metric.MetricTypeGauge,
 			Help: "kubernetes namespace status phase.",
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) metric.Family {
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := []*metric.Metric{
 					{
 						LabelValues: []string{string(v1.NamespaceActive)},
@@ -108,7 +108,7 @@ var (
 					metric.LabelKeys = []string{"phase"}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -116,8 +116,8 @@ var (
 	}
 )
 
-func wrapNamespaceFunc(f func(*v1.Namespace) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		namespace := obj.(*v1.Namespace)
 
 		metricFamily := f(namespace)

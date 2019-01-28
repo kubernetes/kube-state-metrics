@@ -31,17 +31,27 @@ type FamilyGenerator struct {
 	GenerateFunc func(obj interface{}) *Family
 }
 
-func (f *FamilyGenerator) generateHeader() string {
+// Generate calls the FamilyGenerator.GenerateFunc and gives the family its
+// name. The reasoning behind injecting the name at such a late point in time is
+// deduplication in the code, preventing typos made by developers as
+// well as saving memory.
+func (g *FamilyGenerator) Generate(obj interface{}) *Family {
+	family := g.GenerateFunc(obj)
+	family.Name = g.Name
+	return family
+}
+
+func (g *FamilyGenerator) generateHeader() string {
 	header := strings.Builder{}
 	header.WriteString("# HELP ")
-	header.WriteString(f.Name)
+	header.WriteString(g.Name)
 	header.WriteByte(' ')
-	header.WriteString(f.Help)
+	header.WriteString(g.Help)
 	header.WriteByte('\n')
 	header.WriteString("# TYPE ")
-	header.WriteString(f.Name)
+	header.WriteString(g.Name)
 	header.WriteByte(' ')
-	header.WriteString(string(f.Type))
+	header.WriteString(string(g.Type))
 
 	return header.String()
 }
@@ -65,10 +75,7 @@ func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) [
 		families := make([]metricsstore.FamilyStringer, len(familyGens))
 
 		for i, gen := range familyGens {
-			family := gen.GenerateFunc(obj)
-			// Make family aware of its name.
-			family.Name = gen.Name
-			families[i] = family
+			families[i] = gen.Generate(obj)
 		}
 
 		return families

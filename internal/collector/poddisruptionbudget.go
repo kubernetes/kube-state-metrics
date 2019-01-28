@@ -35,7 +35,7 @@ var (
 			Name: "kube_poddisruptionbudget_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metric.Family {
+			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !p.CreationTimestamp.IsZero() {
@@ -44,7 +44,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -53,8 +53,8 @@ var (
 			Name: "kube_poddisruptionbudget_status_current_healthy",
 			Type: metric.MetricTypeGauge,
 			Help: "Current number of healthy pods",
-			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(p.Status.CurrentHealthy),
@@ -67,8 +67,8 @@ var (
 			Name: "kube_poddisruptionbudget_status_desired_healthy",
 			Type: metric.MetricTypeGauge,
 			Help: "Minimum desired number of healthy pods",
-			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(p.Status.DesiredHealthy),
@@ -81,8 +81,8 @@ var (
 			Name: "kube_poddisruptionbudget_status_pod_disruptions_allowed",
 			Type: metric.MetricTypeGauge,
 			Help: "Number of pod disruptions that are currently allowed",
-			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(p.Status.PodDisruptionsAllowed),
@@ -95,8 +95,8 @@ var (
 			Name: "kube_poddisruptionbudget_status_expected_pods",
 			Type: metric.MetricTypeGauge,
 			Help: "Total number of pods counted by this disruption budget",
-			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(p.Status.ExpectedPods),
@@ -109,8 +109,8 @@ var (
 			Name: "kube_poddisruptionbudget_status_observed_generation",
 			Type: metric.MetricTypeGauge,
 			Help: "Most recent generation observed when updating this PDB status",
-			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(p.Status.ObservedGeneration),
@@ -122,8 +122,8 @@ var (
 	}
 )
 
-func wrapPodDisruptionBudgetFunc(f func(*v1beta1.PodDisruptionBudget) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapPodDisruptionBudgetFunc(f func(*v1beta1.PodDisruptionBudget) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		podDisruptionBudget := obj.(*v1beta1.PodDisruptionBudget)
 
 		metricFamily := f(podDisruptionBudget)

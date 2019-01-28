@@ -42,9 +42,9 @@ var (
 			Name: descCronJobLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descCronJobLabelsHelp,
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -59,8 +59,8 @@ var (
 			Name: "kube_cronjob_info",
 			Type: metric.MetricTypeGauge,
 			Help: "Info about cronjob.",
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"schedule", "concurrency_policy"},
@@ -75,7 +75,7 @@ var (
 			Name: "kube_cronjob_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 				if !j.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
@@ -85,7 +85,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -94,8 +94,8 @@ var (
 			Name: "kube_cronjob_status_active",
 			Type: metric.MetricTypeGauge,
 			Help: "Active holds pointers to currently running jobs.",
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{},
@@ -110,7 +110,7 @@ var (
 			Name: "kube_cronjob_status_last_schedule_time",
 			Type: metric.MetricTypeGauge,
 			Help: "LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Status.LastScheduleTime != nil {
@@ -121,7 +121,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -130,7 +130,7 @@ var (
 			Name: "kube_cronjob_spec_suspend",
 			Type: metric.MetricTypeGauge,
 			Help: "Suspend flag tells the controller to suspend subsequent executions.",
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.Suspend != nil {
@@ -141,7 +141,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -150,7 +150,7 @@ var (
 			Name: "kube_cronjob_spec_starting_deadline_seconds",
 			Type: metric.MetricTypeGauge,
 			Help: "Deadline in seconds for starting the job if it misses scheduled time for any reason.",
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.StartingDeadlineSeconds != nil {
@@ -162,7 +162,7 @@ var (
 
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -171,7 +171,7 @@ var (
 			Name: "kube_cronjob_next_schedule_time",
 			Type: metric.MetricTypeGauge,
 			Help: "Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
-			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) metric.Family {
+			GenerateFunc: wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
 				// If the cron job is suspended, don't track the next scheduled time
@@ -186,7 +186,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -194,8 +194,8 @@ var (
 	}
 )
 
-func wrapCronJobFunc(f func(*batchv1beta1.CronJob) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapCronJobFunc(f func(*batchv1beta1.CronJob) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		cronJob := obj.(*batchv1beta1.CronJob)
 
 		metricFamily := f(cronJob)

@@ -28,7 +28,7 @@ type FamilyGenerator struct {
 	Name         string
 	Help         string
 	Type         MetricType
-	GenerateFunc func(obj interface{}) Family
+	GenerateFunc func(obj interface{}) *Family
 }
 
 func (f *FamilyGenerator) generateHeader() string {
@@ -68,7 +68,7 @@ func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) [
 			family := gen.GenerateFunc(obj)
 			// Make family aware of its name.
 			family.Name = gen.Name
-			families[i] = &family
+			families[i] = family
 		}
 
 		return families

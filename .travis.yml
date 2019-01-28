@@ -5,6 +5,11 @@ language: go
 go:
     - "1.11.5"
 
+git:
+  # Benchmark tests needs to access other branches, thereby we need to fetch all
+  # of the repository.
+  depth: false
+
 env:
   global:
       - E2E_SETUP_MINIKUBE=yes
@@ -25,6 +30,8 @@ jobs:
     - script: make doccheck
     # Unit Test
     - script: make test-unit
+    # Bechmark Test
+    - script: make test-benchmark-compare
     # Build
     - script: make build
     # E2e

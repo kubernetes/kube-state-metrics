@@ -27,6 +27,9 @@ rules:
   verbs: ["list", "watch"]
 - apiGroups: ["apps"]
   resources:
+  - daemonsets
+  - deployments
+  - replicasets
   - statefulsets
   verbs: ["list", "watch"]
 - apiGroups: ["batch"]

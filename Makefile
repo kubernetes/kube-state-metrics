@@ -9,6 +9,8 @@ Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG=k8s.io/kube-state-metrics/pkg
 GO_VERSION=1.11.5
+FIRST_GOPATH:=$(firstword $(subst :, ,$(shell go env GOPATH)))
+BENCHCMP_BINARY:=$(FIRST_GOPATH)/bin/benchcmp
 
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
@@ -33,6 +35,11 @@ build: clean
 
 test-unit: clean build
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
+
+# Runs benchmark tests on the current git ref and the last release and compares
+# the two.
+test-benchmark-compare: $(BENCHCMP_BINARY)
+	./tests/compare_benchmarks.sh release-$(shell git describe --abbrev=0 | grep -ohE "[0-9]+.[0-9]+")
 
 TEMP_DIR := $(shell mktemp -d)
 
@@ -85,4 +92,7 @@ clean:
 e2e:
 	./tests/e2e.sh
 
-.PHONY: all build all-push all-container test-unit container push quay-push clean e2e
+$(BENCHCMP_BINARY):
+	go get golang.org/x/tools/cmd/benchcmp
+
+.PHONY: all build all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e

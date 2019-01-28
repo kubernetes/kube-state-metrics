@@ -36,52 +36,53 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Information about limit range.",
 			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				rawLimitRanges := r.Spec.Limits
 				for _, rawLimitRange := range rawLimitRanges {
 					for resource, min := range rawLimitRange.Min {
-						f = append(f, &metric.Metric{
+						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "min"},
 							Value:       float64(min.MilliValue()) / 1000,
 						})
 					}
 
 					for resource, max := range rawLimitRange.Max {
-						f = append(f, &metric.Metric{
+						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "max"},
 							Value:       float64(max.MilliValue()) / 1000,
 						})
 					}
 
 					for resource, df := range rawLimitRange.Default {
-						f = append(f, &metric.Metric{
+						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "default"},
 							Value:       float64(df.MilliValue()) / 1000,
 						})
 					}
 
 					for resource, dfR := range rawLimitRange.DefaultRequest {
-						f = append(f, &metric.Metric{
+						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "defaultRequest"},
 							Value:       float64(dfR.MilliValue()) / 1000,
 						})
 					}
 
 					for resource, mLR := range rawLimitRange.MaxLimitRequestRatio {
-						f = append(f, &metric.Metric{
+						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "maxLimitRequestRatio"},
 							Value:       float64(mLR.MilliValue()) / 1000,
 						})
 					}
 				}
 
-				for _, m := range f {
-					m.Name = "kube_limitrange"
+				for _, m := range ms {
 					m.LabelKeys = []string{"resource", "type", "constraint"}
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -89,16 +90,18 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_limitrange_created",
+					ms = append(ms, &metric.Metric{
+
 						Value: float64(r.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 	}
@@ -110,7 +113,7 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) metric.Family) func(interface{}) 
 
 		metricFamily := f(limitRange)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descLimitRangeLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{limitRange.Namespace, limitRange.Name}, m.LabelValues...)
 		}

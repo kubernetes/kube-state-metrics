@@ -48,7 +48,7 @@ var MetricTypeCounter MetricType = "counter"
 
 // Metric represents a single time series.
 type Metric struct {
-	Name        string
+	// The name of a metric is injected by its family to reduce duplication.
 	LabelKeys   []string
 	LabelValues []string
 	Value       float64
@@ -59,7 +59,6 @@ func (m *Metric) Write(s *strings.Builder) {
 		panic("expected labelKeys to be of same length as labelValues")
 	}
 
-	s.WriteString(m.Name)
 	labelsToString(s, m.LabelKeys, m.LabelValues)
 	s.WriteByte(' ')
 	writeFloat(s, m.Value)

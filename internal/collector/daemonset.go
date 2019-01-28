@@ -38,18 +38,19 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !d.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:        "kube_daemonset_created",
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(d.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -58,11 +59,12 @@ var (
 			Help: "The number of nodes running at least one daemon pod and are supposed to.",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
 				return metric.Family{
-					&metric.Metric{
-						Name:        "kube_daemonset_status_current_number_scheduled",
-						LabelKeys:   []string{},
-						LabelValues: []string{},
-						Value:       float64(d.Status.CurrentNumberScheduled),
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.Status.CurrentNumberScheduled),
+						},
 					},
 				}
 			}),
@@ -72,12 +74,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod.",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_daemonset_status_desired_number_scheduled",
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(d.Status.DesiredNumberScheduled),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.Status.DesiredNumberScheduled),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -85,12 +90,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_daemonset_status_number_available",
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(d.Status.NumberAvailable),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.Status.NumberAvailable),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -98,12 +106,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of nodes running a daemon pod but are not supposed to.",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_daemonset_status_number_misscheduled",
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(d.Status.NumberMisscheduled),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.Status.NumberMisscheduled),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -111,12 +122,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_daemonset_status_number_ready",
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(d.Status.NumberReady),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.Status.NumberReady),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -124,12 +138,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The number of nodes that should be running the daemon pod and have none of the daemon pod running and available",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_daemonset_status_number_unavailable",
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(d.Status.NumberUnavailable),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.Status.NumberUnavailable),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -137,10 +154,13 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "The total number of nodes that are running updated daemon pod",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:  "kube_daemonset_updated_number_scheduled",
-					Value: float64(d.Status.UpdatedNumberScheduled),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(d.Status.UpdatedNumberScheduled),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -148,12 +168,15 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
-				return metric.Family{&metric.Metric{
-					Name:        "kube_daemonset_metadata_generation",
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(d.ObjectMeta.Generation),
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.ObjectMeta.Generation),
+						},
+					},
+				}
 			}),
 		},
 		{
@@ -162,12 +185,15 @@ var (
 			Help: descDaemonSetLabelsHelp,
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1beta1.DaemonSet) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.ObjectMeta.Labels)
-				return metric.Family{&metric.Metric{
-					Name:        descDaemonSetLabelsName,
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}}
+				return metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 			}),
 		},
 	}
@@ -179,7 +205,7 @@ func wrapDaemonSetFunc(f func(*v1beta1.DaemonSet) metric.Family) func(interface{
 
 		metricFamily := f(daemonSet)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descDaemonSetLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{daemonSet.Namespace, daemonSet.Name}, m.LabelValues...)
 		}

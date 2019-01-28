@@ -36,16 +36,18 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:  "kube_resourcequota_created",
+					ms = append(ms, &metric.Metric{
+
 						Value: float64(r.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -53,27 +55,28 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Information about resource quota.",
 			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				for res, qty := range r.Status.Hard {
-					f = append(f, &metric.Metric{
+					ms = append(ms, &metric.Metric{
 						LabelValues: []string{string(res), "hard"},
 						Value:       float64(qty.MilliValue()) / 1000,
 					})
 				}
 				for res, qty := range r.Status.Used {
-					f = append(f, &metric.Metric{
+					ms = append(ms, &metric.Metric{
 						LabelValues: []string{string(res), "used"},
 						Value:       float64(qty.MilliValue()) / 1000,
 					})
 				}
 
-				for _, m := range f {
-					m.Name = "kube_resourcequota"
+				for _, m := range ms {
 					m.LabelKeys = []string{"resource", "type"}
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 	}
@@ -85,7 +88,7 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) metric.Family) func(interfa
 
 		metricFamily := f(resourceQuota)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descResourceQuotaLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelValues...)
 		}

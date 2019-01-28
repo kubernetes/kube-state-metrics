@@ -37,12 +37,11 @@ var (
 			Help: "Information about configmap.",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metric.Family {
 				return metric.Family{
-					&metric.Metric{
-						Name:        "kube_configmap_info",
+					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       1,
-					},
+					}},
 				}
 			}),
 		},
@@ -51,18 +50,19 @@ var (
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metric.Family {
-				f := metric.Family{}
+				ms := []*metric.Metric{}
 
 				if !c.CreationTimestamp.IsZero() {
-					f = append(f, &metric.Metric{
-						Name:        "kube_configmap_created",
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(c.CreationTimestamp.Unix()),
 					})
 				}
 
-				return f
+				return metric.Family{
+					Metrics: ms,
+				}
 			}),
 		},
 		{
@@ -71,11 +71,12 @@ var (
 			Help: "Resource version representing a specific version of the configmap.",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metric.Family {
 				return metric.Family{
-					&metric.Metric{
-						Name:        "kube_configmap_metadata_resource_version",
-						LabelKeys:   []string{"resource_version"},
-						LabelValues: []string{string(c.ObjectMeta.ResourceVersion)},
-						Value:       1,
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"resource_version"},
+							LabelValues: []string{string(c.ObjectMeta.ResourceVersion)},
+							Value:       1,
+						},
 					},
 				}
 			}),
@@ -100,7 +101,7 @@ func wrapConfigMapFunc(f func(*v1.ConfigMap) metric.Family) func(interface{}) me
 
 		metricFamily := f(configMap)
 
-		for _, m := range metricFamily {
+		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descConfigMapLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{configMap.Namespace, configMap.Name}, m.LabelValues...)
 		}

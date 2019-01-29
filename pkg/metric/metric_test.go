@@ -54,7 +54,7 @@ func BenchmarkMetricWrite(b *testing.B) {
 				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
 				Value:       float64(1),
 			},
-			expectedLength: 168,
+			expectedLength: 145,
 		},
 		{
 			testName: "value-35.7",
@@ -63,7 +63,7 @@ func BenchmarkMetricWrite(b *testing.B) {
 				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
 				Value:       float64(35.7),
 			},
-			expectedLength: 171,
+			expectedLength: 148,
 		},
 	}
 

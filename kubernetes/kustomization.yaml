@@ -1,12 +1,6 @@
 commonLabels:
   app.kubernetes.io/name: kube-state-metrics
 
-imageTags:
-- name: quay.io/coreos/kube-state-metrics
-  newTag: v1.5.0
-- name: k8s.gcr.io/addon-resizer
-  newTag: 1.8.3
-
 namespace: kube-system
 
 resources:

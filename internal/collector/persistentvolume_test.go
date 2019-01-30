@@ -38,12 +38,14 @@ func TestPersistentVolumeCollector(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-pending",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumePending,
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pv-pending",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumePending,
+					},
 				},
 			},
 			Want: `
@@ -58,12 +60,14 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumeAvailable,
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pv-available",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumeAvailable,
+					},
 				},
 			},
 			Want: `
@@ -76,12 +80,14 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			MetricNames: []string{"kube_persistentvolume_status_phase"},
 		},
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-bound",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumeBound,
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pv-bound",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumeBound,
+					},
 				},
 			},
 			Want: `
@@ -94,12 +100,14 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			MetricNames: []string{"kube_persistentvolume_status_phase"},
 		},
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-released",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumeReleased,
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pv-released",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumeReleased,
+					},
 				},
 			},
 			Want: `
@@ -113,12 +121,14 @@ func TestPersistentVolumeCollector(t *testing.T) {
 		},
 		{
 
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-failed",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumeFailed,
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pv-failed",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumeFailed,
+					},
 				},
 			},
 			Want: `
@@ -131,15 +141,17 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			MetricNames: []string{"kube_persistentvolume_status_phase"},
 		},
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-pending",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumePending,
-				},
-				Spec: v1.PersistentVolumeSpec{
-					StorageClassName: "test",
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pv-pending",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumePending,
+					},
+					Spec: v1.PersistentVolumeSpec{
+						StorageClassName: "test",
+					},
 				},
 			},
 			Want: `
@@ -154,12 +166,14 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumeAvailable,
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pv-available",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumeAvailable,
+					},
 				},
 			},
 			Want: `
@@ -168,18 +182,20 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-labeled-pv",
-					Labels: map[string]string{
-						"app": "mysql-server",
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-labeled-pv",
+						Labels: map[string]string{
+							"app": "mysql-server",
+						},
 					},
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumePending,
-				},
-				Spec: v1.PersistentVolumeSpec{
-					StorageClassName: "test",
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumePending,
+					},
+					Spec: v1.PersistentVolumeSpec{
+						StorageClassName: "test",
+					},
 				},
 			},
 			Want: `
@@ -188,12 +204,14 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
 		{
-			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-unlabeled-pv",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumeAvailable,
+			Objs: []interface{}{
+				&v1.PersistentVolume{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-unlabeled-pv",
+					},
+					Status: v1.PersistentVolumeStatus{
+						Phase: v1.VolumeAvailable,
+					},
 				},
 			},
 			Want: `

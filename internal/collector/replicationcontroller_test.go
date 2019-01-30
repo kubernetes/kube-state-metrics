@@ -53,22 +53,24 @@ func TestReplicationControllerCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1.ReplicationController{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "rc1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Generation:        21,
-				},
-				Status: v1.ReplicationControllerStatus{
-					Replicas:             5,
-					FullyLabeledReplicas: 10,
-					ReadyReplicas:        5,
-					AvailableReplicas:    3,
-					ObservedGeneration:   1,
-				},
-				Spec: v1.ReplicationControllerSpec{
-					Replicas: &rc1Replicas,
+			Objs: []interface{}{
+				&v1.ReplicationController{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "rc1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "ns1",
+						Generation:        21,
+					},
+					Status: v1.ReplicationControllerStatus{
+						Replicas:             5,
+						FullyLabeledReplicas: 10,
+						ReadyReplicas:        5,
+						AvailableReplicas:    3,
+						ObservedGeneration:   1,
+					},
+					Spec: v1.ReplicationControllerSpec{
+						Replicas: &rc1Replicas,
+					},
 				},
 			},
 			Want: `
@@ -83,21 +85,23 @@ func TestReplicationControllerCollector(t *testing.T) {
 `,
 		},
 		{
-			Obj: &v1.ReplicationController{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "rc2",
-					Namespace:  "ns2",
-					Generation: 14,
-				},
-				Status: v1.ReplicationControllerStatus{
-					Replicas:             0,
-					FullyLabeledReplicas: 5,
-					ReadyReplicas:        0,
-					AvailableReplicas:    0,
-					ObservedGeneration:   5,
-				},
-				Spec: v1.ReplicationControllerSpec{
-					Replicas: &rc2Replicas,
+			Objs: []interface{}{
+				&v1.ReplicationController{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:       "rc2",
+						Namespace:  "ns2",
+						Generation: 14,
+					},
+					Status: v1.ReplicationControllerStatus{
+						Replicas:             0,
+						FullyLabeledReplicas: 5,
+						ReadyReplicas:        0,
+						AvailableReplicas:    0,
+						ObservedGeneration:   5,
+					},
+					Spec: v1.ReplicationControllerSpec{
+						Replicas: &rc2Replicas,
+					},
 				},
 			},
 			Want: `

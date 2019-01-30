@@ -45,13 +45,15 @@ func TestSecretCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "secret1",
-					Namespace:       "ns1",
-					ResourceVersion: "000000",
+			Objs: []interface{}{
+				&v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "secret1",
+						Namespace:       "ns1",
+						ResourceVersion: "000000",
+					},
+					Type: v1.SecretTypeOpaque,
 				},
-				Type: v1.SecretTypeOpaque,
 			},
 			Want: `
 				kube_secret_info{namespace="ns1",secret="secret1"} 1
@@ -62,14 +64,16 @@ func TestSecretCollector(t *testing.T) {
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
 		},
 		{
-			Obj: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "secret2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "123456",
+			Objs: []interface{}{
+				&v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "secret2",
+						Namespace:         "ns2",
+						CreationTimestamp: metav1StartTime,
+						ResourceVersion:   "123456",
+					},
+					Type: v1.SecretTypeServiceAccountToken,
 				},
-				Type: v1.SecretTypeServiceAccountToken,
 			},
 			Want: `
 				kube_secret_info{namespace="ns2",secret="secret2"} 1
@@ -81,15 +85,17 @@ func TestSecretCollector(t *testing.T) {
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
 		},
 		{
-			Obj: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "secret3",
-					Namespace:         "ns3",
-					CreationTimestamp: metav1StartTime,
-					Labels:            map[string]string{"test-3": "test-3"},
-					ResourceVersion:   "abcdef",
+			Objs: []interface{}{
+				&v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "secret3",
+						Namespace:         "ns3",
+						CreationTimestamp: metav1StartTime,
+						Labels:            map[string]string{"test-3": "test-3"},
+						ResourceVersion:   "abcdef",
+					},
+					Type: v1.SecretTypeDockercfg,
 				},
-				Type: v1.SecretTypeDockercfg,
 			},
 			Want: `
 				kube_secret_info{namespace="ns3",secret="secret3"} 1

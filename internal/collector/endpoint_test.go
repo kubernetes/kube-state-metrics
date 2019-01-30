@@ -44,42 +44,44 @@ func TestEndpointCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-endpoint",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "foobar",
-					},
-				},
-				Subsets: []v1.EndpointSubset{
-					{Addresses: []v1.EndpointAddress{
-						{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
-					},
-						Ports: []v1.EndpointPort{
-							{Port: 8080}, {Port: 8081},
+			Objs: []interface{}{
+				&v1.Endpoints{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-endpoint",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "foobar",
 						},
 					},
-					{Addresses: []v1.EndpointAddress{
-						{IP: "172.22.23.202"},
-					},
-						Ports: []v1.EndpointPort{
-							{Port: 8443}, {Port: 9090},
+					Subsets: []v1.EndpointSubset{
+						{Addresses: []v1.EndpointAddress{
+							{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
 						},
-					},
-					{NotReadyAddresses: []v1.EndpointAddress{
-						{IP: "192.168.1.1"},
-					},
-						Ports: []v1.EndpointPort{
-							{Port: 1234}, {Port: 5678},
+							Ports: []v1.EndpointPort{
+								{Port: 8080}, {Port: 8081},
+							},
 						},
-					},
-					{NotReadyAddresses: []v1.EndpointAddress{
-						{IP: "192.168.1.3"}, {IP: "192.168.2.2"},
-					},
-						Ports: []v1.EndpointPort{
-							{Port: 1234}, {Port: 5678},
+						{Addresses: []v1.EndpointAddress{
+							{IP: "172.22.23.202"},
+						},
+							Ports: []v1.EndpointPort{
+								{Port: 8443}, {Port: 9090},
+							},
+						},
+						{NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "192.168.1.1"},
+						},
+							Ports: []v1.EndpointPort{
+								{Port: 1234}, {Port: 5678},
+							},
+						},
+						{NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "192.168.1.3"}, {IP: "192.168.2.2"},
+						},
+							Ports: []v1.EndpointPort{
+								{Port: 1234}, {Port: 5678},
+							},
 						},
 					},
 				},

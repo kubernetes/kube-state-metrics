@@ -52,20 +52,22 @@ func TestDaemonSetCollector(t *testing.T) {
 `
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ds1",
-					Namespace: "ns1",
-					Labels: map[string]string{
-						"app": "example1",
+			Objs: []interface{}{
+				&v1beta1.DaemonSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ds1",
+						Namespace: "ns1",
+						Labels: map[string]string{
+							"app": "example1",
+						},
+						Generation: 21,
 					},
-					Generation: 21,
-				},
-				Status: v1beta1.DaemonSetStatus{
-					CurrentNumberScheduled: 15,
-					NumberMisscheduled:     10,
-					DesiredNumberScheduled: 5,
-					NumberReady:            5,
+					Status: v1beta1.DaemonSetStatus{
+						CurrentNumberScheduled: 15,
+						NumberMisscheduled:     10,
+						DesiredNumberScheduled: 5,
+						NumberReady:            5,
+					},
 				},
 			},
 			Want: `
@@ -92,21 +94,23 @@ func TestDaemonSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ds2",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns2",
-					Labels: map[string]string{
-						"app": "example2",
+			Objs: []interface{}{
+				&v1beta1.DaemonSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "ds2",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "ns2",
+						Labels: map[string]string{
+							"app": "example2",
+						},
+						Generation: 14,
 					},
-					Generation: 14,
-				},
-				Status: v1beta1.DaemonSetStatus{
-					CurrentNumberScheduled: 10,
-					NumberMisscheduled:     5,
-					DesiredNumberScheduled: 0,
-					NumberReady:            0,
+					Status: v1beta1.DaemonSetStatus{
+						CurrentNumberScheduled: 10,
+						NumberMisscheduled:     5,
+						DesiredNumberScheduled: 0,
+						NumberReady:            0,
+					},
 				},
 			},
 			Want: `
@@ -135,24 +139,26 @@ func TestDaemonSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ds3",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns3",
-					Labels: map[string]string{
-						"app": "example3",
+			Objs: []interface{}{
+				&v1beta1.DaemonSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "ds3",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "ns3",
+						Labels: map[string]string{
+							"app": "example3",
+						},
+						Generation: 15,
 					},
-					Generation: 15,
-				},
-				Status: v1beta1.DaemonSetStatus{
-					CurrentNumberScheduled: 10,
-					NumberMisscheduled:     5,
-					DesiredNumberScheduled: 15,
-					NumberReady:            5,
-					NumberAvailable:        5,
-					NumberUnavailable:      5,
-					UpdatedNumberScheduled: 5,
+					Status: v1beta1.DaemonSetStatus{
+						CurrentNumberScheduled: 10,
+						NumberMisscheduled:     5,
+						DesiredNumberScheduled: 15,
+						NumberReady:            5,
+						NumberAvailable:        5,
+						NumberUnavailable:      5,
+						UpdatedNumberScheduled: 5,
+					},
 				},
 			},
 			Want: `

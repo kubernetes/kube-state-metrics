@@ -68,29 +68,31 @@ func TestDeploymentCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "depl1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Labels: map[string]string{
-						"app": "example1",
+			Objs: []interface{}{
+				&v1beta1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "depl1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "ns1",
+						Labels: map[string]string{
+							"app": "example1",
+						},
+						Generation: 21,
 					},
-					Generation: 21,
-				},
-				Status: v1beta1.DeploymentStatus{
-					Replicas:            15,
-					AvailableReplicas:   10,
-					UnavailableReplicas: 5,
-					UpdatedReplicas:     2,
-					ObservedGeneration:  111,
-				},
-				Spec: v1beta1.DeploymentSpec{
-					Replicas: &depl1Replicas,
-					Strategy: v1beta1.DeploymentStrategy{
-						RollingUpdate: &v1beta1.RollingUpdateDeployment{
-							MaxUnavailable: &depl1MaxUnavailable,
-							MaxSurge:       &depl1MaxSurge,
+					Status: v1beta1.DeploymentStatus{
+						Replicas:            15,
+						AvailableReplicas:   10,
+						UnavailableReplicas: 5,
+						UpdatedReplicas:     2,
+						ObservedGeneration:  111,
+					},
+					Spec: v1beta1.DeploymentSpec{
+						Replicas: &depl1Replicas,
+						Strategy: v1beta1.DeploymentStrategy{
+							RollingUpdate: &v1beta1.RollingUpdateDeployment{
+								MaxUnavailable: &depl1MaxUnavailable,
+								MaxSurge:       &depl1MaxSurge,
+							},
 						},
 					},
 				},
@@ -111,29 +113,31 @@ func TestDeploymentCollector(t *testing.T) {
 `,
 		},
 		{
-			Obj: &v1beta1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "depl2",
-					Namespace: "ns2",
-					Labels: map[string]string{
-						"app": "example2",
+			Objs: []interface{}{
+				&v1beta1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "depl2",
+						Namespace: "ns2",
+						Labels: map[string]string{
+							"app": "example2",
+						},
+						Generation: 14,
 					},
-					Generation: 14,
-				},
-				Status: v1beta1.DeploymentStatus{
-					Replicas:            10,
-					AvailableReplicas:   5,
-					UnavailableReplicas: 0,
-					UpdatedReplicas:     1,
-					ObservedGeneration:  1111,
-				},
-				Spec: v1beta1.DeploymentSpec{
-					Paused:   true,
-					Replicas: &depl2Replicas,
-					Strategy: v1beta1.DeploymentStrategy{
-						RollingUpdate: &v1beta1.RollingUpdateDeployment{
-							MaxUnavailable: &depl2MaxUnavailable,
-							MaxSurge:       &depl2MaxSurge,
+					Status: v1beta1.DeploymentStatus{
+						Replicas:            10,
+						AvailableReplicas:   5,
+						UnavailableReplicas: 0,
+						UpdatedReplicas:     1,
+						ObservedGeneration:  1111,
+					},
+					Spec: v1beta1.DeploymentSpec{
+						Paused:   true,
+						Replicas: &depl2Replicas,
+						Strategy: v1beta1.DeploymentStrategy{
+							RollingUpdate: &v1beta1.RollingUpdateDeployment{
+								MaxUnavailable: &depl2MaxUnavailable,
+								MaxSurge:       &depl2MaxSurge,
+							},
 						},
 					},
 				},

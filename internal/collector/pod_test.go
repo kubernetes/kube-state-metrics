@@ -94,18 +94,20 @@ func TestPodCollector(t *testing.T) {
 	// 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:        "container1",
-							Image:       "k8s.gcr.io/hyperkube1",
-							ImageID:     "docker://sha256:aaa",
-							ContainerID: "docker://ab123",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name:        "container1",
+								Image:       "k8s.gcr.io/hyperkube1",
+								ImageID:     "docker://sha256:aaa",
+								ContainerID: "docker://ab123",
+							},
 						},
 					},
 				},
@@ -114,24 +116,26 @@ func TestPodCollector(t *testing.T) {
 			MetricNames: []string{"kube_pod_container_info"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:        "container2",
-							Image:       "k8s.gcr.io/hyperkube2",
-							ImageID:     "docker://sha256:bbb",
-							ContainerID: "docker://cd456",
-						},
-						{
-							Name:        "container3",
-							Image:       "k8s.gcr.io/hyperkube3",
-							ImageID:     "docker://sha256:ccc",
-							ContainerID: "docker://ef789",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name:        "container2",
+								Image:       "k8s.gcr.io/hyperkube2",
+								ImageID:     "docker://sha256:bbb",
+								ContainerID: "docker://cd456",
+							},
+							{
+								Name:        "container3",
+								Image:       "k8s.gcr.io/hyperkube3",
+								ImageID:     "docker://sha256:ccc",
+								ContainerID: "docker://ef789",
+							},
 						},
 					},
 				},
@@ -141,16 +145,18 @@ func TestPodCollector(t *testing.T) {
 			MetricNames: []string{"kube_pod_container_info"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:  "container1",
-							Ready: true,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name:  "container1",
+								Ready: true,
+							},
 						},
 					},
 				},
@@ -159,20 +165,22 @@ func TestPodCollector(t *testing.T) {
 			MetricNames: []string{"kube_pod_container_status_ready"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:  "container2",
-							Ready: true,
-						},
-						{
-							Name:  "container3",
-							Ready: false,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name:  "container2",
+								Ready: true,
+							},
+							{
+								Name:  "container3",
+								Ready: false,
+							},
 						},
 					},
 				},
@@ -184,16 +192,18 @@ func TestPodCollector(t *testing.T) {
 			MetricNames: []string{"kube_pod_container_status_ready"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:         "container1",
-							RestartCount: 0,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name:         "container1",
+								RestartCount: 0,
+							},
 						},
 					},
 				},
@@ -202,20 +212,22 @@ func TestPodCollector(t *testing.T) {
 			MetricNames: []string{"kube_pod_container_status_restarts_total"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:         "container2",
-							RestartCount: 0,
-						},
-						{
-							Name:         "container3",
-							RestartCount: 1,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name:         "container2",
+								RestartCount: 0,
+							},
+							{
+								Name:         "container3",
+								RestartCount: 1,
+							},
 						},
 					},
 				},
@@ -227,17 +239,19 @@ func TestPodCollector(t *testing.T) {
 			MetricNames: []string{"kube_pod_container_status_restarts_total"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "container1",
-							State: v1.ContainerState{
-								Running: &v1.ContainerStateRunning{},
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container1",
+								State: v1.ContainerState{
+									Running: &v1.ContainerStateRunning{},
+								},
 							},
 						},
 					},
@@ -268,26 +282,28 @@ func TestPodCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "container2",
-							State: v1.ContainerState{
-								Terminated: &v1.ContainerStateTerminated{
-									Reason: "OOMKilled",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container2",
+								State: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										Reason: "OOMKilled",
+									},
 								},
 							},
-						},
-						{
-							Name: "container3",
-							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{
-									Reason: "ContainerCreating",
+							{
+								Name: "container3",
+								State: v1.ContainerState{
+									Waiting: &v1.ContainerStateWaiting{
+										Reason: "ContainerCreating",
+									},
 								},
 							},
 						},
@@ -330,18 +346,20 @@ func TestPodCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod3",
-					Namespace: "ns3",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "container4",
-							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{
-									Reason: "CrashLoopBackOff",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod3",
+						Namespace: "ns3",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container4",
+								State: v1.ContainerState{
+									Waiting: &v1.ContainerStateWaiting{
+										Reason: "CrashLoopBackOff",
+									},
 								},
 							},
 						},
@@ -387,21 +405,23 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 		},
 		{
 
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod6",
-					Namespace: "ns6",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "container7",
-							State: v1.ContainerState{
-								Running: &v1.ContainerStateRunning{},
-							},
-							LastTerminationState: v1.ContainerState{
-								Terminated: &v1.ContainerStateTerminated{
-									Reason: "OOMKilled",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod6",
+						Namespace: "ns6",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container7",
+								State: v1.ContainerState{
+									Running: &v1.ContainerStateRunning{},
+								},
+								LastTerminationState: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										Reason: "OOMKilled",
+									},
 								},
 							},
 						},
@@ -436,18 +456,20 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod4",
-					Namespace: "ns4",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "container5",
-							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{
-									Reason: "ImagePullBackOff",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod4",
+						Namespace: "ns4",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container5",
+								State: v1.ContainerState{
+									Waiting: &v1.ContainerStateWaiting{
+										Reason: "ImagePullBackOff",
+									},
 								},
 							},
 						},
@@ -477,18 +499,20 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod5",
-					Namespace: "ns5",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "container6",
-							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{
-									Reason: "ErrImagePull",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod5",
+						Namespace: "ns5",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container6",
+								State: v1.ContainerState{
+									Waiting: &v1.ContainerStateWaiting{
+										Reason: "ErrImagePull",
+									},
 								},
 							},
 						},
@@ -518,18 +542,20 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod7",
-					Namespace: "ns7",
-				},
-				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "container8",
-							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{
-									Reason: "CreateContainerConfigError",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod7",
+						Namespace: "ns7",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container8",
+								State: v1.ContainerState{
+									Waiting: &v1.ContainerStateWaiting{
+										Reason: "CreateContainerConfigError",
+									},
 								},
 							},
 						},
@@ -560,20 +586,22 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 		},
 		{
 
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					UID:               "abc-123-xxx",
-				},
-				Spec: v1.PodSpec{
-					NodeName: "node1",
-				},
-				Status: v1.PodStatus{
-					HostIP:    "1.1.1.1",
-					PodIP:     "1.2.3.4",
-					StartTime: &metav1StartTime,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "pod1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "ns1",
+						UID:               "abc-123-xxx",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+					},
+					Status: v1.PodStatus{
+						HostIP:    "1.1.1.1",
+						PodIP:     "1.2.3.4",
+						StartTime: &metav1StartTime,
+					},
 				},
 			},
 			// TODO: Should it be '1501569018' instead?
@@ -586,61 +614,63 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_created", "kube_pod_info", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "abc-456-xxx",
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind:       "ReplicaSet",
-							Name:       "rs-name",
-							Controller: &test,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+						UID:       "abc-456-xxx",
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Kind:       "ReplicaSet",
+								Name:       "rs-name",
+								Controller: &test,
+							},
 						},
 					},
-				},
-				Spec: v1.PodSpec{
-					NodeName: "node2",
-				},
-				Status: v1.PodStatus{
-					HostIP: "1.1.1.1",
-					PodIP:  "2.3.4.5",
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:        "container2_1",
-							Image:       "k8s.gcr.io/hyperkube2",
-							ImageID:     "docker://sha256:bbb",
-							ContainerID: "docker://cd456",
-							State: v1.ContainerState{
-								Terminated: &v1.ContainerStateTerminated{
-									FinishedAt: metav1.Time{
-										Time: time.Unix(1501777018, 0),
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+					},
+					Status: v1.PodStatus{
+						HostIP: "1.1.1.1",
+						PodIP:  "2.3.4.5",
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name:        "container2_1",
+								Image:       "k8s.gcr.io/hyperkube2",
+								ImageID:     "docker://sha256:bbb",
+								ContainerID: "docker://cd456",
+								State: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										FinishedAt: metav1.Time{
+											Time: time.Unix(1501777018, 0),
+										},
 									},
 								},
 							},
-						},
-						{
-							Name:        "container2_2",
-							Image:       "k8s.gcr.io/hyperkube2",
-							ImageID:     "docker://sha256:bbb",
-							ContainerID: "docker://cd456",
-							State: v1.ContainerState{
-								Terminated: &v1.ContainerStateTerminated{
-									FinishedAt: metav1.Time{
-										Time: time.Unix(1501888018, 0),
+							{
+								Name:        "container2_2",
+								Image:       "k8s.gcr.io/hyperkube2",
+								ImageID:     "docker://sha256:bbb",
+								ContainerID: "docker://cd456",
+								State: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										FinishedAt: metav1.Time{
+											Time: time.Unix(1501888018, 0),
+										},
 									},
 								},
 							},
-						},
-						{
-							Name:        "container2_3",
-							Image:       "k8s.gcr.io/hyperkube2",
-							ImageID:     "docker://sha256:bbb",
-							ContainerID: "docker://cd456",
-							State: v1.ContainerState{
-								Terminated: &v1.ContainerStateTerminated{
-									FinishedAt: metav1.Time{
-										Time: time.Unix(1501666018, 0),
+							{
+								Name:        "container2_3",
+								Image:       "k8s.gcr.io/hyperkube2",
+								ImageID:     "docker://sha256:bbb",
+								ContainerID: "docker://cd456",
+								State: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										FinishedAt: metav1.Time{
+											Time: time.Unix(1501666018, 0),
+										},
 									},
 								},
 							},
@@ -656,13 +686,15 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_created", "kube_pod_info", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Status: v1.PodStatus{
-					Phase: v1.PodRunning,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+					},
 				},
 			},
 			Want: `
@@ -675,13 +707,15 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_status_phase"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Status: v1.PodStatus{
-					Phase: v1.PodPending,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodPending,
+					},
 				},
 			},
 			Want: `
@@ -695,13 +729,15 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 		},
 		{
 
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod3",
-					Namespace: "ns3",
-				},
-				Status: v1.PodStatus{
-					Phase: v1.PodUnknown,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod3",
+						Namespace: "ns3",
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodUnknown,
+					},
 				},
 			},
 			Want: `
@@ -714,15 +750,17 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_status_phase"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					DeletionTimestamp: &metav1.Time{},
-				},
-				Status: v1.PodStatus{
-					Phase:  v1.PodRunning,
-					Reason: nodeUnreachablePodReason,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "pod4",
+						Namespace:         "ns4",
+						DeletionTimestamp: &metav1.Time{},
+					},
+					Status: v1.PodStatus{
+						Phase:  v1.PodRunning,
+						Reason: nodeUnreachablePodReason,
+					},
 				},
 			},
 			Want: `
@@ -735,16 +773,18 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_status_phase"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodReady,
-							Status: v1.ConditionTrue,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							{
+								Type:   v1.PodReady,
+								Status: v1.ConditionTrue,
+							},
 						},
 					},
 				},
@@ -757,16 +797,18 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_status_ready"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodReady,
-							Status: v1.ConditionFalse,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							{
+								Type:   v1.PodReady,
+								Status: v1.ConditionFalse,
+							},
 						},
 					},
 				},
@@ -779,18 +821,20 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_status_ready"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodScheduled,
-							Status: v1.ConditionTrue,
-							LastTransitionTime: metav1.Time{
-								Time: time.Unix(1501666018, 0),
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							{
+								Type:   v1.PodScheduled,
+								Status: v1.ConditionTrue,
+								LastTransitionTime: metav1.Time{
+									Time: time.Unix(1501666018, 0),
+								},
 							},
 						},
 					},
@@ -805,16 +849,18 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_status_scheduled", "kube_pod_status_scheduled_time"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodScheduled,
-							Status: v1.ConditionFalse,
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						Conditions: []v1.PodCondition{
+							{
+								Type:   v1.PodScheduled,
+								Status: v1.ConditionFalse,
+							},
 						},
 					},
 				},
@@ -827,43 +873,45 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{"kube_pod_status_scheduled", "kube_pod_status_scheduled_time"},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-				},
-				Spec: v1.PodSpec{
-					NodeName: "node1",
-					Containers: []v1.Container{
-						{
-							Name: "pod1_con1",
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:                    resource.MustParse("200m"),
-									v1.ResourceMemory:                 resource.MustParse("100M"),
-									v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
-									v1.ResourceStorage:                resource.MustParse("400M"),
-									v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
-								},
-								Limits: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:                    resource.MustParse("200m"),
-									v1.ResourceMemory:                 resource.MustParse("100M"),
-									v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
-									v1.ResourceStorage:                resource.MustParse("400M"),
-									v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node1",
+						Containers: []v1.Container{
+							{
+								Name: "pod1_con1",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:                    resource.MustParse("200m"),
+										v1.ResourceMemory:                 resource.MustParse("100M"),
+										v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
+										v1.ResourceStorage:                resource.MustParse("400M"),
+										v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+									},
+									Limits: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:                    resource.MustParse("200m"),
+										v1.ResourceMemory:                 resource.MustParse("100M"),
+										v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
+										v1.ResourceStorage:                resource.MustParse("400M"),
+										v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+									},
 								},
 							},
-						},
-						{
-							Name: "pod1_con2",
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("300m"),
-									v1.ResourceMemory: resource.MustParse("200M"),
-								},
-								Limits: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("300m"),
-									v1.ResourceMemory: resource.MustParse("200M"),
+							{
+								Name: "pod1_con2",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    resource.MustParse("300m"),
+										v1.ResourceMemory: resource.MustParse("200M"),
+									},
+									Limits: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    resource.MustParse("300m"),
+										v1.ResourceMemory: resource.MustParse("200M"),
+									},
 								},
 							},
 						},
@@ -905,43 +953,45 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 		},
 		{
 
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-				},
-				Spec: v1.PodSpec{
-					NodeName: "node2",
-					Containers: []v1.Container{
-						{
-							Name: "pod2_con1",
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("400m"),
-									v1.ResourceMemory: resource.MustParse("300M"),
-								},
-								Limits: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("400m"),
-									v1.ResourceMemory: resource.MustParse("300M"),
-								},
-							},
-						},
-						{
-							Name: "pod2_con2",
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("500m"),
-									v1.ResourceMemory: resource.MustParse("400M"),
-								},
-								Limits: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("500m"),
-									v1.ResourceMemory: resource.MustParse("400M"),
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns2",
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node2",
+						Containers: []v1.Container{
+							{
+								Name: "pod2_con1",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    resource.MustParse("400m"),
+										v1.ResourceMemory: resource.MustParse("300M"),
+									},
+									Limits: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    resource.MustParse("400m"),
+										v1.ResourceMemory: resource.MustParse("300M"),
+									},
 								},
 							},
-						},
-						// A container without a resource specicication. No metrics will be emitted for that.
-						{
-							Name: "pod2_con3",
+							{
+								Name: "pod2_con2",
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    resource.MustParse("500m"),
+										v1.ResourceMemory: resource.MustParse("400M"),
+									},
+									Limits: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceCPU:    resource.MustParse("500m"),
+										v1.ResourceMemory: resource.MustParse("400M"),
+									},
+								},
+							},
+							// A container without a resource specicication. No metrics will be emitted for that.
+							{
+								Name: "pod2_con3",
+							},
 						},
 					},
 				},
@@ -984,15 +1034,17 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					Labels: map[string]string{
-						"app": "example",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+						Labels: map[string]string{
+							"app": "example",
+						},
 					},
+					Spec: v1.PodSpec{},
 				},
-				Spec: v1.PodSpec{},
 			},
 			Want: metadata + `
 				kube_pod_labels{label_app="example",namespace="ns1",pod="pod1"} 1
@@ -1002,39 +1054,41 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 		},
 		{
-			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					Labels: map[string]string{
-						"app": "example",
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns1",
+						Labels: map[string]string{
+							"app": "example",
+						},
 					},
-				},
-				Spec: v1.PodSpec{
-					Volumes: []v1.Volume{
-						{
-							Name: "myvol",
-							VolumeSource: v1.VolumeSource{
-								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "claim1",
-									ReadOnly:  false,
+					Spec: v1.PodSpec{
+						Volumes: []v1.Volume{
+							{
+								Name: "myvol",
+								VolumeSource: v1.VolumeSource{
+									PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+										ClaimName: "claim1",
+										ReadOnly:  false,
+									},
 								},
 							},
-						},
-						{
-							Name: "my-readonly-vol",
-							VolumeSource: v1.VolumeSource{
-								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "claim2",
-									ReadOnly:  true,
+							{
+								Name: "my-readonly-vol",
+								VolumeSource: v1.VolumeSource{
+									PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+										ClaimName: "claim2",
+										ReadOnly:  true,
+									},
 								},
 							},
-						},
-						{
-							Name: "not-pvc-vol",
-							VolumeSource: v1.VolumeSource{
-								EmptyDir: &v1.EmptyDirVolumeSource{
-									Medium: "memory",
+							{
+								Name: "not-pvc-vol",
+								VolumeSource: v1.VolumeSource{
+									EmptyDir: &v1.EmptyDirVolumeSource{
+										Medium: "memory",
+									},
 								},
 							},
 						},

@@ -28,14 +28,17 @@ import (
 )
 
 type generateMetricsTestCase struct {
-	Obj         interface{}
+	Objs        []interface{}
 	MetricNames []string
 	Want        string
 	Func        func(interface{}) []metricsstore.FamilyStringer
 }
 
 func (testCase *generateMetricsTestCase) run() error {
-	metricFamilies := testCase.Func(testCase.Obj)
+	var metricFamilies []metricsstore.FamilyStringer
+	for _, obj := range testCase.Objs {
+		metricFamilies = testCase.Func(obj)
+	}
 	metricFamilyStrings := []string{}
 	for _, f := range metricFamilies {
 		metricFamilyStrings = append(metricFamilyStrings, f.String())

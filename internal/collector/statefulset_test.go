@@ -63,25 +63,27 @@ func TestStatefuleSetCollector(t *testing.T) {
  	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "statefulset1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Labels: map[string]string{
-						"app": "example1",
+			Objs: []interface{}{
+				&v1beta1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "statefulset1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "ns1",
+						Labels: map[string]string{
+							"app": "example1",
+						},
+						Generation: 3,
 					},
-					Generation: 3,
-				},
-				Spec: v1beta1.StatefulSetSpec{
-					Replicas:    &statefulSet1Replicas,
-					ServiceName: "statefulset1service",
-				},
-				Status: v1beta1.StatefulSetStatus{
-					ObservedGeneration: &statefulSet1ObservedGeneration,
-					Replicas:           2,
-					UpdateRevision:     "ur1",
-					CurrentRevision:    "cr1",
+					Spec: v1beta1.StatefulSetSpec{
+						Replicas:    &statefulSet1Replicas,
+						ServiceName: "statefulset1service",
+					},
+					Status: v1beta1.StatefulSetStatus{
+						ObservedGeneration: &statefulSet1ObservedGeneration,
+						Replicas:           2,
+						UpdateRevision:     "ur1",
+						CurrentRevision:    "cr1",
+					},
 				},
 			},
 			Want: `
@@ -112,27 +114,29 @@ func TestStatefuleSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "statefulset2",
-					Namespace: "ns2",
-					Labels: map[string]string{
-						"app": "example2",
+			Objs: []interface{}{
+				&v1beta1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "statefulset2",
+						Namespace: "ns2",
+						Labels: map[string]string{
+							"app": "example2",
+						},
+						Generation: 21,
 					},
-					Generation: 21,
-				},
-				Spec: v1beta1.StatefulSetSpec{
-					Replicas:    &statefulSet2Replicas,
-					ServiceName: "statefulset2service",
-				},
-				Status: v1beta1.StatefulSetStatus{
-					CurrentReplicas:    2,
-					ObservedGeneration: &statefulSet2ObservedGeneration,
-					ReadyReplicas:      5,
-					Replicas:           5,
-					UpdatedReplicas:    3,
-					UpdateRevision:     "ur2",
-					CurrentRevision:    "cr2",
+					Spec: v1beta1.StatefulSetSpec{
+						Replicas:    &statefulSet2Replicas,
+						ServiceName: "statefulset2service",
+					},
+					Status: v1beta1.StatefulSetStatus{
+						CurrentReplicas:    2,
+						ObservedGeneration: &statefulSet2ObservedGeneration,
+						ReadyReplicas:      5,
+						Replicas:           5,
+						UpdatedReplicas:    3,
+						UpdateRevision:     "ur2",
+						CurrentRevision:    "cr2",
+					},
 				},
 			},
 			Want: `
@@ -161,24 +165,26 @@ func TestStatefuleSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "statefulset3",
-					Namespace: "ns3",
-					Labels: map[string]string{
-						"app": "example3",
+			Objs: []interface{}{
+				&v1beta1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "statefulset3",
+						Namespace: "ns3",
+						Labels: map[string]string{
+							"app": "example3",
+						},
+						Generation: 36,
 					},
-					Generation: 36,
-				},
-				Spec: v1beta1.StatefulSetSpec{
-					Replicas:    &statefulSet3Replicas,
-					ServiceName: "statefulset2service",
-				},
-				Status: v1beta1.StatefulSetStatus{
-					ObservedGeneration: nil,
-					Replicas:           7,
-					UpdateRevision:     "ur3",
-					CurrentRevision:    "cr3",
+					Spec: v1beta1.StatefulSetSpec{
+						Replicas:    &statefulSet3Replicas,
+						ServiceName: "statefulset2service",
+					},
+					Status: v1beta1.StatefulSetStatus{
+						ObservedGeneration: nil,
+						Replicas:           7,
+						UpdateRevision:     "ur3",
+						CurrentRevision:    "cr3",
+					},
 				},
 			},
 			Want: `

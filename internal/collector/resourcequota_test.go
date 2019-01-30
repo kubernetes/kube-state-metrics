@@ -38,13 +38,15 @@ func TestResourceQuotaCollector(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		// Verify populating base metric and that metric for unset fields are skipped.
 		{
-			Obj: &v1.ResourceQuota{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "quotaTest",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "testNS",
+			Objs: []interface{}{
+				&v1.ResourceQuota{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "quotaTest",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "testNS",
+					},
+					Status: v1.ResourceQuotaStatus{},
 				},
-				Status: v1.ResourceQuotaStatus{},
 			},
 			Want: `
 			kube_resourcequota_created{namespace="testNS",resourcequota="quotaTest"} 1.5e+09
@@ -52,55 +54,57 @@ func TestResourceQuotaCollector(t *testing.T) {
 		},
 		// Verify resource metric.
 		{
-			Obj: &v1.ResourceQuota{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "quotaTest",
-					Namespace: "testNS",
-				},
-				Spec: v1.ResourceQuotaSpec{
-					Hard: v1.ResourceList{
-						v1.ResourceCPU:                    resource.MustParse("4.3"),
-						v1.ResourceMemory:                 resource.MustParse("2.1G"),
-						v1.ResourceStorage:                resource.MustParse("10G"),
-						v1.ResourcePods:                   resource.MustParse("9"),
-						v1.ResourceServices:               resource.MustParse("8"),
-						v1.ResourceReplicationControllers: resource.MustParse("7"),
-						v1.ResourceQuotas:                 resource.MustParse("6"),
-						v1.ResourceSecrets:                resource.MustParse("5"),
-						v1.ResourceConfigMaps:             resource.MustParse("4"),
-						v1.ResourcePersistentVolumeClaims: resource.MustParse("3"),
-						v1.ResourceServicesNodePorts:      resource.MustParse("2"),
-						v1.ResourceServicesLoadBalancers:  resource.MustParse("1"),
+			Objs: []interface{}{
+				&v1.ResourceQuota{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "quotaTest",
+						Namespace: "testNS",
 					},
-				},
-				Status: v1.ResourceQuotaStatus{
-					Hard: v1.ResourceList{
-						v1.ResourceCPU:                    resource.MustParse("4.3"),
-						v1.ResourceMemory:                 resource.MustParse("2.1G"),
-						v1.ResourceStorage:                resource.MustParse("10G"),
-						v1.ResourcePods:                   resource.MustParse("9"),
-						v1.ResourceServices:               resource.MustParse("8"),
-						v1.ResourceReplicationControllers: resource.MustParse("7"),
-						v1.ResourceQuotas:                 resource.MustParse("6"),
-						v1.ResourceSecrets:                resource.MustParse("5"),
-						v1.ResourceConfigMaps:             resource.MustParse("4"),
-						v1.ResourcePersistentVolumeClaims: resource.MustParse("3"),
-						v1.ResourceServicesNodePorts:      resource.MustParse("2"),
-						v1.ResourceServicesLoadBalancers:  resource.MustParse("1"),
+					Spec: v1.ResourceQuotaSpec{
+						Hard: v1.ResourceList{
+							v1.ResourceCPU:                    resource.MustParse("4.3"),
+							v1.ResourceMemory:                 resource.MustParse("2.1G"),
+							v1.ResourceStorage:                resource.MustParse("10G"),
+							v1.ResourcePods:                   resource.MustParse("9"),
+							v1.ResourceServices:               resource.MustParse("8"),
+							v1.ResourceReplicationControllers: resource.MustParse("7"),
+							v1.ResourceQuotas:                 resource.MustParse("6"),
+							v1.ResourceSecrets:                resource.MustParse("5"),
+							v1.ResourceConfigMaps:             resource.MustParse("4"),
+							v1.ResourcePersistentVolumeClaims: resource.MustParse("3"),
+							v1.ResourceServicesNodePorts:      resource.MustParse("2"),
+							v1.ResourceServicesLoadBalancers:  resource.MustParse("1"),
+						},
 					},
-					Used: v1.ResourceList{
-						v1.ResourceCPU:                    resource.MustParse("2.1"),
-						v1.ResourceMemory:                 resource.MustParse("500M"),
-						v1.ResourceStorage:                resource.MustParse("9G"),
-						v1.ResourcePods:                   resource.MustParse("8"),
-						v1.ResourceServices:               resource.MustParse("7"),
-						v1.ResourceReplicationControllers: resource.MustParse("6"),
-						v1.ResourceQuotas:                 resource.MustParse("5"),
-						v1.ResourceSecrets:                resource.MustParse("4"),
-						v1.ResourceConfigMaps:             resource.MustParse("3"),
-						v1.ResourcePersistentVolumeClaims: resource.MustParse("2"),
-						v1.ResourceServicesNodePorts:      resource.MustParse("1"),
-						v1.ResourceServicesLoadBalancers:  resource.MustParse("0"),
+					Status: v1.ResourceQuotaStatus{
+						Hard: v1.ResourceList{
+							v1.ResourceCPU:                    resource.MustParse("4.3"),
+							v1.ResourceMemory:                 resource.MustParse("2.1G"),
+							v1.ResourceStorage:                resource.MustParse("10G"),
+							v1.ResourcePods:                   resource.MustParse("9"),
+							v1.ResourceServices:               resource.MustParse("8"),
+							v1.ResourceReplicationControllers: resource.MustParse("7"),
+							v1.ResourceQuotas:                 resource.MustParse("6"),
+							v1.ResourceSecrets:                resource.MustParse("5"),
+							v1.ResourceConfigMaps:             resource.MustParse("4"),
+							v1.ResourcePersistentVolumeClaims: resource.MustParse("3"),
+							v1.ResourceServicesNodePorts:      resource.MustParse("2"),
+							v1.ResourceServicesLoadBalancers:  resource.MustParse("1"),
+						},
+						Used: v1.ResourceList{
+							v1.ResourceCPU:                    resource.MustParse("2.1"),
+							v1.ResourceMemory:                 resource.MustParse("500M"),
+							v1.ResourceStorage:                resource.MustParse("9G"),
+							v1.ResourcePods:                   resource.MustParse("8"),
+							v1.ResourceServices:               resource.MustParse("7"),
+							v1.ResourceReplicationControllers: resource.MustParse("6"),
+							v1.ResourceQuotas:                 resource.MustParse("5"),
+							v1.ResourceSecrets:                resource.MustParse("4"),
+							v1.ResourceConfigMaps:             resource.MustParse("3"),
+							v1.ResourcePersistentVolumeClaims: resource.MustParse("2"),
+							v1.ResourceServicesNodePorts:      resource.MustParse("1"),
+							v1.ResourceServicesLoadBalancers:  resource.MustParse("0"),
+						},
 					},
 				},
 			},

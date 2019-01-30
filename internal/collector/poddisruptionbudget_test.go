@@ -44,19 +44,21 @@ func TestPodDisruptionBudgetCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.PodDisruptionBudget{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pdb1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Generation:        21,
-				},
-				Status: v1beta1.PodDisruptionBudgetStatus{
-					CurrentHealthy:        12,
-					DesiredHealthy:        10,
-					PodDisruptionsAllowed: 2,
-					ExpectedPods:          15,
-					ObservedGeneration:    111,
+			Objs: []interface{}{
+				&v1beta1.PodDisruptionBudget{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "pdb1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "ns1",
+						Generation:        21,
+					},
+					Status: v1beta1.PodDisruptionBudgetStatus{
+						CurrentHealthy:        12,
+						DesiredHealthy:        10,
+						PodDisruptionsAllowed: 2,
+						ExpectedPods:          15,
+						ObservedGeneration:    111,
+					},
 				},
 			},
 			Want: `
@@ -69,18 +71,20 @@ func TestPodDisruptionBudgetCollector(t *testing.T) {
 			`,
 		},
 		{
-			Obj: &v1beta1.PodDisruptionBudget{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "pdb2",
-					Namespace:  "ns2",
-					Generation: 14,
-				},
-				Status: v1beta1.PodDisruptionBudgetStatus{
-					CurrentHealthy:        8,
-					DesiredHealthy:        9,
-					PodDisruptionsAllowed: 0,
-					ExpectedPods:          10,
-					ObservedGeneration:    1111,
+			Objs: []interface{}{
+				&v1beta1.PodDisruptionBudget{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:       "pdb2",
+						Namespace:  "ns2",
+						Generation: 14,
+					},
+					Status: v1beta1.PodDisruptionBudgetStatus{
+						CurrentHealthy:        8,
+						DesiredHealthy:        9,
+						PodDisruptionsAllowed: 0,
+						ExpectedPods:          10,
+						ObservedGeneration:    1111,
+					},
 				},
 			},
 			Want: `

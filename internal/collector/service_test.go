@@ -44,18 +44,20 @@ func TestServiceCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "example1",
+			Objs: []interface{}{
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example1",
+						},
 					},
-				},
-				Spec: v1.ServiceSpec{
-					ClusterIP: "1.2.3.4",
-					Type:      v1.ServiceTypeClusterIP,
+					Spec: v1.ServiceSpec{
+						ClusterIP: "1.2.3.4",
+						Type:      v1.ServiceTypeClusterIP,
+					},
 				},
 			},
 			Want: `
@@ -73,18 +75,20 @@ func TestServiceCollector(t *testing.T) {
 		},
 		{
 
-			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service2",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "example2",
+			Objs: []interface{}{
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service2",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example2",
+						},
 					},
-				},
-				Spec: v1.ServiceSpec{
-					ClusterIP: "1.2.3.5",
-					Type:      v1.ServiceTypeNodePort,
+					Spec: v1.ServiceSpec{
+						ClusterIP: "1.2.3.5",
+						Type:      v1.ServiceTypeNodePort,
+					},
 				},
 			},
 			Want: `
@@ -95,19 +99,21 @@ func TestServiceCollector(t *testing.T) {
 `,
 		},
 		{
-			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service3",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "example3",
+			Objs: []interface{}{
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service3",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example3",
+						},
 					},
-				},
-				Spec: v1.ServiceSpec{
-					ClusterIP:      "1.2.3.6",
-					LoadBalancerIP: "1.2.3.7",
-					Type:           v1.ServiceTypeLoadBalancer,
+					Spec: v1.ServiceSpec{
+						ClusterIP:      "1.2.3.6",
+						LoadBalancerIP: "1.2.3.7",
+						Type:           v1.ServiceTypeLoadBalancer,
+					},
 				},
 			},
 			Want: `
@@ -118,18 +124,20 @@ func TestServiceCollector(t *testing.T) {
 `,
 		},
 		{
-			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service4",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "example4",
+			Objs: []interface{}{
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service4",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example4",
+						},
 					},
-				},
-				Spec: v1.ServiceSpec{
-					ExternalName: "www.example.com",
-					Type:         v1.ServiceTypeExternalName,
+					Spec: v1.ServiceSpec{
+						ExternalName: "www.example.com",
+						Type:         v1.ServiceTypeExternalName,
+					},
 				},
 			},
 			Want: `
@@ -140,24 +148,26 @@ func TestServiceCollector(t *testing.T) {
 			`,
 		},
 		{
-			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service5",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "example5",
+			Objs: []interface{}{
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service5",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example5",
+						},
 					},
-				},
-				Spec: v1.ServiceSpec{
-					Type: v1.ServiceTypeLoadBalancer,
-				},
-				Status: v1.ServiceStatus{
-					LoadBalancer: v1.LoadBalancerStatus{
-						Ingress: []v1.LoadBalancerIngress{
-							{
-								IP:       "1.2.3.8",
-								Hostname: "www.example.com",
+					Spec: v1.ServiceSpec{
+						Type: v1.ServiceTypeLoadBalancer,
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{
+							Ingress: []v1.LoadBalancerIngress{
+								{
+									IP:       "1.2.3.8",
+									Hostname: "www.example.com",
+								},
 							},
 						},
 					},
@@ -172,20 +182,22 @@ func TestServiceCollector(t *testing.T) {
 			`,
 		},
 		{
-			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service6",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "example6",
+			Objs: []interface{}{
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-service6",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Namespace:         "default",
+						Labels: map[string]string{
+							"app": "example6",
+						},
 					},
-				},
-				Spec: v1.ServiceSpec{
-					Type: v1.ServiceTypeClusterIP,
-					ExternalIPs: []string{
-						"1.2.3.9",
-						"1.2.3.10",
+					Spec: v1.ServiceSpec{
+						Type: v1.ServiceTypeClusterIP,
+						ExternalIPs: []string{
+							"1.2.3.9",
+							"1.2.3.10",
+						},
 					},
 				},
 			},

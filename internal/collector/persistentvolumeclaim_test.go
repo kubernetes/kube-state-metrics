@@ -42,25 +42,27 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
-			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "mysql-data",
-					Namespace: "default",
-					Labels: map[string]string{
-						"app": "mysql-server",
-					},
-				},
-				Spec: v1.PersistentVolumeClaimSpec{
-					StorageClassName: &storageClassName,
-					Resources: v1.ResourceRequirements{
-						Requests: v1.ResourceList{
-							v1.ResourceStorage: resource.MustParse("1Gi"),
+			Objs: []interface{}{
+				&v1.PersistentVolumeClaim{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "mysql-data",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "mysql-server",
 						},
 					},
-					VolumeName: "pvc-mysql-data",
-				},
-				Status: v1.PersistentVolumeClaimStatus{
-					Phase: v1.ClaimBound,
+					Spec: v1.PersistentVolumeClaimSpec{
+						StorageClassName: &storageClassName,
+						Resources: v1.ResourceRequirements{
+							Requests: v1.ResourceList{
+								v1.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						},
+						VolumeName: "pvc-mysql-data",
+					},
+					Status: v1.PersistentVolumeClaimStatus{
+						Phase: v1.ClaimBound,
+					},
 				},
 			},
 			Want: `
@@ -74,17 +76,19 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels"},
 		},
 		{
-			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "prometheus-data",
-					Namespace: "default",
-				},
-				Spec: v1.PersistentVolumeClaimSpec{
-					StorageClassName: &storageClassName,
-					VolumeName:       "pvc-prometheus-data",
-				},
-				Status: v1.PersistentVolumeClaimStatus{
-					Phase: v1.ClaimPending,
+			Objs: []interface{}{
+				&v1.PersistentVolumeClaim{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "prometheus-data",
+						Namespace: "default",
+					},
+					Spec: v1.PersistentVolumeClaimSpec{
+						StorageClassName: &storageClassName,
+						VolumeName:       "pvc-prometheus-data",
+					},
+					Status: v1.PersistentVolumeClaimStatus{
+						Phase: v1.ClaimPending,
+					},
 				},
 			},
 			Want: `
@@ -97,12 +101,14 @@ func TestPersistentVolumeClaimCollector(t *testing.T) {
 			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels"},
 		},
 		{
-			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "mongo-data",
-				},
-				Status: v1.PersistentVolumeClaimStatus{
-					Phase: v1.ClaimLost,
+			Objs: []interface{}{
+				&v1.PersistentVolumeClaim{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "mongo-data",
+					},
+					Status: v1.PersistentVolumeClaimStatus{
+						Phase: v1.ClaimLost,
+					},
 				},
 			},
 			Want: `

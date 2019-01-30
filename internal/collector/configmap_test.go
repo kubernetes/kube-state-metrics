@@ -41,11 +41,13 @@ func TestConfigMapCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "configmap1",
-					Namespace:       "ns1",
-					ResourceVersion: "123456",
+			Objs: []interface{}{
+				&v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "configmap1",
+						Namespace:       "ns1",
+						ResourceVersion: "123456",
+					},
 				},
 			},
 			Want: `
@@ -55,12 +57,14 @@ func TestConfigMapCollector(t *testing.T) {
 			MetricNames: []string{"kube_configmap_info", "kube_configmap_metadata_resource_version"},
 		},
 		{
-			Obj: &v1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "configmap2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
+			Objs: []interface{}{
+				&v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "configmap2",
+						Namespace:         "ns2",
+						CreationTimestamp: metav1StartTime,
+						ResourceVersion:   "abcdef",
+					},
 				},
 			},
 			Want: `

@@ -64,21 +64,23 @@ func TestNodeCollector(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		// Verify populating base metric and that metric for unset fields are skipped.
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
-				Status: v1.NodeStatus{
-					NodeInfo: v1.NodeSystemInfo{
-						KernelVersion:           "kernel",
-						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
-						OSImage:                 "osimage",
-						ContainerRuntimeVersion: "rkt",
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.1",
 					},
-				},
-				Spec: v1.NodeSpec{
-					ProviderID: "provider://i-uniqueid",
+					Status: v1.NodeStatus{
+						NodeInfo: v1.NodeSystemInfo{
+							KernelVersion:           "kernel",
+							KubeletVersion:          "kubelet",
+							KubeProxyVersion:        "kubeproxy",
+							OSImage:                 "osimage",
+							ContainerRuntimeVersion: "rkt",
+						},
+					},
+					Spec: v1.NodeSpec{
+						ProviderID: "provider://i-uniqueid",
+					},
 				},
 			},
 			Want: `
@@ -89,41 +91,43 @@ func TestNodeCollector(t *testing.T) {
 		},
 		// Verify resource metric.
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "127.0.0.1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Labels: map[string]string{
-						"type": "master",
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "127.0.0.1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						Labels: map[string]string{
+							"type": "master",
+						},
 					},
-				},
-				Spec: v1.NodeSpec{
-					Unschedulable: true,
-					ProviderID:    "provider://i-randomidentifier",
-				},
-				Status: v1.NodeStatus{
-					NodeInfo: v1.NodeSystemInfo{
-						KernelVersion:           "kernel",
-						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
-						OSImage:                 "osimage",
-						ContainerRuntimeVersion: "rkt",
+					Spec: v1.NodeSpec{
+						Unschedulable: true,
+						ProviderID:    "provider://i-randomidentifier",
 					},
-					Capacity: v1.ResourceList{
-						v1.ResourceCPU:                    resource.MustParse("4.3"),
-						v1.ResourceMemory:                 resource.MustParse("2G"),
-						v1.ResourcePods:                   resource.MustParse("1000"),
-						v1.ResourceStorage:                resource.MustParse("3G"),
-						v1.ResourceEphemeralStorage:       resource.MustParse("4G"),
-						v1.ResourceName("nvidia.com/gpu"): resource.MustParse("4"),
-					},
-					Allocatable: v1.ResourceList{
-						v1.ResourceCPU:                    resource.MustParse("3"),
-						v1.ResourceMemory:                 resource.MustParse("1G"),
-						v1.ResourcePods:                   resource.MustParse("555"),
-						v1.ResourceStorage:                resource.MustParse("2G"),
-						v1.ResourceEphemeralStorage:       resource.MustParse("3G"),
-						v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+					Status: v1.NodeStatus{
+						NodeInfo: v1.NodeSystemInfo{
+							KernelVersion:           "kernel",
+							KubeletVersion:          "kubelet",
+							KubeProxyVersion:        "kubeproxy",
+							OSImage:                 "osimage",
+							ContainerRuntimeVersion: "rkt",
+						},
+						Capacity: v1.ResourceList{
+							v1.ResourceCPU:                    resource.MustParse("4.3"),
+							v1.ResourceMemory:                 resource.MustParse("2G"),
+							v1.ResourcePods:                   resource.MustParse("1000"),
+							v1.ResourceStorage:                resource.MustParse("3G"),
+							v1.ResourceEphemeralStorage:       resource.MustParse("4G"),
+							v1.ResourceName("nvidia.com/gpu"): resource.MustParse("4"),
+						},
+						Allocatable: v1.ResourceList{
+							v1.ResourceCPU:                    resource.MustParse("3"),
+							v1.ResourceMemory:                 resource.MustParse("1G"),
+							v1.ResourcePods:                   resource.MustParse("555"),
+							v1.ResourceStorage:                resource.MustParse("2G"),
+							v1.ResourceEphemeralStorage:       resource.MustParse("3G"),
+							v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+						},
 					},
 				},
 			},
@@ -154,12 +158,14 @@ func TestNodeCollector(t *testing.T) {
 		},
 		// Verify phase enumerations.
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
-				Status: v1.NodeStatus{
-					Phase: v1.NodeRunning,
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.1",
+					},
+					Status: v1.NodeStatus{
+						Phase: v1.NodeRunning,
+					},
 				},
 			},
 			Want: `
@@ -170,12 +176,14 @@ func TestNodeCollector(t *testing.T) {
 			MetricNames: []string{"kube_node_status_phase"},
 		},
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.2",
-				},
-				Status: v1.NodeStatus{
-					Phase: v1.NodePending,
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.2",
+					},
+					Status: v1.NodeStatus{
+						Phase: v1.NodePending,
+					},
 				},
 			},
 			Want: `
@@ -186,12 +194,14 @@ func TestNodeCollector(t *testing.T) {
 			MetricNames: []string{"kube_node_status_phase"},
 		},
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.3",
-				},
-				Status: v1.NodeStatus{
-					Phase: v1.NodeTerminated,
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.3",
+					},
+					Status: v1.NodeStatus{
+						Phase: v1.NodeTerminated,
+					},
 				},
 			},
 			Want: `
@@ -203,15 +213,17 @@ func TestNodeCollector(t *testing.T) {
 		},
 		// Verify StatusCondition
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
-				Status: v1.NodeStatus{
-					Conditions: []v1.NodeCondition{
-						{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionTrue},
-						{Type: v1.NodeReady, Status: v1.ConditionTrue},
-						{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionTrue},
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.1",
+					},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionTrue},
+							{Type: v1.NodeReady, Status: v1.ConditionTrue},
+							{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionTrue},
+						},
 					},
 				},
 			},
@@ -229,15 +241,17 @@ func TestNodeCollector(t *testing.T) {
 			MetricNames: []string{"kube_node_status_condition"},
 		},
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.2",
-				},
-				Status: v1.NodeStatus{
-					Conditions: []v1.NodeCondition{
-						{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionUnknown},
-						{Type: v1.NodeReady, Status: v1.ConditionUnknown},
-						{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionUnknown},
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.2",
+					},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionUnknown},
+							{Type: v1.NodeReady, Status: v1.ConditionUnknown},
+							{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionUnknown},
+						},
 					},
 				},
 			},
@@ -255,15 +269,17 @@ func TestNodeCollector(t *testing.T) {
 			MetricNames: []string{"kube_node_status_condition"},
 		},
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.3",
-				},
-				Status: v1.NodeStatus{
-					Conditions: []v1.NodeCondition{
-						{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionFalse},
-						{Type: v1.NodeReady, Status: v1.ConditionFalse},
-						{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionFalse},
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.3",
+					},
+					Status: v1.NodeStatus{
+						Conditions: []v1.NodeCondition{
+							{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionFalse},
+							{Type: v1.NodeReady, Status: v1.ConditionFalse},
+							{Type: v1.NodeConditionType("CustomizedType"), Status: v1.ConditionFalse},
+						},
 					},
 				},
 			},
@@ -282,15 +298,17 @@ func TestNodeCollector(t *testing.T) {
 		},
 		// Verify SpecTaints
 		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
-				Spec: v1.NodeSpec{
-					Taints: []v1.Taint{
-						{Key: "node.kubernetes.io/memory-pressure", Value: "true", Effect: v1.TaintEffectPreferNoSchedule},
-						{Key: "Accelerated", Value: "gpu", Effect: v1.TaintEffectPreferNoSchedule},
-						{Key: "Dedicated", Effect: v1.TaintEffectPreferNoSchedule},
+			Objs: []interface{}{
+				&v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "127.0.0.1",
+					},
+					Spec: v1.NodeSpec{
+						Taints: []v1.Taint{
+							{Key: "node.kubernetes.io/memory-pressure", Value: "true", Effect: v1.TaintEffectPreferNoSchedule},
+							{Key: "Accelerated", Value: "gpu", Effect: v1.TaintEffectPreferNoSchedule},
+							{Key: "Dedicated", Effect: v1.TaintEffectPreferNoSchedule},
+						},
 					},
 				},
 			},

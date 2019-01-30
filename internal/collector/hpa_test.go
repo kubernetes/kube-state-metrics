@@ -46,24 +46,26 @@ func TestHPACollector(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			// Verify populating base metric.
-			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Generation: 2,
-					Name:       "hpa1",
-					Namespace:  "ns1",
-				},
-				Spec: autoscaling.HorizontalPodAutoscalerSpec{
-					MaxReplicas: 4,
-					MinReplicas: &hpa1MinReplicas,
-					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
-						APIVersion: "extensions/v1beta1",
-						Kind:       "Deployment",
-						Name:       "deployment1",
+			Objs: []interface{}{
+				&autoscaling.HorizontalPodAutoscaler{
+					ObjectMeta: metav1.ObjectMeta{
+						Generation: 2,
+						Name:       "hpa1",
+						Namespace:  "ns1",
 					},
-				},
-				Status: autoscaling.HorizontalPodAutoscalerStatus{
-					CurrentReplicas: 2,
-					DesiredReplicas: 2,
+					Spec: autoscaling.HorizontalPodAutoscalerSpec{
+						MaxReplicas: 4,
+						MinReplicas: &hpa1MinReplicas,
+						ScaleTargetRef: autoscaling.CrossVersionObjectReference{
+							APIVersion: "extensions/v1beta1",
+							Kind:       "Deployment",
+							Name:       "deployment1",
+						},
+					},
+					Status: autoscaling.HorizontalPodAutoscalerStatus{
+						CurrentReplicas: 2,
+						DesiredReplicas: 2,
+					},
 				},
 			},
 			Want: `

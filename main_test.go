@@ -209,6 +209,16 @@ kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",conta
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Completed"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Error"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
+# HELP kube_pod_container_status_terminated_reasons_total Counter with observed container restarts and reason the container was terminated.
+# TYPE kube_pod_container_status_terminated_reasons_total counter
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container2",reason="Completed"} 0
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container2",reason="ContainerCannotRun"} 0
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container2",reason="Error"} 0
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 0
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container3",reason="Completed"} 0
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container3",reason="Error"} 0
+kube_pod_container_status_terminated_reasons_total{namespace="default",pod="pod0",container="container3",reason="OOMKilled"} 0
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 # TYPE kube_pod_container_status_last_terminated_reason gauge
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 1

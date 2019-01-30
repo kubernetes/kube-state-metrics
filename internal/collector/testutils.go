@@ -115,7 +115,7 @@ func filterMetrics(ms []string, names []string) []string {
 
 	regexps := []*regexp.Regexp{}
 	for _, n := range names {
-		regexps = append(regexps, regexp.MustCompile(fmt.Sprintf("^%v", n)))
+		regexps = append(regexps, regexp.MustCompile(fmt.Sprintf("^%v\\{", n)))
 	}
 
 	for _, m := range ms {

@@ -18,6 +18,7 @@ package collector
 
 import (
 	"strconv"
+	"sync"
 
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -32,10 +33,35 @@ import (
 
 const nodeUnreachablePodReason = "NodeLost"
 
+type containerTerminationInfo struct {
+	podContainerReasonCounter sync.Map
+}
+
+func (c *containerTerminationInfo) add(pod, container, reason string, isReason bool) float64 {
+	obj, _ := c.podContainerReasonCounter.LoadOrStore(pod, &sync.Map{})
+	containerReasonCounter := obj.(*sync.Map)
+	obj, _ = containerReasonCounter.LoadOrStore(container, &sync.Map{})
+	reasonCounter := obj.(*sync.Map)
+	obj, _ = reasonCounter.LoadOrStore(reason, 0.0)
+	counter := obj.(float64)
+	if isReason {
+		reasonCounter.Store(reason, counter+1.0)
+		return counter + 1.0
+	}
+	return counter
+}
+
+func (c *containerTerminationInfo) cleanup(p *v1.Pod) {
+	if p.DeletionTimestamp != nil {
+		c.podContainerReasonCounter.Delete(p.Name)
+	}
+}
+
 var (
-	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff"}
-	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
+	descPodLabelsDefaultLabels    = []string{"namespace", "pod"}
+	containerWaitingReasons       = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff"}
+	containerTerminatedReasons    = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
+	observedContainerTerminations = containerTerminationInfo{}
 
 	podMetricFamilies = []metric.FamilyGenerator{
 		{
@@ -425,6 +451,28 @@ var (
 							Value:       boolFloat64(terminationReason(cs, reason)),
 						})
 					}
+				}
+
+				return metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_container_status_terminated_reasons_total",
+			Type: metric.MetricTypeCounter,
+			Help: "Counter with observed container restarts and reason the container was terminated.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) metric.Family {
+				ms := []*metric.Metric{}
+				for _, cs := range p.Status.ContainerStatuses {
+					for _, reason := range containerTerminatedReasons {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"container", "reason"},
+							LabelValues: []string{cs.Name, reason},
+							Value:       observedContainerTerminations.add(p.Name, cs.Name, reason, terminationReason(cs, reason)),
+						})
+					}
+					observedContainerTerminations.cleanup(p)
 				}
 
 				return metric.Family{

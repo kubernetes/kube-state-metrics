@@ -17,6 +17,7 @@ limitations under the License.
 package collector
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -91,6 +92,8 @@ func TestPodCollector(t *testing.T) {
 	// # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 	// # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
 	// # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
+	// # HELP kube_pod_container_status_terminated_reasons_total Counter with observed container restarts and reason the container was terminated.
+	// # TYPE kube_pod_container_status_terminated_reasons_total counter
 	// 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -322,6 +325,14 @@ func TestPodCollector(t *testing.T) {
                 kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
                 kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
                 kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
+				kube_pod_container_status_terminated_reasons_total{container="container2",namespace="ns2",pod="pod2",reason="Completed"} 0
+				kube_pod_container_status_terminated_reasons_total{container="container2",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_terminated_reasons_total{container="container2",namespace="ns2",pod="pod2",reason="Error"} 0
+				kube_pod_container_status_terminated_reasons_total{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled"} 1
+				kube_pod_container_status_terminated_reasons_total{container="container3",namespace="ns2",pod="pod2",reason="Completed"} 0
+				kube_pod_container_status_terminated_reasons_total{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
+				kube_pod_container_status_terminated_reasons_total{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
+				kube_pod_container_status_terminated_reasons_total{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
                 kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
                 kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
@@ -343,6 +354,74 @@ func TestPodCollector(t *testing.T) {
 				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
+				"kube_pod_container_status_terminated_reasons_total",
+			},
+		},
+		{
+			Objs: []interface{}{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod3",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container1",
+								State: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										Reason: "OOMKilled",
+									},
+								},
+							},
+						},
+					},
+				},
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod3",
+						Namespace: "ns2",
+					},
+					Status: v1.PodStatus{
+						ContainerStatuses: []v1.ContainerStatus{
+							{
+								Name: "container1",
+								State: v1.ContainerState{
+									Terminated: &v1.ContainerStateTerminated{
+										Reason: "OOMKilled",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+						kube_pod_container_status_running{container="container1",namespace="ns2",pod="pod3"} 0
+						kube_pod_container_status_terminated{container="container1",namespace="ns2",pod="pod3"} 1
+						kube_pod_container_status_terminated_reason{container="container1",namespace="ns2",pod="pod3",reason="Completed"} 0
+						kube_pod_container_status_terminated_reason{container="container1",namespace="ns2",pod="pod3",reason="ContainerCannotRun"} 0
+						kube_pod_container_status_terminated_reason{container="container1",namespace="ns2",pod="pod3",reason="Error"} 0
+						kube_pod_container_status_terminated_reason{container="container1",namespace="ns2",pod="pod3",reason="OOMKilled"} 1
+						kube_pod_container_status_waiting{container="container1",namespace="ns2",pod="pod3"} 0
+						kube_pod_container_status_waiting_reason{container="container1",namespace="ns2",pod="pod3",reason="ContainerCreating"} 0
+						kube_pod_container_status_waiting_reason{container="container1",namespace="ns2",pod="pod3",reason="ImagePullBackOff"} 0
+						kube_pod_container_status_waiting_reason{container="container1",namespace="ns2",pod="pod3",reason="CrashLoopBackOff"} 0
+						kube_pod_container_status_waiting_reason{container="container1",namespace="ns2",pod="pod3",reason="ErrImagePull"} 0
+						kube_pod_container_status_waiting_reason{container="container1",namespace="ns2",pod="pod3",reason="CreateContainerConfigError"} 0
+						kube_pod_container_status_terminated_reasons_total{container="container1",namespace="ns2",pod="pod3",reason="OOMKilled"} 2
+						kube_pod_container_status_terminated_reasons_total{container="container1",namespace="ns2",pod="pod3",reason="Error"} 0
+						kube_pod_container_status_terminated_reasons_total{container="container1",namespace="ns2",pod="pod3",reason="ContainerCannotRun"} 0
+						kube_pod_container_status_terminated_reasons_total{container="container1",namespace="ns2",pod="pod3",reason="Completed"} 0
+
+		`,
+			MetricNames: []string{
+				"kube_pod_container_status_running",
+				"kube_pod_container_status_waiting",
+				"kube_pod_container_status_waiting_reason",
+				"kube_pod_container_status_terminated",
+				"kube_pod_container_status_terminated_reason",
+				"kube_pod_container_status_terminated_reasons_total",
 			},
 		},
 		{
@@ -1114,5 +1193,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
+		observedContainerTerminations.podContainerReasonCounter = sync.Map{}
 	}
 }

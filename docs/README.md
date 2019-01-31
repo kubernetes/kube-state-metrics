@@ -65,6 +65,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 - [Secret Metrics](secret-metrics.md)
 - [ConfigMap Metrics](configmap-metrics.md)
 - [Ingress Metrics](ingress-metrics.md)
+- [CertificateSigningRequest Metrics](certificatessigningrequest-metrics.md)
 
 ## Join Metrics
 

@@ -27,6 +27,7 @@ import (
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	policy "k8s.io/api/policy/v1beta1"
@@ -112,27 +113,28 @@ func (b *Builder) Build() []*coll.Collector {
 }
 
 var availableCollectors = map[string]func(f *Builder) *coll.Collector{
-	"configmaps":               func(b *Builder) *coll.Collector { return b.buildConfigMapCollector() },
-	"cronjobs":                 func(b *Builder) *coll.Collector { return b.buildCronJobCollector() },
-	"daemonsets":               func(b *Builder) *coll.Collector { return b.buildDaemonSetCollector() },
-	"deployments":              func(b *Builder) *coll.Collector { return b.buildDeploymentCollector() },
-	"endpoints":                func(b *Builder) *coll.Collector { return b.buildEndpointsCollector() },
-	"horizontalpodautoscalers": func(b *Builder) *coll.Collector { return b.buildHPACollector() },
-	"ingresses":                func(b *Builder) *coll.Collector { return b.buildIngressCollector() },
-	"jobs":                     func(b *Builder) *coll.Collector { return b.buildJobCollector() },
-	"limitranges":              func(b *Builder) *coll.Collector { return b.buildLimitRangeCollector() },
-	"namespaces":               func(b *Builder) *coll.Collector { return b.buildNamespaceCollector() },
-	"nodes":                    func(b *Builder) *coll.Collector { return b.buildNodeCollector() },
-	"persistentvolumeclaims":   func(b *Builder) *coll.Collector { return b.buildPersistentVolumeClaimCollector() },
-	"persistentvolumes":        func(b *Builder) *coll.Collector { return b.buildPersistentVolumeCollector() },
-	"poddisruptionbudgets":     func(b *Builder) *coll.Collector { return b.buildPodDisruptionBudgetCollector() },
-	"pods":                     func(b *Builder) *coll.Collector { return b.buildPodCollector() },
-	"replicasets":              func(b *Builder) *coll.Collector { return b.buildReplicaSetCollector() },
-	"replicationcontrollers":   func(b *Builder) *coll.Collector { return b.buildReplicationControllerCollector() },
-	"resourcequotas":           func(b *Builder) *coll.Collector { return b.buildResourceQuotaCollector() },
-	"secrets":                  func(b *Builder) *coll.Collector { return b.buildSecretCollector() },
-	"services":                 func(b *Builder) *coll.Collector { return b.buildServiceCollector() },
-	"statefulsets":             func(b *Builder) *coll.Collector { return b.buildStatefulSetCollector() },
+	"certificatesigningrequests": func(b *Builder) *coll.Collector { return b.buildCsrCollector() },
+	"configmaps":                 func(b *Builder) *coll.Collector { return b.buildConfigMapCollector() },
+	"cronjobs":                   func(b *Builder) *coll.Collector { return b.buildCronJobCollector() },
+	"daemonsets":                 func(b *Builder) *coll.Collector { return b.buildDaemonSetCollector() },
+	"deployments":                func(b *Builder) *coll.Collector { return b.buildDeploymentCollector() },
+	"endpoints":                  func(b *Builder) *coll.Collector { return b.buildEndpointsCollector() },
+	"horizontalpodautoscalers":   func(b *Builder) *coll.Collector { return b.buildHPACollector() },
+	"ingresses":                  func(b *Builder) *coll.Collector { return b.buildIngressCollector() },
+	"jobs":                       func(b *Builder) *coll.Collector { return b.buildJobCollector() },
+	"limitranges":                func(b *Builder) *coll.Collector { return b.buildLimitRangeCollector() },
+	"namespaces":                 func(b *Builder) *coll.Collector { return b.buildNamespaceCollector() },
+	"nodes":                      func(b *Builder) *coll.Collector { return b.buildNodeCollector() },
+	"persistentvolumeclaims":     func(b *Builder) *coll.Collector { return b.buildPersistentVolumeClaimCollector() },
+	"persistentvolumes":          func(b *Builder) *coll.Collector { return b.buildPersistentVolumeCollector() },
+	"poddisruptionbudgets":       func(b *Builder) *coll.Collector { return b.buildPodDisruptionBudgetCollector() },
+	"pods":                       func(b *Builder) *coll.Collector { return b.buildPodCollector() },
+	"replicasets":                func(b *Builder) *coll.Collector { return b.buildReplicaSetCollector() },
+	"replicationcontrollers":     func(b *Builder) *coll.Collector { return b.buildReplicationControllerCollector() },
+	"resourcequotas":             func(b *Builder) *coll.Collector { return b.buildResourceQuotaCollector() },
+	"secrets":                    func(b *Builder) *coll.Collector { return b.buildSecretCollector() },
+	"services":                   func(b *Builder) *coll.Collector { return b.buildServiceCollector() },
+	"statefulsets":               func(b *Builder) *coll.Collector { return b.buildStatefulSetCollector() },
 }
 
 func (b *Builder) buildConfigMapCollector() *coll.Collector {
@@ -446,6 +448,21 @@ func (b *Builder) buildPodCollector() *coll.Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Pod{}, store, b.namespaces, createPodListWatch)
+
+	return coll.NewCollector(store)
+}
+
+func (b *Builder) buildCsrCollector() *coll.Collector {
+	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, csrMetricFamilies)
+	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
+
+	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		familyHeaders,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &certv1beta1.CertificateSigningRequest{}, store, b.namespaces, createCSRListWatch)
 
 	return coll.NewCollector(store)
 }

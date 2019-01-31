@@ -17,10 +17,14 @@ limitations under the License.
 package collector
 
 import (
+	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
-	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
+
+	v1 "k8s.io/api/core/v1"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
@@ -83,4 +87,33 @@ func kubeAnnotationsToPrometheusAnnotations(annotations map[string]string) ([]st
 
 func sanitizeLabelName(s string) string {
 	return invalidLabelCharRE.ReplaceAllString(s, "_")
+}
+
+func isHugePageResourceName(name v1.ResourceName) bool {
+	return strings.HasPrefix(string(name), v1.ResourceHugePagesPrefix)
+}
+
+func isAttachableVolumeResourceName(name v1.ResourceName) bool {
+	return strings.HasPrefix(string(name), v1.ResourceAttachableVolumesPrefix)
+}
+
+func isExtendedResourceName(name v1.ResourceName) bool {
+	if isNativeResource(name) || strings.HasPrefix(string(name), v1.DefaultResourceRequestsPrefix) {
+		return false
+	}
+	// Ensure it satisfies the rules in IsQualifiedName() after converted into quota resource name
+	nameForQuota := fmt.Sprintf("%s%s", v1.DefaultResourceRequestsPrefix, string(name))
+	if errs := validation.IsQualifiedName(string(nameForQuota)); len(errs) != 0 {
+		return false
+	}
+	return true
+}
+
+func isNativeResource(name v1.ResourceName) bool {
+	return !strings.Contains(string(name), "/") ||
+		isPrefixedNativeResource(name)
+}
+
+func isPrefixedNativeResource(name v1.ResourceName) bool {
+	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
 }

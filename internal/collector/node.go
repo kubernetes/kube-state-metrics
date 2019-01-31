@@ -20,13 +20,12 @@ import (
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 )
 
 var (
@@ -237,7 +236,7 @@ var (
 							Value: float64(val.MilliValue()) / 1000,
 						})
 					default:
-						if helper.IsHugePageResourceName(resourceName) {
+						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{
 									sanitizeLabelName(string(resourceName)),
@@ -246,7 +245,7 @@ var (
 								Value: float64(val.MilliValue()) / 1000,
 							})
 						}
-						if helper.IsAttachableVolumeResourceName(resourceName) {
+						if isAttachableVolumeResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{
 									sanitizeLabelName(string(resourceName)),
@@ -255,7 +254,7 @@ var (
 								Value: float64(val.MilliValue()) / 1000,
 							})
 						}
-						if helper.IsExtendedResourceName(resourceName) {
+						if isExtendedResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{
 									sanitizeLabelName(string(resourceName)),
@@ -374,7 +373,7 @@ var (
 							Value: float64(val.MilliValue()) / 1000,
 						})
 					default:
-						if helper.IsHugePageResourceName(resourceName) {
+						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{
 									sanitizeLabelName(string(resourceName)),
@@ -383,7 +382,7 @@ var (
 								Value: float64(val.MilliValue()) / 1000,
 							})
 						}
-						if helper.IsAttachableVolumeResourceName(resourceName) {
+						if isAttachableVolumeResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{
 									sanitizeLabelName(string(resourceName)),
@@ -392,7 +391,7 @@ var (
 								Value: float64(val.MilliValue()) / 1000,
 							})
 						}
-						if helper.IsExtendedResourceName(resourceName) {
+						if isExtendedResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{
 									sanitizeLabelName(string(resourceName)),

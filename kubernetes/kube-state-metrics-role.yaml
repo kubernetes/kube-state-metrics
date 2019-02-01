@@ -9,6 +9,11 @@ rules:
   resources:
   - pods
   verbs: ["get"]
+- apiGroups: ["apps"]
+  resources:
+  - deployments
+  resourceNames: ["kube-state-metrics"]
+  verbs: ["get", "update"]
 - apiGroups: ["extensions"]
   resources:
   - deployments

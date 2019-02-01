@@ -19,7 +19,7 @@ package collector
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
 
-	"k8s.io/api/extensions/v1beta1"
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -38,7 +38,7 @@ var (
 			Name: "kube_deployment_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				ms := []*metric.Metric{}
 
 				if !d.CreationTimestamp.IsZero() {
@@ -56,7 +56,7 @@ var (
 			Name: "kube_deployment_status_replicas",
 			Type: metric.MetricTypeGauge,
 			Help: "The number of replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -70,7 +70,7 @@ var (
 			Name: "kube_deployment_status_replicas_available",
 			Type: metric.MetricTypeGauge,
 			Help: "The number of available replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -84,7 +84,7 @@ var (
 			Name: "kube_deployment_status_replicas_unavailable",
 			Type: metric.MetricTypeGauge,
 			Help: "The number of unavailable replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -98,7 +98,7 @@ var (
 			Name: "kube_deployment_status_replicas_updated",
 			Type: metric.MetricTypeGauge,
 			Help: "The number of updated replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -112,7 +112,7 @@ var (
 			Name: "kube_deployment_status_observed_generation",
 			Type: metric.MetricTypeGauge,
 			Help: "The generation observed by the deployment controller.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -126,7 +126,7 @@ var (
 			Name: "kube_deployment_spec_replicas",
 			Type: metric.MetricTypeGauge,
 			Help: "Number of desired pods for a deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -140,7 +140,7 @@ var (
 			Name: "kube_deployment_spec_paused",
 			Type: metric.MetricTypeGauge,
 			Help: "Whether the deployment is paused and will not be processed by the deployment controller.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -154,7 +154,7 @@ var (
 			Name: "kube_deployment_spec_strategy_rollingupdate_max_unavailable",
 			Type: metric.MetricTypeGauge,
 			Help: "Maximum number of unavailable replicas during a rolling update of a deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				if d.Spec.Strategy.RollingUpdate == nil {
 					return metric.Family{}
 				}
@@ -177,7 +177,7 @@ var (
 			Name: "kube_deployment_spec_strategy_rollingupdate_max_surge",
 			Type: metric.MetricTypeGauge,
 			Help: "Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				if d.Spec.Strategy.RollingUpdate == nil {
 					return metric.Family{}
 				}
@@ -200,7 +200,7 @@ var (
 			Name: "kube_deployment_metadata_generation",
 			Type: metric.MetricTypeGauge,
 			Help: "Sequence number representing a specific generation of the desired state.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				return metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -214,7 +214,7 @@ var (
 			Name: descDeploymentLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descDeploymentLabelsHelp,
-			GenerateFunc: wrapDeploymentFunc(func(d *v1beta1.Deployment) metric.Family {
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
 				return metric.Family{
 					Metrics: []*metric.Metric{
@@ -230,9 +230,9 @@ var (
 	}
 )
 
-func wrapDeploymentFunc(f func(*v1beta1.Deployment) metric.Family) func(interface{}) metric.Family {
+func wrapDeploymentFunc(f func(*v1.Deployment) metric.Family) func(interface{}) metric.Family {
 	return func(obj interface{}) metric.Family {
-		deployment := obj.(*v1beta1.Deployment)
+		deployment := obj.(*v1.Deployment)
 
 		metricFamily := f(deployment)
 
@@ -248,10 +248,10 @@ func wrapDeploymentFunc(f func(*v1beta1.Deployment) metric.Family) func(interfac
 func createDeploymentListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
 	return cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.ExtensionsV1beta1().Deployments(ns).List(opts)
+			return kubeClient.AppsV1().Deployments(ns).List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.ExtensionsV1beta1().Deployments(ns).Watch(opts)
+			return kubeClient.AppsV1().Deployments(ns).Watch(opts)
 		},
 	}
 }

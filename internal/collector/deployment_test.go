@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/extensions/v1beta1"
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -68,7 +68,7 @@ func TestDeploymentCollector(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.Deployment{
+			Obj: &v1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "depl1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -78,17 +78,17 @@ func TestDeploymentCollector(t *testing.T) {
 					},
 					Generation: 21,
 				},
-				Status: v1beta1.DeploymentStatus{
+				Status: v1.DeploymentStatus{
 					Replicas:            15,
 					AvailableReplicas:   10,
 					UnavailableReplicas: 5,
 					UpdatedReplicas:     2,
 					ObservedGeneration:  111,
 				},
-				Spec: v1beta1.DeploymentSpec{
+				Spec: v1.DeploymentSpec{
 					Replicas: &depl1Replicas,
-					Strategy: v1beta1.DeploymentStrategy{
-						RollingUpdate: &v1beta1.RollingUpdateDeployment{
+					Strategy: v1.DeploymentStrategy{
+						RollingUpdate: &v1.RollingUpdateDeployment{
 							MaxUnavailable: &depl1MaxUnavailable,
 							MaxSurge:       &depl1MaxSurge,
 						},
@@ -111,7 +111,7 @@ func TestDeploymentCollector(t *testing.T) {
 `,
 		},
 		{
-			Obj: &v1beta1.Deployment{
+			Obj: &v1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "depl2",
 					Namespace: "ns2",
@@ -120,18 +120,18 @@ func TestDeploymentCollector(t *testing.T) {
 					},
 					Generation: 14,
 				},
-				Status: v1beta1.DeploymentStatus{
+				Status: v1.DeploymentStatus{
 					Replicas:            10,
 					AvailableReplicas:   5,
 					UnavailableReplicas: 0,
 					UpdatedReplicas:     1,
 					ObservedGeneration:  1111,
 				},
-				Spec: v1beta1.DeploymentSpec{
+				Spec: v1.DeploymentSpec{
 					Paused:   true,
 					Replicas: &depl2Replicas,
-					Strategy: v1beta1.DeploymentStrategy{
-						RollingUpdate: &v1beta1.RollingUpdateDeployment{
+					Strategy: v1.DeploymentStrategy{
+						RollingUpdate: &v1.RollingUpdateDeployment{
 							MaxUnavailable: &depl2MaxUnavailable,
 							MaxSurge:       &depl2MaxSurge,
 						},

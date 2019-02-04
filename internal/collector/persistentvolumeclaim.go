@@ -37,9 +37,9 @@ var (
 			Name: descPersistentVolumeClaimLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descPersistentVolumeClaimLabelsHelp,
-			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -54,10 +54,10 @@ var (
 			Name: "kube_persistentvolumeclaim_info",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about persistent volume claim.",
-			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				storageClassName := getPersistentVolumeClaimClass(p)
 				volumeName := p.Spec.VolumeName
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"storageclass", "volumename"},
@@ -72,7 +72,7 @@ var (
 			Name: "kube_persistentvolumeclaim_status_phase",
 			Type: metric.MetricTypeGauge,
 			Help: "The phase the persistent volume claim is currently in.",
-			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := []*metric.Metric{}
 
 				// Set current phase to 1, others to 0 if it is set.
@@ -97,7 +97,7 @@ var (
 					m.LabelKeys = []string{"phase"}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -106,7 +106,7 @@ var (
 			Name: "kube_persistentvolumeclaim_resource_requests_storage_bytes",
 			Type: metric.MetricTypeGauge,
 			Help: "The capacity of storage requested by the persistent volume claim.",
-			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) metric.Family {
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if storage, ok := p.Spec.Resources.Requests[v1.ResourceStorage]; ok {
@@ -115,7 +115,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -123,8 +123,8 @@ var (
 	}
 )
 
-func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		persistentVolumeClaim := obj.(*v1.PersistentVolumeClaim)
 
 		metricFamily := f(persistentVolumeClaim)

@@ -35,8 +35,8 @@ var (
 			Name: "kube_configmap_info",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about configmap.",
-			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
@@ -49,7 +49,7 @@ var (
 			Name: "kube_configmap_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metric.Family {
+			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !c.CreationTimestamp.IsZero() {
@@ -60,7 +60,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -69,8 +69,8 @@ var (
 			Name: "kube_configmap_metadata_resource_version",
 			Type: metric.MetricTypeGauge,
 			Help: "Resource version representing a specific version of the configmap.",
-			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"resource_version"},
@@ -95,8 +95,8 @@ func createConfigMapListWatch(kubeClient clientset.Interface, ns string) cache.L
 	}
 }
 
-func wrapConfigMapFunc(f func(*v1.ConfigMap) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		configMap := obj.(*v1.ConfigMap)
 
 		metricFamily := f(configMap)

@@ -37,8 +37,8 @@ var (
 			Name: "kube_hpa_metadata_generation",
 			Type: metric.MetricTypeGauge,
 			Help: "The generation observed by the HorizontalPodAutoscaler controller.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(a.ObjectMeta.Generation),
@@ -51,8 +51,8 @@ var (
 			Name: "kube_hpa_spec_max_replicas",
 			Type: metric.MetricTypeGauge,
 			Help: "Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(a.Spec.MaxReplicas),
@@ -65,8 +65,8 @@ var (
 			Name: "kube_hpa_spec_min_replicas",
 			Type: metric.MetricTypeGauge,
 			Help: "Lower limit for the number of pods that can be set by the autoscaler, default 1.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(*a.Spec.MinReplicas),
@@ -79,8 +79,8 @@ var (
 			Name: "kube_hpa_status_current_replicas",
 			Type: metric.MetricTypeGauge,
 			Help: "Current number of replicas of pods managed by this autoscaler.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(a.Status.CurrentReplicas),
@@ -93,8 +93,8 @@ var (
 			Name: "kube_hpa_status_desired_replicas",
 			Type: metric.MetricTypeGauge,
 			Help: "Desired number of replicas of pods managed by this autoscaler.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(a.Status.DesiredReplicas),
@@ -107,9 +107,9 @@ var (
 			Name: descHorizontalPodAutoscalerLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descHorizontalPodAutoscalerLabelsHelp,
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(a.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -124,7 +124,7 @@ var (
 			Name: "kube_hpa_status_condition",
 			Type: metric.MetricTypeGauge,
 			Help: "The condition of this autoscaler.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) metric.Family {
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 
 				for _, c := range a.Status.Conditions {
@@ -138,7 +138,7 @@ var (
 					}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -146,8 +146,8 @@ var (
 	}
 )
 
-func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		hpa := obj.(*autoscaling.HorizontalPodAutoscaler)
 
 		metricFamily := f(hpa)

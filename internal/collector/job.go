@@ -37,9 +37,9 @@ var (
 			Name: descJobLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descJobLabelsHelp,
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -54,8 +54,8 @@ var (
 			Name: "kube_job_info",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about job.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: 1,
@@ -68,7 +68,7 @@ var (
 			Name: "kube_job_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !j.CreationTimestamp.IsZero() {
@@ -77,7 +77,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -86,7 +86,7 @@ var (
 			Name: "kube_job_spec_parallelism",
 			Type: metric.MetricTypeGauge,
 			Help: "The maximum desired number of pods the job should run at any given time.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.Parallelism != nil {
@@ -95,7 +95,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -104,7 +104,7 @@ var (
 			Name: "kube_job_spec_completions",
 			Type: metric.MetricTypeGauge,
 			Help: "The desired number of successfully finished pods the job should be run with.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.Completions != nil {
@@ -113,7 +113,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -122,7 +122,7 @@ var (
 			Name: "kube_job_spec_active_deadline_seconds",
 			Type: metric.MetricTypeGauge,
 			Help: "The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.ActiveDeadlineSeconds != nil {
@@ -131,7 +131,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -140,8 +140,8 @@ var (
 			Name: "kube_job_status_succeeded",
 			Type: metric.MetricTypeGauge,
 			Help: "The number of pods which reached Phase Succeeded.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(j.Status.Succeeded),
@@ -154,8 +154,8 @@ var (
 			Name: "kube_job_status_failed",
 			Type: metric.MetricTypeGauge,
 			Help: "The number of pods which reached Phase Failed.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(j.Status.Failed),
@@ -168,8 +168,8 @@ var (
 			Name: "kube_job_status_active",
 			Type: metric.MetricTypeGauge,
 			Help: "The number of actively running pods.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(j.Status.Active),
@@ -182,7 +182,7 @@ var (
 			Name: "kube_job_complete",
 			Type: metric.MetricTypeGauge,
 			Help: "The job has completed its execution.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, c := range j.Status.Conditions {
 					if c.Type == v1batch.JobComplete {
@@ -195,7 +195,7 @@ var (
 					}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -204,7 +204,7 @@ var (
 			Name: "kube_job_failed",
 			Type: metric.MetricTypeGauge,
 			Help: "The job has failed its execution.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				for _, c := range j.Status.Conditions {
@@ -218,7 +218,7 @@ var (
 					}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -227,7 +227,7 @@ var (
 			Name: "kube_job_status_start_time",
 			Type: metric.MetricTypeGauge,
 			Help: "StartTime represents time when the job was acknowledged by the Job Manager.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Status.StartTime != nil {
@@ -237,7 +237,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -246,7 +246,7 @@ var (
 			Name: "kube_job_status_completion_time",
 			Type: metric.MetricTypeGauge,
 			Help: "CompletionTime represents time when the job was completed.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) metric.Family {
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 				if j.Status.CompletionTime != nil {
 					ms = append(ms, &metric.Metric{
@@ -255,7 +255,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -263,8 +263,8 @@ var (
 	}
 )
 
-func wrapJobFunc(f func(*v1batch.Job) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		job := obj.(*v1batch.Job)
 
 		metricFamily := f(job)

@@ -114,8 +114,8 @@ func (n *NamespaceList) IsAllNamespaces() bool {
 }
 
 func (n *NamespaceList) Set(value string) error {
-	splittedNamespaces := strings.Split(value, ",")
-	for _, ns := range splittedNamespaces {
+	splitNamespaces := strings.Split(value, ",")
+	for _, ns := range splitNamespaces {
 		ns = strings.TrimSpace(ns)
 		if len(ns) != 0 {
 			*n = append(*n, ns)

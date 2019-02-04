@@ -27,7 +27,7 @@ type WhiteBlackList struct {
 	isWhiteList bool
 }
 
-// New constructs a new WhtieBlackList based on a white- and a
+// New constructs a new WhiteBlackList based on a white- and a
 // blacklist. Only one of them can be not empty.
 func New(w, b map[string]struct{}) (*WhiteBlackList, error) {
 	if len(w) != 0 && len(b) != 0 {
@@ -99,7 +99,7 @@ func (l *WhiteBlackList) IsExcluded(item string) bool {
 	return !l.IsIncluded(item)
 }
 
-// Status returns the status of the WhtieBlackList that can e.g. be passed into
+// Status returns the status of the WhiteBlackList that can e.g. be passed into
 // a logger.
 func (l *WhiteBlackList) Status() string {
 	items := []string{}

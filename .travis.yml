@@ -30,7 +30,7 @@ jobs:
     - script: make doccheck
     # Unit Test
     - script: make test-unit
-    # Bechmark Test
+    # Benchmark Test
     - script: make test-benchmark-compare
     # Build
     - script: make build

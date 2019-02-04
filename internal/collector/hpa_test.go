@@ -17,6 +17,7 @@ limitations under the License.
 package collector
 
 import (
+	v12 "k8s.io/api/core/v1"
 	"testing"
 
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
@@ -42,6 +43,10 @@ func TestHPACollector(t *testing.T) {
 		# TYPE kube_hpa_status_current_replicas gauge
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
 		# TYPE kube_hpa_status_desired_replicas gauge
+        # HELP kube_hpa_status_condition The condition of this autoscaler.
+        # TYPE kube_hpa_status_condition gauge
+        # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
+        # TYPE kube_hpa_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -51,6 +56,9 @@ func TestHPACollector(t *testing.T) {
 					Generation: 2,
 					Name:       "hpa1",
 					Namespace:  "ns1",
+					Labels: map[string]string{
+						"app": "foobar",
+					},
 				},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
@@ -64,12 +72,22 @@ func TestHPACollector(t *testing.T) {
 				Status: autoscaling.HorizontalPodAutoscalerStatus{
 					CurrentReplicas: 2,
 					DesiredReplicas: 2,
+					Conditions: []autoscaling.HorizontalPodAutoscalerCondition{
+						{
+							Type:   autoscaling.AbleToScale,
+							Status: v12.ConditionTrue,
+						},
+					},
 				},
 			},
 			Want: `
+                kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
 				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
 				kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
+                kube_hpa_status_condition{condition="false",hpa="hpa1",namespace="ns1",status="AbleToScale"} 0
+                kube_hpa_status_condition{condition="true",hpa="hpa1",namespace="ns1",status="AbleToScale"} 1
+                kube_hpa_status_condition{condition="unknown",hpa="hpa1",namespace="ns1",status="AbleToScale"} 0
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
 			`,
@@ -79,6 +97,8 @@ func TestHPACollector(t *testing.T) {
 				"kube_hpa_spec_min_replicas",
 				"kube_hpa_status_current_replicas",
 				"kube_hpa_status_desired_replicas",
+				"kube_hpa_status_condition",
+				"kube_hpa_labels",
 			},
 		},
 	}

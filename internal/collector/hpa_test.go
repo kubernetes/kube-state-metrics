@@ -43,6 +43,10 @@ func TestHPACollector(t *testing.T) {
 		# TYPE kube_hpa_status_current_replicas gauge
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
 		# TYPE kube_hpa_status_desired_replicas gauge
+        # HELP kube_hpa_status_condition The condition of this autoscaler.
+        # TYPE kube_hpa_status_condition gauge
+        # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
+        # TYPE kube_hpa_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -70,7 +74,7 @@ func TestHPACollector(t *testing.T) {
 					DesiredReplicas: 2,
 					Conditions: []autoscaling.HorizontalPodAutoscalerCondition{
 						{
-							Type: autoscaling.AbleToScale,
+							Type:   autoscaling.AbleToScale,
 							Status: v12.ConditionTrue,
 						},
 					},

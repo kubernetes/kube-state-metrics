@@ -267,7 +267,7 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c.Collect(w)
 	}
 
-	// In case we gziped the response, we have to close the writer.
+	// In case we gzipped the response, we have to close the writer.
 	if closer, ok := writer.(io.Closer); ok {
 		closer.Close()
 	}

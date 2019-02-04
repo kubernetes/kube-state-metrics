@@ -156,7 +156,7 @@ pod_collector -> metrics_endpoint: concat(metrics)
 
 - How can the cache map be concurrently accessed? The core golang map
   implementation is not thread-safe. As a first iteration a simple mutex should
-  be sufficient. Golangs sync.Map might be considered.
+  be sufficient. Golang's sync.Map might be considered.
 
 - To solve the problem of out of order events send by the Kubernetes API-Server
   to kube-state-metrics, to each blob of time series inside the cache map it can

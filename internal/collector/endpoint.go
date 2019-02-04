@@ -37,8 +37,8 @@ var (
 			Name: "kube_endpoint_info",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about endpoint.",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: 1,
@@ -51,7 +51,7 @@ var (
 			Name: "kube_endpoint_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !e.CreationTimestamp.IsZero() {
@@ -61,7 +61,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -70,9 +70,9 @@ var (
 			Name: descEndpointLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descEndpointLabelsHelp,
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -87,13 +87,13 @@ var (
 			Name: "kube_endpoint_address_available",
 			Type: metric.MetricTypeGauge,
 			Help: "Number of addresses available in endpoint.",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var available int
 				for _, s := range e.Subsets {
 					available += len(s.Addresses) * len(s.Ports)
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(available),
@@ -106,12 +106,12 @@ var (
 			Name: "kube_endpoint_address_not_ready",
 			Type: metric.MetricTypeGauge,
 			Help: "Number of addresses not ready in endpoint",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) metric.Family {
+			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var notReady int
 				for _, s := range e.Subsets {
 					notReady += len(s.NotReadyAddresses) * len(s.Ports)
 				}
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(notReady),
@@ -123,8 +123,8 @@ var (
 	}
 )
 
-func wrapEndpointFunc(f func(*v1.Endpoints) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapEndpointFunc(f func(*v1.Endpoints) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		endpoint := obj.(*v1.Endpoints)
 
 		metricFamily := f(endpoint)

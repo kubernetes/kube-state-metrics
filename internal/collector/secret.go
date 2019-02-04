@@ -37,8 +37,8 @@ var (
 			Name: "kube_secret_info",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about secret.",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							Value: 1,
@@ -51,8 +51,8 @@ var (
 			Name: "kube_secret_type",
 			Type: metric.MetricTypeGauge,
 			Help: "Type about secret.",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"type"},
@@ -67,9 +67,9 @@ var (
 			Name: descSecretLabelsName,
 			Type: metric.MetricTypeGauge,
 			Help: descSecretLabelsHelp,
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
-				return metric.Family{
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
@@ -85,7 +85,7 @@ var (
 			Name: "kube_secret_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !s.CreationTimestamp.IsZero() {
@@ -94,7 +94,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -103,8 +103,8 @@ var (
 			Name: "kube_secret_metadata_resource_version",
 			Type: metric.MetricTypeGauge,
 			Help: "Resource version representing a specific version of secret.",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) metric.Family {
-				return metric.Family{
+			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"resource_version"},
@@ -118,8 +118,8 @@ var (
 	}
 )
 
-func wrapSecretFunc(f func(*v1.Secret) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		secret := obj.(*v1.Secret)
 
 		metricFamily := f(secret)

@@ -35,7 +35,7 @@ var (
 			Name: "kube_resourcequota_created",
 			Type: metric.MetricTypeGauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metric.Family {
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -45,7 +45,7 @@ var (
 					})
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -54,7 +54,7 @@ var (
 			Name: "kube_resourcequota",
 			Type: metric.MetricTypeGauge,
 			Help: "Information about resource quota.",
-			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) metric.Family {
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				for res, qty := range r.Status.Hard {
@@ -74,7 +74,7 @@ var (
 					m.LabelKeys = []string{"resource", "type"}
 				}
 
-				return metric.Family{
+				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
@@ -82,8 +82,8 @@ var (
 	}
 )
 
-func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) metric.Family) func(interface{}) metric.Family {
-	return func(obj interface{}) metric.Family {
+func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 		resourceQuota := obj.(*v1.ResourceQuota)
 
 		metricFamily := f(resourceQuota)

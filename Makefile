@@ -15,6 +15,15 @@ BENCHCMP_BINARY:=$(FIRST_GOPATH)/bin/benchcmp
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
+validate-modules:
+	@echo "- Verifying that the dependencies have expected content..."
+	GO111MODULE=on go mod verify
+	@echo "- Checking for any unused/missing packages in go.mod..."
+	GO111MODULE=on go mod tidy
+	@echo "- Checking for unused packages in vendor..."
+	GO111MODULE=on go mod vendor
+	@git diff --exit-code -- go.sum go.mod vendor/
+
 format:
 	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi
 	./tests/check_license.sh
@@ -98,4 +107,4 @@ e2e:
 $(BENCHCMP_BINARY):
 	go get golang.org/x/tools/cmd/benchcmp
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e
+.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules

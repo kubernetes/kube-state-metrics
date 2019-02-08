@@ -24,6 +24,7 @@ rules:
   - daemonsets
   - deployments
   - replicasets
+  - ingresses
   verbs: ["list", "watch"]
 - apiGroups: ["apps"]
   resources:

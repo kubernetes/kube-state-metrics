@@ -24,7 +24,7 @@ validate-modules:
 	GO111MODULE=on go mod vendor
 	@git diff --exit-code -- go.sum go.mod vendor/
 
-format:
+format: shellcheck
 	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi
 	./tests/check_license.sh
 
@@ -47,6 +47,9 @@ build: clean
 
 test-unit: clean build
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
+
+shellcheck:
+	docker run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
@@ -107,4 +110,4 @@ e2e:
 $(BENCHCMP_BINARY):
 	go get golang.org/x/tools/cmd/benchcmp
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules
+.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck

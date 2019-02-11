@@ -26,7 +26,7 @@ import (
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	policy "k8s.io/api/policy/v1beta1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -119,7 +119,7 @@ var availableCollectors = map[string]func(f *Builder) *coll.Collector{
 	"deployments":              func(b *Builder) *coll.Collector { return b.buildDeploymentCollector() },
 	"endpoints":                func(b *Builder) *coll.Collector { return b.buildEndpointsCollector() },
 	"horizontalpodautoscalers": func(b *Builder) *coll.Collector { return b.buildHPACollector() },
-	"ingress":                  func(b *Builder) *coll.Collector { return b.buildIngressCollector() },
+	"ingresses":                func(b *Builder) *coll.Collector { return b.buildIngressCollector() },
 	"jobs":                     func(b *Builder) *coll.Collector { return b.buildJobCollector() },
 	"limitranges":              func(b *Builder) *coll.Collector { return b.buildLimitRangeCollector() },
 	"namespaces":               func(b *Builder) *coll.Collector { return b.buildNamespaceCollector() },

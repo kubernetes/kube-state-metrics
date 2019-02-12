@@ -6,7 +6,7 @@ set -o pipefail
 # error on unset variables
 set -u
 
-[ "$#" -eq 1 ] || echo "One argument required, $# provided."
+[[ "$#" -eq 1 ]] || echo "One argument required, $# provided."
 
 REF_CURRENT="$(git rev-parse --abbrev-ref HEAD)"
 REF_TO_COMPARE=$1

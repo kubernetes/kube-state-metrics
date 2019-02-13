@@ -60,6 +60,9 @@ func main() {
 	opts := options.NewOptions()
 	opts.AddFlags()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	err := opts.Parse()
 	if err != nil {
 		glog.Fatalf("Error: %s", err)
@@ -75,7 +78,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	collectorBuilder := kcoll.NewBuilder(context.TODO())
+	collectorBuilder := kcoll.NewBuilder(ctx)
 
 	if len(opts.Collectors) == 0 {
 		glog.Info("Using default collectors")

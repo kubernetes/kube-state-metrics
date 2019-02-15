@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
@@ -34,6 +35,8 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			# TYPE kube_persistentvolume_labels gauge
 			# HELP kube_persistentvolume_info Information about persistentvolume.
 			# TYPE kube_persistentvolume_info gauge
+			# HELP kube_persistentvolume_capacity The size of the persistentvolume in Gigabytes.
+			# TYPE kube_persistentvolume_capacity gauge
 	`
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
@@ -200,6 +203,22 @@ func TestPersistentVolumeCollector(t *testing.T) {
 					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					Capacity: v1.ResourceList{
+						v1.ResourceStorage: resource.MustParse("5Gi"),
+					},
+				},
+			},
+			Want: `
+					kube_persistentvolume_capacity{persistentvolume="test-pv"} 5
+				`,
+			MetricNames: []string{"kube_persistentvolume_capacity"},
 		},
 	}
 	for i, c := range cases {

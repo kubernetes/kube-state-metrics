@@ -108,6 +108,21 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_persistentvolume_capacity",
+			Type: metric.MetricTypeGauge,
+			Help: "persistentvolume capacity in Gigabytes.",
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				storage := p.Spec.Capacity[v1.ResourceStorage]
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(storage.Size()),
+						},
+					},
+				}
+			}),
+		},
 	}
 )
 

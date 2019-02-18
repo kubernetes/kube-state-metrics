@@ -54,8 +54,9 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	if err := injectFixtures(kubeClient, fixtureMultiplier); err != nil {
 		b.Errorf("error injecting resources: %v", err)
 	}
-
-	builder := kcoll.NewBuilder(context.TODO())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	builder := kcoll.NewBuilder(ctx)
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -113,7 +114,9 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatalf("failed to insert sample pod %v", err.Error())
 	}
 
-	builder := kcoll.NewBuilder(context.TODO())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	builder := kcoll.NewBuilder(ctx)
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)

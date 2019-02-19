@@ -35,7 +35,7 @@ func TestPersistentVolumeCollector(t *testing.T) {
 			# TYPE kube_persistentvolume_labels gauge
 			# HELP kube_persistentvolume_info Information about persistentvolume.
 			# TYPE kube_persistentvolume_info gauge
-			# HELP kube_persistentvolume_capacity The size of the persistentvolume in Gigabytes.
+			# HELP kube_persistentvolume_capacity The size of the Persistentvolume in bytes.
 			# TYPE kube_persistentvolume_capacity gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -216,7 +216,7 @@ func TestPersistentVolumeCollector(t *testing.T) {
 				},
 			},
 			Want: `
-					kube_persistentvolume_capacity{persistentvolume="test-pv"} 5
+					kube_persistentvolume_capacity{persistentvolume="test-pv"} 5.36870912e+09
 				`,
 			MetricNames: []string{"kube_persistentvolume_capacity"},
 		},

@@ -20,7 +20,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
+
 	"golang.org/x/net/context"
 	apps "k8s.io/api/apps/v1beta1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
@@ -107,7 +108,7 @@ func (b *Builder) Build() []*coll.Collector {
 		}
 	}
 
-	glog.Infof("Active collectors: %s", strings.Join(activeCollectorNames, ","))
+	klog.Infof("Active collectors: %s", strings.Join(activeCollectorNames, ","))
 
 	return collectors
 }

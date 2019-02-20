@@ -55,7 +55,7 @@ func NewOptions() *Options {
 
 func (o *Options) AddFlags() {
 	o.flags = pflag.NewFlagSet("", pflag.ExitOnError)
-	// add glog flags
+	// add klog flags
 	o.flags.AddGoFlagSet(flag.CommandLine)
 	o.flags.Lookup("logtostderr").Value.Set("true")
 	o.flags.Lookup("logtostderr").DefValue = "true"

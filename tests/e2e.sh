@@ -181,7 +181,7 @@ if [[ "$KUBE_STATE_METRICS_STATUS" == "ok" ]]; then
     exit 0
 fi
 
-# wait for glog to flush to log file
+# wait for klog to flush to log file
 sleep 33
 kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics
 exit 1

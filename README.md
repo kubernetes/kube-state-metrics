@@ -99,7 +99,7 @@ additional metrics!
 > Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.
 
-See the [`Documentation`](Documentation) directory for more information on the exposed metrics.
+See the [`docs`](docs) directory for more information on the exposed metrics.
 
 ### Kube-state-metrics self metrics
 kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 81).

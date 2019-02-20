@@ -120,6 +120,26 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_persistentvolumeclaim_access_mode",
+			Type: metric.MetricTypeGauge,
+			Help: "The access mode(s) specified by the persistent volume claim.",
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, mode := range p.Spec.AccessModes {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"access_mode"},
+						LabelValues: []string{string(mode)},
+						Value:       1,
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
 	}
 )
 

@@ -29,7 +29,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
+
 	"github.com/openshift/origin/pkg/util/proc"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -53,7 +54,7 @@ const (
 type promLogger struct{}
 
 func (pl promLogger) Println(v ...interface{}) {
-	glog.Error(v...)
+	klog.Error(v...)
 }
 
 func main() {
@@ -65,7 +66,7 @@ func main() {
 
 	err := opts.Parse()
 	if err != nil {
-		glog.Fatalf("Error: %s", err)
+		klog.Fatalf("Error: %s", err)
 	}
 
 	if opts.Version {
@@ -81,28 +82,28 @@ func main() {
 	collectorBuilder := kcoll.NewBuilder(ctx)
 
 	if len(opts.Collectors) == 0 {
-		glog.Info("Using default collectors")
+		klog.Info("Using default collectors")
 		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	} else {
-		glog.Infof("Using collectors %s", opts.Collectors.String())
+		klog.Infof("Using collectors %s", opts.Collectors.String())
 		collectorBuilder.WithEnabledCollectors(opts.Collectors.AsSlice())
 	}
 
 	if len(opts.Namespaces) == 0 {
-		glog.Info("Using all namespace")
+		klog.Info("Using all namespace")
 		collectorBuilder.WithNamespaces(options.DefaultNamespaces)
 	} else {
 		if opts.Namespaces.IsAllNamespaces() {
-			glog.Info("Using all namespace")
+			klog.Info("Using all namespace")
 		} else {
-			glog.Infof("Using %s namespaces", opts.Namespaces)
+			klog.Infof("Using %s namespaces", opts.Namespaces)
 		}
 		collectorBuilder.WithNamespaces(opts.Namespaces)
 	}
 
 	whiteBlackList, err := whiteblacklist.New(opts.MetricWhitelist, opts.MetricBlacklist)
 	if err != nil {
-		glog.Fatal(err)
+		klog.Fatal(err)
 	}
 
 	if opts.DisablePodNonGenericResourceMetrics {
@@ -125,7 +126,7 @@ func main() {
 		})
 	}
 
-	glog.Infof("metric white-blacklisting: %v", whiteBlackList.Status())
+	klog.Infof("metric white-blacklisting: %v", whiteBlackList.Status())
 
 	collectorBuilder.WithWhiteBlackList(whiteBlackList)
 
@@ -133,7 +134,7 @@ func main() {
 
 	kubeClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
-		glog.Fatalf("Failed to create client: %v", err)
+		klog.Fatalf("Failed to create client: %v", err)
 	}
 	collectorBuilder.WithKubeClient(kubeClient)
 
@@ -165,14 +166,14 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	// Informers don't seem to do a good job logging error messages when it
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
-	glog.Infof("Testing communication with server")
+	klog.Infof("Testing communication with server")
 	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
 	}
-	glog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
+	klog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
 		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)
-	glog.Infof("Communication with server successful")
+	klog.Infof("Communication with server successful")
 
 	return kubeClient, nil
 }
@@ -181,7 +182,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
-	glog.Infof("Starting kube-state-metrics self metrics server: %s", listenAddress)
+	klog.Infof("Starting kube-state-metrics self metrics server: %s", listenAddress)
 
 	mux := http.NewServeMux()
 
@@ -207,7 +208,7 @@ func serveMetrics(collectors []*coll.Collector, host string, port int, enableGZI
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
-	glog.Infof("Starting metrics server: %s", listenAddress)
+	klog.Infof("Starting metrics server: %s", listenAddress)
 
 	mux := http.NewServeMux()
 

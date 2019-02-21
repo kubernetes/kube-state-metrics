@@ -147,11 +147,8 @@ etc.). It holds an entire snapshot of Kubernetes state in memory and
 continuously generates new metrics based off of it. And just like the
 metric-server it too is not responsibile for exporting its metrics anywhere.
 
-In other words, kube-state-metrics itself is designed to be another source for
-[metrics-server](https://github.com/kubernetes-incubator/metrics-server)
-(although this is not currently the case). Having kube-state-metrics as a
-separate project also enables access to these metrics from monitoring systems
-such as Prometheus.
+Having kube-state-metrics as a separate project also enables access to these
+metrics from monitoring systems such as Prometheus.
 
 ### Setup
 

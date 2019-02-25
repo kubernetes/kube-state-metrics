@@ -47,6 +47,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 * [Job Metrics](job-metrics.md)
 * [LimitRange Metrics](limitrange-metrics.md)
 * [Node Metrics](node-metrics.md)
+* [NetworkPolicy Metrics](networkpolicy-metrics.md)
 * [PersistentVolume Metrics](persistentvolume-metrics.md)
 * [PersistentVolumeClaim Metrics](persistentvolumeclaim-metrics.md)
 * [Pod Metrics](pod-metrics.md)

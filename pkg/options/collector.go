@@ -33,6 +33,7 @@ var (
 		"jobs":                     struct{}{},
 		"limitranges":              struct{}{},
 		"namespaces":               struct{}{},
+		"networkpolicies":          struct{}{},
 		"nodes":                    struct{}{},
 		"persistentvolumes":        struct{}{},
 		"persistentvolumeclaims":   struct{}{},

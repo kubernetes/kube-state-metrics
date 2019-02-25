@@ -29,6 +29,7 @@ import (
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
+	networking "k8s.io/api/networking/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -124,6 +125,7 @@ var availableCollectors = map[string]func(f *Builder) *coll.Collector{
 	"jobs":                     func(b *Builder) *coll.Collector { return b.buildJobCollector() },
 	"limitranges":              func(b *Builder) *coll.Collector { return b.buildLimitRangeCollector() },
 	"namespaces":               func(b *Builder) *coll.Collector { return b.buildNamespaceCollector() },
+	"networkpolicies":          func(b *Builder) *coll.Collector { return b.buildNetworkPolicyCollector() },
 	"nodes":                    func(b *Builder) *coll.Collector { return b.buildNodeCollector() },
 	"persistentvolumeclaims":   func(b *Builder) *coll.Collector { return b.buildPersistentVolumeClaimCollector() },
 	"persistentvolumes":        func(b *Builder) *coll.Collector { return b.buildPersistentVolumeCollector() },
@@ -238,6 +240,21 @@ func (b *Builder) buildIngressCollector() *coll.Collector {
 		composedMetricGenFuncs,
 	)
 	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Ingress{}, store, b.namespaces, createIngressListWatch)
+
+	return coll.NewCollector(store)
+}
+
+func (b *Builder) buildNetworkPolicyCollector() *coll.Collector {
+	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, networkPolicyMetricFamilies)
+	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
+
+	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		familyHeaders,
+		composedMetricGenFuncs,
+	)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &networking.NetworkPolicy{}, store, b.namespaces, createNetworkPolicyListWatch)
 
 	return coll.NewCollector(store)
 }

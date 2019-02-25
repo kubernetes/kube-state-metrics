@@ -271,13 +271,7 @@ var (
 				ms := []*metric.Metric{}
 
 				owners := j.GetOwnerReferences()
-				if len(owners) == 0 {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   labelKeys,
-						LabelValues: []string{"<none>", "<none>", "<none>"},
-						Value:       1,
-					})
-				} else {
+				if len(owners) > 0 {
 					for _, owner := range owners {
 						if owner.Controller != nil {
 							ms = append(ms, &metric.Metric{

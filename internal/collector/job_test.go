@@ -42,11 +42,15 @@ var (
 )
 
 func TestJobCollector(t *testing.T) {
+	var trueValue = true
+
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
 		# HELP kube_job_created Unix creation timestamp
 		# TYPE kube_job_created gauge
+		# HELP kube_job_owner Information about the Job's owner.
+		# TYPE kube_job_owner gauge
 		# HELP kube_job_complete The job has completed its execution.
 		# TYPE kube_job_complete gauge
 		# HELP kube_job_failed The job has failed its execution.
@@ -83,6 +87,13 @@ func TestJobCollector(t *testing.T) {
 					Labels: map[string]string{
 						"app": "example-running-1",
 					},
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind:       "CronJob",
+							Name:       "cronjob-name",
+							Controller: &trueValue,
+						},
+					},
 				},
 				Status: v1batch.JobStatus{
 					Active:         1,
@@ -98,6 +109,7 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			Want: `
+				kube_job_owner{job_name="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="cronjob-name"} 1
 				kube_job_created{job_name="RunningJob1",namespace="ns1"} 1.5e+09
 				kube_job_info{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_labels{job_name="RunningJob1",label_app="example-running-1",namespace="ns1"} 1
@@ -137,6 +149,7 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			Want: `
+				kube_job_owner{job_name="SuccessfulJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_complete{condition="unknown",job_name="SuccessfulJob1",namespace="ns1"} 0
@@ -179,6 +192,7 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			Want: `
+				kube_job_owner{job_name="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
@@ -221,6 +235,7 @@ func TestJobCollector(t *testing.T) {
 				},
 			},
 			Want: `
+				kube_job_owner{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 

@@ -17,6 +17,8 @@ limitations under the License.
 package collector
 
 import (
+	"strconv"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 
 	v1batch "k8s.io/api/batch/v1"
@@ -253,6 +255,38 @@ var (
 
 						Value: float64(j.Status.CompletionTime.Unix()),
 					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_job_owner",
+			Type: metric.MetricTypeGauge,
+			Help: "Information about the Job's owner.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+				ms := []*metric.Metric{}
+
+				owners := j.GetOwnerReferences()
+				if len(owners) > 0 {
+					for _, owner := range owners {
+						if owner.Controller != nil {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   labelKeys,
+								LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+								Value:       1,
+							})
+						} else {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   labelKeys,
+								LabelValues: []string{owner.Kind, owner.Name, "false"},
+								Value:       1,
+							})
+						}
+					}
 				}
 
 				return &metric.Family{

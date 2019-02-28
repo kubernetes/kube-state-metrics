@@ -1,7 +1,9 @@
 FLAGS =
 TESTENVVAR =
 REGISTRY = quay.io/coreos
-TAG = $(shell git describe --abbrev=0)
+TAG_PREFIX = v
+TAG = $(TAG_PREFIX)$(shell cat VERSION)
+LATEST_RELEASE_BRANCH:=release-$(shell cat VERSION | grep -ohE "[0-9]+.[0-9]+")
 PKGS = $(shell go list ./... | grep -v /vendor/)
 ARCH ?= $(shell go env GOARCH)
 BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -54,7 +56,7 @@ shellcheck:
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
 test-benchmark-compare: $(BENCHCMP_BINARY)
-	./tests/compare_benchmarks.sh release-$(shell git describe --abbrev=0 | grep -ohE "[0-9]+.[0-9]+")
+	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
 TEMP_DIR := $(shell mktemp -d)
 

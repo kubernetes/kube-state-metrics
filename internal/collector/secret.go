@@ -35,7 +35,7 @@ var (
 	secretMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_secret_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about secret.",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
@@ -49,7 +49,7 @@ var (
 		},
 		{
 			Name: "kube_secret_type",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Type about secret.",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
@@ -65,7 +65,7 @@ var (
 		},
 		{
 			Name: descSecretLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descSecretLabelsHelp,
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
@@ -83,7 +83,7 @@ var (
 		},
 		{
 			Name: "kube_secret_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				ms := []*metric.Metric{}
@@ -101,7 +101,7 @@ var (
 		},
 		{
 			Name: "kube_secret_metadata_resource_version",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Resource version representing a specific version of secret.",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{

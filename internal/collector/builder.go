@@ -64,10 +64,8 @@ func NewBuilder(
 
 // WithEnabledCollectors sets the enabledCollectors property of a Builder.
 func (b *Builder) WithEnabledCollectors(c []string) {
-	copy := []string{}
-	for _, s := range c {
-		copy = append(copy, s)
-	}
+	var copy []string
+	copy = append(copy, c...)
 
 	sort.Strings(copy)
 

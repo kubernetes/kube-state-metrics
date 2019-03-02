@@ -35,7 +35,7 @@ var (
 	hpaMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_hpa_metadata_generation",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The generation observed by the HorizontalPodAutoscaler controller.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				return &metric.Family{
@@ -49,7 +49,7 @@ var (
 		},
 		{
 			Name: "kube_hpa_spec_max_replicas",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				return &metric.Family{
@@ -63,7 +63,7 @@ var (
 		},
 		{
 			Name: "kube_hpa_spec_min_replicas",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Lower limit for the number of pods that can be set by the autoscaler, default 1.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				return &metric.Family{
@@ -77,7 +77,7 @@ var (
 		},
 		{
 			Name: "kube_hpa_status_current_replicas",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Current number of replicas of pods managed by this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				return &metric.Family{
@@ -91,7 +91,7 @@ var (
 		},
 		{
 			Name: "kube_hpa_status_desired_replicas",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Desired number of replicas of pods managed by this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				return &metric.Family{
@@ -105,7 +105,7 @@ var (
 		},
 		{
 			Name: descHorizontalPodAutoscalerLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descHorizontalPodAutoscalerLabelsHelp,
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(a.Labels)
@@ -122,7 +122,7 @@ var (
 		},
 		{
 			Name: "kube_hpa_status_condition",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The condition of this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}

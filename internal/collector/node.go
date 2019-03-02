@@ -36,7 +36,7 @@ var (
 	nodeMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_node_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				return &metric.Family{
@@ -66,7 +66,7 @@ var (
 		},
 		{
 			Name: "kube_node_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -85,7 +85,7 @@ var (
 		},
 		{
 			Name: descNodeLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descNodeLabelsHelp,
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
@@ -102,7 +102,7 @@ var (
 		},
 		{
 			Name: "kube_node_spec_unschedulable",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Whether a node can schedule new pods.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				return &metric.Family{
@@ -116,7 +116,7 @@ var (
 		},
 		{
 			Name: "kube_node_spec_taint",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The taint of a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -143,7 +143,7 @@ var (
 		// conditions in future.
 		{
 			Name: "kube_node_status_condition",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The condition of a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -165,7 +165,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_phase",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The phase the node is currently in.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -199,7 +199,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_capacity",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The capacity for different resources of a node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -277,7 +277,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_capacity_pods",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The total pod resources of the node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -297,7 +297,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_capacity_cpu_cores",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The total CPU resources of the node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -316,7 +316,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_capacity_memory_bytes",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The total memory resources of the node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -335,7 +335,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_allocatable",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The allocatable for different resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -414,7 +414,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_allocatable_pods",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The pod resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -433,7 +433,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_allocatable_cpu_cores",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The CPU resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
@@ -452,7 +452,7 @@ var (
 		},
 		{
 			Name: "kube_node_status_allocatable_memory_bytes",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The memory resources of a node that are available for scheduling.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}

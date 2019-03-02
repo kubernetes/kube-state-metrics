@@ -62,7 +62,8 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilySt
 
 // Implementing k8s.io/client-go/tools/cache.Store interface
 
-// TODO: Proper comments on all functions below.
+// Add inserts adds to the MetricsStore by calling the metrics generator functions and
+// adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj interface{}) error {
 	o, err := meta.Accessor(obj)
 	if err != nil {
@@ -84,12 +85,13 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	return nil
 }
 
+// Update updates the existing entry in the MetricsStore.
 func (s *MetricsStore) Update(obj interface{}) error {
-	// For now, just call Add, in the future one could check if the resource
-	// version changed?
+	// TODO: For now, just call Add, in the future one could check if the resource version changed?
 	return s.Add(obj)
 }
 
+// Delete deletes an existing entry in the MetricsStore.
 func (s *MetricsStore) Delete(obj interface{}) error {
 
 	o, err := meta.Accessor(obj)
@@ -105,18 +107,22 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 	return nil
 }
 
+// List implements the List method of the store interface.
 func (s *MetricsStore) List() []interface{} {
 	return nil
 }
 
+// ListKeys implements the ListKeys method of the store interface.
 func (s *MetricsStore) ListKeys() []string {
 	return nil
 }
 
+// Get implements the Get method of the store interface.
 func (s *MetricsStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
+// GetByKey implements the GetByKey method of the store interface.
 func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
@@ -138,6 +144,7 @@ func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 	return nil
 }
 
+// Resync implements the Resync method of the store interface.
 func (s *MetricsStore) Resync() error {
 	return nil
 }

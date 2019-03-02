@@ -35,7 +35,7 @@ var (
 	serviceMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_service_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about service.",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
@@ -48,7 +48,7 @@ var (
 		},
 		{
 			Name: "kube_service_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if !s.CreationTimestamp.IsZero() {
@@ -64,7 +64,7 @@ var (
 		},
 		{
 			Name: "kube_service_spec_type",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Type about service.",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
@@ -78,7 +78,7 @@ var (
 		},
 		{
 			Name: descServiceLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descServiceLabelsHelp,
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
@@ -93,7 +93,7 @@ var (
 		},
 		{
 			Name: "kube_service_spec_external_ip",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Service external ips. One series for each ip",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				ms := []*metric.Metric{}
@@ -115,7 +115,7 @@ var (
 		},
 		{
 			Name: "kube_service_status_load_balancer_ingress",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Service load balancer ingress status",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				ms := []*metric.Metric{}

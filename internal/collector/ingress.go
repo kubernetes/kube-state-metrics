@@ -36,7 +36,7 @@ var (
 	ingressMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_ingress_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about ingress.",
 			GenerateFunc: wrapIngressFunc(func(s *v1beta1.Ingress) *metric.Family {
 				return &metric.Family{
@@ -49,7 +49,7 @@ var (
 		},
 		{
 			Name: descIngressLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descIngressLabelsHelp,
 			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(i.Labels)
@@ -66,7 +66,7 @@ var (
 		},
 		{
 			Name: "kube_ingress_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
@@ -84,7 +84,7 @@ var (
 		},
 		{
 			Name: "kube_ingress_metadata_resource_version",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Resource version representing a specific version of ingress.",
 			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				return &metric.Family{

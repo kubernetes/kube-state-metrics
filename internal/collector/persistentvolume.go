@@ -35,7 +35,7 @@ var (
 	persistentVolumeMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: descPersistentVolumeLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descPersistentVolumeLabelsHelp,
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
@@ -52,7 +52,7 @@ var (
 		},
 		{
 			Name: "kube_persistentvolume_status_phase",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				ms := []*metric.Metric{}
@@ -94,7 +94,7 @@ var (
 		},
 		{
 			Name: "kube_persistentvolume_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about persistentvolume.",
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				return &metric.Family{
@@ -110,7 +110,7 @@ var (
 		},
 		{
 			Name: "kube_persistentvolume_capacity_bytes",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Persistentvolume capacity in bytes.",
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				storage := p.Spec.Capacity[v1.ResourceStorage]

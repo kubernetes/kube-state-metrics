@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
 
 func (ms *MetricSet) String() string {
@@ -34,6 +35,7 @@ func (ms *MetricSet) String() string {
 	return strings.Join(ss, ",")
 }
 
+// Set converts a comma-separated string of metrics into a slice and appends it to the MetricSet.
 func (ms *MetricSet) Set(value string) error {
 	s := *ms
 	metrics := strings.Split(value, ",")
@@ -46,6 +48,7 @@ func (ms *MetricSet) Set(value string) error {
 	return nil
 }
 
+// asSlice returns the MetricSet in the form of plain string slice.
 func (ms MetricSet) asSlice() []string {
 	metrics := []string{}
 	for metric := range ms {
@@ -54,14 +57,17 @@ func (ms MetricSet) asSlice() []string {
 	return metrics
 }
 
+// IsEmpty returns true if the length of the MetricSet is zero.
 func (ms MetricSet) IsEmpty() bool {
 	return len(ms.asSlice()) == 0
 }
 
+// Type returns a descriptive string about the MetricSet type.
 func (ms *MetricSet) Type() string {
 	return "string"
 }
 
+// CollectorSet represents a collection which has a unique set of collectors.
 type CollectorSet map[string]struct{}
 
 func (c *CollectorSet) String() string {
@@ -71,6 +77,7 @@ func (c *CollectorSet) String() string {
 	return strings.Join(ss, ",")
 }
 
+// Set converts a comma-separated string of collectors into a slice and appends it to the CollectorSet.
 func (c *CollectorSet) Set(value string) error {
 	s := *c
 	cols := strings.Split(value, ",")
@@ -87,6 +94,7 @@ func (c *CollectorSet) Set(value string) error {
 	return nil
 }
 
+// AsSlice returns the Collector in the form of a plain string slice.
 func (c CollectorSet) AsSlice() []string {
 	cols := []string{}
 	for col := range c {
@@ -95,24 +103,30 @@ func (c CollectorSet) AsSlice() []string {
 	return cols
 }
 
+// isEmpty() returns true if the length of the CollectorSet is zero.
 func (c CollectorSet) isEmpty() bool {
 	return len(c.AsSlice()) == 0
 }
 
+// Type returns a descriptive string about the CollectorSet type.
 func (c *CollectorSet) Type() string {
 	return "string"
 }
 
+// NamespaceList represents a list of namespaces to query forom.
 type NamespaceList []string
 
 func (n *NamespaceList) String() string {
 	return strings.Join(*n, ",")
 }
 
+// IsAllNamespaces checks if the Namespace selector is that of `NamespaceAll` which is used for
+// selecting or filtering across all namespaces.
 func (n *NamespaceList) IsAllNamespaces() bool {
 	return len(*n) == 1 && (*n)[0] == metav1.NamespaceAll
 }
 
+// Set converts a comma-separated string of namespaces into a slice and appends it to the NamespaceList
 func (n *NamespaceList) Set(value string) error {
 	splitNamespaces := strings.Split(value, ",")
 	for _, ns := range splitNamespaces {
@@ -124,6 +138,7 @@ func (n *NamespaceList) Set(value string) error {
 	return nil
 }
 
+// Type returns a descriptive string about the NamespaceList type.
 func (n *NamespaceList) Type() string {
 	return "string"
 }

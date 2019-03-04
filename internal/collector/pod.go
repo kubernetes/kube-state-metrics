@@ -40,7 +40,7 @@ var (
 	podMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_pod_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				createdBy := metav1.GetControllerOf(p)
@@ -69,7 +69,7 @@ var (
 		},
 		{
 			Name: "kube_pod_start_time",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Start time in unix timestamp for a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -89,7 +89,7 @@ var (
 		},
 		{
 			Name: "kube_pod_completion_time",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Completion time in unix timestamp for a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -119,7 +119,7 @@ var (
 		},
 		{
 			Name: "kube_pod_owner",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about the Pod's owner.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
@@ -157,7 +157,7 @@ var (
 		},
 		{
 			Name: "kube_pod_labels",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Kubernetes labels converted to Prometheus labels.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
@@ -173,7 +173,7 @@ var (
 		},
 		{
 			Name: "kube_pod_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -193,7 +193,7 @@ var (
 		},
 		{
 			Name: "kube_pod_status_scheduled_time",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix timestamp when pod moved into scheduled status",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -218,7 +218,7 @@ var (
 		},
 		{
 			Name: "kube_pod_status_phase",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The pods current phase.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -259,7 +259,7 @@ var (
 		},
 		{
 			Name: "kube_pod_status_ready",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes whether the pod is ready to serve requests.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -284,7 +284,7 @@ var (
 		},
 		{
 			Name: "kube_pod_status_scheduled",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes the status of the scheduling process for the pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -309,7 +309,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about a container in a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -330,7 +330,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_waiting",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in waiting state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -350,7 +350,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_waiting_reason",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes the reason the container is currently in waiting state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -372,7 +372,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_running",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in running state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -392,7 +392,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_terminated",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -412,7 +412,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_terminated_reason",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes the reason the container is currently in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -434,7 +434,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_last_terminated_reason",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes the last reason the container was in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -456,7 +456,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_ready",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes whether the containers readiness check succeeded.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -476,7 +476,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_status_restarts_total",
-			Type: metric.MetricTypeCounter,
+			Type: metric.Counter,
 			Help: "The number of container restarts per container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -496,7 +496,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_resource_requests",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The number of requested request resource by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -554,7 +554,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_resource_limits",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The number of requested limit resource by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -612,7 +612,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_resource_requests_cpu_cores",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The number of requested cpu cores by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -635,7 +635,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_resource_requests_memory_bytes",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The number of requested memory bytes by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -658,7 +658,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_resource_limits_cpu_cores",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The limit on cpu cores to be used by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -681,7 +681,7 @@ var (
 		},
 		{
 			Name: "kube_pod_container_resource_limits_memory_bytes",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The limit on memory to be used by a container in bytes.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -705,7 +705,7 @@ var (
 		},
 		{
 			Name: "kube_pod_spec_volumes_persistentvolumeclaims_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about persistentvolumeclaim volumes in a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
@@ -727,7 +727,7 @@ var (
 		},
 		{
 			Name: "kube_pod_spec_volumes_persistentvolumeclaims_readonly",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Describes whether a persistentvolumeclaim is mounted read only.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}

@@ -35,7 +35,7 @@ var (
 	endpointMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_endpoint_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about endpoint.",
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				return &metric.Family{
@@ -49,7 +49,7 @@ var (
 		},
 		{
 			Name: "kube_endpoint_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
@@ -68,7 +68,7 @@ var (
 		},
 		{
 			Name: descEndpointLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descEndpointLabelsHelp,
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
@@ -85,7 +85,7 @@ var (
 		},
 		{
 			Name: "kube_endpoint_address_available",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Number of addresses available in endpoint.",
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var available int
@@ -104,7 +104,7 @@ var (
 		},
 		{
 			Name: "kube_endpoint_address_not_ready",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Number of addresses not ready in endpoint",
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var notReady int

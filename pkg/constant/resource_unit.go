@@ -16,10 +16,14 @@ limitations under the License.
 
 package constant
 
+// ResourceUnit represents the unit of measure for certain metrics.
 type ResourceUnit string
 
 const (
-	UnitByte    ResourceUnit = "byte"
-	UnitCore    ResourceUnit = "core"
+	// UnitByte is the unit of measure in bytes.
+	UnitByte ResourceUnit = "byte"
+	// UnitCore is the unit of measure in CPU cores.
+	UnitCore ResourceUnit = "core"
+	// UnitInteger is the unit of measure in integers.
 	UnitInteger ResourceUnit = "integer"
 )

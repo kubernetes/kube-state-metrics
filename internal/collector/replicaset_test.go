@@ -27,7 +27,7 @@ import (
 
 var (
 	rs1Replicas int32 = 5
-	rs2Replicas int32 = 0
+	rs2Replicas int32
 )
 
 func TestReplicaSetCollector(t *testing.T) {

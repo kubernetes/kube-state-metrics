@@ -36,15 +36,15 @@ var (
 	}
 )
 
-// MetricType represents the type of a metric e.g. a counter. See
+// Type represents the type of a metric e.g. a counter. See
 // https://prometheus.io/docs/concepts/metric_types/.
-type MetricType string
+type Type string
 
-// MetricTypeGauge defines a Prometheus gauge.
-var MetricTypeGauge MetricType = "gauge"
+// Gauge defines a Prometheus gauge.
+var Gauge Type = "gauge"
 
-// MetricTypeCounter defines a Prometheus counter.
-var MetricTypeCounter MetricType = "counter"
+// Counter defines a Prometheus counter.
+var Counter Type = "counter"
 
 // Metric represents a single time series.
 type Metric struct {

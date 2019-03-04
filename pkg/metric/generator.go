@@ -27,7 +27,7 @@ import (
 type FamilyGenerator struct {
 	Name         string
 	Help         string
-	Type         MetricType
+	Type         Type
 	GenerateFunc func(obj interface{}) *Family
 }
 

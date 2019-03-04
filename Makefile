@@ -13,6 +13,8 @@ PKG=k8s.io/kube-state-metrics/pkg
 GO_VERSION=1.11.5
 FIRST_GOPATH:=$(firstword $(subst :, ,$(shell go env GOPATH)))
 BENCHCMP_BINARY:=$(FIRST_GOPATH)/bin/benchcmp
+GOLANGCI_VERSION := v1.15.0
+HAS_GOLANGCI := $(shell which golangci-lint)
 
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
@@ -26,9 +28,14 @@ validate-modules:
 	GO111MODULE=on go mod vendor
 	@git diff --exit-code -- go.sum go.mod vendor/
 
-format: shellcheck
-	@go fmt $(PKGS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi
+licensecheck:
 	./tests/check_license.sh
+
+lint: shellcheck licensecheck
+ifndef HAS_GOLANGCI
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin ${GOLANGCI_VERSION}
+endif
+	golangci-lint run
 
 doccheck:
 	@echo "- Checking if the documentation is up to date..."
@@ -112,4 +119,4 @@ e2e:
 $(BENCHCMP_BINARY):
 	go get golang.org/x/tools/cmd/benchcmp
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck
+.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint

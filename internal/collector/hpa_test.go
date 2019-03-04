@@ -17,8 +17,9 @@ limitations under the License.
 package collector
 
 import (
-	v12 "k8s.io/api/core/v1"
 	"testing"
+
+	v12 "k8s.io/api/core/v1"
 
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

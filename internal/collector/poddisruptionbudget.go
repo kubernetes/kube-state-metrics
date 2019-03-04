@@ -33,7 +33,7 @@ var (
 	podDisruptionBudgetMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_poddisruptionbudget_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
 				ms := []*metric.Metric{}
@@ -51,7 +51,7 @@ var (
 		},
 		{
 			Name: "kube_poddisruptionbudget_status_current_healthy",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Current number of healthy pods",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -65,7 +65,7 @@ var (
 		},
 		{
 			Name: "kube_poddisruptionbudget_status_desired_healthy",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Minimum desired number of healthy pods",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -79,7 +79,7 @@ var (
 		},
 		{
 			Name: "kube_poddisruptionbudget_status_pod_disruptions_allowed",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Number of pod disruptions that are currently allowed",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -93,7 +93,7 @@ var (
 		},
 		{
 			Name: "kube_poddisruptionbudget_status_expected_pods",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Total number of pods counted by this disruption budget",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -107,7 +107,7 @@ var (
 		},
 		{
 			Name: "kube_poddisruptionbudget_status_observed_generation",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Most recent generation observed when updating this PDB status",
 			GenerateFunc: wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{

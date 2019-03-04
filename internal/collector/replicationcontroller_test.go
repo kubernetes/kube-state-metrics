@@ -27,7 +27,7 @@ import (
 
 var (
 	rc1Replicas int32 = 5
-	rc2Replicas int32 = 0
+	rc2Replicas int32
 )
 
 func TestReplicationControllerCollector(t *testing.T) {

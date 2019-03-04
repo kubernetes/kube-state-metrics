@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// Options are the configurable parameters for kube-state-metrics.
 type Options struct {
 	Apiserver                            string
 	Kubeconfig                           string
@@ -45,6 +46,7 @@ type Options struct {
 	flags *pflag.FlagSet
 }
 
+// NewOptions returns a new instance of `Options`.
 func NewOptions() *Options {
 	return &Options{
 		Collectors:      CollectorSet{},
@@ -53,6 +55,7 @@ func NewOptions() *Options {
 	}
 }
 
+// AddFlags populated the Options struct from the command line arguments passed.
 func (o *Options) AddFlags() {
 	o.flags = pflag.NewFlagSet("", pflag.ExitOnError)
 	// add klog flags
@@ -83,11 +86,13 @@ func (o *Options) AddFlags() {
 	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
 }
 
+// Parse parses the flag definitions from the argument list.
 func (o *Options) Parse() error {
 	err := o.flags.Parse(os.Args)
 	return err
 }
 
+// Usage is the function called when an error occurs while parsing flags.
 func (o *Options) Usage() {
 	o.flags.Usage()
 }

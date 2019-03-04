@@ -37,7 +37,7 @@ var (
 	jobMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: descJobLabelsName,
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: descJobLabelsHelp,
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
@@ -54,7 +54,7 @@ var (
 		},
 		{
 			Name: "kube_job_info",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about job.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
@@ -68,7 +68,7 @@ var (
 		},
 		{
 			Name: "kube_job_created",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -86,7 +86,7 @@ var (
 		},
 		{
 			Name: "kube_job_spec_parallelism",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The maximum desired number of pods the job should run at any given time.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -104,7 +104,7 @@ var (
 		},
 		{
 			Name: "kube_job_spec_completions",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The desired number of successfully finished pods the job should be run with.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -122,7 +122,7 @@ var (
 		},
 		{
 			Name: "kube_job_spec_active_deadline_seconds",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -140,7 +140,7 @@ var (
 		},
 		{
 			Name: "kube_job_status_succeeded",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The number of pods which reached Phase Succeeded.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
@@ -154,7 +154,7 @@ var (
 		},
 		{
 			Name: "kube_job_status_failed",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The number of pods which reached Phase Failed.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
@@ -168,7 +168,7 @@ var (
 		},
 		{
 			Name: "kube_job_status_active",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The number of actively running pods.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
@@ -182,7 +182,7 @@ var (
 		},
 		{
 			Name: "kube_job_complete",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The job has completed its execution.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -204,7 +204,7 @@ var (
 		},
 		{
 			Name: "kube_job_failed",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "The job has failed its execution.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -227,7 +227,7 @@ var (
 		},
 		{
 			Name: "kube_job_status_start_time",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "StartTime represents time when the job was acknowledged by the Job Manager.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -246,7 +246,7 @@ var (
 		},
 		{
 			Name: "kube_job_status_completion_time",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "CompletionTime represents time when the job was completed.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
@@ -264,7 +264,7 @@ var (
 		},
 		{
 			Name: "kube_job_owner",
-			Type: metric.MetricTypeGauge,
+			Type: metric.Gauge,
 			Help: "Information about the Job's owner.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}

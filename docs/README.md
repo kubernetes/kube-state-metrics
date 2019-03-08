@@ -78,7 +78,7 @@ and allows you select or group the metrics by helm release label:
 kube_pod_status_ready * on (namespace, pod) group_left(label_release)  kube_pod_labels
 ```
 
-Another useful example could be to know the amount of memory resources in use by pods in a specific `phase`, for example `Running`:
+Another useful example would be to query the memory usage of pods by its `phase`, such as `Running`:
 
 ```
 sum(kube_pod_container_resource_requests_memory_bytes) by (namespace, pod, node)

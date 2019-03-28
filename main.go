@@ -139,7 +139,7 @@ func main() {
 	collectorBuilder.WithKubeClient(kubeClient)
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
-	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(os.Getpid(), ""))
+	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
 	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 

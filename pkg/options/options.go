@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/klog"
+
 	"github.com/spf13/pflag"
 )
 
@@ -59,7 +61,9 @@ func NewOptions() *Options {
 func (o *Options) AddFlags() {
 	o.flags = pflag.NewFlagSet("", pflag.ExitOnError)
 	// add klog flags
-	o.flags.AddGoFlagSet(flag.CommandLine)
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
+	o.flags.AddGoFlagSet(klogFlags)
 	o.flags.Lookup("logtostderr").Value.Set("true")
 	o.flags.Lookup("logtostderr").DefValue = "true"
 	o.flags.Lookup("logtostderr").NoOptDefVal = "true"

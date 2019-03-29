@@ -215,7 +215,7 @@ var (
 						for _, m := range metrics {
 							metric := m
 							metric.LabelKeys = []string{"condition"}
-							ms = append(ms, m)
+							ms = append(ms, metric)
 						}
 					}
 				}

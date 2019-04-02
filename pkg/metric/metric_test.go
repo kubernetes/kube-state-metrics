@@ -34,7 +34,7 @@ func TestFamilyString(t *testing.T) {
 	}
 
 	expected := "kube_pod_info{namespace=\"default\"} 1"
-	got := strings.TrimSpace(f.String())
+	got := strings.TrimSpace(string(f.ByteSlice()))
 
 	if got != expected {
 		t.Fatalf("expected %v but got %v", expected, got)

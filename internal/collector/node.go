@@ -119,17 +119,17 @@ var (
 			Type: metric.Gauge,
 			Help: "The taint of a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(n.Spec.Taints))
 
-				for _, taint := range n.Spec.Taints {
+				for i, taint := range n.Spec.Taints {
 					// Taints are applied to repel pods from nodes that do not have a corresponding
 					// toleration.  Many node conditions are optionally reflected as taints
 					// by the node controller in order to simplify scheduling constraints.
-					ms = append(ms, &metric.Metric{
+					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"key", "value", "effect"},
 						LabelValues: []string{taint.Key, taint.Value, string(taint.Effect)},
 						Value:       1,
-					})
+					}
 				}
 
 				return &metric.Family{
@@ -146,16 +146,20 @@ var (
 			Type: metric.Gauge,
 			Help: "The condition of a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
 
 				// Collect node conditions and while default to false.
-				for _, c := range n.Status.Conditions {
+				for i, c := range n.Status.Conditions {
 					conditionMetrics := addConditionMetrics(c.Status)
-					for _, metric := range conditionMetrics {
+
+					for j, m := range conditionMetrics {
+						metric := m
+
 						metric.LabelKeys = []string{"condition", "status"}
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+
+						ms[i*len(conditionStatuses)+j] = metric
 					}
-					ms = append(ms, conditionMetrics...)
 				}
 
 				return &metric.Family{
@@ -168,24 +172,28 @@ var (
 			Type: metric.Gauge,
 			Help: "The phase the node is currently in.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
+				p := n.Status.Phase
+
+				if p == "" {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
 
 				// Set current phase to 1, others to 0 if it is set.
-				if p := n.Status.Phase; p != "" {
-					ms = append(ms,
-						&metric.Metric{
-							LabelValues: []string{string(v1.NodePending)},
-							Value:       boolFloat64(p == v1.NodePending),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.NodeRunning)},
-							Value:       boolFloat64(p == v1.NodeRunning),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.NodeTerminated)},
-							Value:       boolFloat64(p == v1.NodeTerminated),
-						},
-					)
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{string(v1.NodePending)},
+						Value:       boolFloat64(p == v1.NodePending),
+					},
+					{
+						LabelValues: []string{string(v1.NodeRunning)},
+						Value:       boolFloat64(p == v1.NodeRunning),
+					},
+					{
+						LabelValues: []string{string(v1.NodeTerminated)},
+						Value:       boolFloat64(p == v1.NodeTerminated),
+					},
 				}
 
 				for _, metric := range ms {

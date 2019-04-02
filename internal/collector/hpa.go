@@ -125,16 +125,16 @@ var (
 			Type: metric.Gauge,
 			Help: "The condition of this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(a.Status.Conditions)*len(conditionStatuses))
 
-				for _, c := range a.Status.Conditions {
+				for i, c := range a.Status.Conditions {
 					metrics := addConditionMetrics(c.Status)
 
-					for _, m := range metrics {
+					for j, m := range metrics {
 						metric := m
 						metric.LabelKeys = []string{"condition", "status"}
 						metric.LabelValues = append(metric.LabelValues, string(c.Type))
-						ms = append(ms, metric)
+						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}
 

@@ -55,32 +55,36 @@ var (
 			Type: metric.Gauge,
 			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				ms := []*metric.Metric{}
+				phase := p.Status.Phase
+
+				if phase == "" {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
 
 				// Set current phase to 1, others to 0 if it is set.
-				if p := p.Status.Phase; p != "" {
-					ms = append(ms,
-						&metric.Metric{
-							LabelValues: []string{string(v1.VolumePending)},
-							Value:       boolFloat64(p == v1.VolumePending),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.VolumeAvailable)},
-							Value:       boolFloat64(p == v1.VolumeAvailable),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.VolumeBound)},
-							Value:       boolFloat64(p == v1.VolumeBound),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.VolumeReleased)},
-							Value:       boolFloat64(p == v1.VolumeReleased),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.VolumeFailed)},
-							Value:       boolFloat64(p == v1.VolumeFailed),
-						},
-					)
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{string(v1.VolumePending)},
+						Value:       boolFloat64(phase == v1.VolumePending),
+					},
+					{
+						LabelValues: []string{string(v1.VolumeAvailable)},
+						Value:       boolFloat64(phase == v1.VolumeAvailable),
+					},
+					{
+						LabelValues: []string{string(v1.VolumeBound)},
+						Value:       boolFloat64(phase == v1.VolumeBound),
+					},
+					{
+						LabelValues: []string{string(v1.VolumeReleased)},
+						Value:       boolFloat64(phase == v1.VolumeReleased),
+					},
+					{
+						LabelValues: []string{string(v1.VolumeFailed)},
+						Value:       boolFloat64(phase == v1.VolumeFailed),
+					},
 				}
 
 				for _, m := range ms {

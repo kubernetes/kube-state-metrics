@@ -268,29 +268,35 @@ var (
 			Help: "Information about the Job's owner.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
-				ms := []*metric.Metric{}
 
 				owners := j.GetOwnerReferences()
+
 				if len(owners) == 0 {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   labelKeys,
-						LabelValues: []string{"<none>", "<none>", "<none>"},
-						Value:       1,
-					})
-				} else {
-					for _, owner := range owners {
-						if owner.Controller != nil {
-							ms = append(ms, &metric.Metric{
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
 								LabelKeys:   labelKeys,
-								LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+								LabelValues: []string{"<none>", "<none>", "<none>"},
 								Value:       1,
-							})
-						} else {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   labelKeys,
-								LabelValues: []string{owner.Kind, owner.Name, "false"},
-								Value:       1,
-							})
+							},
+						},
+					}
+				}
+
+				ms := make([]*metric.Metric, len(owners))
+
+				for i, owner := range owners {
+					if owner.Controller != nil {
+						ms[i] = &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+							Value:       1,
+						}
+					} else {
+						ms[i] = &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, "false"},
+							Value:       1,
 						}
 					}
 				}

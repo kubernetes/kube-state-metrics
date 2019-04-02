@@ -82,7 +82,7 @@ func serviceCollector(kubeClient clientset.Interface) *collector.Collector {
 	return collector.NewCollector(store)
 }
 
-func generateServiceMetrics(obj interface{}) []metricsstore.FamilyStringer {
+func generateServiceMetrics(obj interface{}) []metricsstore.FamilyByteSlicer {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
@@ -97,5 +97,5 @@ func generateServiceMetrics(obj interface{}) []metricsstore.FamilyStringer {
 		Metrics: []*metric.Metric{&m},
 	}
 
-	return []metricsstore.FamilyStringer{&family}
+	return []metricsstore.FamilyByteSlicer{&family}
 }

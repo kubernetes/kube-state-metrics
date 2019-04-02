@@ -17,6 +17,7 @@ limitations under the License.
 package metric
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -56,7 +57,10 @@ type Metric struct {
 
 func (m *Metric) Write(s *strings.Builder) {
 	if len(m.LabelKeys) != len(m.LabelValues) {
-		panic("expected labelKeys to be of same length as labelValues")
+		panic(fmt.Sprintf(
+			"expected labelKeys %q to be of same length as labelValues %q",
+			m.LabelKeys, m.LabelValues,
+		))
 	}
 
 	labelsToString(s, m.LabelKeys, m.LabelValues)

@@ -24,10 +24,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// FamilyStringer represents a metric family that can be converted to its string
+// FamilyByteSlicer represents a metric family that can be converted to its string
 // representation.
-type FamilyStringer interface {
-	String() string
+type FamilyByteSlicer interface {
+	ByteSlice() []byte
 }
 
 // MetricsStore implements the k8s.io/client-go/tools/cache.Store
@@ -40,7 +40,7 @@ type MetricsStore struct {
 	// metric families, containing a slice of metrics. We need to keep metrics
 	// grouped by metric families in order to zip families with their help text in
 	// MetricsStore.WriteAll().
-	metrics map[types.UID][]string
+	metrics map[types.UID][][]byte
 	// headers contains the header (TYPE and HELP) of each metric family. It is
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
@@ -48,15 +48,15 @@ type MetricsStore struct {
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []FamilyStringer
+	generateMetricsFunc func(interface{}) []FamilyByteSlicer
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilyStringer) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilyByteSlicer) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,
-		metrics:             map[types.UID][]string{},
+		metrics:             map[types.UID][][]byte{},
 	}
 }
 
@@ -74,10 +74,10 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	defer s.mutex.Unlock()
 
 	families := s.generateMetricsFunc(obj)
-	familyStrings := make([]string, len(families))
+	familyStrings := make([][]byte, len(families))
 
 	for i, f := range families {
-		familyStrings[i] = f.String()
+		familyStrings[i] = f.ByteSlice()
 	}
 
 	s.metrics[o.GetUID()] = familyStrings
@@ -131,7 +131,7 @@ func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err 
 // given list.
 func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 	s.mutex.Lock()
-	s.metrics = map[types.UID][]string{}
+	s.metrics = map[types.UID][][]byte{}
 	s.mutex.Unlock()
 
 	for _, o := range list {

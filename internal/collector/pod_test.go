@@ -568,7 +568,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					UID:               "abc-123-xxx",
 				},
 				Spec: v1.PodSpec{
-					NodeName: "node1",
+					NodeName:          "node1",
 					PriorityClassName: "system-node-critical",
 				},
 				Status: v1.PodStatus{

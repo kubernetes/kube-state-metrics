@@ -568,7 +568,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					UID:               "abc-123-xxx",
 				},
 				Spec: v1.PodSpec{
-					NodeName: "node1",
+					NodeName:          "node1",
+					PriorityClassName: "system-node-critical",
 				},
 				Status: v1.PodStatus{
 					HostIP:    "1.1.1.1",
@@ -579,7 +580,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			// TODO: Should it be '1501569018' instead?
 			Want: `
 				kube_pod_created{namespace="ns1",pod="pod1"} 1.5e+09
-				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx"} 1
+				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1"} 1.501569018e+09
 				kube_pod_owner{namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",pod="pod1"} 1
 `,
@@ -649,7 +650,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: metadata + `
-				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx"} 1
+				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx",priority_class=""} 1
 				kube_pod_completion_time{namespace="ns2",pod="pod2"} 1.501888018e+09
 				kube_pod_owner{namespace="ns2",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="rs-name",pod="pod2"} 1
 				`,

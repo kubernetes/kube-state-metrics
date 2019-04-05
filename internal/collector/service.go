@@ -96,15 +96,19 @@ var (
 			Type: metric.Gauge,
 			Help: "Service external ips. One series for each ip",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				ms := []*metric.Metric{}
+				if len(s.Spec.ExternalIPs) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
 
-				if len(s.Spec.ExternalIPs) > 0 {
-					for _, externalIP := range s.Spec.ExternalIPs {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"external_ip"},
-							LabelValues: []string{externalIP},
-							Value:       1,
-						})
+				ms := make([]*metric.Metric, len(s.Spec.ExternalIPs))
+
+				for i, externalIP := range s.Spec.ExternalIPs {
+					ms[i] = &metric.Metric{
+						LabelKeys:   []string{"external_ip"},
+						LabelValues: []string{externalIP},
+						Value:       1,
 					}
 				}
 
@@ -118,15 +122,19 @@ var (
 			Type: metric.Gauge,
 			Help: "Service load balancer ingress status",
 			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				ms := []*metric.Metric{}
+				if len(s.Status.LoadBalancer.Ingress) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
 
-				if len(s.Status.LoadBalancer.Ingress) > 0 {
-					for _, ingress := range s.Status.LoadBalancer.Ingress {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"ip", "hostname"},
-							LabelValues: []string{ingress.IP, ingress.Hostname},
-							Value:       1,
-						})
+				ms := make([]*metric.Metric, len(s.Status.LoadBalancer.Ingress))
+
+				for i, ingress := range s.Status.LoadBalancer.Ingress {
+					ms[i] = &metric.Metric{
+						LabelKeys:   []string{"ip", "hostname"},
+						LabelValues: []string{ingress.IP, ingress.Hostname},
+						Value:       1,
 					}
 				}
 

@@ -73,24 +73,28 @@ var (
 			Type: metric.Gauge,
 			Help: "The phase the persistent volume claim is currently in.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				ms := []*metric.Metric{}
+				phase := p.Status.Phase
+
+				if phase == "" {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
 
 				// Set current phase to 1, others to 0 if it is set.
-				if p := p.Status.Phase; p != "" {
-					ms = append(ms,
-						&metric.Metric{
-							LabelValues: []string{string(v1.ClaimLost)},
-							Value:       boolFloat64(p == v1.ClaimLost),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.ClaimBound)},
-							Value:       boolFloat64(p == v1.ClaimBound),
-						},
-						&metric.Metric{
-							LabelValues: []string{string(v1.ClaimPending)},
-							Value:       boolFloat64(p == v1.ClaimPending),
-						},
-					)
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{string(v1.ClaimLost)},
+						Value:       boolFloat64(phase == v1.ClaimLost),
+					},
+					{
+						LabelValues: []string{string(v1.ClaimBound)},
+						Value:       boolFloat64(phase == v1.ClaimBound),
+					},
+					{
+						LabelValues: []string{string(v1.ClaimPending)},
+						Value:       boolFloat64(phase == v1.ClaimPending),
+					},
 				}
 
 				for _, m := range ms {
@@ -125,14 +129,14 @@ var (
 			Type: metric.Gauge,
 			Help: "The access mode(s) specified by the persistent volume claim.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Spec.AccessModes))
 
-				for _, mode := range p.Spec.AccessModes {
-					ms = append(ms, &metric.Metric{
+				for i, mode := range p.Spec.AccessModes {
+					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"access_mode"},
 						LabelValues: []string{string(mode)},
 						Value:       1,
-					})
+					}
 				}
 
 				return &metric.Family{

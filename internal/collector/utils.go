@@ -32,6 +32,7 @@ import (
 var (
 	resyncPeriod       = 5 * time.Minute
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )
 
 func boolFloat64(b bool) float64 {
@@ -41,24 +42,20 @@ func boolFloat64(b bool) float64 {
 	return 0
 }
 
-// addConditionMetrics generates one metric for each possible node condition
+// addConditionMetrics generates one metric for each possible condition
 // status. For this function to work properly, the last label in the metric
 // description must be the condition.
 func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
-	return []*metric.Metric{
-		{
-			LabelValues: []string{"true"},
-			Value:       boolFloat64(cs == v1.ConditionTrue),
-		},
-		{
-			LabelValues: []string{"false"},
-			Value:       boolFloat64(cs == v1.ConditionFalse),
-		},
-		{
-			LabelValues: []string{"unknown"},
-			Value:       boolFloat64(cs == v1.ConditionUnknown),
-		},
+	ms := make([]*metric.Metric, len(conditionStatuses))
+
+	for i, status := range conditionStatuses {
+		ms[i] = &metric.Metric{
+			LabelValues: []string{strings.ToLower(string(status))},
+			Value:       boolFloat64(cs == status),
+		}
 	}
+
+	return ms
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {

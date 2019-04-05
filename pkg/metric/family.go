@@ -26,19 +26,13 @@ type Family struct {
 	Metrics []*Metric
 }
 
-// String returns the given Family in its string representation.
-func (f Family) String() string {
+// ByteSlice returns the given Family in its string representation.
+func (f Family) ByteSlice() []byte {
 	b := strings.Builder{}
 	for _, m := range f.Metrics {
 		b.WriteString(f.Name)
 		m.Write(&b)
 	}
 
-	return b.String()
-}
-
-// FamilyStringer represents a metric family that can be converted to its string
-// representation.
-type FamilyStringer interface {
-	String() string
+	return []byte(b.String())
 }

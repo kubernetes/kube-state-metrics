@@ -30,28 +30,28 @@ import (
 // Mock metricFamily instead of importing /pkg/metric to prevent cyclic
 // dependency.
 type metricFamily struct {
-	value string
+	value []byte
 }
 
-// Implement FamilyStringer interface.
-func (f *metricFamily) String() string {
+// Implement FamilyByteSlicer interface.
+func (f *metricFamily) ByteSlice() []byte {
 	return f.value
 }
 
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDS := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []FamilyStringer {
+	genFunc := func(obj interface{}) []FamilyByteSlicer {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		metricFamily := metricFamily{
-			fmt.Sprintf("kube_service_info{uid=\"%v\"} 1", string(o.GetUID())),
+			[]byte(fmt.Sprintf("kube_service_info{uid=\"%v\"} 1", string(o.GetUID()))),
 		}
 
-		return []FamilyStringer{&metricFamily}
+		return []FamilyByteSlicer{&metricFamily}
 	}
 
 	ms := NewMetricsStore([]string{"Information about service."}, genFunc)

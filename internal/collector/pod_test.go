@@ -1063,3 +1063,75 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 		}
 	}
 }
+
+func BenchmarkPodCollector(b *testing.B) {
+	b.ReportAllocs()
+
+	f := metric.ComposeMetricGenFuncs(podMetricFamilies)
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "ns1",
+		},
+		Status: v1.PodStatus{
+			ContainerStatuses: []v1.ContainerStatus{
+				{
+					Name:         "container1",
+					Image:        "k8s.gcr.io/hyperkube1",
+					ImageID:      "docker://sha256:aaa",
+					ContainerID:  "docker://ab123",
+					Ready:        true,
+					RestartCount: 0,
+					State: v1.ContainerState{
+						Running: &v1.ContainerStateRunning{},
+					},
+					LastTerminationState: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "OOMKilled",
+						},
+					},
+				},
+				{
+					Name:         "container1",
+					Image:        "k8s.gcr.io/hyperkube1",
+					ImageID:      "docker://sha256:aaa",
+					ContainerID:  "docker://ab123",
+					Ready:        true,
+					RestartCount: 0,
+					State: v1.ContainerState{
+						Running: &v1.ContainerStateRunning{},
+					},
+					LastTerminationState: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "OOMKilled",
+						},
+					},
+				},
+				{
+					Name:         "container1",
+					Image:        "k8s.gcr.io/hyperkube1",
+					ImageID:      "docker://sha256:aaa",
+					ContainerID:  "docker://ab123",
+					Ready:        true,
+					RestartCount: 0,
+					State: v1.ContainerState{
+						Running: &v1.ContainerStateRunning{},
+					},
+					LastTerminationState: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason: "OOMKilled",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for n := 0; n < b.N; n++ {
+		families := f(pod)
+		if len(families) != 27 {
+			b.Fatalf("expected 27 but got %v", len(families))
+		}
+	}
+}

@@ -123,29 +123,34 @@ var (
 			Help: "Information about the Pod's owner.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
-				ms := []*metric.Metric{}
 
 				owners := p.GetOwnerReferences()
 				if len(owners) == 0 {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   labelKeys,
-						LabelValues: []string{"<none>", "<none>", "<none>"},
-						Value:       1,
-					})
-				} else {
-					for _, owner := range owners {
-						if owner.Controller != nil {
-							ms = append(ms, &metric.Metric{
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
 								LabelKeys:   labelKeys,
-								LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+								LabelValues: []string{"<none>", "<none>", "<none>"},
 								Value:       1,
-							})
-						} else {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   labelKeys,
-								LabelValues: []string{owner.Kind, owner.Name, "false"},
-								Value:       1,
-							})
+							},
+						},
+					}
+				}
+
+				ms := make([]*metric.Metric, len(owners))
+
+				for i, owner := range owners {
+					if owner.Controller != nil {
+						ms[i] = &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+							Value:       1,
+						}
+					} else {
+						ms[i] = &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, "false"},
+							Value:       1,
 						}
 					}
 				}
@@ -221,8 +226,6 @@ var (
 			Type: metric.Gauge,
 			Help: "The pods current phase.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
 				phase := p.Status.Phase
 				if phase == "" {
 					return &metric.Family{
@@ -243,13 +246,15 @@ var (
 					{phase == v1.PodUnknown || (p.DeletionTimestamp != nil && p.Status.Reason == nodeUnreachablePodReason), string(v1.PodUnknown)},
 				}
 
-				for _, p := range phases {
-					ms = append(ms, &metric.Metric{
+				ms := make([]*metric.Metric, len(phases))
+
+				for i, p := range phases {
+					ms[i] = &metric.Metric{
 
 						LabelKeys:   []string{"phase"},
 						LabelValues: []string{p.n},
 						Value:       boolFloat64(p.v),
-					})
+					}
 				}
 
 				return &metric.Family{
@@ -312,15 +317,15 @@ var (
 			Type: metric.Gauge,
 			Help: "Information about a container in a pod.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 				labelKeys := []string{"container", "image", "image_id", "container_id"}
 
-				for _, cs := range p.Status.ContainerStatuses {
-					ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
 						LabelKeys:   labelKeys,
 						LabelValues: []string{cs.Name, cs.Image, cs.ImageID, cs.ContainerID},
 						Value:       1,
-					})
+					}
 				}
 
 				return &metric.Family{
@@ -333,14 +338,14 @@ var (
 			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in waiting state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
 						Value:       boolFloat64(cs.State.Waiting != nil),
-					})
+					}
 				}
 
 				return &metric.Family{
@@ -353,15 +358,15 @@ var (
 			Type: metric.Gauge,
 			Help: "Describes the reason the container is currently in waiting state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerWaitingReasons))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					for _, reason := range containerWaitingReasons {
-						ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					for j, reason := range containerWaitingReasons {
+						ms[i*len(containerWaitingReasons)+j] = &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
 							LabelValues: []string{cs.Name, reason},
 							Value:       boolFloat64(waitingReason(cs, reason)),
-						})
+						}
 					}
 				}
 
@@ -375,14 +380,14 @@ var (
 			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in running state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
 						Value:       boolFloat64(cs.State.Running != nil),
-					})
+					}
 				}
 
 				return &metric.Family{
@@ -395,14 +400,14 @@ var (
 			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
 						Value:       boolFloat64(cs.State.Terminated != nil),
-					})
+					}
 				}
 
 				return &metric.Family{
@@ -415,15 +420,15 @@ var (
 			Type: metric.Gauge,
 			Help: "Describes the reason the container is currently in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerTerminatedReasons))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					for _, reason := range containerTerminatedReasons {
-						ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					for j, reason := range containerTerminatedReasons {
+						ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
 							LabelValues: []string{cs.Name, reason},
 							Value:       boolFloat64(terminationReason(cs, reason)),
-						})
+						}
 					}
 				}
 
@@ -437,15 +442,15 @@ var (
 			Type: metric.Gauge,
 			Help: "Describes the last reason the container was in terminated state.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerTerminatedReasons))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					for _, reason := range containerTerminatedReasons {
-						ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					for j, reason := range containerTerminatedReasons {
+						ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
 							LabelValues: []string{cs.Name, reason},
 							Value:       boolFloat64(lastTerminationReason(cs, reason)),
-						})
+						}
 					}
 				}
 
@@ -459,14 +464,14 @@ var (
 			Type: metric.Gauge,
 			Help: "Describes whether the containers readiness check succeeded.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
 						Value:       boolFloat64(cs.Ready),
-					})
+					}
 				}
 
 				return &metric.Family{
@@ -479,14 +484,14 @@ var (
 			Type: metric.Counter,
 			Help: "The number of container restarts per container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
-				for _, cs := range p.Status.ContainerStatuses {
-					ms = append(ms, &metric.Metric{
+				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
 						Value:       float64(cs.RestartCount),
-					})
+					}
 				}
 
 				return &metric.Family{

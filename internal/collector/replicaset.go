@@ -147,23 +147,30 @@ var (
 			Type: metric.Gauge,
 			Help: "Information about the ReplicaSet's owner.",
 			GenerateFunc: wrapReplicaSetFunc(func(r *v1beta1.ReplicaSet) *metric.Family {
-				ms := []*metric.Metric{}
-
 				owners := r.GetOwnerReferences()
+
 				if len(owners) == 0 {
-					ms = append(ms, &metric.Metric{
-						LabelValues: []string{"<none>", "<none>", "<none>"},
-					})
-				} else {
-					for _, owner := range owners {
-						if owner.Controller != nil {
-							ms = append(ms, &metric.Metric{
-								LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
-							})
-						} else {
-							ms = append(ms, &metric.Metric{
-								LabelValues: []string{owner.Kind, owner.Name, "false"},
-							})
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
+								LabelKeys:   []string{"owner_kind", "owner_name", "owner_is_controller"},
+								LabelValues: []string{"<none>", "<none>", "<none>"},
+								Value:       1,
+							},
+						},
+					}
+				}
+
+				ms := make([]*metric.Metric, len(owners))
+
+				for i, owner := range owners {
+					if owner.Controller != nil {
+						ms[i] = &metric.Metric{
+							LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+						}
+					} else {
+						ms[i] = &metric.Metric{
+							LabelValues: []string{owner.Kind, owner.Name, "false"},
 						}
 					}
 				}

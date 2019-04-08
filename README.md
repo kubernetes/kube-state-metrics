@@ -66,7 +66,7 @@ At most 5 kube-state-metrics releases will be recorded below.
 
 #### Resource group version compatibility
 Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
-in different Kubernetes versions. As for now, kube-state-metrics will only use the oldest API available in the latest
+in different Kubernetes versions. For now, kube-state-metrics will only use the oldest API available in the latest
 release.
 
 #### Container Image
@@ -86,7 +86,7 @@ those that could be used for actionable alerts. Please contribute PR's for
 additional metrics!
 
 > WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
-> For now the following metrics and collectors
+> For now, the following metrics and collectors
 >
 > **metrics**
 >	* kube_pod_container_resource_requests_nvidia_gpu_devices
@@ -110,8 +110,8 @@ Resource usage for kube-state-metrics changes with the Kubernetes objects(Pods/N
 To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
 [addon-resizer](https://github.com/kubernetes/autoscaler/tree/master/addon-resizer)
 can watch and automatically vertically scale the dependent container up and down based on the number of nodes.
-Thus kube-state-metrics uses `addon-resizer` to automatically scale its resource request. As for the detailed usage about
-`addon-resizer` please go to its [ReadMe](https://github.com/kubernetes/autoscaler/tree/master/addon-resizer#nanny-program-and-arguments).
+Thus kube-state-metrics uses `addon-resizer` to automatically scale its resource request. To learn more about the usage of
+`addon-resizer`, please go to its [README](https://github.com/kubernetes/autoscaler/tree/master/addon-resizer/README.md#nanny-program-and-arguments).
 
 As a general rule, you should allocate
 
@@ -160,7 +160,7 @@ go get k8s.io/kube-state-metrics
 
 #### Building the Docker container
 
-Simple run the following command in this root folder, which will create a
+Simply run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
 ```
 make container

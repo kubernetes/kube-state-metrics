@@ -46,3 +46,8 @@ rules:
   resources:
   - poddisruptionbudgets
   verbs: ["list", "watch"]
+- apiGroups: ["certificates.k8s.io"]
+  resources:
+  - certificatesigningrequests
+  verbs: ["list", "watch"]
+

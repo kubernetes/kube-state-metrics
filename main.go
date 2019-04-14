@@ -29,15 +29,15 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/klog"
-
 	"github.com/openshift/origin/pkg/util/proc"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
-
+	"k8s.io/klog"
 	kcoll "k8s.io/kube-state-metrics/internal/collector"
 	coll "k8s.io/kube-state-metrics/pkg/collector"
 	"k8s.io/kube-state-metrics/pkg/options"
@@ -169,7 +169,7 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	klog.Infof("Testing communication with server")
 	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
-		return nil, fmt.Errorf("ERROR communicating with apiserver: %v", err)
+		return nil, errors.Wrap(err, "ERROR communicating with apiserver")
 	}
 	klog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
 		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)

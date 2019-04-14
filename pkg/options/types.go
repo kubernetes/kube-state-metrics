@@ -20,7 +20,7 @@ import (
 	"sort"
 	"strings"
 
-	"fmt"
+	"github.com/pkg/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -86,7 +86,7 @@ func (c *CollectorSet) Set(value string) error {
 		if len(col) != 0 {
 			_, ok := DefaultCollectors[col]
 			if !ok {
-				return fmt.Errorf("collector \"%s\" does not exist", col)
+				return errors.Errorf("collector \"%s\" does not exist", col)
 			}
 			s[col] = struct{}{}
 		}

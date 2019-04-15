@@ -17,10 +17,10 @@ limitations under the License.
 package collector
 
 import (
-	"fmt"
 	"time"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"github.com/pkg/errors"
+	"github.com/robfig/cron"
 
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,8 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/robfig/cron"
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 var (
@@ -223,7 +222,7 @@ func createCronJobListWatch(kubeClient clientset.Interface, ns string) cache.Lis
 func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %s", schedule, err)
+		return time.Time{}, errors.Wrapf(err, "Failed to parse cron job schedule '%s'", schedule)
 	}
 	if !lastScheduleTime.IsZero() {
 		return sched.Next((*lastScheduleTime).Time), nil
@@ -231,5 +230,5 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	if !createdTime.IsZero() {
 		return sched.Next(createdTime.Time), nil
 	}
-	return time.Time{}, fmt.Errorf("Created time and lastScheduleTime are both zero")
+	return time.Time{}, errors.New("Created time and lastScheduleTime are both zero")
 }

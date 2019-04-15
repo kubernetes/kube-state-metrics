@@ -24,6 +24,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 )
 
@@ -48,7 +50,7 @@ func (testCase *generateMetricsTestCase) run() error {
 	out := strings.Join(metric, "\n")
 
 	if err := compareOutput(testCase.Want, out); err != nil {
-		return fmt.Errorf("expected wanted output to equal output: %v", err.Error())
+		return errors.Wrap(err, "expected wanted output to equal output")
 	}
 
 	return nil
@@ -65,7 +67,7 @@ func compareOutput(a, b string) error {
 	}
 
 	if entities[0] != entities[1] {
-		return fmt.Errorf("expected a to equal b but got:\n%v\nand:\n%v", entities[0], entities[1])
+		return errors.Errorf("expected a to equal b but got:\n%v\nand:\n%v", entities[0], entities[1])
 	}
 
 	return nil

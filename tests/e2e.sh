@@ -17,7 +17,7 @@
 set -e
 set -o pipefail
 
-KUBERNETES_VERSION=v1.10.0
+KUBERNETES_VERSION=v1.14.0
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
 PROMETHEUS_VERSION=2.0.0
@@ -38,7 +38,7 @@ function finish() {
 }
 
 function setup_minikube() {
-    curl -sLo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 \
+    curl -sLo minikube https://storage.googleapis.com/minikube/releases/v1.0.0/minikube-linux-amd64 \
         && chmod +x minikube \
         && ${SUDO} mv minikube /usr/local/bin/
 }

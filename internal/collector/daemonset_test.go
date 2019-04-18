@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/extensions/v1beta1"
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
@@ -52,7 +52,7 @@ func TestDaemonSetCollector(t *testing.T) {
 `
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.DaemonSet{
+			Obj: &v1.DaemonSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ds1",
 					Namespace: "ns1",
@@ -61,7 +61,7 @@ func TestDaemonSetCollector(t *testing.T) {
 					},
 					Generation: 21,
 				},
-				Status: v1beta1.DaemonSetStatus{
+				Status: v1.DaemonSetStatus{
 					CurrentNumberScheduled: 15,
 					NumberMisscheduled:     10,
 					DesiredNumberScheduled: 5,
@@ -92,7 +92,7 @@ func TestDaemonSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.DaemonSet{
+			Obj: &v1.DaemonSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "ds2",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -102,7 +102,7 @@ func TestDaemonSetCollector(t *testing.T) {
 					},
 					Generation: 14,
 				},
-				Status: v1beta1.DaemonSetStatus{
+				Status: v1.DaemonSetStatus{
 					CurrentNumberScheduled: 10,
 					NumberMisscheduled:     5,
 					DesiredNumberScheduled: 0,
@@ -135,7 +135,7 @@ func TestDaemonSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.DaemonSet{
+			Obj: &v1.DaemonSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "ds3",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -145,7 +145,7 @@ func TestDaemonSetCollector(t *testing.T) {
 					},
 					Generation: 15,
 				},
-				Status: v1beta1.DaemonSetStatus{
+				Status: v1.DaemonSetStatus{
 					CurrentNumberScheduled: 10,
 					NumberMisscheduled:     5,
 					DesiredNumberScheduled: 15,

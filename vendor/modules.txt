@@ -117,7 +117,6 @@ gopkg.in/inf.v0
 gopkg.in/yaml.v2
 # k8s.io/api v0.0.0-20190313235455-40a48860b5ab
 k8s.io/api/apps/v1
-k8s.io/api/apps/v1beta1
 k8s.io/api/autoscaling/v2beta1
 k8s.io/api/batch/v1
 k8s.io/api/batch/v1beta1
@@ -125,6 +124,7 @@ k8s.io/api/certificates/v1beta1
 k8s.io/api/core/v1
 k8s.io/api/extensions/v1beta1
 k8s.io/api/policy/v1beta1
+k8s.io/api/apps/v1beta1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/autoscaling/v1
 k8s.io/api/apps/v1beta2

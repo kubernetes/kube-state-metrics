@@ -24,7 +24,6 @@ import (
 
 	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
-	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
@@ -178,7 +177,7 @@ func (b *Builder) buildDaemonSetCollector() *coll.Collector {
 		familyHeaders,
 		composedMetricGenFuncs,
 	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.DaemonSet{}, store, b.namespaces, createDaemonSetListWatch)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &appsv1.DaemonSet{}, store, b.namespaces, createDaemonSetListWatch)
 
 	return coll.NewCollector(store)
 }
@@ -433,7 +432,7 @@ func (b *Builder) buildStatefulSetCollector() *coll.Collector {
 		familyHeaders,
 		composedMetricGenFuncs,
 	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &appsv1beta1.StatefulSet{}, store, b.namespaces, createStatefulSetListWatch)
+	reflectorPerNamespace(b.ctx, b.kubeClient, &appsv1.StatefulSet{}, store, b.namespaces, createStatefulSetListWatch)
 
 	return coll.NewCollector(store)
 }

@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/apps/v1beta1"
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
@@ -63,7 +63,7 @@ func TestStatefuleSetCollector(t *testing.T) {
  	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.StatefulSet{
+			Obj: &v1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "statefulset1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -73,12 +73,12 @@ func TestStatefuleSetCollector(t *testing.T) {
 					},
 					Generation: 3,
 				},
-				Spec: v1beta1.StatefulSetSpec{
+				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet1Replicas,
 					ServiceName: "statefulset1service",
 				},
-				Status: v1beta1.StatefulSetStatus{
-					ObservedGeneration: &statefulSet1ObservedGeneration,
+				Status: v1.StatefulSetStatus{
+					ObservedGeneration: statefulSet1ObservedGeneration,
 					Replicas:           2,
 					UpdateRevision:     "ur1",
 					CurrentRevision:    "cr1",
@@ -112,7 +112,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.StatefulSet{
+			Obj: &v1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "statefulset2",
 					Namespace: "ns2",
@@ -121,13 +121,13 @@ func TestStatefuleSetCollector(t *testing.T) {
 					},
 					Generation: 21,
 				},
-				Spec: v1beta1.StatefulSetSpec{
+				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet2Replicas,
 					ServiceName: "statefulset2service",
 				},
-				Status: v1beta1.StatefulSetStatus{
+				Status: v1.StatefulSetStatus{
 					CurrentReplicas:    2,
-					ObservedGeneration: &statefulSet2ObservedGeneration,
+					ObservedGeneration: statefulSet2ObservedGeneration,
 					ReadyReplicas:      5,
 					Replicas:           5,
 					UpdatedReplicas:    3,
@@ -161,7 +161,7 @@ func TestStatefuleSetCollector(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1beta1.StatefulSet{
+			Obj: &v1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "statefulset3",
 					Namespace: "ns3",
@@ -170,12 +170,12 @@ func TestStatefuleSetCollector(t *testing.T) {
 					},
 					Generation: 36,
 				},
-				Spec: v1beta1.StatefulSetSpec{
+				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet3Replicas,
 					ServiceName: "statefulset2service",
 				},
-				Status: v1beta1.StatefulSetStatus{
-					ObservedGeneration: nil,
+				Status: v1.StatefulSetStatus{
+					ObservedGeneration: 0,
 					Replicas:           7,
 					UpdateRevision:     "ur3",
 					CurrentRevision:    "cr3",

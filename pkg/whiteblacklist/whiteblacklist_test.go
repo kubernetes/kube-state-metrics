@@ -118,3 +118,24 @@ func TestExclude(t *testing.T) {
 		}
 	})
 }
+
+func TestStatus(t *testing.T) {
+	t.Run("status when whitelist", func(t *testing.T) {
+		item1 := "item1"
+		whitelist, _ := New(map[string]struct{}{item1 : {}}, map[string]struct{}{})
+		actualStatusString := whitelist.Status()
+		expectedStatusString := "whitelisting the following items: " + item1
+		if actualStatusString != expectedStatusString{
+			t.Fatal("expected status %v but got %v", expectedStatusString, actualStatusString)
+		}
+	})
+	t.Run("status when blacklist", func(t *testing.T) {
+		item1 := "not-empty"
+		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}})
+		actualStatusString := blacklist.Status()
+		expectedStatusString := "blacklisting the following items: " + item1
+		if actualStatusString != expectedStatusString {
+			t.Fatal("expected status %v but got %v", expectedStatusString, actualStatusString)
+		}
+	})
+}

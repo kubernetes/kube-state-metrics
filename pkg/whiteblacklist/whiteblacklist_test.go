@@ -17,6 +17,7 @@ limitations under the License.
 package whiteblacklist
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -120,22 +121,44 @@ func TestExclude(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	t.Run("status when whitelist", func(t *testing.T) {
+	t.Run("status when whitelist has single item", func(t *testing.T) {
 		item1 := "item1"
 		whitelist, _ := New(map[string]struct{}{item1: {}}, map[string]struct{}{})
 		actualStatusString := whitelist.Status()
 		expectedStatusString := "whitelisting the following items: " + item1
 		if actualStatusString != expectedStatusString {
-			t.Errorf("expected status %s but got %s", expectedStatusString, actualStatusString)
+			t.Errorf("expected status %q but got %q", expectedStatusString, actualStatusString)
 		}
 	})
-	t.Run("status when blacklist", func(t *testing.T) {
+	t.Run("status when whitelist has multiple items", func(t *testing.T) {
+		item1 := "item1"
+		item2 := "item2"
+		items := []string{item1, item2}
+		whitelist, _ := New(map[string]struct{}{item1: {}, item2: {}}, map[string]struct{}{})
+		actualStatusString := whitelist.Status()
+		expectedStatusString := "whitelisting the following items: " + strings.Join(items, ",")
+		if actualStatusString != expectedStatusString {
+			t.Errorf("expected status %q but got %q", expectedStatusString, actualStatusString)
+		}
+	})
+	t.Run("status when blacklist has single item", func(t *testing.T) {
 		item1 := "not-empty"
 		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}})
 		actualStatusString := blacklist.Status()
 		expectedStatusString := "blacklisting the following items: " + item1
 		if actualStatusString != expectedStatusString {
-			t.Errorf("expected status %s but got %s", expectedStatusString, actualStatusString)
+			t.Errorf("expected status %q but got %q", expectedStatusString, actualStatusString)
+		}
+	})
+	t.Run("status when blacklist has multiple items", func(t *testing.T) {
+		item1 := "not-empty"
+		item2 := "item2"
+		items := []string{item1, item2}
+		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {} , item2: {}})
+		actualStatusString := blacklist.Status()
+		expectedStatusString := "blacklisting the following items: " + strings.Join(items, ",")
+		if actualStatusString != expectedStatusString {
+			t.Errorf("expected status %q but got %q", expectedStatusString, actualStatusString)
 		}
 	})
 }

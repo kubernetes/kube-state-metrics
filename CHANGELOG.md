@@ -1,3 +1,7 @@
+## v1.6.0-rc.1 / 2019-04-23
+
+* [BUGFIX] Use k8s.io/api/apps/v1 for DaemonSet, Deployment and StatefulSet reflector (#720).
+
 ## v1.6.0-rc.0 / 2019-04-05
 
 * [FEATURE] Add `kube_replicaset_labels` to replicaset collector (#638).

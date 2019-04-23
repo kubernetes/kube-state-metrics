@@ -113,7 +113,7 @@ func (c *CollectorSet) Type() string {
 	return "string"
 }
 
-// NamespaceList represents a list of namespaces to query forom.
+// NamespaceList represents a list of namespaces to query from.
 type NamespaceList []string
 
 func (n *NamespaceList) String() string {

@@ -154,7 +154,7 @@ func TestStatus(t *testing.T) {
 		item1 := "not-empty"
 		item2 := "item2"
 		items := []string{item1, item2}
-		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {} , item2: {}})
+		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}, item2: {}})
 		actualStatusString := blacklist.Status()
 		expectedStatusString := "blacklisting the following items: " + strings.Join(items, ",")
 		if actualStatusString != expectedStatusString {

@@ -17,6 +17,7 @@ limitations under the License.
 package whiteblacklist
 
 import (
+	"regexp"
 	"testing"
 )
 
@@ -115,6 +116,49 @@ func TestExclude(t *testing.T) {
 
 		if blacklist.IsIncluded(item1) {
 			t.Fatal("expected excluded item to be excluded")
+		}
+	})
+}
+
+func TestStatus(t *testing.T) {
+	t.Run("status when whitelist has single item", func(t *testing.T) {
+		item1 := "item1"
+		whitelist, _ := New(map[string]struct{}{item1: {}}, map[string]struct{}{})
+		actualStatusString := whitelist.Status()
+		expectedStatusString := "whitelisting the following items: " + item1
+		if actualStatusString != expectedStatusString {
+			t.Errorf("expected status %q but got %q", expectedStatusString, actualStatusString)
+		}
+	})
+	t.Run("status when whitelist has multiple items", func(t *testing.T) {
+		item1 := "item1"
+		item2 := "item2"
+		whitelist, _ := New(map[string]struct{}{item1: {}, item2: {}}, map[string]struct{}{})
+		actualStatusString := whitelist.Status()
+		expectedRegexPattern := `^whitelisting the following items: (item1|item2), (item2|item1)$`
+		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
+		if !matched {
+			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)
+		}
+	})
+	t.Run("status when blacklist has single item", func(t *testing.T) {
+		item1 := "not-empty"
+		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}})
+		actualStatusString := blacklist.Status()
+		expectedStatusString := "blacklisting the following items: " + item1
+		if actualStatusString != expectedStatusString {
+			t.Errorf("expected status %q but got %q", expectedStatusString, actualStatusString)
+		}
+	})
+	t.Run("status when blacklist has multiple items", func(t *testing.T) {
+		item1 := "item1"
+		item2 := "item2"
+		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}, item2: {}})
+		actualStatusString := blacklist.Status()
+		expectedRegexPattern := `^blacklisting the following items: (item1|item2), (item2|item1)$`
+		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
+		if !matched {
+			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)
 		}
 	})
 }

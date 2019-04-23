@@ -61,3 +61,33 @@ func TestCollectorSetSet(t *testing.T) {
 		}
 	}
 }
+
+func TestNamespaceListSet(t *testing.T) {
+	tests := []struct {
+		Desc   string
+		Value  string
+		Wanted NamespaceList
+	}{
+		{
+			Desc:   "empty namespacelist",
+			Value:  "",
+			Wanted: NamespaceList{},
+		},
+		{
+			Desc:  "normal namespacelist",
+			Value: "default, kube-system",
+			Wanted: NamespaceList([]string{
+				"default",
+				"kube-system",
+			}),
+		},
+	}
+
+	for _, test := range tests {
+		ns := &NamespaceList{}
+		gotError := ns.Set(test.Value)
+		if gotError != nil || !reflect.DeepEqual(*ns, test.Wanted) {
+			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v. Got Error: %v", test.Desc, test.Wanted, *ns, gotError)
+		}
+	}
+}

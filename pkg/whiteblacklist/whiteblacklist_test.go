@@ -135,7 +135,7 @@ func TestStatus(t *testing.T) {
 		item2 := "item2"
 		whitelist, _ := New(map[string]struct{}{item1: {}, item2: {}}, map[string]struct{}{})
 		actualStatusString := whitelist.Status()
-		expectedRegexPattern := `^whitelisting the following items: item1|item2, item2|item1$`
+		expectedRegexPattern := `^whitelisting the following items: (item1|item2), (item2|item1)$`
 		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
 		if !matched {
 			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)
@@ -155,7 +155,7 @@ func TestStatus(t *testing.T) {
 		item2 := "item2"
 		blacklist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}, item2: {}})
 		actualStatusString := blacklist.Status()
-		expectedRegexPattern := `^blacklisting the following items: item1|item2, item2|item1$`
+		expectedRegexPattern := `^blacklisting the following items: (item1|item2), (item2|item1)$`
 		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
 		if !matched {
 			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)

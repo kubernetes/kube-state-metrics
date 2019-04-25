@@ -125,3 +125,131 @@ func TestIsExtendedResourceName(t *testing.T) {
 		})
 	}
 }
+
+func TestKubeLabelsToPrometheusLabels(t *testing.T) {
+	testCases := []struct {
+		kubeLabels   map[string]string
+		expectKeys   []string
+		expectValues []string
+	}{
+		{
+			kubeLabels: map[string]string{
+				"app1": "normal",
+			},
+			expectKeys:   []string{"label_app1"},
+			expectValues: []string{"normal"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"0_app3": "starts_with_digit",
+			},
+			expectKeys:   []string{"label_0_app3"},
+			expectValues: []string{"starts_with_digit"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"": "empty",
+			},
+			expectKeys:   []string{"label_"},
+			expectValues: []string{"empty"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"$app4": "special_char",
+			},
+			expectKeys:   []string{"label__app4"},
+			expectValues: []string{"special_char"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"_app5": "starts_with_underscore",
+			},
+			expectKeys:   []string{"label__app5"},
+			expectValues: []string{"starts_with_underscore"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("kubelabels input=%v , expected prometheus keys=%v, expected prometheus values=%v", tc.kubeLabels, tc.expectKeys, tc.expectValues), func(t *testing.T) {
+			labelKeys, labelValues := kubeLabelsToPrometheusLabels(tc.kubeLabels)
+			if len(labelKeys) != len(tc.expectKeys) {
+				t.Errorf("Got Prometheus label keys with len %d but expected %d", len(labelKeys), len(tc.expectKeys))
+			}
+
+			if len(labelValues) != len(tc.expectValues) {
+				t.Errorf("Got Prometheus label values with len %d but expected %d", len(labelValues), len(tc.expectValues))
+			}
+
+			for i := range tc.expectKeys {
+				if !(tc.expectKeys[i] == labelKeys[i] && tc.expectValues[i] == labelValues[i]) {
+					t.Errorf("Got Prometheus label %q: %q but expected %q: %q", labelKeys[i], labelValues[i], tc.expectKeys[i], tc.expectValues[i])
+				}
+			}
+		})
+	}
+
+}
+
+func TestKubeAnnotationsToPrometheusAnnotations(t *testing.T) {
+	testCases := []struct {
+		kubeAnnotations map[string]string
+		expectKeys      []string
+		expectValues    []string
+	}{
+		{
+			kubeAnnotations: map[string]string{
+				"app1": "normal",
+			},
+			expectKeys:   []string{"annotation_app1"},
+			expectValues: []string{"normal"},
+		},
+		{
+			kubeAnnotations: map[string]string{
+				"0_app3": "starts_with_digit",
+			},
+			expectKeys:   []string{"annotation_0_app3"},
+			expectValues: []string{"starts_with_digit"},
+		},
+		{
+			kubeAnnotations: map[string]string{
+				"": "empty",
+			},
+			expectKeys:   []string{"annotation_"},
+			expectValues: []string{"empty"},
+		},
+		{
+			kubeAnnotations: map[string]string{
+				"$app4": "special_char",
+			},
+			expectKeys:   []string{"annotation__app4"},
+			expectValues: []string{"special_char"},
+		},
+		{
+			kubeAnnotations: map[string]string{
+				"_app5": "starts_with_underscore",
+			},
+			expectKeys:   []string{"annotation__app5"},
+			expectValues: []string{"starts_with_underscore"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("kubeannotations input=%v , expected prometheus keys=%v, expected prometheus values=%v", tc.kubeAnnotations, tc.expectKeys, tc.expectValues), func(t *testing.T) {
+			annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(tc.kubeAnnotations)
+			if len(annotationKeys) != len(tc.expectKeys) {
+				t.Errorf("Got Prometheus label keys with len %d but expected %d", len(annotationKeys), len(tc.expectKeys))
+			}
+
+			if len(annotationValues) != len(tc.expectValues) {
+				t.Errorf("Got Prometheus label values with len %d but expected %d", len(annotationValues), len(tc.expectValues))
+			}
+
+			for i := range tc.expectKeys {
+				if !(tc.expectKeys[i] == annotationKeys[i] && tc.expectValues[i] == annotationValues[i]) {
+					t.Errorf("Got Prometheus label %q: %q but expected %q: %q", annotationKeys[i], annotationValues[i], tc.expectKeys[i], tc.expectValues[i])
+				}
+			}
+		})
+	}
+
+}

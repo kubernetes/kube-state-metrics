@@ -125,3 +125,116 @@ func TestIsExtendedResourceName(t *testing.T) {
 		})
 	}
 }
+
+func TestkubeLabelsToPrometheusLabels(t *testing.T) {
+	t.Run("prometheus labels when kube labels has multiple items", func(t *testing.T) {
+
+		kubeLabels := map[string]string{
+			"app1":   "normal",
+			"-app2":  "starts_with_hyphen",
+			"0_app3": "starts_with_digit",
+			"":       "empty",
+			"$app4":  "special_char",
+			"_app5":  "starts_with_underscore",
+		}
+
+		expectedPrometheusLabelKeys := []string{
+			"label_app1",
+			"label_-app2",
+			"label_0_app3",
+			"label_",
+			"label__app4",
+			"label__app5",
+		}
+		expectedPrometheusLabelValues := []string{
+			"normal",
+			"starts_with_hyphen",
+			"starts_with_digit",
+			"empty",
+			"special_char",
+			"starts_with_underscore",
+		}
+
+		labelKeys, labelValues := kubeLabelsToPrometheusLabels(kubeLabels)
+		if len(labelKeys) != len(expectedPrometheusLabelKeys) {
+			t.Errorf("Got Prometheus label keys with len %d but expected %d", len(labelKeys), len(expectedPrometheusLabelKeys))
+		}
+
+		if len(labelValues) != len(expectedPrometheusLabelValues) {
+			t.Errorf("Got Prometheus label values with len %d but expected %d", len(labelValues), len(expectedPrometheusLabelValues))
+		}
+
+		for i, _ := range expectedPrometheusLabelKeys {
+			if !(expectedPrometheusLabelKeys[i] == labelKeys[i] && expectedPrometheusLabelValues[i] == labelValues[i]) {
+				t.Errorf("Got Prometheus label %q: %q but expected %q: %q", labelKeys[i], labelValues[i], expectedPrometheusLabelKeys[i], expectedPrometheusLabelValues[i])
+			}
+		}
+	})
+
+	t.Run("prometheus labels when kube labels is empty", func(t *testing.T) {
+
+		kubeLabels := map[string]string{}
+
+		labelKeys, labelValues := kubeLabelsToPrometheusLabels(kubeLabels)
+		if len(labelKeys) != 0 || len(labelValues) != 0 {
+			t.Errorf("Got Prometheus label keys with len %d and values with len %d but expected len 0", len(labelKeys), len(labelValues))
+		}
+	})
+}
+
+func TestkubeAnnotationsToPrometheusAnnotations(t *testing.T) {
+
+	t.Run("prometheus annotations when kube annotations has multiple items", func(t *testing.T) {
+
+		kubeAnnotations := map[string]string{
+			"app1":   "normal",
+			"-app2":  "starts_with_hyphen",
+			"0_app3": "starts_with_digit",
+			"":       "empty",
+			"$app4":  "special_char",
+			"_app5":  "starts_with_underscore",
+		}
+
+		expectedPrometheusAnnotationKeys := []string{
+			"annotation_app1",
+			"annotation_-app2",
+			"annotation_0_app3",
+			"annotation_",
+			"annotation__app4",
+			"annotation__app5",
+		}
+		expectedPrometheusAnnotationValues := []string{
+			"normal",
+			"starts_with_hyphen",
+			"starts_with_digit",
+			"empty",
+			"special_char",
+			"starts_with_underscore",
+		}
+
+		annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(kubeAnnotations)
+		if len(annotationKeys) != len(expectedPrometheusAnnotationKeys) {
+			t.Errorf("Got Prometheus annotation keys with len %d but expected %d", len(annotationKeys), len(expectedPrometheusAnnotationKeys))
+		}
+
+		if len(annotationValues) != len(expectedPrometheusAnnotationValues) {
+			t.Errorf("Got Prometheus annotation values with len %d but expected %d", len(annotationValues), len(expectedPrometheusAnnotationValues))
+		}
+
+		for i, _ := range expectedPrometheusAnnotationKeys {
+			if !(expectedPrometheusAnnotationKeys[i] == annotationKeys[i] && expectedPrometheusAnnotationValues[i] == annotationValues[i]) {
+				t.Errorf("Got Prometheus annotation %q: %q but expected %q: %q", annotationKeys[i], annotationValues[i], expectedPrometheusAnnotationKeys[i], expectedPrometheusAnnotationValues[i])
+			}
+		}
+	})
+
+	t.Run("prometheus annotations when kube annotations is empty", func(t *testing.T) {
+
+		kubeAnnotations := map[string]string{}
+
+		annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(kubeAnnotations)
+		if len(annotationKeys) != 0 || len(annotationValues) != 0 {
+			t.Errorf("Got Prometheus annotation keys with len %d and values with len %d but expected len 0", len(annotationKeys), len(annotationValues))
+		}
+	})
+}

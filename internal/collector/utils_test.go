@@ -190,7 +190,7 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 
 }
 
-func TestKubeAnnotationsToPrometheusAnootations(t *testing.T) {
+func TestKubeAnnotationsToPrometheusAnnotations(t *testing.T) {
 	testCases := []struct {
 		kubeAnnotations map[string]string
 		expectKeys      []string
@@ -235,7 +235,7 @@ func TestKubeAnnotationsToPrometheusAnootations(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("kubeannotations input=%v , expected prometheus keys=%v, expected prometheus values=%v", tc.kubeAnnotations, tc.expectKeys, tc.expectValues), func(t *testing.T) {
-			annotationKeys, annotationValues := kubeLabelsToPrometheusLabels(tc.kubeAnnotations)
+			annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(tc.kubeAnnotations)
 			if len(annotationKeys) != len(tc.expectKeys) {
 				t.Errorf("Got Prometheus label keys with len %d but expected %d", len(annotationKeys), len(tc.expectKeys))
 			}

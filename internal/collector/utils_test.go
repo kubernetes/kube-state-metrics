@@ -126,7 +126,7 @@ func TestIsExtendedResourceName(t *testing.T) {
 	}
 }
 
-func TestkubeLabelsToPrometheusLabels(t *testing.T) {
+func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 	t.Run("prometheus labels when kube labels has multiple items", func(t *testing.T) {
 
 		kubeLabels := map[string]string{
@@ -164,7 +164,7 @@ func TestkubeLabelsToPrometheusLabels(t *testing.T) {
 			t.Errorf("Got Prometheus label values with len %d but expected %d", len(labelValues), len(expectedPrometheusLabelValues))
 		}
 
-		for i, _ := range expectedPrometheusLabelKeys {
+		for i := range expectedPrometheusLabelKeys {
 			if !(expectedPrometheusLabelKeys[i] == labelKeys[i] && expectedPrometheusLabelValues[i] == labelValues[i]) {
 				t.Errorf("Got Prometheus label %q: %q but expected %q: %q", labelKeys[i], labelValues[i], expectedPrometheusLabelKeys[i], expectedPrometheusLabelValues[i])
 			}
@@ -182,7 +182,7 @@ func TestkubeLabelsToPrometheusLabels(t *testing.T) {
 	})
 }
 
-func TestkubeAnnotationsToPrometheusAnnotations(t *testing.T) {
+func TestKubeAnnotationsToPrometheusAnnotations(t *testing.T) {
 
 	t.Run("prometheus annotations when kube annotations has multiple items", func(t *testing.T) {
 
@@ -221,7 +221,7 @@ func TestkubeAnnotationsToPrometheusAnnotations(t *testing.T) {
 			t.Errorf("Got Prometheus annotation values with len %d but expected %d", len(annotationValues), len(expectedPrometheusAnnotationValues))
 		}
 
-		for i, _ := range expectedPrometheusAnnotationKeys {
+		for i := range expectedPrometheusAnnotationKeys {
 			if !(expectedPrometheusAnnotationKeys[i] == annotationKeys[i] && expectedPrometheusAnnotationValues[i] == annotationValues[i]) {
 				t.Errorf("Got Prometheus annotation %q: %q but expected %q: %q", annotationKeys[i], annotationValues[i], expectedPrometheusAnnotationKeys[i], expectedPrometheusAnnotationValues[i])
 			}

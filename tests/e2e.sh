@@ -17,13 +17,14 @@
 set -e
 set -o pipefail
 
-KUBERNETES_VERSION=v1.10.0
+KUBERNETES_VERSION=v1.14.1
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
-PROMETHEUS_VERSION=2.0.0
+PROMETHEUS_VERSION=2.9.1
 E2E_SETUP_MINIKUBE=${E2E_SETUP_MINIKUBE:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
 E2E_SETUP_PROMTOOL=${E2E_SETUP_PROMTOOL:-}
+MINIKUBE_VERSION=v1.0.0
 MINIKUBE_DRIVER=${MINIKUBE_DRIVER:-virtualbox}
 SUDO=${SUDO:-}
 
@@ -38,7 +39,7 @@ function finish() {
 }
 
 function setup_minikube() {
-    curl -sLo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 \
+    curl -sLo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 \
         && chmod +x minikube \
         && ${SUDO} mv minikube /usr/local/bin/
 }

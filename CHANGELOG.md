@@ -1,3 +1,7 @@
+## v1.6.0-rc.2 / 2019-04-26
+
+* [BUGFIX] Bump addon-resizer patch version reducing resource consumption (#724).
+
 ## v1.6.0-rc.1 / 2019-04-23
 
 * [BUGFIX] Use k8s.io/api/apps/v1 for DaemonSet, Deployment and StatefulSet reflector (#720).

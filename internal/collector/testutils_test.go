@@ -33,3 +33,27 @@ kube_pod_container_info{container="container3",container_id="docker://ef789",ima
 		t.Fatalf("expected:\n%v\nbut got:\n%v", want, out)
 	}
 }
+
+func TestRemoveUnusedWhitespace(t *testing.T) {
+	in := "       kube_cron_job_info \n        kube_pod_container_info \n        kube_config_map_info     "
+
+	want := "kube_cron_job_info\nkube_pod_container_info\nkube_config_map_info"
+
+	out := removeUnusedWhitespace(in)
+
+	if want != out {
+		t.Fatalf("expected: %q\nbut got: %q", want, out)
+	}
+}
+
+func TestSortByLine(t *testing.T) {
+	in := "kube_cron_job_info \nkube_pod_container_info \nkube_config_map_info"
+
+	want := "kube_config_map_info\nkube_cron_job_info \nkube_pod_container_info "
+
+	out := sortByLine(in)
+
+	if want != out {
+		t.Fatalf("expected: %q\nbut got: %q", want, out)
+	}
+}

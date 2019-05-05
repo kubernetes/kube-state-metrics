@@ -97,6 +97,26 @@ var (
 					}}
 			}),
 		},
+		{
+			Name: "kube_ingress_path",
+			Type: metric.Gauge,
+			Help: "Ingress host, paths and backend service information.",
+			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, rule := range i.Spec.Rules {
+					for _, path := range rule.HTTP.Paths {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"host", "path", "service_name", "service_port"},
+							LabelValues: []string{rule.Host, path.Path, path.Backend.ServiceName, path.Backend.ServicePort.String()},
+							Value:       1,
+						})
+					}
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
 	}
 )
 

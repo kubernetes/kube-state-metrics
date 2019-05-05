@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -40,6 +41,8 @@ func TestIngressCollector(t *testing.T) {
 		# TYPE kube_ingress_created gauge
 		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
 		# TYPE kube_ingress_metadata_resource_version gauge
+		# HELP kube_ingress_path Ingress host, paths and backend service.
+		# TYPE kube_ingress_path gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -55,7 +58,7 @@ func TestIngressCollector(t *testing.T) {
 				kube_ingress_metadata_resource_version{namespace="ns1",resource_version="000000",ingress="ingress1"} 1
 				kube_ingress_labels{namespace="ns1",ingress="ingress1"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path"},
 		},
 		{
 			Obj: &v1beta1.Ingress{
@@ -72,7 +75,7 @@ func TestIngressCollector(t *testing.T) {
 				kube_ingress_metadata_resource_version{namespace="ns2",resource_version="123456",ingress="ingress2"} 1
 				kube_ingress_labels{namespace="ns2",ingress="ingress2"} 1
 				`,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path"},
 		},
 		{
 			Obj: &v1beta1.Ingress{
@@ -90,7 +93,46 @@ func TestIngressCollector(t *testing.T) {
 				kube_ingress_metadata_resource_version{namespace="ns3",resource_version="abcdef",ingress="ingress3"} 1
 				kube_ingress_labels{label_test_3="test-3",namespace="ns3",ingress="ingress3"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path"},
+		},
+		{
+			Obj: &v1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress4",
+					Namespace:         "ns4",
+					CreationTimestamp: metav1StartTime,
+					Labels:            map[string]string{"test-4": "test-4"},
+					ResourceVersion:   "abcdef",
+				},
+				Spec: v1beta1.IngressSpec{
+					Rules: []v1beta1.IngressRule{
+						{
+							Host: "somehost",
+							IngressRuleValue: v1beta1.IngressRuleValue{
+								HTTP: &v1beta1.HTTPIngressRuleValue{
+									Paths: []v1beta1.HTTPIngressPath{
+										{
+											Path: "/somepath",
+											Backend: v1beta1.IngressBackend{
+												ServiceName: "someservice",
+												ServicePort: intstr.FromInt(1234),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				kube_ingress_info{namespace="ns4",ingress="ingress4"} 1
+				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
+				kube_ingress_metadata_resource_version{namespace="ns4",resource_version="abcdef",ingress="ingress4"} 1
+				kube_ingress_labels{label_test_4="test-4",namespace="ns4",ingress="ingress4"} 1
+				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
+`,
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path"},
 		},
 	}
 	for i, c := range cases {

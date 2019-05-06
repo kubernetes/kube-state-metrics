@@ -324,8 +324,8 @@ func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.
 	}
 }
 
-func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
-	return cache.ListWatch{
+func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.BatchV1().Jobs(ns).List(opts)
 		},

@@ -1,4 +1,7 @@
-## v1.6.0-rc.0 / 2019-04-05
+## v1.6.0 / 2019-05-06
+
+After a testing period of 10 days (release candidate 2), there were no
+additional bugs found, thus releasing the stable version v1.6.0.
 
 * [FEATURE] Add `kube_replicaset_labels` to replicaset collector (#638).
 * [FEATURE] Add ingresses collector (#640).
@@ -7,6 +10,8 @@
 * [FEATURE] Add `kube_persistentvolume_capacity` metric (#674).
 * [FEATURE] Add `kube_job_owner` metric (#681).
 * [ENHANCEMENT] Add `priority_class` label to `kube_pod_info` metric (#713).
+* [BUGFIX] Bump addon-resizer patch version reducing resource consumption (#724).
+* [BUGFIX] Use k8s.io/api/apps/v1 for DaemonSet, Deployment and StatefulSet reflector (#720).
 
 ## v1.5.0 / 2019-01-10
 

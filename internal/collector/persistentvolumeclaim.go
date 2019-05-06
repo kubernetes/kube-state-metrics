@@ -162,8 +162,8 @@ func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Fam
 	}
 }
 
-func createPersistentVolumeClaimListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
-	return cache.ListWatch{
+func createPersistentVolumeClaimListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(opts)
 		},

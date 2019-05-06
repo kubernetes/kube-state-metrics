@@ -138,322 +138,99 @@ var availableCollectors = map[string]func(f *Builder) *coll.Collector{
 }
 
 func (b *Builder) buildConfigMapCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, configMapMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ConfigMap{}, store, b.namespaces, createConfigMapListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(configMapMetricFamilies, &v1.ConfigMap{}, createConfigMapListWatch)
 }
 
 func (b *Builder) buildCronJobCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, cronJobMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1beta1.CronJob{}, store, b.namespaces, createCronJobListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(cronJobMetricFamilies, &batchv1beta1.CronJob{}, createCronJobListWatch)
 }
 
 func (b *Builder) buildDaemonSetCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, daemonSetMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &appsv1.DaemonSet{}, store, b.namespaces, createDaemonSetListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(daemonSetMetricFamilies, &appsv1.DaemonSet{}, createDaemonSetListWatch)
 }
 
 func (b *Builder) buildDeploymentCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, deploymentMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &appsv1.Deployment{}, store, b.namespaces, createDeploymentListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(deploymentMetricFamilies, &appsv1.Deployment{}, createDeploymentListWatch)
 }
 
 func (b *Builder) buildEndpointsCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, endpointMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Endpoints{}, store, b.namespaces, createEndpointsListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(endpointMetricFamilies, &v1.Endpoints{}, createEndpointsListWatch)
 }
 
 func (b *Builder) buildHPACollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, hpaMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &autoscaling.HorizontalPodAutoscaler{}, store, b.namespaces, createHPAListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(hpaMetricFamilies, &autoscaling.HorizontalPodAutoscaler{}, createHPAListWatch)
 }
 
 func (b *Builder) buildIngressCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, ingressMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.Ingress{}, store, b.namespaces, createIngressListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(ingressMetricFamilies, &extensions.Ingress{}, createIngressListWatch)
 }
 
 func (b *Builder) buildJobCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, jobMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &batchv1.Job{}, store, b.namespaces, createJobListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(jobMetricFamilies, &batchv1.Job{}, createJobListWatch)
 }
 
 func (b *Builder) buildLimitRangeCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, limitRangeMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.LimitRange{}, store, b.namespaces, createLimitRangeListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(limitRangeMetricFamilies, &v1.LimitRange{}, createLimitRangeListWatch)
 }
 
 func (b *Builder) buildNamespaceCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, namespaceMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Namespace{}, store, b.namespaces, createNamespaceListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(namespaceMetricFamilies, &v1.Namespace{}, createNamespaceListWatch)
 }
 
 func (b *Builder) buildNodeCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, nodeMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Node{}, store, b.namespaces, createNodeListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(nodeMetricFamilies, &v1.Node{}, createNodeListWatch)
 }
 
 func (b *Builder) buildPersistentVolumeClaimCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, persistentVolumeClaimMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolumeClaim{}, store, b.namespaces, createPersistentVolumeClaimListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(persistentVolumeClaimMetricFamilies, &v1.PersistentVolumeClaim{}, createPersistentVolumeClaimListWatch)
 }
 
 func (b *Builder) buildPersistentVolumeCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, persistentVolumeMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.PersistentVolume{}, store, b.namespaces, createPersistentVolumeListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(persistentVolumeMetricFamilies, &v1.PersistentVolume{}, createPersistentVolumeListWatch)
 }
 
 func (b *Builder) buildPodDisruptionBudgetCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, podDisruptionBudgetMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &policy.PodDisruptionBudget{}, store, b.namespaces, createPodDisruptionBudgetListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(podDisruptionBudgetMetricFamilies, &policy.PodDisruptionBudget{}, createPodDisruptionBudgetListWatch)
 }
 
 func (b *Builder) buildReplicaSetCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, replicaSetMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &extensions.ReplicaSet{}, store, b.namespaces, createReplicaSetListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(replicaSetMetricFamilies, &extensions.ReplicaSet{}, createReplicaSetListWatch)
 }
 
 func (b *Builder) buildReplicationControllerCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, replicationControllerMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ReplicationController{}, store, b.namespaces, createReplicationControllerListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(replicationControllerMetricFamilies, &v1.ReplicationController{}, createReplicationControllerListWatch)
 }
 
 func (b *Builder) buildResourceQuotaCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, resourceQuotaMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.ResourceQuota{}, store, b.namespaces, createResourceQuotaListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(resourceQuotaMetricFamilies, &v1.ResourceQuota{}, createResourceQuotaListWatch)
 }
 
 func (b *Builder) buildSecretCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, secretMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Secret{}, store, b.namespaces, createSecretListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(secretMetricFamilies, &v1.Secret{}, createSecretListWatch)
 }
 
 func (b *Builder) buildServiceCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, serviceMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Service{}, store, b.namespaces, createServiceListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(serviceMetricFamilies, &v1.Service{}, createServiceListWatch)
 }
 
 func (b *Builder) buildStatefulSetCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, statefulSetMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &appsv1.StatefulSet{}, store, b.namespaces, createStatefulSetListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(statefulSetMetricFamilies, &appsv1.StatefulSet{}, createStatefulSetListWatch)
 }
 
 func (b *Builder) buildPodCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, podMetricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &v1.Pod{}, store, b.namespaces, createPodListWatch)
-
-	return coll.NewCollector(store)
+	return b.buildCollector(podMetricFamilies, &v1.Pod{}, createPodListWatch)
 }
 
 func (b *Builder) buildCsrCollector() *coll.Collector {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, csrMetricFamilies)
+	return b.buildCollector(csrMetricFamilies, &certv1beta1.CertificateSigningRequest{}, createCSRListWatch)
+}
+
+func (b *Builder) buildCollector(
+	metricFamilies []metric.FamilyGenerator,
+	expectedType interface{},
+	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
+) *coll.Collector {
+	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, metricFamilies)
 	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
 
 	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
@@ -462,24 +239,21 @@ func (b *Builder) buildCsrCollector() *coll.Collector {
 		familyHeaders,
 		composedMetricGenFuncs,
 	)
-	reflectorPerNamespace(b.ctx, b.kubeClient, &certv1beta1.CertificateSigningRequest{}, store, b.namespaces, createCSRListWatch)
+	b.reflectorPerNamespace(expectedType, store, listWatchFunc)
 
 	return coll.NewCollector(store)
 }
 
 // reflectorPerNamespace creates a Kubernetes client-go reflector with the given
 // listWatchFunc for each given namespace and registers it with the given store.
-func reflectorPerNamespace(
-	ctx context.Context,
-	kubeClient clientset.Interface,
+func (b *Builder) reflectorPerNamespace(
 	expectedType interface{},
 	store cache.Store,
-	namespaces []string,
-	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListWatch,
+	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) {
-	for _, ns := range namespaces {
-		lw := listWatchFunc(kubeClient, ns)
-		reflector := cache.NewReflector(&lw, expectedType, store, 0)
-		go reflector.Run(ctx.Done())
+	for _, ns := range b.namespaces {
+		lw := listWatchFunc(b.kubeClient, ns)
+		reflector := cache.NewReflector(lw, expectedType, store, 0)
+		go reflector.Run(b.ctx.Done())
 	}
 }

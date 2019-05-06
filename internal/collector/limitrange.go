@@ -122,8 +122,8 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(interface{})
 	}
 }
 
-func createLimitRangeListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
-	return cache.ListWatch{
+func createLimitRangeListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CoreV1().LimitRanges(ns).List(opts)
 		},

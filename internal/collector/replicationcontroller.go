@@ -169,8 +169,8 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Fam
 	}
 }
 
-func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string) cache.ListWatch {
-	return cache.ListWatch{
+func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CoreV1().ReplicationControllers(ns).List(opts)
 		},

@@ -17,6 +17,8 @@ limitations under the License.
 package collector
 
 import (
+	"strconv"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 
 	v1 "k8s.io/api/apps/v1"
@@ -222,6 +224,27 @@ var (
 							LabelKeys:   labelKeys,
 							LabelValues: labelValues,
 							Value:       1,
+						},
+					},
+				}
+			}),
+		},
+		{
+			Name: "kube_deployment_revision",
+			Type: metric.Gauge,
+			Help: "Sequence number representing a specific revision of the deployment controller represented by the annotaion 'deployment.kubernetes.io/revision'.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				if d.ObjectMeta.Annotations == nil {
+					return &metric.Family{}
+				}
+				revision, err := strconv.Atoi(d.ObjectMeta.Annotations["deployment.kubernetes.io/revision"])
+				if err != nil {
+					return &metric.Family{}
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(revision),
 						},
 					},
 				}

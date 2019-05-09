@@ -65,6 +65,8 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
 		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
+		# HELP kube_deployment_revision Sequence number representing a specific revision of the deployment controller represented by the annotaion 'deployment.kubernetes.io/revision'.
+		# TYPE kube_deployment_revision gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -75,6 +77,9 @@ func TestDeploymentCollector(t *testing.T) {
 					Namespace:         "ns1",
 					Labels: map[string]string{
 						"app": "example1",
+					},
+					Annotations: map[string]string{
+						"deployment.kubernetes.io/revision": "1",
 					},
 					Generation: 21,
 				},
@@ -108,6 +113,7 @@ func TestDeploymentCollector(t *testing.T) {
         kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
         kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
         kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
+		kube_deployment_revision{deployment="depl1",namespace="ns1"} 1
 `,
 		},
 		{
@@ -117,6 +123,9 @@ func TestDeploymentCollector(t *testing.T) {
 					Namespace: "ns2",
 					Labels: map[string]string{
 						"app": "example2",
+					},
+					Annotations: map[string]string{
+						"deployment.kubernetes.io/revision": "3",
 					},
 					Generation: 14,
 				},
@@ -150,6 +159,7 @@ func TestDeploymentCollector(t *testing.T) {
         kube_deployment_status_replicas_unavailable{deployment="depl2",namespace="ns2"} 0
         kube_deployment_status_replicas_updated{deployment="depl2",namespace="ns2"} 1
         kube_deployment_status_replicas{deployment="depl2",namespace="ns2"} 10
+		kube_deployment_revision{deployment="depl2",namespace="ns2"} 3
 `,
 		},
 	}

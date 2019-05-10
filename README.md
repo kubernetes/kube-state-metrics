@@ -108,10 +108,6 @@ kube-state-metrics exposes its own general process metrics under `--telemetry-ho
 
 Resource usage for kube-state-metrics changes with the Kubernetes objects(Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
 To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
-[addon-resizer](https://github.com/kubernetes/autoscaler/tree/master/addon-resizer)
-can watch and automatically vertically scale the dependent container up and down based on the number of nodes.
-Thus kube-state-metrics uses `addon-resizer` to automatically scale its resource request. To learn more about the usage of
-`addon-resizer`, please go to its [README](https://github.com/kubernetes/autoscaler/tree/master/addon-resizer/README.md#nanny-program-and-arguments).
 
 As a general rule, you should allocate
 

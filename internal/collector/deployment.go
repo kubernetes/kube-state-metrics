@@ -34,6 +34,7 @@ var (
 	descDeploymentLabelsName          = "kube_deployment_labels"
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
+	annotationDeploymentRevision      = "deployment.kubernetes.io/revision"
 
 	deploymentMetricFamilies = []metric.FamilyGenerator{
 		{
@@ -232,12 +233,12 @@ var (
 		{
 			Name: "kube_deployment_revision",
 			Type: metric.Gauge,
-			Help: "Sequence number representing a specific revision of the deployment controller represented by the annotaion 'deployment.kubernetes.io/revision'.",
+			Help: "Number representing a specific revision of the deployment controller represented by the annotation 'deployment.kubernetes.io/revision'.",
 			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				if d.ObjectMeta.Annotations == nil {
 					return &metric.Family{}
 				}
-				revision, err := strconv.Atoi(d.ObjectMeta.Annotations["deployment.kubernetes.io/revision"])
+				revision, err := strconv.Atoi(d.ObjectMeta.Annotations[annotationDeploymentRevision])
 				if err != nil {
 					return &metric.Family{}
 				}

@@ -65,7 +65,7 @@ func TestDeploymentCollector(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
 		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
-		# HELP kube_deployment_revision Sequence number representing a specific revision of the deployment controller represented by the annotaion 'deployment.kubernetes.io/revision'.
+		# HELP kube_deployment_revision Number representing a specific revision of the deployment controller represented by the annotation 'deployment.kubernetes.io/revision'.
 		# TYPE kube_deployment_revision gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -100,7 +100,7 @@ func TestDeploymentCollector(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
         kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
         kube_deployment_labels{deployment="depl1",label_app="example1",namespace="ns1"} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21

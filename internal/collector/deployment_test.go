@@ -100,7 +100,7 @@ func TestDeploymentCollector(t *testing.T) {
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
         kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
         kube_deployment_labels{deployment="depl1",label_app="example1",namespace="ns1"} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21

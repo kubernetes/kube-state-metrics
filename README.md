@@ -224,7 +224,7 @@ spec:
     spec:
       containers:
         - args:
-	        - '--collectors=pods'
+          - '--collectors=pods'
           - '--namespace=project1'
 ```
 

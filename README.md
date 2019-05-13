@@ -199,7 +199,7 @@ metadata:
   namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- give it `view` privileges on specific namespaces (using roleBinding)
+- give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the NS you want your serviceaccount to access*)
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding

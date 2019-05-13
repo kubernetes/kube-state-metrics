@@ -38,6 +38,7 @@ the raw metrics.
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)
   - [Kubernetes Deployment](#kubernetes-deployment)
+  - [Limited privileges environment](#limited-privileges-environment)
   - [Development](#development)
 
 ### Versioning
@@ -184,6 +185,50 @@ kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-ad
 Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and kubectl apply -f kubernetes, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
+
+#### Limited privileges environment
+
+If you want to run kube-state-metrics in an environment where you don't have cluster-reader role, you can:
+
+- create a serviceaccount
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-state-metrics
+  namespace: your-namespace-where-kube-state-metrics-will-deployed
+```
+
+- give it `view` privileges on specific namespaces (using roleBinding)
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: kube-state-metrics
+  namespace: project1
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: kube-state-metrics
+    namespace: your-namespace-where-kube-state-metrics-will-deployed
+```
+
+- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--collectors`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+        - args:
+	        - '--collectors=pods'
+          - '--namespace=project1'
+```
+
+For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
 
 #### Development
 

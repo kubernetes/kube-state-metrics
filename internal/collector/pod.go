@@ -78,7 +78,7 @@ var (
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
-						Value:       float64((*(p.Status.StartTime)).Unix()),
+						Value:       float64((p.Status.StartTime).Unix()),
 					})
 				}
 

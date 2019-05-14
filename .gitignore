@@ -32,3 +32,6 @@ _testmain.go
 
 *.iml
 .idea/
+
+# Generated CLI help file
+help.txt

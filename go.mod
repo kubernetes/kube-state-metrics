@@ -3,6 +3,7 @@ module k8s.io/kube-state-metrics
 require (
 	cloud.google.com/go v0.0.0-20160913182117-3b1ae45394a2 // indirect
 	github.com/Azure/go-autorest v11.1.0+incompatible // indirect
+	github.com/campoy/embedmd v1.0.0 // indirect
 	github.com/dgrijalva/jwt-go v0.0.0-20160705203006-01aeca54ebda // indirect
 	github.com/evanphx/json-patch v4.1.0+incompatible // indirect
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect

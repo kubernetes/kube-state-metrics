@@ -116,7 +116,15 @@ clean:
 e2e:
 	./tests/e2e.sh
 
+generate: build-local embedmd
+	@echo ">> generating docs"
+	@./scripts/generate-help-text.sh
+	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+
+embedmd:
+	go get github.com/campoy/embedmd
+
 $(BENCHCMP_BINARY):
 	go get golang.org/x/tools/cmd/benchcmp
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint
+.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generare embedmd

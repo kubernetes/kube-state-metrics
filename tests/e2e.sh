@@ -123,9 +123,6 @@ kubectl create -f ./kubernetes/kube-state-metrics-service-account.yaml
 kubectl create -f ./kubernetes/kube-state-metrics-cluster-role.yaml
 kubectl create -f ./kubernetes/kube-state-metrics-cluster-role-binding.yaml
 
-kubectl create -f ./kubernetes/kube-state-metrics-role-binding.yaml
-kubectl create -f ./kubernetes/kube-state-metrics-role.yaml
-
 kubectl create -f ./kubernetes/kube-state-metrics-deployment.yaml
 
 kubectl create -f ./kubernetes/kube-state-metrics-service.yaml

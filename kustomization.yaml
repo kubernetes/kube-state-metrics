@@ -7,7 +7,5 @@ resources:
 - kubernetes/kube-state-metrics-cluster-role-binding.yaml
 - kubernetes/kube-state-metrics-cluster-role.yaml
 - kubernetes/kube-state-metrics-deployment.yaml
-- kubernetes/kube-state-metrics-role-binding.yaml
-- kubernetes/kube-state-metrics-role.yaml
 - kubernetes/kube-state-metrics-service-account.yaml
 - kubernetes/kube-state-metrics-service.yaml

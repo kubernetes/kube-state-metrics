@@ -11,6 +11,7 @@ linters:
     - gocyclo
     - ineffassign
     - misspell
+    - gocritic
     - govet
 
 linters-settings:

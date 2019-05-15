@@ -225,7 +225,7 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 		return time.Time{}, errors.Wrapf(err, "Failed to parse cron job schedule '%s'", schedule)
 	}
 	if !lastScheduleTime.IsZero() {
-		return sched.Next((*lastScheduleTime).Time), nil
+		return sched.Next(lastScheduleTime.Time), nil
 	}
 	if !createdTime.IsZero() {
 		return sched.Next(createdTime.Time), nil

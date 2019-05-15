@@ -89,4 +89,4 @@ sum(kube_pod_container_resource_requests_memory_bytes) by (namespace, pod, node)
 
 ## CLI Arguments
 
-Additionally, options for `kube-state-metrics` can be passed when executing as a CLI, or in a kubernetes/openshift environment. More information can be found here: [CLI Arguments](cli-arguments.md)
+Additionally, options for `kube-state-metrics` can be passed when executing as a CLI, or in a kubernetes / openshift environment. More information can be found here: [CLI Arguments](cli-arguments.md)

@@ -10,6 +10,7 @@ Any contribution to improving this documentation or adding sample usages will be
 - [Metrics Deprecation](#metrics-deprecation)
 - [Exposed Metrics](#exposed-metrics)
 - [Join Metrics](#join-metrics)
+- [CLI arguments](#cli-arguments)
 
 ## Metrics Stages
 
@@ -85,3 +86,7 @@ Another useful example would be to query the memory usage of pods by its `phase`
 sum(kube_pod_container_resource_requests_memory_bytes) by (namespace, pod, node)
   * on (pod) group_left()  (sum(kube_pod_status_phase{phase="Running"}) by (pod, namespace) == 1)
 ```
+
+## CLI Arguments
+
+Additionally, options for `kube-state-metrics` can be passed when executing as a CLI, or in a kubernetes/openshift environment. More information can be found here: [CLI Arguments](cli-arguments.md)

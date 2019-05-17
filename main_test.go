@@ -178,10 +178,14 @@ kube_pod_status_phase{namespace="default",pod="pod0",phase="Unknown"} 0
 # TYPE kube_pod_container_info gauge
 kube_pod_container_info{namespace="default",pod="pod0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
+# HELP kube_pod_init_container_info Information about an init container in a pod.
+# TYPE kube_pod_init_container_info gauge
 # HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 # TYPE kube_pod_container_status_waiting gauge
 kube_pod_container_status_waiting{namespace="default",pod="pod0",container="container2"} 1
 kube_pod_container_status_waiting{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
+# TYPE kube_pod_init_container_status_waiting gauge
 # HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
 # TYPE kube_pod_container_status_waiting_reason gauge
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="ContainerCreating"} 0
@@ -198,14 +202,20 @@ kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",containe
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="ImagePullBackOff"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="CreateContainerError"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="InvalidImageName"} 0
+# HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
+# TYPE kube_pod_init_container_status_waiting_reason gauge
 # HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 # TYPE kube_pod_container_status_running gauge
 kube_pod_container_status_running{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_running{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_running Describes whether the init container is currently in running state.
+# TYPE kube_pod_init_container_status_running gauge
 # HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 # TYPE kube_pod_container_status_terminated gauge
 kube_pod_container_status_terminated{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_terminated{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_terminated Describes whether the init container is currently in terminated state.
+# TYPE kube_pod_init_container_status_terminated gauge
 # HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 # TYPE kube_pod_container_status_terminated_reason gauge
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 0
@@ -218,6 +228,8 @@ kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",conta
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Error"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="DeadlineExceeded"} 0
+# HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
+# TYPE kube_pod_init_container_status_terminated_reason gauge
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 # TYPE kube_pod_container_status_last_terminated_reason gauge
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 1
@@ -230,14 +242,20 @@ kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Error"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="DeadlineExceeded"} 0
+# HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
+# TYPE kube_pod_init_container_status_last_terminated_reason gauge
 # HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
 # TYPE kube_pod_container_status_ready gauge
 kube_pod_container_status_ready{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_ready{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_ready Describes whether the init containers readiness check succeeded.
+# TYPE kube_pod_init_container_status_ready gauge
 # HELP kube_pod_container_status_restarts_total The number of container restarts per container.
 # TYPE kube_pod_container_status_restarts_total counter
 kube_pod_container_status_restarts_total{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_restarts_total{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_restarts_total The number of restarts for the init container.
+# TYPE kube_pod_init_container_status_restarts_total counter
 # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
 # TYPE kube_pod_container_resource_requests gauge
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="nvidia_com_gpu",unit="integer"} 1
@@ -247,6 +265,8 @@ kube_pod_container_resource_requests{namespace="default",pod="pod0",container="p
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
+# HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
+# TYPE kube_pod_init_container_resource_limits gauge
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
 # TYPE kube_pod_container_resource_limits gauge
 kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="nvidia_com_gpu",unit="integer"} 1

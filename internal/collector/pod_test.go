@@ -41,24 +41,42 @@ func TestPodCollector(t *testing.T) {
 	// # TYPE kube_pod_created gauge
 	// # HELP kube_pod_container_info Information about a container in a pod.
 	// # TYPE kube_pod_container_info gauge
+	// # HELP kube_pod_init_container_info Information about a container in a pod.
+	// # TYPE kube_pod_init_container_info gauge
 	// # HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 	// # TYPE kube_pod_labels gauge
 	// # HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
 	// # TYPE kube_pod_container_status_ready gauge
+	// # HELP kube_pod_init_container_status_ready Describes whether the init containers readiness check succeeded.
+	// # TYPE kube_pod_init_container_status_ready gauge
 	// # HELP kube_pod_container_status_restarts_total The number of container restarts per container.
 	// # TYPE kube_pod_container_status_restarts_total counter
+	// # HELP kube_pod_init_container_status_restarts_total The number of init container restarts per container.
+	// # TYPE kube_pod_init_container_status_restarts_total counter
 	// # HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 	// # TYPE kube_pod_container_status_running gauge
+	// # HELP kube_pod_init_container_status_running Describes whether the init container is currently in running state.
+	// # TYPE kube_pod_init_container_status_running gauge
 	// # HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 	// # TYPE kube_pod_container_status_terminated gauge
+	// # HELP kube_pod_init_container_status_terminated Describes whether the init container is currently in terminated state.
+	// # TYPE kube_pod_init_container_status_terminated gauge
 	// # HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 	// # TYPE kube_pod_container_status_terminated_reason gauge
+	// # HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
+	// # TYPE kube_pod_init_container_status_terminated_reason gauge
 	// # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 	// # TYPE kube_pod_container_status_last_terminated_reason gauge
+	// # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
+	// # TYPE kube_pod_init_container_status_last_terminated_reason gauge
 	// # HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 	// # TYPE kube_pod_container_status_waiting gauge
+	// # HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
+	// # TYPE kube_pod_init_container_status_waiting gauge
 	// # HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
 	// # TYPE kube_pod_container_status_waiting_reason gauge
+	// # HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
+	// # TYPE kube_pod_init_container_status_waiting_reason gauge
 	// # HELP kube_pod_info Information about pod.
 	// # TYPE kube_pod_info gauge
 	// # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
@@ -77,8 +95,12 @@ func TestPodCollector(t *testing.T) {
 	// # TYPE kube_pod_status_scheduled gauge
 	// # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
 	// # TYPE kube_pod_container_resource_requests gauge
+	// # HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
+	// # TYPE kube_pod_init_container_resource_requests gauge
 	// # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
 	// # TYPE kube_pod_container_resource_limits gauge
+	// # HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
+	// # TYPE kube_pod_init_container_resource_limits gauge
 	// # HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
 	// # TYPE kube_pod_container_resource_requests_cpu_cores gauge
 	// # HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
@@ -134,11 +156,20 @@ func TestPodCollector(t *testing.T) {
 							ContainerID: "docker://ef789",
 						},
 					},
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:        "initContainer",
+							Image:       "k8s.gcr.io/initfoo",
+							ImageID:     "docker://sha256:wxyz",
+							ContainerID: "docker://ef123",
+						},
+					},
 				},
 			},
 			Want: `kube_pod_container_info{container="container2",container_id="docker://cd456",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
-		kube_pod_container_info{container="container3",container_id="docker://ef789",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1`,
-			MetricNames: []string{"kube_pod_container_info"},
+		kube_pod_container_info{container="container3",container_id="docker://ef789",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
+        kube_pod_init_container_info{container="initContainer",container_id="docker://ef123",image="k8s.gcr.io/initfoo",image_id="docker://sha256:wxyz",namespace="ns2",pod="pod2"} 1`,
+			MetricNames: []string{"kube_pod_container_info", "kube_pod_init_container_info"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -186,6 +217,41 @@ func TestPodCollector(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod3",
+					Namespace: "ns3",
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "container2",
+							Ready: true,
+						},
+						{
+							Name:  "container3",
+							Ready: false,
+						},
+					},
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "initcontainer1",
+							Ready: true,
+						},
+						{
+							Name:  "initcontainer2",
+							Ready: false,
+						},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_pod_init_container_status_ready{container="initcontainer1",namespace="ns3",pod="pod3"} 1
+				kube_pod_init_container_status_ready{container="initcontainer2",namespace="ns3",pod="pod3"} 0
+				`,
+			MetricNames: []string{"kube_pod_init_container_status_ready"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
 				},
@@ -200,6 +266,24 @@ func TestPodCollector(t *testing.T) {
 			},
 			Want:        `kube_pod_container_status_restarts_total{container="container1",namespace="ns1",pod="pod1"} 0`,
 			MetricNames: []string{"kube_pod_container_status_restarts_total"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+				},
+				Status: v1.PodStatus{
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:         "initcontainer1",
+							RestartCount: 1,
+						},
+					},
+				},
+			},
+			Want:        `kube_pod_init_container_status_restarts_total{container="initcontainer1",namespace="ns2",pod="pod2"} 1`,
+			MetricNames: []string{"kube_pod_init_container_status_restarts_total"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -229,6 +313,31 @@ func TestPodCollector(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+				},
+				Status: v1.PodStatus{
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:         "initcontainer2",
+							RestartCount: 0,
+						},
+						{
+							Name:         "initcontainer3",
+							RestartCount: 1,
+						},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_pod_init_container_status_restarts_total{container="initcontainer2",namespace="ns2",pod="pod2"} 0
+				kube_pod_init_container_status_restarts_total{container="initcontainer3",namespace="ns2",pod="pod2"} 1
+				`,
+			MetricNames: []string{"kube_pod_init_container_status_restarts_total"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
 				},
@@ -236,6 +345,14 @@ func TestPodCollector(t *testing.T) {
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name: "container1",
+							State: v1.ContainerState{
+								Running: &v1.ContainerStateRunning{},
+							},
+						},
+					},
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "initcontainer1",
 							State: v1.ContainerState{
 								Running: &v1.ContainerStateRunning{},
 							},
@@ -259,6 +376,21 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerConfigError"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerError"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="InvalidImageName"} 0
+				kube_pod_init_container_status_running{container="initcontainer1",namespace="ns1",pod="pod1"} 1
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Completed"} 0
+                kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Error"} 0
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="DeadlineExceeded"} 0
+                kube_pod_init_container_status_terminated{container="initcontainer1",namespace="ns1",pod="pod1"} 0
+				kube_pod_init_container_status_waiting{container="initcontainer1",namespace="ns1",pod="pod1"} 0
+				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
+				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ImagePullBackOff"} 0
+				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff"} 0
+				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ErrImagePull"} 0
+				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CreateContainerConfigError"} 0
+				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CreateContainerError"} 0
+				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="InvalidImageName"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -266,6 +398,11 @@ func TestPodCollector(t *testing.T) {
 				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
+				"kube_pod_init_container_status_running",
+				"kube_pod_init_container_status_waiting",
+				"kube_pod_init_container_status_waiting_reason",
+				"kube_pod_init_container_status_terminated",
+				"kube_pod_init_container_status_terminated_reason",
 			},
 		},
 		{
@@ -945,6 +1082,27 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 							},
 						},
 					},
+					InitContainers: []v1.Container{
+						{
+							Name: "pod1_initcon1",
+							Resources: v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:                    resource.MustParse("200m"),
+									v1.ResourceMemory:                 resource.MustParse("100M"),
+									v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
+									v1.ResourceStorage:                resource.MustParse("400M"),
+									v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+								},
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:                    resource.MustParse("200m"),
+									v1.ResourceMemory:                 resource.MustParse("100M"),
+									v1.ResourceEphemeralStorage:       resource.MustParse("300M"),
+									v1.ResourceStorage:                resource.MustParse("400M"),
+									v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+								},
+							},
+						},
+					},
 				},
 			},
 			Want: metadata + `
@@ -970,6 +1128,11 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 2e+08
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
+                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
+                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
+                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 1e+08
+                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
+                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
 		`,
 			MetricNames: []string{
 				"kube_pod_container_resource_requests_cpu_cores",
@@ -978,6 +1141,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_container_resource_limits_memory_bytes",
 				"kube_pod_container_resource_requests",
 				"kube_pod_container_resource_limits",
+				"kube_pod_init_container_resource_requests",
+				"kube_pod_init_container_resource_limits",
 			},
 		},
 		{
@@ -1016,9 +1181,24 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 								},
 							},
 						},
-						// A container without a resource specicication. No metrics will be emitted for that.
+						// A container without a resource specification. No metrics will be emitted for that.
 						{
 							Name: "pod2_con3",
+						},
+					},
+					InitContainers: []v1.Container{
+						{
+							Name: "pod2_initcon1",
+							Resources: v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("400m"),
+									v1.ResourceMemory: resource.MustParse("300M"),
+								},
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("400m"),
+									v1.ResourceMemory: resource.MustParse("300M"),
+								},
+							},
 						},
 					},
 				},
@@ -1040,6 +1220,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_resource_limits{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.5
 				kube_pod_container_resource_limits{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
 				kube_pod_container_resource_limits{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 4e+08
+                kube_pod_init_container_resource_limits{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.4
+                kube_pod_init_container_resource_limits{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
 		`,
 			MetricNames: []string{
 				"kube_pod_container_resource_requests_cpu_cores",
@@ -1058,6 +1240,14 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_container_resource_limits",
 				"kube_pod_container_resource_limits",
 				"kube_pod_container_resource_limits",
+				"kube_pod_init_container_resource_requests",
+				"kube_pod_init_container_resource_requests",
+				"kube_pod_init_container_resource_requests",
+				"kube_pod_init_container_resource_requests",
+				"kube_pod_init_container_resource_limits",
+				"kube_pod_init_container_resource_limits",
+				"kube_pod_init_container_resource_limits",
+				"kube_pod_init_container_resource_limits",
 			},
 		},
 		{
@@ -1206,8 +1396,8 @@ func BenchmarkPodCollector(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
-		if len(families) != 27 {
-			b.Fatalf("expected 27 but got %v", len(families))
+		if len(families) != 38 {
+			b.Fatalf("expected 38 but got %v", len(families))
 		}
 	}
 }

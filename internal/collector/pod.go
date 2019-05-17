@@ -34,7 +34,7 @@ const nodeUnreachablePodReason = "NodeLost"
 
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff"}
+	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded"}
 
 	podMetricFamilies = []metric.FamilyGenerator{

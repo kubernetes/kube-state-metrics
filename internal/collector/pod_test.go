@@ -257,6 +257,8 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="InvalidImageName"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -315,11 +317,15 @@ func TestPodCollector(t *testing.T) {
 				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="InvalidImageName"} 0
                 kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCreating"} 1
                 kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0
                 kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ImagePullBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="InvalidImageName"} 0
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -362,6 +368,8 @@ kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff"} 1
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="InvalidImageName"} 0
 kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
 				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
@@ -424,6 +432,8 @@ kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",
 				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="InvalidImageName"} 0
 kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
@@ -475,6 +485,8 @@ kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",
 				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="InvalidImageName"} 0
 kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Completed"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Error"} 0
@@ -523,6 +535,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="InvalidImageName"} 0
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -565,6 +579,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ErrImagePull"} 1
 				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CreateContainerConfigError"} 0
+				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CreateContainerError"} 0
+				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="InvalidImageName"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -606,6 +622,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ImagePullBackOff"} 0
 					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CrashLoopBackOff"} 0
 					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ErrImagePull"} 0
+					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CreateContainerError"} 0
+					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="InvalidImageName"} 0
 					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CreateContainerConfigError"} 1
 			`,
 			MetricNames: []string{

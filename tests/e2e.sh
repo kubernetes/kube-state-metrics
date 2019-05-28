@@ -140,7 +140,7 @@ kubectl proxy &
 # this for loop waits until kube-state-metrics is running by accessing the healthz endpoint
 for _ in {1..30}; do # timeout for 1 minutes
     KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
-    if [[ "$KUBE_STATE_METRICS_STATUS" == "ok" ]]; then
+    if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then
         is_kube_state_metrics_running="true"
         break
     fi
@@ -174,7 +174,7 @@ for collector in ${collectors}; do
 done
 
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
-if [[ "$KUBE_STATE_METRICS_STATUS" == "ok" ]]; then
+if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then
     echo "kube-state-metrics is still running after accessing metrics endpoint"
     exit 0
 fi

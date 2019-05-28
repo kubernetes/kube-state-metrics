@@ -223,8 +223,8 @@ func serveMetrics(collectors []*coll.Collector, host string, port int, enableGZI
 	mux.Handle(metricsPath, &metricHandler{collectors, enableGZIPEncoding})
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte("ok"))
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
 	})
 	// Add index
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

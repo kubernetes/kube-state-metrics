@@ -334,6 +334,27 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_info",
+			Type: metric.Gauge,
+			Help: "Information about an init container in a pod.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
+				labelKeys := []string{"container", "image", "image_id", "container_id"}
+
+				for i, cs := range p.Status.InitContainerStatuses {
+					ms[i] = &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{cs.Name, cs.Image, cs.ImageID, cs.ContainerID},
+						Value:       1,
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_container_status_waiting",
 			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in waiting state.",
@@ -341,6 +362,26 @@ var (
 				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
 				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
+						Value:       boolFloat64(cs.State.Waiting != nil),
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_status_waiting",
+			Type: metric.Gauge,
+			Help: "Describes whether the init container is currently in waiting state.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
+
+				for i, cs := range p.Status.InitContainerStatuses {
 					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
@@ -376,6 +417,28 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_status_waiting_reason",
+			Type: metric.Gauge,
+			Help: "Describes the reason the init container is currently in waiting state.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerWaitingReasons))
+
+				for i, cs := range p.Status.InitContainerStatuses {
+					for j, reason := range containerWaitingReasons {
+						ms[i*len(containerWaitingReasons)+j] = &metric.Metric{
+							LabelKeys:   []string{"container", "reason"},
+							LabelValues: []string{cs.Name, reason},
+							Value:       boolFloat64(waitingReason(cs, reason)),
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_container_status_running",
 			Type: metric.Gauge,
 			Help: "Describes whether the container is currently in running state.",
@@ -383,6 +446,26 @@ var (
 				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
 				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
+						Value:       boolFloat64(cs.State.Running != nil),
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_status_running",
+			Type: metric.Gauge,
+			Help: "Describes whether the init container is currently in running state.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
+
+				for i, cs := range p.Status.InitContainerStatuses {
 					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
@@ -416,6 +499,26 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_status_terminated",
+			Type: metric.Gauge,
+			Help: "Describes whether the init container is currently in terminated state.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
+
+				for i, cs := range p.Status.InitContainerStatuses {
+					ms[i] = &metric.Metric{
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
+						Value:       boolFloat64(cs.State.Terminated != nil),
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_container_status_terminated_reason",
 			Type: metric.Gauge,
 			Help: "Describes the reason the container is currently in terminated state.",
@@ -423,6 +526,28 @@ var (
 				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerTerminatedReasons))
 
 				for i, cs := range p.Status.ContainerStatuses {
+					for j, reason := range containerTerminatedReasons {
+						ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+							LabelKeys:   []string{"container", "reason"},
+							LabelValues: []string{cs.Name, reason},
+							Value:       boolFloat64(terminationReason(cs, reason)),
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_status_terminated_reason",
+			Type: metric.Gauge,
+			Help: "Describes the reason the init container is currently in terminated state.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerTerminatedReasons))
+
+				for i, cs := range p.Status.InitContainerStatuses {
 					for j, reason := range containerTerminatedReasons {
 						ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
@@ -460,6 +585,28 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_status_last_terminated_reason",
+			Type: metric.Gauge,
+			Help: "Describes the last reason the init container was in terminated state.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerTerminatedReasons))
+
+				for i, cs := range p.Status.InitContainerStatuses {
+					for j, reason := range containerTerminatedReasons {
+						ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+							LabelKeys:   []string{"container", "reason"},
+							LabelValues: []string{cs.Name, reason},
+							Value:       boolFloat64(lastTerminationReason(cs, reason)),
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_container_status_ready",
 			Type: metric.Gauge,
 			Help: "Describes whether the containers readiness check succeeded.",
@@ -480,6 +627,26 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_status_ready",
+			Type: metric.Gauge,
+			Help: "Describes whether the init containers readiness check succeeded.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
+
+				for i, cs := range p.Status.InitContainerStatuses {
+					ms[i] = &metric.Metric{
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
+						Value:       boolFloat64(cs.Ready),
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_container_status_restarts_total",
 			Type: metric.Counter,
 			Help: "The number of container restarts per container.",
@@ -487,6 +654,26 @@ var (
 				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
 
 				for i, cs := range p.Status.ContainerStatuses {
+					ms[i] = &metric.Metric{
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
+						Value:       float64(cs.RestartCount),
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_status_restarts_total",
+			Type: metric.Counter,
+			Help: "The number of restarts for the init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
+
+				for i, cs := range p.Status.InitContainerStatuses {
 					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
@@ -616,6 +803,64 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_resource_limits",
+			Type: metric.Gauge,
+			Help: "The number of requested limit resource by the init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					lim := c.Resources.Limits
+
+					for resourceName, val := range lim {
+						switch resourceName {
+						case v1.ResourceCPU:
+							ms = append(ms, &metric.Metric{
+								Value:       float64(val.MilliValue()) / 1000,
+								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+							})
+						case v1.ResourceStorage:
+							fallthrough
+						case v1.ResourceEphemeralStorage:
+							fallthrough
+						case v1.ResourceMemory:
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								Value:       float64(val.Value()),
+							})
+						default:
+							if isHugePageResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									Value:       float64(val.Value()),
+								})
+							}
+							if isAttachableVolumeResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									Value:       float64(val.Value()),
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								})
+							}
+							if isExtendedResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									Value:       float64(val.Value()),
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								})
+							}
+						}
+					}
+				}
+
+				for _, metric := range ms {
+					metric.LabelKeys = []string{"container", "node", "resource", "unit"}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_container_resource_requests_cpu_cores",
 			Type: metric.Gauge,
 			Help: "The number of requested cpu cores by a container.",
@@ -623,6 +868,29 @@ var (
 				ms := []*metric.Metric{}
 
 				for _, c := range p.Spec.Containers {
+					req := c.Resources.Requests
+					if cpu, ok := req[v1.ResourceCPU]; ok {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"container", "node"},
+							LabelValues: []string{c.Name, p.Spec.NodeName},
+							Value:       float64(cpu.MilliValue()) / 1000,
+						})
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_init_pod_container_resource_requests_cpu_cores",
+			Type: metric.Gauge,
+			Help: "The number of requested cpu cores by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
 					req := c.Resources.Requests
 					if cpu, ok := req[v1.ResourceCPU]; ok {
 						ms = append(ms, &metric.Metric{

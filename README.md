@@ -33,6 +33,7 @@ the raw metrics.
 - [Metrics Documentation](#metrics-documentation)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
+- [A note on costing](#a-note-on-costing)
 - [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
@@ -123,6 +124,9 @@ For clusters of more than 100 nodes, allocate at least
 These numbers are based on [scalability tests](https://github.com/kubernetes/kube-state-metrics/issues/124#issuecomment-318394185) at 30 pods per node.
 
 Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation, try increasing the CPU limits.
+
+### A note on costing
+By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.  
 
 ### kube-state-metrics vs. metrics-server
 

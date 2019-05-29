@@ -127,6 +127,23 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_persistentvolume_annotations",
+			Type: metric.Gauge,
+			Help: "Kubernetes annotations converted to Prometheus labels.",
+			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(p.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		},
 	}
 )
 

@@ -65,6 +65,8 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
 		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
+		# HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_deployment_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -74,6 +76,9 @@ func TestDeploymentStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns1",
 					Labels: map[string]string{
+						"app": "example1",
+					},
+					Annotations: map[string]string{
 						"app": "example1",
 					},
 					Generation: 21,
@@ -108,6 +113,7 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
         kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
         kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
+		kube_deployment_annotations{annotation_app="example1",deployment="depl1",namespace="ns1"} 1
 `,
 		},
 		{
@@ -116,6 +122,9 @@ func TestDeploymentStore(t *testing.T) {
 					Name:      "depl2",
 					Namespace: "ns2",
 					Labels: map[string]string{
+						"app": "example2",
+					},
+					Annotations: map[string]string{
 						"app": "example2",
 					},
 					Generation: 14,
@@ -139,7 +148,7 @@ func TestDeploymentStore(t *testing.T) {
 				},
 			},
 			Want: `
-       kube_deployment_labels{deployment="depl2",label_app="example2",namespace="ns2"} 1
+       	kube_deployment_labels{deployment="depl2",label_app="example2",namespace="ns2"} 1
         kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
         kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
@@ -150,6 +159,7 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_replicas_unavailable{deployment="depl2",namespace="ns2"} 0
         kube_deployment_status_replicas_updated{deployment="depl2",namespace="ns2"} 1
         kube_deployment_status_replicas{deployment="depl2",namespace="ns2"} 10
+        kube_deployment_annotations{annotation_app="example2",deployment="depl2",namespace="ns2"} 1
 `,
 		},
 	}

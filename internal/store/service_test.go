@@ -41,6 +41,8 @@ func TestServiceStore(t *testing.T) {
 		# TYPE kube_service_spec_external_ip gauge
 		# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status
 		# TYPE kube_service_status_load_balancer_ingress gauge
+		# HELP kube_service_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_service_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -50,6 +52,9 @@ func TestServiceStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
 					Labels: map[string]string{
+						"app": "example1",
+					},
+					Annotations: map[string]string{
 						"app": "example1",
 					},
 				},
@@ -63,12 +68,14 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="1.2.3.4",external_name="",load_balancer_ip="",namespace="default",service="test-service1"} 1
 				kube_service_labels{label_app="example1",namespace="default",service="test-service1"} 1
 				kube_service_spec_type{namespace="default",service="test-service1",type="ClusterIP"} 1
+				kube_service_annotations{namespace="default",service="test-service1",annotation_app="example1"} 1
 `,
 			MetricNames: []string{
 				"kube_service_created",
 				"kube_service_info",
 				"kube_service_labels",
 				"kube_service_spec_type",
+				"kube_service_annotations",
 			},
 		},
 		{
@@ -79,6 +86,9 @@ func TestServiceStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
 					Labels: map[string]string{
+						"app": "example2",
+					},
+					Annotations: map[string]string{
 						"app": "example2",
 					},
 				},
@@ -92,6 +102,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="1.2.3.5",external_name="",load_balancer_ip="",namespace="default",service="test-service2"} 1
 				kube_service_labels{label_app="example2",namespace="default",service="test-service2"} 1
 				kube_service_spec_type{namespace="default",service="test-service2",type="NodePort"} 1
+				kube_service_annotations{namespace="default",service="test-service2",annotation_app="example2"} 1
 `,
 		},
 		{
@@ -101,6 +112,9 @@ func TestServiceStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
 					Labels: map[string]string{
+						"app": "example3",
+					},
+					Annotations: map[string]string{
 						"app": "example3",
 					},
 				},
@@ -115,6 +129,8 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="1.2.3.6",external_name="",load_balancer_ip="1.2.3.7",namespace="default",service="test-service3"} 1
 				kube_service_labels{label_app="example3",namespace="default",service="test-service3"} 1
 				kube_service_spec_type{namespace="default",service="test-service3",type="LoadBalancer"} 1
+				kube_service_annotations{namespace="default",service="test-service3",annotation_app="example3"} 1
+
 `,
 		},
 		{
@@ -124,6 +140,9 @@ func TestServiceStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
 					Labels: map[string]string{
+						"app": "example4",
+					},
+					Annotations: map[string]string{
 						"app": "example4",
 					},
 				},
@@ -137,6 +156,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="",external_name="www.example.com",load_balancer_ip="",namespace="default",service="test-service4"} 1
 				kube_service_labels{label_app="example4",namespace="default",service="test-service4"} 1
 				kube_service_spec_type{namespace="default",service="test-service4",type="ExternalName"} 1
+				kube_service_annotations{namespace="default",service="test-service4",annotation_app="example4"} 1
 			`,
 		},
 		{
@@ -146,6 +166,9 @@ func TestServiceStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
 					Labels: map[string]string{
+						"app": "example5",
+					},
+					Annotations: map[string]string{
 						"app": "example5",
 					},
 				},
@@ -169,6 +192,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_labels{label_app="example5",namespace="default",service="test-service5"} 1
 				kube_service_spec_type{namespace="default",service="test-service5",type="LoadBalancer"} 1
 				kube_service_status_load_balancer_ingress{hostname="www.example.com",ip="1.2.3.8",namespace="default",service="test-service5"} 1
+				kube_service_annotations{namespace="default",service="test-service5",annotation_app="example5"} 1
 			`,
 		},
 		{
@@ -178,6 +202,9 @@ func TestServiceStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
 					Labels: map[string]string{
+						"app": "example6",
+					},
+					Annotations: map[string]string{
 						"app": "example6",
 					},
 				},
@@ -196,6 +223,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_spec_type{namespace="default",service="test-service6",type="ClusterIP"} 1
 				kube_service_spec_external_ip{external_ip="1.2.3.9",namespace="default",service="test-service6"} 1
 				kube_service_spec_external_ip{external_ip="1.2.3.10",namespace="default",service="test-service6"} 1
+				kube_service_annotations{namespace="default",service="test-service6",annotation_app="example6"} 1
 			`,
 		},
 	}

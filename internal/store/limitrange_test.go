@@ -36,6 +36,8 @@ func TestLimitRangeollector(t *testing.T) {
 	# TYPE kube_limitrange_created gauge
 	# HELP kube_limitrange Information about limit range.
 	# TYPE kube_limitrange gauge
+	# HELP kube_limitrange_annotations Kubernetes annotations converted to Prometheus labels.
+	# TYPE kube_limitrange_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -44,6 +46,9 @@ func TestLimitRangeollector(t *testing.T) {
 					Name:              "quotaTest",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "testNS",
+					Annotations: map[string]string{
+						"quota": "test",
+					},
 				},
 				Spec: v1.LimitRangeSpec{
 					Limits: []v1.LimitRangeItem{
@@ -75,7 +80,7 @@ func TestLimitRangeollector(t *testing.T) {
         kube_limitrange{constraint="max",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
         kube_limitrange{constraint="maxLimitRequestRatio",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
         kube_limitrange{constraint="min",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
-
+		kube_limitrange_annotations{limitrange="quotaTest",namespace="testNS",annotation_quota="test"} 1
 		`,
 		},
 	}

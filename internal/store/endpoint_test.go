@@ -41,6 +41,8 @@ func TestEndpointStore(t *testing.T) {
 		# TYPE kube_endpoint_info gauge
 		# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_endpoint_labels gauge
+		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_endpoint_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -50,6 +52,9 @@ func TestEndpointStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
 					Labels: map[string]string{
+						"app": "foobar",
+					},
+					Annotations: map[string]string{
 						"app": "foobar",
 					},
 				},
@@ -90,6 +95,7 @@ func TestEndpointStore(t *testing.T) {
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="test-endpoint",label_app="foobar",namespace="default"} 1
+				kube_endpoint_annotations{endpoint="test-endpoint",namespace="default",annotation_app="foobar"} 1
 			`,
 		},
 	}

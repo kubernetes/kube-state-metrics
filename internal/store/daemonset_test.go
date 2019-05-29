@@ -49,6 +49,8 @@ func TestDaemonSetStore(t *testing.T) {
 		# TYPE kube_daemonset_updated_number_scheduled gauge
 		# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_daemonset_labels gauge
+		# HELP kube_daemonset_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_daemonset_annotations gauge
 `
 	cases := []generateMetricsTestCase{
 		{
@@ -57,6 +59,9 @@ func TestDaemonSetStore(t *testing.T) {
 					Name:      "ds1",
 					Namespace: "ns1",
 					Labels: map[string]string{
+						"app": "example1",
+					},
+					Annotations: map[string]string{
 						"app": "example1",
 					},
 					Generation: 21,
@@ -78,6 +83,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_labels{daemonset="ds1",label_app="example1",namespace="ns1"} 1
+				kube_daemonset_annotations{daemonset="ds1",namespace="ns1",annotation_app="example1"} 1
 `,
 			MetricNames: []string{
 				"kube_daemonset_labels",
@@ -89,6 +95,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_updated_number_scheduled",
+				"kube_daemonset_annotations",
 			},
 		},
 		{
@@ -98,6 +105,9 @@ func TestDaemonSetStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns2",
 					Labels: map[string]string{
+						"app": "example2",
+					},
+					Annotations: map[string]string{
 						"app": "example2",
 					},
 					Generation: 14,
@@ -120,6 +130,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_labels{daemonset="ds2",label_app="example2",namespace="ns2"} 1
+				kube_daemonset_annotations{daemonset="ds2",namespace="ns2",annotation_app="example2"} 1
 `,
 			MetricNames: []string{
 				"kube_daemonset_created",
@@ -132,6 +143,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_updated_number_scheduled",
+				"kube_daemonset_annotations",
 			},
 		},
 		{
@@ -141,6 +153,9 @@ func TestDaemonSetStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns3",
 					Labels: map[string]string{
+						"app": "example3",
+					},
+					Annotations: map[string]string{
 						"app": "example3",
 					},
 					Generation: 15,
@@ -166,6 +181,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_updated_number_scheduled{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_labels{daemonset="ds3",label_app="example3",namespace="ns3"} 1
+				kube_daemonset_annotations{daemonset="ds3",namespace="ns3",annotation_app="example3"} 1
 `,
 			MetricNames: []string{
 				"kube_daemonset_created",
@@ -178,6 +194,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_updated_number_scheduled",
+				"kube_daemonset_annotations",
 			},
 		},
 	}

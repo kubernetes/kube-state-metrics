@@ -380,6 +380,9 @@ func pod(client *fake.Clientset, index int) error {
 			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 			Namespace:         "default",
 			UID:               types.UID("abc-" + i),
+			Annotations: map[string]string{
+				"pod": "pod",
+			},
 		},
 		Spec: v1.PodSpec{
 			NodeName: "node1",

@@ -48,6 +48,8 @@ func TestHPAStore(t *testing.T) {
         # TYPE kube_hpa_status_condition gauge
         # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
         # TYPE kube_hpa_labels gauge
+		# HELP kube_hpa_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_hpa_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -58,6 +60,9 @@ func TestHPAStore(t *testing.T) {
 					Name:       "hpa1",
 					Namespace:  "ns1",
 					Labels: map[string]string{
+						"app": "foobar",
+					},
+					Annotations: map[string]string{
 						"app": "foobar",
 					},
 				},
@@ -91,6 +96,7 @@ func TestHPAStore(t *testing.T) {
                 kube_hpa_status_condition{condition="unknown",hpa="hpa1",namespace="ns1",status="AbleToScale"} 0
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
+				kube_hpa_annotations{hpa="hpa1",namespace="ns1",annotation_app="foobar"} 1
 			`,
 			MetricNames: []string{
 				"kube_hpa_metadata_generation",
@@ -100,6 +106,7 @@ func TestHPAStore(t *testing.T) {
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
 				"kube_hpa_labels",
+				"kube_hpa_annotations",
 			},
 		},
 	}

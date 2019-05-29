@@ -60,6 +60,8 @@ func TestNodeStore(t *testing.T) {
 		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
 		# HELP kube_node_status_condition The condition of a cluster node.
 		# TYPE kube_node_status_condition gauge
+		# HELP kube_node_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_node_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		// Verify populating base metric and that metric for unset fields are skipped.
@@ -67,6 +69,9 @@ func TestNodeStore(t *testing.T) {
 			Obj: &v1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "127.0.0.1",
+					Annotations: map[string]string{
+						"kubeadm.alpha.kubernetes.io/ttl": "0",
+					},
 				},
 				Status: v1.NodeStatus{
 					NodeInfo: v1.NodeSystemInfo{
@@ -85,6 +90,7 @@ func TestNodeStore(t *testing.T) {
 				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-uniqueid"} 1
 				kube_node_labels{node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 0
+				kube_node_annotations{node="127.0.0.1",annotation_kubeadm_alpha_kubernetes_io_ttl="0"} 1
 			`,
 		},
 		// Verify resource metric.
@@ -150,6 +156,7 @@ func TestNodeStore(t *testing.T) {
         kube_node_status_capacity{node="127.0.0.1",resource="nvidia_com_gpu",unit="integer"} 4
         kube_node_status_capacity{node="127.0.0.1",resource="pods",unit="integer"} 1000
         kube_node_status_capacity{node="127.0.0.1",resource="storage",unit="byte"} 3e+09
+		kube_node_annotations{node="127.0.0.1"} 1
 			`,
 		},
 		// Verify phase enumerations.

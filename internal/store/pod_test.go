@@ -1397,7 +1397,7 @@ func BenchmarkPodStore(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != 38 {
-			b.Fatalf("expected 38 but got %v", len(families))
+			b.Fatalf("expected 39 but got %v", len(families))
 		}
 	}
 }

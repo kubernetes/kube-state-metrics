@@ -50,6 +50,8 @@ func TestReplicationControllerStore(t *testing.T) {
 		# TYPE kube_replicationcontroller_status_observed_generation gauge
 		# HELP kube_replicationcontroller_spec_replicas Number of desired pods for a ReplicationController.
 		# TYPE kube_replicationcontroller_spec_replicas gauge
+		# HELP kube_replicationcontroller_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_replicationcontroller_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -59,6 +61,9 @@ func TestReplicationControllerStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns1",
 					Generation:        21,
+					Annotations: map[string]string{
+						"app": "example1",
+					},
 				},
 				Status: v1.ReplicationControllerStatus{
 					Replicas:             5,
@@ -80,6 +85,7 @@ func TestReplicationControllerStore(t *testing.T) {
 				kube_replicationcontroller_status_ready_replicas{namespace="ns1",replicationcontroller="rc1"} 5
 				kube_replicationcontroller_status_available_replicas{namespace="ns1",replicationcontroller="rc1"} 3
 				kube_replicationcontroller_spec_replicas{namespace="ns1",replicationcontroller="rc1"} 5
+				kube_replicationcontroller_annotations{namespace="ns1",replicationcontroller="rc1",annotation_app="example1"} 1
 `,
 		},
 		{
@@ -88,6 +94,9 @@ func TestReplicationControllerStore(t *testing.T) {
 					Name:       "rc2",
 					Namespace:  "ns2",
 					Generation: 14,
+					Annotations: map[string]string{
+						"app": "rc2",
+					},
 				},
 				Status: v1.ReplicationControllerStatus{
 					Replicas:             0,
@@ -108,6 +117,7 @@ func TestReplicationControllerStore(t *testing.T) {
 				kube_replicationcontroller_status_ready_replicas{namespace="ns2",replicationcontroller="rc2"} 0
 				kube_replicationcontroller_status_available_replicas{namespace="ns2",replicationcontroller="rc2"} 0
 				kube_replicationcontroller_spec_replicas{namespace="ns2",replicationcontroller="rc2"} 0
+				kube_replicationcontroller_annotations{namespace="ns2",replicationcontroller="rc2",annotation_app="rc2"} 1
 `,
 		},
 	}

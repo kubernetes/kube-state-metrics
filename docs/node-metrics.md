@@ -17,3 +17,4 @@
 | kube_node_status_allocatable_pods | Gauge | `node`=&lt;node-address&gt;| DEPRECATED |
 | kube_node_status_condition | Gauge | `node`=&lt;node-address&gt; <br> `condition`=&lt;node-condition&gt; <br> `status`=&lt;true\|false\|unknown&gt; | STABLE |
 | kube_node_created | Gauge | `node`=&lt;node-address&gt;| STABLE |
+| kube_node_annotations | Gauge | `annotation_NODE_ANNOTATION`=&lt;NODE_ANNOTATION&gt; <br> `node`=&lt;endpoint-name&gt; | EXPERIMENTAL |

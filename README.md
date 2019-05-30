@@ -9,9 +9,9 @@ Kubernetes components, but rather on the health of the various objects inside,
 such as deployments, nodes and pods.
 
 kube-state-metrics is about generating metrics from Kubernetes API objects
-without modification. This ensures, that features provided by kube-state-metrics
+without modification. This ensures that features provided by kube-state-metrics
 have the same grade of stability as the Kubernetes API objects themselves. In
-turn this means, that kube-state-metrics in certain situations may not show the
+turn, this means that kube-state-metrics in certain situations may not show the
 exact same values as kubectl, as kubectl applies certain heuristics to display
 comprehensible messages. kube-state-metrics exposes raw data unmodified from the
 Kubernetes API, this way users have all the data they require and perform

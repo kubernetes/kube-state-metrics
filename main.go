@@ -39,7 +39,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 	kcoll "k8s.io/kube-state-metrics/internal/collector"
-	coll "k8s.io/kube-state-metrics/pkg/collector"
+	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
 	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
@@ -203,8 +203,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
-// TODO: How about accepting an interface Collector instead?
-func serveMetrics(collectors []*coll.Collector, host string, port int, enableGZIPEncoding bool) {
+func serveMetrics(collectors []*metricsstore.MetricsStore, host string, port int, enableGZIPEncoding bool) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
@@ -243,7 +242,7 @@ func serveMetrics(collectors []*coll.Collector, host string, port int, enableGZI
 }
 
 type metricHandler struct {
-	collectors         []*coll.Collector
+	collectors         []*metricsstore.MetricsStore
 	enableGZIPEncoding bool
 }
 
@@ -251,6 +250,8 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resHeader := w.Header()
 	var writer io.Writer = w
 
+	// Set the exposition format version of Prometheus.
+	// https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
 	resHeader.Set("Content-Type", `text/plain; version=`+"0.0.4")
 
 	if m.enableGZIPEncoding {
@@ -268,7 +269,7 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, c := range m.collectors {
-		c.Collect(w)
+		c.WriteAll(w)
 	}
 
 	// In case we gzipped the response, we have to close the writer.

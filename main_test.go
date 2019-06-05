@@ -28,7 +28,7 @@ import (
 	"time"
 
 	kcoll "k8s.io/kube-state-metrics/internal/collector"
-	coll "k8s.io/kube-state-metrics/pkg/collector"
+	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
 
 	v1 "k8s.io/api/core/v1"
@@ -39,7 +39,7 @@ import (
 )
 
 func BenchmarkKubeStateMetrics(b *testing.B) {
-	var collectors []*coll.Collector
+	var collectors []*metricsstore.MetricsStore
 	fixtureMultiplier := 1000
 	requestCount := 1000
 

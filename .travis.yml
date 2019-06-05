@@ -30,15 +30,28 @@ jobs:
   include:
     # Lint
     - script: make lint
+      name: Lint
+
     # Check that all the go modules manifests, vendors, and packages are in sync
     - script: make validate-modules
+      name: Validate vendor is in sync with go modules
+
     # Check that all metrics are documented
     - script: make doccheck
-    # Unit Test
+      name: Check that all metrics are documented
+
+     # Unit Test
     - script: make test-unit
-    # Benchmark Test
+      name: Unit tests
+
+     # Benchmark Test
     - script: make test-benchmark-compare
-    # Build
+      name: Benchmark comparison tests
+
+     # Build
     - script: make build
-    # E2e
+      name: Build
+
+     # E2E
     - script: make e2e
+      name: End to end tests

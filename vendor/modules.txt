@@ -126,6 +126,7 @@ k8s.io/api/certificates/v1beta1
 k8s.io/api/core/v1
 k8s.io/api/extensions/v1beta1
 k8s.io/api/policy/v1beta1
+k8s.io/api/storage/v1
 k8s.io/api/apps/v1beta1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/autoscaling/v1
@@ -151,7 +152,6 @@ k8s.io/api/scheduling/v1
 k8s.io/api/scheduling/v1alpha1
 k8s.io/api/scheduling/v1beta1
 k8s.io/api/settings/v1alpha1
-k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apimachinery v0.0.0-20190313205120-d7deff9243b1

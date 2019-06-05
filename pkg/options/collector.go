@@ -48,5 +48,6 @@ var (
 		"secrets":                    struct{}{},
 		"services":                   struct{}{},
 		"statefulsets":               struct{}{},
+		"storageclasses":             struct{}{},
 	}
 )

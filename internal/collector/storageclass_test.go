@@ -38,8 +38,6 @@ func TestStorageClassCollector(t *testing.T) {
 			# TYPE kube_storageclass_info gauge
 			# HELP kube_storageclass_created Unix creation timestamp
 			# TYPE kube_storageclass_created gauge
-			# HELP kube_storageclass_metadata_resource_version Resource version representing a specific version of secret.
-			# TYPE kube_storageclass_metadata_resource_version gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -73,23 +71,6 @@ func TestStorageClassCollector(t *testing.T) {
 				`,
 			MetricNames: []string{
 				"kube_storageclass_created",
-			},
-		},
-		{
-			Obj: &storagev1.StorageClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "test_kube_storageclass_resource_version",
-					ResourceVersion: "abcdef",
-				},
-				Provisioner:       "kubernetes.io/rbd",
-				ReclaimPolicy:     &reclaimPolicy,
-				VolumeBindingMode: &volumeBindingMode,
-			},
-			Want: `
-					kube_storageclass_metadata_resource_version{storageclass="test_kube_storageclass_resource_version",resource_version="abcdef"} 1
-				`,
-			MetricNames: []string{
-				"kube_storageclass_metadata_resource_version",
 			},
 		},
 		{

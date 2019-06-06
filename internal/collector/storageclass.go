@@ -60,22 +60,6 @@ var (
 			}),
 		},
 		{
-			Name: "kube_storageclass_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of storageclass.",
-			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{s.ObjectMeta.ResourceVersion},
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
-		{
 			Name: descStorageClassLabelsName,
 			Type: metric.Gauge,
 			Help: descStorageClassLabelsHelp,

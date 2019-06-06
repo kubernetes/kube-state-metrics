@@ -38,7 +38,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
-	kcoll "k8s.io/kube-state-metrics/internal/collector"
+	"k8s.io/kube-state-metrics/internal/store"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/version"
@@ -79,26 +79,26 @@ func main() {
 		os.Exit(0)
 	}
 
-	collectorBuilder := kcoll.NewBuilder(ctx)
+	storeBuilder := store.NewBuilder(ctx)
 
 	if len(opts.Collectors) == 0 {
 		klog.Info("Using default collectors")
-		collectorBuilder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
+		storeBuilder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	} else {
 		klog.Infof("Using collectors %s", opts.Collectors.String())
-		collectorBuilder.WithEnabledCollectors(opts.Collectors.AsSlice())
+		storeBuilder.WithEnabledResources(opts.Collectors.AsSlice())
 	}
 
 	if len(opts.Namespaces) == 0 {
 		klog.Info("Using all namespace")
-		collectorBuilder.WithNamespaces(options.DefaultNamespaces)
+		storeBuilder.WithNamespaces(options.DefaultNamespaces)
 	} else {
 		if opts.Namespaces.IsAllNamespaces() {
 			klog.Info("Using all namespace")
 		} else {
 			klog.Infof("Using %s namespaces", opts.Namespaces)
 		}
-		collectorBuilder.WithNamespaces(opts.Namespaces)
+		storeBuilder.WithNamespaces(opts.Namespaces)
 	}
 
 	whiteBlackList, err := whiteblacklist.New(opts.MetricWhitelist, opts.MetricBlacklist)
@@ -128,7 +128,7 @@ func main() {
 
 	klog.Infof("metric white-blacklisting: %v", whiteBlackList.Status())
 
-	collectorBuilder.WithWhiteBlackList(whiteBlackList)
+	storeBuilder.WithWhiteBlackList(whiteBlackList)
 
 	proc.StartReaper()
 
@@ -136,16 +136,16 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Failed to create client: %v", err)
 	}
-	collectorBuilder.WithKubeClient(kubeClient)
+	storeBuilder.WithKubeClient(kubeClient)
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
 	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 
-	collectors := collectorBuilder.Build()
+	stores := storeBuilder.Build()
 
-	serveMetrics(collectors, opts.Host, opts.Port, opts.EnableGZIPEncoding)
+	serveMetrics(stores, opts.Host, opts.Port, opts.EnableGZIPEncoding)
 }
 
 func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
@@ -203,7 +203,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
-func serveMetrics(collectors []*metricsstore.MetricsStore, host string, port int, enableGZIPEncoding bool) {
+func serveMetrics(stores []*metricsstore.MetricsStore, host string, port int, enableGZIPEncoding bool) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
@@ -219,7 +219,7 @@ func serveMetrics(collectors []*metricsstore.MetricsStore, host string, port int
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	// Add metricsPath
-	mux.Handle(metricsPath, &metricHandler{collectors, enableGZIPEncoding})
+	mux.Handle(metricsPath, &metricHandler{stores, enableGZIPEncoding})
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -242,7 +242,7 @@ func serveMetrics(collectors []*metricsstore.MetricsStore, host string, port int
 }
 
 type metricHandler struct {
-	collectors         []*metricsstore.MetricsStore
+	stores             []*metricsstore.MetricsStore
 	enableGZIPEncoding bool
 }
 
@@ -268,7 +268,7 @@ func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for _, c := range m.collectors {
+	for _, c := range m.stores {
 		c.WriteAll(w)
 	}
 

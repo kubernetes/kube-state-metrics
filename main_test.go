@@ -27,19 +27,19 @@ import (
 	"testing"
 	"time"
 
-	kcoll "k8s.io/kube-state-metrics/internal/collector"
+	"k8s.io/kube-state-metrics/internal/store"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
 func BenchmarkKubeStateMetrics(b *testing.B) {
-	var collectors []*metricsstore.MetricsStore
+	var stores []*metricsstore.MetricsStore
 	fixtureMultiplier := 1000
 	requestCount := 1000
 
@@ -56,8 +56,8 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	builder := kcoll.NewBuilder(ctx)
-	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
+	builder := store.NewBuilder(ctx)
+	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
@@ -70,13 +70,13 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
 	b.Run("GenerateMetrics", func(b *testing.B) {
-		collectors = builder.Build()
+		stores = builder.Build()
 
 		// Wait for caches to fill
 		time.Sleep(time.Second)
 	})
 
-	handler := metricHandler{collectors, false}
+	handler := metricHandler{stores, false}
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	b.Run("MakeRequests", func(b *testing.B) {
@@ -116,8 +116,8 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	builder := kcoll.NewBuilder(ctx)
-	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
+	builder := store.NewBuilder(ctx)
+	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
@@ -127,12 +127,12 @@ func TestFullScrapeCycle(t *testing.T) {
 	}
 	builder.WithWhiteBlackList(l)
 
-	collectors := builder.Build()
+	stores := builder.Build()
 
 	// Wait for caches to fill
 	time.Sleep(time.Second)
 
-	handler := metricHandler{collectors, false}
+	handler := metricHandler{stores, false}
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	w := httptest.NewRecorder()

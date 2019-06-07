@@ -37,8 +37,10 @@ ifndef HAS_GOLANGCI
 endif
 	golangci-lint run
 
-doccheck:
-	@echo "- Checking if the documentation is up to date..."
+doccheck: generate
+	@echo "- Checking if the generated documentation is up to date..."
+	@git diff --exit-code
+	@echo "- Checking if the documentation is in sync with the code..."
 	@grep -hoE '(kube_[^ |]+)' docs/* --exclude=README.md| sort -u > documented_metrics
 	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' internal/collector/*_test.go | sort -u > tested_metrics
 	@diff -u0 tested_metrics documented_metrics || (echo "ERROR: Metrics with - are present in tests but missing in documentation, metrics with + are documented but not tested."; exit 1)
@@ -122,7 +124,7 @@ generate: build-local embedmd
 	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
 embedmd:
-	go get github.com/campoy/embedmd@v1.0.0
+	GO111MODULE=off go get github.com/campoy/embedmd
 
 $(BENCHCMP_BINARY):
 	go get golang.org/x/tools/cmd/benchcmp

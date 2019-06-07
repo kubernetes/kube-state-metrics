@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	policy "k8s.io/api/policy/v1beta1"
+	storagev1 "k8s.io/api/storage/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	coll "k8s.io/kube-state-metrics/pkg/collector"
@@ -135,6 +136,7 @@ var availableCollectors = map[string]func(f *Builder) *coll.Collector{
 	"secrets":                    func(b *Builder) *coll.Collector { return b.buildSecretCollector() },
 	"services":                   func(b *Builder) *coll.Collector { return b.buildServiceCollector() },
 	"statefulsets":               func(b *Builder) *coll.Collector { return b.buildStatefulSetCollector() },
+	"storageclasses":             func(b *Builder) *coll.Collector { return b.buildStorageClassCollector() },
 }
 
 func (b *Builder) buildConfigMapCollector() *coll.Collector {
@@ -215,6 +217,10 @@ func (b *Builder) buildServiceCollector() *coll.Collector {
 
 func (b *Builder) buildStatefulSetCollector() *coll.Collector {
 	return b.buildCollector(statefulSetMetricFamilies, &appsv1.StatefulSet{}, createStatefulSetListWatch)
+}
+
+func (b *Builder) buildStorageClassCollector() *coll.Collector {
+	return b.buildCollector(storageClassMetricFamilies, &storagev1.StorageClass{}, createStorageClassListWatch)
 }
 
 func (b *Builder) buildPodCollector() *coll.Collector {

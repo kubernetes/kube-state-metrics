@@ -65,6 +65,7 @@ shellcheck:
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
 test-benchmark-compare: $(BENCHCMP_BINARY)
+	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
 TEMP_DIR := $(shell mktemp -d)

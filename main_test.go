@@ -35,6 +35,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -147,7 +148,7 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	expected := `# HELP kube_pod_info Information about pod.
 # TYPE kube_pod_info gauge
-kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class=""} 1
+kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-0",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class=""} 1
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # TYPE kube_pod_start_time gauge
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
@@ -317,7 +318,7 @@ kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",c
 
 	for i := 0; i < len(expectedSplit); i++ {
 		if expectedSplit[i] != gotFiltered[i] {
-			t.Fatalf("expected %v, but got %v", expectedSplit[i], gotFiltered[i])
+			t.Fatalf("expected:\n\n%v, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
 	}
 }
@@ -349,6 +350,7 @@ func configMap(client *fake.Clientset, index int) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "configmap" + i,
 			ResourceVersion: "123456",
+			UID:             types.UID("abc-" + i),
 		},
 	}
 	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(&configMap)
@@ -362,6 +364,7 @@ func service(client *fake.Clientset, index int) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "service" + i,
 			ResourceVersion: "123456",
+			UID:             types.UID("abc-" + i),
 		},
 	}
 	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(&service)
@@ -376,7 +379,7 @@ func pod(client *fake.Clientset, index int) error {
 			Name:              "pod" + i,
 			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 			Namespace:         "default",
-			UID:               "abc-123-xxx",
+			UID:               types.UID("abc-" + i),
 		},
 		Spec: v1.PodSpec{
 			NodeName: "node1",

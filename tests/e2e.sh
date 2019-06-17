@@ -28,6 +28,8 @@ MINIKUBE_VERSION=v1.1.1
 MINIKUBE_DRIVER=${MINIKUBE_DRIVER:-virtualbox}
 SUDO=${SUDO:-}
 
+EXCLUDED_RESOURCE_REGEX="verticalpodautoscaler"
+
 mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
 
 function finish() {
@@ -166,7 +168,7 @@ echo "check metrics format with promtool"
 [[ -n "$E2E_SETUP_PROMTOOL" ]] && setup_promtool
 < ${KUBE_STATE_METRICS_LOG_DIR}/metrics promtool check metrics
 
-resources=$(find internal/store/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "builder.go" -not -name "testutils.go" -not -name "utils.go" -print0 | xargs -0 -n1 basename | awk -F. '{print $1}')
+resources=$(find internal/store/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "builder.go" -not -name "testutils.go" -not -name "utils.go" -print0 | xargs -0 -n1 basename | awk -F. '{print $1}'| grep -v "$EXCLUDED_RESOURCE_REGEX")
 echo "available resources: $resources"
 for resource in ${resources}; do
     echo "checking that kube_${resource}* metrics exists"

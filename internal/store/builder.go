@@ -33,6 +33,8 @@ import (
 	extensions "k8s.io/api/extensions/v1beta1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
+	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
+	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -49,6 +51,7 @@ type whiteBlackLister interface {
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
 	kubeClient       clientset.Interface
+	vpaClient        vpaclientset.Interface
 	namespaces       options.NamespaceList
 	ctx              context.Context
 	enabledResources []string
@@ -89,6 +92,11 @@ func (b *Builder) WithNamespaces(n options.NamespaceList) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.kubeClient = c
+}
+
+// WithVPAClient sets the vpaClient property of a Builder so that the verticalpodautoscaler collector can query VPA objects.
+func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
+	b.vpaClient = c
 }
 
 // WithWhiteBlackList configures the white or blacklisted metric to be exposed
@@ -144,6 +152,7 @@ var availableStores = map[string]func(f *Builder) *metricsstore.MetricsStore{
 	"services":                   func(b *Builder) *metricsstore.MetricsStore { return b.buildServiceStore() },
 	"statefulsets":               func(b *Builder) *metricsstore.MetricsStore { return b.buildStatefulSetStore() },
 	"storageclasses":             func(b *Builder) *metricsstore.MetricsStore { return b.buildStorageClassStore() },
+	"verticalpodautoscalers":     func(b *Builder) *metricsstore.MetricsStore { return b.buildVPAStore() },
 }
 
 func collectorExists(name string) bool {
@@ -249,6 +258,10 @@ func (b *Builder) buildPodStore() *metricsstore.MetricsStore {
 
 func (b *Builder) buildCsrStore() *metricsstore.MetricsStore {
 	return b.buildStore(csrMetricFamilies, &certv1beta1.CertificateSigningRequest{}, createCSRListWatch)
+}
+
+func (b *Builder) buildVPAStore() *metricsstore.MetricsStore {
+	return b.buildStore(vpaMetricFamilies, &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient))
 }
 
 func (b *Builder) buildStore(

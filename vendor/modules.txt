@@ -128,8 +128,8 @@ k8s.io/api/extensions/v1beta1
 k8s.io/api/policy/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/apps/v1beta1
-k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/autoscaling/v1
+k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1beta2
 k8s.io/api/auditregistration/v1alpha1
 k8s.io/api/authentication/v1
@@ -197,12 +197,25 @@ k8s.io/apimachinery/pkg/apis/meta/v1/unstructured
 k8s.io/apimachinery/pkg/util/strategicpatch
 k8s.io/apimachinery/pkg/util/mergepatch
 k8s.io/apimachinery/third_party/forked/golang/json
+# k8s.io/autoscaler v0.0.0-20190612121530-8bb2354d9af9
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1beta1
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1beta2
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/poc.autoscaling.k8s.io/v1alpha1
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/scheme
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta1
+k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/poc.autoscaling.k8s.io/v1alpha1
 # k8s.io/client-go v2.0.0-alpha.0.0.20190313235726-6ee68ca5fd83+incompatible
 k8s.io/client-go/kubernetes
 k8s.io/client-go/plugin/pkg/client/auth
 k8s.io/client-go/tools/clientcmd
 k8s.io/client-go/tools/cache
 k8s.io/client-go/discovery
+k8s.io/client-go/rest
+k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1
 k8s.io/client-go/kubernetes/typed/apps/v1
 k8s.io/client-go/kubernetes/typed/apps/v1beta1
@@ -239,8 +252,6 @@ k8s.io/client-go/kubernetes/typed/settings/v1alpha1
 k8s.io/client-go/kubernetes/typed/storage/v1
 k8s.io/client-go/kubernetes/typed/storage/v1alpha1
 k8s.io/client-go/kubernetes/typed/storage/v1beta1
-k8s.io/client-go/rest
-k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/plugin/pkg/client/auth/azure
 k8s.io/client-go/plugin/pkg/client/auth/gcp
 k8s.io/client-go/plugin/pkg/client/auth/oidc
@@ -253,13 +264,13 @@ k8s.io/client-go/kubernetes/fake
 k8s.io/client-go/tools/pager
 k8s.io/client-go/util/retry
 k8s.io/client-go/kubernetes/scheme
-k8s.io/client-go/tools/reference
 k8s.io/client-go/pkg/version
 k8s.io/client-go/plugin/pkg/client/auth/exec
 k8s.io/client-go/rest/watch
 k8s.io/client-go/tools/metrics
 k8s.io/client-go/transport
 k8s.io/client-go/util/cert
+k8s.io/client-go/tools/reference
 k8s.io/client-go/util/jsonpath
 k8s.io/client-go/tools/clientcmd/api/v1
 k8s.io/client-go/discovery/fake

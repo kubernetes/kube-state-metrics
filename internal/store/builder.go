@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
 	"k8s.io/klog"
 
 	"golang.org/x/net/context"
@@ -64,13 +65,20 @@ func NewBuilder(
 }
 
 // WithEnabledResources sets the enabledResources property of a Builder.
-func (b *Builder) WithEnabledResources(c []string) {
+func (b *Builder) WithEnabledResources(c []string) error {
+	for _, col := range c {
+		if !collectorExists(col) {
+			return errors.Errorf("collector %s does not exist. Available collectors: %s", col, strings.Join(availableCollectors(), ","))
+		}
+	}
+
 	var copy []string
 	copy = append(copy, c...)
 
 	sort.Strings(copy)
 
 	b.enabledResources = copy
+	return nil
 }
 
 // WithNamespaces sets the namespaces property of a Builder.
@@ -136,6 +144,19 @@ var availableStores = map[string]func(f *Builder) *metricsstore.MetricsStore{
 	"services":                   func(b *Builder) *metricsstore.MetricsStore { return b.buildServiceStore() },
 	"statefulsets":               func(b *Builder) *metricsstore.MetricsStore { return b.buildStatefulSetStore() },
 	"storageclasses":             func(b *Builder) *metricsstore.MetricsStore { return b.buildStorageClassStore() },
+}
+
+func collectorExists(name string) bool {
+	_, ok := availableStores[name]
+	return ok
+}
+
+func availableCollectors() []string {
+	c := []string{}
+	for name := range availableStores {
+		c = append(c, name)
+	}
+	return c
 }
 
 func (b *Builder) buildConfigMapStore() *metricsstore.MetricsStore {

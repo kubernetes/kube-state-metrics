@@ -81,12 +81,17 @@ func main() {
 
 	storeBuilder := store.NewBuilder(ctx)
 
+	var collectors []string
 	if len(opts.Collectors) == 0 {
 		klog.Info("Using default collectors")
-		storeBuilder.WithEnabledResources(options.DefaultCollectors.AsSlice())
+		collectors = options.DefaultCollectors.AsSlice()
 	} else {
 		klog.Infof("Using collectors %s", opts.Collectors.String())
-		storeBuilder.WithEnabledResources(opts.Collectors.AsSlice())
+		collectors = opts.Collectors.AsSlice()
+	}
+
+	if err := storeBuilder.WithEnabledResources(collectors); err != nil {
+		klog.Fatalf("Failed to set up collectors: %v", err)
 	}
 
 	if len(opts.Namespaces) == 0 {

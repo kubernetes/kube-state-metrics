@@ -45,12 +45,6 @@ func TestCollectorSetSet(t *testing.T) {
 			}),
 			WantedError: false,
 		},
-		{
-			Desc:        "none exist collectors",
-			Value:       "none-exists",
-			Wanted:      CollectorSet{},
-			WantedError: true,
-		},
 	}
 
 	for _, test := range tests {

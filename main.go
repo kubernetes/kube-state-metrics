@@ -131,6 +131,11 @@ func main() {
 		})
 	}
 
+	err = whiteBlackList.Parse()
+	if err != nil {
+		klog.Fatalf("error initializing the whiteblack list : %v", err)
+	}
+
 	klog.Infof("metric white-blacklisting: %v", whiteBlackList.Status())
 
 	storeBuilder.WithWhiteBlackList(whiteBlackList)

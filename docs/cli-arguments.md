@@ -39,8 +39,8 @@ Usage of ./kube-state-metrics:
       --log_file string                             If non-empty, use this log file
       --log_file_max_size uint                      Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                                 log to standard error instead of files (default true)
-      --metric-blacklist string                     Comma-separated list of metrics not to be enabled. The whitelist and blacklist are mutually exclusive.
-      --metric-whitelist string                     Comma-separated list of metrics to be exposed. The whitelist and blacklist are mutually exclusive.
+      --metric-blacklist string                     Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The whitelist and blacklist are mutually exclusive.
+      --metric-whitelist string                     Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The whitelist and blacklist are mutually exclusive.
       --namespace string                            Comma-separated list of namespaces to be enabled. Defaults to ""
       --port int                                    Port to expose metrics on. (default 80)
       --skip_headers                                If true, avoid header prefixes in the log messages

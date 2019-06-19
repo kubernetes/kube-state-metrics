@@ -17,13 +17,16 @@ limitations under the License.
 package whiteblacklist
 
 import (
-	"errors"
+	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // WhiteBlackList encapsulates the logic needed to filter based on a string.
 type WhiteBlackList struct {
 	list        map[string]struct{}
+	rList       []regexp.Regexp
 	isWhiteList bool
 }
 
@@ -57,6 +60,19 @@ func New(w, b map[string]struct{}) (*WhiteBlackList, error) {
 	}, nil
 }
 
+func (l *WhiteBlackList) Parse() error {
+	var regexes []regexp.Regexp
+	for item := range l.list {
+		r, err := regexp.Compile(item)
+		if err != nil {
+			return err
+		}
+		regexes = append(regexes, *r)
+	}
+	l.rList = regexes
+	return nil
+}
+
 // Include includes the given items in the list.
 func (l *WhiteBlackList) Include(items []string) {
 	if l.isWhiteList {
@@ -85,13 +101,19 @@ func (l *WhiteBlackList) Exclude(items []string) {
 
 // IsIncluded returns if the given item is included.
 func (l *WhiteBlackList) IsIncluded(item string) bool {
-	_, exists := l.list[item]
-
-	if l.isWhiteList {
-		return exists
+	var matched bool
+	for _, r := range l.rList {
+		matched = r.MatchString(item)
+		if matched {
+			break
+		}
 	}
 
-	return !exists
+	if l.isWhiteList {
+		return matched
+	}
+
+	return !matched
 }
 
 // IsExcluded returns if the given item is excluded.

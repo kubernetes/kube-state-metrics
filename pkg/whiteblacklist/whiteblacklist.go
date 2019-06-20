@@ -60,6 +60,7 @@ func New(w, b map[string]struct{}) (*WhiteBlackList, error) {
 	}, nil
 }
 
+// Parse parses and compiles all of the regexes in the whiteBlackList.
 func (l *WhiteBlackList) Parse() error {
 	var regexes []regexp.Regexp
 	for item := range l.list {

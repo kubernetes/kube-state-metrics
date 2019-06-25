@@ -29,6 +29,13 @@ var (
 	BuildDate = ""
 )
 
+// Version is the current version of kube-state-metrics.
+// Update this whenever making a new release.
+// The version is of the format Major.Minor.Patch
+//
+// Increment major number for new feature additions and behavioral changes.
+// Increment minor number for bug fixes and performance enhancements.
+// Increment patch number for critical fixes to existing releases.
 type Version struct {
 	GitCommit string
 	BuildDate string
@@ -44,7 +51,7 @@ func (v Version) String() string {
 		runtime.GOOS, runtime.GOARCH, v.GitCommit)
 }
 
-// GetVersion returns kube-state-metrics version
+// GetVersion returns the kube-state-metrics version.
 func GetVersion() Version {
 	return Version{
 		GitCommit: Commit,

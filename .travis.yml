@@ -1,22 +1,43 @@
 sudo: required
-
+dist: xenial
 language: go
 
 go:
-    - "1.11.4"
+    - "1.12.x"
+
+services:
+  - docker
+
+git:
+  # Benchmark tests needs to access other branches, thereby we need to fetch all
+  # of the repository.
+  depth: false
+
+env:
+  global:
+      - E2E_SETUP_MINIKUBE=yes
+      - E2E_SETUP_KUBECTL=yes
+      - E2E_SETUP_PROMTOOL=yes
+      - MINIKUBE_DRIVER=none
+      - SUDO=sudo
 
 install:
 - mkdir -p $HOME/gopath/src/k8s.io
 - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/kube-state-metrics
+- cd $HOME/gopath/src/k8s.io/kube-state-metrics
 
 jobs:
   include:
-    # Go fmt
-    - script: make gofmtcheck
+    # Lint
+    - script: make lint
+    # Check that all the go modules manifests, vendors, and packages are in sync
+    - script: make validate-modules
     # Check that all metrics are documented
     - script: make doccheck
     # Unit Test
     - script: make test-unit
+    # Benchmark Test
+    - script: make test-benchmark-compare
     # Build
     - script: make build
     # E2e

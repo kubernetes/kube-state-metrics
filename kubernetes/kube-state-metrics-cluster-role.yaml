@@ -24,9 +24,13 @@ rules:
   - daemonsets
   - deployments
   - replicasets
+  - ingresses
   verbs: ["list", "watch"]
 - apiGroups: ["apps"]
   resources:
+  - daemonsets
+  - deployments
+  - replicasets
   - statefulsets
   verbs: ["list", "watch"]
 - apiGroups: ["batch"]
@@ -42,3 +46,8 @@ rules:
   resources:
   - poddisruptionbudgets
   verbs: ["list", "watch"]
+- apiGroups: ["certificates.k8s.io"]
+  resources:
+  - certificatesigningrequests
+  verbs: ["list", "watch"]
+

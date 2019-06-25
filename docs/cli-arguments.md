@@ -44,7 +44,7 @@ Usage of ./kube-state-metrics:
       --namespace string                            Comma-separated list of namespaces to be enabled. Defaults to ""
       --port int                                    Port to expose metrics on. (default 80)
       --skip_headers                                If true, avoid header prefixes in the log messages
-      --skip_log_headers                            If true, avoid headers when openning log files
+      --skip_log_headers                            If true, avoid headers when opening log files
       --stderrthreshold severity                    logs at or above this threshold go to stderr (default 2)
       --telemetry-host string                       Host to expose kube-state-metrics self metrics on. (default "0.0.0.0")
       --telemetry-port int                          Port to expose kube-state-metrics self metrics on. (default 81)

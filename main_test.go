@@ -27,10 +27,11 @@ import (
 	"testing"
 	"time"
 
-	kcollectors "k8s.io/kube-state-metrics/pkg/collectors"
+	kcoll "k8s.io/kube-state-metrics/internal/collector"
+	coll "k8s.io/kube-state-metrics/pkg/collector"
 	"k8s.io/kube-state-metrics/pkg/options"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -38,7 +39,7 @@ import (
 )
 
 func BenchmarkKubeStateMetrics(b *testing.B) {
-	var collectors []*kcollectors.Collector
+	var collectors []*coll.Collector
 	fixtureMultiplier := 1000
 	requestCount := 1000
 
@@ -53,8 +54,9 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	if err := injectFixtures(kubeClient, fixtureMultiplier); err != nil {
 		b.Errorf("error injecting resources: %v", err)
 	}
-
-	builder := kcollectors.NewBuilder(context.TODO())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	builder := kcoll.NewBuilder(ctx)
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -112,7 +114,9 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatalf("failed to insert sample pod %v", err.Error())
 	}
 
-	builder := kcollectors.NewBuilder(context.TODO())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	builder := kcoll.NewBuilder(ctx)
 	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -143,7 +147,7 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	expected := `# HELP kube_pod_info Information about pod.
 # TYPE kube_pod_info gauge
-kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx",node="node1",created_by_kind="<none>",created_by_name="<none>"} 1
+kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class=""} 1
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # TYPE kube_pod_start_time gauge
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
@@ -349,7 +353,7 @@ func pod(client *fake.Clientset, index int) error {
 		Spec: v1.PodSpec{
 			NodeName: "node1",
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name: "pod1_con1",
 					Resources: v1.ResourceRequirements{
 						Requests: map[v1.ResourceName]resource.Quantity{
@@ -368,7 +372,7 @@ func pod(client *fake.Clientset, index int) error {
 						},
 					},
 				},
-				v1.Container{
+				{
 					Name: "pod1_con2",
 					Resources: v1.ResourceRequirements{
 						Requests: map[v1.ResourceName]resource.Quantity{
@@ -388,7 +392,7 @@ func pod(client *fake.Clientset, index int) error {
 			PodIP:  "1.2.3.4",
 			Phase:  v1.PodRunning,
 			ContainerStatuses: []v1.ContainerStatus{
-				v1.ContainerStatus{
+				{
 					Name:        "container2",
 					Image:       "k8s.gcr.io/hyperkube2",
 					ImageID:     "docker://sha256:bbb",
@@ -404,7 +408,7 @@ func pod(client *fake.Clientset, index int) error {
 						},
 					},
 				},
-				v1.ContainerStatus{
+				{
 					Name:        "container3",
 					Image:       "k8s.gcr.io/hyperkube3",
 					ImageID:     "docker://sha256:ccc",

@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package metricsstore
 
 import (
@@ -8,13 +24,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// FamilyStringer represents a metric family that can be converted to its string
+// FamilyByteSlicer represents a metric family that can be converted to its string
 // representation.
-type FamilyStringer interface {
-	String() string
+type FamilyByteSlicer interface {
+	ByteSlice() []byte
 }
 
-// MetricsStore implements the k8s.io/kubernetes/client-go/tools/cache.Store
+// MetricsStore implements the k8s.io/client-go/tools/cache.Store
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
 // generated based on those objects.
 type MetricsStore struct {
@@ -24,7 +40,7 @@ type MetricsStore struct {
 	// metric families, containing a slice of metrics. We need to keep metrics
 	// grouped by metric families in order to zip families with their help text in
 	// MetricsStore.WriteAll().
-	metrics map[types.UID][]string
+	metrics map[types.UID][][]byte
 	// headers contains the header (TYPE and HELP) of each metric family. It is
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
@@ -32,21 +48,22 @@ type MetricsStore struct {
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []FamilyStringer
+	generateMetricsFunc func(interface{}) []FamilyByteSlicer
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilyStringer) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilyByteSlicer) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,
-		metrics:             map[types.UID][]string{},
+		metrics:             map[types.UID][][]byte{},
 	}
 }
 
-// Implementing k8s.io/kubernetes/client-go/tools/cache.Store interface
+// Implementing k8s.io/client-go/tools/cache.Store interface
 
-// TODO: Proper comments on all functions below.
+// Add inserts adds to the MetricsStore by calling the metrics generator functions and
+// adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj interface{}) error {
 	o, err := meta.Accessor(obj)
 	if err != nil {
@@ -57,10 +74,10 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	defer s.mutex.Unlock()
 
 	families := s.generateMetricsFunc(obj)
-	familyStrings := make([]string, len(families))
+	familyStrings := make([][]byte, len(families))
 
 	for i, f := range families {
-		familyStrings[i] = f.String()
+		familyStrings[i] = f.ByteSlice()
 	}
 
 	s.metrics[o.GetUID()] = familyStrings
@@ -68,12 +85,13 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	return nil
 }
 
+// Update updates the existing entry in the MetricsStore.
 func (s *MetricsStore) Update(obj interface{}) error {
-	// For now, just call Add, in the future one could check if the resource
-	// version changed?
+	// TODO: For now, just call Add, in the future one could check if the resource version changed?
 	return s.Add(obj)
 }
 
+// Delete deletes an existing entry in the MetricsStore.
 func (s *MetricsStore) Delete(obj interface{}) error {
 
 	o, err := meta.Accessor(obj)
@@ -89,18 +107,22 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 	return nil
 }
 
+// List implements the List method of the store interface.
 func (s *MetricsStore) List() []interface{} {
 	return nil
 }
 
+// ListKeys implements the ListKeys method of the store interface.
 func (s *MetricsStore) ListKeys() []string {
 	return nil
 }
 
+// Get implements the Get method of the store interface.
 func (s *MetricsStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
+// GetByKey implements the GetByKey method of the store interface.
 func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
@@ -109,7 +131,7 @@ func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err 
 // given list.
 func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 	s.mutex.Lock()
-	s.metrics = map[types.UID][]string{}
+	s.metrics = map[types.UID][][]byte{}
 	s.mutex.Unlock()
 
 	for _, o := range list {
@@ -122,6 +144,7 @@ func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 	return nil
 }
 
+// Resync implements the Resync method of the store interface.
 func (s *MetricsStore) Resync() error {
 	return nil
 }

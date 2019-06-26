@@ -21,27 +21,32 @@ import (
 )
 
 var (
+	// DefaultNamespaces is the default namespace selector for selecting and filtering across all namespaces.
 	DefaultNamespaces = NamespaceList{metav1.NamespaceAll}
+
+	// DefaultCollectors represents the default set of collectors in kube-state-metrics.
 	DefaultCollectors = CollectorSet{
-		"daemonsets":               struct{}{},
-		"deployments":              struct{}{},
-		"limitranges":              struct{}{},
-		"nodes":                    struct{}{},
-		"pods":                     struct{}{},
-		"poddisruptionbudgets":     struct{}{},
-		"replicasets":              struct{}{},
-		"replicationcontrollers":   struct{}{},
-		"resourcequotas":           struct{}{},
-		"services":                 struct{}{},
-		"jobs":                     struct{}{},
-		"cronjobs":                 struct{}{},
-		"statefulsets":             struct{}{},
-		"persistentvolumes":        struct{}{},
-		"persistentvolumeclaims":   struct{}{},
-		"namespaces":               struct{}{},
-		"horizontalpodautoscalers": struct{}{},
-		"endpoints":                struct{}{},
-		"secrets":                  struct{}{},
-		"configmaps":               struct{}{},
+		"certificatesigningrequests": struct{}{},
+		"configmaps":                 struct{}{},
+		"cronjobs":                   struct{}{},
+		"daemonsets":                 struct{}{},
+		"deployments":                struct{}{},
+		"endpoints":                  struct{}{},
+		"horizontalpodautoscalers":   struct{}{},
+		"ingresses":                  struct{}{},
+		"jobs":                       struct{}{},
+		"limitranges":                struct{}{},
+		"namespaces":                 struct{}{},
+		"nodes":                      struct{}{},
+		"persistentvolumes":          struct{}{},
+		"persistentvolumeclaims":     struct{}{},
+		"poddisruptionbudgets":       struct{}{},
+		"pods":                       struct{}{},
+		"replicasets":                struct{}{},
+		"replicationcontrollers":     struct{}{},
+		"resourcequotas":             struct{}{},
+		"secrets":                    struct{}{},
+		"services":                   struct{}{},
+		"statefulsets":               struct{}{},
 	}
 )

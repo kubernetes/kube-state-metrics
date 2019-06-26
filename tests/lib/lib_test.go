@@ -22,15 +22,15 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/collectors"
-	"k8s.io/kube-state-metrics/pkg/metrics"
+	"k8s.io/kube-state-metrics/pkg/collector"
+	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 )
 
@@ -63,7 +63,7 @@ func TestAsLibrary(t *testing.T) {
 	}
 }
 
-func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
+func serviceCollector(kubeClient clientset.Interface) *collector.Collector {
 	store := metricsstore.NewMetricsStore([]string{"test_metric describes a test metric"}, generateServiceMetrics)
 
 	lw := cache.ListWatch{
@@ -79,21 +79,23 @@ func serviceCollector(kubeClient clientset.Interface) *collectors.Collector {
 
 	go r.Run(context.TODO().Done())
 
-	return collectors.NewCollector(store)
+	return collector.NewCollector(store)
 }
 
-func generateServiceMetrics(obj interface{}) []metricsstore.FamilyStringer {
+func generateServiceMetrics(obj interface{}) []metricsstore.FamilyByteSlicer {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
-	m := metrics.Metric{
-		Name:        "test_metric",
+	m := metric.Metric{
 		LabelKeys:   []string{"name"},
 		LabelValues: []string{s.Name},
 		Value:       1,
 	}
 
-	family := metrics.Family{&m}
+	family := metric.Family{
+		Name:    "test_metric",
+		Metrics: []*metric.Metric{&m},
+	}
 
-	return []metricsstore.FamilyStringer{family}
+	return []metricsstore.FamilyByteSlicer{&family}
 }

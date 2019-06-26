@@ -1,7 +1,8 @@
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.10 AS builder
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.12 AS builder
 WORKDIR /go/src/k8s.io/kube-state-metrics
 COPY . .
-RUN make build
+ENV GOFLAGS="-mod=vendor"
+RUN make build-local
 
 FROM  registry.svc.ci.openshift.org/openshift/origin-v4.0:base
 LABEL io.k8s.display-name="kube-state-metrics" \

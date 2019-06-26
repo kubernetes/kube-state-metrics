@@ -26,7 +26,7 @@ import (
 // WhiteBlackList encapsulates the logic needed to filter based on a string.
 type WhiteBlackList struct {
 	list        map[string]struct{}
-	rList       []regexp.Regexp
+	rList       []*regexp.Regexp
 	isWhiteList bool
 }
 
@@ -62,13 +62,13 @@ func New(w, b map[string]struct{}) (*WhiteBlackList, error) {
 
 // Parse parses and compiles all of the regexes in the whiteBlackList.
 func (l *WhiteBlackList) Parse() error {
-	var regexes []regexp.Regexp
+	var regexes []*regexp.Regexp
 	for item := range l.list {
 		r, err := regexp.Compile(item)
 		if err != nil {
 			return err
 		}
-		regexes = append(regexes, *r)
+		regexes = append(regexes, r)
 	}
 	l.rList = regexes
 	return nil

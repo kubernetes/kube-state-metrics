@@ -39,6 +39,8 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 		# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
 		# HELP kube_persistentvolumeclaim_access_mode The access mode of the persistent volume.
 		# TYPE kube_persistentvolumeclaim_access_mode gauge
+		# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_persistentvolumeclaim_annotations gauge
 	`
 	storageClassName := "rbd"
 	cases := []generateMetricsTestCase{
@@ -49,6 +51,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 					Name:      "mysql-data",
 					Namespace: "default",
 					Labels: map[string]string{
+						"app": "mysql-server",
+					},
+					Annotations: map[string]string{
 						"app": "mysql-server",
 					},
 				},
@@ -76,8 +81,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace="default",persistentvolumeclaim="mysql-data"} 1.073741824e+09
 				kube_persistentvolumeclaim_labels{label_app="mysql-server",namespace="default",persistentvolumeclaim="mysql-data"} 1
 				kube_persistentvolumeclaim_access_mode{namespace="default",persistentvolumeclaim="mysql-data",access_mode="ReadWriteOnce"} 1
+				kube_persistentvolumeclaim_annotations{namespace="default",persistentvolumeclaim="mysql-data",annotation_app="mysql-server"} 1
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_annotations"},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{

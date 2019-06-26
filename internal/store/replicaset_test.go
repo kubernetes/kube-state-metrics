@@ -54,6 +54,8 @@ func TestReplicaSetStore(t *testing.T) {
 		# TYPE kube_replicaset_owner gauge
 		# HELP kube_replicaset_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_replicaset_labels gauge
+		# HELP kube_replicaset_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_replicaset_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -71,6 +73,9 @@ func TestReplicaSetStore(t *testing.T) {
 						},
 					},
 					Labels: map[string]string{
+						"app": "example1",
+					},
+					Annotations: map[string]string{
 						"app": "example1",
 					},
 				},
@@ -94,6 +99,7 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_status_ready_replicas{namespace="ns1",replicaset="rs1"} 5
 				kube_replicaset_spec_replicas{namespace="ns1",replicaset="rs1"} 5
 				kube_replicaset_owner{namespace="ns1",owner_is_controller="true",owner_kind="Deployment",owner_name="dp-name",replicaset="rs1"} 1
+				kube_replicaset_annotations{namespace="ns1",replicaset="rs1",annotation_app="example1"} 1
 `,
 		},
 		{
@@ -103,6 +109,10 @@ func TestReplicaSetStore(t *testing.T) {
 					Namespace:  "ns2",
 					Generation: 14,
 					Labels: map[string]string{
+						"app": "example2",
+						"env": "ex",
+					},
+					Annotations: map[string]string{
 						"app": "example2",
 						"env": "ex",
 					},
@@ -126,6 +136,7 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_status_ready_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_spec_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_owner{namespace="ns2",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",replicaset="rs2"} 1
+				kube_replicaset_annotations{namespace="ns2",replicaset="rs2",annotation_app="example2",annotation_env="ex"} 1
 			`,
 		},
 	}

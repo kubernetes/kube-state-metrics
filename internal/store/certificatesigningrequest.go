@@ -95,6 +95,23 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_certificatesigningrequest_annotations",
+			Type: metric.Gauge,
+			Help: "Kubernetes annotations converted to Prometheus labels.",
+			GenerateFunc: wrapCSRFunc(func(j *certv1beta1.CertificateSigningRequest) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(j.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		},
 	}
 )
 

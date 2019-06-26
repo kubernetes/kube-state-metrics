@@ -60,6 +60,8 @@ func TestStatefuleSetStore(t *testing.T) {
  		# TYPE kube_statefulset_metadata_generation gauge
 		# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_statefulset_labels gauge
+		# HELP kube_statefulset_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_statefulset_annotations gauge
  	`
 	cases := []generateMetricsTestCase{
 		{
@@ -69,6 +71,9 @@ func TestStatefuleSetStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns1",
 					Labels: map[string]string{
+						"app": "example1",
+					},
+					Annotations: map[string]string{
 						"app": "example1",
 					},
 					Generation: 3,
@@ -96,6 +101,7 @@ func TestStatefuleSetStore(t *testing.T) {
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_metadata_generation{namespace="ns1",statefulset="statefulset1"} 3
 				kube_statefulset_labels{label_app="example1",namespace="ns1",statefulset="statefulset1"} 1
+				kube_statefulset_annotations{namespace="ns1",statefulset="statefulset1",annotation_app="example1"} 1
 `,
 			MetricNames: []string{
 				"kube_statefulset_created",
@@ -109,6 +115,7 @@ func TestStatefuleSetStore(t *testing.T) {
 				"kube_statefulset_status_replicas_updated",
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
+				"kube_statefulset_annotations",
 			},
 		},
 		{
@@ -117,6 +124,9 @@ func TestStatefuleSetStore(t *testing.T) {
 					Name:      "statefulset2",
 					Namespace: "ns2",
 					Labels: map[string]string{
+						"app": "example2",
+					},
+					Annotations: map[string]string{
 						"app": "example2",
 					},
 					Generation: 21,
@@ -146,6 +156,7 @@ func TestStatefuleSetStore(t *testing.T) {
  				kube_statefulset_metadata_generation{namespace="ns2",statefulset="statefulset2"} 21
 				kube_statefulset_labels{label_app="example2",namespace="ns2",statefulset="statefulset2"} 1
 				kube_statefulset_status_current_revision{namespace="ns2",revision="cr2",statefulset="statefulset2"} 1
+				kube_statefulset_annotations{namespace="ns2",statefulset="statefulset2",annotation_app="example2"} 1
 `,
 			MetricNames: []string{
 				"kube_statefulset_labels",
@@ -158,6 +169,7 @@ func TestStatefuleSetStore(t *testing.T) {
 				"kube_statefulset_status_replicas_updated",
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
+				"kube_statefulset_annotations",
 			},
 		},
 		{
@@ -166,6 +178,9 @@ func TestStatefuleSetStore(t *testing.T) {
 					Name:      "statefulset3",
 					Namespace: "ns3",
 					Labels: map[string]string{
+						"app": "example3",
+					},
+					Annotations: map[string]string{
 						"app": "example3",
 					},
 					Generation: 36,
@@ -191,6 +206,7 @@ func TestStatefuleSetStore(t *testing.T) {
  				kube_statefulset_metadata_generation{namespace="ns3",statefulset="statefulset3"} 36
 				kube_statefulset_labels{label_app="example3",namespace="ns3",statefulset="statefulset3"} 1
 				kube_statefulset_status_current_revision{namespace="ns3",revision="cr3",statefulset="statefulset3"} 1
+				kube_statefulset_annotations{namespace="ns3",statefulset="statefulset3",annotation_app="example3"} 1
  			`,
 			MetricNames: []string{
 				"kube_statefulset_labels",
@@ -202,6 +218,7 @@ func TestStatefuleSetStore(t *testing.T) {
 				"kube_statefulset_status_replicas_updated",
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
+				"kube_statefulset_annotations",
 			},
 		},
 	}

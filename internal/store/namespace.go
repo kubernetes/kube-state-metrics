@@ -32,10 +32,6 @@ var (
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
 
-	descNamespaceAnnotationsName          = "kube_namespace_annotations"
-	descNamespaceAnnotationsHelp          = "Kubernetes annotations converted to Prometheus labels."
-	descNamespaceAnnotationsDefaultLabels = []string{"namespace"}
-
 	namespaceMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_namespace_created",
@@ -72,9 +68,9 @@ var (
 			}),
 		},
 		{
-			Name: descNamespaceAnnotationsName,
+			Name: "kube_namespace_annotations",
 			Type: metric.Gauge,
-			Help: descNamespaceAnnotationsHelp,
+			Help: "Kubernetes annotations converted to Prometheus labels.",
 			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
 				return &metric.Family{

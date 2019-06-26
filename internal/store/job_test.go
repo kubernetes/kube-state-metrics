@@ -75,6 +75,8 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_start_time gauge
 		# HELP kube_job_status_succeeded The number of pods which reached Phase Succeeded.
 		# TYPE kube_job_status_succeeded gauge
+		# HELP kube_job_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_job_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -85,6 +87,9 @@ func TestJobStore(t *testing.T) {
 					Namespace:         "ns1",
 					Generation:        1,
 					Labels: map[string]string{
+						"app": "example-running-1",
+					},
+					Annotations: map[string]string{
 						"app": "example-running-1",
 					},
 					OwnerReferences: []metav1.OwnerReference{
@@ -120,6 +125,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="RunningJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="RunningJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_annotations{job_name="RunningJob1",namespace="ns1",annotation_app="example-running-1"} 1
 `,
 		},
 		{
@@ -129,6 +135,9 @@ func TestJobStore(t *testing.T) {
 					Namespace:  "ns1",
 					Generation: 1,
 					Labels: map[string]string{
+						"app": "example-successful-1",
+					},
+					Annotations: map[string]string{
 						"app": "example-successful-1",
 					},
 				},
@@ -163,6 +172,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob1",namespace="ns1"} 1
+				kube_job_annotations{job_name="SuccessfulJob1",namespace="ns1",annotation_app="example-successful-1"} 1
 `,
 		},
 		{
@@ -172,6 +182,9 @@ func TestJobStore(t *testing.T) {
 					Namespace:  "ns1",
 					Generation: 1,
 					Labels: map[string]string{
+						"app": "example-failed-1",
+					},
+					Annotations: map[string]string{
 						"app": "example-failed-1",
 					},
 				},
@@ -206,6 +219,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
+				kube_job_annotations{job_name="FailedJob1",namespace="ns1",annotation_app="example-failed-1"} 1
 `,
 		},
 		{
@@ -215,6 +229,9 @@ func TestJobStore(t *testing.T) {
 					Namespace:  "ns1",
 					Generation: 1,
 					Labels: map[string]string{
+						"app": "example-successful-2",
+					},
+					Annotations: map[string]string{
 						"app": "example-successful-2",
 					},
 				},
@@ -238,7 +255,6 @@ func TestJobStore(t *testing.T) {
 				kube_job_owner{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
-
 				kube_job_complete{condition="unknown",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_info{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_labels{job_name="SuccessfulJob2NoActiveDeadlineSeconds",label_app="example-successful-2",namespace="ns1"} 1
@@ -249,6 +265,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_annotations{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",annotation_app="example-successful-2"} 1
 `,
 		},
 	}

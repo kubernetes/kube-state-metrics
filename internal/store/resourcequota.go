@@ -79,6 +79,23 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_resourcequota_annotations",
+			Type: metric.Gauge,
+			Help: "Kubernetes annotations converted to Prometheus labels.",
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(r.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		},
 	}
 )
 

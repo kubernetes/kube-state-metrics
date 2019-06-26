@@ -36,6 +36,8 @@ func TestCsrStore(t *testing.T) {
 		# TYPE kube_certificatesigningrequest_condition gauge
 		# HELP kube_certificatesigningrequest_cert_length Length of the issued cert
 		# TYPE kube_certificatesigningrequest_cert_length gauge
+		# HELP kube_certificatesigningrequest_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_certificatesigningrequest_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -44,6 +46,9 @@ func TestCsrStore(t *testing.T) {
 					Name:       "certificate-test",
 					Generation: 1,
 					Labels: map[string]string{
+						"cert": "test",
+					},
+					Annotations: map[string]string{
 						"cert": "test",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -57,8 +62,9 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test",annotation_cert="test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -66,6 +72,9 @@ func TestCsrStore(t *testing.T) {
 					Name:       "certificate-test",
 					Generation: 1,
 					Labels: map[string]string{
+						"cert": "test",
+					},
+					Annotations: map[string]string{
 						"cert": "test",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -85,8 +94,9 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 1
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test",annotation_cert="test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -94,6 +104,9 @@ func TestCsrStore(t *testing.T) {
 					Name:       "certificate-test",
 					Generation: 1,
 					Labels: map[string]string{
+						"cert": "test",
+					},
+					Annotations: map[string]string{
 						"cert": "test",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -113,8 +126,9 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test",annotation_cert="test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -122,6 +136,9 @@ func TestCsrStore(t *testing.T) {
 					Name:       "certificate-test",
 					Generation: 1,
 					Labels: map[string]string{
+						"cert": "test",
+					},
+					Annotations: map[string]string{
 						"cert": "test",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -141,8 +158,9 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 13
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test",annotation_cert="test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -150,6 +168,9 @@ func TestCsrStore(t *testing.T) {
 					Name:       "certificate-test",
 					Generation: 1,
 					Labels: map[string]string{
+						"cert": "test",
+					},
+					Annotations: map[string]string{
 						"cert": "test",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -171,8 +192,9 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 1
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test",annotation_cert="test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -180,6 +202,9 @@ func TestCsrStore(t *testing.T) {
 					Name:       "certificate-test",
 					Generation: 1,
 					Labels: map[string]string{
+						"cert": "test",
+					},
+					Annotations: map[string]string{
 						"cert": "test",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -207,8 +232,9 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 2
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test",annotation_cert="test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
 		},
 	}
 	for i, c := range cases {

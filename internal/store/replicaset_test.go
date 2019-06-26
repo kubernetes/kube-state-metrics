@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/extensions/v1beta1"
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
@@ -59,7 +59,7 @@ func TestReplicaSetStore(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.ReplicaSet{
+			Obj: &v1.ReplicaSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "rs1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -79,13 +79,13 @@ func TestReplicaSetStore(t *testing.T) {
 						"app": "example1",
 					},
 				},
-				Status: v1beta1.ReplicaSetStatus{
+				Status: v1.ReplicaSetStatus{
 					Replicas:             5,
 					FullyLabeledReplicas: 10,
 					ReadyReplicas:        5,
 					ObservedGeneration:   1,
 				},
-				Spec: v1beta1.ReplicaSetSpec{
+				Spec: v1.ReplicaSetSpec{
 					Replicas: &rs1Replicas,
 				},
 			},
@@ -103,7 +103,7 @@ func TestReplicaSetStore(t *testing.T) {
 `,
 		},
 		{
-			Obj: &v1beta1.ReplicaSet{
+			Obj: &v1.ReplicaSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "rs2",
 					Namespace:  "ns2",
@@ -117,13 +117,13 @@ func TestReplicaSetStore(t *testing.T) {
 						"env": "ex",
 					},
 				},
-				Status: v1beta1.ReplicaSetStatus{
+				Status: v1.ReplicaSetStatus{
 					Replicas:             0,
 					FullyLabeledReplicas: 5,
 					ReadyReplicas:        0,
 					ObservedGeneration:   5,
 				},
-				Spec: v1beta1.ReplicaSetSpec{
+				Spec: v1.ReplicaSetSpec{
 					Replicas: &rs2Replicas,
 				},
 			},

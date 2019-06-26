@@ -1,6 +1,4 @@
 apiVersion: apps/v1
-# Kubernetes version 1.8.x should use apps/v1beta2
-# Kubernetes versions before 1.8.0 should use apps/v1beta1 or extensions/v1beta1
 kind: Deployment
 metadata:
   labels:

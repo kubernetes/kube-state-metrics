@@ -70,7 +70,7 @@ func TestHPAStore(t *testing.T) {
 					MaxReplicas: 4,
 					MinReplicas: &hpa1MinReplicas,
 					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
-						APIVersion: "extensions/v1beta1",
+						APIVersion: "apps/v1",
 						Kind:       "Deployment",
 						Name:       "deployment1",
 					},

@@ -26,24 +26,6 @@ import (
 )
 
 func TestPodDisruptionBudgetStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-	# HELP kube_poddisruptionbudget_created Unix creation timestamp
-	# TYPE kube_poddisruptionbudget_created gauge
-	# HELP kube_poddisruptionbudget_status_current_healthy Current number of healthy pods
-	# TYPE kube_poddisruptionbudget_status_current_healthy gauge
-	# HELP kube_poddisruptionbudget_status_desired_healthy Minimum desired number of healthy pods
-	# TYPE kube_poddisruptionbudget_status_desired_healthy gauge
-	# HELP kube_poddisruptionbudget_status_pod_disruptions_allowed Number of pod disruptions that are currently allowed
-	# TYPE kube_poddisruptionbudget_status_pod_disruptions_allowed gauge
-	# HELP kube_poddisruptionbudget_status_expected_pods Total number of pods counted by this disruption budget
-	# TYPE kube_poddisruptionbudget_status_expected_pods gauge
-	# HELP kube_poddisruptionbudget_status_observed_generation Most recent generation observed when updating this PDB status
-	# TYPE kube_poddisruptionbudget_status_observed_generation gauge
-	# HELP kube_poddisruptionbudget_annotations Kubernetes annotations converted to Prometheus labels.
-	# TYPE kube_poddisruptionbudget_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1beta1.PodDisruptionBudget{

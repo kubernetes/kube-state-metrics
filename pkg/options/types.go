@@ -97,11 +97,6 @@ func (c CollectorSet) AsSlice() []string {
 	return cols
 }
 
-// isEmpty() returns true if the length of the CollectorSet is zero.
-func (c CollectorSet) isEmpty() bool {
-	return len(c.AsSlice()) == 0
-}
-
 // Type returns a descriptive string about the CollectorSet type.
 func (c *CollectorSet) Type() string {
 	return "string"

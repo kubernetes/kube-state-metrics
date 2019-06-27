@@ -26,20 +26,6 @@ import (
 )
 
 func TestPersistentVolumeStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-			# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
-			# TYPE kube_persistentvolume_status_phase gauge
-			# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
-			# TYPE kube_persistentvolume_labels gauge
-			# HELP kube_persistentvolume_info Information about persistentvolume.
-			# TYPE kube_persistentvolume_info gauge
-			# HELP kube_persistentvolume_capacity_bytes The size of the Persistentvolume in bytes.
-			# TYPE kube_persistentvolume_capacity_bytes gauge
-			# HELP kube_persistentvolume_annotations Kubernetes annotations converted to Prometheus labels.
-			# TYPE kube_persistentvolume_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{

@@ -247,5 +247,5 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	if !createdTime.IsZero() {
 		return sched.Next(createdTime.Time), nil
 	}
-	return time.Time{}, errors.New("Created time and lastScheduleTime are both zero")
+	return time.Time{}, errors.New("created time and lastScheduleTime are both zero")
 }

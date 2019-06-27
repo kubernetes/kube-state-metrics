@@ -31,26 +31,6 @@ var (
 )
 
 func TestHPAStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_hpa_metadata_generation The generation observed by the HorizontalPodAutoscaler controller.
-		# TYPE kube_hpa_metadata_generation gauge
-		# HELP kube_hpa_spec_max_replicas Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
-		# TYPE kube_hpa_spec_max_replicas gauge
-		# HELP kube_hpa_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
-		# TYPE kube_hpa_spec_min_replicas gauge
-		# HELP kube_hpa_status_current_replicas Current number of replicas of pods managed by this autoscaler.
-		# TYPE kube_hpa_status_current_replicas gauge
-		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
-		# TYPE kube_hpa_status_desired_replicas gauge
-        # HELP kube_hpa_status_condition The condition of this autoscaler.
-        # TYPE kube_hpa_status_condition gauge
-        # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
-        # TYPE kube_hpa_labels gauge
-		# HELP kube_hpa_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_hpa_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			// Verify populating base metric.

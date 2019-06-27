@@ -27,18 +27,8 @@ import (
 )
 
 func TestLimitRangeollector(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
 	testMemory := "2.1G"
 	testMemoryQuantity := resource.MustParse(testMemory)
-	const metadata = `
-	# HELP kube_limitrange_created Unix creation timestamp
-	# TYPE kube_limitrange_created gauge
-	# HELP kube_limitrange Information about limit range.
-	# TYPE kube_limitrange gauge
-	# HELP kube_limitrange_annotations Kubernetes annotations converted to Prometheus labels.
-	# TYPE kube_limitrange_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.LimitRange{

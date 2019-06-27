@@ -27,42 +27,6 @@ import (
 )
 
 func TestNodeStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_node_created Unix creation timestamp
-		# TYPE kube_node_created gauge
-		# HELP kube_node_info Information about a cluster node.
-		# TYPE kube_node_info gauge
-		# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_node_labels gauge
-		# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
-		# TYPE kube_node_spec_unschedulable gauge
-		# HELP kube_node_spec_taint The taint of a cluster node.
-		# TYPE kube_node_spec_taint gauge
-		# TYPE kube_node_status_phase gauge
-		# HELP kube_node_status_phase The phase the node is currently in.
-		# TYPE kube_node_status_capacity gauge
-		# HELP kube_node_status_capacity The capacity for different resources of a node.
-		# TYPE kube_node_status_capacity_pods gauge
-		# HELP kube_node_status_capacity_pods The total pod resources of the node.
-		# TYPE kube_node_status_capacity_cpu_cores gauge
-		# HELP kube_node_status_capacity_cpu_cores The total CPU resources of the node.
-		# TYPE kube_node_status_capacity_memory_bytes gauge
-		# HELP kube_node_status_capacity_memory_bytes The total memory resources of the node.
-		# TYPE kube_node_status_allocatable gauge
-		# HELP kube_node_status_allocatable The allocatable for different resources of a node that are available for scheduling.
-		# TYPE kube_node_status_allocatable_pods gauge
-		# HELP kube_node_status_allocatable_pods The pod resources of a node that are available for scheduling.
-		# TYPE kube_node_status_allocatable_cpu_cores gauge
-		# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
-		# TYPE kube_node_status_allocatable_memory_bytes gauge
-		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
-		# HELP kube_node_status_condition The condition of a cluster node.
-		# TYPE kube_node_status_condition gauge
-		# HELP kube_node_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_node_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		// Verify populating base metric and that metric for unset fields are skipped.
 		{

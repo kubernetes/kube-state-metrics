@@ -26,24 +26,6 @@ import (
 )
 
 func TestServiceStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_service_info Information about service.
-		# TYPE kube_service_info gauge
-		# HELP kube_service_created Unix creation timestamp
-		# TYPE kube_service_created gauge
-		# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_service_labels gauge
-		# HELP kube_service_spec_type Type about service.
-		# TYPE kube_service_spec_type gauge
-		# HELP kube_service_spec_external_ip Service external ips. One series for each ip
-		# TYPE kube_service_spec_external_ip gauge
-		# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status
-		# TYPE kube_service_status_load_balancer_ingress gauge
-		# HELP kube_service_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_service_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Service{

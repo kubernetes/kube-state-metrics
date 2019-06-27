@@ -26,22 +26,6 @@ import (
 )
 
 func TestPersistentVolumeClaimStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
-		# TYPE kube_persistentvolumeclaim_info gauge
-		# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_persistentvolumeclaim_labels gauge
-		# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
-		# TYPE kube_persistentvolumeclaim_status_phase gauge
-		# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
-		# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
-		# HELP kube_persistentvolumeclaim_access_mode The access mode of the persistent volume.
-		# TYPE kube_persistentvolumeclaim_access_mode gauge
-		# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_persistentvolumeclaim_annotations gauge
-	`
 	storageClassName := "rbd"
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.

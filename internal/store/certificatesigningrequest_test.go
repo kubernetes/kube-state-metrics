@@ -27,18 +27,6 @@ import (
 )
 
 func TestCsrStore(t *testing.T) {
-	const metadata = `
-		# HELP kube_certificatesigningrequest_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_certificatesigningrequest_labels gauge
-		# HELP kube_certificatesigningrequest_created Unix creation timestamp
-		# TYPE kube_certificatesigningrequest_created gauge
-		# HELP kube_certificatesigningrequest_condition The number of each certificatesigningrequest condition
-		# TYPE kube_certificatesigningrequest_condition gauge
-		# HELP kube_certificatesigningrequest_cert_length Length of the issued cert
-		# TYPE kube_certificatesigningrequest_cert_length gauge
-		# HELP kube_certificatesigningrequest_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_certificatesigningrequest_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{

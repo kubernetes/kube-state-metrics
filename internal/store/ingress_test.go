@@ -26,26 +26,9 @@ import (
 )
 
 func TestIngressStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	const metadata = `
-		# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_ingress_labels gauge
-		# HELP kube_ingress_info Information about ingress.
-		# TYPE kube_ingress_info gauge
-		# HELP kube_ingress_created Unix creation timestamp
-		# TYPE kube_ingress_created gauge
-		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
-		# TYPE kube_ingress_metadata_resource_version gauge
-		# HELP kube_ingress_path Ingress host, paths and backend service.
-		# TYPE kube_ingress_path gauge
-		# HELP kube_ingress_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_ingress_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1beta1.Ingress{

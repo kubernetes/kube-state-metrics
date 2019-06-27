@@ -27,16 +27,6 @@ import (
 )
 
 func TestResourceQuotaStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-	# HELP kube_resourcequota Information about resource quota.
-	# TYPE kube_resourcequota gauge
-	# HELP kube_resourcequota_created Unix creation timestamp
-	# TYPE kube_resourcequota_created gauge
-	# HELP kube_resourcequota_annotations Kubernetes annotations converted to Prometheus labels.
-	# TYPE kube_resourcequota_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		// Verify populating base metric and that metric for unset fields are skipped.
 		{

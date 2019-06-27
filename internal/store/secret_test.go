@@ -25,26 +25,9 @@ import (
 )
 
 func TestSecretStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	const metadata = `
-        # HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_secret_labels gauge
-        # HELP kube_secret_info Information about secret.
-		# TYPE kube_secret_info gauge
-		# HELP kube_secret_type Type about secret.
-		# TYPE kube_secret_type gauge
-		# HELP kube_secret_created Unix creation timestamp
-		# TYPE kube_secret_created gauge
-		# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
-		# TYPE kube_secret_metadata_resource_version gauge
-		# HELP kube_secret_annotations Kubernetes annotations converted to Prometheus labels
-		# TYPE kube_secret_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Secret{

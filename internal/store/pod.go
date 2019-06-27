@@ -861,21 +861,56 @@ var (
 			}),
 		},
 		{
-			Name: "kube_pod_container_resource_requests_cpu_cores",
+			Name: "kube_pod_init_container_resource_requests",
 			Type: metric.Gauge,
-			Help: "The number of requested cpu cores by a container.",
+			Help: "The number of requested request resource by the init container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
 
-				for _, c := range p.Spec.Containers {
+				for _, c := range p.Spec.InitContainers {
 					req := c.Resources.Requests
-					if cpu, ok := req[v1.ResourceCPU]; ok {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"container", "node"},
-							LabelValues: []string{c.Name, p.Spec.NodeName},
-							Value:       float64(cpu.MilliValue()) / 1000,
-						})
+
+					for resourceName, val := range req {
+						switch resourceName {
+						case v1.ResourceCPU:
+							ms = append(ms, &metric.Metric{
+								Value:       float64(val.MilliValue()) / 1000,
+								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+							})
+						case v1.ResourceStorage:
+							fallthrough
+						case v1.ResourceEphemeralStorage:
+							fallthrough
+						case v1.ResourceMemory:
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								Value:       float64(val.Value()),
+							})
+						default:
+							if isHugePageResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									Value:       float64(val.Value()),
+								})
+							}
+							if isAttachableVolumeResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									Value:       float64(val.Value()),
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								})
+							}
+							if isExtendedResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									Value:       float64(val.Value()),
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								})
+							}
+						}
 					}
+				}
+
+				for _, metric := range ms {
+					metric.LabelKeys = []string{"container", "node", "resource", "unit"}
 				}
 
 				return &metric.Family{
@@ -884,13 +919,13 @@ var (
 			}),
 		},
 		{
-			Name: "kube_init_pod_container_resource_requests_cpu_cores",
+			Name: "kube_pod_container_resource_requests_cpu_cores",
 			Type: metric.Gauge,
-			Help: "The number of requested cpu cores by an init container.",
+			Help: "The number of requested cpu cores by a container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
 
-				for _, c := range p.Spec.InitContainers {
+				for _, c := range p.Spec.Containers {
 					req := c.Resources.Requests
 					if cpu, ok := req[v1.ResourceCPU]; ok {
 						ms = append(ms, &metric.Metric{

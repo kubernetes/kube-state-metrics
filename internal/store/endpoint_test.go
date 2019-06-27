@@ -28,22 +28,6 @@ import (
 )
 
 func TestEndpointStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_endpoint_address_available Number of addresses available in endpoint.
-		# TYPE kube_endpoint_address_available gauge
-		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
-		# TYPE kube_endpoint_address_not_ready gauge
-		# HELP kube_endpoint_created Unix creation timestamp
-		# TYPE kube_endpoint_created gauge
-		# HELP kube_endpoint_info Information about endpoint.
-		# TYPE kube_endpoint_info gauge
-		# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_endpoint_labels gauge
-		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_endpoint_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Endpoints{

@@ -363,11 +363,16 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
-                kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
+                                kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="DeadlineExceeded"} 0
-                kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Completed"} 0
+                                kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Error"} 0
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
+				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="DeadlineExceeded"} 0
+                                kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ImagePullBackOff"} 0
@@ -377,11 +382,11 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerError"} 0
 				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="InvalidImageName"} 0
 				kube_pod_init_container_status_running{container="initcontainer1",namespace="ns1",pod="pod1"} 1
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Completed"} 0
-                kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Error"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="DeadlineExceeded"} 0
+				kube_pod_init_container_status_last_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Completed"} 0
+                kube_pod_init_container_status_last_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
+				kube_pod_init_container_status_last_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Error"} 0
+				kube_pod_init_container_status_last_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
+				kube_pod_init_container_status_last_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="DeadlineExceeded"} 0
                 kube_pod_init_container_status_terminated{container="initcontainer1",namespace="ns1",pod="pod1"} 0
 				kube_pod_init_container_status_waiting{container="initcontainer1",namespace="ns1",pod="pod1"} 0
 				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
@@ -403,6 +408,7 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_init_container_status_waiting_reason",
 				"kube_pod_init_container_status_terminated",
 				"kube_pod_init_container_status_terminated_reason",
+				"kube_pod_init_container_status_last_terminated_reason",
 			},
 		},
 		{
@@ -494,20 +500,20 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				kube_pod_container_status_running{container="container4",namespace="ns3",pod="pod3"} 0
 				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3"} 0
-kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
+                                kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
 				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
 				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
 				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="DeadlineExceeded"} 0
 				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3"} 1
-kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCreating"} 0
+                                kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCreating"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ImagePullBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff"} 1
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ErrImagePull"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerConfigError"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerError"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="InvalidImageName"} 0
-kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
+                                kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
 				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
 				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
 				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
@@ -1128,11 +1134,16 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 2e+08
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 1e+08
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
+                                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
+                                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
+                                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 1e+08
+                                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
+                                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
+                                kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
+                                kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
+                                kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 1e+08
+                                kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
+                                kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
 		`,
 			MetricNames: []string{
 				"kube_pod_container_resource_requests_cpu_cores",
@@ -1222,6 +1233,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_resource_limits{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 4e+08
                 kube_pod_init_container_resource_limits{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.4
                 kube_pod_init_container_resource_limits{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
+                kube_pod_init_container_resource_requests{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.4
+                kube_pod_init_container_resource_requests{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
 		`,
 			MetricNames: []string{
 				"kube_pod_container_resource_requests_cpu_cores",
@@ -1242,10 +1255,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_container_resource_limits",
 				"kube_pod_init_container_resource_requests",
 				"kube_pod_init_container_resource_requests",
-				"kube_pod_init_container_resource_requests",
-				"kube_pod_init_container_resource_requests",
-				"kube_pod_init_container_resource_limits",
-				"kube_pod_init_container_resource_limits",
 				"kube_pod_init_container_resource_limits",
 				"kube_pod_init_container_resource_limits",
 			},
@@ -1397,7 +1406,7 @@ func BenchmarkPodStore(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != 38 {
-			b.Fatalf("expected 39 but got %v", len(families))
+			b.Fatalf("expected 38 but got %v", len(families))
 		}
 	}
 }

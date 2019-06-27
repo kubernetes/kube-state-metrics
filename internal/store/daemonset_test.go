@@ -26,32 +26,6 @@ import (
 )
 
 func TestDaemonSetStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_daemonset_created Unix creation timestamp
-		# TYPE kube_daemonset_created gauge
-		# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
-		# TYPE kube_daemonset_metadata_generation gauge
-		# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
-		# TYPE kube_daemonset_status_current_number_scheduled gauge
-		# HELP kube_daemonset_status_number_misscheduled The number of nodes running a daemon pod but are not supposed to.
-		# TYPE kube_daemonset_status_number_misscheduled gauge
-		# HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
-		# TYPE kube_daemonset_status_desired_number_scheduled gauge
-		# HELP kube_daemonset_status_number_available The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
-		# TYPE kube_daemonset_status_number_available gauge
-		# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
-		# TYPE kube_daemonset_status_number_ready gauge
-		# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
-		# TYPE kube_daemonset_status_number_unavailable gauge
-		# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
-		# TYPE kube_daemonset_updated_number_scheduled gauge
-		# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_daemonset_labels gauge
-		# HELP kube_daemonset_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_daemonset_annotations gauge
-`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.DaemonSet{

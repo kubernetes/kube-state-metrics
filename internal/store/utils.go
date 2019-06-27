@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -30,7 +29,6 @@ import (
 )
 
 var (
-	resyncPeriod       = 5 * time.Minute
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )

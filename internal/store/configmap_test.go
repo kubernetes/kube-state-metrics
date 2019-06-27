@@ -25,22 +25,9 @@ import (
 )
 
 func TestConfigMapStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	const metadata = `
-		# HELP kube_configmap_info Information about configmap.
-		# TYPE kube_configmap_info gauge
-		# HELP kube_configmap_created Unix creation timestamp
-		# TYPE kube_configmap_created gauge
-		# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
-		# TYPE kube_configmap_metadata_resource_version gauge
-		# HELP kube_configmap_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_configmap_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.ConfigMap{

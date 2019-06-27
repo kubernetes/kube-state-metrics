@@ -40,9 +40,6 @@ var (
 )
 
 func TestCronJobStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	hour := ActiveRunningCronJob1LastScheduleTime.Hour()
 	ActiveRunningCronJob1NextScheduleTime := time.Time{}
 	switch {
@@ -101,26 +98,6 @@ func TestCronJobStore(t *testing.T) {
 			0, 0, time.Local)
 	}
 
-	const metadata = `
-		# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_cronjob_labels gauge
-		# HELP kube_cronjob_info Info about cronjob.
-		# TYPE kube_cronjob_info gauge
-		# HELP kube_cronjob_created Unix creation timestamp
-		# TYPE kube_cronjob_created gauge
-		# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
-		# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
-		# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
-		# TYPE kube_cronjob_spec_suspend gauge
-		# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
-		# TYPE kube_cronjob_status_active gauge
-		# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
-		# TYPE kube_cronjob_status_last_schedule_time gauge
-		# HELP kube_cronjob_next_schedule_time Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
-		# TYPE kube_cronjob_next_schedule_time gauge
-		# HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_cronjob_annotations gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &batchv1beta1.CronJob{

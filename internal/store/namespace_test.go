@@ -26,19 +26,6 @@ import (
 )
 
 func TestNamespaceStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_namespace_created Unix creation timestamp
-		# TYPE kube_namespace_created gauge
-		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_namespace_labels gauge
-		# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_namespace_annotations gauge
-		# HELP kube_namespace_status_phase kubernetes namespace status phase.
-		# TYPE kube_namespace_status_phase gauge
-	`
-
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Namespace{

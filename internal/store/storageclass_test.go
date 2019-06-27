@@ -23,22 +23,11 @@ import (
 )
 
 func TestStorageClassStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 	reclaimPolicy := v1.PersistentVolumeReclaimDelete
 	volumeBindingMode := storagev1.VolumeBindingImmediate
 
-	const metadata = `
-			# HELP kube_storageclass_labels Kubernetes labels converted to Prometheus labels.
-			# TYPE kube_storageclass_labels gauge
-			# HELP kube_storageclass_info Information about storageclass.
-			# TYPE kube_storageclass_info gauge
-			# HELP kube_storageclass_created Unix creation timestamp
-			# TYPE kube_storageclass_created gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &storagev1.StorageClass{

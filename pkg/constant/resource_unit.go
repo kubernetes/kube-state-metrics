@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package constant defines constant values used in kube-state-metrics project.
 package constant
 
 // ResourceUnit represents the unit of measure for certain metrics.

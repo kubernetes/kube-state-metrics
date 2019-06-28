@@ -125,7 +125,7 @@ var (
 			Type: metric.Gauge,
 			Help: "Kubernetes annotations converted to Prometheus labels.",
 			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(e.Annotations)
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(e.Annotations)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

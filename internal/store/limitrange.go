@@ -109,7 +109,7 @@ var (
 			Type: metric.Gauge,
 			Help: "Kubernetes annotations converted to Prometheus labels.",
 			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(r.Annotations)
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(r.Annotations)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

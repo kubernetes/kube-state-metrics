@@ -100,7 +100,7 @@ var (
 			Type: metric.Gauge,
 			Help: "Kubernetes annotations converted to Prometheus labels.",
 			GenerateFunc: wrapCSRFunc(func(j *certv1beta1.CertificateSigningRequest) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(j.Annotations)
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(j.Annotations)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

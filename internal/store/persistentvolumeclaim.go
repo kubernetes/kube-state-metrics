@@ -149,7 +149,7 @@ var (
 			Type: metric.Gauge,
 			Help: "Kubernetes annotations converted to Prometheus labels.",
 			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(p.Annotations)
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(p.Annotations)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

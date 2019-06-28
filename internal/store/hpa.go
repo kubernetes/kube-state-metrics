@@ -148,7 +148,7 @@ var (
 			Type: metric.Gauge,
 			Help: "Kubernetes annotations converted to Prometheus labels.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(a.Annotations)
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(a.Annotations)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

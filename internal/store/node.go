@@ -483,7 +483,7 @@ var (
 			Type: metric.Gauge,
 			Help: "Kubernetes annotations converted to Prometheus labels.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusAnnotations(n.Annotations)
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(n.Annotations)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

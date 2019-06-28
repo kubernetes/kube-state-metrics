@@ -73,6 +73,8 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_failed gauge
 		# HELP kube_job_status_start_time StartTime represents time when the job was acknowledged by the Job Manager.
 		# TYPE kube_job_status_start_time gauge
+		# HELP kube_job_status_duration_time DurationTime represents time when the job was duration.
+		# TYPE kube_job_status_duration_time gauge
 		# HELP kube_job_status_succeeded The number of pods which reached Phase Succeeded.
 		# TYPE kube_job_status_succeeded gauge
 		# HELP kube_job_annotations Kubernetes annotations converted to Prometheus labels.
@@ -171,8 +173,10 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_completion_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495803607e+09
 				kube_job_status_failed{job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495800007e+09
+				kube_job_status_duration_time{job_name="SuccessfulJob1",namespace="ns1"} 3600
 				kube_job_status_succeeded{job_name="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_annotations{job_name="SuccessfulJob1",namespace="ns1",annotation_app="example-successful-1"} 1
+
 `,
 		},
 		{
@@ -218,6 +222,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_completion_time{job_name="FailedJob1",namespace="ns1"} 1.495810807e+09
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
+				kube_job_status_duration_time{job_name="FailedJob1",namespace="ns1"} 3600
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_annotations{job_name="FailedJob1",namespace="ns1",annotation_app="example-failed-1"} 1
 `,
@@ -264,6 +269,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_completion_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495804207e+09
 				kube_job_status_failed{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
+				kube_job_status_duration_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 3600
 				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_annotations{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",annotation_app="example-successful-2"} 1
 `,

@@ -263,6 +263,24 @@ var (
 			}),
 		},
 		{
+			Name: "kube_job_status_duration_time",
+			Type: metric.Gauge,
+			Help: "DurationTime represents time when the job was duration.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family{
+				ms := []*metric.Metric{}
+				if j.Status.CompletionTime != nil && j.Status.StartTime != nil{
+					ms = append(ms, &metric.Metric{
+
+						Value: j.Status.CompletionTime.Sub(j.Status.StartTime.Time).Seconds(),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_job_owner",
 			Type: metric.Gauge,
 			Help: "Information about the Job's owner.",

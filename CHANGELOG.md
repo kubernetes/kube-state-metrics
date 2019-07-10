@@ -1,3 +1,16 @@
+## v1.7.0-rc.0 / 2019-07-10
+
+* [CHANGE] Use appsv1 apigroup for ReplicaSet. #804
+* [CHANGE] Use distroless/static as base image to further reduce image size. #748
+* [CHANGE] Return standardized text for health endpoint. #767
+* [ENHANCEMENT] Add DeadlineExceeded pod termination reason. #740
+* [ENHANCEMENT] Add CreateContainerError and InvalidImageName waiting reasons. #763
+* [FEATURE] Add Pod init container metrics. #762
+* [FEATURE] Add Metrics About StorageClass. #777
+* [FEATURE] Allow black/white- listing of metrics by regex. #773
+* [FEATURE] Add metrics for VerticalPodAutoscaler objects (experimental and disabled by default). #791
+* [FEATURE] Add (experimental) `kube_*_annotations` metrics. #770
+
 ## v1.6.0 / 2019-05-06
 
 After a testing period of 10 days (release candidate 2), there were no

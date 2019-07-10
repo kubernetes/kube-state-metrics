@@ -1,3 +1,7 @@
+## v1.7.0-rc.1 / 2019-07-10
+
+* [BUGFIX] Use the appsv1 apigroup when building the reflector for replicasets. #816
+
 ## v1.7.0-rc.0 / 2019-07-10
 
 * [CHANGE] Use appsv1 apigroup for ReplicaSet. #804

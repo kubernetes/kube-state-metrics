@@ -225,7 +225,7 @@ func (b *Builder) buildPodDisruptionBudgetStore() *metricsstore.MetricsStore {
 }
 
 func (b *Builder) buildReplicaSetStore() *metricsstore.MetricsStore {
-	return b.buildStore(replicaSetMetricFamilies, &extensions.ReplicaSet{}, createReplicaSetListWatch)
+	return b.buildStore(replicaSetMetricFamilies, &appsv1.ReplicaSet{}, createReplicaSetListWatch)
 }
 
 func (b *Builder) buildReplicationControllerStore() *metricsstore.MetricsStore {

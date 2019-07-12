@@ -185,12 +185,12 @@ sleep 33
 klog_err=E$(date +%m%d)
 echo "check for errors in logs"
 output_logs=$(kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics)
-if echo "$output_logs" | grep "^$klog_err"; then
+if echo "${output_logs}" | grep "^${klog_err}"; then
     echo ""
-    echo "======================================="
-    echo "found errors in kube-state-metrics logs"
-    echo "======================================="
+    echo "==========================================="
+    echo "Found errors in the kube-state-metrics logs"
+    echo "==========================================="
     echo ""
-    echo "$output_logs"
+    echo "${output_logs}"
     exit 1
 fi

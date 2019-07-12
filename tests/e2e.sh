@@ -178,10 +178,19 @@ done
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
 if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then
     echo "kube-state-metrics is still running after accessing metrics endpoint"
-    exit 0
 fi
 
 # wait for klog to flush to log file
 sleep 33
-kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics
-exit 1
+klog_err=E$(date +%m%d)
+echo "check for errors in logs"
+output_logs=$(kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics)
+if echo "${output_logs}" | grep "^${klog_err}"; then
+    echo ""
+    echo "==========================================="
+    echo "Found errors in the kube-state-metrics logs"
+    echo "==========================================="
+    echo ""
+    echo "${output_logs}"
+    exit 1
+fi

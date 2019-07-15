@@ -1,17 +1,7 @@
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.12 AS builder
-WORKDIR /go/src/k8s.io/kube-state-metrics
-COPY . .
-ENV GOFLAGS="-mod=vendor"
-RUN make build-local
+FROM alpine:3.9
 
-FROM  registry.svc.ci.openshift.org/openshift/origin-v4.0:base
-LABEL io.k8s.display-name="kube-state-metrics" \
-      io.k8s.description="This is a component that exposes metrics about Kubernetes objects." \
-      io.openshift.tags="kubernetes" \
-      maintainer="Frederic Branczyk <fbranczy@redhat.com>"
+COPY kube-state-metrics /
 
-ARG FROM_DIRECTORY=/go/src/k8s.io/kube-state-metrics
-COPY --from=builder ${FROM_DIRECTORY}/kube-state-metrics  /usr/bin/kube-state-metrics
+ENTRYPOINT ["/kube-state-metrics", "--port=8080", "--telemetry-port=8081"]
 
-USER nobody
-ENTRYPOINT ["/usr/bin/kube-state-metrics"]
+EXPOSE 8080 8081

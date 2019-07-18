@@ -45,6 +45,8 @@ func TestIngressStore(t *testing.T) {
 		# TYPE kube_ingress_path gauge
 		# HELP kube_ingress_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_ingress_annotations gauge
+		# HELP kube_ingress_tls Ingress TLS host and secret information.
+		# TYPE kube_ingress_tls gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -64,7 +66,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_labels{namespace="ns1",ingress="ingress1"} 1
 				kube_ingress_annotations{namespace="ns1",ingress="ingress1",annotation_app="ingress1"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations", "kube_ingress_tls"},
 		},
 		{
 			Obj: &v1beta1.Ingress{
@@ -85,7 +87,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_labels{namespace="ns2",ingress="ingress2"} 1
 				kube_ingress_annotations{namespace="ns2",ingress="ingress2",annotation_app="ingress2"} 1
 				`,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations", "kube_ingress_tls"},
 		},
 		{
 			Obj: &v1beta1.Ingress{
@@ -107,7 +109,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_labels{label_test_3="test-3",namespace="ns3",ingress="ingress3"} 1
 				kube_ingress_annotations{namespace="ns3",ingress="ingress3",annotation_test_3="test-3"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations", "kube_ingress_tls"},
 		},
 		{
 			Obj: &v1beta1.Ingress{
@@ -153,7 +155,39 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
 				kube_ingress_annotations{namespace="ns4",ingress="ingress4",annotation_test_4="test-4"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations", "kube_ingress_tls"},
+		},
+		{
+			Obj: &v1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress5",
+					Namespace:         "ns5",
+					CreationTimestamp: metav1StartTime,
+					Labels:            map[string]string{"test-5": "test-5"},
+					ResourceVersion:   "abcdef",
+					Annotations: map[string]string{
+						"test-5": "test-5",
+					},
+				},
+				Spec: v1beta1.IngressSpec{
+					TLS: []v1beta1.IngressTLS{
+						{
+							Hosts:      []string{"somehost1", "somehost2"},
+							SecretName: "somesecret",
+						},
+					},
+				},
+			},
+			Want: `
+				kube_ingress_info{namespace="ns5",ingress="ingress5"} 1
+				kube_ingress_created{namespace="ns5",ingress="ingress5"} 1.501569018e+09
+				kube_ingress_metadata_resource_version{namespace="ns5",resource_version="abcdef",ingress="ingress5"} 1
+				kube_ingress_labels{label_test_5="test-5",namespace="ns5",ingress="ingress5"} 1
+				kube_ingress_annotations{namespace="ns5",ingress="ingress5",annotation_test_5="test-5"} 1
+				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost1",secret="somesecret"} 1
+				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost2",secret="somesecret"} 1
+`,
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_annotations", "kube_ingress_tls"},
 		},
 	}
 	for i, c := range cases {

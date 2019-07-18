@@ -60,7 +60,7 @@ var (
 			GenerateFunc: wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 
-				if a.Spec.UpdatePolicy.UpdateMode == nil {
+				if a.Spec.UpdatePolicy == nil || a.Spec.UpdatePolicy.UpdateMode == nil {
 					return &metric.Family{
 						Metrics: ms,
 					}
@@ -96,6 +96,12 @@ var (
 			Help: "Minimum resources the VerticalPodAutoscaler can set for containers matching the name.",
 			GenerateFunc: wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
+				if a.Spec.ResourcePolicy == nil || a.Spec.ResourcePolicy.ContainerPolicies == nil {
+					return &metric.Family{
+						Metrics: ms,
+					}
+				}
+
 				for _, c := range a.Spec.ResourcePolicy.ContainerPolicies {
 					ms = append(ms, vpaResourcesToMetrics(c.ContainerName, c.MinAllowed)...)
 
@@ -111,6 +117,12 @@ var (
 			Help: "Maximum resources the VerticalPodAutoscaler can set for containers matching the name.",
 			GenerateFunc: wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
+				if a.Spec.ResourcePolicy == nil || a.Spec.ResourcePolicy.ContainerPolicies == nil {
+					return &metric.Family{
+						Metrics: ms,
+					}
+				}
+
 				for _, c := range a.Spec.ResourcePolicy.ContainerPolicies {
 					ms = append(ms, vpaResourcesToMetrics(c.ContainerName, c.MaxAllowed)...)
 				}

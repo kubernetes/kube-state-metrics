@@ -1,3 +1,7 @@
+## v1.7.0 / 2019-07-17
+
+After a testing period of 7 days, there were no additional bugs found or features introduced.
+
 ## v1.7.0-rc.1 / 2019-07-10
 
 * [BUGFIX] Use the appsv1 apigroup when building the reflector for replicasets. #816

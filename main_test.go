@@ -27,19 +27,20 @@ import (
 	"testing"
 	"time"
 
-	kcoll "k8s.io/kube-state-metrics/internal/collector"
-	coll "k8s.io/kube-state-metrics/pkg/collector"
+	"k8s.io/kube-state-metrics/internal/store"
+	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
 func BenchmarkKubeStateMetrics(b *testing.B) {
-	var collectors []*coll.Collector
+	var stores []*metricsstore.MetricsStore
 	fixtureMultiplier := 1000
 	requestCount := 1000
 
@@ -56,8 +57,8 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	builder := kcoll.NewBuilder(ctx)
-	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
+	builder := store.NewBuilder(ctx)
+	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
@@ -70,13 +71,13 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
 	b.Run("GenerateMetrics", func(b *testing.B) {
-		collectors = builder.Build()
+		stores = builder.Build()
 
 		// Wait for caches to fill
 		time.Sleep(time.Second)
 	})
 
-	handler := metricHandler{collectors, false}
+	handler := metricHandler{stores, false}
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	b.Run("MakeRequests", func(b *testing.B) {
@@ -116,8 +117,8 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	builder := kcoll.NewBuilder(ctx)
-	builder.WithEnabledCollectors(options.DefaultCollectors.AsSlice())
+	builder := store.NewBuilder(ctx)
+	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
@@ -127,12 +128,12 @@ func TestFullScrapeCycle(t *testing.T) {
 	}
 	builder.WithWhiteBlackList(l)
 
-	collectors := builder.Build()
+	stores := builder.Build()
 
 	// Wait for caches to fill
 	time.Sleep(time.Second)
 
-	handler := metricHandler{collectors, false}
+	handler := metricHandler{stores, false}
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	w := httptest.NewRecorder()
@@ -147,7 +148,7 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	expected := `# HELP kube_pod_info Information about pod.
 # TYPE kube_pod_info gauge
-kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-123-xxx",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class=""} 1
+kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-0",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class=""} 1
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # TYPE kube_pod_start_time gauge
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
@@ -178,10 +179,14 @@ kube_pod_status_phase{namespace="default",pod="pod0",phase="Unknown"} 0
 # TYPE kube_pod_container_info gauge
 kube_pod_container_info{namespace="default",pod="pod0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
+# HELP kube_pod_init_container_info Information about an init container in a pod.
+# TYPE kube_pod_init_container_info gauge
 # HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 # TYPE kube_pod_container_status_waiting gauge
 kube_pod_container_status_waiting{namespace="default",pod="pod0",container="container2"} 1
 kube_pod_container_status_waiting{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
+# TYPE kube_pod_init_container_status_waiting gauge
 # HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
 # TYPE kube_pod_container_status_waiting_reason gauge
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="ContainerCreating"} 0
@@ -189,47 +194,69 @@ kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",containe
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="CreateContainerConfigError"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="ErrImagePull"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="ImagePullBackOff"} 0
+kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="CreateContainerError"} 0
+kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="InvalidImageName"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCreating"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="CrashLoopBackOff"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="CreateContainerConfigError"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="ErrImagePull"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="ImagePullBackOff"} 0
+kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="CreateContainerError"} 0
+kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="InvalidImageName"} 0
+# HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
+# TYPE kube_pod_init_container_status_waiting_reason gauge
 # HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 # TYPE kube_pod_container_status_running gauge
 kube_pod_container_status_running{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_running{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_running Describes whether the init container is currently in running state.
+# TYPE kube_pod_init_container_status_running gauge
 # HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 # TYPE kube_pod_container_status_terminated gauge
 kube_pod_container_status_terminated{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_terminated{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_terminated Describes whether the init container is currently in terminated state.
+# TYPE kube_pod_init_container_status_terminated gauge
 # HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 # TYPE kube_pod_container_status_terminated_reason gauge
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Completed"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Error"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="ContainerCannotRun"} 0
+kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="DeadlineExceeded"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="OOMKilled"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Completed"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Error"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
+kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="DeadlineExceeded"} 0
+# HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
+# TYPE kube_pod_init_container_status_terminated_reason gauge
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 # TYPE kube_pod_container_status_last_terminated_reason gauge
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 1
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Completed"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Error"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="ContainerCannotRun"} 0
+kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="DeadlineExceeded"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="OOMKilled"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Completed"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Error"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
+kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="DeadlineExceeded"} 0
+# HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
+# TYPE kube_pod_init_container_status_last_terminated_reason gauge
 # HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
 # TYPE kube_pod_container_status_ready gauge
 kube_pod_container_status_ready{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_ready{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_ready Describes whether the init containers readiness check succeeded.
+# TYPE kube_pod_init_container_status_ready gauge
 # HELP kube_pod_container_status_restarts_total The number of container restarts per container.
 # TYPE kube_pod_container_status_restarts_total counter
 kube_pod_container_status_restarts_total{namespace="default",pod="pod0",container="container2"} 0
 kube_pod_container_status_restarts_total{namespace="default",pod="pod0",container="container3"} 0
+# HELP kube_pod_init_container_status_restarts_total The number of restarts for the init container.
+# TYPE kube_pod_init_container_status_restarts_total counter
 # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
 # TYPE kube_pod_container_resource_requests gauge
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="nvidia_com_gpu",unit="integer"} 1
@@ -239,6 +266,8 @@ kube_pod_container_resource_requests{namespace="default",pod="pod0",container="p
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
+# HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
+# TYPE kube_pod_init_container_resource_limits gauge
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
 # TYPE kube_pod_container_resource_limits gauge
 kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="nvidia_com_gpu",unit="integer"} 1
@@ -289,7 +318,7 @@ kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",c
 
 	for i := 0; i < len(expectedSplit); i++ {
 		if expectedSplit[i] != gotFiltered[i] {
-			t.Fatalf("expected %v, but got %v", expectedSplit[i], gotFiltered[i])
+			t.Fatalf("expected:\n\n%v, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
 	}
 }
@@ -321,6 +350,7 @@ func configMap(client *fake.Clientset, index int) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "configmap" + i,
 			ResourceVersion: "123456",
+			UID:             types.UID("abc-" + i),
 		},
 	}
 	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(&configMap)
@@ -334,6 +364,7 @@ func service(client *fake.Clientset, index int) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "service" + i,
 			ResourceVersion: "123456",
+			UID:             types.UID("abc-" + i),
 		},
 	}
 	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(&service)
@@ -348,7 +379,10 @@ func pod(client *fake.Clientset, index int) error {
 			Name:              "pod" + i,
 			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 			Namespace:         "default",
-			UID:               "abc-123-xxx",
+			UID:               types.UID("abc-" + i),
+			Annotations: map[string]string{
+				"pod": "pod",
+			},
 		},
 		Spec: v1.PodSpec{
 			NodeName: "node1",

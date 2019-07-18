@@ -13,7 +13,7 @@ PKG=k8s.io/kube-state-metrics/pkg
 GO_VERSION=1.12
 FIRST_GOPATH:=$(firstword $(subst :, ,$(shell go env GOPATH)))
 BENCHCMP_BINARY:=$(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.15.0
+GOLANGCI_VERSION := v1.17.1
 HAS_GOLANGCI := $(shell which golangci-lint)
 
 IMAGE = $(REGISTRY)/kube-state-metrics
@@ -37,10 +37,12 @@ ifndef HAS_GOLANGCI
 endif
 	golangci-lint run
 
-doccheck:
-	@echo "- Checking if the documentation is up to date..."
+doccheck: generate
+	@echo "- Checking if the generated documentation is up to date..."
+	@git diff --exit-code
+	@echo "- Checking if the documentation is in sync with the code..."
 	@grep -hoE '(kube_[^ |]+)' docs/* --exclude=README.md| sort -u > documented_metrics
-	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' internal/collector/*_test.go | sort -u > tested_metrics
+	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' internal/store/*_test.go | sort -u > tested_metrics
 	@diff -u0 tested_metrics documented_metrics || (echo "ERROR: Metrics with - are present in tests but missing in documentation, metrics with + are documented but not tested."; exit 1)
 	@echo OK
 	@rm -f tested_metrics documented_metrics
@@ -63,6 +65,7 @@ shellcheck:
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
 test-benchmark-compare: $(BENCHCMP_BINARY)
+	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
 TEMP_DIR := $(shell mktemp -d)
@@ -116,7 +119,15 @@ clean:
 e2e:
 	./tests/e2e.sh
 
+generate: build-local embedmd
+	@echo ">> generating docs"
+	@./scripts/generate-help-text.sh
+	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+
+embedmd:
+	GO111MODULE=off go get github.com/campoy/embedmd
+
 $(BENCHCMP_BINARY):
 	go get golang.org/x/tools/cmd/benchcmp
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint
+.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd

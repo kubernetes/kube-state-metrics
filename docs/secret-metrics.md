@@ -7,3 +7,4 @@
 | kube_secret_labels | Gauge | `secret`=&lt;secret-name&gt; <br> `namespace`=&lt;secret-namespace&gt; <br> `label_SECRET_LABEL`=&lt;SECRET_LABEL&gt; | STABLE |
 | kube_secret_created  | Gauge | `secret`=&lt;secret-name&gt; <br> `namespace`=&lt;secret-namespace&gt; | STABLE |
 | kube_secret_metadata_resource_version  | Gauge | `secret`=&lt;secret-name&gt; <br> `namespace`=&lt;secret-namespace&gt; <br> `resource_version`=&lt;secret-resource-version&gt; | STABLE |
+| kube_secret_annotations | Gauge | `annotation_SECRET_ANNOTATION`=&lt;SECRET_ANNOTATION&gt; <br> `secret`=&lt;secret-name&gt; <br> `namespace`=&lt;secret-namespace&gt; | EXPERIMENTAL |

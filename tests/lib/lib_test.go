@@ -29,7 +29,6 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/kube-state-metrics/pkg/collector"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 )
@@ -55,7 +54,7 @@ func TestAsLibrary(t *testing.T) {
 	time.Sleep(time.Second)
 
 	w := strings.Builder{}
-	c.Collect(&w)
+	c.WriteAll(&w)
 	m := w.String()
 
 	if !strings.Contains(m, service.ObjectMeta.Name) {
@@ -63,7 +62,7 @@ func TestAsLibrary(t *testing.T) {
 	}
 }
 
-func serviceCollector(kubeClient clientset.Interface) *collector.Collector {
+func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore {
 	store := metricsstore.NewMetricsStore([]string{"test_metric describes a test metric"}, generateServiceMetrics)
 
 	lw := cache.ListWatch{
@@ -79,7 +78,7 @@ func serviceCollector(kubeClient clientset.Interface) *collector.Collector {
 
 	go r.Run(context.TODO().Done())
 
-	return collector.NewCollector(store)
+	return store
 }
 
 func generateServiceMetrics(obj interface{}) []metricsstore.FamilyByteSlicer {

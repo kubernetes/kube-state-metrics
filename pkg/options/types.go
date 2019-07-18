@@ -20,8 +20,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -84,10 +82,6 @@ func (c *CollectorSet) Set(value string) error {
 	for _, col := range cols {
 		col = strings.TrimSpace(col)
 		if len(col) != 0 {
-			_, ok := DefaultCollectors[col]
-			if !ok {
-				return errors.Errorf("collector \"%s\" does not exist", col)
-			}
 			s[col] = struct{}{}
 		}
 	}
@@ -113,7 +107,7 @@ func (c *CollectorSet) Type() string {
 	return "string"
 }
 
-// NamespaceList represents a list of namespaces to query forom.
+// NamespaceList represents a list of namespaces to query from.
 type NamespaceList []string
 
 func (n *NamespaceList) String() string {

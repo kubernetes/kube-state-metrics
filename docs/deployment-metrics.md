@@ -14,3 +14,4 @@
 | kube_deployment_metadata_generation | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
 | kube_deployment_labels | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
 | kube_deployment_created | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
+| kube_deployment_annotations | Gauge | `annotation_DEPLOYMENT_ANNOTATION`=&lt;DEPLOYMENT_ANNOTATION&gt; <br> `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | EXPERIMENTAL |

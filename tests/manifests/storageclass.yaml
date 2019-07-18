@@ -1,0 +1,7 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: storageclass
+provisioner: kubernetes.io/rbd
+reclaimPolicy: Delete
+volumeBindingMode: Immediate

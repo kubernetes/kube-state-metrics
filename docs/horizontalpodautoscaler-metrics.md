@@ -9,3 +9,4 @@
 | kube_hpa_status_desired_replicas  | Gauge       | `hpa`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | STABLE |
 | kube_hpa_status_condition         | Gauge       | `hpa`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | STABLE |
 | kube_hpa_labels                   | Gauge       | `hpa`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | STABLE |
+| kube_hpa_annotations | Gauge | `annotation_HPA_ANNOTATION`=&lt;HPA_ANNOTATION&gt; <br> `hpa`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | EXPERIMENTAL |

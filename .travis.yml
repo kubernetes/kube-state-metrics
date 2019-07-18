@@ -28,17 +28,18 @@ install:
 
 jobs:
   include:
-    # Lint
-    - script: make lint
-    # Check that all the go modules manifests, vendors, and packages are in sync
-    - script: make validate-modules
-    # Check that all metrics are documented
-    - script: make doccheck
-    # Unit Test
-    - script: make test-unit
-    # Benchmark Test
-    - script: make test-benchmark-compare
-    # Build
-    - script: make build
-    # E2e
-    - script: make e2e
+    - stage: all
+      name: Lint
+      script: make lint
+    - name: Validate vendor is in sync with go modules
+      script: make validate-modules
+    - name: Check that all metrics are documented
+      script: make doccheck
+    - name: Unit tests
+      script: make test-unit
+    - name: Benchmark tests
+      script: make test-benchmark-compare
+    - name: Build
+      script: make build
+    - name: End to end tests
+      script: make e2e

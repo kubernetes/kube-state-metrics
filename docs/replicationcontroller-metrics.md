@@ -10,3 +10,4 @@
 | kube_replicationcontroller_spec_replicas | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; | STABLE |
 | kube_replicationcontroller_metadata_generation | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; | STABLE |
 | kube_replicationcontroller_created | Gauge | `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; | STABLE |
+| kube_replicationcontroller_annotations | Gauge | `annotation_REPLICATIONCONTROLLER_ANNOTATION`=&lt;REPLICATIONCONTROLLER_ANNOTATION&gt; <br> `replicationcontroller`=&lt;replicationcontroller-name&gt; <br> `namespace`=&lt;replicationcontroller-namespace&gt; | EXPERIMENTAL |

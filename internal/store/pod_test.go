@@ -1157,6 +1157,30 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:    v1.PodScheduled,
+							Status:  v1.ConditionFalse,
+							Reason:  "Unschedulable",
+							Message: "0/3 nodes are available: 3 Insufficient cpu.",
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
+				# TYPE kube_pod_status_unschedulable gauge
+				kube_pod_status_unschedulable{namespace="ns2",pod="pod2"} 1
+			`,
+			MetricNames: []string{"kube_pod_status_unschedulable"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
 				},
@@ -1541,7 +1565,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 38
+	expectedFamilies := 39
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

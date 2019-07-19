@@ -197,6 +197,22 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_restart_policy",
+			Type: metric.Gauge,
+			Help: "Describes the restart policy in use by this pod.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"type"},
+							LabelValues: []string{string(p.Spec.RestartPolicy)},
+							Value:       float64(1),
+						},
+					},
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_status_scheduled_time",
 			Type: metric.Gauge,
 			Help: "Unix timestamp when pod moved into scheduled status",

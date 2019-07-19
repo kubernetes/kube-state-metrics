@@ -162,6 +162,9 @@ kube_pod_labels{namespace="default",pod="pod0"} 1
 # HELP kube_pod_created Unix creation timestamp
 # TYPE kube_pod_created gauge
 kube_pod_created{namespace="default",pod="pod0"} 1.5e+09
+# HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
+# TYPE kube_pod_restart_policy gauge
+kube_pod_restart_policy{namespace="default",pod="pod0",type="Always"} 1
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # TYPE kube_pod_status_scheduled_time gauge
 # HELP kube_pod_status_phase The pods current phase.
@@ -385,7 +388,8 @@ func pod(client *fake.Clientset, index int) error {
 			},
 		},
 		Spec: v1.PodSpec{
-			NodeName: "node1",
+			RestartPolicy: v1.RestartPolicyAlways,
+			NodeName:      "node1",
 			Containers: []v1.Container{
 				{
 					Name: "pod1_con1",

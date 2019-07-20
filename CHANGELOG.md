@@ -1,3 +1,8 @@
+## v1.7.1 / 2019-07-18
+
+* [BUGFIX] Fix crash due to missing ingress http block. #831
+* [BUGFIX] Add nil guard checks when querying VPA objects. #832
+
 ## v1.7.0 / 2019-07-17
 
 After a testing period of 7 days, there were no additional bugs found or features introduced.

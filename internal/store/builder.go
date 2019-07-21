@@ -17,13 +17,13 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"

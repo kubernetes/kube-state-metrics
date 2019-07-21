@@ -167,6 +167,15 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 			expectKeys:   []string{"label__app5"},
 			expectValues: []string{"starts_with_underscore"},
 		},
+		{
+			kubeLabels: map[string]string{
+				"an":    "",
+				"order": "",
+				"test":  "",
+			},
+			expectKeys:   []string{"label_an", "label_order", "label_test"},
+			expectValues: []string{"", "", ""},
+		},
 	}
 
 	for _, tc := range testCases {

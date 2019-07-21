@@ -29,7 +29,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openshift/origin/pkg/util/proc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -39,9 +38,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
+
 	"k8s.io/kube-state-metrics/internal/store"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/util/proc"
 	"k8s.io/kube-state-metrics/pkg/version"
 	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )

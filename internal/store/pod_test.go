@@ -39,6 +39,8 @@ func TestPodStore(t *testing.T) {
 	// 	const metadata = `
 	// # HELP kube_pod_created Unix creation timestamp
 	// # TYPE kube_pod_created gauge
+	// # HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
+	// # TYPE kube_pod_restart_policy gauge
 	// # HELP kube_pod_container_info Information about a container in a pod.
 	// # TYPE kube_pod_container_info gauge
 	// # HELP kube_pod_init_container_info Information about a container in a pod.
@@ -804,6 +806,36 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
 					Namespace: "ns2",
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: v1.RestartPolicyAlways,
+				},
+			},
+			Want: metadata + `
+				kube_pod_restart_policy{namespace="ns2",pod="pod2",type="Always"} 1
+				`,
+			MetricNames: []string{"kube_pod_restart_policy"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: v1.RestartPolicyOnFailure,
+				},
+			},
+			Want: metadata + `
+				kube_pod_restart_policy{namespace="ns2",pod="pod2",type="OnFailure"} 1
+				`,
+			MetricNames: []string{"kube_pod_restart_policy"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
 					UID:       "abc-456-xxx",
 					OwnerReferences: []metav1.OwnerReference{
 						{
@@ -1394,10 +1426,11 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
+	expectedFamilies := 39
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
-		if len(families) != 38 {
-			b.Fatalf("expected 39 but got %v", len(families))
+		if len(families) != expectedFamilies {
+			b.Fatalf("expected %d but got %v", expectedFamilies, len(families))
 		}
 	}
 }

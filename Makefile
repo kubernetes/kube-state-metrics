@@ -49,7 +49,7 @@ doccheck: generate
 	@git diff --exit-code
 	@echo "- Checking if the documentation is in sync with the code..."
 	@grep -hoE '(kube_[^ |]+)' docs/* --exclude=README.md| sort -u > documented_metrics
-	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' internal/store/*_test.go | sort -u > tested_metrics
+	@sed -nE 's/.*# TYPE (kube_[^ ]+).*/\1/p' internal/store/*_test.go | sort -u > tested_metrics
 	@diff -u0 tested_metrics documented_metrics || (echo "ERROR: Metrics with - are present in tests but missing in documentation, metrics with + are documented but not tested."; exit 1)
 	@echo OK
 	@rm -f tested_metrics documented_metrics

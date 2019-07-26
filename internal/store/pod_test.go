@@ -1227,6 +1227,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
 				# HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
 				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
+				# HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
 				# TYPE kube_pod_container_resource_limits gauge
 				# TYPE kube_pod_container_resource_limits_cpu_cores gauge
 				# TYPE kube_pod_container_resource_limits_memory_bytes gauge
@@ -1234,6 +1235,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_container_resource_requests_cpu_cores gauge
 				# TYPE kube_pod_container_resource_requests_memory_bytes gauge
 				# TYPE kube_pod_init_container_resource_limits gauge
+				# TYPE kube_pod_init_container_status_last_terminated_reason gauge
 				kube_pod_container_resource_requests_cpu_cores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 0.2
 				kube_pod_container_resource_requests_cpu_cores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 0.3
 				kube_pod_container_resource_requests_memory_bytes{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 1e+08
@@ -1270,6 +1272,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_container_resource_requests",
 				"kube_pod_container_resource_limits",
 				"kube_pod_init_container_resource_limits",
+				"kube_pod_init_container_status_last_terminated_reason",
 			},
 		},
 		{

@@ -26,11 +26,11 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
-func TestLimitRangeollector(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
+func TestLimitRangeStore(t *testing.T) {
 	testMemory := "2.1G"
 	testMemoryQuantity := resource.MustParse(testMemory)
+	// Fixed metadata on type and help text. We prepend this to every expected
+	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
 	# HELP kube_limitrange_created Unix creation timestamp
 	# TYPE kube_limitrange_created gauge
@@ -73,7 +73,7 @@ func TestLimitRangeollector(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
         kube_limitrange_created{limitrange="quotaTest",namespace="testNS"} 1.5e+09
         kube_limitrange{constraint="default",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
         kube_limitrange{constraint="defaultRequest",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
@@ -86,6 +86,7 @@ func TestLimitRangeollector(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(limitRangeMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(limitRangeMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

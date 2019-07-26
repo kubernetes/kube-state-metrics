@@ -86,7 +86,7 @@ func TestHPAStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
                 kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
 				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
@@ -112,6 +112,7 @@ func TestHPAStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(hpaMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(hpaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

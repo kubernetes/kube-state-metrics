@@ -26,26 +26,25 @@ import (
 )
 
 func TestIngressStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
+	// Fixed metadata on type and help text. We prepend this to every expected
+	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_ingress_labels gauge
-		# HELP kube_ingress_info Information about ingress.
-		# TYPE kube_ingress_info gauge
-		# HELP kube_ingress_created Unix creation timestamp
-		# TYPE kube_ingress_created gauge
-		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
-		# TYPE kube_ingress_metadata_resource_version gauge
-		# HELP kube_ingress_path Ingress host, paths and backend service.
-		# TYPE kube_ingress_path gauge
 		# HELP kube_ingress_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_ingress_annotations gauge
+		# HELP kube_ingress_created Unix creation timestamp
+		# HELP kube_ingress_info Information about ingress.
+		# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
+		# HELP kube_ingress_path Ingress host, paths and backend service information.
 		# HELP kube_ingress_tls Ingress TLS host and secret information.
+		# TYPE kube_ingress_annotations gauge
+		# TYPE kube_ingress_created gauge
+		# TYPE kube_ingress_info gauge
+		# TYPE kube_ingress_labels gauge
+		# TYPE kube_ingress_metadata_resource_version gauge
+		# TYPE kube_ingress_path gauge
 		# TYPE kube_ingress_tls gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -60,7 +59,7 @@ func TestIngressStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_ingress_info{namespace="ns1",ingress="ingress1"} 1
 				kube_ingress_metadata_resource_version{namespace="ns1",resource_version="000000",ingress="ingress1"} 1
 				kube_ingress_labels{namespace="ns1",ingress="ingress1"} 1
@@ -80,7 +79,7 @@ func TestIngressStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_ingress_info{namespace="ns2",ingress="ingress2"} 1
 				kube_ingress_created{namespace="ns2",ingress="ingress2"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns2",resource_version="123456",ingress="ingress2"} 1
@@ -102,7 +101,7 @@ func TestIngressStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_ingress_info{namespace="ns3",ingress="ingress3"} 1
 				kube_ingress_created{namespace="ns3",ingress="ingress3"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns3",resource_version="abcdef",ingress="ingress3"} 1
@@ -147,7 +146,7 @@ func TestIngressStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_ingress_info{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns4",resource_version="abcdef",ingress="ingress4"} 1
@@ -178,7 +177,7 @@ func TestIngressStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_ingress_info{namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_created{namespace="ns5",ingress="ingress5"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns5",resource_version="abcdef",ingress="ingress5"} 1
@@ -192,6 +191,7 @@ func TestIngressStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(ingressMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(ingressMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -27,95 +27,10 @@ import (
 )
 
 func TestPodStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
 	var test = true
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	// TODO: renable metadata
-	const metadata = ""
-	// 	const metadata = `
-	// # HELP kube_pod_created Unix creation timestamp
-	// # TYPE kube_pod_created gauge
-	// # HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
-	// # TYPE kube_pod_restart_policy gauge
-	// # HELP kube_pod_container_info Information about a container in a pod.
-	// # TYPE kube_pod_container_info gauge
-	// # HELP kube_pod_init_container_info Information about a container in a pod.
-	// # TYPE kube_pod_init_container_info gauge
-	// # HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
-	// # TYPE kube_pod_labels gauge
-	// # HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
-	// # TYPE kube_pod_container_status_ready gauge
-	// # HELP kube_pod_init_container_status_ready Describes whether the init containers readiness check succeeded.
-	// # TYPE kube_pod_init_container_status_ready gauge
-	// # HELP kube_pod_container_status_restarts_total The number of container restarts per container.
-	// # TYPE kube_pod_container_status_restarts_total counter
-	// # HELP kube_pod_init_container_status_restarts_total The number of init container restarts per container.
-	// # TYPE kube_pod_init_container_status_restarts_total counter
-	// # HELP kube_pod_container_status_running Describes whether the container is currently in running state.
-	// # TYPE kube_pod_container_status_running gauge
-	// # HELP kube_pod_init_container_status_running Describes whether the init container is currently in running state.
-	// # TYPE kube_pod_init_container_status_running gauge
-	// # HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
-	// # TYPE kube_pod_container_status_terminated gauge
-	// # HELP kube_pod_init_container_status_terminated Describes whether the init container is currently in terminated state.
-	// # TYPE kube_pod_init_container_status_terminated gauge
-	// # HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
-	// # TYPE kube_pod_container_status_terminated_reason gauge
-	// # HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
-	// # TYPE kube_pod_init_container_status_terminated_reason gauge
-	// # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
-	// # TYPE kube_pod_container_status_last_terminated_reason gauge
-	// # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
-	// # TYPE kube_pod_init_container_status_last_terminated_reason gauge
-	// # HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
-	// # TYPE kube_pod_container_status_waiting gauge
-	// # HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
-	// # TYPE kube_pod_init_container_status_waiting gauge
-	// # HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
-	// # TYPE kube_pod_container_status_waiting_reason gauge
-	// # HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
-	// # TYPE kube_pod_init_container_status_waiting_reason gauge
-	// # HELP kube_pod_info Information about pod.
-	// # TYPE kube_pod_info gauge
-	// # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
-	// # TYPE kube_pod_status_scheduled_time gauge
-	// # HELP kube_pod_start_time Start time in unix timestamp for a pod.
-	// # TYPE kube_pod_start_time gauge
-	// # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
-	// # TYPE kube_pod_completion_time gauge
-	// # HELP kube_pod_owner Information about the Pod's owner.
-	// # TYPE kube_pod_owner gauge
-	// # HELP kube_pod_status_phase The pods current phase.
-	// # TYPE kube_pod_status_phase gauge
-	// # HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
-	// # TYPE kube_pod_status_ready gauge
-	// # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
-	// # TYPE kube_pod_status_scheduled gauge
-	// # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
-	// # TYPE kube_pod_container_resource_requests gauge
-	// # HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
-	// # TYPE kube_pod_init_container_resource_requests gauge
-	// # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
-	// # TYPE kube_pod_container_resource_limits gauge
-	// # HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
-	// # TYPE kube_pod_init_container_resource_limits gauge
-	// # HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
-	// # TYPE kube_pod_container_resource_requests_cpu_cores gauge
-	// # HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
-	// # TYPE kube_pod_container_resource_requests_memory_bytes gauge
-	// # HELP kube_pod_container_resource_limits_cpu_cores The limit on cpu cores to be used by a container.
-	// # TYPE kube_pod_container_resource_limits_cpu_cores gauge
-	// # HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
-	// # TYPE kube_pod_container_resource_limits_memory_bytes gauge
-	// # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
-	// # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
-	// # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
-	// # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
-	// 	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Pod{
@@ -134,7 +49,10 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want:        `kube_pod_container_info{container="container1",container_id="docker://ab123",image="k8s.gcr.io/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1`,
+			Want: `
+			# HELP kube_pod_container_info Information about a container in a pod.
+			# TYPE kube_pod_container_info gauge
+			kube_pod_container_info{container="container1",container_id="docker://ab123",image="k8s.gcr.io/hyperkube1",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1"} 1`,
 			MetricNames: []string{"kube_pod_container_info"},
 		},
 		{
@@ -168,9 +86,14 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `kube_pod_container_info{container="container2",container_id="docker://cd456",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
-		kube_pod_container_info{container="container3",container_id="docker://ef789",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
-        kube_pod_init_container_info{container="initContainer",container_id="docker://ef123",image="k8s.gcr.io/initfoo",image_id="docker://sha256:wxyz",namespace="ns2",pod="pod2"} 1`,
+			Want: `
+				# HELP kube_pod_container_info Information about a container in a pod.
+				# HELP kube_pod_init_container_info Information about an init container in a pod.
+				# TYPE kube_pod_container_info gauge
+				# TYPE kube_pod_init_container_info gauge
+				kube_pod_container_info{container="container2",container_id="docker://cd456",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2"} 1
+				kube_pod_container_info{container="container3",container_id="docker://ef789",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2"} 1
+				kube_pod_init_container_info{container="initContainer",container_id="docker://ef123",image="k8s.gcr.io/initfoo",image_id="docker://sha256:wxyz",namespace="ns2",pod="pod2"} 1`,
 			MetricNames: []string{"kube_pod_container_info", "kube_pod_init_container_info"},
 		},
 		{
@@ -188,7 +111,10 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want:        `kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1`,
+			Want: `
+				# HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
+				# TYPE kube_pod_container_status_ready gauge
+				kube_pod_container_status_ready{container="container1",namespace="ns1",pod="pod1"} 1`,
 			MetricNames: []string{"kube_pod_container_status_ready"},
 		},
 		{
@@ -210,7 +136,9 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
+				# TYPE kube_pod_container_status_ready gauge
 				kube_pod_container_status_ready{container="container2",namespace="ns2",pod="pod2"} 1
 				kube_pod_container_status_ready{container="container3",namespace="ns2",pod="pod2"} 0
 				`,
@@ -245,7 +173,9 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_init_container_status_ready Describes whether the init containers readiness check succeeded.
+				# TYPE kube_pod_init_container_status_ready gauge
 				kube_pod_init_container_status_ready{container="initcontainer1",namespace="ns3",pod="pod3"} 1
 				kube_pod_init_container_status_ready{container="initcontainer2",namespace="ns3",pod="pod3"} 0
 				`,
@@ -266,7 +196,11 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want:        `kube_pod_container_status_restarts_total{container="container1",namespace="ns1",pod="pod1"} 0`,
+			Want: `
+				# HELP kube_pod_container_status_restarts_total The number of container restarts per container.
+				# TYPE kube_pod_container_status_restarts_total counter
+				kube_pod_container_status_restarts_total{container="container1",namespace="ns1",pod="pod1"} 0
+				`,
 			MetricNames: []string{"kube_pod_container_status_restarts_total"},
 		},
 		{
@@ -284,7 +218,11 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want:        `kube_pod_init_container_status_restarts_total{container="initcontainer1",namespace="ns2",pod="pod2"} 1`,
+			Want: `
+				# HELP kube_pod_init_container_status_restarts_total The number of restarts for the init container.
+				# TYPE kube_pod_init_container_status_restarts_total counter
+				kube_pod_init_container_status_restarts_total{container="initcontainer1",namespace="ns2",pod="pod2"} 1
+				`,
 			MetricNames: []string{"kube_pod_init_container_status_restarts_total"},
 		},
 		{
@@ -306,7 +244,9 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_container_status_restarts_total The number of container restarts per container.
+				# TYPE kube_pod_container_status_restarts_total counter
 				kube_pod_container_status_restarts_total{container="container2",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_restarts_total{container="container3",namespace="ns2",pod="pod2"} 1
 				`,
@@ -331,7 +271,9 @@ func TestPodStore(t *testing.T) {
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_init_container_status_restarts_total The number of restarts for the init container.
+				# TYPE kube_pod_init_container_status_restarts_total counter
 				kube_pod_init_container_status_restarts_total{container="initcontainer2",namespace="ns2",pod="pod2"} 0
 				kube_pod_init_container_status_restarts_total{container="initcontainer3",namespace="ns2",pod="pod2"} 1
 				`,
@@ -363,6 +305,26 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# HELP kube_pod_init_container_status_running Describes whether the init container is currently in running state.
+				# HELP kube_pod_init_container_status_terminated Describes whether the init container is currently in terminated state.
+				# HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
+				# HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
+				# HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
+				# TYPE kube_pod_init_container_status_running gauge
+				# TYPE kube_pod_init_container_status_terminated gauge
+				# TYPE kube_pod_init_container_status_terminated_reason gauge
+				# TYPE kube_pod_init_container_status_waiting gauge
+				# TYPE kube_pod_init_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
 				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
                 kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
@@ -435,6 +397,16 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
                 kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
@@ -494,6 +466,18 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_last_terminated_reason gauge
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container4",namespace="ns3",pod="pod3"} 0
 				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3"} 0
 kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
@@ -558,6 +542,18 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_last_terminated_reason gauge
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container7",namespace="ns6",pod="pod6"} 1
 				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6"} 0
 kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
@@ -611,6 +607,18 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_last_terminated_reason gauge
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container7",namespace="ns7",pod="pod7"} 1
 				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7"} 0
 kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Completed"} 0
@@ -661,6 +669,16 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container5",namespace="ns4",pod="pod4"} 0
 				kube_pod_container_status_terminated{container="container5",namespace="ns4",pod="pod4"} 0
 				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Completed"} 0
@@ -705,6 +723,16 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container6",namespace="ns5",pod="pod5"} 0
 				kube_pod_container_status_terminated{container="container6",namespace="ns5",pod="pod5"} 0
 				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Completed"} 0
@@ -749,6 +777,16 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+					# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+					# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+					# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+					# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+					# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+					# TYPE kube_pod_container_status_running gauge
+					# TYPE kube_pod_container_status_terminated gauge
+					# TYPE kube_pod_container_status_terminated_reason gauge
+					# TYPE kube_pod_container_status_waiting gauge
+					# TYPE kube_pod_container_status_waiting_reason gauge
 					kube_pod_container_status_running{container="container8",namespace="ns7",pod="pod7"} 0
 					kube_pod_container_status_terminated{container="container8",namespace="ns7",pod="pod7"} 0
 					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Completed"} 0
@@ -794,6 +832,16 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 			// TODO: Should it be '1501569018' instead?
 			Want: `
+				# HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
+				# HELP kube_pod_created Unix creation timestamp
+				# HELP kube_pod_info Information about pod.
+				# HELP kube_pod_owner Information about the Pod's owner.
+				# HELP kube_pod_start_time Start time in unix timestamp for a pod.
+				# TYPE kube_pod_completion_time gauge
+				# TYPE kube_pod_created gauge
+				# TYPE kube_pod_info gauge
+				# TYPE kube_pod_owner gauge
+				# TYPE kube_pod_start_time gauge
 				kube_pod_created{namespace="ns1",pod="pod1"} 1.5e+09
 				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1"} 1.501569018e+09
@@ -811,7 +859,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					RestartPolicy: v1.RestartPolicyAlways,
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
+				# TYPE kube_pod_restart_policy gauge
 				kube_pod_restart_policy{namespace="ns2",pod="pod2",type="Always"} 1
 				`,
 			MetricNames: []string{"kube_pod_restart_policy"},
@@ -826,7 +876,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					RestartPolicy: v1.RestartPolicyOnFailure,
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
+				# TYPE kube_pod_restart_policy gauge
 				kube_pod_restart_policy{namespace="ns2",pod="pod2",type="OnFailure"} 1
 				`,
 			MetricNames: []string{"kube_pod_restart_policy"},
@@ -894,7 +946,17 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
+				# HELP kube_pod_created Unix creation timestamp
+				# HELP kube_pod_info Information about pod.
+				# HELP kube_pod_owner Information about the Pod's owner.
+				# HELP kube_pod_start_time Start time in unix timestamp for a pod.
+				# TYPE kube_pod_completion_time gauge
+				# TYPE kube_pod_created gauge
+				# TYPE kube_pod_info gauge
+				# TYPE kube_pod_owner gauge
+				# TYPE kube_pod_start_time gauge
 				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx",priority_class=""} 1
 				kube_pod_completion_time{namespace="ns2",pod="pod2"} 1.501888018e+09
 				kube_pod_owner{namespace="ns2",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="rs-name",pod="pod2"} 1
@@ -912,6 +974,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_status_phase The pods current phase.
+				# TYPE kube_pod_status_phase gauge
 				kube_pod_status_phase{namespace="ns1",phase="Failed",pod="pod1"} 0
 				kube_pod_status_phase{namespace="ns1",phase="Pending",pod="pod1"} 0
 				kube_pod_status_phase{namespace="ns1",phase="Running",pod="pod1"} 1
@@ -931,6 +995,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_status_phase The pods current phase.
+				# TYPE kube_pod_status_phase gauge
 				kube_pod_status_phase{namespace="ns2",phase="Failed",pod="pod2"} 0
 				kube_pod_status_phase{namespace="ns2",phase="Pending",pod="pod2"} 1
 				kube_pod_status_phase{namespace="ns2",phase="Running",pod="pod2"} 0
@@ -951,6 +1017,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_status_phase The pods current phase.
+				# TYPE kube_pod_status_phase gauge
 				kube_pod_status_phase{namespace="ns3",phase="Failed",pod="pod3"} 0
 				kube_pod_status_phase{namespace="ns3",phase="Pending",pod="pod3"} 0
 				kube_pod_status_phase{namespace="ns3",phase="Running",pod="pod3"} 0
@@ -972,6 +1040,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
+				# HELP kube_pod_status_phase The pods current phase.
+				# TYPE kube_pod_status_phase gauge
 				kube_pod_status_phase{namespace="ns4",phase="Failed",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Pending",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4"} 0
@@ -995,7 +1065,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
+				# TYPE kube_pod_status_ready gauge
 				kube_pod_status_ready{condition="false",namespace="ns1",pod="pod1"} 0
 				kube_pod_status_ready{condition="true",namespace="ns1",pod="pod1"} 1
 				kube_pod_status_ready{condition="unknown",namespace="ns1",pod="pod1"} 0
@@ -1017,7 +1089,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
+				# TYPE kube_pod_status_ready gauge
 				kube_pod_status_ready{condition="false",namespace="ns2",pod="pod2"} 1
 				kube_pod_status_ready{condition="true",namespace="ns2",pod="pod2"} 0
 				kube_pod_status_ready{condition="unknown",namespace="ns2",pod="pod2"} 0
@@ -1042,7 +1116,11 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
+				# HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
+				# TYPE kube_pod_status_scheduled gauge
+				# TYPE kube_pod_status_scheduled_time gauge
 				kube_pod_status_scheduled_time{namespace="ns1",pod="pod1"} 1.501666018e+09
 				kube_pod_status_scheduled{condition="false",namespace="ns1",pod="pod1"} 0
 				kube_pod_status_scheduled{condition="true",namespace="ns1",pod="pod1"} 1
@@ -1065,7 +1143,11 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
+				# HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
+				# TYPE kube_pod_status_scheduled gauge
+				# TYPE kube_pod_status_scheduled_time gauge
 				kube_pod_status_scheduled{condition="false",namespace="ns2",pod="pod2"} 1
 				kube_pod_status_scheduled{condition="true",namespace="ns2",pod="pod2"} 0
 				kube_pod_status_scheduled{condition="unknown",namespace="ns2",pod="pod2"} 0
@@ -1137,7 +1219,21 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
+				# HELP kube_pod_container_resource_limits_cpu_cores The limit on cpu cores to be used by a container.
+				# HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
+				# HELP kube_pod_container_resource_requests The number of requested request resource by a container.
+				# HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
+				# HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
+				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
+				# TYPE kube_pod_container_resource_limits gauge
+				# TYPE kube_pod_container_resource_limits_cpu_cores gauge
+				# TYPE kube_pod_container_resource_limits_memory_bytes gauge
+				# TYPE kube_pod_container_resource_requests gauge
+				# TYPE kube_pod_container_resource_requests_cpu_cores gauge
+				# TYPE kube_pod_container_resource_requests_memory_bytes gauge
+				# TYPE kube_pod_init_container_resource_limits gauge
 				kube_pod_container_resource_requests_cpu_cores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 0.2
 				kube_pod_container_resource_requests_cpu_cores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 0.3
 				kube_pod_container_resource_requests_memory_bytes{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 1e+08
@@ -1235,7 +1331,21 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
+				# HELP kube_pod_container_resource_limits_cpu_cores The limit on cpu cores to be used by a container.
+				# HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
+				# HELP kube_pod_container_resource_requests The number of requested request resource by a container.
+				# HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
+				# HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
+				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
+				# TYPE kube_pod_container_resource_limits gauge
+				# TYPE kube_pod_container_resource_limits_cpu_cores gauge
+				# TYPE kube_pod_container_resource_limits_memory_bytes gauge
+				# TYPE kube_pod_container_resource_requests gauge
+				# TYPE kube_pod_container_resource_requests_cpu_cores gauge
+				# TYPE kube_pod_container_resource_requests_memory_bytes gauge
+				# TYPE kube_pod_init_container_resource_limits gauge
 				kube_pod_container_resource_requests_cpu_cores{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 0.4
 				kube_pod_container_resource_requests_cpu_cores{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 0.5
 				kube_pod_container_resource_requests_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
@@ -1293,7 +1403,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Spec: v1.PodSpec{},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_pod_labels gauge
 				kube_pod_labels{label_app="example",namespace="ns1",pod="pod1"} 1
 		`,
 			MetricNames: []string{
@@ -1340,7 +1452,11 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
+				# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
+				# TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
+				# TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 				kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="ns1",persistentvolumeclaim="claim1",pod="pod1",volume="myvol"} 1
 				kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="ns1",persistentvolumeclaim="claim2",pod="pod1",volume="my-readonly-vol"} 1
 				kube_pod_spec_volumes_persistentvolumeclaims_readonly{namespace="ns1",persistentvolumeclaim="claim1",pod="pod1",volume="myvol"} 0
@@ -1356,6 +1472,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(podMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(podMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

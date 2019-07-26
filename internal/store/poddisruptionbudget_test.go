@@ -64,7 +64,7 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 					ObservedGeneration:    111,
 				},
 			},
-			Want: `
+			Want: metadata + `
 			kube_poddisruptionbudget_created{namespace="ns1",poddisruptionbudget="pdb1"} 1.5e+09
 			kube_poddisruptionbudget_status_current_healthy{namespace="ns1",poddisruptionbudget="pdb1"} 12
 			kube_poddisruptionbudget_status_desired_healthy{namespace="ns1",poddisruptionbudget="pdb1"} 10
@@ -89,7 +89,7 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 					ObservedGeneration:    1111,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_poddisruptionbudget_status_current_healthy{namespace="ns2",poddisruptionbudget="pdb2"} 8
 				kube_poddisruptionbudget_status_desired_healthy{namespace="ns2",poddisruptionbudget="pdb2"} 9
 				kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns2",poddisruptionbudget="pdb2"} 0
@@ -101,6 +101,7 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(podDisruptionBudgetMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(podDisruptionBudgetMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

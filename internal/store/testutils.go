@@ -33,6 +33,7 @@ type generateMetricsTestCase struct {
 	Obj         interface{}
 	MetricNames []string
 	Want        string
+	Headers     []string
 	Func        func(interface{}) []metricsstore.FamilyByteSlicer
 }
 
@@ -42,12 +43,12 @@ func (testCase *generateMetricsTestCase) run() error {
 	for _, f := range metricFamilies {
 		metricFamilyStrings = append(metricFamilyStrings, string(f.ByteSlice()))
 	}
-
 	metric := strings.Split(strings.Join(metricFamilyStrings, ""), "\n")
-
-	metric = filterMetrics(metric, testCase.MetricNames)
-
-	out := strings.Join(metric, "\n")
+	filteredMetrics := filterMetricNames(metric, testCase.MetricNames)
+	filteredHeaders := filterMetricNames(testCase.Headers, testCase.MetricNames)
+	headers := strings.Join(filteredHeaders, "\n")
+	metrics := strings.Join(filteredMetrics, "\n")
+	out := headers + "\n" + metrics
 
 	if err := compareOutput(testCase.Want, out); err != nil {
 		return errors.Wrap(err, "expected wanted output to equal output")
@@ -56,10 +57,9 @@ func (testCase *generateMetricsTestCase) run() error {
 	return nil
 }
 
-func compareOutput(a, b string) error {
-	entities := []string{a, b}
-
-	// Align a and b
+func compareOutput(expected, actual string) error {
+	entities := []string{expected, actual}
+	// Align wanted and actual
 	for i := 0; i < len(entities); i++ {
 		for _, f := range []func(string) string{removeUnusedWhitespace, sortLabels, sortByLine} {
 			entities[i] = f(entities[i])
@@ -67,7 +67,7 @@ func compareOutput(a, b string) error {
 	}
 
 	if entities[0] != entities[1] {
-		return errors.Errorf("expected a to equal b but got:\n%v\nand:\n%v", entities[0], entities[1])
+		return errors.Errorf("\nEXPECTED:\n--------------\n%v\nACTUAL:\n--------------\n%v", entities[0], entities[1])
 	}
 
 	return nil
@@ -80,6 +80,11 @@ func sortLabels(s string) string {
 	sorted := []string{}
 
 	for _, line := range strings.Split(s, "\n") {
+		// skipping if its headers
+		if strings.HasPrefix(line, "# ") {
+			sorted = append(sorted, line)
+			continue
+		}
 		split := strings.Split(line, "{")
 		if len(split) != 2 {
 			panic(fmt.Sprintf("failed to sort labels in \"%v\"", line))
@@ -104,7 +109,9 @@ func sortByLine(s string) string {
 	return strings.Join(split, "\n")
 }
 
-func filterMetrics(ms []string, names []string) []string {
+// filterMetricNames removes those metrics and headers that
+// are not part of the names.
+func filterMetricNames(ms []string, names []string) []string {
 	// In case the test case is based on all returned metric, MetricNames does
 	// not need to me defined.
 	if names == nil {
@@ -114,7 +121,7 @@ func filterMetrics(ms []string, names []string) []string {
 
 	regexps := []*regexp.Regexp{}
 	for _, n := range names {
-		regexps = append(regexps, regexp.MustCompile(fmt.Sprintf("^%v", n)))
+		regexps = append(regexps, regexp.MustCompile(fmt.Sprintf(".*%v.*$", n)))
 	}
 
 	for _, m := range ms {

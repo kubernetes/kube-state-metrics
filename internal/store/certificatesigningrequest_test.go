@@ -56,7 +56,7 @@ func TestCsrStore(t *testing.T) {
 				Status: certv1beta1.CertificateSigningRequestStatus{},
 				Spec:   certv1beta1.CertificateSigningRequestSpec{},
 			},
-			Want: `
+			Want: metadata + `
 				kube_certificatesigningrequest_created{certificatesigningrequest="certificate-test"} 1.5e+09
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="approved"} 0
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
@@ -88,7 +88,7 @@ func TestCsrStore(t *testing.T) {
 				},
 				Spec: certv1beta1.CertificateSigningRequestSpec{},
 			},
-			Want: `
+			Want: metadata + `
 				kube_certificatesigningrequest_created{certificatesigningrequest="certificate-test"} 1.5e+09
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="approved"} 0
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 1
@@ -120,7 +120,7 @@ func TestCsrStore(t *testing.T) {
 				},
 				Spec: certv1beta1.CertificateSigningRequestSpec{},
 			},
-			Want: `
+			Want: metadata + `
 				kube_certificatesigningrequest_created{certificatesigningrequest="certificate-test"} 1.5e+09
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="approved"} 1
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
@@ -152,7 +152,7 @@ func TestCsrStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_certificatesigningrequest_created{certificatesigningrequest="certificate-test"} 1.5e+09
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="approved"} 1
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
@@ -186,7 +186,7 @@ func TestCsrStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_certificatesigningrequest_created{certificatesigningrequest="certificate-test"} 1.5e+09
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="approved"} 1
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 1
@@ -226,7 +226,7 @@ func TestCsrStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_certificatesigningrequest_created{certificatesigningrequest="certificate-test"} 1.5e+09
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="approved"} 2
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 2
@@ -239,6 +239,7 @@ func TestCsrStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(csrMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(csrMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected error when collecting result in %vth run:\n%s", i, err)
 		}

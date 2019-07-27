@@ -26,22 +26,6 @@ import (
 )
 
 func TestPersistentVolumeClaimStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-		# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
-		# TYPE kube_persistentvolumeclaim_info gauge
-		# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_persistentvolumeclaim_labels gauge
-		# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
-		# TYPE kube_persistentvolumeclaim_status_phase gauge
-		# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
-		# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
-		# HELP kube_persistentvolumeclaim_access_mode The access mode of the persistent volume.
-		# TYPE kube_persistentvolumeclaim_access_mode gauge
-		# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_persistentvolumeclaim_annotations gauge
-	`
 	storageClassName := "rbd"
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
@@ -74,6 +58,18 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
+				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
+				# TYPE kube_persistentvolumeclaim_access_mode gauge
+				# TYPE kube_persistentvolumeclaim_annotations gauge
+				# TYPE kube_persistentvolumeclaim_info gauge
+				# TYPE kube_persistentvolumeclaim_labels gauge
+				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
+				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Bound"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Lost"} 0
@@ -103,6 +99,16 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
+				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
+				# TYPE kube_persistentvolumeclaim_access_mode gauge
+				# TYPE kube_persistentvolumeclaim_info gauge
+				# TYPE kube_persistentvolumeclaim_labels gauge
+				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
+				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",volumename="pvc-prometheus-data"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Lost"} 0
@@ -127,6 +133,16 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
+				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
+				# TYPE kube_persistentvolumeclaim_access_mode gauge
+				# TYPE kube_persistentvolumeclaim_info gauge
+				# TYPE kube_persistentvolumeclaim_labels gauge
+				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
+				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",volumename=""} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Lost"} 1
@@ -139,6 +155,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

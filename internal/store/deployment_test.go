@@ -100,7 +100,7 @@ func TestDeploymentStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
         kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
         kube_deployment_labels{deployment="depl1",label_app="example1",namespace="ns1"} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
@@ -147,7 +147,7 @@ func TestDeploymentStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
        	kube_deployment_labels{deployment="depl2",label_app="example2",namespace="ns2"} 1
         kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
@@ -166,6 +166,7 @@ func TestDeploymentStore(t *testing.T) {
 
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(deploymentMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(deploymentMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

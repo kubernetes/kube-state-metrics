@@ -139,6 +139,9 @@ func TestIngressStore(t *testing.T) {
 								},
 							},
 						},
+						{
+							Host: "somehost2",
+						},
 					},
 				},
 			},

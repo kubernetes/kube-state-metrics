@@ -174,6 +174,8 @@ kube_pod_status_phase{namespace="default",pod="pod0",phase="Succeeded"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Failed"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Running"} 1
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Unknown"} 0
+# HELP kube_pod_failure_information The failed pods failure information (reason and message).
+# TYPE kube_pod_failure_information gauge
 # HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
 # TYPE kube_pod_status_ready gauge
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.

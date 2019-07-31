@@ -279,6 +279,27 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_failure_information",
+			Type: metric.Gauge,
+			Help: "The failed pods failure information (reason and message).",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				phase := p.Status.Phase
+				if phase == v1.PodFailed {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"reason", "message"},
+						LabelValues: []string{p.Status.Reason, p.Status.Message},
+						Value:       1,
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_status_ready",
 			Type: metric.Gauge,
 			Help: "Describes whether the pod is ready to serve requests.",

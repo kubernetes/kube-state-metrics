@@ -1105,6 +1105,25 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					Namespace: "ns1",
 				},
 				Status: v1.PodStatus{
+					Phase:   v1.PodFailed,
+					Reason:  "FailureReason",
+					Message: "FailureMessage",
+				},
+			},
+			Want: `
+				# HELP kube_pod_failure_information The failed pods failure information (reason and message).
+	            # TYPE kube_pod_failure_information gauge
+				kube_pod_failure_information{namespace="ns1",reason="FailureReason",message="FailureMessage",pod="pod1"} 1
+			`,
+			MetricNames: []string{"kube_pod_failure_information"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+				},
+				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
 							Type:   v1.PodScheduled,
@@ -1541,7 +1560,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 38
+	expectedFamilies := 39
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

@@ -900,29 +900,6 @@ var (
 			}),
 		},
 		{
-			Name: "kube_init_pod_container_resource_requests_cpu_cores",
-			Type: metric.Gauge,
-			Help: "The number of requested cpu cores by an init container.",
-			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.InitContainers {
-					req := c.Resources.Requests
-					if cpu, ok := req[v1.ResourceCPU]; ok {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"container", "node"},
-							LabelValues: []string{c.Name, p.Spec.NodeName},
-							Value:       float64(cpu.MilliValue()) / 1000,
-						})
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
 			Name: "kube_pod_container_resource_requests_memory_bytes",
 			Type: metric.Gauge,
 			Help: "The number of requested memory bytes by a container.",

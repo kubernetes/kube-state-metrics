@@ -49,10 +49,10 @@ doccheck: generate
 	@git diff --exit-code
 	@echo "- Checking if the documentation is in sync with the code..."
 	@grep -hoE '(kube_[^ |]+)' docs/* --exclude=README.md| sort -u > documented_metrics
-	@sed -n 's/.*# TYPE \(kube_[^ ]\+\).*/\1/p' internal/store/*_test.go | sort -u > tested_metrics
-	@diff -u0 tested_metrics documented_metrics || (echo "ERROR: Metrics with - are present in tests but missing in documentation, metrics with + are documented but not tested."; exit 1)
+	@find internal/store -type f -not -name '*_test.go' -exec sed -nE 's/.*"(kube_[^"]+)"/\1/p' {} \; | sed -E 's/,//g' | sort -u > code_metrics
+	@diff -u0 code_metrics documented_metrics || (echo "ERROR: Metrics with - are present in code but missing in documentation, metrics with + are documented but not found in code."; exit 1)
 	@echo OK
-	@rm -f tested_metrics documented_metrics
+	@rm -f code_metrics documented_metrics
 	@echo "- Checking for orphan documentation files"
 	@cd docs; for doc in *.md; do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK

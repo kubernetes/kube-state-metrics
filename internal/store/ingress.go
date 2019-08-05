@@ -119,23 +119,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_ingress_annotations",
-			Type: metric.Gauge,
-			Help: "Kubernetes annotations converted to Prometheus labels.",
-			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(i.Annotations)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
 	}
 )
 

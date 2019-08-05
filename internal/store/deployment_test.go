@@ -20,7 +20,8 @@ import (
 	"testing"
 	"time"
 
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -70,7 +71,7 @@ func TestDeploymentStore(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1.Deployment{
+			Obj: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "depl1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
@@ -79,21 +80,22 @@ func TestDeploymentStore(t *testing.T) {
 						"app": "example1",
 					},
 					Annotations: map[string]string{
-						"app": "example1",
+						"app":                              "example1",
+						corev1.LastAppliedConfigAnnotation: "fooConfig",
 					},
 					Generation: 21,
 				},
-				Status: v1.DeploymentStatus{
+				Status: appsv1.DeploymentStatus{
 					Replicas:            15,
 					AvailableReplicas:   10,
 					UnavailableReplicas: 5,
 					UpdatedReplicas:     2,
 					ObservedGeneration:  111,
 				},
-				Spec: v1.DeploymentSpec{
+				Spec: appsv1.DeploymentSpec{
 					Replicas: &depl1Replicas,
-					Strategy: v1.DeploymentStrategy{
-						RollingUpdate: &v1.RollingUpdateDeployment{
+					Strategy: appsv1.DeploymentStrategy{
+						RollingUpdate: &appsv1.RollingUpdateDeployment{
 							MaxUnavailable: &depl1MaxUnavailable,
 							MaxSurge:       &depl1MaxSurge,
 						},
@@ -117,7 +119,7 @@ func TestDeploymentStore(t *testing.T) {
 `,
 		},
 		{
-			Obj: &v1.Deployment{
+			Obj: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "depl2",
 					Namespace: "ns2",
@@ -129,18 +131,18 @@ func TestDeploymentStore(t *testing.T) {
 					},
 					Generation: 14,
 				},
-				Status: v1.DeploymentStatus{
+				Status: appsv1.DeploymentStatus{
 					Replicas:            10,
 					AvailableReplicas:   5,
 					UnavailableReplicas: 0,
 					UpdatedReplicas:     1,
 					ObservedGeneration:  1111,
 				},
-				Spec: v1.DeploymentSpec{
+				Spec: appsv1.DeploymentSpec{
 					Paused:   true,
 					Replicas: &depl2Replicas,
-					Strategy: v1.DeploymentStrategy{
-						RollingUpdate: &v1.RollingUpdateDeployment{
+					Strategy: appsv1.DeploymentStrategy{
+						RollingUpdate: &appsv1.RollingUpdateDeployment{
 							MaxUnavailable: &depl2MaxUnavailable,
 							MaxSurge:       &depl2MaxSurge,
 						},

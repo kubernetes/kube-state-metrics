@@ -45,7 +45,9 @@ func TestNamespaceStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nsActiveTest",
 					Annotations: map[string]string{
-						"test": "testNS",
+						"test":                         "testNS",
+						v1.LastAppliedConfigAnnotation: "fooConfig",
+						"kubernetes.io/last_applied_configuration": "fooConfig",
 					},
 				},
 				Spec: v1.NamespaceSpec{
@@ -59,7 +61,7 @@ func TestNamespaceStore(t *testing.T) {
 				kube_namespace_labels{namespace="nsActiveTest"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Active"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Terminating"} 0
-				kube_namespace_annotations{namespace="nsActiveTest",annotation_test="testNS"} 1
+				kube_namespace_annotations{namespace="nsActiveTest",annotation_kubernetes_io_last_applied_configuration="fooConfig",annotation_test="testNS"} 1
 `,
 		},
 		{

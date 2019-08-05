@@ -144,23 +144,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_persistentvolumeclaim_annotations",
-			Type: metric.Gauge,
-			Help: "Kubernetes annotations converted to Prometheus labels.",
-			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(p.Annotations)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
 	}
 )
 

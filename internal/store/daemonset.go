@@ -195,23 +195,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_daemonset_annotations",
-			Type: metric.Gauge,
-			Help: "Kubernetes annotations converted to Prometheus labels.",
-			GenerateFunc: wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(d.Annotations)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
 	}
 )
 

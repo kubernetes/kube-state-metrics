@@ -32,14 +32,12 @@ func TestConfigMapStore(t *testing.T) {
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
 	const metadata = `
-		# HELP kube_configmap_info Information about configmap.
+        # HELP kube_configmap_info Information about configmap.
 		# TYPE kube_configmap_info gauge
 		# HELP kube_configmap_created Unix creation timestamp
 		# TYPE kube_configmap_created gauge
 		# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
 		# TYPE kube_configmap_metadata_resource_version gauge
-		# HELP kube_configmap_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_configmap_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -48,17 +46,13 @@ func TestConfigMapStore(t *testing.T) {
 					Name:            "configmap1",
 					Namespace:       "ns1",
 					ResourceVersion: "123456",
-					Annotations: map[string]string{
-						"configmap": "test",
-					},
 				},
 			},
 			Want: `
 				kube_configmap_info{configmap="configmap1",namespace="ns1"} 1
 				kube_configmap_metadata_resource_version{configmap="configmap1",namespace="ns1",resource_version="123456"} 1
-				kube_configmap_annotations{configmap="configmap1",namespace="ns1",annotation_configmap="test"} 1
 `,
-			MetricNames: []string{"kube_configmap_info", "kube_configmap_metadata_resource_version", "kube_configmap_annotations"},
+			MetricNames: []string{"kube_configmap_info", "kube_configmap_metadata_resource_version"},
 		},
 		{
 			Obj: &v1.ConfigMap{
@@ -67,18 +61,14 @@ func TestConfigMapStore(t *testing.T) {
 					Namespace:         "ns2",
 					CreationTimestamp: metav1StartTime,
 					ResourceVersion:   "abcdef",
-					Annotations: map[string]string{
-						"configmap": "test2",
-					},
 				},
 			},
 			Want: `
 				kube_configmap_info{configmap="configmap2",namespace="ns2"} 1
 				kube_configmap_created{configmap="configmap2",namespace="ns2"} 1.501569018e+09
 				kube_configmap_metadata_resource_version{configmap="configmap2",namespace="ns2",resource_version="abcdef"} 1
-				kube_configmap_annotations{configmap="configmap2",namespace="ns2",annotation_configmap="test2"} 1
 				`,
-			MetricNames: []string{"kube_configmap_info", "kube_configmap_created", "kube_configmap_metadata_resource_version", "kube_configmap_annotations"},
+			MetricNames: []string{"kube_configmap_info", "kube_configmap_created", "kube_configmap_metadata_resource_version"},
 		},
 	}
 	for i, c := range cases {

@@ -18,10 +18,12 @@ package store
 
 import (
 	"context"
+	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/klog"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -41,6 +43,7 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/util/watcher"
 )
 
 type whiteBlackLister interface {
@@ -57,14 +60,18 @@ type Builder struct {
 	ctx              context.Context
 	enabledResources []string
 	whiteBlackList   whiteBlackLister
+	metrics          *watcher.ListWatchMetrics
 }
 
 // NewBuilder returns a new builder.
 func NewBuilder(
 	ctx context.Context,
+	r *prometheus.Registry,
 ) *Builder {
+	metrics := watcher.NewListWatchMetrics(r)
 	return &Builder{
-		ctx: ctx,
+		ctx:     ctx,
+		metrics: metrics,
 	}
 }
 
@@ -293,7 +300,7 @@ func (b *Builder) reflectorPerNamespace(
 ) {
 	for _, ns := range b.namespaces {
 		lw := listWatchFunc(b.kubeClient, ns)
-		reflector := cache.NewReflector(lw, expectedType, store, 0)
+		reflector := cache.NewReflector(watcher.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String()), expectedType, store, 0)
 		go reflector.Run(b.ctx.Done())
 	}
 }

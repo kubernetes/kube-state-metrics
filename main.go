@@ -80,8 +80,8 @@ func main() {
 		opts.Usage()
 		os.Exit(0)
 	}
-
-	storeBuilder := store.NewBuilder(ctx)
+	ksmMetricsRegistry := prometheus.NewRegistry()
+	storeBuilder := store.NewBuilder(ctx, ksmMetricsRegistry)
 
 	var collectors []string
 	if len(opts.Collectors) == 0 {
@@ -151,7 +151,6 @@ func main() {
 	storeBuilder.WithKubeClient(kubeClient)
 	storeBuilder.WithVPAClient(vpaClient)
 
-	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
 	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)

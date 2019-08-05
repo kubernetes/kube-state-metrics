@@ -45,9 +45,6 @@ func TestStatefulSetStore(t *testing.T) {
 					Labels: map[string]string{
 						"app": "example1",
 					},
-					Annotations: map[string]string{
-						"app": "example1",
-					},
 					Generation: 3,
 				},
 				Spec: v1.StatefulSetSpec{
@@ -62,7 +59,6 @@ func TestStatefulSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_statefulset_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_statefulset_created Unix creation timestamp
 				# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
@@ -74,7 +70,6 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_status_replicas_ready The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
 				# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
-				# TYPE kube_statefulset_annotations gauge
 				# TYPE kube_statefulset_created gauge
 				# TYPE kube_statefulset_labels gauge
 				# TYPE kube_statefulset_metadata_generation gauge
@@ -97,7 +92,6 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_metadata_generation{namespace="ns1",statefulset="statefulset1"} 3
 				kube_statefulset_labels{label_app="example1",namespace="ns1",statefulset="statefulset1"} 1
-				kube_statefulset_annotations{namespace="ns1",statefulset="statefulset1",annotation_app="example1"} 1
 `,
 			MetricNames: []string{
 				"kube_statefulset_created",
@@ -111,7 +105,6 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_replicas_updated",
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
-				"kube_statefulset_annotations",
 			},
 		},
 		{
@@ -120,9 +113,6 @@ func TestStatefulSetStore(t *testing.T) {
 					Name:      "statefulset2",
 					Namespace: "ns2",
 					Labels: map[string]string{
-						"app": "example2",
-					},
-					Annotations: map[string]string{
 						"app": "example2",
 					},
 					Generation: 21,
@@ -142,7 +132,6 @@ func TestStatefulSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_statefulset_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
@@ -153,7 +142,6 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_status_replicas_ready The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
 				# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
-				# TYPE kube_statefulset_annotations gauge
 				# TYPE kube_statefulset_labels gauge
 				# TYPE kube_statefulset_metadata_generation gauge
 				# TYPE kube_statefulset_replicas gauge
@@ -174,7 +162,6 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_metadata_generation{namespace="ns2",statefulset="statefulset2"} 21
 				kube_statefulset_labels{label_app="example2",namespace="ns2",statefulset="statefulset2"} 1
 				kube_statefulset_status_current_revision{namespace="ns2",revision="cr2",statefulset="statefulset2"} 1
-				kube_statefulset_annotations{namespace="ns2",statefulset="statefulset2",annotation_app="example2"} 1
 `,
 			MetricNames: []string{
 				"kube_statefulset_labels",
@@ -187,7 +174,6 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_replicas_updated",
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
-				"kube_statefulset_annotations",
 			},
 		},
 		{
@@ -196,9 +182,6 @@ func TestStatefulSetStore(t *testing.T) {
 					Name:      "statefulset3",
 					Namespace: "ns3",
 					Labels: map[string]string{
-						"app": "example3",
-					},
-					Annotations: map[string]string{
 						"app": "example3",
 					},
 					Generation: 36,
@@ -215,7 +198,6 @@ func TestStatefulSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_statefulset_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
@@ -225,7 +207,6 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_status_replicas_ready The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
 				# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
-				# TYPE kube_statefulset_annotations gauge
 				# TYPE kube_statefulset_labels gauge
 				# TYPE kube_statefulset_metadata_generation gauge
 				# TYPE kube_statefulset_replicas gauge
@@ -244,7 +225,6 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_metadata_generation{namespace="ns3",statefulset="statefulset3"} 36
 				kube_statefulset_labels{label_app="example3",namespace="ns3",statefulset="statefulset3"} 1
 				kube_statefulset_status_current_revision{namespace="ns3",revision="cr3",statefulset="statefulset3"} 1
-				kube_statefulset_annotations{namespace="ns3",statefulset="statefulset3",annotation_app="example3"} 1
  			`,
 			MetricNames: []string{
 				"kube_statefulset_labels",
@@ -256,7 +236,6 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_replicas_updated",
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
-				"kube_statefulset_annotations",
 			},
 		},
 	}

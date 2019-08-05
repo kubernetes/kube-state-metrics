@@ -33,8 +33,6 @@ func TestNamespaceStore(t *testing.T) {
 		# TYPE kube_namespace_created gauge
 		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_namespace_labels gauge
-		# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_namespace_annotations gauge
 		# HELP kube_namespace_status_phase kubernetes namespace status phase.
 		# TYPE kube_namespace_status_phase gauge
 	`
@@ -44,9 +42,6 @@ func TestNamespaceStore(t *testing.T) {
 			Obj: &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nsActiveTest",
-					Annotations: map[string]string{
-						"test": "testNS",
-					},
 				},
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
@@ -59,16 +54,12 @@ func TestNamespaceStore(t *testing.T) {
 				kube_namespace_labels{namespace="nsActiveTest"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Active"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Terminating"} 0
-				kube_namespace_annotations{namespace="nsActiveTest",annotation_test="testNS"} 1
 `,
 		},
 		{
 			Obj: &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nsTerminateTest",
-					Annotations: map[string]string{
-						"test": "nsTerminateTest",
-					},
 				},
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
@@ -81,7 +72,6 @@ func TestNamespaceStore(t *testing.T) {
 				kube_namespace_labels{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Terminating"} 1
-				kube_namespace_annotations{namespace="nsTerminateTest",annotation_test="nsTerminateTest"} 1
 `,
 		},
 		{
@@ -91,9 +81,6 @@ func TestNamespaceStore(t *testing.T) {
 					Name:              "ns1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Labels: map[string]string{
-						"app": "example1",
-					},
-					Annotations: map[string]string{
 						"app": "example1",
 					},
 				},
@@ -109,7 +96,6 @@ func TestNamespaceStore(t *testing.T) {
 				kube_namespace_labels{label_app="example1",namespace="ns1"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
-				kube_namespace_annotations{annotation_app="example1",namespace="ns1"} 1
 `,
 		},
 		{
@@ -117,10 +103,6 @@ func TestNamespaceStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "ns2",
 					Labels: map[string]string{
-						"app": "example2",
-						"l2":  "label2",
-					},
-					Annotations: map[string]string{
 						"app": "example2",
 						"l2":  "label2",
 					},
@@ -134,7 +116,6 @@ func TestNamespaceStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
-				kube_namespace_annotations{annotation_app="example2",annotation_l2="label2",namespace="ns2"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
 `,

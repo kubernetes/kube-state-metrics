@@ -41,8 +41,6 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	# TYPE kube_poddisruptionbudget_status_expected_pods gauge
 	# HELP kube_poddisruptionbudget_status_observed_generation Most recent generation observed when updating this PDB status
 	# TYPE kube_poddisruptionbudget_status_observed_generation gauge
-	# HELP kube_poddisruptionbudget_annotations Kubernetes annotations converted to Prometheus labels.
-	# TYPE kube_poddisruptionbudget_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -52,9 +50,6 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns1",
 					Generation:        21,
-					Annotations: map[string]string{
-						"pdb1": "pdb1",
-					},
 				},
 				Status: v1beta1.PodDisruptionBudgetStatus{
 					CurrentHealthy:        12,
@@ -71,7 +66,6 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 			kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns1",poddisruptionbudget="pdb1"} 2
 			kube_poddisruptionbudget_status_expected_pods{namespace="ns1",poddisruptionbudget="pdb1"} 15
 			kube_poddisruptionbudget_status_observed_generation{namespace="ns1",poddisruptionbudget="pdb1"} 111
-			kube_poddisruptionbudget_annotations{namespace="ns1",poddisruptionbudget="pdb1",annotation_pdb1="pdb1"} 1
 			`,
 		},
 		{
@@ -95,7 +89,6 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 				kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns2",poddisruptionbudget="pdb2"} 0
 				kube_poddisruptionbudget_status_expected_pods{namespace="ns2",poddisruptionbudget="pdb2"} 10
 				kube_poddisruptionbudget_status_observed_generation{namespace="ns2",poddisruptionbudget="pdb2"} 1111
-				kube_poddisruptionbudget_annotations{namespace="ns2",poddisruptionbudget="pdb2"} 1
 			`,
 		},
 	}

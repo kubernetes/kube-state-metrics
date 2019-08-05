@@ -108,9 +108,6 @@ func TestCronJobStore(t *testing.T) {
 					Labels: map[string]string{
 						"app": "example-active-running-1",
 					},
-					Annotations: map[string]string{
-						"app": "example-active-running-1",
-					},
 				},
 				Status: batchv1beta1.CronJobStatus{
 					Active:           []v1.ObjectReference{{Name: "FakeJob1"}, {Name: "FakeJob2"}},
@@ -124,7 +121,6 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
 				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
@@ -133,7 +129,6 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
 				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
-				# TYPE kube_cronjob_annotations gauge
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_labels gauge
@@ -148,10 +143,9 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_spec_suspend{cronjob="ActiveRunningCronJob1",namespace="ns1"} 0
 				kube_cronjob_status_active{cronjob="ActiveRunningCronJob1",namespace="ns1"} 2
 				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.520742896e+09
-				kube_cronjob_annotations{cronjob="ActiveRunningCronJob1",namespace="ns1",annotation_app="example-active-running-1"} 1
 ` + fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveRunningCronJob1\",namespace=\"ns1\"} %ve+09\n",
 				float64(ActiveRunningCronJob1NextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time", "kube_cronjob_annotations"},
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -160,9 +154,6 @@ func TestCronJobStore(t *testing.T) {
 					Namespace:  "ns1",
 					Generation: 1,
 					Labels: map[string]string{
-						"app": "example-suspended-1",
-					},
-					Annotations: map[string]string{
 						"app": "example-suspended-1",
 					},
 				},
@@ -178,7 +169,6 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
 				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
@@ -186,7 +176,6 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
 				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
-				# TYPE kube_cronjob_annotations gauge
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_labels gauge
@@ -200,9 +189,8 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_spec_suspend{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_status_active{cronjob="SuspendedCronJob1",namespace="ns1"} 0
 				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.520762696e+09
-				kube_cronjob_annotations{cronjob="SuspendedCronJob1",namespace="ns1",annotation_app="example-suspended-1"} 1
 `,
-			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time", "kube_cronjob_annotations"},
+			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -212,9 +200,6 @@ func TestCronJobStore(t *testing.T) {
 					Namespace:         "ns1",
 					Generation:        1,
 					Labels: map[string]string{
-						"app": "example-active-no-last-scheduled-1",
-					},
-					Annotations: map[string]string{
 						"app": "example-active-no-last-scheduled-1",
 					},
 				},
@@ -230,7 +215,6 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
 				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
@@ -238,7 +222,6 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
-				# TYPE kube_cronjob_annotations gauge
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_labels gauge
@@ -252,11 +235,10 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.520766296e+09
 				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",label_app="example-active-no-last-scheduled-1",namespace="ns1"} 1
-				kube_cronjob_annotations{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",annotation_app="example-active-no-last-scheduled-1"} 1
 ` +
 				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveCronJob1NoLastScheduled\",namespace=\"ns1\"} %ve+09\n",
 					float64(ActiveCronJob1NoLastScheduledNextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_annotations"},
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels"},
 		},
 	}
 	for i, c := range cases {

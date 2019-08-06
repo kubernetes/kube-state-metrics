@@ -68,23 +68,6 @@ var (
 			}),
 		},
 		{
-			Name: "kube_namespace_annotations",
-			Type: metric.Gauge,
-			Help: "Kubernetes annotations converted to Prometheus labels.",
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(n.Annotations)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
-		{
 			Name: "kube_namespace_status_phase",
 			Type: metric.Gauge,
 			Help: "kubernetes namespace status phase.",

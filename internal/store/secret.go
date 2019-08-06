@@ -115,23 +115,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_secret_annotations",
-			Type: metric.Gauge,
-			Help: "Kubernetes annotations converted to Prometheus labels.",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(s.Annotations)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
 	}
 )
 

@@ -202,23 +202,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_statefulset_annotations",
-			Type: metric.Gauge,
-			Help: "Kubernetes annotations converted to Prometheus labels.",
-			GenerateFunc: wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(s.Annotations)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
 	}
 )
 

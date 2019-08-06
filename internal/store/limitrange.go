@@ -104,23 +104,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_limitrange_annotations",
-			Type: metric.Gauge,
-			Help: "Kubernetes annotations converted to Prometheus labels.",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
-				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(r.Annotations)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		},
 	}
 )
 

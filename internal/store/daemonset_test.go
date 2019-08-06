@@ -35,9 +35,6 @@ func TestDaemonSetStore(t *testing.T) {
 					Labels: map[string]string{
 						"app": "example1",
 					},
-					Annotations: map[string]string{
-						"app": "example1",
-					},
 					Generation: 21,
 				},
 				Status: v1.DaemonSetStatus{
@@ -48,7 +45,6 @@ func TestDaemonSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_daemonset_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
 				# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
@@ -58,7 +54,6 @@ func TestDaemonSetStore(t *testing.T) {
 				# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
 				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
 				# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
-				# TYPE kube_daemonset_annotations gauge
 				# TYPE kube_daemonset_labels gauge
 				# TYPE kube_daemonset_metadata_generation gauge
 				# TYPE kube_daemonset_status_current_number_scheduled gauge
@@ -77,7 +72,6 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_labels{daemonset="ds1",label_app="example1",namespace="ns1"} 1
-				kube_daemonset_annotations{daemonset="ds1",namespace="ns1",annotation_app="example1"} 1
 `,
 			MetricNames: []string{
 				"kube_daemonset_labels",
@@ -89,7 +83,6 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_updated_number_scheduled",
-				"kube_daemonset_annotations",
 			},
 		},
 		{
@@ -99,9 +92,6 @@ func TestDaemonSetStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns2",
 					Labels: map[string]string{
-						"app": "example2",
-					},
-					Annotations: map[string]string{
 						"app": "example2",
 					},
 					Generation: 14,
@@ -134,8 +124,6 @@ func TestDaemonSetStore(t *testing.T) {
 				# TYPE kube_daemonset_metadata_generation gauge
 				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_daemonset_labels gauge
-				# HELP kube_daemonset_annotations Kubernetes annotations converted to Prometheus labels.
-				# TYPE kube_daemonset_annotations gauge
 				kube_daemonset_metadata_generation{daemonset="ds2",namespace="ns2"} 14
 				kube_daemonset_status_current_number_scheduled{daemonset="ds2",namespace="ns2"} 10
 				kube_daemonset_status_desired_number_scheduled{daemonset="ds2",namespace="ns2"} 0
@@ -145,7 +133,6 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_labels{daemonset="ds2",label_app="example2",namespace="ns2"} 1
-				kube_daemonset_annotations{daemonset="ds2",namespace="ns2",annotation_app="example2"} 1
 				kube_daemonset_created{namespace="ns2",daemonset="ds2"} 1.5e+09
 `,
 			MetricNames: []string{
@@ -159,7 +146,6 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_updated_number_scheduled",
-				"kube_daemonset_annotations",
 			},
 		},
 		{
@@ -169,9 +155,6 @@ func TestDaemonSetStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns3",
 					Labels: map[string]string{
-						"app": "example3",
-					},
-					Annotations: map[string]string{
 						"app": "example3",
 					},
 					Generation: 15,
@@ -207,8 +190,6 @@ func TestDaemonSetStore(t *testing.T) {
 				# TYPE kube_daemonset_metadata_generation gauge
 				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_daemonset_labels gauge
-				# HELP kube_daemonset_annotations Kubernetes annotations converted to Prometheus labels.
-				# TYPE kube_daemonset_annotations gauge
 				kube_daemonset_created{daemonset="ds3",namespace="ns3"} 1.5e+09
 				kube_daemonset_metadata_generation{daemonset="ds3",namespace="ns3"} 15
 				kube_daemonset_status_current_number_scheduled{daemonset="ds3",namespace="ns3"} 10
@@ -219,7 +200,6 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_updated_number_scheduled{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_labels{daemonset="ds3",label_app="example3",namespace="ns3"} 1
-				kube_daemonset_annotations{daemonset="ds3",namespace="ns3",annotation_app="example3"} 1
 `,
 			MetricNames: []string{
 				"kube_daemonset_created",
@@ -232,7 +212,6 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_updated_number_scheduled",
-				"kube_daemonset_annotations",
 			},
 		},
 	}

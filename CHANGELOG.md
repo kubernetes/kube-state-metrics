@@ -1,3 +1,8 @@
+## v1.7.2 / 2019-08-05
+
+* [CHANGE] Revert "add `kube_*_annotations metrics` for all objects" #859
+* [CHANGE] Remove `kube_namespace_annotations` metric #859
+
 ## v1.7.1 / 2019-07-18
 
 * [BUGFIX] Fix crash due to missing ingress http block. #831

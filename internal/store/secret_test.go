@@ -92,20 +92,15 @@ func TestSecretStore(t *testing.T) {
 					CreationTimestamp: metav1StartTime,
 					Labels:            map[string]string{"test-3": "test-3"},
 					ResourceVersion:   "abcdef",
-					Annotations: map[string]string{
-						"test-3": "test-3",
-					},
 				},
 				Type: v1.SecretTypeDockercfg,
 			},
 			Want: `
-				# HELP kube_secret_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_secret_created Unix creation timestamp
 				# HELP kube_secret_info Information about secret.
 				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
 				# HELP kube_secret_type Type about secret.
-				# TYPE kube_secret_annotations gauge
 				# TYPE kube_secret_created gauge
 				# TYPE kube_secret_info gauge
 				# TYPE kube_secret_labels gauge
@@ -116,9 +111,8 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_created{namespace="ns3",secret="secret3"} 1.501569018e+09
 				kube_secret_metadata_resource_version{namespace="ns3",resource_version="abcdef",secret="secret3"} 1
 				kube_secret_labels{label_test_3="test-3",namespace="ns3",secret="secret3"} 1
-				kube_secret_annotations{namespace="ns3",secret="secret3",annotation_test_3="test-3"} 1
 `,
-			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type", "kube_secret_annotations"},
+			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
 		},
 	}
 	for i, c := range cases {

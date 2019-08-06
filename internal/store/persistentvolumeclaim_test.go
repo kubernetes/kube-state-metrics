@@ -37,9 +37,6 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 					Labels: map[string]string{
 						"app": "mysql-server",
 					},
-					Annotations: map[string]string{
-						"app": "mysql-server",
-					},
 				},
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
@@ -59,13 +56,11 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
-				# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
 				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
-				# TYPE kube_persistentvolumeclaim_annotations gauge
 				# TYPE kube_persistentvolumeclaim_info gauge
 				# TYPE kube_persistentvolumeclaim_labels gauge
 				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
@@ -77,9 +72,8 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace="default",persistentvolumeclaim="mysql-data"} 1.073741824e+09
 				kube_persistentvolumeclaim_labels{label_app="mysql-server",namespace="default",persistentvolumeclaim="mysql-data"} 1
 				kube_persistentvolumeclaim_access_mode{namespace="default",persistentvolumeclaim="mysql-data",access_mode="ReadWriteOnce"} 1
-				kube_persistentvolumeclaim_annotations{namespace="default",persistentvolumeclaim="mysql-data",annotation_app="mysql-server"} 1
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_annotations"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode"},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{

@@ -33,9 +33,6 @@ func TestNodeStore(t *testing.T) {
 			Obj: &v1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "127.0.0.1",
-					Annotations: map[string]string{
-						"kubeadm.alpha.kubernetes.io/ttl": "0",
-					},
 				},
 				Status: v1.NodeStatus{
 					NodeInfo: v1.NodeSystemInfo{
@@ -51,20 +48,17 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_node_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_node_info Information about a cluster node.
 				# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
-				# TYPE kube_node_annotations gauge
 				# TYPE kube_node_info gauge
 				# TYPE kube_node_labels gauge
 				# TYPE kube_node_spec_unschedulable gauge
 				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-uniqueid"} 1
 				kube_node_labels{node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 0
-				kube_node_annotations{node="127.0.0.1",annotation_kubeadm_alpha_kubernetes_io_ttl="0"} 1
 			`,
-			MetricNames: []string{"kube_node_annotations", "kube_node_spec_unschedulable", "kube_node_labels", "kube_node_info"},
+			MetricNames: []string{"kube_node_spec_unschedulable", "kube_node_labels", "kube_node_info"},
 		},
 		// Verify resource metric.
 		{
@@ -107,7 +101,6 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-		# HELP kube_node_annotations Kubernetes annotations converted to Prometheus labels.
 		# HELP kube_node_created Unix creation timestamp
 		# HELP kube_node_info Information about a cluster node.
 		# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
@@ -120,7 +113,6 @@ func TestNodeStore(t *testing.T) {
 		# HELP kube_node_status_capacity_cpu_cores The total CPU resources of the node.
 		# HELP kube_node_status_capacity_memory_bytes The total memory resources of the node.
 		# HELP kube_node_status_capacity_pods The total pod resources of the node.
-		# TYPE kube_node_annotations gauge
 		# TYPE kube_node_created gauge
 		# TYPE kube_node_info gauge
 		# TYPE kube_node_labels gauge
@@ -155,9 +147,8 @@ func TestNodeStore(t *testing.T) {
         kube_node_status_capacity{node="127.0.0.1",resource="nvidia_com_gpu",unit="integer"} 4
         kube_node_status_capacity{node="127.0.0.1",resource="pods",unit="integer"} 1000
         kube_node_status_capacity{node="127.0.0.1",resource="storage",unit="byte"} 3e+09
-		kube_node_annotations{node="127.0.0.1"} 1
 			`,
-			MetricNames: []string{"kube_node_annotations", "kube_node_status_capacity", "kube_node_status_capacity_pods", "kube_node_status_capacity_memory_bytes", "kube_node_status_capacity_cpu_cores", "kube_node_status_allocatable", "kube_node_status_allocatable_pods", "kube_node_status_allocatable_memory_bytes", "kube_node_status_allocatable_cpu_cores", "kube_node_spec_unschedulable", "kube_node_labels", "kube_node_info", "kube_node_created"},
+			MetricNames: []string{"kube_node_status_capacity", "kube_node_status_capacity_pods", "kube_node_status_capacity_memory_bytes", "kube_node_status_capacity_cpu_cores", "kube_node_status_allocatable", "kube_node_status_allocatable_pods", "kube_node_status_allocatable_memory_bytes", "kube_node_status_allocatable_cpu_cores", "kube_node_spec_unschedulable", "kube_node_labels", "kube_node_info", "kube_node_created"},
 		},
 		// Verify phase enumerations.
 		{

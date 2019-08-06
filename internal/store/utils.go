@@ -74,21 +74,6 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 	return labelKeys, labelValues
 }
 
-func kubeAnnotationsToPrometheusLabels(annotations map[string]string) ([]string, []string) {
-	annotationKeys := make([]string, 0, len(annotations))
-	for k := range annotations {
-		annotationKeys = append(annotationKeys, k)
-	}
-	sort.Strings(annotationKeys)
-
-	annotationValues := make([]string, 0, len(annotations))
-	for i, k := range annotationKeys {
-		annotationKeys[i] = "annotation_" + sanitizeLabelName(k)
-		annotationValues = append(annotationValues, annotations[k])
-	}
-	return annotationKeys, annotationValues
-}
-
 func sanitizeLabelName(s string) string {
 	return invalidLabelCharRE.ReplaceAllString(s, "_")
 }

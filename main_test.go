@@ -169,6 +169,8 @@ kube_pod_restart_policy{namespace="default",pod="pod0",type="Always"} 1
 # TYPE kube_pod_status_scheduled_time gauge
 # HELP kube_pod_status_phase The pods current phase.
 # TYPE kube_pod_status_phase gauge
+# HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
+# TYPE kube_pod_status_unschedulable gauge
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Pending"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Succeeded"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Failed"} 0

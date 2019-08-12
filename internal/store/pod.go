@@ -238,6 +238,31 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_status_unschedulable",
+			Type: metric.Gauge,
+			Help: "Describes the unschedulable status for the pod.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Status.Conditions {
+					switch c.Type {
+					case v1.PodScheduled:
+						if c.Status == v1.ConditionFalse {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{},
+								LabelValues: []string{},
+								Value:       1,
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_status_phase",
 			Type: metric.Gauge,
 			Help: "The pods current phase.",

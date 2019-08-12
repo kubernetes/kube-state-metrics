@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package watcher
+package watch
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,8 +31,8 @@ type ListWatchMetrics struct {
 }
 
 // NewListWatchMetrics takes in a prometheus registry and initializes
-// and registers the kube_state_metrics_list_total and kube_state_metrics_watch_total
-// metrics. It returns those registered metrics.
+// and registers the kube_state_metrics_list_total and
+// kube_state_metrics_watch_total metrics. It returns those registered metrics.
 func NewListWatchMetrics(r *prometheus.Registry) *ListWatchMetrics {
 	var m ListWatchMetrics
 	m.WatchTotal = prometheus.NewCounterVec(
@@ -72,8 +72,8 @@ func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetr
 	}
 }
 
-// List is a wraper func around the cache.ListerWatcher.List func. It also increases the counter whenever any
-// errors occur with trying to list a resource.
+// List is a wrapper func around the cache.ListerWatcher.List func. It increases the success/error
+// / counters based on the outcome of the List operation it instruments.
 func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtime.Object, err error) {
 	res, err = i.lw.List(options)
 	if err != nil {
@@ -85,8 +85,8 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtim
 	return
 }
 
-// Watch is a wraper func around the cache.ListerWatcher.Watch func. It also increases the counter whenever any
-// errors occur when trying to watch a resource.
+// Watch is a wrapper func around the cache.ListerWatcher.Watch func. It increases the success/error
+// counters based on the outcome of the Watch operation it instruments.
 func (i *InstrumentedListerWatcher) Watch(options metav1.ListOptions) (res watch.Interface, err error) {
 	res, err = i.lw.Watch(options)
 	if err != nil {

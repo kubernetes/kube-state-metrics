@@ -80,8 +80,10 @@ func main() {
 		opts.Usage()
 		os.Exit(0)
 	}
+	storeBuilder := store.NewBuilder(ctx)
+
 	ksmMetricsRegistry := prometheus.NewRegistry()
-	storeBuilder := store.NewBuilder(ctx, ksmMetricsRegistry)
+	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
 	var collectors []string
 	if len(opts.Collectors) == 0 {

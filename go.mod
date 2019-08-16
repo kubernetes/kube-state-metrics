@@ -10,7 +10,7 @@ require (
 	github.com/onsi/ginkgo v1.7.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v1.0.0
+	github.com/prometheus/client_golang v1.1.0
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/spf13/pflag v1.0.3
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
@@ -20,7 +20,7 @@ require (
 	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
 	k8s.io/autoscaler v0.0.0-20190607113959-1b4f1855cb8e
 	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
-	k8s.io/klog v0.3.3
+	k8s.io/klog v0.4.0
 	k8s.io/kube-openapi v0.0.0-20190320154901-5e45bb682580 // indirect
 	k8s.io/utils v0.0.0-20190308190857-21c4ce38f2a7 // indirect
 )

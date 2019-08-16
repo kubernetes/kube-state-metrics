@@ -17,14 +17,14 @@
 set -e
 set -o pipefail
 
-KUBERNETES_VERSION=v1.15.1
+KUBERNETES_VERSION=v1.15.2
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
-PROMETHEUS_VERSION=2.11.0
+PROMETHEUS_VERSION=2.11.2
 E2E_SETUP_MINIKUBE=${E2E_SETUP_MINIKUBE:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
 E2E_SETUP_PROMTOOL=${E2E_SETUP_PROMTOOL:-}
-MINIKUBE_VERSION=v1.2.0
+MINIKUBE_VERSION=v1.3.1
 MINIKUBE_DRIVER=${MINIKUBE_DRIVER:-virtualbox}
 SUDO=${SUDO:-}
 
@@ -60,18 +60,18 @@ function setup_promtool() {
     rm /tmp/prometheus.tar.gz
 }
 
-[[ -n "$E2E_SETUP_MINIKUBE" ]] && setup_minikube
+[[ -n "${E2E_SETUP_MINIKUBE}" ]] && setup_minikube
 
 minikube version
 
-[[ -n "$E2E_SETUP_KUBECTL" ]] && setup_kubectl
+[[ -n "${E2E_SETUP_KUBECTL}" ]] && setup_kubectl
 
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
-mkdir "$HOME"/.kube || true
-touch "$HOME"/.kube/config
+mkdir "${HOME}"/.kube || true
+touch "${HOME}"/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
 ${SUDO} minikube start --vm-driver="${MINIKUBE_DRIVER}" --kubernetes-version=${KUBERNETES_VERSION} --logtostderr
@@ -114,7 +114,7 @@ KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep 'quay.io/coreos/kube-state-
 echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"
 
 # update kube-state-metrics image tag in kube-state-metrics-deployment.yaml
-sed -i.bak "s|$KUBE_STATE_METRICS_IMAGE_NAME:v.*|$KUBE_STATE_METRICS_IMAGE_NAME:$KUBE_STATE_METRICS_IMAGE_TAG|g" ./kubernetes/kube-state-metrics-deployment.yaml
+sed -i.bak "s|${KUBE_STATE_METRICS_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./kubernetes/kube-state-metrics-deployment.yaml
 cat ./kubernetes/kube-state-metrics-deployment.yaml
 
 trap finish EXIT
@@ -165,7 +165,7 @@ echo "access kube-state-metrics metrics endpoint"
 curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/metrics
 
 echo "check metrics format with promtool"
-[[ -n "$E2E_SETUP_PROMTOOL" ]] && setup_promtool
+[[ -n "${E2E_SETUP_PROMTOOL}" ]] && setup_promtool
 < ${KUBE_STATE_METRICS_LOG_DIR}/metrics promtool check metrics
 
 resources=$(find internal/store/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "builder.go" -not -name "testutils.go" -not -name "utils.go" -print0 | xargs -0 -n1 basename | awk -F. '{print $1}'| grep -v "$EXCLUDED_RESOURCE_REGEX")

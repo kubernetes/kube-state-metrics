@@ -19,10 +19,10 @@ package store
 import (
 	"testing"
 
-	v12 "k8s.io/api/core/v1"
-
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -76,7 +76,7 @@ func TestHPAStore(t *testing.T) {
 					Conditions: []autoscaling.HorizontalPodAutoscalerCondition{
 						{
 							Type:   autoscaling.AbleToScale,
-							Status: v12.ConditionTrue,
+							Status: v1.ConditionTrue,
 						},
 					},
 				},

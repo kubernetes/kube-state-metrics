@@ -21,13 +21,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
-
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -230,5 +230,5 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	if !createdTime.IsZero() {
 		return sched.Next(createdTime.Time), nil
 	}
-	return time.Time{}, errors.New("Created time and lastScheduleTime are both zero")
+	return time.Time{}, errors.New("createdTime and lastScheduleTime are both zero")
 }

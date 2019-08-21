@@ -21,8 +21,8 @@ import (
 	"time"
 
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 

@@ -19,12 +19,12 @@ package store
 import (
 	"testing"
 
+	k8sautoscaling "k8s.io/api/autoscaling/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	k8sautoscaling "k8s.io/api/autoscaling/v1"
 	autoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 

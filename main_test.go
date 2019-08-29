@@ -32,6 +32,7 @@ import (
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 
+	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +58,10 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	reg := prometheus.NewRegistry()
+
 	builder := store.NewBuilder(ctx)
+	builder.WithMetrics(reg)
 	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -117,7 +121,9 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder(ctx)
+	builder.WithMetrics(reg)
 	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)

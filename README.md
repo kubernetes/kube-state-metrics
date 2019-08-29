@@ -91,10 +91,10 @@ additional metrics!
 > For now, the following metrics and collectors
 >
 > **metrics**
->	* kube_pod_container_resource_requests_nvidia_gpu_devices
->	* kube_pod_container_resource_limits_nvidia_gpu_devices
->	* kube_node_status_capacity_nvidia_gpu_cards
->	* kube_node_status_allocatable_nvidia_gpu_cards
+>	* `kube_pod_container_resource_requests_nvidia_gpu_devices`
+>	* `kube_pod_container_resource_limits_nvidia_gpu_devices`
+>	* `kube_node_status_capacity_nvidia_gpu_cards`
+>	* `kube_node_status_allocatable_nvidia_gpu_cards`
 >
 >	are removed in kube-state-metrics v1.4.0.
 >
@@ -104,7 +104,19 @@ additional metrics!
 See the [`docs`](docs) directory for more information on the exposed metrics.
 
 ### Kube-state-metrics self metrics
+
 kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 81).
+
+kube-state-metrics also exposes list and watch success and error metrics. These can be used to calculate the error rate of list or watch resources.
+If you encounter those errors in the metrics, it is most likely a configuration or permission issue, and the next thing to investigate would be looking
+at the logs of kube-state-metrics.
+
+Example of the above mentioned metrics:
+```
+kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
+kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
+kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
+```
 
 ### Resource recommendation
 

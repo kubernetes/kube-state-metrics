@@ -18,12 +18,12 @@ package store
 
 import (
 	"context"
+	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog"
-
+	"github.com/prometheus/client_golang/prometheus"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -37,10 +37,12 @@ import (
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/watch"
 )
 
 type whiteBlackLister interface {
@@ -57,18 +59,23 @@ type Builder struct {
 	ctx              context.Context
 	enabledResources []string
 	whiteBlackList   whiteBlackLister
+	metrics          *watch.ListWatchMetrics
 }
 
 // NewBuilder returns a new builder.
-func NewBuilder(
-	ctx context.Context,
-) *Builder {
+func NewBuilder(ctx context.Context) *Builder {
 	return &Builder{
 		ctx: ctx,
 	}
 }
 
+// WithMetrics sets the metrics property of a Builder.
+func (b *Builder) WithMetrics(r *prometheus.Registry) {
+	b.metrics = watch.NewListWatchMetrics(r)
+}
+
 // WithEnabledResources sets the enabledResources property of a Builder.
+
 func (b *Builder) WithEnabledResources(c []string) error {
 	for _, col := range c {
 		if !collectorExists(col) {
@@ -293,7 +300,7 @@ func (b *Builder) reflectorPerNamespace(
 ) {
 	for _, ns := range b.namespaces {
 		lw := listWatchFunc(b.kubeClient, ns)
-		reflector := cache.NewReflector(lw, expectedType, store, 0)
+		reflector := cache.NewReflector(watch.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String()), expectedType, store, 0)
 		go reflector.Run(b.ctx.Done())
 	}
 }

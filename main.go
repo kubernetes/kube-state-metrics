@@ -32,7 +32,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -153,8 +152,10 @@ func main() {
 	storeBuilder.WithKubeClient(kubeClient)
 	storeBuilder.WithVPAClient(vpaClient)
 
-	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
-	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
+	ksmMetricsRegistry.MustRegister(
+		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
+		prometheus.NewGoCollector(),
+	)
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 
 	stores := storeBuilder.Build()

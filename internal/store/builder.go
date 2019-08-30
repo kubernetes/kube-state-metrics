@@ -42,6 +42,7 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/sharding"
 	"k8s.io/kube-state-metrics/pkg/watch"
 )
 
@@ -60,14 +61,12 @@ type Builder struct {
 	enabledResources []string
 	whiteBlackList   whiteBlackLister
 	metrics          *watch.ListWatchMetrics
+	shard            int32
+	totalShards      int
 }
 
 // NewBuilder returns a new builder.
-func NewBuilder(ctx context.Context) *Builder {
-	return &Builder{
-		ctx: ctx,
-	}
-}
+func NewBuilder() *Builder { return &Builder{} }
 
 // WithMetrics sets the metrics property of a Builder.
 func (b *Builder) WithMetrics(r *prometheus.Registry) {
@@ -95,6 +94,17 @@ func (b *Builder) WithEnabledResources(c []string) error {
 // WithNamespaces sets the namespaces property of a Builder.
 func (b *Builder) WithNamespaces(n options.NamespaceList) {
 	b.namespaces = n
+}
+
+// WithSharding sets the shard and totalShards property of a Builder.
+func (b *Builder) WithSharding(shard int32, totalShards int) {
+	b.shard = shard
+	b.totalShards = totalShards
+}
+
+// WithContext sets the ctx property of a Builder.
+func (b *Builder) WithContext(ctx context.Context) {
+	b.ctx = ctx
 }
 
 // WithKubeClient sets the kubeClient property of a Builder.
@@ -300,7 +310,8 @@ func (b *Builder) reflectorPerNamespace(
 ) {
 	for _, ns := range b.namespaces {
 		lw := listWatchFunc(b.kubeClient, ns)
-		reflector := cache.NewReflector(watch.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String()), expectedType, store, 0)
+		instrumentedListWatch := watch.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String())
+		reflector := cache.NewReflector(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, 0)
 		go reflector.Run(b.ctx.Done())
 	}
 }

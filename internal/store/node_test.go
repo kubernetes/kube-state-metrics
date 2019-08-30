@@ -94,7 +94,7 @@ func TestNodeStore(t *testing.T) {
 					Name:              "127.0.0.1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Labels: map[string]string{
-						"type": "master",
+						"node-role.kubernetes.io/master": "",
 					},
 				},
 				Spec: v1.NodeSpec{
@@ -128,9 +128,10 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-        kube_node_created{node="127.0.0.1"} 1.5e+09
+		kube_node_created{node="127.0.0.1"} 1.5e+09
         kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-randomidentifier"} 1
-        kube_node_labels{label_type="master",node="127.0.0.1"} 1
+		kube_node_labels{label_node_role_kubernetes_io_master="",node="127.0.0.1"} 1
+		kube_node_role{node="127.0.0.1",role="master"} 1
         kube_node_spec_unschedulable{node="127.0.0.1"} 1
         kube_node_status_allocatable_cpu_cores{node="127.0.0.1"} 3
         kube_node_status_allocatable_memory_bytes{node="127.0.0.1"} 1e+09
@@ -151,6 +152,21 @@ func TestNodeStore(t *testing.T) {
         kube_node_status_capacity{node="127.0.0.1",resource="pods",unit="integer"} 1000
         kube_node_status_capacity{node="127.0.0.1",resource="storage",unit="byte"} 3e+09
 			`,
+			MetricNames: []string{
+				"kube_node_status_capacity",
+				"kube_node_status_capacity_pods",
+				"kube_node_status_capacity_memory_bytes",
+				"kube_node_status_capacity_cpu_cores",
+				"kube_node_status_allocatable",
+				"kube_node_status_allocatable_pods",
+				"kube_node_status_allocatable_memory_bytes",
+				"kube_node_status_allocatable_cpu_cores",
+				"kube_node_spec_unschedulable",
+				"kube_node_labels",
+				"kube_node_role",
+				"kube_node_info",
+				"kube_node_created",
+			},
 		},
 		// Verify phase enumerations.
 		{

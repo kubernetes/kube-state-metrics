@@ -18,7 +18,6 @@ package watch
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -51,8 +50,10 @@ func NewListWatchMetrics(r *prometheus.Registry) *ListWatchMetrics {
 		[]string{"result", "resource"},
 	)
 	if r != nil {
-		r.Register(m.WatchTotal)
-		r.Register(m.ListTotal)
+		r.MustRegister(
+			m.ListTotal,
+			m.WatchTotal,
+		)
 	}
 	return &m
 }

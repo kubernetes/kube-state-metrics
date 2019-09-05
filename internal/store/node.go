@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"strings"
+
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
 
@@ -97,6 +99,27 @@ var (
 							Value:       1,
 						},
 					},
+				}
+			}),
+		},
+		{
+			Name: "kube_node_role",
+			Type: metric.Gauge,
+			Help: "The role of a cluster node.",
+			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+				const prefix = "node-role.kubernetes.io/"
+				ms := []*metric.Metric{}
+				for lbl := range n.Labels {
+					if strings.HasPrefix(lbl, prefix) {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"role"},
+							LabelValues: []string{strings.TrimPrefix(lbl, prefix)},
+							Value:       float64(1),
+						})
+					}
+				}
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		},

@@ -1,3 +1,10 @@
+## v1.8.0-rc.0 / 2019-09-10
+
+* [FEATURE] Add `kube_node_role` metric. #877
+* [FEATURE] Introduce sharding (and experimental auto-sharding). #613
+* [FEATURE] Add kube_pod_status_unschedulable metric. #835
+* [ENHANCEMENT] Add metrics about kube-state-metric's interaction with the Kubernetes API. #866
+
 ## v1.7.2 / 2019-08-05
 
 * [CHANGE] Revert "add `kube_*_annotations metrics` for all objects" #859

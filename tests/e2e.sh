@@ -28,6 +28,9 @@ MINIKUBE_VERSION=v1.3.1
 MINIKUBE_DRIVER=${MINIKUBE_DRIVER:-virtualbox}
 SUDO=${SUDO:-}
 
+OS=$(uname -s | awk '{print tolower($0)}')
+OS=${OS:-linux}
+
 EXCLUDED_RESOURCE_REGEX="verticalpodautoscaler"
 
 mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
@@ -41,22 +44,22 @@ function finish() {
 }
 
 function setup_minikube() {
-    curl -sLo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 \
+    curl -sLo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-"${OS}"-amd64 \
         && chmod +x minikube \
         && ${SUDO} mv minikube /usr/local/bin/
 }
 
 function setup_kubectl() {
-    curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/"$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"/bin/linux/amd64/kubectl \
+    curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/"$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"/bin/"${OS}"/amd64/kubectl \
         && chmod +x kubectl \
         && ${SUDO} mv kubectl /usr/local/bin/
 }
 
 function setup_promtool() {
-    wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz
-    tar zxfv /tmp/prometheus.tar.gz -C /tmp/ prometheus-${PROMETHEUS_VERSION}.linux-amd64/promtool
-    ${SUDO} mv /tmp/prometheus-${PROMETHEUS_VERSION}.linux-amd64/promtool /usr/local/bin/
-    rmdir /tmp/prometheus-${PROMETHEUS_VERSION}.linux-amd64
+    wget -q -O /tmp/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}."${OS}"-amd64.tar.gz
+    tar zxfv /tmp/prometheus.tar.gz -C /tmp/ prometheus-${PROMETHEUS_VERSION}."${OS}"-amd64/promtool
+    ${SUDO} mv /tmp/prometheus-${PROMETHEUS_VERSION}."${OS}"-amd64/promtool /usr/local/bin/
+    rmdir /tmp/prometheus-${PROMETHEUS_VERSION}."${OS}"-amd64
     rm /tmp/prometheus.tar.gz
 }
 

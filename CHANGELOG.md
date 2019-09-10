@@ -8,7 +8,7 @@
 * [FEATURE] Introduce sharding (and experimental auto-sharding) #613
 * [FEATURE] Add `kube_pod_status_unschedulable metric` #835
 * [CHANGE] Makefile: Remove tmpdir after container build #867
-* [ENHANCEMENT] Add list/watch success/error count total metrics #866
+* [ENHANCEMENT] Add metrics about kube-state-metric's interaction with the Kubernetes API. #866
 * [FEATURE] Add `kube_node_role metric` #877
 * [ENHANCEMENT] Add support for Darwin OS in e2e test #879
 

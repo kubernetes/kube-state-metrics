@@ -197,6 +197,22 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_restart_policy",
+			Type: metric.Gauge,
+			Help: "Describes the restart policy in use by this pod.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"type"},
+							LabelValues: []string{string(p.Spec.RestartPolicy)},
+							Value:       float64(1),
+						},
+					},
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_status_scheduled_time",
 			Type: metric.Gauge,
 			Help: "Unix timestamp when pod moved into scheduled status",
@@ -211,6 +227,31 @@ var (
 								LabelKeys:   []string{},
 								LabelValues: []string{},
 								Value:       float64(c.LastTransitionTime.Unix()),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_status_unschedulable",
+			Type: metric.Gauge,
+			Help: "Describes the unschedulable status for the pod.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Status.Conditions {
+					switch c.Type {
+					case v1.PodScheduled:
+						if c.Status == v1.ConditionFalse {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{},
+								LabelValues: []string{},
+								Value:       1,
 							})
 						}
 					}
@@ -868,29 +909,6 @@ var (
 				ms := []*metric.Metric{}
 
 				for _, c := range p.Spec.Containers {
-					req := c.Resources.Requests
-					if cpu, ok := req[v1.ResourceCPU]; ok {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"container", "node"},
-							LabelValues: []string{c.Name, p.Spec.NodeName},
-							Value:       float64(cpu.MilliValue()) / 1000,
-						})
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_init_pod_container_resource_requests_cpu_cores",
-			Type: metric.Gauge,
-			Help: "The number of requested cpu cores by an init container.",
-			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.InitContainers {
 					req := c.Resources.Requests
 					if cpu, ok := req[v1.ResourceCPU]; ok {
 						ms = append(ms, &metric.Metric{

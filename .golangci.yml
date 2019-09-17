@@ -7,7 +7,7 @@ linters:
     - gofmt
     - goimports
     - golint
-    - gosimple
+    - staticcheck
     - gocyclo
     - ineffassign
     - misspell
@@ -16,4 +16,4 @@ linters:
 
 linters-settings:
   goimports:
-local-prefixes: k8s.io/kube-state-metrics
+    local-prefixes: k8s.io/kube-state-metrics

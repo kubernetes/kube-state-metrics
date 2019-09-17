@@ -17,13 +17,13 @@ limitations under the License.
 package store
 
 import (
+	"context"
+	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog"
-
-	"golang.org/x/net/context"
+	"github.com/prometheus/client_golang/prometheus"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -37,9 +37,13 @@ import (
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/sharding"
+	"k8s.io/kube-state-metrics/pkg/watch"
 )
 
 type whiteBlackLister interface {
@@ -56,18 +60,21 @@ type Builder struct {
 	ctx              context.Context
 	enabledResources []string
 	whiteBlackList   whiteBlackLister
+	metrics          *watch.ListWatchMetrics
+	shard            int32
+	totalShards      int
 }
 
 // NewBuilder returns a new builder.
-func NewBuilder(
-	ctx context.Context,
-) *Builder {
-	return &Builder{
-		ctx: ctx,
-	}
+func NewBuilder() *Builder { return &Builder{} }
+
+// WithMetrics sets the metrics property of a Builder.
+func (b *Builder) WithMetrics(r *prometheus.Registry) {
+	b.metrics = watch.NewListWatchMetrics(r)
 }
 
 // WithEnabledResources sets the enabledResources property of a Builder.
+
 func (b *Builder) WithEnabledResources(c []string) error {
 	for _, col := range c {
 		if !collectorExists(col) {
@@ -87,6 +94,17 @@ func (b *Builder) WithEnabledResources(c []string) error {
 // WithNamespaces sets the namespaces property of a Builder.
 func (b *Builder) WithNamespaces(n options.NamespaceList) {
 	b.namespaces = n
+}
+
+// WithSharding sets the shard and totalShards property of a Builder.
+func (b *Builder) WithSharding(shard int32, totalShards int) {
+	b.shard = shard
+	b.totalShards = totalShards
+}
+
+// WithContext sets the ctx property of a Builder.
+func (b *Builder) WithContext(ctx context.Context) {
+	b.ctx = ctx
 }
 
 // WithKubeClient sets the kubeClient property of a Builder.
@@ -292,7 +310,8 @@ func (b *Builder) reflectorPerNamespace(
 ) {
 	for _, ns := range b.namespaces {
 		lw := listWatchFunc(b.kubeClient, ns)
-		reflector := cache.NewReflector(lw, expectedType, store, 0)
+		instrumentedListWatch := watch.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String())
+		reflector := cache.NewReflector(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, 0)
 		go reflector.Run(b.ctx.Done())
 	}
 }

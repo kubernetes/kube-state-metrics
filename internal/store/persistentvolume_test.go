@@ -22,22 +22,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 func TestPersistentVolumeStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-	const metadata = `
-			# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
-			# TYPE kube_persistentvolume_status_phase gauge
-			# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
-			# TYPE kube_persistentvolume_labels gauge
-			# HELP kube_persistentvolume_info Information about persistentvolume.
-			# TYPE kube_persistentvolume_info gauge
-			# HELP kube_persistentvolume_capacity_bytes The size of the Persistentvolume in bytes.
-			# TYPE kube_persistentvolume_capacity_bytes gauge
-	`
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
@@ -50,6 +39,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Bound"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Failed"} 0
@@ -70,6 +61,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Available"} 1
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Bound"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Failed"} 0
@@ -88,6 +81,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Bound"} 1
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Failed"} 0
@@ -106,6 +101,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Bound"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Failed"} 0
@@ -125,6 +122,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Bound"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Failed"} 1
@@ -146,7 +145,9 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-				kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Available"} 0
+					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# TYPE kube_persistentvolume_status_phase gauge
+				    kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Bound"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Failed"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Pending"} 1
@@ -166,6 +167,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
@@ -186,6 +189,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# TYPE kube_persistentvolume_labels gauge
 					kube_persistentvolume_labels{label_app="mysql-server",persistentvolume="test-labeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
@@ -200,6 +205,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# TYPE kube_persistentvolume_labels gauge
 					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
@@ -216,6 +223,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
+					# HELP kube_persistentvolume_capacity_bytes Persistentvolume capacity in bytes.
+					# TYPE kube_persistentvolume_capacity_bytes gauge
 					kube_persistentvolume_capacity_bytes{persistentvolume="test-pv"} 5.36870912e+09
 				`,
 			MetricNames: []string{"kube_persistentvolume_capacity_bytes"},
@@ -223,6 +232,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(persistentVolumeMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

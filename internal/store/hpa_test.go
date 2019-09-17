@@ -19,10 +19,10 @@ package store
 import (
 	"testing"
 
-	v12 "k8s.io/api/core/v1"
-
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -76,12 +76,12 @@ func TestHPAStore(t *testing.T) {
 					Conditions: []autoscaling.HorizontalPodAutoscalerCondition{
 						{
 							Type:   autoscaling.AbleToScale,
-							Status: v12.ConditionTrue,
+							Status: v1.ConditionTrue,
 						},
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
                 kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
 				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
@@ -105,6 +105,7 @@ func TestHPAStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(hpaMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(hpaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

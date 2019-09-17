@@ -74,7 +74,6 @@ func (b *Builder) WithMetrics(r *prometheus.Registry) {
 }
 
 // WithEnabledResources sets the enabledResources property of a Builder.
-
 func (b *Builder) WithEnabledResources(c []string) error {
 	for _, col := range c {
 		if !collectorExists(col) {

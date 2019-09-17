@@ -119,6 +119,26 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_ingress_tls",
+			Type: metric.Gauge,
+			Help: "Ingress TLS host and secret information.",
+			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, tls := range i.Spec.TLS {
+					for _, host := range tls.Hosts {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"tls_host", "secret"},
+							LabelValues: []string{host, tls.SecretName},
+							Value:       1,
+						})
+					}
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
 	}
 )
 

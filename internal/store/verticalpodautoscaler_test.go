@@ -19,34 +19,33 @@ package store
 import (
 	"testing"
 
+	k8sautoscaling "k8s.io/api/autoscaling/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	k8sautoscaling "k8s.io/api/autoscaling/v1"
 	autoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 func TestVPAStore(t *testing.T) {
-
 	const metadata = `
 		# HELP kube_verticalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_verticalpodautoscaler_labels gauge
-		# HELP kube_verticalpodautoscaler_spec_updatepolicy_updatemode Update mode of the VPA.
-		# TYPE kube_verticalpodautoscaler_spec_updatepolicy_updatemode gauge
-		# HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed Minimum resources the VPA can set for containers matching the name.
-		# TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed gauge
-		# HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed Maximum resources the VPA can set for containers matching the name.
-		# TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed gauge
-		# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum resources the container can use before the VPA updater evicts it.
-		# TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound gauge
-		# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound Maximum resources the container can use before the VPA updater evicts it.
-		# TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound gauge
-		# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target Target resources the VPA recommends for the container.
-		# TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target gauge
-		# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget Target resources the VPA recommends for the container ignoring bounds.
-		# TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget gauge
+        # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed Maximum resources the VerticalPodAutoscaler can set for containers matching the name.
+        # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed Minimum resources the VerticalPodAutoscaler can set for containers matching the name.
+        # HELP kube_verticalpodautoscaler_spec_updatepolicy_updatemode Update mode of the VerticalPodAutoscaler.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target Target resources the VerticalPodAutoscaler recommends for the container.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget Target resources the VerticalPodAutoscaler recommends for the container ignoring bounds.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+        # TYPE kube_verticalpodautoscaler_labels gauge
+        # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed gauge
+        # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed gauge
+        # TYPE kube_verticalpodautoscaler_spec_updatepolicy_updatemode gauge
+        # TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound gauge
+        # TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target gauge
+        # TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget gauge
+        # TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound gauge
 	`
 
 	updateMode := autoscaling.UpdateModeRecreate
@@ -102,7 +101,7 @@ func TestVPAStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 1
@@ -135,6 +134,7 @@ func TestVPAStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(vpaMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(vpaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

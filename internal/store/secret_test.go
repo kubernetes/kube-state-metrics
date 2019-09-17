@@ -21,28 +21,13 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 func TestSecretStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
-
-	const metadata = `
-        # HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_secret_labels gauge
-        # HELP kube_secret_info Information about secret.
-		# TYPE kube_secret_info gauge
-		# HELP kube_secret_type Type about secret.
-		# TYPE kube_secret_type gauge
-		# HELP kube_secret_created Unix creation timestamp
-		# TYPE kube_secret_created gauge
-		# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
-		# TYPE kube_secret_metadata_resource_version gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Secret{
@@ -54,6 +39,16 @@ func TestSecretStore(t *testing.T) {
 				Type: v1.SecretTypeOpaque,
 			},
 			Want: `
+				# HELP kube_secret_created Unix creation timestamp
+				# HELP kube_secret_info Information about secret.
+				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
+				# HELP kube_secret_type Type about secret.
+				# TYPE kube_secret_created gauge
+				# TYPE kube_secret_info gauge
+				# TYPE kube_secret_labels gauge
+				# TYPE kube_secret_metadata_resource_version gauge
+				# TYPE kube_secret_type gauge
 				kube_secret_info{namespace="ns1",secret="secret1"} 1
 				kube_secret_type{namespace="ns1",secret="secret1",type="Opaque"} 1
 				kube_secret_metadata_resource_version{namespace="ns1",resource_version="000000",secret="secret1"} 1
@@ -72,6 +67,16 @@ func TestSecretStore(t *testing.T) {
 				Type: v1.SecretTypeServiceAccountToken,
 			},
 			Want: `
+				# HELP kube_secret_created Unix creation timestamp
+				# HELP kube_secret_info Information about secret.
+				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
+				# HELP kube_secret_type Type about secret.
+				# TYPE kube_secret_created gauge
+				# TYPE kube_secret_info gauge
+				# TYPE kube_secret_labels gauge
+				# TYPE kube_secret_metadata_resource_version gauge
+				# TYPE kube_secret_type gauge
 				kube_secret_info{namespace="ns2",secret="secret2"} 1
 				kube_secret_type{namespace="ns2",secret="secret2",type="kubernetes.io/service-account-token"} 1
 				kube_secret_created{namespace="ns2",secret="secret2"} 1.501569018e+09
@@ -92,6 +97,16 @@ func TestSecretStore(t *testing.T) {
 				Type: v1.SecretTypeDockercfg,
 			},
 			Want: `
+				# HELP kube_secret_created Unix creation timestamp
+				# HELP kube_secret_info Information about secret.
+				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
+				# HELP kube_secret_type Type about secret.
+				# TYPE kube_secret_created gauge
+				# TYPE kube_secret_info gauge
+				# TYPE kube_secret_labels gauge
+				# TYPE kube_secret_metadata_resource_version gauge
+				# TYPE kube_secret_type gauge
 				kube_secret_info{namespace="ns3",secret="secret3"} 1
 				kube_secret_type{namespace="ns3",secret="secret3",type="kubernetes.io/dockercfg"} 1
 				kube_secret_created{namespace="ns3",secret="secret3"} 1.501569018e+09
@@ -103,6 +118,7 @@ func TestSecretStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(secretMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(secretMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

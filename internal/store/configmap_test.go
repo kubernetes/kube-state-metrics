@@ -21,24 +21,14 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 func TestConfigMapStore(t *testing.T) {
-	// Fixed metadata on type and help text. We prepend this to every expected
-	// output so we only have to modify a single place when doing adjustments.
-
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	const metadata = `
-        # HELP kube_configmap_info Information about configmap.
-		# TYPE kube_configmap_info gauge
-		# HELP kube_configmap_created Unix creation timestamp
-		# TYPE kube_configmap_created gauge
-		# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
-		# TYPE kube_configmap_metadata_resource_version gauge
-	`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.ConfigMap{
@@ -49,6 +39,10 @@ func TestConfigMapStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_configmap_info Information about configmap.
+				# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
+				# TYPE kube_configmap_info gauge
+				# TYPE kube_configmap_metadata_resource_version gauge
 				kube_configmap_info{configmap="configmap1",namespace="ns1"} 1
 				kube_configmap_metadata_resource_version{configmap="configmap1",namespace="ns1",resource_version="123456"} 1
 `,
@@ -64,6 +58,12 @@ func TestConfigMapStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_configmap_created Unix creation timestamp
+				# HELP kube_configmap_info Information about configmap.
+				# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
+				# TYPE kube_configmap_created gauge
+				# TYPE kube_configmap_info gauge
+				# TYPE kube_configmap_metadata_resource_version gauge
 				kube_configmap_info{configmap="configmap2",namespace="ns2"} 1
 				kube_configmap_created{configmap="configmap2",namespace="ns2"} 1.501569018e+09
 				kube_configmap_metadata_resource_version{configmap="configmap2",namespace="ns2",resource_version="abcdef"} 1
@@ -73,6 +73,7 @@ func TestConfigMapStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(configMapMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(configMapMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

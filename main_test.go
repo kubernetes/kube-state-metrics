@@ -28,10 +28,11 @@ import (
 	"time"
 
 	"k8s.io/kube-state-metrics/internal/store"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 
+	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +41,6 @@ import (
 )
 
 func BenchmarkKubeStateMetrics(b *testing.B) {
-	var stores []*metricsstore.MetricsStore
 	fixtureMultiplier := 1000
 	requestCount := 1000
 
@@ -57,9 +57,14 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	builder := store.NewBuilder(ctx)
+	reg := prometheus.NewRegistry()
+
+	builder := store.NewBuilder()
+	builder.WithMetrics(reg)
 	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
+	builder.WithSharding(0, 1)
+	builder.WithContext(ctx)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
 	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
@@ -70,14 +75,14 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
+	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 	b.Run("GenerateMetrics", func(b *testing.B) {
-		stores = builder.Build()
+		handler.ConfigureSharding(ctx, 0, 1)
 
 		// Wait for caches to fill
 		time.Sleep(time.Second)
 	})
 
-	handler := metricHandler{stores, false}
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	b.Run("MakeRequests", func(b *testing.B) {
@@ -117,7 +122,9 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	builder := store.NewBuilder(ctx)
+	reg := prometheus.NewRegistry()
+	builder := store.NewBuilder()
+	builder.WithMetrics(reg)
 	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -128,12 +135,12 @@ func TestFullScrapeCycle(t *testing.T) {
 	}
 	builder.WithWhiteBlackList(l)
 
-	stores := builder.Build()
+	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler.ConfigureSharding(ctx, 0, 1)
 
 	// Wait for caches to fill
 	time.Sleep(time.Second)
 
-	handler := metricHandler{stores, false}
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
 	w := httptest.NewRecorder()
@@ -162,10 +169,15 @@ kube_pod_labels{namespace="default",pod="pod0"} 1
 # HELP kube_pod_created Unix creation timestamp
 # TYPE kube_pod_created gauge
 kube_pod_created{namespace="default",pod="pod0"} 1.5e+09
+# HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
+# TYPE kube_pod_restart_policy gauge
+kube_pod_restart_policy{namespace="default",pod="pod0",type="Always"} 1
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # TYPE kube_pod_status_scheduled_time gauge
 # HELP kube_pod_status_phase The pods current phase.
 # TYPE kube_pod_status_phase gauge
+# HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
+# TYPE kube_pod_status_unschedulable gauge
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Pending"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Succeeded"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Failed"} 0
@@ -313,12 +325,169 @@ kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",c
 	sort.Strings(gotFiltered)
 
 	if len(expectedSplit) != len(gotFiltered) {
-		t.Fatal("expected different output length")
+		t.Fatalf("expected different output length, expected %d got %d", len(expectedSplit), len(gotFiltered))
 	}
 
 	for i := 0; i < len(expectedSplit); i++ {
 		if expectedSplit[i] != gotFiltered[i] {
 			t.Fatalf("expected:\n\n%v, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
+		}
+	}
+}
+
+// TestShardingEquivalenceScrapeCycle is a simple smoke test covering the entire cycle from
+// cache filling to scraping comparing a sharded with an unsharded setup.
+func TestShardingEquivalenceScrapeCycle(t *testing.T) {
+	t.Parallel()
+
+	kubeClient := fake.NewSimpleClientset()
+
+	for i := 0; i < 10; i++ {
+		err := pod(kubeClient, i)
+		if err != nil {
+			t.Fatalf("failed to insert sample pod %v", err.Error())
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reg := prometheus.NewRegistry()
+	unshardedBuilder := store.NewBuilder()
+	unshardedBuilder.WithMetrics(reg)
+	unshardedBuilder.WithEnabledResources(options.DefaultCollectors.AsSlice())
+	unshardedBuilder.WithKubeClient(kubeClient)
+	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
+	unshardedBuilder.WithWhiteBlackList(l)
+
+	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
+	unshardedHandler.ConfigureSharding(ctx, 0, 1)
+
+	regShard1 := prometheus.NewRegistry()
+	shardedBuilder1 := store.NewBuilder()
+	shardedBuilder1.WithMetrics(regShard1)
+	shardedBuilder1.WithEnabledResources(options.DefaultCollectors.AsSlice())
+	shardedBuilder1.WithKubeClient(kubeClient)
+	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
+	shardedBuilder1.WithWhiteBlackList(l)
+
+	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
+	shardedHandler1.ConfigureSharding(ctx, 0, 2)
+
+	regShard2 := prometheus.NewRegistry()
+	shardedBuilder2 := store.NewBuilder()
+	shardedBuilder2.WithMetrics(regShard2)
+	shardedBuilder2.WithEnabledResources(options.DefaultCollectors.AsSlice())
+	shardedBuilder2.WithKubeClient(kubeClient)
+	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
+	shardedBuilder2.WithWhiteBlackList(l)
+
+	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
+	shardedHandler2.ConfigureSharding(ctx, 1, 2)
+
+	// Wait for caches to fill
+	time.Sleep(time.Second)
+
+	// unsharded request as the controlled environment
+	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
+
+	w := httptest.NewRecorder()
+	unshardedHandler.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+	}
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	expected := string(body)
+
+	// sharded requests
+	//
+	// request first shard
+	req = httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
+
+	w = httptest.NewRecorder()
+	shardedHandler1.ServeHTTP(w, req)
+
+	resp = w.Result()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+	}
+
+	body, _ = ioutil.ReadAll(resp.Body)
+	got1 := string(body)
+
+	// request second shard
+	req = httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
+
+	w = httptest.NewRecorder()
+	shardedHandler2.ServeHTTP(w, req)
+
+	resp = w.Result()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+	}
+
+	body, _ = ioutil.ReadAll(resp.Body)
+	got2 := string(body)
+
+	// normalize results:
+
+	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
+	sort.Strings(expectedSplit)
+
+	expectedFiltered := []string{}
+	for _, l := range expectedSplit {
+		if strings.HasPrefix(l, "kube_pod_") {
+			expectedFiltered = append(expectedFiltered, l)
+		}
+	}
+
+	got1Split := strings.Split(strings.TrimSpace(got1), "\n")
+	sort.Strings(got1Split)
+
+	got1Filtered := []string{}
+	for _, l := range got1Split {
+		if strings.HasPrefix(l, "kube_pod_") {
+			got1Filtered = append(got1Filtered, l)
+		}
+	}
+
+	got2Split := strings.Split(strings.TrimSpace(got2), "\n")
+	sort.Strings(got2Split)
+
+	got2Filtered := []string{}
+	for _, l := range got2Split {
+		if strings.HasPrefix(l, "kube_pod_") {
+			got2Filtered = append(got2Filtered, l)
+		}
+	}
+
+	// total metrics should be equal
+	if len(expectedFiltered) != (len(got1Filtered) + len(got2Filtered)) {
+		t.Fatalf("expected different output length, expected total %d got 1) %d 2) %d", len(expectedFiltered), len(got1Filtered), len(got2Filtered))
+	}
+	// smoke test to test that each shard actually represents a subset
+	if len(got1Filtered) == 0 {
+		t.Fatal("shard 1 has 0 metrics when it shouldn't")
+	}
+	if len(got2Filtered) == 0 {
+		t.Fatal("shard 2 has 0 metrics when it shouldn't")
+	}
+
+	gotFiltered := append(got1Filtered, got2Filtered...)
+	sort.Strings(gotFiltered)
+
+	for i := 0; i < len(expectedFiltered); i++ {
+		expected := strings.TrimSpace(expectedFiltered[i])
+		got := strings.TrimSpace(gotFiltered[i])
+		if expected != got {
+			t.Fatalf("\n\nexpected:\n\n%q\n\nbut got:\n\n%q\n\n", expected, got)
 		}
 	}
 }
@@ -382,7 +551,8 @@ func pod(client *fake.Clientset, index int) error {
 			UID:               types.UID("abc-" + i),
 		},
 		Spec: v1.PodSpec{
-			NodeName: "node1",
+			RestartPolicy: v1.RestartPolicyAlways,
+			NodeName:      "node1",
 			Containers: []v1.Container{
 				{
 					Name: "pod1_con1",

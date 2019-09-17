@@ -17,31 +17,28 @@ limitations under the License.
 package main
 
 import (
-	"compress/gzip"
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strconv"
-	"strings"
 
-	"github.com/openshift/origin/pkg/util/proc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
+
 	"k8s.io/kube-state-metrics/internal/store"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/pkg/util/proc"
 	"k8s.io/kube-state-metrics/pkg/version"
 	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
@@ -79,8 +76,10 @@ func main() {
 		opts.Usage()
 		os.Exit(0)
 	}
+	storeBuilder := store.NewBuilder()
 
-	storeBuilder := store.NewBuilder(ctx)
+	ksmMetricsRegistry := prometheus.NewRegistry()
+	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
 	var collectors []string
 	if len(opts.Collectors) == 0 {
@@ -149,15 +148,15 @@ func main() {
 	}
 	storeBuilder.WithKubeClient(kubeClient)
 	storeBuilder.WithVPAClient(vpaClient)
+	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 
-	ksmMetricsRegistry := prometheus.NewRegistry()
-	ksmMetricsRegistry.Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
-	ksmMetricsRegistry.Register(prometheus.NewGoCollector())
+	ksmMetricsRegistry.MustRegister(
+		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
+		prometheus.NewGoCollector(),
+	)
 	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 
-	stores := storeBuilder.Build()
-
-	serveMetrics(stores, opts.Host, opts.Port, opts.EnableGZIPEncoding)
+	serveMetrics(ctx, kubeClient, storeBuilder, opts, opts.Host, opts.Port, opts.EnableGZIPEncoding)
 }
 
 func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, vpaclientset.Interface, error) {
@@ -219,7 +218,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
 }
 
-func serveMetrics(stores []*metricsstore.MetricsStore, host string, port int, enableGZIPEncoding bool) {
+func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuilder *store.Builder, opts *options.Options, host string, port int, enableGZIPEncoding bool) {
 	// Address to listen on for web interface and telemetry
 	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
 
@@ -234,8 +233,15 @@ func serveMetrics(stores []*metricsstore.MetricsStore, host string, port int, en
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-	// Add metricsPath
-	mux.Handle(metricsPath, &metricHandler{stores, enableGZIPEncoding})
+	m := metricshandler.New(
+		opts,
+		kubeClient,
+		storeBuilder,
+		enableGZIPEncoding,
+	)
+	go m.Run(ctx)
+	mux.Handle(metricsPath, m)
+
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -255,41 +261,4 @@ func serveMetrics(stores []*metricsstore.MetricsStore, host string, port int, en
              </html>`))
 	})
 	log.Fatal(http.ListenAndServe(listenAddress, mux))
-}
-
-type metricHandler struct {
-	stores             []*metricsstore.MetricsStore
-	enableGZIPEncoding bool
-}
-
-func (m *metricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	resHeader := w.Header()
-	var writer io.Writer = w
-
-	// Set the exposition format version of Prometheus.
-	// https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
-	resHeader.Set("Content-Type", `text/plain; version=`+"0.0.4")
-
-	if m.enableGZIPEncoding {
-		// Gzip response if requested. Taken from
-		// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
-		reqHeader := r.Header.Get("Accept-Encoding")
-		parts := strings.Split(reqHeader, ",")
-		for _, part := range parts {
-			part = strings.TrimSpace(part)
-			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
-				writer = gzip.NewWriter(writer)
-				resHeader.Set("Content-Encoding", "gzip")
-			}
-		}
-	}
-
-	for _, c := range m.stores {
-		c.WriteAll(w)
-	}
-
-	// In case we gzipped the response, we have to close the writer.
-	if closer, ok := writer.(io.Closer); ok {
-		closer.Close()
-	}
 }

@@ -23,6 +23,7 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -108,7 +109,7 @@ func TestJobStore(t *testing.T) {
 					Completions:           &Completions1,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_job_owner{job_name="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="cronjob-name"} 1
 				kube_job_created{job_name="RunningJob1",namespace="ns1"} 1.5e+09
 				kube_job_info{job_name="RunningJob1",namespace="ns1"} 1
@@ -148,7 +149,7 @@ func TestJobStore(t *testing.T) {
 					Completions:           &Completions1,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_job_owner{job_name="SuccessfulJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob1",namespace="ns1"} 1
@@ -191,7 +192,7 @@ func TestJobStore(t *testing.T) {
 					Completions:           &Completions1,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_job_owner{job_name="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
@@ -234,7 +235,7 @@ func TestJobStore(t *testing.T) {
 					Completions:           &Completions1,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_job_owner{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
@@ -254,6 +255,7 @@ func TestJobStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(jobMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(jobMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

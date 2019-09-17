@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -31,10 +32,9 @@ var (
 )
 
 func TestReplicaSetStore(t *testing.T) {
+	var test = true
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
-	var test = true
-
 	const metadata = `
 		# HELP kube_replicaset_created Unix creation timestamp
 		# TYPE kube_replicaset_created gauge
@@ -84,7 +84,7 @@ func TestReplicaSetStore(t *testing.T) {
 					Replicas: &rs1Replicas,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_replicaset_labels{replicaset="rs1",namespace="ns1",label_app="example1"} 1
 				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
@@ -117,7 +117,7 @@ func TestReplicaSetStore(t *testing.T) {
 					Replicas: &rs2Replicas,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_replicaset_labels{replicaset="rs2",namespace="ns2",label_app="example2",label_env="ex"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
@@ -131,6 +131,7 @@ func TestReplicaSetStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(replicaSetMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(replicaSetMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

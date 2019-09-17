@@ -35,6 +35,10 @@ the raw metrics.
 - [Resource recommendation](#resource-recommendation)
 - [A note on costing](#a-note-on-costing)
 - [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
+- [Scaling kube-state-metrics](#scaling-kube-state-metrics)
+  - [Resource recommendation](#resource-recommendation)
+  - [Horizontal scaling (sharding)](#horizontal-scaling-sharding)
+    - [Automated sharding](#automated-sharding)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)
@@ -91,10 +95,10 @@ additional metrics!
 > For now, the following metrics and collectors
 >
 > **metrics**
->	* kube_pod_container_resource_requests_nvidia_gpu_devices
->	* kube_pod_container_resource_limits_nvidia_gpu_devices
->	* kube_node_status_capacity_nvidia_gpu_cards
->	* kube_node_status_allocatable_nvidia_gpu_cards
+>	* `kube_pod_container_resource_requests_nvidia_gpu_devices`
+>	* `kube_pod_container_resource_limits_nvidia_gpu_devices`
+>	* `kube_node_status_capacity_nvidia_gpu_cards`
+>	* `kube_node_status_allocatable_nvidia_gpu_cards`
 >
 >	are removed in kube-state-metrics v1.4.0.
 >
@@ -104,11 +108,27 @@ additional metrics!
 See the [`docs`](docs) directory for more information on the exposed metrics.
 
 ### Kube-state-metrics self metrics
+
 kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 81).
 
-### Resource recommendation
+kube-state-metrics also exposes list and watch success and error metrics. These can be used to calculate the error rate of list or watch resources.
+If you encounter those errors in the metrics, it is most likely a configuration or permission issue, and the next thing to investigate would be looking
+at the logs of kube-state-metrics.
 
-Resource usage for kube-state-metrics changes with the Kubernetes objects(Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
+Example of the above mentioned metrics:
+```
+kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
+kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
+kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
+```
+
+### Scaling kube-state-metrics
+
+#### Resource recommendation
+
+> Note: These recommendations are based on scalability tests done over a year ago. They may differ significantly today.
+
+Resource usage for kube-state-metrics changes with the Kubernetes objects (Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
 To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
 
 As a general rule, you should allocate
@@ -126,7 +146,8 @@ These numbers are based on [scalability tests](https://github.com/kubernetes/kub
 Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation, try increasing the CPU limits.
 
 ### A note on costing
-By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.  
+
+By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
 
 ### kube-state-metrics vs. metrics-server
 
@@ -150,6 +171,25 @@ metric-server it too is not responsibile for exporting its metrics anywhere.
 
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
+
+#### Horizontal scaling (sharding)
+
+In order to scale kube-state-metrics horizontally, some automated sharding capabilities have been implemented. It is configured with the following flags:
+
+* `--shard` (zero indexed)
+* `--total-shards`
+
+Sharding is done by taking an md5 sum of the Kubernetes Object's UID and performing a modulo operation on it, with the total number of shards. The configured shard decides whether the object is handled by the respective instance of kube-state-metrics or not. Note that this means all instances of kube-state-metrics even if sharded will have the network traffic and the resource consumption for unmarshaling objects for all objects, not just the ones it is responsible for. To optimize this further, the Kubernetes API would need to support sharded list/watch capabilities. Overall memory consumption should be 1/n th of each shard compared to an unsharded setup. Typically, kube-state-metrics needs to be memory and latency optimized in order for it to return its metrics rather quickly to Prometheus.
+
+Sharding should be used carefully, and additional monitoring should be set up in order to ensure that sharding is set up and functioning as expected (eg. instances for each shard out of the total shards are configured).
+
+##### Automated sharding
+
+There is also an experimental feature, that allows kube-state-metrics to auto discover its nominal position if it is deployed in a StatefulSet, in order to automatically configure sharding. This is an experimental feature and may be broken or removed without notice.
+
+To enable automated sharding kube-state-metrics must be run by a `StatefulSet` and the pod names and namespace must be handed to the kube-state-metrics process via the `--pod` and `--pod-namespace` flags.
+
+There are example manifests demonstrating the autosharding functionality in [`/kubernetes/autosharding`](/kubernetes/audosharding).
 
 ### Setup
 

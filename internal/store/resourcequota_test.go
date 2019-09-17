@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -46,7 +47,7 @@ func TestResourceQuotaStore(t *testing.T) {
 				},
 				Status: v1.ResourceQuotaStatus{},
 			},
-			Want: `
+			Want: metadata + `
 			kube_resourcequota_created{namespace="testNS",resourcequota="quotaTest"} 1.5e+09
 			`,
 		},
@@ -104,7 +105,7 @@ func TestResourceQuotaStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 			kube_resourcequota{namespace="testNS",resource="configmaps",resourcequota="quotaTest",type="hard"} 4
 			kube_resourcequota{namespace="testNS",resource="configmaps",resourcequota="quotaTest",type="used"} 3
 			kube_resourcequota{namespace="testNS",resource="cpu",resourcequota="quotaTest",type="hard"} 4.3
@@ -134,6 +135,7 @@ func TestResourceQuotaStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(resourceQuotaMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

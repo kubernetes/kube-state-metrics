@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -59,6 +60,14 @@ func TestServiceStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_service_created Unix creation timestamp
+				# HELP kube_service_info Information about service.
+				# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_service_spec_type Type about service.
+				# TYPE kube_service_created gauge
+				# TYPE kube_service_info gauge
+				# TYPE kube_service_labels gauge
+				# TYPE kube_service_spec_type gauge
 				kube_service_created{namespace="default",service="test-service1"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.4",external_name="",load_balancer_ip="",namespace="default",service="test-service1"} 1
 				kube_service_labels{label_app="example1",namespace="default",service="test-service1"} 1
@@ -87,7 +96,7 @@ func TestServiceStore(t *testing.T) {
 					Type:      v1.ServiceTypeNodePort,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_service_created{namespace="default",service="test-service2"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.5",external_name="",load_balancer_ip="",namespace="default",service="test-service2"} 1
 				kube_service_labels{label_app="example2",namespace="default",service="test-service2"} 1
@@ -110,7 +119,7 @@ func TestServiceStore(t *testing.T) {
 					Type:           v1.ServiceTypeLoadBalancer,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_service_created{namespace="default",service="test-service3"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.6",external_name="",load_balancer_ip="1.2.3.7",namespace="default",service="test-service3"} 1
 				kube_service_labels{label_app="example3",namespace="default",service="test-service3"} 1
@@ -132,7 +141,7 @@ func TestServiceStore(t *testing.T) {
 					Type:         v1.ServiceTypeExternalName,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_service_created{namespace="default",service="test-service4"} 1.5e+09
 				kube_service_info{cluster_ip="",external_name="www.example.com",load_balancer_ip="",namespace="default",service="test-service4"} 1
 				kube_service_labels{label_app="example4",namespace="default",service="test-service4"} 1
@@ -163,7 +172,7 @@ func TestServiceStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_service_created{namespace="default",service="test-service5"} 1.5e+09
 				kube_service_info{cluster_ip="",external_name="",load_balancer_ip="",namespace="default",service="test-service5"} 1
 				kube_service_labels{label_app="example5",namespace="default",service="test-service5"} 1
@@ -189,7 +198,7 @@ func TestServiceStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_service_created{namespace="default",service="test-service6"} 1.5e+09
 				kube_service_info{cluster_ip="",external_name="",load_balancer_ip="",namespace="default",service="test-service6"} 1
 				kube_service_labels{label_app="example6",namespace="default",service="test-service6"} 1
@@ -201,6 +210,7 @@ func TestServiceStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(serviceMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(serviceMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

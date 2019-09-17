@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -71,7 +72,7 @@ func TestReplicationControllerStore(t *testing.T) {
 					Replicas: &rc1Replicas,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_replicationcontroller_created{namespace="ns1",replicationcontroller="rc1"} 1.5e+09
 				kube_replicationcontroller_metadata_generation{namespace="ns1",replicationcontroller="rc1"} 21
 				kube_replicationcontroller_status_replicas{namespace="ns1",replicationcontroller="rc1"} 5
@@ -100,7 +101,7 @@ func TestReplicationControllerStore(t *testing.T) {
 					Replicas: &rc2Replicas,
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_replicationcontroller_metadata_generation{namespace="ns2",replicationcontroller="rc2"} 14
 				kube_replicationcontroller_status_replicas{namespace="ns2",replicationcontroller="rc2"} 0
 				kube_replicationcontroller_status_observed_generation{namespace="ns2",replicationcontroller="rc2"} 5
@@ -113,6 +114,7 @@ func TestReplicationControllerStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(replicationControllerMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(replicationControllerMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

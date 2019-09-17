@@ -16,14 +16,13 @@ limitations under the License.
 
 package store
 
-// TODO: Shouldn't this file be called endpoints?
-
 import (
 	"testing"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -84,7 +83,7 @@ func TestEndpointStore(t *testing.T) {
 					},
 				},
 			},
-			Want: `
+			Want: metadata + `
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
@@ -95,6 +94,7 @@ func TestEndpointStore(t *testing.T) {
 	}
 	for i, c := range cases {
 		c.Func = metric.ComposeMetricGenFuncs(endpointMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(endpointMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -19,8 +19,8 @@ package store
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -30,7 +30,6 @@ import (
 )
 
 var (
-	resyncPeriod       = 5 * time.Minute
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )
@@ -59,13 +58,16 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
-	labelKeys := make([]string, len(labels))
-	labelValues := make([]string, len(labels))
-	i := 0
-	for k, v := range labels {
+	labelKeys := make([]string, 0, len(labels))
+	for k := range labels {
+		labelKeys = append(labelKeys, k)
+	}
+	sort.Strings(labelKeys)
+
+	labelValues := make([]string, 0, len(labels))
+	for i, k := range labelKeys {
 		labelKeys[i] = "label_" + sanitizeLabelName(k)
-		labelValues[i] = v
-		i++
+		labelValues = append(labelValues, labels[k])
 	}
 	return labelKeys, labelValues
 }

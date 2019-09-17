@@ -13,9 +13,10 @@ If a bug fix got accidentally merged into master, cherry-pick commits have to be
 Maintaining the release branches for older minor releases happens on a best effort basis.
 
 ## Prepare your release
+
 * Bump the version in the `VERSION` file in the root of the repository.
 * Make a PR to update:
-  * Kube-state-metrics image tag for both `quay.io` and `staging-k8s.gcr.io`
+  * kube-state-metrics image tag for both `quay.io` and `staging-k8s.gcr.io`.
   * [Compatibility matrix](README.md#compatibility-matrix)
   * Changelog entry
     * Only include user relevant changes
@@ -27,8 +28,12 @@ Maintaining the release branches for older minor releases happens on a best effo
     [BUGFIX]
     ```
     * All lines should be full sentences
-  * Kube-state-metrics image tag used in Kubernetes deployment yaml config
+  * kube-state-metrics image tag used in Kubernetes deployment yaml config.
 * Cut the new release branch, i.e., `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on
 * Cut the new release tag, i.e., `v1.2.0-rc.0`
 * Ping Googlers(@loburm/@piosz) to build and push newest image to `k8s.gcr.io` (or to `staging-k8s.gcr.io` in case of release candidates)
 * Build and push newest image to `quay.io`(@brancz)
+
+## Stable release
+
+First a release candidate (e.g. `v1.2.0-rc.0`) should be cut. If after a period of 7 days no bugs or issues were reported after publishing the release candidate, a stable release (e.g. `v1.2.0`) can be cut.

@@ -10,7 +10,7 @@ BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.12
+GO_VERSION = 1.13
 FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
 BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
 GOLANGCI_VERSION := v1.17.1
@@ -21,11 +21,11 @@ MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
-	GO111MODULE=on go mod verify
+	go mod verify
 	@echo "- Checking for any unused/missing packages in go.mod..."
-	GO111MODULE=on go mod tidy
+	go mod tidy
 	@echo "- Checking for unused packages in vendor..."
-	GO111MODULE=on go mod vendor
+	go mod vendor
 	@git diff --exit-code -- go.sum go.mod vendor/
 
 licensecheck:
@@ -136,6 +136,6 @@ embedmd:
 	GO111MODULE=off go get github.com/campoy/embedmd
 
 $(BENCHCMP_BINARY):
-	go get golang.org/x/tools/cmd/benchcmp
+	GO111MODULE=off go get golang.org/x/tools/cmd/benchcmp
 
 .PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd

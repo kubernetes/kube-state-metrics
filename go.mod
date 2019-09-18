@@ -26,4 +26,4 @@ require (
 	k8s.io/utils v0.0.0-20190308190857-21c4ce38f2a7 // indirect
 )
 
-go 1.12
+go 1.13

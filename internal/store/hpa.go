@@ -20,6 +20,7 @@ import (
 	"k8s.io/kube-state-metrics/pkg/metric"
 
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -138,6 +139,56 @@ var (
 					}
 				}
 
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_hpa_status_currentmetrics_average_value",
+			Type: metric.Gauge,
+			Help: "Average metric value observed by the autoscaler.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				ms := make([]*metric.Metric, len(a.Status.CurrentMetrics))
+				for i, c := range a.Status.CurrentMetrics {
+					var value *resource.Quantity
+					switch c.Type {
+					case autoscaling.ResourceMetricSourceType:
+						value = &c.Resource.CurrentAverageValue
+					case autoscaling.PodsMetricSourceType:
+						value = &c.Pods.CurrentAverageValue
+					case autoscaling.ObjectMetricSourceType:
+						value = c.Object.AverageValue
+					case autoscaling.ExternalMetricSourceType:
+						value = c.External.CurrentAverageValue
+					default:
+						// Skip unsupported metric type
+						continue
+					}
+					if intVal, canFastConvert := value.AsInt64(); canFastConvert {
+						ms[i] = &metric.Metric{
+							Value: float64(intVal),
+						}
+					}
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_hpa_status_currentmetrics_average_utilization",
+			Type: metric.Gauge,
+			Help: "Average metric utilization observed by the autoscaler.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				ms := make([]*metric.Metric, len(a.Status.CurrentMetrics))
+				for i, c := range a.Status.CurrentMetrics {
+					if c.Type == autoscaling.ResourceMetricSourceType {
+						ms[i] = &metric.Metric{
+							Value: float64(*c.Resource.CurrentAverageUtilization),
+						}
+					}
+				}
 				return &metric.Family{
 					Metrics: ms,
 				}

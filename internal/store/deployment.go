@@ -123,6 +123,30 @@ var (
 			}),
 		},
 		{
+			Name: "kube_deployment_status_condition",
+			Type: metric.Gauge,
+			Help: "The current status conditions of a deployment.",
+			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				ms := make([]*metric.Metric, len(d.Status.Conditions)*len(conditionStatuses))
+
+				for i, c := range d.Status.Conditions {
+					conditionMetrics := addConditionMetrics(c.Status)
+
+					for j, m := range conditionMetrics {
+						metric := m
+
+						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+						ms[i*len(conditionStatuses)+j] = metric
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_deployment_spec_replicas",
 			Type: metric.Gauge,
 			Help: "Number of desired pods for a deployment.",

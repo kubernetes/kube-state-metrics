@@ -44,10 +44,10 @@ func TestHPAStore(t *testing.T) {
 		# TYPE kube_hpa_status_current_replicas gauge
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
 		# TYPE kube_hpa_status_desired_replicas gauge
-        # HELP kube_hpa_status_condition The condition of this autoscaler.
-        # TYPE kube_hpa_status_condition gauge
-        # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
-        # TYPE kube_hpa_labels gauge
+		# HELP kube_hpa_status_condition The condition of this autoscaler.
+		# TYPE kube_hpa_status_condition gauge
+		# HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_hpa_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -82,13 +82,13 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-                kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
+				kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
 				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
 				kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
-                kube_hpa_status_condition{condition="false",hpa="hpa1",namespace="ns1",status="AbleToScale"} 0
-                kube_hpa_status_condition{condition="true",hpa="hpa1",namespace="ns1",status="AbleToScale"} 1
-                kube_hpa_status_condition{condition="unknown",hpa="hpa1",namespace="ns1",status="AbleToScale"} 0
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
 			`,

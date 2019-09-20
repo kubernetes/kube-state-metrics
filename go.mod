@@ -1,6 +1,7 @@
 module k8s.io/kube-state-metrics
 
 require (
+	github.com/brancz/gojsontoyaml v0.0.0-20190425155809-e8bd32d46b3d
 	github.com/campoy/embedmd v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
 	github.com/evanphx/json-patch v4.1.0+incompatible // indirect

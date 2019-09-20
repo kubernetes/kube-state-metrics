@@ -159,6 +159,7 @@ var availableStores = map[string]func(f *Builder) *metricsstore.MetricsStore{
 	"limitranges":                     func(b *Builder) *metricsstore.MetricsStore { return b.buildLimitRangeStore() },
 	"mutatingwebhookconfigurations":   func(b *Builder) *metricsstore.MetricsStore { return b.buildMutatingWebhookConfigurationStore() },
 	"namespaces":                      func(b *Builder) *metricsstore.MetricsStore { return b.buildNamespaceStore() },
+	"networkpolicies":                 func(b *Builder) *metricsstore.MetricsStore { return b.buildNetworkPolicyStore() },
 	"nodes":                           func(b *Builder) *metricsstore.MetricsStore { return b.buildNodeStore() },
 	"persistentvolumeclaims":          func(b *Builder) *metricsstore.MetricsStore { return b.buildPersistentVolumeClaimStore() },
 	"persistentvolumes":               func(b *Builder) *metricsstore.MetricsStore { return b.buildPersistentVolumeStore() },
@@ -230,6 +231,10 @@ func (b *Builder) buildMutatingWebhookConfigurationStore() *metricsstore.Metrics
 
 func (b *Builder) buildNamespaceStore() *metricsstore.MetricsStore {
 	return b.buildStore(namespaceMetricFamilies, &v1.Namespace{}, createNamespaceListWatch)
+}
+
+func (b *Builder) buildNetworkPolicyStore() *metricsstore.MetricsStore {
+	return b.buildStore(networkpolicyMetricFamilies, &v1.Namespace{}, createNetworkPolicyListWatch)
 }
 
 func (b *Builder) buildNodeStore() *metricsstore.MetricsStore {

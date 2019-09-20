@@ -14,6 +14,8 @@ github.com/alecthomas/template/parse
 github.com/alecthomas/units
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
+# github.com/brancz/gojsontoyaml v0.0.0-20190425155809-e8bd32d46b3d
+github.com/brancz/gojsontoyaml
 # github.com/campoy/embedmd v1.0.0
 github.com/campoy/embedmd
 github.com/campoy/embedmd/embedmd
@@ -27,6 +29,8 @@ github.com/dgryski/go-jump
 github.com/evanphx/json-patch
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
+# github.com/ghodss/yaml v1.0.0
+github.com/ghodss/yaml
 # github.com/gogo/protobuf v1.2.0
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys

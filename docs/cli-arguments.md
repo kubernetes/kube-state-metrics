@@ -53,7 +53,6 @@ Usage of ./kube-state-metrics:
       --telemetry-host string                       Host to expose kube-state-metrics self metrics on. (default "0.0.0.0")
       --telemetry-port int                          Port to expose kube-state-metrics self metrics on. (default 81)
       --total-shards int                            The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
-  -v, --v Level                                     number for the log level verbosity
       --version                                     kube-state-metrics build version information
       --vmodule moduleSpec                          comma-separated list of pattern=N settings for file-filtered logging
 ```

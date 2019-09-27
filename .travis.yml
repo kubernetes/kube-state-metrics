@@ -31,6 +31,8 @@ jobs:
     - stage: all
       name: Lint
       script: make lint
+    - name: Validate generated manifests
+      script: make validate-manifests
     - name: Validate vendor is in sync with go modules
       script: make validate-modules
     - name: Check that all metrics are documented

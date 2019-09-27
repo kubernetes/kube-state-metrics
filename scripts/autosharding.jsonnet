@@ -1,0 +1,1 @@
+(import 'standard.jsonnet').autosharding

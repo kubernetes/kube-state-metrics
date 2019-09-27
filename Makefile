@@ -2,7 +2,8 @@ FLAGS =
 TESTENVVAR =
 REGISTRY = quay.io/coreos
 TAG_PREFIX = v
-TAG = $(TAG_PREFIX)$(shell cat VERSION)
+VERSION = $(shell cat VERSION)
+TAG = $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
@@ -131,6 +132,30 @@ generate: build-local embedmd
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
 	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+
+validate-manifests: examples
+	@git diff --exit-code
+
+examples: examples/standard examples/autosharding
+
+examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor VERSION
+	mkdir -p examples/standard
+	jsonnet -J scripts/vendor -m examples/standard --ext-str version="$(VERSION)" scripts/standard.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	find examples -type f ! -name '*.yaml' -delete
+
+examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/autosharding.jsonnet scripts/vendor VERSION
+	mkdir -p examples/autosharding
+	jsonnet -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	find examples -type f ! -name '*.yaml' -delete
+
+scripts/vendor: jb scripts/jsonnetfile.json scripts/jsonnetfile.lock.json
+	cd scripts && jb install
+
+jsonnet:
+	GO111MODULE=off go get github.com/google/go-jsonnet/cmd/jsonnet
+
+jb:
+	GO111MODULE=off go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 
 embedmd:
 	GO111MODULE=off go get github.com/campoy/embedmd

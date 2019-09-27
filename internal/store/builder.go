@@ -24,6 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -146,30 +147,32 @@ func (b *Builder) Build() []*metricsstore.MetricsStore {
 }
 
 var availableStores = map[string]func(f *Builder) *metricsstore.MetricsStore{
-	"certificatesigningrequests": func(b *Builder) *metricsstore.MetricsStore { return b.buildCsrStore() },
-	"configmaps":                 func(b *Builder) *metricsstore.MetricsStore { return b.buildConfigMapStore() },
-	"cronjobs":                   func(b *Builder) *metricsstore.MetricsStore { return b.buildCronJobStore() },
-	"daemonsets":                 func(b *Builder) *metricsstore.MetricsStore { return b.buildDaemonSetStore() },
-	"deployments":                func(b *Builder) *metricsstore.MetricsStore { return b.buildDeploymentStore() },
-	"endpoints":                  func(b *Builder) *metricsstore.MetricsStore { return b.buildEndpointsStore() },
-	"horizontalpodautoscalers":   func(b *Builder) *metricsstore.MetricsStore { return b.buildHPAStore() },
-	"ingresses":                  func(b *Builder) *metricsstore.MetricsStore { return b.buildIngressStore() },
-	"jobs":                       func(b *Builder) *metricsstore.MetricsStore { return b.buildJobStore() },
-	"limitranges":                func(b *Builder) *metricsstore.MetricsStore { return b.buildLimitRangeStore() },
-	"namespaces":                 func(b *Builder) *metricsstore.MetricsStore { return b.buildNamespaceStore() },
-	"nodes":                      func(b *Builder) *metricsstore.MetricsStore { return b.buildNodeStore() },
-	"persistentvolumeclaims":     func(b *Builder) *metricsstore.MetricsStore { return b.buildPersistentVolumeClaimStore() },
-	"persistentvolumes":          func(b *Builder) *metricsstore.MetricsStore { return b.buildPersistentVolumeStore() },
-	"poddisruptionbudgets":       func(b *Builder) *metricsstore.MetricsStore { return b.buildPodDisruptionBudgetStore() },
-	"pods":                       func(b *Builder) *metricsstore.MetricsStore { return b.buildPodStore() },
-	"replicasets":                func(b *Builder) *metricsstore.MetricsStore { return b.buildReplicaSetStore() },
-	"replicationcontrollers":     func(b *Builder) *metricsstore.MetricsStore { return b.buildReplicationControllerStore() },
-	"resourcequotas":             func(b *Builder) *metricsstore.MetricsStore { return b.buildResourceQuotaStore() },
-	"secrets":                    func(b *Builder) *metricsstore.MetricsStore { return b.buildSecretStore() },
-	"services":                   func(b *Builder) *metricsstore.MetricsStore { return b.buildServiceStore() },
-	"statefulsets":               func(b *Builder) *metricsstore.MetricsStore { return b.buildStatefulSetStore() },
-	"storageclasses":             func(b *Builder) *metricsstore.MetricsStore { return b.buildStorageClassStore() },
-	"verticalpodautoscalers":     func(b *Builder) *metricsstore.MetricsStore { return b.buildVPAStore() },
+	"certificatesigningrequests":      func(b *Builder) *metricsstore.MetricsStore { return b.buildCsrStore() },
+	"configmaps":                      func(b *Builder) *metricsstore.MetricsStore { return b.buildConfigMapStore() },
+	"cronjobs":                        func(b *Builder) *metricsstore.MetricsStore { return b.buildCronJobStore() },
+	"daemonsets":                      func(b *Builder) *metricsstore.MetricsStore { return b.buildDaemonSetStore() },
+	"deployments":                     func(b *Builder) *metricsstore.MetricsStore { return b.buildDeploymentStore() },
+	"endpoints":                       func(b *Builder) *metricsstore.MetricsStore { return b.buildEndpointsStore() },
+	"horizontalpodautoscalers":        func(b *Builder) *metricsstore.MetricsStore { return b.buildHPAStore() },
+	"ingresses":                       func(b *Builder) *metricsstore.MetricsStore { return b.buildIngressStore() },
+	"jobs":                            func(b *Builder) *metricsstore.MetricsStore { return b.buildJobStore() },
+	"limitranges":                     func(b *Builder) *metricsstore.MetricsStore { return b.buildLimitRangeStore() },
+	"mutatingwebhookconfigurations":   func(b *Builder) *metricsstore.MetricsStore { return b.buildMutatingWebhookConfigurationStore() },
+	"namespaces":                      func(b *Builder) *metricsstore.MetricsStore { return b.buildNamespaceStore() },
+	"nodes":                           func(b *Builder) *metricsstore.MetricsStore { return b.buildNodeStore() },
+	"persistentvolumeclaims":          func(b *Builder) *metricsstore.MetricsStore { return b.buildPersistentVolumeClaimStore() },
+	"persistentvolumes":               func(b *Builder) *metricsstore.MetricsStore { return b.buildPersistentVolumeStore() },
+	"poddisruptionbudgets":            func(b *Builder) *metricsstore.MetricsStore { return b.buildPodDisruptionBudgetStore() },
+	"pods":                            func(b *Builder) *metricsstore.MetricsStore { return b.buildPodStore() },
+	"replicasets":                     func(b *Builder) *metricsstore.MetricsStore { return b.buildReplicaSetStore() },
+	"replicationcontrollers":          func(b *Builder) *metricsstore.MetricsStore { return b.buildReplicationControllerStore() },
+	"resourcequotas":                  func(b *Builder) *metricsstore.MetricsStore { return b.buildResourceQuotaStore() },
+	"secrets":                         func(b *Builder) *metricsstore.MetricsStore { return b.buildSecretStore() },
+	"services":                        func(b *Builder) *metricsstore.MetricsStore { return b.buildServiceStore() },
+	"statefulsets":                    func(b *Builder) *metricsstore.MetricsStore { return b.buildStatefulSetStore() },
+	"storageclasses":                  func(b *Builder) *metricsstore.MetricsStore { return b.buildStorageClassStore() },
+	"validatingwebhookconfigurations": func(b *Builder) *metricsstore.MetricsStore { return b.buildValidatingWebhookConfigurationStore() },
+	"verticalpodautoscalers":          func(b *Builder) *metricsstore.MetricsStore { return b.buildVPAStore() },
 }
 
 func collectorExists(name string) bool {
@@ -219,6 +222,10 @@ func (b *Builder) buildJobStore() *metricsstore.MetricsStore {
 
 func (b *Builder) buildLimitRangeStore() *metricsstore.MetricsStore {
 	return b.buildStore(limitRangeMetricFamilies, &v1.LimitRange{}, createLimitRangeListWatch)
+}
+
+func (b *Builder) buildMutatingWebhookConfigurationStore() *metricsstore.MetricsStore {
+	return b.buildStore(mutatingWebhookConfigurationMetricFamilies, &admissionregistration.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch)
 }
 
 func (b *Builder) buildNamespaceStore() *metricsstore.MetricsStore {
@@ -275,6 +282,10 @@ func (b *Builder) buildPodStore() *metricsstore.MetricsStore {
 
 func (b *Builder) buildCsrStore() *metricsstore.MetricsStore {
 	return b.buildStore(csrMetricFamilies, &certv1beta1.CertificateSigningRequest{}, createCSRListWatch)
+}
+
+func (b *Builder) buildValidatingWebhookConfigurationStore() *metricsstore.MetricsStore {
+	return b.buildStore(validatingWebhookConfigurationMetricFamilies, &admissionregistration.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch)
 }
 
 func (b *Builder) buildVPAStore() *metricsstore.MetricsStore {

@@ -17,10 +17,13 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"flag"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/prometheus/prometheus/util/promlint"
 )
 
 func TestMain(m *testing.M) {
@@ -53,5 +56,24 @@ func TestIsHealthz(t *testing.T) {
 
 	if ok == false {
 		t.Fatal("kube-state-metrics is unhealthy")
+	}
+}
+
+func TestLintMetrics(t *testing.T) {
+	buf := &bytes.Buffer{}
+
+	err := framework.KsmClient.metrics(buf)
+	if err != nil {
+		t.Fatalf("failed to get metrics from kube-state-metrics: %v", err)
+	}
+
+	l := promlint.New(buf)
+	problems, err := l.Lint()
+	if err != nil {
+		t.Fatalf("failed to lint: %v", err)
+	}
+
+	if len(problems) != 0 {
+		t.Fatalf("the problems encountered in Lint are: %v", problems)
 	}
 }

@@ -17,6 +17,9 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -77,9 +80,46 @@ func (k *KSMClient) isHealthz() (bool, error) {
 	}
 
 	resp, err := k.client.Do(req)
-	if err != nil || resp.StatusCode != 200 {
+	if err != nil {
 		return false, err
+	}
+	defer func() {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("server returned HTTP status %s", resp.Status)
 	}
 
 	return true, nil
+}
+
+func (k *KSMClient) metrics(w io.Writer) error {
+	p := path.Join(k.endpoint.Path, epMetrics)
+
+	u := *k.endpoint
+	u.Path = p
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := k.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("server returned HTTP status %s", resp.Status)
+	}
+
+	io.Copy(w, resp.Body)
+
+	return nil
 }

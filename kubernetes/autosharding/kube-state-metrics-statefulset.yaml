@@ -19,7 +19,7 @@ spec:
       serviceAccountName: kube-state-metrics
       containers:
       - name: kube-state-metrics
-        image: quay.io/coreos/kube-state-metrics:v1.7.1
+        image: quay.io/coreos/kube-state-metrics:v1.8.0
         args:
         - "--pod=$(POD_NAME)"
         - "--pod-namespace=$(POD_NAMESPACE)"

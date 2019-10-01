@@ -1,6 +1,6 @@
 # Overview
 
-[![Build Status](https://travis-ci.org/kubernetes/kube-state-metrics.svg?branch=master)](https://travis-ci.org/kubernetes/kube-state-metrics)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics)
+[![Build Status](https://travis-ci.org/kubernetes/kube-state-metrics.svg?branch=master)](https://travis-ci.org/kubernetes/kube-state-metrics)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc Widget]][GoDoc]
 
 kube-state-metrics is a simple service that listens to the Kubernetes API
 server and generates metrics about the state of the objects. (See examples in
@@ -290,3 +290,6 @@ Then curl the metrics endpoint
 	curl localhost:8080/metrics
 
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
+
+[GoDoc]: https://godoc.org/k8s.io/kube-state-metrics
+[GoDoc Widget]: https://godoc.org/k8s.io/kube-state-metrics?status.svg

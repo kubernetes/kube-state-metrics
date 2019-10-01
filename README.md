@@ -267,7 +267,8 @@ spec:
   template:
     spec:
       containers:
-        - args:
+      - name: kube-state-metrics
+        args:
           - '--collectors=pods'
           - '--namespace=project1'
 ```

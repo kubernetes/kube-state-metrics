@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0
-	github.com/prometheus/prometheus v2.5.0+incompatible
+	github.com/prometheus/prometheus v2.12.0
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/spf13/pflag v1.0.3
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect

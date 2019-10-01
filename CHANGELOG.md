@@ -1,3 +1,7 @@
+## v1.8.0 / 2019-10-01
+
+After a testing period of 7 days, there were no additional bugs found or features introduced.
+
 ## v1.8.0-rc.1 / 2019-09-24
 
 * [CHANGE] Pin go version to go mod artifact file #882

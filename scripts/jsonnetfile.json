@@ -1,0 +1,13 @@
+{
+    "dependencies": [
+        {
+            "name": "kube-state-metrics",
+            "source": {
+                "local": {
+                    "directory": "../jsonnet/kube-state-metrics"
+                }
+            },
+            "version": ""
+        }
+    ]
+}

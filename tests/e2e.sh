@@ -39,7 +39,7 @@ function finish() {
     echo "calling cleanup function"
     # kill kubectl proxy in background
     kill %1 || true
-    kubectl delete -f kubernetes/ || true
+    kubectl delete -f examples/standard/ || true
     kubectl delete -f tests/manifests/ || true
 }
 
@@ -116,21 +116,21 @@ docker images -a
 KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep 'quay.io/coreos/kube-state-metrics'|grep -v 'latest'|awk '{print $2}'|sort -u)
 echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"
 
-# update kube-state-metrics image tag in kube-state-metrics-deployment.yaml
-sed -i.bak "s|${KUBE_STATE_METRICS_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./kubernetes/kube-state-metrics-deployment.yaml
-cat ./kubernetes/kube-state-metrics-deployment.yaml
+# update kube-state-metrics image tag in deployment.yaml
+sed -i.bak "s|${KUBE_STATE_METRICS_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
+cat ./examples/standard/deployment.yaml
 
 trap finish EXIT
 
 # set up kube-state-metrics manifests
-kubectl create -f ./kubernetes/kube-state-metrics-service-account.yaml
+kubectl create -f ./examples/standard/service-account.yaml
 
-kubectl create -f ./kubernetes/kube-state-metrics-cluster-role.yaml
-kubectl create -f ./kubernetes/kube-state-metrics-cluster-role-binding.yaml
+kubectl create -f ./examples/standard/cluster-role.yaml
+kubectl create -f ./examples/standard/cluster-role-binding.yaml
 
-kubectl create -f ./kubernetes/kube-state-metrics-deployment.yaml
+kubectl create -f ./examples/standard/deployment.yaml
 
-kubectl create -f ./kubernetes/kube-state-metrics-service.yaml
+kubectl create -f ./examples/standard/service.yaml
 
 kubectl create -f ./tests/manifests/
 

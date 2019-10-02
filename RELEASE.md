@@ -15,6 +15,7 @@ Maintaining the release branches for older minor releases happens on a best effo
 ## Prepare your release
 
 * Bump the version in the `VERSION` file in the root of the repository.
+* Run `make examples`, which will re-generate all example manifests to use the the new version.
 * Make a PR to update:
   * kube-state-metrics image tag for both `quay.io` and `staging-k8s.gcr.io`.
   * [Compatibility matrix](README.md#compatibility-matrix)

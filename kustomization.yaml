@@ -1,11 +1,8 @@
-commonLabels:
-  app.kubernetes.io/name: kube-state-metrics
-
 namespace: kube-system
 
 resources:
-- kubernetes/kube-state-metrics-cluster-role-binding.yaml
-- kubernetes/kube-state-metrics-cluster-role.yaml
-- kubernetes/kube-state-metrics-deployment.yaml
-- kubernetes/kube-state-metrics-service-account.yaml
-- kubernetes/kube-state-metrics-service.yaml
+- examples/standard/cluster-role-binding.yaml
+- examples/standard/cluster-role.yaml
+- examples/standard/deployment.yaml
+- examples/standard/service-account.yaml
+- examples/standard/service.yaml

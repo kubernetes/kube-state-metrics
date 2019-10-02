@@ -189,7 +189,7 @@ There is also an experimental feature, that allows kube-state-metrics to auto di
 
 To enable automated sharding kube-state-metrics must be run by a `StatefulSet` and the pod names and namespace must be handed to the kube-state-metrics process via the `--pod` and `--pod-namespace` flags.
 
-There are example manifests demonstrating the autosharding functionality in [`/examples/autosharding`](./examples/audosharding).
+There are example manifests demonstrating the autosharding functionality in [`/examples/autosharding`](./examples/autosharding).
 
 ### Setup
 

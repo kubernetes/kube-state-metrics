@@ -152,15 +152,15 @@ scripts/vendor: jb scripts/jsonnetfile.json scripts/jsonnetfile.lock.json
 	cd scripts && jb install
 
 jsonnet:
-	GO111MODULE=off go get github.com/google/go-jsonnet/cmd/jsonnet
+	 go install github.com/google/go-jsonnet/cmd/jsonnet
 
 jb:
-	GO111MODULE=off go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
+	 go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 
 embedmd:
-	GO111MODULE=off go get github.com/campoy/embedmd
+	 go install github.com/campoy/embedmd
 
 $(BENCHCMP_BINARY):
-	GO111MODULE=off go get golang.org/x/tools/cmd/benchcmp
+	 go install golang.org/x/tools/cmd/benchcmp
 
 .PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd

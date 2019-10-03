@@ -1,0 +1,27 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: example-mutatingwebhookconfiguration
+webhooks:
+- name: "example.mutatingwebhookconfiguration.com"
+  failurePolicy: Ignore
+  clientConfig:
+    service:
+      name: apple-service
+      namespace: apples
+      path: /apple
+    caBundle: "YXBwbGVz"
+  namespaceSelector:
+    matchExpressions:
+    - key: production
+      operator: DoesNotExist
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pods

@@ -51,6 +51,24 @@ func TestStorageClassStore(t *testing.T) {
 		{
 			Obj: &storagev1.StorageClass{
 				ObjectMeta: metav1.ObjectMeta{
+					Name: "test_storageclass-default-info",
+				},
+				Provisioner:       "kubernetes.io/rbd",
+				ReclaimPolicy:     nil,
+				VolumeBindingMode: nil,
+			},
+			Want: `
+					# HELP kube_storageclass_info Information about storageclass.
+					# TYPE kube_storageclass_info gauge
+					kube_storageclass_info{storageclass="test_storageclass-default-info",provisioner="kubernetes.io/rbd",reclaimPolicy="Delete",volumeBindingMode="Immediate"} 1
+				`,
+			MetricNames: []string{
+				"kube_storageclass_info",
+			},
+		},
+		{
+			Obj: &storagev1.StorageClass{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:              "test_kube_storageclass-created",
 					CreationTimestamp: metav1StartTime,
 				},

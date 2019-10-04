@@ -108,7 +108,7 @@ var (
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{string(s.ObjectMeta.ResourceVersion)},
+							LabelValues: []string{s.ObjectMeta.ResourceVersion},
 							Value:       1,
 						},
 					},

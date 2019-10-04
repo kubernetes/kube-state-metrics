@@ -20,6 +20,10 @@ If your repo has certain guidelines for contribution, put them here ahead of the
 
 - [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!
 
+## Contact Information
+
+- [Slack channel](https://kubernetes.slack.com/?redir=%2Fmessages%2FCJJ529RUY) - Open channel that can be used by people who have questions about the project. It offers an alternative to submitting a Github issue;
+
 <!---
 Custom Information - if you're copying this template for the first time you can add custom content here, for example:
 

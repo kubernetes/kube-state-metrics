@@ -20,12 +20,7 @@ If your repo has certain guidelines for contribution, put them here ahead of the
 
 - [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!
 
-<!---
-Custom Information - if you're copying this template for the first time you can add custom content here, for example:
-
 ## Contact Information
 
-- [Slack channel](https://kubernetes.slack.com/messages/kubernetes-users) - Replace `kubernetes-users` with your slack channel string, this will send users directly to your channel. 
-- [Mailing list](URL) 
-
--->
+- [Join Slack](http://slack.k8s.io) to sign up and join the Kubernetes Slack. Please make sure to read our [Slack Guidelines](https://github.com/kubernetes/community/blob/master/communication/slack-guidelines.md) before participating.
+-  The [kube-state-metrics slack channel](https://kubernetes.slack.com/messages/CJJ529RUY) provides an effective communication platform to reach out to members and other users of the project. It offers an alternative to submitting a GitHub issue for when you have questions and issues.

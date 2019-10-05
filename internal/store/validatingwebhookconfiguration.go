@@ -72,7 +72,7 @@ var (
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{string(vwc.ObjectMeta.ResourceVersion)},
+							LabelValues: []string{vwc.ObjectMeta.ResourceVersion},
 							Value:       1,
 						},
 					},

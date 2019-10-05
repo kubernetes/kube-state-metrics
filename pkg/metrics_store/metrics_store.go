@@ -159,7 +159,7 @@ func (s *MetricsStore) WriteAll(w io.Writer) {
 		w.Write([]byte(help))
 		w.Write([]byte{'\n'})
 		for _, metricFamilies := range s.metrics {
-			w.Write([]byte(metricFamilies[i]))
+			w.Write(metricFamilies[i])
 		}
 	}
 }

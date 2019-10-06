@@ -61,7 +61,7 @@ func BenchmarkMetricWrite(b *testing.B) {
 			metric: Metric{
 				LabelKeys:   []string{"container", "container_id", "image", "image_id", "namespace", "pod"},
 				LabelValues: []string{"container2", "docker://cd456", "k8s.gcr.io/hyperkube2", "docker://sha256:bbb", "ns2", "pod2"},
-				Value:       float64(35.7),
+				Value:       35.7,
 			},
 			expectedLength: 148,
 		},

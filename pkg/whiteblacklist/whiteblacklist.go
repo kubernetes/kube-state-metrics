@@ -32,25 +32,22 @@ type WhiteBlackList struct {
 
 // New constructs a new WhiteBlackList based on a white- and a
 // blacklist. Only one of them can be not empty.
-func New(w, b map[string]struct{}) (*WhiteBlackList, error) {
-	if len(w) != 0 && len(b) != 0 {
+func New(white, black map[string]struct{}) (*WhiteBlackList, error) {
+	if len(white) != 0 && len(black) != 0 {
 		return nil, errors.New(
 			"whitelist and blacklist are both set, they are mutually exclusive, only one of them can be set",
 		)
 	}
-
-	white := copyList(w)
-	black := copyList(b)
 
 	var list map[string]struct{}
 	var isWhiteList bool
 
 	// Default to blacklisting
 	if len(white) != 0 {
-		list = white
+		list = copyList(white)
 		isWhiteList = true
 	} else {
-		list = black
+		list = copyList(black)
 		isWhiteList = false
 	}
 
@@ -62,7 +59,7 @@ func New(w, b map[string]struct{}) (*WhiteBlackList, error) {
 
 // Parse parses and compiles all of the regexes in the whiteBlackList.
 func (l *WhiteBlackList) Parse() error {
-	var regexes []*regexp.Regexp
+	regexes := make([]*regexp.Regexp, 0, len(l.list))
 	for item := range l.list {
 		r, err := regexp.Compile(item)
 		if err != nil {
@@ -125,7 +122,7 @@ func (l *WhiteBlackList) IsExcluded(item string) bool {
 // Status returns the status of the WhiteBlackList that can e.g. be passed into
 // a logger.
 func (l *WhiteBlackList) Status() string {
-	items := []string{}
+	items := make([]string, 0, len(l.list))
 	for key := range l.list {
 		items = append(items, key)
 	}

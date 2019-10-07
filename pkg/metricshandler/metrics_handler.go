@@ -108,7 +108,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	statefulSetName := ss.Name
 
 	labelSelectorOptions := func(o *metav1.ListOptions) {
-		o.LabelSelector = fields.SelectorFromSet(fields.Set(ss.Labels)).String()
+		o.LabelSelector = fields.SelectorFromSet(ss.Labels).String()
 	}
 
 	i := cache.NewSharedIndexInformer(

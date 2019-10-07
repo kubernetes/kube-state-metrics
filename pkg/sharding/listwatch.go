@@ -73,7 +73,7 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 		return nil, err
 	}
 
-	return watch.Filter(w, watch.FilterFunc(func(in watch.Event) (out watch.Event, keep bool) {
+	return watch.Filter(w, func(in watch.Event) (out watch.Event, keep bool) {
 		a, err := meta.Accessor(in.Object)
 		if err != nil {
 			// TODO(brancz): needs logging
@@ -81,7 +81,7 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 		}
 
 		return in, s.sharding.keep(a)
-	})), nil
+	}), nil
 }
 
 type sharding struct {

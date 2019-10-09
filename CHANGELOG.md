@@ -1,3 +1,21 @@
+## v1.8.0 / 2019-10-01
+
+After a testing period of 7 days, there were no additional bugs found or features introduced.
+
+## v1.8.0-rc.1 / 2019-09-24
+
+* [CHANGE] Pin go version to go mod artifact file #882
+* [BUGFIX] Correct mapping of hpa condition status labels  #890
+
+## v1.8.0-rc.0 / 2019-09-10
+
+* [FEATURE] Introduce sharding (and experimental auto-sharding) #613
+* [FEATURE] Add `kube_pod_status_unschedulable metric` #835
+* [CHANGE] Makefile: Remove tmpdir after container build #867
+* [ENHANCEMENT] Add metrics about kube-state-metric's interaction with the Kubernetes API. #866
+* [FEATURE] Add `kube_node_role metric` #877
+* [ENHANCEMENT] Add support for Darwin OS in e2e test #879
+
 ## v1.7.2 / 2019-08-05
 
 * [CHANGE] Revert "add `kube_*_annotations metrics` for all objects" #859

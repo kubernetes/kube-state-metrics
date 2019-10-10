@@ -1,7 +1,6 @@
 module k8s.io/kube-state-metrics
 
 require (
-	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
 	github.com/campoy/embedmd v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
@@ -20,7 +19,7 @@ require (
 	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/autoscaler v0.0.0-20190923084523-b8ef369fd110
 	k8s.io/client-go v0.0.0-20191003000419-f68efa97b39e
-	k8s.io/klog v0.4.0
+	k8s.io/klog v1.0.0
 )
 
 go 1.13

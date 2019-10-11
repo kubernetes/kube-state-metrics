@@ -34,6 +34,7 @@ import (
 	extensions "k8s.io/api/extensions/v1beta1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
+	storagev1beta1 "k8s.io/api/storage/v1beta1"
 	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
@@ -172,6 +173,7 @@ var availableStores = map[string]func(f *Builder) *metricsstore.MetricsStore{
 	"statefulsets":                    func(b *Builder) *metricsstore.MetricsStore { return b.buildStatefulSetStore() },
 	"storageclasses":                  func(b *Builder) *metricsstore.MetricsStore { return b.buildStorageClassStore() },
 	"validatingwebhookconfigurations": func(b *Builder) *metricsstore.MetricsStore { return b.buildValidatingWebhookConfigurationStore() },
+	"volumeattachments":               func(b *Builder) *metricsstore.MetricsStore { return b.buildVolumeAttachmentStore() },
 	"verticalpodautoscalers":          func(b *Builder) *metricsstore.MetricsStore { return b.buildVPAStore() },
 }
 
@@ -286,6 +288,10 @@ func (b *Builder) buildCsrStore() *metricsstore.MetricsStore {
 
 func (b *Builder) buildValidatingWebhookConfigurationStore() *metricsstore.MetricsStore {
 	return b.buildStore(validatingWebhookConfigurationMetricFamilies, &admissionregistration.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch)
+}
+
+func (b *Builder) buildVolumeAttachmentStore() *metricsstore.MetricsStore {
+	return b.buildStore(volumeAttachmentMetricFamilies, &storagev1beta1.VolumeAttachment{}, createVolumeAttachmentListWatch)
 }
 
 func (b *Builder) buildVPAStore() *metricsstore.MetricsStore {

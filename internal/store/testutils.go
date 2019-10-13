@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 type generateMetricsTestCase struct {
@@ -34,7 +34,7 @@ type generateMetricsTestCase struct {
 	MetricNames []string
 	Want        string
 	Headers     []string
-	Func        func(interface{}) []metricsstore.FamilyByteSlicer
+	Func        func(interface{}) []*metric.Family
 }
 
 func (testCase *generateMetricsTestCase) run() error {

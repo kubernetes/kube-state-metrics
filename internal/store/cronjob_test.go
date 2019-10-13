@@ -26,7 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -243,8 +243,8 @@ func TestCronJobStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(cronJobMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(cronJobMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

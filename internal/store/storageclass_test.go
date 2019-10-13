@@ -20,7 +20,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestStorageClassStore(t *testing.T) {
@@ -108,8 +108,8 @@ func TestStorageClassStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(storageClassMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(storageClassMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

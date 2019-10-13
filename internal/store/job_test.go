@@ -24,7 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -254,8 +254,8 @@ func TestJobStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(jobMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(jobMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(jobMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(jobMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -183,8 +183,8 @@ func TestDeploymentStore(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(deploymentMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(deploymentMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

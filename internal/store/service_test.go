@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestServiceStore(t *testing.T) {
@@ -209,8 +209,8 @@ func TestServiceStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(serviceMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(serviceMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(serviceMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(serviceMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

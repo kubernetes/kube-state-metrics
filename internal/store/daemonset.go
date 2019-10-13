@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 
-	daemonSetMetricFamilies = []metric.FamilyGenerator{
+	daemonSetMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_daemonset_created",
 			Type: metric.Gauge,

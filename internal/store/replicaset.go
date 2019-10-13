@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +35,7 @@ var (
 	descReplicaSetLabelsName          = "kube_replicaset_labels"
 	descReplicaSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 
-	replicaSetMetricFamilies = []metric.FamilyGenerator{
+	replicaSetMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_replicaset_created",
 			Type: metric.Gauge,

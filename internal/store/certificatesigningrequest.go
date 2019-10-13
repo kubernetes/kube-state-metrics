@@ -18,6 +18,7 @@ package store
 
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ var (
 	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest"}
 
-	csrMetricFamilies = []metric.FamilyGenerator{
+	csrMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: descCSRLabelsName,
 			Type: metric.Gauge,

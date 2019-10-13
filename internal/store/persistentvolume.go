@@ -18,6 +18,7 @@ package store
 
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ var (
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 
-	persistentVolumeMetricFamilies = []metric.FamilyGenerator{
+	persistentVolumeMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: descPersistentVolumeLabelsName,
 			Type: metric.Gauge,

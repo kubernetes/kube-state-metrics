@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 // Mock metricFamily instead of importing /pkg/metric to prevent cyclic
@@ -41,17 +43,24 @@ func (f *metricFamily) ByteSlice() []byte {
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDS := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []FamilyByteSlicer {
+	genFunc := func(obj interface{}) []*metric.Family {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		metricFamily := metricFamily{
-			[]byte(fmt.Sprintf("kube_service_info{uid=\"%v\"} 1", string(o.GetUID()))),
+		metricFamily := metric.Family{
+			Name: "kube_service_info",
+			Metrics: []*metric.Metric{
+				{
+					LabelKeys:   []string{"uid"},
+					LabelValues: []string{string(o.GetUID())},
+					Value:       float64(1),
+				},
+			},
 		}
 
-		return []FamilyByteSlicer{&metricFamily}
+		return []*metric.Family{&metricFamily}
 	}
 
 	ms := NewMetricsStore([]string{"Information about service."}, genFunc)

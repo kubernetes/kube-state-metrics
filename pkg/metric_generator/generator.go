@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package metric
+package generator
 
 import (
 	"strings"
 
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 // FamilyGenerator provides everything needed to generate a metric family with a
@@ -27,15 +27,15 @@ import (
 type FamilyGenerator struct {
 	Name         string
 	Help         string
-	Type         Type
-	GenerateFunc func(obj interface{}) *Family
+	Type         metric.Type
+	GenerateFunc func(obj interface{}) *metric.Family
 }
 
 // Generate calls the FamilyGenerator.GenerateFunc and gives the family its
 // name. The reasoning behind injecting the name at such a late point in time is
 // deduplication in the code, preventing typos made by developers as
 // well as saving memory.
-func (g *FamilyGenerator) Generate(obj interface{}) *Family {
+func (g *FamilyGenerator) Generate(obj interface{}) *metric.Family {
 	family := g.GenerateFunc(obj)
 	family.Name = g.Name
 	return family
@@ -70,9 +70,9 @@ func ExtractMetricFamilyHeaders(families []FamilyGenerator) []string {
 
 // ComposeMetricGenFuncs takes a slice of metric families and returns a function
 // that composes their metric generation functions into a single one.
-func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) []metricsstore.FamilyByteSlicer {
-	return func(obj interface{}) []metricsstore.FamilyByteSlicer {
-		families := make([]metricsstore.FamilyByteSlicer, len(familyGens))
+func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) []*metric.Family {
+	return func(obj interface{}) []*metric.Family {
+		families := make([]*metric.Family, len(familyGens))
 
 		for i, gen := range familyGens {
 			families[i] = gen.Generate(obj)

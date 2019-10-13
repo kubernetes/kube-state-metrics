@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +38,7 @@ var (
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
 
-	podMetricFamilies = []metric.FamilyGenerator{
+	podMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_pod_info",
 			Type: metric.Gauge,

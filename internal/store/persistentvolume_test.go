@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestPersistentVolumeStore(t *testing.T) {
@@ -231,8 +231,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(persistentVolumeMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -22,13 +22,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
-)
 
-// FamilyByteSlicer represents a metric family that can be converted to its string
-// representation.
-type FamilyByteSlicer interface {
-	ByteSlice() []byte
-}
+	"k8s.io/kube-state-metrics/pkg/metric"
+)
 
 // MetricsStore implements the k8s.io/client-go/tools/cache.Store
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
@@ -48,11 +44,11 @@ type MetricsStore struct {
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []FamilyByteSlicer
+	generateMetricsFunc func(interface{}) []*metric.Family
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilyByteSlicer) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(interface{}) []*metric.Family) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,

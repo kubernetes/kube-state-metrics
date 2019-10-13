@@ -23,7 +23,7 @@ import (
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestCsrStore(t *testing.T) {
@@ -212,8 +212,8 @@ func TestCsrStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(csrMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(csrMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(csrMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(csrMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected error when collecting result in %vth run:\n%s", i, err)
 		}

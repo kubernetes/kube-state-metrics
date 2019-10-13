@@ -25,12 +25,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
 
-	networkpolicyMetricFamilies = []metric.FamilyGenerator{
+	networkpolicyMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_networkpolicy_created",
 			Type: metric.Gauge,

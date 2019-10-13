@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestDaemonSetStore(t *testing.T) {
@@ -217,8 +217,8 @@ func TestDaemonSetStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(daemonSetMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(daemonSetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(daemonSetMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

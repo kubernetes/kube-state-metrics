@@ -42,7 +42,7 @@ import (
 	"k8s.io/klog"
 
 	"k8s.io/kube-state-metrics/pkg/listwatch"
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/sharding"
@@ -55,7 +55,7 @@ type whiteBlackLister interface {
 }
 
 // BuildStoreFunc function signature that is use to returns a cache.Store
-type BuildStoreFunc func(metricFamilies []metric.FamilyGenerator,
+type BuildStoreFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) cache.Store
@@ -321,14 +321,14 @@ func (b *Builder) buildVPAStore() cache.Store {
 }
 
 func (b *Builder) buildStore(
-	metricFamilies []metric.FamilyGenerator,
+	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) cache.Store {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, metricFamilies)
-	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
+	filteredMetricFamilies := generator.FilterMetricFamilies(b.whiteBlackList, metricFamilies)
+	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(filteredMetricFamilies)
 
-	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)
+	familyHeaders := generator.ExtractMetricFamilyHeaders(filteredMetricFamilies)
 
 	store := metricsstore.NewMetricsStore(
 		familyHeaders,

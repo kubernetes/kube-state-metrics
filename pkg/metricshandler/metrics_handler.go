@@ -50,7 +50,7 @@ type MetricsHandler struct {
 
 	// mtx protects stores, curShard, and curTotalShards
 	mtx            *sync.RWMutex
-	stores         []*metricsstore.MetricsStore
+	stores         []cache.Store
 	curShard       int32
 	curTotalShards int
 }
@@ -199,7 +199,8 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, s := range m.stores {
-		s.WriteAll(w)
+		ms := s.(*metricsstore.MetricsStore)
+		ms.WriteAll(w)
 	}
 
 	// In case we gzipped the response, we have to close the writer.

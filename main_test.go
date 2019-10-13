@@ -208,6 +208,7 @@ kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",containe
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="ImagePullBackOff"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="CreateContainerError"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="InvalidImageName"} 0
+kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container2",reason="PostStartHookError"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCreating"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="CrashLoopBackOff"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="CreateContainerConfigError"} 0
@@ -215,6 +216,7 @@ kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",containe
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="ImagePullBackOff"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="CreateContainerError"} 0
 kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="InvalidImageName"} 0
+kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",container="container3",reason="PostStartHookError"} 0
 # HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
 # TYPE kube_pod_init_container_status_waiting_reason gauge
 # HELP kube_pod_container_status_running Describes whether the container is currently in running state.

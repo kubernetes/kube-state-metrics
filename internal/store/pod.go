@@ -18,6 +18,7 @@ package store
 
 import (
 	"strconv"
+	"strings"
 
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -34,7 +35,7 @@ const nodeUnreachablePodReason = "NodeLost"
 
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
+	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName", "PostStartHookError"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
 
 	podMetricFamilies = []metric.FamilyGenerator{
@@ -1071,7 +1072,7 @@ func waitingReason(cs v1.ContainerStatus, reason string) bool {
 	if cs.State.Waiting == nil {
 		return false
 	}
-	return cs.State.Waiting.Reason == reason
+	return cs.State.Waiting.Reason == reason || strings.Contains(cs.State.Waiting.Reason, "PostStartHookError")
 }
 
 func terminationReason(cs v1.ContainerStatus, reason string) bool {

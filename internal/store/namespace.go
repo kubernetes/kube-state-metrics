@@ -92,6 +92,30 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_namespace_status_condition",
+			Type: metric.Gauge,
+			Help: "The condition of a namespace.",
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
+				for i, c := range n.Status.Conditions {
+					conditionMetrics := addConditionMetrics(c.Status)
+
+					for j, m := range conditionMetrics {
+						metric := m
+
+						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+
+						ms[i*len(conditionStatuses)+j] = metric
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
 	}
 )
 

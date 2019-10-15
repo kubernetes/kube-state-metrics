@@ -144,6 +144,31 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_persistentvolumeclaim_status_condition",
+			Help: "Information about status of different conditions of persistent volume claim.",
+			Type: metric.Gauge,
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.Conditions)*len(conditionStatuses))
+
+				for i, c := range p.Status.Conditions {
+					conditionMetrics := addConditionMetrics(c.Status)
+
+					for j, m := range conditionMetrics {
+						metric := m
+
+						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+
+						ms[i*len(conditionStatuses)+j] = metric
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
 	}
 )
 

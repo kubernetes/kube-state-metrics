@@ -23,6 +23,7 @@ import (
 // Family represents a set of metrics with the same name and help text.
 type Family struct {
 	Name    string
+	Type    Type
 	Metrics []*Metric
 }
 

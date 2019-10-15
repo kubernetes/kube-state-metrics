@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
 
+	ksmtypes "k8s.io/kube-state-metrics/pkg/builder/types"
 	"k8s.io/kube-state-metrics/pkg/listwatch"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
@@ -48,17 +49,6 @@ import (
 	"k8s.io/kube-state-metrics/pkg/sharding"
 	"k8s.io/kube-state-metrics/pkg/watch"
 )
-
-type whiteBlackLister interface {
-	IsIncluded(string) bool
-	IsExcluded(string) bool
-}
-
-// BuildStoreFunc function signature that is use to returns a cache.Store
-type BuildStoreFunc func(metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
-	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
-) cache.Store
 
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
@@ -68,11 +58,11 @@ type Builder struct {
 	namespaces       options.NamespaceList
 	ctx              context.Context
 	enabledResources []string
-	whiteBlackList   whiteBlackLister
+	whiteBlackList   ksmtypes.WhiteBlackLister
 	metrics          *watch.ListWatchMetrics
 	shard            int32
 	totalShards      int
-	buildStoreFunc   BuildStoreFunc
+	buildStoreFunc   ksmtypes.BuildStoreFunc
 }
 
 // NewBuilder returns a new builder.
@@ -132,12 +122,12 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 
 // WithWhiteBlackList configures the white or blacklisted metric to be exposed
 // by the store build by the Builder.
-func (b *Builder) WithWhiteBlackList(l whiteBlackLister) {
+func (b *Builder) WithWhiteBlackList(l ksmtypes.WhiteBlackLister) {
 	b.whiteBlackList = l
 }
 
 // WithCustomGenerateStoreFunc configures a constom generate store function
-func (b *Builder) WithCustomGenerateStoreFunc(f BuildStoreFunc) {
+func (b *Builder) WithCustomGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
 	b.buildStoreFunc = f
 }
 

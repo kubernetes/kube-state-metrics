@@ -38,6 +38,7 @@ type FamilyGenerator struct {
 func (g *FamilyGenerator) Generate(obj interface{}) *metric.Family {
 	family := g.GenerateFunc(obj)
 	family.Name = g.Name
+	family.Type = g.Type
 	return family
 }
 

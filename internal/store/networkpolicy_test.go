@@ -22,7 +22,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestNetworkPolicyStore(t *testing.T) {
@@ -68,7 +68,7 @@ func TestNetworkPolicyStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(networkpolicyMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(networkpolicyMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%s", i, err)
 		}

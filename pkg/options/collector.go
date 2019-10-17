@@ -52,5 +52,6 @@ var (
 		"statefulsets":                    struct{}{},
 		"storageclasses":                  struct{}{},
 		"validatingwebhookconfigurations": struct{}{},
+		"volumeattachments":               struct{}{},
 	}
 )

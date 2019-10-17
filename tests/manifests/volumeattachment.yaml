@@ -1,0 +1,9 @@
+apiVersion: storage.k8s.io/v1
+kind: VolumeAttachment
+metadata:
+  name: volumeattachment
+spec:
+  attacher: attacher
+  nodeName: minikube
+  source:
+    persistentVolumeName: persistentvolume

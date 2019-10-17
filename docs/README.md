@@ -71,6 +71,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 - [StorageClass Metrics](storageclass-metrics.md)
 - [ValidatingWebhookConfiguration Metrics](validatingwebhookconfiguration.md)
 - [VerticalPodAutoscaler Metrics](verticalpodautoscaler-metrics.md)
+- [VolumeAttachment Metrics](volumeattachment-metrics.md)
 
 ## Join Metrics
 

@@ -58,6 +58,10 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
+	return mapToPrometheusLabels(labels, "label")
+}
+
+func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
 	for k := range labels {
 		labelKeys = append(labelKeys, k)
@@ -66,7 +70,7 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 
 	labelValues := make([]string, 0, len(labels))
 	for i, k := range labelKeys {
-		labelKeys[i] = "label_" + sanitizeLabelName(k)
+		labelKeys[i] = prefix + "_" + sanitizeLabelName(k)
 		labelValues = append(labelValues, labels[k])
 	}
 	return labelKeys, labelValues

@@ -25,13 +25,13 @@ github.com/davecgh/go-spew/spew
 github.com/dgrijalva/jwt-go
 # github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
 github.com/dgryski/go-jump
-# github.com/evanphx/json-patch v4.1.0+incompatible
+# github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
 github.com/evanphx/json-patch
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
-# github.com/gogo/protobuf v1.2.0
+# github.com/gogo/protobuf v1.1.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/protobuf v1.3.2
@@ -60,7 +60,7 @@ github.com/google/gofuzz
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
-# github.com/gophercloud/gophercloud v0.2.0
+# github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
 github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
@@ -71,7 +71,7 @@ github.com/gophercloud/gophercloud/pagination
 # github.com/hashicorp/golang-lru v0.5.0
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
-# github.com/imdario/mergo v0.3.7
+# github.com/imdario/mergo v0.3.5
 github.com/imdario/mergo
 # github.com/json-iterator/go v1.1.7
 github.com/json-iterator/go
@@ -122,7 +122,7 @@ golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
-# golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+# golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 golang.org/x/oauth2
 golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
@@ -136,7 +136,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
+# golang.org/x/time v0.0.0-20161028155119-f51c12702a4d
 golang.org/x/time/rate
 # golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e
 golang.org/x/tools/benchmark/parse
@@ -156,7 +156,7 @@ google.golang.org/appengine/urlfetch
 gopkg.in/alecthomas/kingpin.v2
 # gopkg.in/inf.v0 v0.9.0
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.1
 gopkg.in/yaml.v2
 # k8s.io/api v0.0.0-20190620084959-7cf5895f2711
 k8s.io/api/admissionregistration/v1beta1
@@ -358,9 +358,9 @@ k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 # k8s.io/klog v0.4.0
 k8s.io/klog
-# k8s.io/kube-openapi v0.0.0-20190320154901-5e45bb682580
+# k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 k8s.io/kube-openapi/pkg/util/proto
-# k8s.io/utils v0.0.0-20190308190857-21c4ce38f2a7
+# k8s.io/utils v0.0.0-20190221042446-c2654d5206da
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/trace

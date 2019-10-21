@@ -194,16 +194,9 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 	if res.ExpiresInSec == 0 || res.AccessToken == "" {
 		return nil, fmt.Errorf("oauth2/google: incomplete token received from metadata")
 	}
-	tok := &oauth2.Token{
+	return &oauth2.Token{
 		AccessToken: res.AccessToken,
 		TokenType:   res.TokenType,
 		Expiry:      time.Now().Add(time.Duration(res.ExpiresInSec) * time.Second),
-	}
-	// NOTE(cbro): add hidden metadata about where the token is from.
-	// This is needed for detection by client libraries to know that credentials come from the metadata server.
-	// This may be removed in a future version of this library.
-	return tok.WithExtra(map[string]interface{}{
-		"oauth2.google.tokenSource":    "compute-metadata",
-		"oauth2.google.serviceAccount": acct,
-	}), nil
+	}, nil
 }

@@ -4,6 +4,9 @@ metadata:
   labels:
     app.kubernetes.io/name: kube-state-metrics
     app.kubernetes.io/version: v1.8.0
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
   name: kube-state-metrics
   namespace: kube-system
 spec:

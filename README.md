@@ -216,10 +216,9 @@ service account token that has read-only access to the Kubernetes cluster.
 #### Kubernetes Deployment
 
 To deploy this project, you can simply run `kubectl apply -f examples/standard` and a
-Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information). The service already has a
-`prometheus.io/scrape: 'true'` annotation and if you added the recommended
-Prometheus service-endpoint scraping configuration, Prometheus will pick it up automatically and you can start using the generated
-metrics right away.
+Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information).
+
+To have Prometheus discover kube-state-metrics instances it is advised to create a specific Prometheus scrape config for kube-state-metrics that picks up both metrics endpoints. Annotation based discovery is discouraged as only one of the endpoints would be able to be selected, plus kube-state-metrics in most cases has special authentication and authorization requirements as it essentially grants read access through the metrics endpoint to most information available to it.
 
 **Note:** Google Kubernetes Engine (GKE) Users - GKE has strict role permissions that will prevent the kube-state-metrics roles and role bindings from being created. To work around this, you can give your GCP identity the cluster-admin role by running the following one-liner:
 

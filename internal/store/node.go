@@ -51,6 +51,7 @@ var (
 								"kubelet_version",
 								"kubeproxy_version",
 								"provider_id",
+								"pod_cidr",
 							},
 							LabelValues: []string{
 								n.Status.NodeInfo.KernelVersion,
@@ -59,6 +60,7 @@ var (
 								n.Status.NodeInfo.KubeletVersion,
 								n.Status.NodeInfo.KubeProxyVersion,
 								n.Spec.ProviderID,
+								n.Spec.PodCIDR,
 							},
 							Value: 1,
 						},

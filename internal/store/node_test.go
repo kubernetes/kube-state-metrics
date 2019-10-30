@@ -46,6 +46,7 @@ func TestNodeStore(t *testing.T) {
 				},
 				Spec: v1.NodeSpec{
 					ProviderID: "provider://i-uniqueid",
+					PodCIDR:    "172.24.10.0/24",
 				},
 			},
 			Want: `
@@ -55,7 +56,7 @@ func TestNodeStore(t *testing.T) {
 				# TYPE kube_node_info gauge
 				# TYPE kube_node_labels gauge
 				# TYPE kube_node_spec_unschedulable gauge
-				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-uniqueid"} 1
+				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-uniqueid"} 1
 				kube_node_labels{node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 0
 			`,
@@ -74,6 +75,7 @@ func TestNodeStore(t *testing.T) {
 				Spec: v1.NodeSpec{
 					Unschedulable: true,
 					ProviderID:    "provider://i-randomidentifier",
+					PodCIDR:       "172.24.10.0/24",
 				},
 				Status: v1.NodeStatus{
 					NodeInfo: v1.NodeSystemInfo{
@@ -129,7 +131,7 @@ func TestNodeStore(t *testing.T) {
 		# TYPE kube_node_status_capacity_memory_bytes gauge
 		# TYPE kube_node_status_capacity_pods gauge
 		kube_node_created{node="127.0.0.1"} 1.5e+09
-        kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-randomidentifier"} 1
+        kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-randomidentifier"} 1
 		kube_node_labels{label_node_role_kubernetes_io_master="",node="127.0.0.1"} 1
 		kube_node_role{node="127.0.0.1",role="master"} 1
         kube_node_spec_unschedulable{node="127.0.0.1"} 1

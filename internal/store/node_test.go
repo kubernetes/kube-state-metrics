@@ -62,6 +62,20 @@ func TestNodeStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_node_spec_unschedulable", "kube_node_labels", "kube_node_info"},
 		},
+		// Verify unset fields are skipped. Note that prometheus subsequently drops empty labels.
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{},
+				Status:     v1.NodeStatus{},
+				Spec:       v1.NodeSpec{},
+			},
+			Want: `
+				# HELP kube_node_info Information about a cluster node.
+				# TYPE kube_node_info gauge
+				kube_node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="",node="",os_image="",pod_cidr="",provider_id=""} 1
+			`,
+			MetricNames: []string{"kube_node_info"},
+		},
 		// Verify resource metric.
 		{
 			Obj: &v1.Node{

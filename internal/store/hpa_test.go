@@ -41,6 +41,8 @@ func TestHPAStore(t *testing.T) {
 		# TYPE kube_hpa_spec_max_replicas gauge
 		# HELP kube_hpa_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
 		# TYPE kube_hpa_spec_min_replicas gauge
+		# HELP kube_hpa_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
+		# TYPE kube_hpa_spec_target_metric gauge
 		# HELP kube_hpa_status_current_replicas Current number of replicas of pods managed by this autoscaler.
 		# TYPE kube_hpa_status_current_replicas gauge
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
@@ -69,6 +71,52 @@ func TestHPAStore(t *testing.T) {
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
 					MinReplicas: &hpa1MinReplicas,
+					Metrics: []autoscaling.MetricSpec{
+						{
+							Type: autoscaling.ObjectMetricSourceType,
+							Object: &autoscaling.ObjectMetricSource{
+								MetricName:   "hits",
+								TargetValue:  resource.MustParse("10"),
+								AverageValue: resourcePtr(resource.MustParse("12")),
+							},
+						},
+						{
+							Type: autoscaling.PodsMetricSourceType,
+							Pods: &autoscaling.PodsMetricSource{
+								MetricName:         "transactions_processed",
+								TargetAverageValue: resource.MustParse("33"),
+							},
+						},
+						{
+							Type: autoscaling.ResourceMetricSourceType,
+							Resource: &autoscaling.ResourceMetricSource{
+								Name:                     "cpu",
+								TargetAverageUtilization: int32ptr(80),
+							},
+						},
+						{
+							Type: autoscaling.ResourceMetricSourceType,
+							Resource: &autoscaling.ResourceMetricSource{
+								Name:                     "memory",
+								TargetAverageUtilization: int32ptr(80),
+								TargetAverageValue:       resourcePtr(resource.MustParse("800Ki")),
+							},
+						},
+						{
+							Type: autoscaling.ExternalMetricSourceType,
+							External: &autoscaling.ExternalMetricSource{
+								MetricName:  "sqs_jobs",
+								TargetValue: resourcePtr(resource.MustParse("30")),
+							},
+						},
+						{
+							Type: autoscaling.ExternalMetricSourceType,
+							External: &autoscaling.ExternalMetricSource{
+								MetricName:         "events",
+								TargetAverageValue: resourcePtr(resource.MustParse("30")),
+							},
+						},
+					},
 					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
 						APIVersion: "apps/v1",
 						Kind:       "Deployment",
@@ -98,22 +146,31 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-                            kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
-                            kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
-                            kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
-                            kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
-                            kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
-                            kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
-                            kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
-                            kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
-                            kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
-                            kube_hpa_status_currentmetrics_average_value{hpa="hpa1",namespace="ns1"} 10
-                            kube_hpa_status_currentmetrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
+				kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
+				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
+				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
+				kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="hits",metric_target_type="value"} 10
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="hits",metric_target_type="average"} 12
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="transactions_processed",metric_target_type="average"} 33
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="cpu",metric_target_type="utilization"} 80
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="memory",metric_target_type="utilization"} 80
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="memory",metric_target_type="average"} 819200
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="sqs_jobs",metric_target_type="value"} 30
+				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="events",metric_target_type="average"} 30
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
+				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
+				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
+				kube_hpa_status_currentmetrics_average_value{hpa="hpa1",namespace="ns1"} 10
+				kube_hpa_status_currentmetrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
 			`,
 			MetricNames: []string{
 				"kube_hpa_metadata_generation",
 				"kube_hpa_spec_max_replicas",
 				"kube_hpa_spec_min_replicas",
+				"kube_hpa_spec_target_metric",
 				"kube_hpa_status_current_replicas",
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
@@ -130,4 +187,12 @@ func TestHPAStore(t *testing.T) {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
+}
+
+func int32ptr(value int32) *int32 {
+	return &value
+}
+
+func resourcePtr(quantity resource.Quantity) *resource.Quantity {
+	return &quantity
 }

@@ -33,6 +33,8 @@ var (
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "hpa"}
 
+	targetMetricLabels = []string{"metric_name", "metric_target_type"}
+
 	hpaMetricFamilies = []metric.FamilyGenerator{
 		{
 			Name: "kube_hpa_metadata_generation",
@@ -74,6 +76,73 @@ var (
 						},
 					},
 				}
+			}),
+		},
+		{
+			Name: "kube_hpa_spec_target_metric",
+			Type: metric.Gauge,
+			Help: "The metric specifications used by this autoscaler when calculating the desired replica count.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				targets := make([]*metric.Metric, 0, len(a.Spec.Metrics))
+				for _, m := range a.Spec.Metrics {
+					var metricName string
+					var value, average int64
+					valueLabel := "value"
+					var valueOk, averageOk bool
+
+					switch m.Type {
+					case autoscaling.ObjectMetricSourceType:
+						metricName = m.Object.MetricName
+
+						value, valueOk = m.Object.TargetValue.AsInt64()
+						if m.Object.AverageValue != nil {
+							average, averageOk = m.Object.AverageValue.AsInt64()
+						}
+					case autoscaling.PodsMetricSourceType:
+						metricName = m.Pods.MetricName
+
+						average, averageOk = m.Pods.TargetAverageValue.AsInt64()
+					case autoscaling.ResourceMetricSourceType:
+						metricName = string(m.Resource.Name)
+
+						value = int64(*m.Resource.TargetAverageUtilization)
+						valueOk = true
+						valueLabel = "utilization"
+
+						if m.Resource.TargetAverageValue != nil {
+							average, averageOk = m.Resource.TargetAverageValue.AsInt64()
+						}
+					case autoscaling.ExternalMetricSourceType:
+						metricName = m.External.MetricName
+
+						// The TargetValue and TargetAverageValue are mutually exclusive
+						if m.External.TargetValue != nil {
+							value, valueOk = m.External.TargetValue.AsInt64()
+						}
+						if m.External.TargetAverageValue != nil {
+							average, averageOk = m.External.TargetAverageValue.AsInt64()
+						}
+					default:
+						// Skip unsupported metric type
+						continue
+					}
+
+					if valueOk {
+						targets = append(targets, &metric.Metric{
+							LabelKeys:   targetMetricLabels,
+							LabelValues: []string{metricName, valueLabel},
+							Value:       float64(value),
+						})
+					}
+					if averageOk {
+						targets = append(targets, &metric.Metric{
+							LabelKeys:   targetMetricLabels,
+							LabelValues: []string{metricName, "average"},
+							Value:       float64(average),
+						})
+					}
+				}
+				return &metric.Family{Metrics: targets}
 			}),
 		},
 		{

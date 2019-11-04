@@ -21,6 +21,7 @@ import (
 
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -44,10 +45,14 @@ func TestHPAStore(t *testing.T) {
 		# TYPE kube_hpa_status_current_replicas gauge
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
 		# TYPE kube_hpa_status_desired_replicas gauge
-		# HELP kube_hpa_status_condition The condition of this autoscaler.
-		# TYPE kube_hpa_status_condition gauge
-		# HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_hpa_labels gauge
+        # HELP kube_hpa_status_condition The condition of this autoscaler.
+        # TYPE kube_hpa_status_condition gauge
+        # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
+        # TYPE kube_hpa_labels gauge
+        # HELP kube_hpa_status_currentmetrics_average_value Average metric value observed by the autoscaler.
+        # TYPE kube_hpa_status_currentmetrics_average_value gauge
+        # HELP kube_hpa_status_currentmetrics_average_utilization Average metric utilization observed by the autoscaler.
+        # TYPE kube_hpa_status_currentmetrics_average_utilization gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -77,20 +82,33 @@ func TestHPAStore(t *testing.T) {
 						{
 							Type:   autoscaling.AbleToScale,
 							Status: v1.ConditionTrue,
+							Reason: "reason",
+						},
+					},
+					CurrentMetrics: []autoscaling.MetricStatus{
+						{
+							Type: "Resource",
+							Resource: &autoscaling.ResourceMetricStatus{
+								Name:                      "cpu",
+								CurrentAverageUtilization: new(int32),
+								CurrentAverageValue:       resource.MustParse("10"),
+							},
 						},
 					},
 				},
 			},
 			Want: metadata + `
-				kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
-				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
-				kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
-				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
+                            kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
+                            kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
+                            kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
+                            kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
+                            kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
+                            kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
+                            kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
+                            kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
+                            kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
+                            kube_hpa_status_currentmetrics_average_value{hpa="hpa1",namespace="ns1"} 10
+                            kube_hpa_status_currentmetrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
 			`,
 			MetricNames: []string{
 				"kube_hpa_metadata_generation",
@@ -100,6 +118,8 @@ func TestHPAStore(t *testing.T) {
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
 				"kube_hpa_labels",
+				"kube_hpa_status_currentmetrics_average_value",
+				"kube_hpa_status_currentmetrics_average_utilization",
 			},
 		},
 	}

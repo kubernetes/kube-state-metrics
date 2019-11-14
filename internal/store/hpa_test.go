@@ -102,6 +102,13 @@ func TestHPAStore(t *testing.T) {
 								TargetAverageValue:       resourcePtr(resource.MustParse("800Ki")),
 							},
 						},
+						// No targets, this metric should be ignored
+						{
+							Type: autoscaling.ResourceMetricSourceType,
+							Resource: &autoscaling.ResourceMetricSource{
+								Name: "disk",
+							},
+						},
 						{
 							Type: autoscaling.ExternalMetricSourceType,
 							External: &autoscaling.ExternalMetricSource{

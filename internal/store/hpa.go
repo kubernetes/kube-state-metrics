@@ -28,6 +28,20 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+type MetricTargetType int
+
+const (
+	Value MetricTargetType = iota
+	Utilization
+	Average
+
+	MetricTargetTypeCount // Used as a length argument to arrays
+)
+
+func (m MetricTargetType) String() string {
+	return [...]string{"value", "utilization", "average"}[m]
+}
+
 var (
 	descHorizontalPodAutoscalerLabelsName          = "kube_hpa_labels"
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
@@ -83,66 +97,61 @@ var (
 			Type: metric.Gauge,
 			Help: "The metric specifications used by this autoscaler when calculating the desired replica count.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				targets := make([]*metric.Metric, 0, len(a.Spec.Metrics))
+				ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
 				for _, m := range a.Spec.Metrics {
 					var metricName string
-					var value, average int64
-					valueLabel := "value"
-					var valueOk, averageOk bool
+
+					var v [MetricTargetTypeCount]int64
+					var ok [MetricTargetTypeCount]bool
 
 					switch m.Type {
 					case autoscaling.ObjectMetricSourceType:
 						metricName = m.Object.MetricName
 
-						value, valueOk = m.Object.TargetValue.AsInt64()
+						v[Value], ok[Value] = m.Object.TargetValue.AsInt64()
 						if m.Object.AverageValue != nil {
-							average, averageOk = m.Object.AverageValue.AsInt64()
+							v[Average], ok[Average] = m.Object.AverageValue.AsInt64()
 						}
 					case autoscaling.PodsMetricSourceType:
 						metricName = m.Pods.MetricName
 
-						average, averageOk = m.Pods.TargetAverageValue.AsInt64()
+						v[Average], ok[Average] = m.Pods.TargetAverageValue.AsInt64()
 					case autoscaling.ResourceMetricSourceType:
 						metricName = string(m.Resource.Name)
 
-						value = int64(*m.Resource.TargetAverageUtilization)
-						valueOk = true
-						valueLabel = "utilization"
+						if ok[Utilization] = (m.Resource.TargetAverageUtilization != nil); ok[Utilization] {
+							v[Utilization] = int64(*m.Resource.TargetAverageUtilization)
+						}
 
 						if m.Resource.TargetAverageValue != nil {
-							average, averageOk = m.Resource.TargetAverageValue.AsInt64()
+							v[Average], ok[Average] = m.Resource.TargetAverageValue.AsInt64()
 						}
 					case autoscaling.ExternalMetricSourceType:
 						metricName = m.External.MetricName
 
 						// The TargetValue and TargetAverageValue are mutually exclusive
 						if m.External.TargetValue != nil {
-							value, valueOk = m.External.TargetValue.AsInt64()
+							v[Value], ok[Value] = m.External.TargetValue.AsInt64()
 						}
 						if m.External.TargetAverageValue != nil {
-							average, averageOk = m.External.TargetAverageValue.AsInt64()
+							v[Average], ok[Average] = m.External.TargetAverageValue.AsInt64()
 						}
 					default:
 						// Skip unsupported metric type
 						continue
 					}
 
-					if valueOk {
-						targets = append(targets, &metric.Metric{
-							LabelKeys:   targetMetricLabels,
-							LabelValues: []string{metricName, valueLabel},
-							Value:       float64(value),
-						})
-					}
-					if averageOk {
-						targets = append(targets, &metric.Metric{
-							LabelKeys:   targetMetricLabels,
-							LabelValues: []string{metricName, "average"},
-							Value:       float64(average),
-						})
+					for i := range ok {
+						if ok[i] {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   targetMetricLabels,
+								LabelValues: []string{metricName, MetricTargetType(i).String()},
+								Value:       float64(v[i]),
+							})
+						}
 					}
 				}
-				return &metric.Family{Metrics: targets}
+				return &metric.Family{Metrics: ms}
 			}),
 		},
 		{

@@ -223,7 +223,7 @@ var (
 			}),
 		},
 		{
-			Name: "kube_hpa_status_currentmetrics_average_value",
+			Name: "kube_hpa_status_current_metrics_average_value",
 			Type: metric.Gauge,
 			Help: "Average metric value observed by the autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
@@ -255,7 +255,7 @@ var (
 			}),
 		},
 		{
-			Name: "kube_hpa_status_currentmetrics_average_utilization",
+			Name: "kube_hpa_status_current_metrics_average_utilization",
 			Type: metric.Gauge,
 			Help: "Average metric utilization observed by the autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {

@@ -19,6 +19,9 @@ limitations under the License.
 package versioned
 
 import (
+	"fmt"
+
+	autoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1"
 	autoscalingv1beta1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1beta1"
 	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1beta2"
 	pocv1alpha1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/poc.autoscaling.k8s.io/v1alpha1"
@@ -29,6 +32,7 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	AutoscalingV1() autoscalingv1.AutoscalingV1Interface
 	AutoscalingV1beta2() autoscalingv1beta2.AutoscalingV1beta2Interface
 	AutoscalingV1beta1() autoscalingv1beta1.AutoscalingV1beta1Interface
 	PocV1alpha1() pocv1alpha1.PocV1alpha1Interface
@@ -38,9 +42,15 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	autoscalingV1      *autoscalingv1.AutoscalingV1Client
 	autoscalingV1beta2 *autoscalingv1beta2.AutoscalingV1beta2Client
 	autoscalingV1beta1 *autoscalingv1beta1.AutoscalingV1beta1Client
 	pocV1alpha1        *pocv1alpha1.PocV1alpha1Client
+}
+
+// AutoscalingV1 retrieves the AutoscalingV1Client
+func (c *Clientset) AutoscalingV1() autoscalingv1.AutoscalingV1Interface {
+	return c.autoscalingV1
 }
 
 // AutoscalingV1beta2 retrieves the AutoscalingV1beta2Client
@@ -67,13 +77,22 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 // NewForConfig creates a new Clientset for the given config.
+// If config's RateLimiter is not set and QPS and Burst are acceptable,
+// NewForConfig will generate a rate-limiter in configShallowCopy.
 func NewForConfig(c *rest.Config) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
+		if configShallowCopy.Burst <= 0 {
+			return nil, fmt.Errorf("Burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
+		}
 		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
 	}
 	var cs Clientset
 	var err error
+	cs.autoscalingV1, err = autoscalingv1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.autoscalingV1beta2, err = autoscalingv1beta2.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -98,6 +117,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
+	cs.autoscalingV1 = autoscalingv1.NewForConfigOrDie(c)
 	cs.autoscalingV1beta2 = autoscalingv1beta2.NewForConfigOrDie(c)
 	cs.autoscalingV1beta1 = autoscalingv1beta1.NewForConfigOrDie(c)
 	cs.pocV1alpha1 = pocv1alpha1.NewForConfigOrDie(c)
@@ -109,6 +129,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.autoscalingV1 = autoscalingv1.New(c)
 	cs.autoscalingV1beta2 = autoscalingv1beta2.New(c)
 	cs.autoscalingV1beta1 = autoscalingv1beta1.New(c)
 	cs.pocV1alpha1 = pocv1alpha1.New(c)

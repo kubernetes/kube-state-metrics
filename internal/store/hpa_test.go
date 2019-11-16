@@ -51,10 +51,10 @@ func TestHPAStore(t *testing.T) {
         # TYPE kube_hpa_status_condition gauge
         # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
         # TYPE kube_hpa_labels gauge
-        # HELP kube_hpa_status_currentmetrics_average_value Average metric value observed by the autoscaler.
-        # TYPE kube_hpa_status_currentmetrics_average_value gauge
-        # HELP kube_hpa_status_currentmetrics_average_utilization Average metric utilization observed by the autoscaler.
-        # TYPE kube_hpa_status_currentmetrics_average_utilization gauge
+        # HELP kube_hpa_status_current_metrics_average_value Average metric value observed by the autoscaler.
+        # TYPE kube_hpa_status_current_metrics_average_value gauge
+        # HELP kube_hpa_status_current_metrics_average_utilization Average metric utilization observed by the autoscaler.
+        # TYPE kube_hpa_status_current_metrics_average_utilization gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -170,8 +170,8 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_status_currentmetrics_average_value{hpa="hpa1",namespace="ns1"} 10
-				kube_hpa_status_currentmetrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
+				kube_hpa_status_current_metrics_average_value{hpa="hpa1",namespace="ns1"} 10
+				kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
 			`,
 			MetricNames: []string{
 				"kube_hpa_metadata_generation",
@@ -182,8 +182,8 @@ func TestHPAStore(t *testing.T) {
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
 				"kube_hpa_labels",
-				"kube_hpa_status_currentmetrics_average_value",
-				"kube_hpa_status_currentmetrics_average_utilization",
+				"kube_hpa_status_current_metrics_average_value",
+				"kube_hpa_status_current_metrics_average_utilization",
 			},
 		},
 	}

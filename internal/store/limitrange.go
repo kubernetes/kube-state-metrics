@@ -109,6 +109,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_limitrange_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(r.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

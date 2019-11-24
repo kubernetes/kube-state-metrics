@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -30,6 +31,8 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+	# HELP kube_poddisruptionbudget_annotations Kubernetes annotations converted to Prometheus labels.
+	# TYPE kube_poddisruptionbudget_annotations gauge
 	# HELP kube_poddisruptionbudget_created Unix creation timestamp
 	# TYPE kube_poddisruptionbudget_created gauge
 	# HELP kube_poddisruptionbudget_status_current_healthy Current number of healthy pods
@@ -61,6 +64,7 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+			kube_poddisruptionbudget_annotations{namespace="ns1",poddisruptionbudget="pdb1"} 1
 			kube_poddisruptionbudget_created{namespace="ns1",poddisruptionbudget="pdb1"} 1.5e+09
 			kube_poddisruptionbudget_status_current_healthy{namespace="ns1",poddisruptionbudget="pdb1"} 12
 			kube_poddisruptionbudget_status_desired_healthy{namespace="ns1",poddisruptionbudget="pdb1"} 10
@@ -68,6 +72,7 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 			kube_poddisruptionbudget_status_expected_pods{namespace="ns1",poddisruptionbudget="pdb1"} 15
 			kube_poddisruptionbudget_status_observed_generation{namespace="ns1",poddisruptionbudget="pdb1"} 111
 			`,
+			allowLabels: allow.Labels{"kube_poddisruptionbudget_annotations": descPodDisruptionBudgetLabelsDefaultLabels},
 		},
 		{
 			Obj: &v1beta1.PodDisruptionBudget{
@@ -75,6 +80,10 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 					Name:       "pdb2",
 					Namespace:  "ns2",
 					Generation: 14,
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
 				},
 				Status: v1beta1.PodDisruptionBudgetStatus{
 					CurrentHealthy:     8,
@@ -85,17 +94,20 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_poddisruptionbudget_annotations{annotation_whitelisted="true",namespace="ns2",poddisruptionbudget="pdb2"} 1
 				kube_poddisruptionbudget_status_current_healthy{namespace="ns2",poddisruptionbudget="pdb2"} 8
 				kube_poddisruptionbudget_status_desired_healthy{namespace="ns2",poddisruptionbudget="pdb2"} 9
-				kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns2",poddisruptionbudget="pdb2"} 0
 				kube_poddisruptionbudget_status_expected_pods{namespace="ns2",poddisruptionbudget="pdb2"} 10
 				kube_poddisruptionbudget_status_observed_generation{namespace="ns2",poddisruptionbudget="pdb2"} 1111
+				kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns2",poddisruptionbudget="pdb2"} 0
 			`,
+			allowLabels: allow.Labels{"kube_poddisruptionbudget_annotations": append([]string{"annotation_whitelisted"}, descPodDisruptionBudgetLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podDisruptionBudgetMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(podDisruptionBudgetMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, podDisruptionBudgetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -91,6 +92,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="Resizing"} 0
 `,
 			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition"},
+			allowLabels: allow.Labels{"kube_persistentvolumeclaim_labels": append([]string{"label_app"}, descPersistentVolumeClaimLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
@@ -130,11 +132,17 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_access_mode{namespace="default",persistentvolumeclaim="prometheus-data",access_mode="ReadWriteOnce"} 1
 			`,
 			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition"},
+			allowLabels: allow.Labels{"kube_persistentvolumeclaim_annotations": append([]string{"annotation_whitelisted"}, descPersistentVolumeLabelsDefaultLabels...),
+				"kube_persistentvolumeclaim_labels": append([]string{"label_app"}, descPersistentVolumeClaimLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "mongo-data",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
 				},
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
@@ -152,12 +160,14 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
 				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
+				# TYPE kube_persistentvolumeclaim_annotations gauge
 				# TYPE kube_persistentvolumeclaim_info gauge
 				# TYPE kube_persistentvolumeclaim_labels gauge
 				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
@@ -178,13 +188,17 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="CustomizedType"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="FileSystemResizePending"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="Resizing"} 0
+				kube_persistentvolumeclaim_annotations{annotation_whitelisted="true",namespace="",persistentvolumeclaim="mongo-data"} 1
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_annotations"},
+			allowLabels: allow.Labels{"kube_persistentvolumeclaim_annotations": append([]string{"annotation_whitelisted"}, descPersistentVolumeClaimLabelsDefaultLabels...),
+				"kube_persistentvolumeclaim_labels": append([]string{"label_app"}, descPersistentVolumeClaimLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, persistentVolumeClaimMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

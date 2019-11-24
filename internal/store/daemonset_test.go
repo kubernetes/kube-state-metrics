@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -90,6 +91,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_observed_generation",
 				"kube_daemonset_status_updated_number_scheduled",
 			},
+			allowLabels: allow.Labels{"kube_daemonset_labels": append([]string{"label_app"}, descDaemonSetLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.DaemonSet{
@@ -153,6 +155,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_status_updated_number_scheduled",
 			},
+			allowLabels: allow.Labels{"kube_daemonset_labels": append([]string{"label_app"}, descDaemonSetLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.DaemonSet{
@@ -219,6 +222,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_status_updated_number_scheduled",
 			},
+			allowLabels: allow.Labels{"kube_daemonset_labels": append([]string{"label_app"}, descDaemonSetLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {

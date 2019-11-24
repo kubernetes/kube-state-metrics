@@ -200,6 +200,22 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_cronjob_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(j.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
+						Value:       1,
+					}},
+				}
+			}),
+		),
 	}
 )
 

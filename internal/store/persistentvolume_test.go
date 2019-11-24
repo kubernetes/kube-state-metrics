@@ -23,11 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestPersistentVolumeStore(t *testing.T) {
-	iscsiInitiatorName := "iqn.my.test.initiator:112233"
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
@@ -170,7 +170,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -189,7 +189,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -212,7 +212,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="name",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="name",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -235,7 +235,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="aws://eu-west-1c/vol-012d34d567890123b",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="aws://eu-west-1c/vol-012d34d567890123b",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -259,7 +259,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="123",fc_target_wwns="0123456789abcdef,abcdef0123456789",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="123",fc_target_wwns="0123456789abcdef,abcdef0123456789",fc_wwids="",gce_persistent_disk_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -282,7 +282,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="0123456789abcdef,abcdef0123456789",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="0123456789abcdef,abcdef0123456789",gce_persistent_disk_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -307,33 +307,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
-				`,
-			MetricNames: []string{"kube_persistentvolume_info"},
-		},
-		{
-			Obj: &v1.PersistentVolume{
-				Spec: v1.PersistentVolumeSpec{
-					PersistentVolumeSource: v1.PersistentVolumeSource{
-						ISCSI: &v1.ISCSIPersistentVolumeSource{
-							TargetPortal:  "1.2.3.4:3260",
-							IQN:           "iqn.my.test.server.target00",
-							Lun:           int32(123),
-							InitiatorName: &iscsiInitiatorName,
-						},
-					},
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
-				Status: v1.PersistentVolumeStatus{
-					Phase: v1.VolumeAvailable,
-				},
-			},
-			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
-					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="iqn.my.test.initiator:112233",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -357,7 +331,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="/myPath",nfs_server="1.2.3.4",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="/myPath",nfs_server="1.2.3.4",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -382,6 +356,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 					kube_persistentvolume_labels{label_app="mysql-server",persistentvolume="test-labeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
+			allowLabels: allow.Labels{"kube_persistentvolume_labels": append([]string{"label_app"}, descPersistentVolumeLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.PersistentVolume{
@@ -398,6 +373,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
+			allowLabels: allow.Labels{"kube_persistentvolume_labels": descPersistentVolumeLabelsDefaultLabels},
 		},
 		{
 			Obj: &v1.PersistentVolume{
@@ -417,10 +393,34 @@ func TestPersistentVolumeStore(t *testing.T) {
 				`,
 			MetricNames: []string{"kube_persistentvolume_capacity_bytes"},
 		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+				},
+				Spec: v1.PersistentVolumeSpec{
+					Capacity: v1.ResourceList{
+						v1.ResourceStorage: resource.MustParse("5Gi"),
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_annotations Kubernetes annotations converted to Prometheus labels.
+					# TYPE kube_persistentvolume_annotations gauge
+					kube_persistentvolume_annotations{annotation_whitelisted="true",persistentvolume="test-pv"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_annotations"},
+			allowLabels: allow.Labels{"kube_persistentvolume_annotations": append([]string{"annotation_whitelisted"}, descPersistentVolumeLabelsDefaultLabels...)},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, persistentVolumeMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

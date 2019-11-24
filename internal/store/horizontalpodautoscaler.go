@@ -232,6 +232,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_horizontalpodautoscaler_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(a.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

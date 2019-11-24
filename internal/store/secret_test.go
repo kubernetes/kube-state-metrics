@@ -22,6 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -83,6 +84,7 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_labels{namespace="ns2",secret="secret2"} 1
 				`,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
+			allowLabels: allow.Labels{"kube_secret_labels": descSecretLabelsDefaultLabels},
 		},
 		{
 			Obj: &v1.Secret{
@@ -113,11 +115,36 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_labels{label_test_3="test-3",namespace="ns3",secret="secret3"} 1
 `,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
+			allowLabels: allow.Labels{"kube_secret_labels": append([]string{"label_test_3"}, descSecretLabelsDefaultLabels...)},
+		},
+		{
+			Obj: &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "secret4",
+					Namespace:         "ns4",
+					CreationTimestamp: metav1StartTime,
+					Labels:            map[string]string{"test-4": "test-4"},
+					ResourceVersion:   "abcdef",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+				},
+				Type: v1.SecretTypeDockercfg,
+			},
+			Want: `
+				# HELP kube_secret_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_secret_annotations gauge
+				kube_secret_annotations{annotation_whitelisted="true",namespace="ns4",secret="secret4"} 1
+`,
+			MetricNames: []string{"kube_secret_annotations"},
+			allowLabels: allow.Labels{"kube_secret_annotations": append([]string{"annotation_whitelisted"}, descSecretLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(secretMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(secretMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, secretMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

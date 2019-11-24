@@ -93,7 +93,6 @@ func ExtractMetricFamilyHeaders(families []FamilyGenerator) []string {
 func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) []metric.FamilyInterface {
 	return func(obj interface{}) []metric.FamilyInterface {
 		families := make([]metric.FamilyInterface, len(familyGens))
-
 		for i, gen := range familyGens {
 			families[i] = gen.Generate(obj)
 		}

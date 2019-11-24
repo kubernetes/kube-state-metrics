@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -33,6 +34,8 @@ func TestLimitRangeStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+	# HELP kube_limitrange_annotations Kubernetes annotations converted to Prometheus labels.
+	# TYPE kube_limitrange_annotations gauge
 	# HELP kube_limitrange_created Unix creation timestamp
 	# TYPE kube_limitrange_created gauge
 	# HELP kube_limitrange Information about limit range.
@@ -45,6 +48,10 @@ func TestLimitRangeStore(t *testing.T) {
 					Name:              "quotaTest",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "testNS",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
 				},
 				Spec: v1.LimitRangeSpec{
 					Limits: []v1.LimitRangeItem{
@@ -70,19 +77,21 @@ func TestLimitRangeStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+		kube_limitrange_annotations{annotation_whitelisted="true",limitrange="quotaTest",namespace="testNS"} 1
         kube_limitrange_created{limitrange="quotaTest",namespace="testNS"} 1.5e+09
         kube_limitrange{constraint="default",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
         kube_limitrange{constraint="defaultRequest",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
         kube_limitrange{constraint="max",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
         kube_limitrange{constraint="maxLimitRequestRatio",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
         kube_limitrange{constraint="min",limitrange="quotaTest",namespace="testNS",resource="memory",type="Pod"} 2.1e+09
-
 		`,
+			allowLabels: allow.Labels{"kube_limitrange_annotations": append([]string{"annotation_whitelisted"}, descLimitRangeLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(limitRangeMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(limitRangeMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, limitRangeMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

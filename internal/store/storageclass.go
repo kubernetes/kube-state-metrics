@@ -16,9 +16,6 @@ package store
 import (
 	"context"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -89,6 +89,24 @@ var (
 						{
 							LabelKeys:   labelKeys,
 							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_storageclass_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(s.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
 							Value:       1,
 						},
 					},

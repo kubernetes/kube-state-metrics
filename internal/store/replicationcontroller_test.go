@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -38,6 +39,8 @@ func TestReplicationControllerStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_replicationcontroller_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_replicationcontroller_annotations gauge
 		# HELP kube_replicationcontroller_created Unix creation timestamp
 		# TYPE kube_replicationcontroller_created gauge
 		# HELP kube_replicationcontroller_metadata_generation Sequence number representing a specific generation of the desired state.
@@ -85,6 +88,7 @@ func TestReplicationControllerStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_replicationcontroller_annotations{namespace="ns1",replicationcontroller="rc1"} 1
 				kube_replicationcontroller_created{namespace="ns1",replicationcontroller="rc1"} 1.5e+09
 				kube_replicationcontroller_metadata_generation{namespace="ns1",replicationcontroller="rc1"} 21
 				kube_replicationcontroller_owner{namespace="ns1",owner_is_controller="true",owner_kind="DeploymentConfig",owner_name="dc-name",replicationcontroller="rc1"} 1
@@ -102,6 +106,10 @@ func TestReplicationControllerStore(t *testing.T) {
 					Name:       "rc2",
 					Namespace:  "ns2",
 					Generation: 14,
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
 				},
 				Status: v1.ReplicationControllerStatus{
 					Replicas:             0,
@@ -115,6 +123,7 @@ func TestReplicationControllerStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+			 	kube_replicationcontroller_annotations{annotation_whitelisted="true",namespace="ns2",replicationcontroller="rc2"} 1
 				kube_replicationcontroller_metadata_generation{namespace="ns2",replicationcontroller="rc2"} 14
 				kube_replicationcontroller_owner{namespace="ns2",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",replicationcontroller="rc2"} 1
 				kube_replicationcontroller_status_replicas{namespace="ns2",replicationcontroller="rc2"} 0
@@ -124,6 +133,7 @@ func TestReplicationControllerStore(t *testing.T) {
 				kube_replicationcontroller_status_available_replicas{namespace="ns2",replicationcontroller="rc2"} 0
 				kube_replicationcontroller_spec_replicas{namespace="ns2",replicationcontroller="rc2"} 0
 `,
+			allowLabels: allow.Labels{"kube_replicationcontroller_annotations": append([]string{"annotation_whitelisted"}, descReplicationControllerLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.ReplicationController{
@@ -151,6 +161,7 @@ func TestReplicationControllerStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_replicationcontroller_annotations{namespace="ns3",replicationcontroller="rc3"} 1
 				kube_replicationcontroller_metadata_generation{namespace="ns3",replicationcontroller="rc3"} 5
 				kube_replicationcontroller_owner{namespace="ns3",owner_is_controller="false",owner_kind="DeploymentConfig",owner_name="dc-test",replicationcontroller="rc3"} 1
 				kube_replicationcontroller_status_replicas{namespace="ns3",replicationcontroller="rc3"} 1
@@ -163,8 +174,9 @@ func TestReplicationControllerStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(replicationControllerMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(replicationControllerMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, replicationControllerMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

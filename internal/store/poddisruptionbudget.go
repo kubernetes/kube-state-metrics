@@ -128,6 +128,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_poddisruptionbudget_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(p.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

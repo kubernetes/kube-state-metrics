@@ -8,3 +8,4 @@
 | kube_volumeattachment_spec_source_persistentvolume | Gauge | `volumeattachment`=&lt;volumeattachment-name&gt; <br> `volumename`=&lt;persistentvolume-name&gt; | EXPERIMENTAL |
 | kube_volumeattachment_status_attached | Gauge | `volumeattachment`=&lt;volumeattachment-name&gt; | EXPERIMENTAL |
 | kube_volumeattachment_status_attachment_metadata | Gauge | `volumeattachment`=&lt;volumeattachment-name&gt; <br> `metadata_METADATA_KEY`=&lt;METADATA_VALUE&gt;  | EXPERIMENTAL |
+| kube_volumeattachment_annotations | Gauge | `volumeattachment`=&lt;volumeattachment-name&gt; <br> `metadata_METADATA_KEY`=&lt;METADATA_VALUE&gt;  | EXPERIMENTAL |

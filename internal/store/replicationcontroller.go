@@ -199,6 +199,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(r.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

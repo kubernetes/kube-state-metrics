@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -30,6 +31,8 @@ func TestEndpointStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_endpoint_annotations gauge
 		# HELP kube_endpoint_address_available Number of addresses available in endpoint.
 		# TYPE kube_endpoint_address_available gauge
 		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
@@ -50,6 +53,10 @@ func TestEndpointStore(t *testing.T) {
 					Namespace:         "default",
 					Labels: map[string]string{
 						"app": "foobar",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 				},
 				Subsets: []v1.EndpointSubset{
@@ -89,12 +96,16 @@ func TestEndpointStore(t *testing.T) {
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="test-endpoint",label_app="foobar",namespace="default"} 1
+				kube_endpoint_annotations{annotation_whitelisted="true",endpoint="test-endpoint",namespace="default"} 1
 			`,
+			allowLabels: allow.Labels{"kube_endpoint_annotations": append([]string{"annotation_whitelisted"}, descEndpointLabelsDefaultLabels...),
+				"kube_endpoint_labels": append([]string{"label_app"}, descEndpointLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, endpointMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

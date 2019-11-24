@@ -22,17 +22,20 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestVolumeAttachmentStore(t *testing.T) {
 	const metadata = `
+		# HELP kube_volumeattachment_annotations Kubernetes annotations converted to Prometheus labels.
 		# HELP kube_volumeattachment_created Unix creation timestamp
         # HELP kube_volumeattachment_info Information about volumeattachment.
         # HELP kube_volumeattachment_labels Kubernetes labels converted to Prometheus labels.
         # HELP kube_volumeattachment_spec_source_persistentvolume PersistentVolume source reference.
         # HELP kube_volumeattachment_status_attached Information about volumeattachment.
         # HELP kube_volumeattachment_status_attachment_metadata volumeattachment metadata.
+		# TYPE kube_volumeattachment_annotations gauge
         # TYPE kube_volumeattachment_created gauge
         # TYPE kube_volumeattachment_info gauge
         # TYPE kube_volumeattachment_labels gauge
@@ -52,6 +55,10 @@ func TestVolumeAttachmentStore(t *testing.T) {
 						Labels: map[string]string{
 							"app": "foobar",
 						},
+						Annotations: map[string]string{
+							"whitelisted":     "true",
+							"not-whitelisted": "false",
+						},
 					},
 					Spec: storagev1.VolumeAttachmentSpec{
 						Attacher: "cinder.csi.openstack.org",
@@ -69,6 +76,7 @@ func TestVolumeAttachmentStore(t *testing.T) {
 					},
 				},
 				Want: metadata + `
+				kube_volumeattachment_annotations{annotation_whitelisted="true",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
 		        kube_volumeattachment_info{attacher="cinder.csi.openstack.org",node="node1",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
         		kube_volumeattachment_labels{label_app="foobar",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
 		        kube_volumeattachment_spec_source_persistentvolume{volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224",volumename="pvc-44f6ff3f-ba9b-49c4-9b95-8b01c4bd4bab"} 1
@@ -82,13 +90,17 @@ func TestVolumeAttachmentStore(t *testing.T) {
 					"kube_volumeattachment_spec_source_persistentvolume",
 					"kube_volumeattachment_status_attached",
 					"kube_volumeattachment_status_attachment_metadata",
+					"kube_volumeattachment_annotations",
 				},
+				allowLabels: allow.Labels{"kube_volumeattachment_annotations": append([]string{"annotation_whitelisted"}, descVolumeAttachmentLabelsDefaultLabels...),
+					"kube_volumeattachment_labels": append([]string{"label_app"}, descVolumeAttachmentLabelsDefaultLabels...)},
 			},
 		}
 	)
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(volumeAttachmentMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttachmentMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, volumeAttachmentMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

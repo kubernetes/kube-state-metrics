@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -107,6 +108,7 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
 			},
+			allowLabels: allow.Labels{"kube_statefulset_labels": append([]string{"label_app"}, descStatefulSetLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.StatefulSet{
@@ -176,6 +178,7 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
 			},
+			allowLabels: allow.Labels{"kube_statefulset_labels": append([]string{"label_app"}, descStatefulSetLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.StatefulSet{
@@ -238,11 +241,39 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
 			},
+			allowLabels: allow.Labels{"kube_statefulset_labels": append([]string{"label_app"}, descStatefulSetLabelsDefaultLabels...)},
+		},
+		{
+			Obj: &v1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "statefulset4",
+					Namespace: "ns4",
+					Labels: map[string]string{
+						"app": "example3",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+					Generation: 36,
+				},
+			},
+			Want: `
+				# HELP kube_statefulset_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_statefulset_annotations gauge
+				kube_statefulset_annotations{annotation_whitelisted="true",namespace="ns4",statefulset="statefulset4"} 1
+ 			`,
+			MetricNames: []string{
+				"kube_statefulset_annotations",
+			},
+			allowLabels: allow.Labels{
+				"kube_statefulset_annotations": append([]string{"annotation_whitelisted"}, descStatefulSetLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, statefulSetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

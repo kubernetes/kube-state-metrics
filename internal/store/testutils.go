@@ -26,6 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
@@ -35,6 +36,7 @@ type generateMetricsTestCase struct {
 	Want        string
 	Headers     []string
 	Func        func(interface{}) []metric.FamilyInterface
+	allowLabels allow.Labels
 }
 
 func (testCase *generateMetricsTestCase) run() error {

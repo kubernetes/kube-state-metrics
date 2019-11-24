@@ -79,6 +79,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(vwc.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -30,6 +31,8 @@ func TestServiceStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_service_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_service_annotations gauge
 		# HELP kube_service_info Information about service.
 		# TYPE kube_service_info gauge
 		# HELP kube_service_created Unix creation timestamp
@@ -79,6 +82,7 @@ func TestServiceStore(t *testing.T) {
 				"kube_service_labels",
 				"kube_service_spec_type",
 			},
+			allowLabels: allow.Labels{"kube_service_labels": append([]string{"label_app"}, descServiceLabelsDefaultLabels...)},
 		},
 		{
 
@@ -97,11 +101,14 @@ func TestServiceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_service_annotations{namespace="default",service="test-service2"} 1
 				kube_service_created{namespace="default",service="test-service2"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.5",external_name="",load_balancer_ip="",namespace="default",service="test-service2"} 1
 				kube_service_labels{label_app="example2",namespace="default",service="test-service2"} 1
 				kube_service_spec_type{namespace="default",service="test-service2",type="NodePort"} 1
 `,
+			allowLabels: allow.Labels{"kube_service_annotations": descServiceLabelsDefaultLabels,
+				"kube_service_labels": append([]string{"label_app"}, descServiceLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.Service{
@@ -120,11 +127,13 @@ func TestServiceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_service_annotations{namespace="default",service="test-service3"} 1
 				kube_service_created{namespace="default",service="test-service3"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.6",external_name="",load_balancer_ip="1.2.3.7",namespace="default",service="test-service3"} 1
 				kube_service_labels{label_app="example3",namespace="default",service="test-service3"} 1
 				kube_service_spec_type{namespace="default",service="test-service3",type="LoadBalancer"} 1
 `,
+			allowLabels: allow.Labels{"kube_service_labels": append([]string{"label_app"}, descServiceLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.Service{
@@ -142,11 +151,13 @@ func TestServiceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_service_annotations{namespace="default",service="test-service4"} 1
 				kube_service_created{namespace="default",service="test-service4"} 1.5e+09
 				kube_service_info{cluster_ip="",external_name="www.example.com",load_balancer_ip="",namespace="default",service="test-service4"} 1
 				kube_service_labels{label_app="example4",namespace="default",service="test-service4"} 1
 				kube_service_spec_type{namespace="default",service="test-service4",type="ExternalName"} 1
 			`,
+			allowLabels: allow.Labels{"kube_service_labels": append([]string{"label_app"}, descServiceLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.Service{
@@ -173,12 +184,14 @@ func TestServiceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_service_annotations{namespace="default",service="test-service5"} 1
 				kube_service_created{namespace="default",service="test-service5"} 1.5e+09
 				kube_service_info{cluster_ip="",external_name="",load_balancer_ip="",namespace="default",service="test-service5"} 1
 				kube_service_labels{label_app="example5",namespace="default",service="test-service5"} 1
 				kube_service_spec_type{namespace="default",service="test-service5",type="LoadBalancer"} 1
 				kube_service_status_load_balancer_ingress{hostname="www.example.com",ip="1.2.3.8",namespace="default",service="test-service5"} 1
 			`,
+			allowLabels: allow.Labels{"kube_service_labels": append([]string{"label_app"}, descServiceLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.Service{
@@ -188,6 +201,10 @@ func TestServiceStore(t *testing.T) {
 					Namespace:         "default",
 					Labels: map[string]string{
 						"app": "example6",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 				},
 				Spec: v1.ServiceSpec{
@@ -199,6 +216,7 @@ func TestServiceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_service_annotations{annotation_whitelisted="true",namespace="default",service="test-service6"} 1
 				kube_service_created{namespace="default",service="test-service6"} 1.5e+09
 				kube_service_info{cluster_ip="",external_name="",load_balancer_ip="",namespace="default",service="test-service6"} 1
 				kube_service_labels{label_app="example6",namespace="default",service="test-service6"} 1
@@ -206,11 +224,14 @@ func TestServiceStore(t *testing.T) {
 				kube_service_spec_external_ip{external_ip="1.2.3.9",namespace="default",service="test-service6"} 1
 				kube_service_spec_external_ip{external_ip="1.2.3.10",namespace="default",service="test-service6"} 1
 			`,
+			allowLabels: allow.Labels{"kube_service_annotations": append([]string{"annotation_whitelisted"}, descServiceLabelsDefaultLabels...),
+				"kube_service_labels": append([]string{"label_app"}, descServiceLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(serviceMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(serviceMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, serviceMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

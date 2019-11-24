@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -36,9 +37,11 @@ func TestReplicaSetStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_replicaset_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_replicaset_annotations gauge
 		# HELP kube_replicaset_created Unix creation timestamp
 		# TYPE kube_replicaset_created gauge
-	  # HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
+	  	# HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
 		# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_replicas gauge
@@ -85,6 +88,7 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_replicaset_annotations{namespace="ns1",replicaset="rs1"} 1
 				kube_replicaset_labels{replicaset="rs1",namespace="ns1",label_app="example1"} 1
 				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
@@ -95,6 +99,7 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_spec_replicas{namespace="ns1",replicaset="rs1"} 5
 				kube_replicaset_owner{namespace="ns1",owner_is_controller="true",owner_kind="Deployment",owner_name="dp-name",replicaset="rs1"} 1
 `,
+			allowLabels: allow.Labels{"kube_replicaset_labels": append([]string{"label_app"}, descReplicaSetLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.ReplicaSet{
@@ -105,6 +110,10 @@ func TestReplicaSetStore(t *testing.T) {
 					Labels: map[string]string{
 						"app": "example2",
 						"env": "ex",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 				},
 				Status: v1.ReplicaSetStatus{
@@ -118,6 +127,7 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_replicaset_annotations{annotation_whitelisted="true",namespace="ns2",replicaset="rs2"} 1
 				kube_replicaset_labels{replicaset="rs2",namespace="ns2",label_app="example2",label_env="ex"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
@@ -127,11 +137,14 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_spec_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_owner{namespace="ns2",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",replicaset="rs2"} 1
 			`,
+			allowLabels: allow.Labels{"kube_replicaset_annotations": append([]string{"annotation_whitelisted"}, descReplicaSetLabelsDefaultLabels...),
+				"kube_replicaset_labels": append([]string{"label_app", "label_env"}, descReplicaSetLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(replicaSetMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(replicaSetMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, replicaSetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

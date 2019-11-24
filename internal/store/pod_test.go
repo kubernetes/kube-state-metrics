@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -1563,6 +1564,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			MetricNames: []string{
 				"kube_pod_labels",
 			},
+			allowLabels: allow.Labels{"kube_pod_labels": append([]string{"label_app"}, descPodLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1620,11 +1622,36 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					Labels: map[string]string{
+						"app": "example",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
+        		# TYPE kube_pod_annotations gauge
+				kube_pod_annotations{annotation_whitelisted="true",namespace="ns1",pod="pod1"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_annotations",
+			},
+			allowLabels: allow.Labels{"kube_pod_annotations": append([]string{"annotation_whitelisted"}, descPodLabelsDefaultLabels...)},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, podMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -1695,7 +1722,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 57
+	expectedFamilies := 58
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

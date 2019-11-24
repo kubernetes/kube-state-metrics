@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -30,6 +31,8 @@ func TestNamespaceStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_namespace_annotations gauge
 		# HELP kube_namespace_created Unix creation timestamp
 		# TYPE kube_namespace_created gauge
 		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
@@ -54,10 +57,12 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_namespace_annotations{namespace="nsActiveTest"} 1
 				kube_namespace_labels{namespace="nsActiveTest"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Active"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Terminating"} 0
 `,
+			allowLabels: allow.Labels{"kube_namespace_labels": descNamespaceLabelsDefaultLabels},
 		},
 		{
 			Obj: &v1.Namespace{
@@ -72,10 +77,13 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_namespace_annotations{namespace="nsTerminateTest"} 1
 				kube_namespace_labels{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Terminating"} 1
 `,
+			allowLabels: allow.Labels{"kube_namespace_annotations": descNamespaceLabelsDefaultLabels,
+				"kube_namespace_labels": descNamespaceLabelsDefaultLabels},
 		},
 		{
 			Obj: &v1.Namespace{
@@ -95,6 +103,7 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_namespace_annotations{namespace="nsTerminateWithConditionTest"} 1
 				kube_namespace_labels{namespace="nsTerminateWithConditionTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Terminating"} 1
@@ -127,11 +136,13 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_namespace_annotations{namespace="ns1"} 1
 				kube_namespace_created{namespace="ns1"} 1.5e+09
 				kube_namespace_labels{label_app="example1",namespace="ns1"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
 `,
+			allowLabels: allow.Labels{"kube_namespace_labels": append([]string{"label_app"}, descNamespaceLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.Namespace{
@@ -139,6 +150,38 @@ func TestNamespaceStore(t *testing.T) {
 					Name: "ns2",
 					Labels: map[string]string{
 						"app": "example2",
+						"l2":  "label2",
+					},
+					Annotations: map[string]string{
+						"whitelisted": "true",
+					},
+				},
+				Spec: v1.NamespaceSpec{
+					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+				},
+				Status: v1.NamespaceStatus{
+					Phase: v1.NamespaceActive,
+				},
+			},
+			Want: metadata + `
+				kube_namespace_annotations{namespace="ns2",annotation_whitelisted="true"} 1
+				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
+				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
+				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
+`,
+			allowLabels: allow.Labels{"kube_namespace_annotations": append([]string{"annotation_whitelisted"}, descNamespaceLabelsDefaultLabels...),
+				"kube_namespace_labels": append([]string{"label_app", "label_l2"}, descNamespaceLabelsDefaultLabels...)},
+		},
+		{
+			Obj: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "ns3",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+					Labels: map[string]string{
+						"app": "example3",
 						"l2":  "label2",
 					},
 				},
@@ -150,16 +193,20 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
-				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
-				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
+				kube_namespace_annotations{annotation_whitelisted="true",namespace="ns3"} 1
+				kube_namespace_labels{label_app="example3",label_l2="label2",namespace="ns3"} 1
+				kube_namespace_status_phase{namespace="ns3",phase="Active"} 1
+				kube_namespace_status_phase{namespace="ns3",phase="Terminating"} 0
 `,
+			allowLabels: allow.Labels{"kube_namespace_annotations": append([]string{"annotation_whitelisted"}, descNamespaceLabelsDefaultLabels...),
+				"kube_namespace_labels": append([]string{"label_app", "label_l2"}, descNamespaceLabelsDefaultLabels...)},
 		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(namespaceMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(namespaceMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, namespaceMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -165,6 +166,7 @@ func TestNodeStore(t *testing.T) {
 				"kube_node_info",
 				"kube_node_created",
 			},
+			allowLabels: allow.Labels{"kube_node_labels": append([]string{"label_node_role_kubernetes_io_master"}, descNodeLabelsDefaultLabels...)},
 		},
 		// Verify StatusCondition
 		{
@@ -274,10 +276,29 @@ func TestNodeStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_node_spec_taint"},
 		},
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "127.0.0.1",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+				},
+			},
+			Want: `
+				# HELP kube_node_annotations Kubernetes annotations converted to Prometheus labels.
+        		# TYPE kube_node_annotations gauge
+				kube_node_annotations{annotation_whitelisted="true",node="127.0.0.1"} 1
+			`,
+			MetricNames: []string{"kube_node_annotations"},
+			allowLabels: allow.Labels{"kube_node_annotations": append([]string{"annotation_whitelisted"}, descNodeLabelsDefaultLabels...)},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(nodeMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(nodeMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, nodeMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

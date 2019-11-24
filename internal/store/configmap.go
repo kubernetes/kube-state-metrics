@@ -81,6 +81,22 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_configmap_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(c.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
+						Value:       1,
+					}},
+				}
+			}),
+		),
 	}
 )
 

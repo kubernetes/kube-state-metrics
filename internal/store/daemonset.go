@@ -226,6 +226,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_daemonset_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.ObjectMeta.Labels)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

@@ -20,6 +20,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -105,11 +106,39 @@ func TestStorageClassStore(t *testing.T) {
 			MetricNames: []string{
 				"kube_storageclass_labels",
 			},
+			allowLabels: allow.Labels{"kube_storageclass_labels": append([]string{"label_foo"}, descStorageClassLabelsDefaultLabels...)},
+		},
+		{
+			Obj: &storagev1.StorageClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test_storageclass-annotations",
+					Labels: map[string]string{
+						"foo": "bar",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+				},
+				Provisioner:       "kubernetes.io/rbd",
+				ReclaimPolicy:     &reclaimPolicy,
+				VolumeBindingMode: &volumeBindingMode,
+			},
+			Want: `
+					# HELP kube_storageclass_annotations Kubernetes annotations converted to Prometheus labels.
+					# TYPE kube_storageclass_annotations gauge
+					kube_storageclass_annotations{annotation_whitelisted="true",storageclass="test_storageclass-annotations"} 1
+				`,
+			MetricNames: []string{
+				"kube_storageclass_annotations",
+			},
+			allowLabels: allow.Labels{"kube_storageclass_annotations": append([]string{"annotation_whitelisted"}, descStorageClassLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, storageClassMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -85,6 +85,10 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 	return mapToPrometheusLabels(labels, "label")
 }
 
+func kubeAnnotationsToPrometheusLabels(labels map[string]string) ([]string, []string) {
+	return mapToPrometheusLabels(labels, "annotation")
+}
+
 func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
 	labelValues := make([]string, 0, len(labels))

@@ -22,6 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -53,26 +54,35 @@ func TestConfigMapStore(t *testing.T) {
 					Name:              "configmap2",
 					Namespace:         "ns2",
 					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "10596",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+					ResourceVersion: "10596",
 				},
 			},
 			Want: `
-				# HELP kube_configmap_created Unix creation timestamp
 				# HELP kube_configmap_info Information about configmap.
 				# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
+				# HELP kube_configmap_annotations Kubernetes annotations converted to Prometheus labels.
+				# HELP kube_configmap_created Unix creation timestamp
 				# TYPE kube_configmap_created gauge
 				# TYPE kube_configmap_info gauge
 				# TYPE kube_configmap_metadata_resource_version gauge
+				# TYPE kube_configmap_annotations gauge
 				kube_configmap_info{configmap="configmap2",namespace="ns2"} 1
 				kube_configmap_created{configmap="configmap2",namespace="ns2"} 1.501569018e+09
 				kube_configmap_metadata_resource_version{configmap="configmap2",namespace="ns2"} 10596
+				kube_configmap_annotations{annotation_whitelisted="true",configmap="configmap2",namespace="ns2"} 1
 				`,
-			MetricNames: []string{"kube_configmap_info", "kube_configmap_created", "kube_configmap_metadata_resource_version"},
+			MetricNames: []string{"kube_configmap_info", "kube_configmap_created", "kube_configmap_metadata_resource_version", "kube_configmap_annotations"},
+			allowLabels: allow.Labels{"kube_configmap_annotations": append([]string{"annotation_whitelisted"}, descConfigMapLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(configMapMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(configMapMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, configMapMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

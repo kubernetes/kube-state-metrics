@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -147,6 +148,7 @@ func TestCronJobStore(t *testing.T) {
 ` + fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveRunningCronJob1\",namespace=\"ns1\"} %ve+09\n",
 				float64(ActiveRunningCronJob1NextScheduleTime.Unix())/math.Pow10(9)),
 			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
+			allowLabels: allow.Labels{"kube_cronjob_labels": append([]string{"label_app"}, descCronJobLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -192,6 +194,7 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.520762696e+09
 `,
 			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
+			allowLabels: allow.Labels{"kube_cronjob_labels": append([]string{"label_app"}, descCronJobLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -202,6 +205,10 @@ func TestCronJobStore(t *testing.T) {
 					Generation:        1,
 					Labels: map[string]string{
 						"app": "example-active-no-last-scheduled-1",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 				},
 				Status: batchv1beta1.CronJobStatus{
@@ -216,6 +223,8 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
+			    # HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
+			    # TYPE kube_cronjob_annotations gauge
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
 				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
@@ -236,15 +245,19 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.520766296e+09
 				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",label_app="example-active-no-last-scheduled-1",namespace="ns1"} 1
+				kube_cronjob_annotations{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",annotation_whitelisted="true"} 1
 ` +
 				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveCronJob1NoLastScheduled\",namespace=\"ns1\"} %ve+09\n",
 					float64(ActiveCronJob1NoLastScheduledNextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels"},
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_annotations"},
+			allowLabels: allow.Labels{"kube_cronjob_annotations": append([]string{"annotation_whitelisted"}, descCronJobLabelsDefaultLabels...),
+				"kube_cronjob_labels": append([]string{"label_app"}, descCronJobLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, cronJobMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -35,6 +36,7 @@ func TestHPAStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_horizontalpodautoscaler_annotations Kubernetes annotations converted to Prometheus labels.
 		# HELP kube_horizontalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
 		# HELP kube_horizontalpodautoscaler_metadata_generation The generation observed by the HorizontalPodAutoscaler controller.
 		# HELP kube_horizontalpodautoscaler_spec_max_replicas Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
@@ -43,6 +45,7 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_horizontalpodautoscaler_status_condition The condition of this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_current_replicas Current number of replicas of pods managed by this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
+		# TYPE kube_horizontalpodautoscaler_annotations gauge
 		# TYPE kube_horizontalpodautoscaler_labels gauge
 		# TYPE kube_horizontalpodautoscaler_metadata_generation gauge
 		# TYPE kube_horizontalpodautoscaler_spec_max_replicas gauge
@@ -157,6 +160,7 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_horizontalpodautoscaler_annotations{horizontalpodautoscaler="hpa1",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa1",label_app="foobar",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 4
@@ -184,7 +188,9 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_status_desired_replicas",
 				"kube_horizontalpodautoscaler_status_condition",
 				"kube_horizontalpodautoscaler_labels",
+				"kube_horizontalpodautoscaler_annotations",
 			},
+			allowLabels: allow.Labels{"kube_horizontalpodautoscaler_labels": append([]string{"label_app"}, descHorizontalPodAutoscalerLabelsDefaultLabels...)},
 		},
 		{
 			// Verify populating base metric.
@@ -195,6 +201,10 @@ func TestHPAStore(t *testing.T) {
 					Namespace:  "ns1",
 					Labels: map[string]string{
 						"app": "foobar",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 				},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
@@ -282,6 +292,7 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_horizontalpodautoscaler_annotations{annotation_whitelisted="true",horizontalpodautoscaler="hpa2",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa2",label_app="foobar",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 4
@@ -305,12 +316,16 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_status_desired_replicas",
 				"kube_horizontalpodautoscaler_status_condition",
 				"kube_horizontalpodautoscaler_labels",
+				"kube_horizontalpodautoscaler_annotations",
 			},
+			allowLabels: allow.Labels{"kube_horizontalpodautoscaler_annotations": append([]string{"annotation_whitelisted"}, descHorizontalPodAutoscalerLabelsDefaultLabels...),
+				"kube_horizontalpodautoscaler_labels": append([]string{"label_app"}, descHorizontalPodAutoscalerLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(hpaMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(hpaMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, hpaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

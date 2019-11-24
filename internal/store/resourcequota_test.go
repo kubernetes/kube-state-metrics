@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -33,6 +34,8 @@ func TestResourceQuotaStore(t *testing.T) {
 	const metadata = `
 	# HELP kube_resourcequota Information about resource quota.
 	# TYPE kube_resourcequota gauge
+	# HELP kube_resourcequota_annotations Kubernetes annotations converted to Prometheus labels.
+	# TYPE kube_resourcequota_annotations gauge
 	# HELP kube_resourcequota_created Unix creation timestamp
 	# TYPE kube_resourcequota_created gauge
 	`
@@ -48,6 +51,7 @@ func TestResourceQuotaStore(t *testing.T) {
 				Status: v1.ResourceQuotaStatus{},
 			},
 			Want: metadata + `
+			kube_resourcequota_annotations{namespace="testNS",resourcequota="quotaTest"} 1
 			kube_resourcequota_created{namespace="testNS",resourcequota="quotaTest"} 1.5e+09
 			`,
 		},
@@ -57,6 +61,10 @@ func TestResourceQuotaStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "quotaTest",
 					Namespace: "testNS",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
 				},
 				Spec: v1.ResourceQuotaSpec{
 					Hard: v1.ResourceList{
@@ -106,6 +114,7 @@ func TestResourceQuotaStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+			kube_resourcequota_annotations{annotation_whitelisted="true",namespace="testNS",resourcequota="quotaTest"} 1
 			kube_resourcequota{namespace="testNS",resource="configmaps",resourcequota="quotaTest",type="hard"} 4
 			kube_resourcequota{namespace="testNS",resource="configmaps",resourcequota="quotaTest",type="used"} 3
 			kube_resourcequota{namespace="testNS",resource="cpu",resourcequota="quotaTest",type="hard"} 4.3
@@ -131,11 +140,13 @@ func TestResourceQuotaStore(t *testing.T) {
 			kube_resourcequota{namespace="testNS",resource="storage",resourcequota="quotaTest",type="hard"} 1e+10
 			kube_resourcequota{namespace="testNS",resource="storage",resourcequota="quotaTest",type="used"} 9e+09
 			`,
+			allowLabels: allow.Labels{"kube_resourcequota_annotations": append([]string{"annotation_whitelisted"}, descResourceQuotaLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(resourceQuotaMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, resourceQuotaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

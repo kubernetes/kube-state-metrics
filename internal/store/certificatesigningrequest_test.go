@@ -23,6 +23,7 @@ import (
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -36,6 +37,8 @@ func TestCsrStore(t *testing.T) {
 		# TYPE kube_certificatesigningrequest_condition gauge
 		# HELP kube_certificatesigningrequest_cert_length Length of the issued cert
 		# TYPE kube_certificatesigningrequest_cert_length gauge
+		# HELP kube_certificatesigningrequest_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_certificatesigningrequest_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -57,8 +60,12 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
+			allowLabels: allow.Labels{
+				"kube_certificatesigningrequest_labels": append([]string{"label_cert"}, descCSRLabelsDefaultLabels...),
+			},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -85,8 +92,12 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 1
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
+			allowLabels: allow.Labels{
+				"kube_certificatesigningrequest_labels": append([]string{"label_cert"}, descCSRLabelsDefaultLabels...),
+			},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -113,8 +124,12 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
+			allowLabels: allow.Labels{
+				"kube_certificatesigningrequest_labels": append([]string{"label_cert"}, descCSRLabelsDefaultLabels...),
+			},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -141,8 +156,12 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 0
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 13
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
+			allowLabels: allow.Labels{
+				"kube_certificatesigningrequest_labels": append([]string{"label_cert"}, descCSRLabelsDefaultLabels...),
+			},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -171,8 +190,12 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 1
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{certificatesigningrequest="certificate-test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
+			allowLabels: allow.Labels{
+				"kube_certificatesigningrequest_labels": append([]string{"label_cert"}, descCSRLabelsDefaultLabels...),
+			},
 		},
 		{
 			Obj: &certv1beta1.CertificateSigningRequest{
@@ -181,6 +204,10 @@ func TestCsrStore(t *testing.T) {
 					Generation: 1,
 					Labels: map[string]string{
 						"cert": "test",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				},
@@ -207,13 +234,17 @@ func TestCsrStore(t *testing.T) {
 				kube_certificatesigningrequest_condition{certificatesigningrequest="certificate-test",condition="denied"} 2
 				kube_certificatesigningrequest_labels{certificatesigningrequest="certificate-test",label_cert="test"} 1
 				kube_certificatesigningrequest_cert_length{certificatesigningrequest="certificate-test"} 0
+				kube_certificatesigningrequest_annotations{annotation_whitelisted="true",certificatesigningrequest="certificate-test"} 1
 `,
-			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length"},
+			MetricNames: []string{"kube_certificatesigningrequest_created", "kube_certificatesigningrequest_condition", "kube_certificatesigningrequest_labels", "kube_certificatesigningrequest_cert_length", "kube_certificatesigningrequest_annotations"},
+			allowLabels: allow.Labels{"kube_certificatesigningrequest_annotations": append([]string{"annotation_whitelisted"}, descCSRLabelsDefaultLabels...),
+				"kube_certificatesigningrequest_labels": append([]string{"label_cert"}, descCSRLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(csrMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(csrMetricFamilies)
+		filteredAllowedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, csrMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredAllowedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredAllowedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected error when collecting result in %vth run:\n%s", i, err)
 		}

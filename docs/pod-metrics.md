@@ -59,6 +59,7 @@
 | kube_pod_status_reason | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;NodeLost\|Evicted\|UnexpectedAdmissionError&gt; | EXPERIMENTAL |
 | kube_pod_status_scheduled_time | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
 | kube_pod_status_unschedulable | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
+| kube_pod_annotations | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `annotation_POD_ANNOTATION`=&lt;POD_ANNOTATIONL&gt;  | EXPERIMENTAL |
 
 ## Useful metrics queries
 

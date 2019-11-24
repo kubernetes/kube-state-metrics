@@ -22,6 +22,7 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -69,10 +70,31 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_validatingwebhookconfiguration_created", "kube_validatingwebhookconfiguration_info", "kube_validatingwebhookconfiguration_metadata_resource_version"},
 		},
+		{
+			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "validatingwebhookconfiguration3",
+					Namespace:       "ns3",
+					ResourceVersion: "123456",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
+				},
+			},
+			Want: `
+				# HELP kube_validatingwebhookconfiguration_annotations Kubernetes annotations converted to Prometheus labels.
+        		# TYPE kube_validatingwebhookconfiguration_annotations gauge
+				kube_validatingwebhookconfiguration_annotations{annotation_whitelisted="true",namespace="ns3",validatingwebhookconfiguration="validatingwebhookconfiguration3"} 1
+				`,
+			MetricNames: []string{"kube_validatingwebhookconfiguration_annotations"},
+			allowLabels: allow.Labels{"kube_validatingwebhookconfiguration_annotations": append([]string{"annotation_whitelisted"}, descValidatingWebhookConfigurationDefaultLabels...)},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(validatingWebhookConfigurationMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(validatingWebhookConfigurationMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, validatingWebhookConfigurationMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

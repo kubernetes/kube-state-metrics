@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -48,6 +49,8 @@ func TestJobStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_job_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_job_annotations gauge
 		# HELP kube_job_created Unix creation timestamp
 		# TYPE kube_job_created gauge
 		# HELP kube_job_owner Information about the Job's owner.
@@ -110,6 +113,7 @@ func TestJobStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_job_annotations{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_owner{job_name="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="cronjob-name"} 1
 				kube_job_created{job_name="RunningJob1",namespace="ns1"} 1.5e+09
 				kube_job_info{job_name="RunningJob1",namespace="ns1"} 1
@@ -122,6 +126,8 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_start_time{job_name="RunningJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="RunningJob1",namespace="ns1"} 0
 `,
+			allowLabels: allow.Labels{"kube_job_annotations": append([]string{"annotation_whitelisted"}, descJobLabelsDefaultLabels...),
+				"kube_job_labels": append([]string{"label_app"}, descJobLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1batch.Job{
@@ -150,6 +156,7 @@ func TestJobStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_job_annotations{job_name="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_owner{job_name="SuccessfulJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob1",namespace="ns1"} 1
@@ -165,6 +172,8 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_start_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob1",namespace="ns1"} 1
 `,
+			allowLabels: allow.Labels{"kube_job_annotations": append([]string{"annotation_whitelisted"}, descJobLabelsDefaultLabels...),
+				"kube_job_labels": append([]string{"label_app"}, descJobLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1batch.Job{
@@ -193,6 +202,7 @@ func TestJobStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_job_annotations{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_owner{job_name="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
@@ -210,6 +220,8 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
 `,
+			allowLabels: allow.Labels{"kube_job_annotations": append([]string{"annotation_whitelisted"}, descJobLabelsDefaultLabels...),
+				"kube_job_labels": append([]string{"label_app"}, descJobLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1batch.Job{
@@ -219,6 +231,10 @@ func TestJobStore(t *testing.T) {
 					Generation: 1,
 					Labels: map[string]string{
 						"app": "example-successful-2",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 				},
 				Status: v1batch.JobStatus{
@@ -238,10 +254,10 @@ func TestJobStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_job_annotations{annotation_whitelisted="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_owner{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
-
 				kube_job_complete{condition="unknown",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_info{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_labels{job_name="SuccessfulJob2NoActiveDeadlineSeconds",label_app="example-successful-2",namespace="ns1"} 1
@@ -253,11 +269,14 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 `,
+			allowLabels: allow.Labels{"kube_job_annotations": append([]string{"annotation_whitelisted"}, descJobLabelsDefaultLabels...),
+				"kube_job_labels": append([]string{"label_app"}, descJobLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(jobMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(jobMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, jobMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -20,15 +20,15 @@ import (
 	"context"
 	"strconv"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -108,7 +108,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				var gcePDDiskName, ebsVolumeID, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, iscsiInitiatorName, nfsServer, nfsPath string
+				var gcePDDiskName, ebsVolumeID, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, nfsServer, nfsPath string
 
 				switch {
 				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
@@ -135,9 +135,6 @@ var (
 					iscsiTargetPortal = p.Spec.PersistentVolumeSource.ISCSI.TargetPortal
 					iscsiIQN = p.Spec.PersistentVolumeSource.ISCSI.IQN
 					iscsiLun = strconv.FormatInt(int64(p.Spec.PersistentVolumeSource.ISCSI.Lun), 10)
-					if p.Spec.PersistentVolumeSource.ISCSI.InitiatorName != nil {
-						iscsiInitiatorName = *p.Spec.PersistentVolumeSource.ISCSI.InitiatorName
-					}
 				case p.Spec.PersistentVolumeSource.NFS != nil:
 					nfsServer = p.Spec.PersistentVolumeSource.NFS.Server
 					nfsPath = p.Spec.PersistentVolumeSource.NFS.Path
@@ -156,7 +153,6 @@ var (
 								"iscsi_target_portal",
 								"iscsi_iqn",
 								"iscsi_lun",
-								"iscsi_initiator_name",
 								"nfs_server",
 								"nfs_path",
 							},
@@ -170,7 +166,6 @@ var (
 								iscsiTargetPortal,
 								iscsiIQN,
 								iscsiLun,
-								iscsiInitiatorName,
 								nfsServer,
 								nfsPath,
 							},
@@ -191,6 +186,24 @@ var (
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(storage.Value()),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_persistentvolume_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(p.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
 						},
 					},
 				}

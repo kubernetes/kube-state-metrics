@@ -25,11 +25,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	autoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestVPAStore(t *testing.T) {
 	const metadata = `
+		# HELP kube_verticalpodautoscaler_annotations Kubernetes annotations converted to Prometheus labels.
 		# HELP kube_verticalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
         # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed Maximum resources the VerticalPodAutoscaler can set for containers matching the name.
         # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed Minimum resources the VerticalPodAutoscaler can set for containers matching the name.
@@ -37,7 +39,8 @@ func TestVPAStore(t *testing.T) {
         # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum resources the container can use before the VerticalPodAutoscaler updater evicts it.
         # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target Target resources the VerticalPodAutoscaler recommends for the container.
         # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget Target resources the VerticalPodAutoscaler recommends for the container ignoring bounds.
-        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+		# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+		# TYPE kube_verticalpodautoscaler_annotations gauge
         # TYPE kube_verticalpodautoscaler_labels gauge
         # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed gauge
         # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed gauge
@@ -66,6 +69,10 @@ func TestVPAStore(t *testing.T) {
 					Namespace:  "ns1",
 					Labels: map[string]string{
 						"app": "foobar",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 				},
 				Spec: autoscaling.VerticalPodAutoscalerSpec{
@@ -102,6 +109,7 @@ func TestVPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_verticalpodautoscaler_annotations{annotation_whitelisted="true",namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 1
@@ -129,12 +137,16 @@ func TestVPAStore(t *testing.T) {
 				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound",
 				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target",
 				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget",
+				"kube_verticalpodautoscaler_annotations",
 			},
+			allowLabels: allow.Labels{"kube_verticalpodautoscaler_annotations": append([]string{"annotation_whitelisted"}, descVerticalPodAutoscalerLabelsDefaultLabels...),
+				"kube_verticalpodautoscaler_labels": append([]string{"label_app"}, descVerticalPodAutoscalerLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, vpaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

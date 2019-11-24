@@ -19,16 +19,15 @@ package store
 import (
 	"context"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	"k8s.io/api/extensions/v1beta1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -141,6 +140,24 @@ var (
 				return &metric.Family{
 					Metrics: ms,
 				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_ingress_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(i.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					}}
+
 			}),
 		),
 	}

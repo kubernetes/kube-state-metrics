@@ -22,6 +22,7 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -55,24 +56,33 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 					Namespace:         "ns2",
 					CreationTimestamp: metav1StartTime,
 					ResourceVersion:   "abcdef",
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
 				},
 			},
 			Want: `
+			# HELP kube_mutatingwebhookconfiguration_annotations Kubernetes annotations converted to Prometheus labels.
 			# HELP kube_mutatingwebhookconfiguration_created Unix creation timestamp.
 			# HELP kube_mutatingwebhookconfiguration_info Information about the MutatingWebhookConfiguration.
 			# HELP kube_mutatingwebhookconfiguration_metadata_resource_version Resource version representing a specific version of the MutatingWebhookConfiguration.
+			# TYPE kube_mutatingwebhookconfiguration_annotations gauge
 			# TYPE kube_mutatingwebhookconfiguration_created gauge
 			# TYPE kube_mutatingwebhookconfiguration_info gauge
 			# TYPE kube_mutatingwebhookconfiguration_metadata_resource_version gauge
+			kube_mutatingwebhookconfiguration_annotations{annotation_whitelisted="true",mutatingwebhookconfiguration="mutatingwebhookconfiguration2",namespace="ns2"} 1
 			kube_mutatingwebhookconfiguration_created{mutatingwebhookconfiguration="mutatingwebhookconfiguration2",namespace="ns2"} 1.501569018e+09
 			kube_mutatingwebhookconfiguration_info{mutatingwebhookconfiguration="mutatingwebhookconfiguration2",namespace="ns2"} 1
 			`,
-			MetricNames: []string{"kube_mutatingwebhookconfiguration_created", "kube_mutatingwebhookconfiguration_info", "kube_mutatingwebhookconfiguration_metadata_resource_version"},
+			MetricNames: []string{"kube_mutatingwebhookconfiguration_created", "kube_mutatingwebhookconfiguration_info", "kube_mutatingwebhookconfiguration_metadata_resource_version", "kube_mutatingwebhookconfiguration_annotations"},
+			allowLabels: allow.Labels{"kube_mutatingwebhookconfiguration_annotations": append([]string{"annotation_whitelisted"}, descMutatingWebhookConfigurationDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(mutatingWebhookConfigurationMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(mutatingWebhookConfigurationMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, mutatingWebhookConfigurationMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

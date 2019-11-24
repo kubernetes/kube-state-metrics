@@ -103,6 +103,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_networkpolicy_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(n.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -43,6 +44,8 @@ func TestDeploymentStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_deployment_annotations gauge
 		# HELP kube_deployment_created Unix creation timestamp
 		# TYPE kube_deployment_created gauge
 		# HELP kube_deployment_metadata_generation Sequence number representing a specific generation of the desired state.
@@ -121,8 +124,10 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="false"} 0
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="false"} 0
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="unknown"} 0
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="unknown"} 0
+		kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="unknown"} 0
+		kube_deployment_annotations{deployment="depl1",namespace="ns1"} 1
 `,
+			allowLabels: allow.Labels{"kube_deployment_labels": append([]string{"label_app"}, descDeploymentLabelsDefaultLabels...)},
 		},
 		{
 			Obj: &v1.Deployment{
@@ -131,6 +136,10 @@ func TestDeploymentStore(t *testing.T) {
 					Namespace: "ns2",
 					Labels: map[string]string{
 						"app": "example2",
+					},
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
 					},
 					Generation: 14,
 				},
@@ -177,14 +186,18 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="false"} 0
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="unknown"} 0
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="unknown"} 0
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="unknown"} 0
+		kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="unknown"} 0
+		kube_deployment_annotations{annotation_whitelisted="true",deployment="depl2",namespace="ns2"} 1
 `,
+			allowLabels: allow.Labels{"kube_deployment_annotations": append([]string{"annotation_whitelisted"}, descDeploymentLabelsDefaultLabels...),
+				"kube_deployment_labels": append([]string{"label_app"}, descDeploymentLabelsDefaultLabels...)},
 		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, deploymentMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

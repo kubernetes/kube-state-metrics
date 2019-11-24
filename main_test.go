@@ -138,12 +138,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	builder.WithAllowDenyList(l)
-	builder.WithAllowLabels(map[string][]string{
-		"kube_pod_labels": {
-			"namespace",
-			"pod",
-		},
-	})
+	builder.WithAllowLabels(map[string][]string{})
 
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
@@ -164,6 +159,9 @@ func TestFullScrapeCycle(t *testing.T) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	expected := `# HELP kube_pod_info Information about pod.
+# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
+# TYPE kube_pod_annotations gauge
+kube_pod_annotations{namespace="default",pod="pod0"} 1
 # TYPE kube_pod_info gauge
 kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-0",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class="",host_network="false"} 1
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.

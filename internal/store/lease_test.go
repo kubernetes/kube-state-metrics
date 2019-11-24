@@ -23,11 +23,14 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestLeaseStore(t *testing.T) {
 	const metadata = `
+		# HELP kube_lease_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_lease_annotations gauge
         # HELP kube_lease_owner Information about the Lease's owner.
         # TYPE kube_lease_owner gauge
         # HELP kube_lease_renew_time Kube lease renew time.
@@ -48,25 +51,33 @@ func TestLeaseStore(t *testing.T) {
 								Name: "kube-master",
 							},
 						},
+						Annotations: map[string]string{
+							"whitelisted":     "true",
+							"not-whitelisted": "false",
+						},
 					},
 					Spec: coordinationv1.LeaseSpec{
 						RenewTime: &metav1.MicroTime{Time: time.Unix(1500000000, 0)},
 					},
 				},
 				Want: metadata + `
+					kube_lease_annotations{annotation_whitelisted="true",lease="kube-master"} 1
                     kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master"} 1
                     kube_lease_renew_time{lease="kube-master"} 1.5e+09
 			`,
 				MetricNames: []string{
 					"kube_lease_owner",
 					"kube_lease_renew_time",
+					"kube_lease_annotations",
 				},
+				allowLabels: allow.Labels{"kube_lease_annotations": append([]string{"annotation_whitelisted"}, descLeaseLabelsDefaultLabels...)},
 			},
 		}
 	)
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(leaseMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(leaseMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, leaseMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%v", i, err)
 		}

@@ -10,3 +10,4 @@
 | kube_horizontalpodautoscaler_status_condition         | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; <br> `condition`=&lt;hpa-condition&gt; <br> `status`=&lt;true\|false\|unknown&gt; | STABLE |
 | kube_horizontalpodautoscaler_status_current_replicas  | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | STABLE |
 | kube_horizontalpodautoscaler_status_desired_replicas  | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | STABLE |
+| kube_horizontalpodautoscaler_annotations              | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; <br> `annotation_HORIZONTALPODAUTOSCALER_ANNOTATION`=&lt;HORIZONTALPODAUTOSCALER_ANNOTATIONL&gt; | EXPERIMENTAL |

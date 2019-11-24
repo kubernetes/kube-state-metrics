@@ -22,6 +22,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -29,10 +30,6 @@ func TestNetworkPolicyStore(t *testing.T) {
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	const metadata = `
-		# HELP kube_verticalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_verticalpodautoscaler_labels gauge
-		`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &networkingv1.NetworkPolicy{
@@ -40,6 +37,10 @@ func TestNetworkPolicyStore(t *testing.T) {
 					Name:              "netpol1",
 					Namespace:         "ns1",
 					CreationTimestamp: metav1StartTime,
+					Annotations: map[string]string{
+						"whitelisted":     "true",
+						"not-whitelisted": "false",
+					},
 				},
 				Spec: networkingv1.NetworkPolicySpec{
 					Ingress: []networkingv1.NetworkPolicyIngressRule{
@@ -54,6 +55,7 @@ func TestNetworkPolicyStore(t *testing.T) {
 				},
 			},
 			Want: `
+			kube_networkpolicy_annotations{annotation_whitelisted="true",namespace="ns1",networkpolicy="netpol1"} 1
 			kube_networkpolicy_created{namespace="ns1",networkpolicy="netpol1"} 1.501569018e+09
 			kube_networkpolicy_labels{namespace="ns1",networkpolicy="netpol1"} 1
 			kube_networkpolicy_spec_egress_rules{namespace="ns1",networkpolicy="netpol1"} 3
@@ -64,11 +66,14 @@ func TestNetworkPolicyStore(t *testing.T) {
 				"kube_networkpolicy_labels",
 				"kube_networkpolicy_spec_egress_rules",
 				"kube_networkpolicy_spec_ingress_rules",
+				"kube_networkpolicy_annotations",
 			},
+			allowLabels: allow.Labels{"kube_networkpolicy_annotations": append([]string{"annotation_whitelisted"}, descNetworkPolicyLabelsDefaultLabels...)},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(networkpolicyMetricFamilies)
+		filteredWhitelistedAnnotationMetricFamilies := generator.FilterMetricFamiliesLabels(c.allowLabels, networkpolicyMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(filteredWhitelistedAnnotationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%s", i, err)
 		}

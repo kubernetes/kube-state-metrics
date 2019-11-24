@@ -143,6 +143,24 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_volumeattachment_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
+				annotationKeys, annotationValues := kubeAnnotationsToPrometheusLabels(va.Annotations)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 )
 

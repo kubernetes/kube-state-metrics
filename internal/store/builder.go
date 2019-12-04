@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
 
+	"k8s.io/kube-state-metrics/pkg/listwatch"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/pkg/options"
@@ -329,10 +330,9 @@ func (b *Builder) reflectorPerNamespace(
 	store cache.Store,
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) {
-	for _, ns := range b.namespaces {
-		lw := listWatchFunc(b.kubeClient, ns)
-		instrumentedListWatch := watch.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String())
-		reflector := cache.NewReflector(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, 0)
-		go reflector.Run(b.ctx.Done())
-	}
+	lwf := func(ns string) cache.ListerWatcher { return listWatchFunc(b.kubeClient, ns) }
+	lw := listwatch.MultiNamespaceListerWatcher(b.namespaces, nil, lwf)
+	instrumentedListWatch := watch.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String())
+	reflector := cache.NewReflector(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, 0)
+	go reflector.Run(b.ctx.Done())
 }

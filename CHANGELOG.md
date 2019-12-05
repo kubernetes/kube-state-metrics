@@ -1,5 +1,6 @@
 ## v1.9.0-rc.0 / 2019-12-04
 
+* [ENHANCEMENT] Add kube-state-metrics alerting rules. #962
 * [BUGFIX] Use single MultiListerWatcher for single store to fix missing metrics when watching multiple namespaces. #969
 * [ENHANCEMENT] Add "Evicted" to the set of container terminated reasons. #968
 * [FEATURE] Add `kube_hpa_spec_target_metric` metric. #966

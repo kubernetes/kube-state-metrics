@@ -8,6 +8,15 @@
                 }
             },
             "version": ""
+        },
+        {
+            "name": "kube-state-metrics-mixin",
+            "source": {
+                "local": {
+                    "directory": "../jsonnet/kube-state-metrics-mixin"
+                }
+            },
+            "version": ""
         }
     ]
 }

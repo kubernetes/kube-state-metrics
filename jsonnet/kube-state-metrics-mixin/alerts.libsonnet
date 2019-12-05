@@ -1,6 +1,6 @@
 {
   _config+:: {
-    kubeStateMetricsSelectmr: error 'must provide selector for kube-state-metrics',
+    kubeStateMetricsSelector: error 'must provide selector for kube-state-metrics',
   },
   prometheusAlerts+:: {
     groups+: [

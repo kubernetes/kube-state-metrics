@@ -44,11 +44,11 @@ type MetricsStore struct {
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []*metric.Family
+	generateMetricsFunc func(interface{}) []metric.FamilityInterface
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []*metric.Family) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilityInterface) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,

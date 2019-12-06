@@ -43,7 +43,7 @@ func (f *metricFamily) ByteSlice() []byte {
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDS := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []*metric.Family {
+	genFunc := func(obj interface{}) []metric.FamilityInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -60,7 +60,7 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 			},
 		}
 
-		return []*metric.Family{&metricFamily}
+		return []metric.FamilityInterface{&metricFamily}
 	}
 
 	ms := NewMetricsStore([]string{"Information about service."}, genFunc)

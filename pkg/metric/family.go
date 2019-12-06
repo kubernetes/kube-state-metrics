@@ -20,11 +20,22 @@ import (
 	"strings"
 )
 
+// FamilityInterface interface for a family
+type FamilityInterface interface {
+	Inspect(inspect func(Family))
+	ByteSlice() []byte
+}
+
 // Family represents a set of metrics with the same name and help text.
 type Family struct {
 	Name    string
 	Type    Type
 	Metrics []*Metric
+}
+
+// Inspect use to instact the inside of a Family
+func (f Family) Inspect(inspect func(Family)) {
+	inspect(f)
 }
 
 // ByteSlice returns the given Family in its string representation.

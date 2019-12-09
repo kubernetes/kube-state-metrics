@@ -49,7 +49,7 @@ import (
 	"k8s.io/kube-state-metrics/pkg/watch"
 )
 
-type whiteBlackLister interface {
+type allowDenyLister interface {
 	IsIncluded(string) bool
 	IsExcluded(string) bool
 }
@@ -62,7 +62,7 @@ type Builder struct {
 	namespaces       options.NamespaceList
 	ctx              context.Context
 	enabledResources []string
-	whiteBlackList   whiteBlackLister
+	allowDenyList    allowDenyLister
 	metrics          *watch.ListWatchMetrics
 	shard            int32
 	totalShards      int
@@ -119,16 +119,16 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 	b.vpaClient = c
 }
 
-// WithWhiteBlackList configures the white or blacklisted metric to be exposed
+// WithAllowDenyList configures the allow or denylisted metric to be exposed
 // by the store build by the Builder.
-func (b *Builder) WithWhiteBlackList(l whiteBlackLister) {
-	b.whiteBlackList = l
+func (b *Builder) WithAllowDenyList(l allowDenyLister) {
+	b.allowDenyList = l
 }
 
 // Build initializes and registers all enabled stores.
 func (b *Builder) Build() []*metricsstore.MetricsStore {
-	if b.whiteBlackList == nil {
-		panic("whiteBlackList should not be nil")
+	if b.allowDenyList == nil {
+		panic("allowDenyList should not be nil")
 	}
 
 	stores := []*metricsstore.MetricsStore{}
@@ -309,7 +309,7 @@ func (b *Builder) buildStore(
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) *metricsstore.MetricsStore {
-	filteredMetricFamilies := metric.FilterMetricFamilies(b.whiteBlackList, metricFamilies)
+	filteredMetricFamilies := metric.FilterMetricFamilies(b.allowDenyList, metricFamilies)
 	composedMetricGenFuncs := metric.ComposeMetricGenFuncs(filteredMetricFamilies)
 
 	familyHeaders := metric.ExtractMetricFamilyHeaders(filteredMetricFamilies)

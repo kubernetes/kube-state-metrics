@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package whiteblacklist
+package allowdenylist
 
 import (
 	"regexp"
@@ -23,42 +23,42 @@ import (
 	"github.com/pkg/errors"
 )
 
-// WhiteBlackList encapsulates the logic needed to filter based on a string.
-type WhiteBlackList struct {
+// AllowDenyList encapsulates the logic needed to filter based on a string.
+type AllowDenyList struct {
 	list        map[string]struct{}
 	rList       []*regexp.Regexp
-	isWhiteList bool
+	isAllowList bool
 }
 
-// New constructs a new WhiteBlackList based on a white- and a
-// blacklist. Only one of them can be not empty.
-func New(white, black map[string]struct{}) (*WhiteBlackList, error) {
-	if len(white) != 0 && len(black) != 0 {
+// New constructs a new AllowDenyList based on a allow- and a
+// denylist. Only one of them can be not empty.
+func New(allow, deny map[string]struct{}) (*AllowDenyList, error) {
+	if len(allow) != 0 && len(deny) != 0 {
 		return nil, errors.New(
-			"whitelist and blacklist are both set, they are mutually exclusive, only one of them can be set",
+			"allowlist and denylist are both set, they are mutually exclusive, only one of them can be set",
 		)
 	}
 
 	var list map[string]struct{}
-	var isWhiteList bool
+	var isAllowList bool
 
-	// Default to blacklisting
-	if len(white) != 0 {
-		list = copyList(white)
-		isWhiteList = true
+	// Default to denylisting
+	if len(allow) != 0 {
+		list = copyList(allow)
+		isAllowList = true
 	} else {
-		list = copyList(black)
-		isWhiteList = false
+		list = copyList(deny)
+		isAllowList = false
 	}
 
-	return &WhiteBlackList{
+	return &AllowDenyList{
 		list:        list,
-		isWhiteList: isWhiteList,
+		isAllowList: isAllowList,
 	}, nil
 }
 
-// Parse parses and compiles all of the regexes in the whiteBlackList.
-func (l *WhiteBlackList) Parse() error {
+// Parse parses and compiles all of the regexes in the allowDenyList.
+func (l *AllowDenyList) Parse() error {
 	regexes := make([]*regexp.Regexp, 0, len(l.list))
 	for item := range l.list {
 		r, err := regexp.Compile(item)
@@ -72,8 +72,8 @@ func (l *WhiteBlackList) Parse() error {
 }
 
 // Include includes the given items in the list.
-func (l *WhiteBlackList) Include(items []string) {
-	if l.isWhiteList {
+func (l *AllowDenyList) Include(items []string) {
+	if l.isAllowList {
 		for _, item := range items {
 			l.list[item] = struct{}{}
 		}
@@ -85,8 +85,8 @@ func (l *WhiteBlackList) Include(items []string) {
 }
 
 // Exclude excludes the given items from the list.
-func (l *WhiteBlackList) Exclude(items []string) {
-	if l.isWhiteList {
+func (l *AllowDenyList) Exclude(items []string) {
+	if l.isAllowList {
 		for _, item := range items {
 			delete(l.list, item)
 		}
@@ -98,7 +98,7 @@ func (l *WhiteBlackList) Exclude(items []string) {
 }
 
 // IsIncluded returns if the given item is included.
-func (l *WhiteBlackList) IsIncluded(item string) bool {
+func (l *AllowDenyList) IsIncluded(item string) bool {
 	var matched bool
 	for _, r := range l.rList {
 		matched = r.MatchString(item)
@@ -107,7 +107,7 @@ func (l *WhiteBlackList) IsIncluded(item string) bool {
 		}
 	}
 
-	if l.isWhiteList {
+	if l.isAllowList {
 		return matched
 	}
 
@@ -115,23 +115,23 @@ func (l *WhiteBlackList) IsIncluded(item string) bool {
 }
 
 // IsExcluded returns if the given item is excluded.
-func (l *WhiteBlackList) IsExcluded(item string) bool {
+func (l *AllowDenyList) IsExcluded(item string) bool {
 	return !l.IsIncluded(item)
 }
 
-// Status returns the status of the WhiteBlackList that can e.g. be passed into
+// Status returns the status of the AllowDenyList that can e.g. be passed into
 // a logger.
-func (l *WhiteBlackList) Status() string {
+func (l *AllowDenyList) Status() string {
 	items := make([]string, 0, len(l.list))
 	for key := range l.list {
 		items = append(items, key)
 	}
 
-	if l.isWhiteList {
-		return "whitelisting the following items: " + strings.Join(items, ", ")
+	if l.isAllowList {
+		return "allowlisting the following items: " + strings.Join(items, ", ")
 	}
 
-	return "blacklisting the following items: " + strings.Join(items, ", ")
+	return "denylisting the following items: " + strings.Join(items, ", ")
 }
 
 func copyList(l map[string]struct{}) map[string]struct{} {

@@ -30,7 +30,7 @@ import (
 	"k8s.io/kube-state-metrics/internal/store"
 	"k8s.io/kube-state-metrics/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/pkg/options"
-	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
+	"k8s.io/kube-state-metrics/pkg/allowdenylist"
 
 	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
@@ -67,11 +67,11 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithContext(ctx)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
-	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
 		b.Fatal(err)
 	}
-	builder.WithWhiteBlackList(l)
+	builder.WithAllowDenyList(l)
 
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
@@ -129,11 +129,11 @@ func TestFullScrapeCycle(t *testing.T) {
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 
-	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	builder.WithWhiteBlackList(l)
+	builder.WithAllowDenyList(l)
 
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
@@ -355,7 +355,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -366,7 +366,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	unshardedBuilder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	unshardedBuilder.WithKubeClient(kubeClient)
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
-	unshardedBuilder.WithWhiteBlackList(l)
+	unshardedBuilder.WithAllowDenyList(l)
 
 	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
 	unshardedHandler.ConfigureSharding(ctx, 0, 1)
@@ -377,7 +377,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder1.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	shardedBuilder1.WithKubeClient(kubeClient)
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
-	shardedBuilder1.WithWhiteBlackList(l)
+	shardedBuilder1.WithAllowDenyList(l)
 
 	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
 	shardedHandler1.ConfigureSharding(ctx, 0, 2)
@@ -388,7 +388,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder2.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	shardedBuilder2.WithKubeClient(kubeClient)
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
-	shardedBuilder2.WithWhiteBlackList(l)
+	shardedBuilder2.WithAllowDenyList(l)
 
 	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
 	shardedHandler2.ConfigureSharding(ctx, 1, 2)

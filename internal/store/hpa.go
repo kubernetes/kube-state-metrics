@@ -17,15 +17,16 @@ limitations under the License.
 package store
 
 import (
-	"k8s.io/kube-state-metrics/pkg/metric"
-
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 type MetricTargetType int
@@ -243,10 +244,17 @@ var (
 						// Skip unsupported metric type
 						continue
 					}
-					if intVal, canFastConvert := value.AsInt64(); canFastConvert {
-						ms[i] = &metric.Metric{
-							Value: float64(intVal),
-						}
+					var metricValue float64
+					if c.Type == autoscaling.ResourceMetricSourceType && c.Resource.Name == corev1.ResourceCPU {
+						metricValue = float64(value.MilliValue()) / 1000
+					} else if intVal, canFastConvert := value.AsInt64(); canFastConvert {
+						metricValue = float64(intVal)
+					} else {
+						// Skip unsupported metric value format
+						continue
+					}
+					ms[i] = &metric.Metric{
+						Value: metricValue,
 					}
 				}
 				return &metric.Family{

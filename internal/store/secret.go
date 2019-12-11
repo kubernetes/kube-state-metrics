@@ -105,13 +105,7 @@ var (
 			Help: "Resource version representing a specific version of secret.",
 			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{s.ObjectMeta.ResourceVersion},
-							Value:       1,
-						},
-					},
+					Metrics: resourceVersionMetric(s.ObjectMeta.ResourceVersion),
 				}
 			}),
 		},

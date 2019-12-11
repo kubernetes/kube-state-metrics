@@ -88,13 +88,8 @@ var (
 			Help: "Resource version representing a specific version of ingress.",
 			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{i.ObjectMeta.ResourceVersion},
-							Value:       1,
-						},
-					}}
+					Metrics: resourceVersionMetric(i.ObjectMeta.ResourceVersion),
+				}
 			}),
 		},
 		{

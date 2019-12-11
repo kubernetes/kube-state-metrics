@@ -69,13 +69,7 @@ var (
 			Help: "Resource version representing a specific version of the MutatingWebhookConfiguration.",
 			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistration.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{mwc.ObjectMeta.ResourceVersion},
-							Value:       1,
-						},
-					},
+					Metrics: resourceVersionMetric(mwc.ObjectMeta.ResourceVersion),
 				}
 			}),
 		},

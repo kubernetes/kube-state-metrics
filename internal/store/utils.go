@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -33,6 +34,20 @@ var (
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )
+
+func resourceVersionMetric(rv string) []*metric.Metric {
+	v, err := strconv.ParseFloat(rv, 64)
+	if err != nil {
+		return []*metric.Metric{}
+	}
+
+	return []*metric.Metric{
+		{
+			Value: v,
+		},
+	}
+
+}
 
 func boolFloat64(b bool) float64 {
 	if b {

@@ -1,5 +1,9 @@
 ## v1.9.0-rc.0 / 2019-12-04
 
+* [BUGFIX] Move resource version from metric label to metric number value #997
+
+## v1.9.0-rc.0 / 2019-12-04
+
 * [CHANGE] Add tools as go modules #927
 * [FEATURE] Add `kube_hpa_spec_target_metric` metric. #966
 * [FEATURE] Add hpa stats for current utilization and average value. #961

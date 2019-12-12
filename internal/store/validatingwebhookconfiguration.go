@@ -69,13 +69,7 @@ var (
 			Help: "Resource version representing a specific version of the ValidatingWebhookConfiguration.",
 			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistration.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{vwc.ObjectMeta.ResourceVersion},
-							Value:       1,
-						},
-					},
+					Metrics: resourceVersionMetric(vwc.ObjectMeta.ResourceVersion),
 				}
 			}),
 		},

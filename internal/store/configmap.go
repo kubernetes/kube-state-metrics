@@ -71,13 +71,7 @@ var (
 			Help: "Resource version representing a specific version of the configmap.",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{c.ObjectMeta.ResourceVersion},
-							Value:       1,
-						},
-					},
+					Metrics: resourceVersionMetric(c.ObjectMeta.ResourceVersion),
 				}
 			}),
 		},

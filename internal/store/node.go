@@ -194,44 +194,6 @@ var (
 			}),
 		},
 		{
-			Name: "kube_node_status_phase",
-			Type: metric.Gauge,
-			Help: "The phase the node is currently in.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				p := n.Status.Phase
-
-				if p == "" {
-					return &metric.Family{
-						Metrics: []*metric.Metric{},
-					}
-				}
-
-				// Set current phase to 1, others to 0 if it is set.
-				ms := []*metric.Metric{
-					{
-						LabelValues: []string{string(v1.NodePending)},
-						Value:       boolFloat64(p == v1.NodePending),
-					},
-					{
-						LabelValues: []string{string(v1.NodeRunning)},
-						Value:       boolFloat64(p == v1.NodeRunning),
-					},
-					{
-						LabelValues: []string{string(v1.NodeTerminated)},
-						Value:       boolFloat64(p == v1.NodeTerminated),
-					},
-				}
-
-				for _, metric := range ms {
-					metric.LabelKeys = []string{"phase"}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
 			Name: "kube_node_status_capacity",
 			Type: metric.Gauge,
 			Help: "The capacity for different resources of a node.",
@@ -302,64 +264,6 @@ var (
 
 				for _, metric := range ms {
 					metric.LabelKeys = []string{"resource", "unit"}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_capacity_pods",
-			Type: metric.Gauge,
-			Help: "The total pod resources of the node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Capacity[v1.ResourcePods]; ok {
-					ms = append(ms, &metric.Metric{
-
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_capacity_cpu_cores",
-			Type: metric.Gauge,
-			Help: "The total CPU resources of the node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Capacity[v1.ResourceCPU]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_capacity_memory_bytes",
-			Type: metric.Gauge,
-			Help: "The total memory resources of the node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Capacity[v1.ResourceMemory]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
 				}
 
 				return &metric.Family{
@@ -439,64 +343,6 @@ var (
 
 				for _, m := range ms {
 					m.LabelKeys = []string{"resource", "unit"}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_allocatable_pods",
-			Type: metric.Gauge,
-			Help: "The pod resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Allocatable[v1.ResourcePods]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_allocatable_cpu_cores",
-			Type: metric.Gauge,
-			Help: "The CPU resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Allocatable[v1.ResourceCPU]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_allocatable_memory_bytes",
-			Type: metric.Gauge,
-			Help: "The memory resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Allocatable[v1.ResourceMemory]; ok {
-					ms = append(ms, &metric.Metric{
-
-						Value: float64(v.MilliValue()) / 1000,
-					})
 				}
 
 				return &metric.Family{

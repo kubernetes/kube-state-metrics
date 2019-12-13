@@ -295,22 +295,6 @@ kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod
 kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
 kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
 kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
-# HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
-# TYPE kube_pod_container_resource_requests_cpu_cores gauge
-kube_pod_container_resource_requests_cpu_cores{namespace="default",pod="pod0",container="pod1_con1",node="node1"} 0.2
-kube_pod_container_resource_requests_cpu_cores{namespace="default",pod="pod0",container="pod1_con2",node="node1"} 0.3
-# HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
-# TYPE kube_pod_container_resource_requests_memory_bytes gauge
-kube_pod_container_resource_requests_memory_bytes{namespace="default",pod="pod0",container="pod1_con1",node="node1"} 1e+08
-kube_pod_container_resource_requests_memory_bytes{namespace="default",pod="pod0",container="pod1_con2",node="node1"} 2e+08
-# HELP kube_pod_container_resource_limits_cpu_cores The limit on cpu cores to be used by a container.
-# TYPE kube_pod_container_resource_limits_cpu_cores gauge
-kube_pod_container_resource_limits_cpu_cores{namespace="default",pod="pod0",container="pod1_con1",node="node1"} 0.2
-kube_pod_container_resource_limits_cpu_cores{namespace="default",pod="pod0",container="pod1_con2",node="node1"} 0.3
-# HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
-# TYPE kube_pod_container_resource_limits_memory_bytes gauge
-kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",container="pod1_con1",node="node1"} 1e+08
-kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",container="pod1_con2",node="node1"} 2e+08
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.

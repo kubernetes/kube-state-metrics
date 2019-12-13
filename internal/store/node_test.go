@@ -124,43 +124,25 @@ func TestNodeStore(t *testing.T) {
 		# HELP kube_node_role The role of a cluster node.
 		# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
 		# HELP kube_node_status_allocatable The allocatable for different resources of a node that are available for scheduling.
-		# HELP kube_node_status_allocatable_cpu_cores The CPU resources of a node that are available for scheduling.
-		# HELP kube_node_status_allocatable_memory_bytes The memory resources of a node that are available for scheduling.
-		# HELP kube_node_status_allocatable_pods The pod resources of a node that are available for scheduling.
 		# HELP kube_node_status_capacity The capacity for different resources of a node.
-		# HELP kube_node_status_capacity_cpu_cores The total CPU resources of the node.
-		# HELP kube_node_status_capacity_memory_bytes The total memory resources of the node.
-		# HELP kube_node_status_capacity_pods The total pod resources of the node.
 		# TYPE kube_node_created gauge
 		# TYPE kube_node_info gauge
 		# TYPE kube_node_labels gauge
 		# TYPE kube_node_role gauge
 		# TYPE kube_node_spec_unschedulable gauge
 		# TYPE kube_node_status_allocatable gauge
-		# TYPE kube_node_status_allocatable_cpu_cores gauge
-		# TYPE kube_node_status_allocatable_memory_bytes gauge
-		# TYPE kube_node_status_allocatable_pods gauge
 		# TYPE kube_node_status_capacity gauge
-		# TYPE kube_node_status_capacity_cpu_cores gauge
-		# TYPE kube_node_status_capacity_memory_bytes gauge
-		# TYPE kube_node_status_capacity_pods gauge
 		kube_node_created{node="127.0.0.1"} 1.5e+09
         kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-randomidentifier"} 1
 		kube_node_labels{label_node_role_kubernetes_io_master="",node="127.0.0.1"} 1
 		kube_node_role{node="127.0.0.1",role="master"} 1
         kube_node_spec_unschedulable{node="127.0.0.1"} 1
-        kube_node_status_allocatable_cpu_cores{node="127.0.0.1"} 3
-        kube_node_status_allocatable_memory_bytes{node="127.0.0.1"} 1e+09
-        kube_node_status_allocatable_pods{node="127.0.0.1"} 555
         kube_node_status_allocatable{node="127.0.0.1",resource="cpu",unit="core"} 3
         kube_node_status_allocatable{node="127.0.0.1",resource="ephemeral_storage",unit="byte"} 3e+09
         kube_node_status_allocatable{node="127.0.0.1",resource="memory",unit="byte"} 1e+09
         kube_node_status_allocatable{node="127.0.0.1",resource="nvidia_com_gpu",unit="integer"} 1
         kube_node_status_allocatable{node="127.0.0.1",resource="pods",unit="integer"} 555
         kube_node_status_allocatable{node="127.0.0.1",resource="storage",unit="byte"} 2e+09
-        kube_node_status_capacity_cpu_cores{node="127.0.0.1"} 4.3
-        kube_node_status_capacity_memory_bytes{node="127.0.0.1"} 2e+09
-        kube_node_status_capacity_pods{node="127.0.0.1"} 1000
         kube_node_status_capacity{node="127.0.0.1",resource="cpu",unit="core"} 4.3
         kube_node_status_capacity{node="127.0.0.1",resource="ephemeral_storage",unit="byte"} 4e+09
         kube_node_status_capacity{node="127.0.0.1",resource="memory",unit="byte"} 2e+09
@@ -170,74 +152,13 @@ func TestNodeStore(t *testing.T) {
 			`,
 			MetricNames: []string{
 				"kube_node_status_capacity",
-				"kube_node_status_capacity_pods",
-				"kube_node_status_capacity_memory_bytes",
-				"kube_node_status_capacity_cpu_cores",
 				"kube_node_status_allocatable",
-				"kube_node_status_allocatable_pods",
-				"kube_node_status_allocatable_memory_bytes",
-				"kube_node_status_allocatable_cpu_cores",
 				"kube_node_spec_unschedulable",
 				"kube_node_labels",
 				"kube_node_role",
 				"kube_node_info",
 				"kube_node_created",
 			},
-		},
-		// Verify phase enumerations.
-		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
-				Status: v1.NodeStatus{
-					Phase: v1.NodeRunning,
-				},
-			},
-			Want: `
-				# HELP kube_node_status_phase The phase the node is currently in.
-				# TYPE kube_node_status_phase gauge
-				kube_node_status_phase{node="127.0.0.1",phase="Terminated"} 0
-				kube_node_status_phase{node="127.0.0.1",phase="Running"} 1
-				kube_node_status_phase{node="127.0.0.1",phase="Pending"} 0
-`,
-			MetricNames: []string{"kube_node_status_phase"},
-		},
-		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.2",
-				},
-				Status: v1.NodeStatus{
-					Phase: v1.NodePending,
-				},
-			},
-			Want: `
-				# HELP kube_node_status_phase The phase the node is currently in.
-				# TYPE kube_node_status_phase gauge
-				kube_node_status_phase{node="127.0.0.2",phase="Terminated"} 0
-				kube_node_status_phase{node="127.0.0.2",phase="Running"} 0
-				kube_node_status_phase{node="127.0.0.2",phase="Pending"} 1
-`,
-			MetricNames: []string{"kube_node_status_phase"},
-		},
-		{
-			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.3",
-				},
-				Status: v1.NodeStatus{
-					Phase: v1.NodeTerminated,
-				},
-			},
-			Want: `
-			    # HELP kube_node_status_phase The phase the node is currently in.
-				# TYPE kube_node_status_phase gauge
-				kube_node_status_phase{node="127.0.0.3",phase="Terminated"} 1
-				kube_node_status_phase{node="127.0.0.3",phase="Running"} 0
-				kube_node_status_phase{node="127.0.0.3",phase="Pending"} 0
-`,
-			MetricNames: []string{"kube_node_status_phase"},
 		},
 		// Verify StatusCondition
 		{

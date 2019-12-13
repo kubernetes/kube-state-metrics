@@ -111,26 +111,6 @@ func main() {
 		klog.Fatal(err)
 	}
 
-	if opts.DisablePodNonGenericResourceMetrics {
-		allowDenyList.Exclude([]string{
-			"kube_pod_container_resource_requests_cpu_cores",
-			"kube_pod_container_resource_requests_memory_bytes",
-			"kube_pod_container_resource_limits_cpu_cores",
-			"kube_pod_container_resource_limits_memory_bytes",
-		})
-	}
-
-	if opts.DisableNodeNonGenericResourceMetrics {
-		allowDenyList.Exclude([]string{
-			"kube_node_status_capacity_cpu_cores",
-			"kube_node_status_capacity_memory_bytes",
-			"kube_node_status_capacity_pods",
-			"kube_node_status_allocatable_cpu_cores",
-			"kube_node_status_allocatable_memory_bytes",
-			"kube_node_status_allocatable_pods",
-		})
-	}
-
 	err = allowDenyList.Parse()
 	if err != nil {
 		klog.Fatalf("error initializing the allowdeny list : %v", err)

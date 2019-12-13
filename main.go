@@ -36,11 +36,11 @@ import (
 	"k8s.io/klog"
 
 	"k8s.io/kube-state-metrics/internal/store"
+	"k8s.io/kube-state-metrics/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/util/proc"
 	"k8s.io/kube-state-metrics/pkg/version"
-	"k8s.io/kube-state-metrics/pkg/allowdenylist"
 )
 
 const (
@@ -209,9 +209,9 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
              <head><title>Kube-State-Metrics Metrics Server</title></head>
              <body>
              <h1>Kube-State-Metrics Metrics</h1>
-			 <ul>
+                         <ul>
              <li><a href='` + metricsPath + `'>metrics</a></li>
-			 </ul>
+                         </ul>
              </body>
              </html>`))
 	})
@@ -253,10 +253,10 @@ func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuil
              <head><title>Kube Metrics Server</title></head>
              <body>
              <h1>Kube Metrics</h1>
-			 <ul>
+                         <ul>
              <li><a href='` + metricsPath + `'>metrics</a></li>
              <li><a href='` + healthzPath + `'>healthz</a></li>
-			 </ul>
+                         </ul>
              </body>
              </html>`))
 	})

@@ -57,7 +57,7 @@ func NewOptions() *Options {
 	return &Options{
 		Collectors:      CollectorSet{},
 		MetricAllowlist: MetricSet{},
-		MetricDenylist: MetricSet{},
+		MetricDenylist:  MetricSet{},
 	}
 }
 

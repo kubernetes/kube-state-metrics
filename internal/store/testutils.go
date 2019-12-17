@@ -34,7 +34,7 @@ type generateMetricsTestCase struct {
 	MetricNames []string
 	Want        string
 	Headers     []string
-	Func        func(interface{}) []metric.FamilityInterface
+	Func        func(interface{}) []metric.FamilyInterface
 }
 
 func (testCase *generateMetricsTestCase) run() error {

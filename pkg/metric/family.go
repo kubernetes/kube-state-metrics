@@ -20,8 +20,8 @@ import (
 	"strings"
 )
 
-// FamilityInterface interface for a family
-type FamilityInterface interface {
+// FamilyInterface interface for a family
+type FamilyInterface interface {
 	Inspect(inspect func(Family))
 	ByteSlice() []byte
 }

@@ -60,11 +60,11 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.11** | **Kubernetes 1.12** | **Kubernetes 1.13** | **Kubernetes 1.14** |  **Kubernetes 1.15** |
+| kube-state-metrics | **Kubernetes 1.12** | **Kubernetes 1.13** | **Kubernetes 1.14** | **Kubernetes 1.15** |  **Kubernetes 1.16** |
 |--------------------|---------------------|---------------------|---------------------|---------------------|----------------------|
-| **v1.4.0**         |         ✓           |         ✓           |         -           |         -           |          -           |
-| **v1.5.0**         |         ✓           |         ✓           |         -           |         -           |          -           |
-| **v1.6.0**         |         ✓           |         ✓           |         ✓           |         ✓           |          -           |
+| **v1.4.0**         |         ✓           |         -           |         -           |         -           |          -           |
+| **v1.5.0**         |         ✓           |         -           |         -           |         -           |          -           |
+| **v1.6.0**         |         ✓           |         ✓           |         ✓           |         -           |          -           |
 | **v1.7.2**         |         ✓           |         ✓           |         ✓           |         ✓           |          ✓           |
 | **v1.8.0**         |         ✓           |         ✓           |         ✓           |         ✓           |          ✓           |
 | **master**         |         ✓           |         ✓           |         ✓           |         ✓           |          ✓           |

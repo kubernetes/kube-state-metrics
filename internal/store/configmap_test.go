@@ -35,7 +35,7 @@ func TestConfigMapStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "configmap1",
 					Namespace:       "ns1",
-					ResourceVersion: "123456",
+					ResourceVersion: "BBBBB",
 				},
 			},
 			Want: `
@@ -44,7 +44,6 @@ func TestConfigMapStore(t *testing.T) {
 				# TYPE kube_configmap_info gauge
 				# TYPE kube_configmap_metadata_resource_version gauge
 				kube_configmap_info{configmap="configmap1",namespace="ns1"} 1
-				kube_configmap_metadata_resource_version{configmap="configmap1",namespace="ns1",resource_version="123456"} 1
 `,
 			MetricNames: []string{"kube_configmap_info", "kube_configmap_metadata_resource_version"},
 		},
@@ -54,7 +53,7 @@ func TestConfigMapStore(t *testing.T) {
 					Name:              "configmap2",
 					Namespace:         "ns2",
 					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
+					ResourceVersion:   "10596",
 				},
 			},
 			Want: `
@@ -66,7 +65,7 @@ func TestConfigMapStore(t *testing.T) {
 				# TYPE kube_configmap_metadata_resource_version gauge
 				kube_configmap_info{configmap="configmap2",namespace="ns2"} 1
 				kube_configmap_created{configmap="configmap2",namespace="ns2"} 1.501569018e+09
-				kube_configmap_metadata_resource_version{configmap="configmap2",namespace="ns2",resource_version="abcdef"} 1
+				kube_configmap_metadata_resource_version{configmap="configmap2",namespace="ns2"} 10596
 				`,
 			MetricNames: []string{"kube_configmap_info", "kube_configmap_created", "kube_configmap_metadata_resource_version"},
 		},

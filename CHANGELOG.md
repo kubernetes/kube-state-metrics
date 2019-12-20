@@ -1,3 +1,7 @@
+## v1.9.0 / 2019-12-20
+
+After a testing period of 7 days, there were no additional bugs found or features introduced.
+
 ## v1.9.0-rc.1 / 2019-12-12
 
 * [BUGFIX] Move resource version from metric label to metric number value #997

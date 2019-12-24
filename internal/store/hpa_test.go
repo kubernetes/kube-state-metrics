@@ -149,6 +149,14 @@ func TestHPAStore(t *testing.T) {
 								CurrentAverageValue:       resource.MustParse("7m"),
 							},
 						},
+						{
+							Type: "Resource",
+							Resource: &autoscaling.ResourceMetricStatus{
+								Name:                      "memory",
+								CurrentAverageUtilization: new(int32),
+								CurrentAverageValue:       resource.MustParse("26335914666m"),
+							},
+						},
 					},
 				},
 			},
@@ -171,7 +179,9 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_current_metrics_average_value{hpa="hpa1",namespace="ns1"} 0.007
+                kube_hpa_status_current_metrics_average_value{hpa="hpa1",namespace="ns1"} 2.6335915e+07
 				kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
+	            kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
 			`,
 			MetricNames: []string{
 				"kube_hpa_metadata_generation",

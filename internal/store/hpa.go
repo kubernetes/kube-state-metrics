@@ -245,8 +245,13 @@ var (
 						continue
 					}
 					var metricValue float64
-					if c.Type == autoscaling.ResourceMetricSourceType && c.Resource.Name == corev1.ResourceCPU {
-						metricValue = float64(value.MilliValue()) / 1000
+					if c.Type == autoscaling.ResourceMetricSourceType {
+						switch c.Resource.Name {
+						case corev1.ResourceCPU:
+							metricValue = float64(value.MilliValue()) / 1000.0
+						case corev1.ResourceMemory:
+							metricValue = float64(value.Value())
+						}
 					} else if intVal, canFastConvert := value.AsInt64(); canFastConvert {
 						metricValue = float64(intVal)
 					} else {

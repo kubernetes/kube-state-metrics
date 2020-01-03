@@ -14,7 +14,7 @@ PKG = k8s.io/kube-state-metrics/pkg
 GO_VERSION = 1.13
 FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
 BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.19.1
+GOLANGCI_VERSION := v1.22.2
 HAS_GOLANGCI := $(shell which golangci-lint)
 
 IMAGE = $(REGISTRY)/kube-state-metrics

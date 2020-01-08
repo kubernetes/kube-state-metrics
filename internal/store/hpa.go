@@ -206,16 +206,16 @@ var (
 			Type: metric.Gauge,
 			Help: "The condition of this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, len(a.Status.Conditions)*len(conditionStatuses))
+				ms := make([]*metric.Metric, 0, len(a.Status.Conditions)*len(conditionStatuses))
 
-				for i, c := range a.Status.Conditions {
+				for _, c := range a.Status.Conditions {
 					metrics := addConditionMetrics(c.Status)
 
-					for j, m := range metrics {
+					for _, m := range metrics {
 						metric := m
 						metric.LabelKeys = []string{"condition", "status"}
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
-						ms[i*len(conditionStatuses)+j] = metric
+						ms = append(ms, metric)
 					}
 				}
 
@@ -224,13 +224,14 @@ var (
 				}
 			}),
 		},
+
 		{
 			Name: "kube_hpa_status_current_metrics_average_value",
 			Type: metric.Gauge,
 			Help: "Average metric value observed by the autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, len(a.Status.CurrentMetrics))
-				for i, c := range a.Status.CurrentMetrics {
+				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+				for _, c := range a.Status.CurrentMetrics {
 					var value *resource.Quantity
 					switch c.Type {
 					case autoscaling.ResourceMetricSourceType:
@@ -259,9 +260,9 @@ var (
 						// Skip unsupported metric value format
 						continue
 					}
-					ms[i] = &metric.Metric{
+					ms = append(ms, &metric.Metric{
 						Value: metricValue,
-					}
+					})
 				}
 				return &metric.Family{
 					Metrics: ms,
@@ -273,12 +274,12 @@ var (
 			Type: metric.Gauge,
 			Help: "Average metric utilization observed by the autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, len(a.Status.CurrentMetrics))
-				for i, c := range a.Status.CurrentMetrics {
+				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+				for _, c := range a.Status.CurrentMetrics {
 					if c.Type == autoscaling.ResourceMetricSourceType {
-						ms[i] = &metric.Metric{
+						ms = append(ms, &metric.Metric{
 							Value: float64(*c.Resource.CurrentAverageUtilization),
-						}
+						})
 					}
 				}
 				return &metric.Family{

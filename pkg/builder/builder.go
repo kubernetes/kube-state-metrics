@@ -84,9 +84,14 @@ func (b *Builder) WithWhiteBlackList(l ksmtypes.WhiteBlackLister) {
 	b.internal.WithWhiteBlackList(l)
 }
 
-// WithCustomGenerateStoreFunc configures a constom generate store function
-func (b *Builder) WithCustomGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
-	b.internal.WithCustomGenerateStoreFunc(f)
+// WithGenerateStoreFunc configures a constom generate store function
+func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
+	b.internal.WithGenerateStoreFunc(f)
+}
+
+// DefaultGenerateStoreFunc returns default buildStore function
+func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
+	return b.internal.DefaultGenerateStoreFunc()
 }
 
 // Build initializes and registers all enabled stores.

@@ -68,7 +68,6 @@ type Builder struct {
 // NewBuilder returns a new builder.
 func NewBuilder() *Builder {
 	b := &Builder{}
-	b.buildStoreFunc = b.buildStore
 	return b
 }
 
@@ -126,9 +125,14 @@ func (b *Builder) WithWhiteBlackList(l ksmtypes.WhiteBlackLister) {
 	b.whiteBlackList = l
 }
 
-// WithCustomGenerateStoreFunc configures a constom generate store function
-func (b *Builder) WithCustomGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
+// WithGenerateStoreFunc configures a constom generate store function
+func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
 	b.buildStoreFunc = f
+}
+
+// DefaultGenerateStoreFunc returns default buildStore function
+func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
+	return b.buildStore
 }
 
 // Build initializes and registers all enabled stores.

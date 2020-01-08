@@ -38,7 +38,8 @@ type BuilderInterface interface {
 	WithKubeClient(c clientset.Interface)
 	WithVPAClient(c vpaclientset.Interface)
 	WithWhiteBlackList(l WhiteBlackLister)
-	WithCustomGenerateStoreFunc(f BuildStoreFunc)
+	WithGenerateStoreFunc(f BuildStoreFunc)
+	DefaultGenerateStoreFunc() BuildStoreFunc
 	Build() []cache.Store
 }
 

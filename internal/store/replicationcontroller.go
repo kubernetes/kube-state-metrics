@@ -25,12 +25,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
-	replicationControllerMetricFamilies = []metric.FamilyGenerator{
+	replicationControllerMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_replicationcontroller_created",
 			Type: metric.Gauge,

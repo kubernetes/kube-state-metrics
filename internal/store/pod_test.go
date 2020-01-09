@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestPodStore(t *testing.T) {
@@ -1507,8 +1507,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 	}
 
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(podMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(podMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -1518,7 +1518,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 func BenchmarkPodStore(b *testing.B) {
 	b.ReportAllocs()
 
-	f := metric.ComposeMetricGenFuncs(podMetricFamilies)
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies)
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

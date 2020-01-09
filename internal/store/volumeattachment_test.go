@@ -17,12 +17,12 @@ limitations under the License.
 package store
 
 import (
+	"testing"
+
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"testing"
-
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestVolumeAttachmentStore(t *testing.T) {
@@ -87,8 +87,8 @@ func TestVolumeAttachmentStore(t *testing.T) {
 		}
 	)
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(volumeAttachmentMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(volumeAttachmentMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(volumeAttachmentMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttachmentMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

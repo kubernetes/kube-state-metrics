@@ -22,7 +22,7 @@ import (
 	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestMutatingWebhookConfigurationStore(t *testing.T) {
@@ -71,8 +71,8 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(mutatingWebhookConfigurationMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(mutatingWebhookConfigurationMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(mutatingWebhookConfigurationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(mutatingWebhookConfigurationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

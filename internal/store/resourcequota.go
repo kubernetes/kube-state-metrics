@@ -25,12 +25,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
-	resourceQuotaMetricFamilies = []metric.FamilyGenerator{
+	resourceQuotaMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_resourcequota_created",
 			Type: metric.Gauge,

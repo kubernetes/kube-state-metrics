@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -188,8 +188,8 @@ func TestHPAStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(hpaMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(hpaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(hpaMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(hpaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

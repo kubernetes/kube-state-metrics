@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 	descVolumeAttachmentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descVolumeAttachmentLabelsDefaultLabels = []string{"volumeattachment"}
 
-	volumeAttachmentMetricFamilies = []metric.FamilyGenerator{
+	volumeAttachmentMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: descVolumeAttachmentLabelsName,
 			Type: metric.Gauge,

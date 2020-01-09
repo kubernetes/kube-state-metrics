@@ -25,13 +25,14 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descValidatingWebhookConfigurationHelp          = "Kubernetes labels converted to Prometheus labels."
 	descValidatingWebhookConfigurationDefaultLabels = []string{"namespace", "validatingwebhookconfiguration"}
 
-	validatingWebhookConfigurationMetricFamilies = []metric.FamilyGenerator{
+	validatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_validatingwebhookconfiguration_info",
 			Type: metric.Gauge,

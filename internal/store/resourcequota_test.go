@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestResourceQuotaStore(t *testing.T) {
@@ -134,8 +134,8 @@ func TestResourceQuotaStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(resourceQuotaMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(resourceQuotaMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

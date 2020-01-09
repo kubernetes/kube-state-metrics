@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestIngressStore(t *testing.T) {
@@ -166,8 +166,8 @@ func TestIngressStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(ingressMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(ingressMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

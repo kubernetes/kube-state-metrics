@@ -18,6 +18,7 @@ package store
 
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	"k8s.io/api/extensions/v1beta1"
 
@@ -33,7 +34,7 @@ var (
 	descIngressLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
 
-	ingressMetricFamilies = []metric.FamilyGenerator{
+	ingressMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_ingress_info",
 			Type: metric.Gauge,

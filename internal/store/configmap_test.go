@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestConfigMapStore(t *testing.T) {
@@ -71,8 +71,8 @@ func TestConfigMapStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(configMapMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(configMapMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(configMapMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(configMapMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

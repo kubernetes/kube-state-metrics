@@ -25,12 +25,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 
-	configMapMetricFamilies = []metric.FamilyGenerator{
+	configMapMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_configmap_info",
 			Type: metric.Gauge,

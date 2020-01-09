@@ -66,6 +66,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithSharding(0, 1)
 	builder.WithContext(ctx)
 	builder.WithNamespaces(options.DefaultNamespaces)
+	builder.WithGenerateStoreFunc(builder.DefaultGenerateStoreFunc())
 
 	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -128,6 +129,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
+	builder.WithGenerateStoreFunc(builder.DefaultGenerateStoreFunc())
 
 	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -367,6 +369,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	unshardedBuilder.WithKubeClient(kubeClient)
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
 	unshardedBuilder.WithWhiteBlackList(l)
+	unshardedBuilder.WithGenerateStoreFunc(unshardedBuilder.DefaultGenerateStoreFunc())
 
 	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
 	unshardedHandler.ConfigureSharding(ctx, 0, 1)
@@ -378,6 +381,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder1.WithKubeClient(kubeClient)
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder1.WithWhiteBlackList(l)
+	shardedBuilder1.WithGenerateStoreFunc(shardedBuilder1.DefaultGenerateStoreFunc())
 
 	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
 	shardedHandler1.ConfigureSharding(ctx, 0, 2)
@@ -389,6 +393,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder2.WithKubeClient(kubeClient)
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder2.WithWhiteBlackList(l)
+	shardedBuilder2.WithGenerateStoreFunc(shardedBuilder2.DefaultGenerateStoreFunc())
 
 	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
 	shardedHandler2.ConfigureSharding(ctx, 1, 2)

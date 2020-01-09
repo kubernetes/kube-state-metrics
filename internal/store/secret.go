@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 
-	secretMetricFamilies = []metric.FamilyGenerator{
+	secretMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_secret_info",
 			Type: metric.Gauge,

@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestPersistentVolumeClaimStore(t *testing.T) {
@@ -183,8 +183,8 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

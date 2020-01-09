@@ -140,6 +140,8 @@ func main() {
 
 	storeBuilder.WithWhiteBlackList(whiteBlackList)
 
+	storeBuilder.WithGenerateStoreFunc(storeBuilder.DefaultGenerateStoreFunc())
+
 	proc.StartReaper()
 
 	kubeClient, vpaClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)

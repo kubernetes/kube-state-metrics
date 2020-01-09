@@ -18,6 +18,7 @@ package store
 
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ var (
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 
-	statefulSetMetricFamilies = []metric.FamilyGenerator{
+	statefulSetMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_statefulset_created",
 			Type: metric.Gauge,

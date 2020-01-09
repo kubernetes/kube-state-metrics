@@ -290,6 +290,7 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="unknown"} 0
 				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 28
 				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 6
+				kube_hpa_status_current_metrics_average_value{hpa="hpa2",namespace="ns1"} 2.9
 				kube_hpa_status_current_metrics_average_value{hpa="hpa2",namespace="ns1"} 0.062
 				kube_hpa_status_current_metrics_average_value{hpa="hpa2",namespace="ns1"} 8.47775744e+08
 				kube_hpa_status_current_replicas{hpa="hpa2",namespace="ns1"} 2

@@ -255,6 +255,8 @@ var (
 						}
 					} else if intVal, canFastConvert := value.AsInt64(); canFastConvert {
 						metricValue = float64(intVal)
+					} else if c.Type == autoscaling.ExternalMetricSourceType {
+						metricValue = float64(value.MilliValue()) / 1000.0
 					} else {
 						// Skip unsupported metric value format
 						continue

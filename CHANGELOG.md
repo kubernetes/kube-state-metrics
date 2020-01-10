@@ -1,3 +1,8 @@
+## v1.9.1 / 2020-01-10
+
+* [BUGFIX] Fix segfault in hpa metrics #1019
+* [BUGFIX] Fix nil panics when parsing hpa memory current metrics #1014
+
 ## v1.9.0 / 2019-12-20
 
 After a testing period of 7 days, there were no additional bugs found or features introduced.

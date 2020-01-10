@@ -149,6 +149,14 @@ func TestHPAStore(t *testing.T) {
 								CurrentAverageValue:       resource.MustParse("7m"),
 							},
 						},
+						{
+							Type: "Resource",
+							Resource: &autoscaling.ResourceMetricStatus{
+								Name:                      "memory",
+								CurrentAverageUtilization: new(int32),
+								CurrentAverageValue:       resource.MustParse("26335914666m"),
+							},
+						},
 					},
 				},
 			},
@@ -171,7 +179,121 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_current_metrics_average_value{hpa="hpa1",namespace="ns1"} 0.007
+                kube_hpa_status_current_metrics_average_value{hpa="hpa1",namespace="ns1"} 2.6335915e+07
 				kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
+	            kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
+			`,
+			MetricNames: []string{
+				"kube_hpa_metadata_generation",
+				"kube_hpa_spec_max_replicas",
+				"kube_hpa_spec_min_replicas",
+				"kube_hpa_spec_target_metric",
+				"kube_hpa_status_current_replicas",
+				"kube_hpa_status_desired_replicas",
+				"kube_hpa_status_condition",
+				"kube_hpa_labels",
+				"kube_hpa_status_current_metrics_average_value",
+				"kube_hpa_status_current_metrics_average_utilization",
+			},
+		},
+		{
+			// Verify populating base metric.
+			Obj: &autoscaling.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Generation: 2,
+					Name:       "hpa2",
+					Namespace:  "ns1",
+					Labels: map[string]string{
+						"app": "foobar",
+					},
+				},
+				Spec: autoscaling.HorizontalPodAutoscalerSpec{
+					MaxReplicas: 4,
+					MinReplicas: &hpa1MinReplicas,
+					Metrics: []autoscaling.MetricSpec{
+						{
+							Type: autoscaling.ResourceMetricSourceType,
+							Resource: &autoscaling.ResourceMetricSource{
+								Name:                     "memory",
+								TargetAverageUtilization: int32ptr(75),
+							},
+						},
+						{
+							Type: autoscaling.ResourceMetricSourceType,
+							Resource: &autoscaling.ResourceMetricSource{
+								Name:                     "cpu",
+								TargetAverageUtilization: int32ptr(80),
+							},
+						},
+						{
+							Type: autoscaling.ExternalMetricSourceType,
+							External: &autoscaling.ExternalMetricSource{
+								MetricName:  "traefik_backend_requests_per_second",
+								TargetValue: resourcePtr(resource.MustParse("100")),
+							},
+						},
+					},
+					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
+						APIVersion: "apps/v1",
+						Kind:       "Deployment",
+						Name:       "deployment1",
+					},
+				},
+				Status: autoscaling.HorizontalPodAutoscalerStatus{
+					CurrentReplicas: 2,
+					DesiredReplicas: 2,
+					Conditions: []autoscaling.HorizontalPodAutoscalerCondition{
+						{
+							Type:   autoscaling.AbleToScale,
+							Status: v1.ConditionTrue,
+							Reason: "reason",
+						},
+					},
+					CurrentMetrics: []autoscaling.MetricStatus{
+						{
+							Type: "Resource",
+							Resource: &autoscaling.ResourceMetricStatus{
+								Name:                      "memory",
+								CurrentAverageUtilization: int32ptr(28),
+								CurrentAverageValue:       resource.MustParse("847775744"),
+							},
+						},
+						{
+							Type: "Resource",
+							Resource: &autoscaling.ResourceMetricStatus{
+								Name:                      "cpu",
+								CurrentAverageUtilization: int32ptr(6),
+								CurrentAverageValue:       resource.MustParse("62m"),
+							},
+						},
+						{
+							Type: "External",
+							External: &autoscaling.ExternalMetricStatus{
+								MetricName:          "traefik_backend_requests_per_second",
+								CurrentValue:        resource.MustParse("0"),
+								CurrentAverageValue: resourcePtr(resource.MustParse("2900m")),
+							},
+						},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_hpa_labels{hpa="hpa2",label_app="foobar",namespace="ns1"} 1
+				kube_hpa_metadata_generation{hpa="hpa2",namespace="ns1"} 2
+				kube_hpa_spec_max_replicas{hpa="hpa2",namespace="ns1"} 4
+				kube_hpa_spec_min_replicas{hpa="hpa2",namespace="ns1"} 2
+				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
+				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 75
+				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 100
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="false"} 0
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="true"} 1
+				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="unknown"} 0
+				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 28
+				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 6
+				kube_hpa_status_current_metrics_average_value{hpa="hpa2",namespace="ns1"} 0.062
+				kube_hpa_status_current_metrics_average_value{hpa="hpa2",namespace="ns1"} 8.47775744e+08
+				kube_hpa_status_current_replicas{hpa="hpa2",namespace="ns1"} 2
+				kube_hpa_status_desired_replicas{hpa="hpa2",namespace="ns1"} 2
 			`,
 			MetricNames: []string{
 				"kube_hpa_metadata_generation",

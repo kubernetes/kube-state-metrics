@@ -245,6 +245,10 @@ var (
 						// Skip unsupported metric type
 						continue
 					}
+					if value == nil {
+						// Some types might have a nil value (e.g. External.CurrentAverageValue can be nil)
+						continue
+					}
 					var metricValue float64
 					if c.Type == autoscaling.ResourceMetricSourceType {
 						switch c.Resource.Name {

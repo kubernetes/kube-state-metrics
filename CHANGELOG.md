@@ -1,3 +1,7 @@
+## v1.9.2 / 2020-01-13
+
+* [BUGFIX] Fix segfault with External metrics #1023
+
 ## v1.9.1 / 2020-01-10
 
 * [BUGFIX] Fix segfault in hpa metrics #1019

@@ -232,6 +232,13 @@ func TestHPAStore(t *testing.T) {
 								TargetValue: resourcePtr(resource.MustParse("100")),
 							},
 						},
+						{
+							Type: autoscaling.ExternalMetricSourceType,
+							External: &autoscaling.ExternalMetricSource{
+								MetricName:  "traefik_backend_errors_per_second",
+								TargetValue: resourcePtr(resource.MustParse("100")),
+							},
+						},
 					},
 					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
 						APIVersion: "apps/v1",
@@ -274,6 +281,13 @@ func TestHPAStore(t *testing.T) {
 								CurrentAverageValue: resourcePtr(resource.MustParse("2900m")),
 							},
 						},
+						{
+							Type: "External",
+							External: &autoscaling.ExternalMetricStatus{
+								MetricName:   "traefik_backend_errors_per_second",
+								CurrentValue: resource.MustParse("0"),
+							},
+						},
 					},
 				},
 			},
@@ -284,6 +298,7 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_spec_min_replicas{hpa="hpa2",namespace="ns1"} 2
 				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
 				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 75
+				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 100
 				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 100
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="false"} 0
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="true"} 1

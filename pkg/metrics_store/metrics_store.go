@@ -21,7 +21,6 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
@@ -36,7 +35,7 @@ type MetricsStore struct {
 	// metric families, containing a slice of metrics. We need to keep metrics
 	// grouped by metric families in order to zip families with their help text in
 	// MetricsStore.WriteAll().
-	metrics map[types.UID][][]byte
+	metrics sync.Map
 	// headers contains the header (TYPE and HELP) of each metric family. It is
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
@@ -52,7 +51,7 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.F
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,
-		metrics:             map[types.UID][][]byte{},
+		metrics:             sync.Map{},
 	}
 }
 
@@ -66,9 +65,6 @@ func (s *MetricsStore) Add(obj interface{}) error {
 		return err
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	families := s.generateMetricsFunc(obj)
 	familyStrings := make([][]byte, len(families))
 
@@ -76,8 +72,7 @@ func (s *MetricsStore) Add(obj interface{}) error {
 		familyStrings[i] = f.ByteSlice()
 	}
 
-	s.metrics[o.GetUID()] = familyStrings
-
+	s.metrics.Store(o.GetUID(), familyStrings)
 	return nil
 }
 
@@ -95,10 +90,7 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 		return err
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	delete(s.metrics, o.GetUID())
+	s.metrics.Delete(o.GetUID())
 
 	return nil
 }
@@ -126,9 +118,7 @@ func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err 
 // Replace will delete the contents of the store, using instead the
 // given list.
 func (s *MetricsStore) Replace(list []interface{}, _ string) error {
-	s.mutex.Lock()
-	s.metrics = map[types.UID][][]byte{}
-	s.mutex.Unlock()
+	s.metrics = sync.Map{}
 
 	for _, o := range list {
 		err := s.Add(o)
@@ -154,8 +144,12 @@ func (s *MetricsStore) WriteAll(w io.Writer) {
 	for i, help := range s.headers {
 		w.Write([]byte(help))
 		w.Write([]byte{'\n'})
-		for _, metricFamilies := range s.metrics {
-			w.Write(metricFamilies[i])
-		}
+
+		s.metrics.Range(func(key interface{}, value interface{}) bool {
+			metricFamilies := value.([][]byte)
+			w.Write([]byte(metricFamilies[i]))
+			w.Write([]byte(metricFamilies[i]))
+			return true
+		})
 	}
 }

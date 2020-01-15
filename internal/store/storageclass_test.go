@@ -20,7 +20,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestStorageClassStore(t *testing.T) {
@@ -43,6 +43,24 @@ func TestStorageClassStore(t *testing.T) {
 					# HELP kube_storageclass_info Information about storageclass.
 					# TYPE kube_storageclass_info gauge
 					kube_storageclass_info{storageclass="test_storageclass-info",provisioner="kubernetes.io/rbd",reclaimPolicy="Delete",volumeBindingMode="Immediate"} 1
+				`,
+			MetricNames: []string{
+				"kube_storageclass_info",
+			},
+		},
+		{
+			Obj: &storagev1.StorageClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test_storageclass-default-info",
+				},
+				Provisioner:       "kubernetes.io/rbd",
+				ReclaimPolicy:     nil,
+				VolumeBindingMode: nil,
+			},
+			Want: `
+					# HELP kube_storageclass_info Information about storageclass.
+					# TYPE kube_storageclass_info gauge
+					kube_storageclass_info{storageclass="test_storageclass-default-info",provisioner="kubernetes.io/rbd",reclaimPolicy="Delete",volumeBindingMode="Immediate"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_info",
@@ -90,8 +108,8 @@ func TestStorageClassStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(storageClassMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(storageClassMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

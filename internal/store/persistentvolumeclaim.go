@@ -18,6 +18,7 @@ package store
 
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ var (
 	descPersistentVolumeClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
 
-	persistentVolumeClaimMetricFamilies = []metric.FamilyGenerator{
+	persistentVolumeClaimMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: descPersistentVolumeClaimLabelsName,
 			Type: metric.Gauge,
@@ -136,6 +137,31 @@ var (
 						LabelKeys:   []string{"access_mode"},
 						LabelValues: []string{string(mode)},
 						Value:       1,
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_persistentvolumeclaim_status_condition",
+			Help: "Information about status of different conditions of persistent volume claim.",
+			Type: metric.Gauge,
+			GenerateFunc: wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				ms := make([]*metric.Metric, len(p.Status.Conditions)*len(conditionStatuses))
+
+				for i, c := range p.Status.Conditions {
+					conditionMetrics := addConditionMetrics(c.Status)
+
+					for j, m := range conditionMetrics {
+						metric := m
+
+						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+
+						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}
 

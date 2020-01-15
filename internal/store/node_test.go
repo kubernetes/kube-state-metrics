@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestNodeStore(t *testing.T) {
@@ -46,6 +46,7 @@ func TestNodeStore(t *testing.T) {
 				},
 				Spec: v1.NodeSpec{
 					ProviderID: "provider://i-uniqueid",
+					PodCIDR:    "172.24.10.0/24",
 				},
 			},
 			Want: `
@@ -55,11 +56,25 @@ func TestNodeStore(t *testing.T) {
 				# TYPE kube_node_info gauge
 				# TYPE kube_node_labels gauge
 				# TYPE kube_node_spec_unschedulable gauge
-				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-uniqueid"} 1
+				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-uniqueid"} 1
 				kube_node_labels{node="127.0.0.1"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 0
 			`,
 			MetricNames: []string{"kube_node_spec_unschedulable", "kube_node_labels", "kube_node_info"},
+		},
+		// Verify unset fields are skipped. Note that prometheus subsequently drops empty labels.
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{},
+				Status:     v1.NodeStatus{},
+				Spec:       v1.NodeSpec{},
+			},
+			Want: `
+				# HELP kube_node_info Information about a cluster node.
+				# TYPE kube_node_info gauge
+				kube_node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="",node="",os_image="",pod_cidr="",provider_id=""} 1
+			`,
+			MetricNames: []string{"kube_node_info"},
 		},
 		// Verify resource metric.
 		{
@@ -74,6 +89,7 @@ func TestNodeStore(t *testing.T) {
 				Spec: v1.NodeSpec{
 					Unschedulable: true,
 					ProviderID:    "provider://i-randomidentifier",
+					PodCIDR:       "172.24.10.0/24",
 				},
 				Status: v1.NodeStatus{
 					NodeInfo: v1.NodeSystemInfo{
@@ -129,7 +145,7 @@ func TestNodeStore(t *testing.T) {
 		# TYPE kube_node_status_capacity_memory_bytes gauge
 		# TYPE kube_node_status_capacity_pods gauge
 		kube_node_created{node="127.0.0.1"} 1.5e+09
-        kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",provider_id="provider://i-randomidentifier"} 1
+        kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-randomidentifier"} 1
 		kube_node_labels{label_node_role_kubernetes_io_master="",node="127.0.0.1"} 1
 		kube_node_role{node="127.0.0.1",role="master"} 1
         kube_node_spec_unschedulable{node="127.0.0.1"} 1
@@ -333,8 +349,8 @@ func TestNodeStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(nodeMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(nodeMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(nodeMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(nodeMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

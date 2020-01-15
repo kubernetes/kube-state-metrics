@@ -1,3 +1,38 @@
+## v1.9.2 / 2020-01-13
+
+* [BUGFIX] Fix segfault with External metrics #1023
+
+## v1.9.1 / 2020-01-10
+
+* [BUGFIX] Fix segfault in hpa metrics #1019
+* [BUGFIX] Fix nil panics when parsing hpa memory current metrics #1014
+
+## v1.9.0 / 2019-12-20
+
+After a testing period of 7 days, there were no additional bugs found or features introduced.
+
+## v1.9.0-rc.1 / 2019-12-12
+
+* [BUGFIX] Move resource version from metric label to metric number value #997
+
+## v1.9.0-rc.0 / 2019-12-04
+
+* [CHANGE] Add tools as go modules #927
+* [FEATURE] Add `kube_hpa_spec_target_metric` metric. #966
+* [FEATURE] Add hpa stats for current utilization and average value. #961
+* [FEATURE] Add `kube_namespace_status_condition` metric. #949
+* [FEATURE] Add `kube_persistentvolumeclaim_status_condition` and `kube_persistentvolumeclaim_status_phase` metrics #952
+* [FEATURE] Add `kube_networkpolicy_*` metrics #893
+* [FEATURE] Add `kube_volumeattachment_*` metrics #946
+* [FEATURE] add `kube_mutatingwebhookconfiguration_*`, `kube_validatingwebhookconfiguration_*` metrics #914
+* [ENHANCEMENT] Add `pod_cidr` label to the `kube_node_info` metric. #963
+* [ENHANCEMENT] Generate all manifests from jsonnet #908
+* [ENHANCEMENT] Add kube-state-metrics alerting rules. #962
+* [ENHANCEMENT] Add "Evicted" to the set of container terminated reasons. #968
+* [BUGFIX] Add check for ReclaimPolicy, VolumeBindingMode storageclass metrics. #929
+* [BUGFIX] Use single MultiListerWatcher for single store to fix missing metrics when watching multiple namespaces. #969
+* [BUGFIX] Fix nil panics parsing HPA CPU current metrics. #993
+
 ## v1.8.0 / 2019-10-01
 
 After a testing period of 7 days, there were no additional bugs found or features introduced.

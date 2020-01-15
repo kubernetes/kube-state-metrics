@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestIngressStore(t *testing.T) {
@@ -57,7 +57,7 @@ func TestIngressStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_ingress_info{namespace="ns1",ingress="ingress1"} 1
-				kube_ingress_metadata_resource_version{namespace="ns1",resource_version="000000",ingress="ingress1"} 1
+				kube_ingress_metadata_resource_version{namespace="ns1",ingress="ingress1"} 0
 				kube_ingress_labels{namespace="ns1",ingress="ingress1"} 1
 `,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
@@ -74,7 +74,7 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns2",ingress="ingress2"} 1
 				kube_ingress_created{namespace="ns2",ingress="ingress2"} 1.501569018e+09
-				kube_ingress_metadata_resource_version{namespace="ns2",resource_version="123456",ingress="ingress2"} 1
+				kube_ingress_metadata_resource_version{namespace="ns2",ingress="ingress2"} 123456
 				kube_ingress_labels{namespace="ns2",ingress="ingress2"} 1
 				`,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
@@ -92,7 +92,6 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns3",ingress="ingress3"} 1
 				kube_ingress_created{namespace="ns3",ingress="ingress3"} 1.501569018e+09
-				kube_ingress_metadata_resource_version{namespace="ns3",resource_version="abcdef",ingress="ingress3"} 1
 				kube_ingress_labels{label_test_3="test-3",namespace="ns3",ingress="ingress3"} 1
 `,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
@@ -133,7 +132,6 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
-				kube_ingress_metadata_resource_version{namespace="ns4",resource_version="abcdef",ingress="ingress4"} 1
 				kube_ingress_labels{label_test_4="test-4",namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
 `,
@@ -160,7 +158,6 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_created{namespace="ns5",ingress="ingress5"} 1.501569018e+09
-				kube_ingress_metadata_resource_version{namespace="ns5",resource_version="abcdef",ingress="ingress5"} 1
 				kube_ingress_labels{label_test_5="test-5",namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost1",secret="somesecret"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost2",secret="somesecret"} 1
@@ -169,8 +166,8 @@ func TestIngressStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(ingressMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(ingressMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

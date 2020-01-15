@@ -25,12 +25,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descPodDisruptionBudgetLabelsDefaultLabels = []string{"namespace", "poddisruptionbudget"}
 
-	podDisruptionBudgetMetricFamilies = []metric.FamilyGenerator{
+	podDisruptionBudgetMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_poddisruptionbudget_created",
 			Type: metric.Gauge,

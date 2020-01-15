@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -35,7 +36,7 @@ var (
 	descVerticalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descVerticalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "verticalpodautoscaler", "target_api_version", "target_kind", "target_name"}
 
-	vpaMetricFamilies = []metric.FamilyGenerator{
+	vpaMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: descVerticalPodAutoscalerLabelsName,
 			Type: metric.Gauge,

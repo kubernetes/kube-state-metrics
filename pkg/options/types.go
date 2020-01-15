@@ -48,16 +48,11 @@ func (ms *MetricSet) Set(value string) error {
 
 // asSlice returns the MetricSet in the form of plain string slice.
 func (ms MetricSet) asSlice() []string {
-	metrics := []string{}
+	metrics := make([]string, 0, len(ms))
 	for metric := range ms {
 		metrics = append(metrics, metric)
 	}
 	return metrics
-}
-
-// IsEmpty returns true if the length of the MetricSet is zero.
-func (ms MetricSet) IsEmpty() bool {
-	return len(ms.asSlice()) == 0
 }
 
 // Type returns a descriptive string about the MetricSet type.
@@ -90,16 +85,11 @@ func (c *CollectorSet) Set(value string) error {
 
 // AsSlice returns the Collector in the form of a plain string slice.
 func (c CollectorSet) AsSlice() []string {
-	cols := []string{}
+	cols := make([]string, 0, len(c))
 	for col := range c {
 		cols = append(cols, col)
 	}
 	return cols
-}
-
-// isEmpty() returns true if the length of the CollectorSet is zero.
-func (c CollectorSet) isEmpty() bool {
-	return len(c.AsSlice()) == 0
 }
 
 // Type returns a descriptive string about the CollectorSet type.

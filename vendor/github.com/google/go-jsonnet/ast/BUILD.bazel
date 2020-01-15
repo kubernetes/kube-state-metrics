@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "ast.go",
+        "clone.go",
+        "fodder.go",
+        "identifier_set.go",
+        "location.go",
+        "util.go",
+    ],
+    importpath = "github.com/google/go-jsonnet/ast",
+    visibility = ["//visibility:public"],
+)

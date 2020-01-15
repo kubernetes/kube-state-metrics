@@ -28,7 +28,7 @@ Usage of ./kube-state-metrics:
       --add_dir_header                              If true, adds the file directory to the header
       --alsologtostderr                             log to standard error as well as files
       --apiserver string                            The URL of the apiserver to use as a master
-      --collectors string                           Comma-separated list of collectors to be enabled. Defaults to "certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,namespaces,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses"
+      --collectors string                           Comma-separated list of collectors to be enabled. Defaults to "certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments"
       --disable-node-non-generic-resource-metrics   Disable node non generic resource request and limit metrics
       --disable-pod-non-generic-resource-metrics    Disable pod non generic resource request and limit metrics
       --enable-gzip-encoding                        Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.

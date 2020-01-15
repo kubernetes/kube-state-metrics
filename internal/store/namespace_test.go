@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestNamespaceStore(t *testing.T) {
@@ -36,6 +36,8 @@ func TestNamespaceStore(t *testing.T) {
 		# TYPE kube_namespace_labels gauge
 		# HELP kube_namespace_status_phase kubernetes namespace status phase.
 		# TYPE kube_namespace_status_phase gauge
+		# HELP kube_namespace_status_condition The condition of a namespace.
+		# TYPE kube_namespace_status_condition gauge
 	`
 
 	cases := []generateMetricsTestCase{
@@ -73,6 +75,38 @@ func TestNamespaceStore(t *testing.T) {
 				kube_namespace_labels{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Terminating"} 1
+`,
+		},
+		{
+			Obj: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nsTerminateWithConditionTest",
+				},
+				Spec: v1.NamespaceSpec{
+					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+				},
+				Status: v1.NamespaceStatus{
+					Phase: v1.NamespaceTerminating,
+					Conditions: []v1.NamespaceCondition{
+						{Type: v1.NamespaceDeletionDiscoveryFailure, Status: v1.ConditionTrue},
+						{Type: v1.NamespaceDeletionContentFailure, Status: v1.ConditionTrue},
+						{Type: v1.NamespaceDeletionGVParsingFailure, Status: v1.ConditionTrue},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_namespace_labels{namespace="nsTerminateWithConditionTest"} 1
+				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Active"} 0
+				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Terminating"} 1
+				kube_namespace_status_condition{condition="NamespaceDeletionContentFailure",namespace="nsTerminateWithConditionTest",status="false"} 0
+				kube_namespace_status_condition{condition="NamespaceDeletionContentFailure",namespace="nsTerminateWithConditionTest",status="true"} 1
+				kube_namespace_status_condition{condition="NamespaceDeletionContentFailure",namespace="nsTerminateWithConditionTest",status="unknown"} 0
+				kube_namespace_status_condition{condition="NamespaceDeletionDiscoveryFailure",namespace="nsTerminateWithConditionTest",status="false"} 0
+				kube_namespace_status_condition{condition="NamespaceDeletionDiscoveryFailure",namespace="nsTerminateWithConditionTest",status="true"} 1
+				kube_namespace_status_condition{condition="NamespaceDeletionDiscoveryFailure",namespace="nsTerminateWithConditionTest",status="unknown"} 0
+				kube_namespace_status_condition{condition="NamespaceDeletionGroupVersionParsingFailure",namespace="nsTerminateWithConditionTest",status="false"} 0
+				kube_namespace_status_condition{condition="NamespaceDeletionGroupVersionParsingFailure",namespace="nsTerminateWithConditionTest",status="true"} 1
+				kube_namespace_status_condition{condition="NamespaceDeletionGroupVersionParsingFailure",namespace="nsTerminateWithConditionTest",status="unknown"} 0
 `,
 		},
 		{
@@ -124,8 +158,8 @@ func TestNamespaceStore(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(namespaceMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(namespaceMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(namespaceMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(namespaceMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

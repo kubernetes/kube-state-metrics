@@ -1,0 +1,22 @@
+{
+    "dependencies": [
+        {
+            "name": "kube-state-metrics",
+            "source": {
+                "local": {
+                    "directory": "../jsonnet/kube-state-metrics"
+                }
+            },
+            "version": ""
+        },
+        {
+            "name": "kube-state-metrics-mixin",
+            "source": {
+                "local": {
+                    "directory": "../jsonnet/kube-state-metrics-mixin"
+                }
+            },
+            "version": ""
+        }
+    ]
+}

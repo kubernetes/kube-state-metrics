@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestSecretStore(t *testing.T) {
@@ -51,7 +51,7 @@ func TestSecretStore(t *testing.T) {
 				# TYPE kube_secret_type gauge
 				kube_secret_info{namespace="ns1",secret="secret1"} 1
 				kube_secret_type{namespace="ns1",secret="secret1",type="Opaque"} 1
-				kube_secret_metadata_resource_version{namespace="ns1",resource_version="000000",secret="secret1"} 1
+				kube_secret_metadata_resource_version{namespace="ns1",secret="secret1"} 0
 				kube_secret_labels{namespace="ns1",secret="secret1"} 1
 `,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
@@ -62,7 +62,7 @@ func TestSecretStore(t *testing.T) {
 					Name:              "secret2",
 					Namespace:         "ns2",
 					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "123456",
+					ResourceVersion:   "123456B",
 				},
 				Type: v1.SecretTypeServiceAccountToken,
 			},
@@ -80,7 +80,6 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_info{namespace="ns2",secret="secret2"} 1
 				kube_secret_type{namespace="ns2",secret="secret2",type="kubernetes.io/service-account-token"} 1
 				kube_secret_created{namespace="ns2",secret="secret2"} 1.501569018e+09
-				kube_secret_metadata_resource_version{namespace="ns2",resource_version="123456",secret="secret2"} 1
 				kube_secret_labels{namespace="ns2",secret="secret2"} 1
 				`,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
@@ -92,7 +91,7 @@ func TestSecretStore(t *testing.T) {
 					Namespace:         "ns3",
 					CreationTimestamp: metav1StartTime,
 					Labels:            map[string]string{"test-3": "test-3"},
-					ResourceVersion:   "abcdef",
+					ResourceVersion:   "0",
 				},
 				Type: v1.SecretTypeDockercfg,
 			},
@@ -110,15 +109,15 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_info{namespace="ns3",secret="secret3"} 1
 				kube_secret_type{namespace="ns3",secret="secret3",type="kubernetes.io/dockercfg"} 1
 				kube_secret_created{namespace="ns3",secret="secret3"} 1.501569018e+09
-				kube_secret_metadata_resource_version{namespace="ns3",resource_version="abcdef",secret="secret3"} 1
+				kube_secret_metadata_resource_version{namespace="ns3",secret="secret3"} 0
 				kube_secret_labels{label_test_3="test-3",namespace="ns3",secret="secret3"} 1
 `,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(secretMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(secretMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(secretMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(secretMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -33,6 +34,20 @@ var (
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )
+
+func resourceVersionMetric(rv string) []*metric.Metric {
+	v, err := strconv.ParseFloat(rv, 64)
+	if err != nil {
+		return []*metric.Metric{}
+	}
+
+	return []*metric.Metric{
+		{
+			Value: v,
+		},
+	}
+
+}
 
 func boolFloat64(b bool) float64 {
 	if b {
@@ -58,6 +73,10 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
+	return mapToPrometheusLabels(labels, "label")
+}
+
+func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
 	for k := range labels {
 		labelKeys = append(labelKeys, k)
@@ -66,7 +85,7 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 
 	labelValues := make([]string, 0, len(labels))
 	for i, k := range labelKeys {
-		labelKeys[i] = "label_" + sanitizeLabelName(k)
+		labelKeys[i] = prefix + "_" + sanitizeLabelName(k)
 		labelValues = append(labelValues, labels[k])
 	}
 	return labelKeys, labelValues
@@ -90,7 +109,7 @@ func isExtendedResourceName(name v1.ResourceName) bool {
 	}
 	// Ensure it satisfies the rules in IsQualifiedName() after converted into quota resource name
 	nameForQuota := fmt.Sprintf("%s%s", v1.DefaultResourceRequestsPrefix, string(name))
-	if errs := validation.IsQualifiedName(string(nameForQuota)); len(errs) != 0 {
+	if errs := validation.IsQualifiedName(nameForQuota); len(errs) != 0 {
 		return false
 	}
 	return true

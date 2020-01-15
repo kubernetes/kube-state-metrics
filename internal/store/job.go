@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +35,7 @@ var (
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 
-	jobMetricFamilies = []metric.FamilyGenerator{
+	jobMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: descJobLabelsName,
 			Type: metric.Gauge,

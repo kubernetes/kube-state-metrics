@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -113,8 +113,8 @@ func TestReplicationControllerStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(replicationControllerMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(replicationControllerMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(replicationControllerMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(replicationControllerMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

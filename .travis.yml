@@ -3,7 +3,7 @@ dist: xenial
 language: go
 
 go:
-    - "1.12.x"
+    - "1.13.x"
 
 services:
   - docker
@@ -21,6 +21,9 @@ env:
       - MINIKUBE_DRIVER=none
       - SUDO=sudo
 
+before_script:
+- make install-tools
+
 install:
 - mkdir -p $HOME/gopath/src/k8s.io
 - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/kube-state-metrics
@@ -31,6 +34,8 @@ jobs:
     - stage: all
       name: Lint
       script: make lint
+    - name: Validate generated manifests
+      script: make validate-manifests
     - name: Validate vendor is in sync with go modules
       script: make validate-modules
     - name: Check that all metrics are documented

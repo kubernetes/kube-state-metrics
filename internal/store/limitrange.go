@@ -25,12 +25,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
 
-	limitRangeMetricFamilies = []metric.FamilyGenerator{
+	limitRangeMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_limitrange",
 			Type: metric.Gauge,

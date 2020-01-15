@@ -2,18 +2,19 @@ FLAGS =
 TESTENVVAR =
 REGISTRY = quay.io/coreos
 TAG_PREFIX = v
-TAG = $(TAG_PREFIX)$(shell cat VERSION)
+VERSION = $(shell cat VERSION)
+TAG = $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
-PKGS = $(shell go list ./... | grep -v /vendor/)
+PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
 BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.12
+GO_VERSION = 1.13
 FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
 BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.17.1
+GOLANGCI_VERSION := v1.22.2
 HAS_GOLANGCI := $(shell which golangci-lint)
 
 IMAGE = $(REGISTRY)/kube-state-metrics
@@ -21,11 +22,11 @@ MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
-	GO111MODULE=on go mod verify
+	go mod verify
 	@echo "- Checking for any unused/missing packages in go.mod..."
-	GO111MODULE=on go mod tidy
+	go mod tidy
 	@echo "- Checking for unused packages in vendor..."
-	GO111MODULE=on go mod vendor
+	go mod vendor
 	@git diff --exit-code -- go.sum go.mod vendor/
 
 licensecheck:
@@ -33,7 +34,7 @@ licensecheck:
 	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*') ; do \
                awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
        done); \
-       if [[ -n "$${licRes}" ]]; then \
+       if [ -n "$${licRes}" ]; then \
                echo "license header checking failed:"; echo "$${licRes}"; \
                exit 1; \
        fi
@@ -123,19 +124,42 @@ endif
 
 clean:
 	rm -f kube-state-metrics
+	git clean -Xfd .
 
 e2e:
 	./tests/e2e.sh
 
-generate: build-local embedmd
+generate: build-local
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
 	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
-embedmd:
-	GO111MODULE=off go get github.com/campoy/embedmd
+validate-manifests: examples
+	@git diff --exit-code
 
-$(BENCHCMP_BINARY):
-	go get golang.org/x/tools/cmd/benchcmp
+mixin: examples/prometheus-alerting-rules/alerts.yaml
+
+examples/prometheus-alerting-rules/alerts.yaml: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/mixin.jsonnet scripts/vendor
+	mkdir -p examples/prometheus-alerting-rules
+	jsonnet -J scripts/vendor scripts/mixin.jsonnet | gojsontoyaml > examples/prometheus-alerting-rules/alerts.yaml
+
+examples: examples/standard examples/autosharding mixin
+
+examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor VERSION
+	mkdir -p examples/standard
+	jsonnet -J scripts/vendor -m examples/standard --ext-str version="$(VERSION)" scripts/standard.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	find examples -type f ! -name '*.yaml' -delete
+
+examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/autosharding.jsonnet scripts/vendor VERSION
+	mkdir -p examples/autosharding
+	jsonnet -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	find examples -type f ! -name '*.yaml' -delete
+
+scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json
+	cd scripts && jb install
+
+install-tools:
+	@echo Installing tools from tools.go
+	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
 .PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd

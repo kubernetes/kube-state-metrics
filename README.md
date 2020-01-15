@@ -1,6 +1,6 @@
 # Overview
 
-[![Build Status](https://travis-ci.org/kubernetes/kube-state-metrics.svg?branch=master)](https://travis-ci.org/kubernetes/kube-state-metrics)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics)
+[![Build Status](https://travis-ci.org/kubernetes/kube-state-metrics.svg?branch=master)](https://travis-ci.org/kubernetes/kube-state-metrics)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc](https://godoc.org/github.com/kubernetes/kube-state-metrics?status.svg)](https://godoc.org/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics is a simple service that listens to the Kubernetes API
 server and generates metrics about the state of the objects. (See examples in
@@ -45,6 +45,7 @@ the raw metrics.
   - [Kubernetes Deployment](#kubernetes-deployment)
   - [Limited privileges environment](#limited-privileges-environment)
   - [Development](#development)
+  - [Developer Contributions](#developer-contributions)
 
 ### Versioning
 
@@ -59,14 +60,14 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | client-go  | **Kubernetes 1.11** | **Kubernetes 1.12** | **Kubernetes 1.13** | **Kubernetes 1.14** |  **Kubernetes 1.15** |
-|--------------------|------------|---------------------|---------------------|---------------------|---------------------|----------------------|
-| **v1.4.0**         |  v8.0.0    |         ✓           |         ✓           |         -           |         -           |          -           |
-| **v1.5.0**         |  v8.0.0    |         ✓           |         ✓           |         -           |         -           |          -           |
-| **v1.6.0**         |  v11.0.0   |         ✓           |         ✓           |         ✓           |         ✓           |          -           |
-| **v1.7.2**         |  v12.0.0   |         ✓           |         ✓           |         ✓           |         ✓           |          ✓           |
-| **v1.8.0**         |  v12.0.0   |         ✓           |         ✓           |         ✓           |         ✓           |          ✓           |
-| **master**         |  v12.0.0   |         ✓           |         ✓           |         ✓           |         ✓           |          ✓           |
+| kube-state-metrics | **Kubernetes 1.12** | **Kubernetes 1.13** | **Kubernetes 1.14** |  **Kubernetes 1.15** |  **Kubernetes 1.16** |
+|--------------------|---------------------|---------------------|---------------------|----------------------|----------------------|
+| **v1.5.0**         |         ✓           |         -           |         -           |          -           |          -           |
+| **v1.6.0**         |         ✓           |         ✓           |         -           |          -           |          -           |
+| **v1.7.2**         |         ✓           |         ✓           |         ✓           |          -           |          -           |
+| **v1.8.0**         |         ✓           |         ✓           |         ✓           |          ✓           |          -           |
+| **v1.9.2**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
+| **master**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
 
@@ -78,8 +79,8 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v1.8.0`
-* `k8s.gcr.io/kube-state-metrics:v1.8.0`
+* `quay.io/coreos/kube-state-metrics:v1.9.2`
+* `k8s.gcr.io/kube-state-metrics:v1.9.2`
 
 **Note**:
 The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on
@@ -189,7 +190,7 @@ There is also an experimental feature, that allows kube-state-metrics to auto di
 
 To enable automated sharding kube-state-metrics must be run by a `StatefulSet` and the pod names and namespace must be handed to the kube-state-metrics process via the `--pod` and `--pod-namespace` flags.
 
-There are example manifests demonstrating the autosharding functionality in [`/kubernetes/autosharding`](/kubernetes/audosharding).
+There are example manifests demonstrating the autosharding functionality in [`/examples/autosharding`](./examples/autosharding).
 
 ### Setup
 
@@ -214,11 +215,10 @@ service account token that has read-only access to the Kubernetes cluster.
 
 #### Kubernetes Deployment
 
-To deploy this project, you can simply run `kubectl apply -f kubernetes` and a
-Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information). The service already has a
-`prometheus.io/scrape: 'true'` annotation and if you added the recommended
-Prometheus service-endpoint scraping configuration, Prometheus will pick it up automatically and you can start using the generated
-metrics right away.
+To deploy this project, you can simply run `kubectl apply -f examples/standard` and a
+Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information).
+
+To have Prometheus discover kube-state-metrics instances it is advised to create a specific Prometheus scrape config for kube-state-metrics that picks up both metrics endpoints. Annotation based discovery is discouraged as only one of the endpoints would be able to be selected, plus kube-state-metrics in most cases has special authentication and authorization requirements as it essentially grants read access through the metrics endpoint to most information available to it.
 
 **Note:** Google Kubernetes Engine (GKE) Users - GKE has strict role permissions that will prevent the kube-state-metrics roles and role bindings from being created. To work around this, you can give your GCP identity the cluster-admin role by running the following one-liner:
 
@@ -226,7 +226,7 @@ metrics right away.
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info --format='value(config.account)')
 ```
 
-Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and kubectl apply -f kubernetes, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
+Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
 
@@ -245,7 +245,7 @@ metadata:
 
 - give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the NS you want your serviceaccount to access*)
 ```yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: kube-state-metrics
@@ -267,7 +267,8 @@ spec:
   template:
     spec:
       containers:
-        - args:
+      - name: kube-state-metrics
+        args:
           - '--collectors=pods'
           - '--namespace=project1'
 ```
@@ -289,3 +290,7 @@ Then curl the metrics endpoint
 	curl localhost:8080/metrics
 
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
+
+#### Developer Contributions
+
+When developing, there are certain code patterns to follow to better your contributing experience and likelihood of e2e and other ci tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).

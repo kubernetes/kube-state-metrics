@@ -15,7 +15,9 @@ package store
 
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
+	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,13 +30,25 @@ var (
 	descStorageClassLabelsName          = "kube_storageclass_labels"
 	descStorageClassLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStorageClassLabelsDefaultLabels = []string{"storageclass"}
+	defaultReclaimPolicy                = v1.PersistentVolumeReclaimDelete
+	defaultVolumeBindingMode            = storagev1.VolumeBindingImmediate
 
-	storageClassMetricFamilies = []metric.FamilyGenerator{
+	storageClassMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_storageclass_info",
 			Type: metric.Gauge,
 			Help: "Information about storageclass.",
 			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+
+				// Add default values if missing.
+				if s.ReclaimPolicy == nil {
+					s.ReclaimPolicy = &defaultReclaimPolicy
+				}
+
+				if s.VolumeBindingMode == nil {
+					s.VolumeBindingMode = &defaultVolumeBindingMode
+				}
+
 				m := metric.Metric{
 					LabelKeys:   []string{"provisioner", "reclaimPolicy", "volumeBindingMode"},
 					LabelValues: []string{s.Provisioner, string(*s.ReclaimPolicy), string(*s.VolumeBindingMode)},

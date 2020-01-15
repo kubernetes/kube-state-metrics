@@ -66,6 +66,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithSharding(0, 1)
 	builder.WithContext(ctx)
 	builder.WithNamespaces(options.DefaultNamespaces)
+	builder.WithGenerateStoreFunc(builder.DefaultGenerateStoreFunc())
 
 	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -128,6 +129,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	builder.WithEnabledResources(options.DefaultCollectors.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
+	builder.WithGenerateStoreFunc(builder.DefaultGenerateStoreFunc())
 
 	l, err := whiteblacklist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -234,11 +236,13 @@ kube_pod_container_status_terminated{namespace="default",pod="pod0",container="c
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Completed"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Error"} 0
+kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Evicted"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="ContainerCannotRun"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container2",reason="DeadlineExceeded"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="OOMKilled"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Completed"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Error"} 0
+kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Evicted"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
 kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",container="container3",reason="DeadlineExceeded"} 0
 # HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
@@ -248,11 +252,13 @@ kube_pod_container_status_terminated_reason{namespace="default",pod="pod0",conta
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="OOMKilled"} 1
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Completed"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Error"} 0
+kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="Evicted"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="ContainerCannotRun"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container2",reason="DeadlineExceeded"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="OOMKilled"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Completed"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Error"} 0
+kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="Evicted"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="ContainerCannotRun"} 0
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",container="container3",reason="DeadlineExceeded"} 0
 # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
@@ -363,6 +369,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	unshardedBuilder.WithKubeClient(kubeClient)
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
 	unshardedBuilder.WithWhiteBlackList(l)
+	unshardedBuilder.WithGenerateStoreFunc(unshardedBuilder.DefaultGenerateStoreFunc())
 
 	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
 	unshardedHandler.ConfigureSharding(ctx, 0, 1)
@@ -374,6 +381,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder1.WithKubeClient(kubeClient)
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder1.WithWhiteBlackList(l)
+	shardedBuilder1.WithGenerateStoreFunc(shardedBuilder1.DefaultGenerateStoreFunc())
 
 	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
 	shardedHandler1.ConfigureSharding(ctx, 0, 2)
@@ -385,6 +393,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder2.WithKubeClient(kubeClient)
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder2.WithWhiteBlackList(l)
+	shardedBuilder2.WithGenerateStoreFunc(shardedBuilder2.DefaultGenerateStoreFunc())
 
 	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
 	shardedHandler2.ConfigureSharding(ctx, 1, 2)

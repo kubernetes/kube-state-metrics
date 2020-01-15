@@ -25,12 +25,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 
-	configMapMetricFamilies = []metric.FamilyGenerator{
+	configMapMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_configmap_info",
 			Type: metric.Gauge,
@@ -71,13 +72,7 @@ var (
 			Help: "Resource version representing a specific version of the configmap.",
 			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"resource_version"},
-							LabelValues: []string{string(c.ObjectMeta.ResourceVersion)},
-							Value:       1,
-						},
-					},
+					Metrics: resourceVersionMetric(c.ObjectMeta.ResourceVersion),
 				}
 			}),
 		},

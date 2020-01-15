@@ -17,22 +17,41 @@ limitations under the License.
 package store
 
 import (
-	"k8s.io/kube-state-metrics/pkg/metric"
-
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
+
+type MetricTargetType int
+
+const (
+	Value MetricTargetType = iota
+	Utilization
+	Average
+
+	MetricTargetTypeCount // Used as a length argument to arrays
+)
+
+func (m MetricTargetType) String() string {
+	return [...]string{"value", "utilization", "average"}[m]
+}
 
 var (
 	descHorizontalPodAutoscalerLabelsName          = "kube_hpa_labels"
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "hpa"}
 
-	hpaMetricFamilies = []metric.FamilyGenerator{
+	targetMetricLabels = []string{"metric_name", "metric_target_type"}
+
+	hpaMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_hpa_metadata_generation",
 			Type: metric.Gauge,
@@ -73,6 +92,68 @@ var (
 						},
 					},
 				}
+			}),
+		},
+		{
+			Name: "kube_hpa_spec_target_metric",
+			Type: metric.Gauge,
+			Help: "The metric specifications used by this autoscaler when calculating the desired replica count.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
+				for _, m := range a.Spec.Metrics {
+					var metricName string
+
+					var v [MetricTargetTypeCount]int64
+					var ok [MetricTargetTypeCount]bool
+
+					switch m.Type {
+					case autoscaling.ObjectMetricSourceType:
+						metricName = m.Object.MetricName
+
+						v[Value], ok[Value] = m.Object.TargetValue.AsInt64()
+						if m.Object.AverageValue != nil {
+							v[Average], ok[Average] = m.Object.AverageValue.AsInt64()
+						}
+					case autoscaling.PodsMetricSourceType:
+						metricName = m.Pods.MetricName
+
+						v[Average], ok[Average] = m.Pods.TargetAverageValue.AsInt64()
+					case autoscaling.ResourceMetricSourceType:
+						metricName = string(m.Resource.Name)
+
+						if ok[Utilization] = (m.Resource.TargetAverageUtilization != nil); ok[Utilization] {
+							v[Utilization] = int64(*m.Resource.TargetAverageUtilization)
+						}
+
+						if m.Resource.TargetAverageValue != nil {
+							v[Average], ok[Average] = m.Resource.TargetAverageValue.AsInt64()
+						}
+					case autoscaling.ExternalMetricSourceType:
+						metricName = m.External.MetricName
+
+						// The TargetValue and TargetAverageValue are mutually exclusive
+						if m.External.TargetValue != nil {
+							v[Value], ok[Value] = m.External.TargetValue.AsInt64()
+						}
+						if m.External.TargetAverageValue != nil {
+							v[Average], ok[Average] = m.External.TargetAverageValue.AsInt64()
+						}
+					default:
+						// Skip unsupported metric type
+						continue
+					}
+
+					for i := range ok {
+						if ok[i] {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   targetMetricLabels,
+								LabelValues: []string{metricName, MetricTargetType(i).String()},
+								Value:       float64(v[i]),
+							})
+						}
+					}
+				}
+				return &metric.Family{Metrics: ms}
 			}),
 		},
 		{
@@ -125,19 +206,86 @@ var (
 			Type: metric.Gauge,
 			Help: "The condition of this autoscaler.",
 			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, len(a.Status.Conditions)*len(conditionStatuses))
+				ms := make([]*metric.Metric, 0, len(a.Status.Conditions)*len(conditionStatuses))
 
-				for i, c := range a.Status.Conditions {
+				for _, c := range a.Status.Conditions {
 					metrics := addConditionMetrics(c.Status)
 
-					for j, m := range metrics {
+					for _, m := range metrics {
 						metric := m
 						metric.LabelKeys = []string{"condition", "status"}
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
-						ms[i*len(conditionStatuses)+j] = metric
+						ms = append(ms, metric)
 					}
 				}
 
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+
+		{
+			Name: "kube_hpa_status_current_metrics_average_value",
+			Type: metric.Gauge,
+			Help: "Average metric value observed by the autoscaler.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+				for _, c := range a.Status.CurrentMetrics {
+					var value *resource.Quantity
+					switch c.Type {
+					case autoscaling.ResourceMetricSourceType:
+						value = &c.Resource.CurrentAverageValue
+					case autoscaling.PodsMetricSourceType:
+						value = &c.Pods.CurrentAverageValue
+					case autoscaling.ObjectMetricSourceType:
+						value = c.Object.AverageValue
+					case autoscaling.ExternalMetricSourceType:
+						value = c.External.CurrentAverageValue
+					default:
+						// Skip unsupported metric type
+						continue
+					}
+					if value == nil {
+						// Some types might have a nil value (e.g. External.CurrentAverageValue can be nil)
+						continue
+					}
+					var metricValue float64
+					if c.Type == autoscaling.ResourceMetricSourceType {
+						switch c.Resource.Name {
+						case corev1.ResourceCPU:
+							metricValue = float64(value.MilliValue()) / 1000.0
+						case corev1.ResourceMemory:
+							metricValue = float64(value.Value())
+						}
+					} else if intVal, canFastConvert := value.AsInt64(); canFastConvert {
+						metricValue = float64(intVal)
+					} else {
+						// Skip unsupported metric value format
+						continue
+					}
+					ms = append(ms, &metric.Metric{
+						Value: metricValue,
+					})
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_hpa_status_current_metrics_average_utilization",
+			Type: metric.Gauge,
+			Help: "Average metric utilization observed by the autoscaler.",
+			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+				for _, c := range a.Status.CurrentMetrics {
+					if c.Type == autoscaling.ResourceMetricSourceType {
+						ms = append(ms, &metric.Metric{
+							Value: float64(*c.Resource.CurrentAverageUtilization),
+						})
+					}
+				}
 				return &metric.Family{
 					Metrics: ms,
 				}

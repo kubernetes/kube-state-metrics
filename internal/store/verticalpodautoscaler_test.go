@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	autoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestVPAStore(t *testing.T) {
@@ -133,8 +133,8 @@ func TestVPAStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(vpaMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(vpaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

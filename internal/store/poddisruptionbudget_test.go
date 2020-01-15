@@ -23,7 +23,7 @@ import (
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 func TestPodDisruptionBudgetStore(t *testing.T) {
@@ -94,8 +94,8 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(podDisruptionBudgetMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(podDisruptionBudgetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(podDisruptionBudgetMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(podDisruptionBudgetMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/kube-state-metrics/pkg/constant"
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +36,7 @@ var (
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
 
-	nodeMetricFamilies = []metric.FamilyGenerator{
+	nodeMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_node_info",
 			Type: metric.Gauge,
@@ -51,6 +52,7 @@ var (
 								"kubelet_version",
 								"kubeproxy_version",
 								"provider_id",
+								"pod_cidr",
 							},
 							LabelValues: []string{
 								n.Status.NodeInfo.KernelVersion,
@@ -59,6 +61,7 @@ var (
 								n.Status.NodeInfo.KubeletVersion,
 								n.Status.NodeInfo.KubeProxyVersion,
 								n.Spec.ProviderID,
+								n.Spec.PodCIDR,
 							},
 							Value: 1,
 						},

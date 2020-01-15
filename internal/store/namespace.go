@@ -18,6 +18,7 @@ package store
 
 import (
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ var (
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
 
-	namespaceMetricFamilies = []metric.FamilyGenerator{
+	namespaceMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_namespace_created",
 			Type: metric.Gauge,
@@ -85,6 +86,30 @@ var (
 
 				for _, metric := range ms {
 					metric.LabelKeys = []string{"phase"}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_namespace_status_condition",
+			Type: metric.Gauge,
+			Help: "The condition of a namespace.",
+			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
+				for i, c := range n.Status.Conditions {
+					conditionMetrics := addConditionMetrics(c.Status)
+
+					for j, m := range conditionMetrics {
+						metric := m
+
+						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+
+						ms[i*len(conditionStatuses)+j] = metric
+					}
 				}
 
 				return &metric.Family{

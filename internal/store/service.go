@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
-	serviceMetricFamilies = []metric.FamilyGenerator{
+	serviceMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: "kube_service_info",
 			Type: metric.Gauge,

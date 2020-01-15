@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
 var (
@@ -36,7 +37,7 @@ var (
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
 
-	cronJobMetricFamilies = []metric.FamilyGenerator{
+	cronJobMetricFamilies = []generator.FamilyGenerator{
 		{
 			Name: descCronJobLabelsName,
 			Type: metric.Gauge,

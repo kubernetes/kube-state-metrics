@@ -882,7 +882,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					StartTime: &metav1StartTime,
 				},
 			},
-			// TODO: Should it be '1501569018' instead?
 			Want: `
 				# HELP kube_pod_deleted Unix deletion timestamp
 				# TYPE kube_pod_deleted gauge
@@ -1606,7 +1605,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 35
+	expectedFamilies := 41
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

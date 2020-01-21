@@ -221,24 +221,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_hpa_status_current_metrics_average_utilization",
-			Type: metric.Gauge,
-			Help: "Average metric utilization observed by the autoscaler.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
-				for _, c := range a.Status.CurrentMetrics {
-					if c.Type == autoscaling.ResourceMetricSourceType {
-						ms = append(ms, &metric.Metric{
-							Value: float64(*c.Resource.CurrentAverageUtilization),
-						})
-					}
-				}
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
 	}
 )
 

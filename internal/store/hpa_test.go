@@ -41,7 +41,6 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_hpa_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
 		# HELP kube_hpa_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
 		# HELP kube_hpa_status_condition The condition of this autoscaler.
-		# HELP kube_hpa_status_current_metrics_average_utilization Average metric utilization observed by the autoscaler.
 		# HELP kube_hpa_status_current_replicas Current number of replicas of pods managed by this autoscaler.
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
 		# TYPE kube_hpa_labels gauge
@@ -50,7 +49,6 @@ func TestHPAStore(t *testing.T) {
 		# TYPE kube_hpa_spec_min_replicas gauge
 		# TYPE kube_hpa_spec_target_metric gauge
 		# TYPE kube_hpa_status_condition gauge
-		# TYPE kube_hpa_status_current_metrics_average_utilization gauge
 		# TYPE kube_hpa_status_current_replicas gauge
 		# TYPE kube_hpa_status_desired_replicas gauge
 	`
@@ -174,8 +172,6 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
-				kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
-				kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
 			`,
@@ -188,7 +184,6 @@ func TestHPAStore(t *testing.T) {
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
 				"kube_hpa_labels",
-				"kube_hpa_status_current_metrics_average_utilization",
 			},
 		},
 		{
@@ -298,8 +293,6 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="false"} 0
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="true"} 1
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="unknown"} 0
-				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 28
-				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 6
 				kube_hpa_status_current_replicas{hpa="hpa2",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa2",namespace="ns1"} 2
 			`,
@@ -312,7 +305,6 @@ func TestHPAStore(t *testing.T) {
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
 				"kube_hpa_labels",
-				"kube_hpa_status_current_metrics_average_utilization",
 			},
 		},
 	}

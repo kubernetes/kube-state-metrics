@@ -18,8 +18,6 @@ package store
 
 import (
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -219,73 +217,6 @@ var (
 					}
 				}
 
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-
-		{
-			Name: "kube_hpa_status_current_metrics_average_value",
-			Type: metric.Gauge,
-			Help: "Average metric value observed by the autoscaler.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
-				for _, c := range a.Status.CurrentMetrics {
-					var value *resource.Quantity
-					switch c.Type {
-					case autoscaling.ResourceMetricSourceType:
-						value = &c.Resource.CurrentAverageValue
-					case autoscaling.PodsMetricSourceType:
-						value = &c.Pods.CurrentAverageValue
-					case autoscaling.ObjectMetricSourceType:
-						value = c.Object.AverageValue
-					case autoscaling.ExternalMetricSourceType:
-						value = c.External.CurrentAverageValue
-					default:
-						// Skip unsupported metric type
-						continue
-					}
-					if value == nil {
-						// Some types might have a nil value (e.g. External.CurrentAverageValue can be nil)
-						continue
-					}
-					var metricValue float64
-					if c.Type == autoscaling.ResourceMetricSourceType {
-						switch c.Resource.Name {
-						case corev1.ResourceCPU:
-							metricValue = float64(value.MilliValue()) / 1000.0
-						case corev1.ResourceMemory:
-							metricValue = float64(value.Value())
-						}
-					} else if intVal, canFastConvert := value.AsInt64(); canFastConvert {
-						metricValue = float64(intVal)
-					} else {
-						// Skip unsupported metric value format
-						continue
-					}
-					ms = append(ms, &metric.Metric{
-						Value: metricValue,
-					})
-				}
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_hpa_status_current_metrics_average_utilization",
-			Type: metric.Gauge,
-			Help: "Average metric utilization observed by the autoscaler.",
-			GenerateFunc: wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
-				for _, c := range a.Status.CurrentMetrics {
-					if c.Type == autoscaling.ResourceMetricSourceType {
-						ms = append(ms, &metric.Metric{
-							Value: float64(*c.Resource.CurrentAverageUtilization),
-						})
-					}
-				}
 				return &metric.Family{
 					Metrics: ms,
 				}

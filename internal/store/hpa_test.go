@@ -35,26 +35,22 @@ func TestHPAStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
 		# HELP kube_hpa_metadata_generation The generation observed by the HorizontalPodAutoscaler controller.
-		# TYPE kube_hpa_metadata_generation gauge
 		# HELP kube_hpa_spec_max_replicas Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
-		# TYPE kube_hpa_spec_max_replicas gauge
 		# HELP kube_hpa_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
-		# TYPE kube_hpa_spec_min_replicas gauge
 		# HELP kube_hpa_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
-		# TYPE kube_hpa_spec_target_metric gauge
+		# HELP kube_hpa_status_condition The condition of this autoscaler.
 		# HELP kube_hpa_status_current_replicas Current number of replicas of pods managed by this autoscaler.
-		# TYPE kube_hpa_status_current_replicas gauge
 		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
+		# TYPE kube_hpa_labels gauge
+		# TYPE kube_hpa_metadata_generation gauge
+		# TYPE kube_hpa_spec_max_replicas gauge
+		# TYPE kube_hpa_spec_min_replicas gauge
+		# TYPE kube_hpa_spec_target_metric gauge
+		# TYPE kube_hpa_status_condition gauge
+		# TYPE kube_hpa_status_current_replicas gauge
 		# TYPE kube_hpa_status_desired_replicas gauge
-        # HELP kube_hpa_status_condition The condition of this autoscaler.
-        # TYPE kube_hpa_status_condition gauge
-        # HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
-        # TYPE kube_hpa_labels gauge
-        # HELP kube_hpa_status_current_metrics_average_value Average metric value observed by the autoscaler.
-        # TYPE kube_hpa_status_current_metrics_average_value gauge
-        # HELP kube_hpa_status_current_metrics_average_utilization Average metric utilization observed by the autoscaler.
-        # TYPE kube_hpa_status_current_metrics_average_utilization gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -165,23 +161,19 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
 				kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="hits",metric_target_type="value"} 10
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="hits",metric_target_type="average"} 12
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="transactions_processed",metric_target_type="average"} 33
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="cpu",metric_target_type="utilization"} 80
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="memory",metric_target_type="utilization"} 80
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="memory",metric_target_type="average"} 819200
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="sqs_jobs",metric_target_type="value"} 30
-				kube_hpa_spec_target_metric{hpa="hpa1",namespace="ns1",metric_name="events",metric_target_type="average"} 30
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="events",metric_target_type="average",namespace="ns1"} 30
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="hits",metric_target_type="average",namespace="ns1"} 12
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="hits",metric_target_type="value",namespace="ns1"} 10
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 819200
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="sqs_jobs",metric_target_type="value",namespace="ns1"} 30
+				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="transactions_processed",metric_target_type="average",namespace="ns1"} 33
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
 				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_status_current_metrics_average_value{hpa="hpa1",namespace="ns1"} 0.007
-                kube_hpa_status_current_metrics_average_value{hpa="hpa1",namespace="ns1"} 2.6335915e+07
-				kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
-	            kube_hpa_status_current_metrics_average_utilization{hpa="hpa1",namespace="ns1"} 0
 			`,
 			MetricNames: []string{
 				"kube_hpa_metadata_generation",
@@ -192,8 +184,6 @@ func TestHPAStore(t *testing.T) {
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
 				"kube_hpa_labels",
-				"kube_hpa_status_current_metrics_average_value",
-				"kube_hpa_status_current_metrics_average_utilization",
 			},
 		},
 		{
@@ -303,10 +293,6 @@ func TestHPAStore(t *testing.T) {
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="false"} 0
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="true"} 1
 				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="unknown"} 0
-				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 28
-				kube_hpa_status_current_metrics_average_utilization{hpa="hpa2",namespace="ns1"} 6
-				kube_hpa_status_current_metrics_average_value{hpa="hpa2",namespace="ns1"} 0.062
-				kube_hpa_status_current_metrics_average_value{hpa="hpa2",namespace="ns1"} 8.47775744e+08
 				kube_hpa_status_current_replicas{hpa="hpa2",namespace="ns1"} 2
 				kube_hpa_status_desired_replicas{hpa="hpa2",namespace="ns1"} 2
 			`,
@@ -319,8 +305,6 @@ func TestHPAStore(t *testing.T) {
 				"kube_hpa_status_desired_replicas",
 				"kube_hpa_status_condition",
 				"kube_hpa_labels",
-				"kube_hpa_status_current_metrics_average_value",
-				"kube_hpa_status_current_metrics_average_utilization",
 			},
 		},
 	}

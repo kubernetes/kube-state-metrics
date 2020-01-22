@@ -164,7 +164,8 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
       container.mixin.readinessProbe.httpGet.withPath('/') +
       container.mixin.readinessProbe.httpGet.withPort(8081) +
       container.mixin.readinessProbe.withInitialDelaySeconds(5) +
-      container.mixin.readinessProbe.withTimeoutSeconds(5);
+      container.mixin.readinessProbe.withTimeoutSeconds(5) +
+      container.mixin.securityContext.withRunAsUser(65534);
 
     deployment.new(ksm.name, 1, c, ksm.commonLabels) +
     deployment.mixin.metadata.withNamespace(ksm.namespace) +
@@ -236,6 +237,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
                   '--pod=$(POD_NAME)',
                   '--pod-namespace=$(POD_NAMESPACE)',
                 ]) +
+                container.mixin.securityContext.withRunAsUser(65534) + 
                 container.withEnv([
                   containerEnv.new('POD_NAME') +
                   containerEnv.mixin.valueFrom.fieldRef.withFieldPath('metadata.name'),

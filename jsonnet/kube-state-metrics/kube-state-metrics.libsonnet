@@ -237,7 +237,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
                   '--pod=$(POD_NAME)',
                   '--pod-namespace=$(POD_NAMESPACE)',
                 ]) +
-                container.mixin.securityContext.withRunAsUser(65534) + 
+                container.mixin.securityContext.withRunAsUser(65534) +
                 container.withEnv([
                   containerEnv.new('POD_NAME') +
                   containerEnv.mixin.valueFrom.fieldRef.withFieldPath('metadata.name'),

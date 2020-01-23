@@ -14,15 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+// +k8s:deepcopy-gen=package
+// +k8s:protobuf-gen=package
+// +k8s:openapi-gen=true
+// +groupName=discovery.k8s.io
 
-const (
-	// LabelServiceName is used to indicate the name of a Kubernetes service.
-	LabelServiceName = "kubernetes.io/service-name"
-	// LabelManagedBy is used to indicate the controller or entity that manages
-	// an EndpointSlice. This label aims to enable different EndpointSlice
-	// objects to be managed by different controllers or entities within the
-	// same cluster. It is highly recommended to configure this label for all
-	// EndpointSlices.
-	LabelManagedBy = "endpointslice.kubernetes.io/managed-by"
-)
+package v1beta1 // import "k8s.io/api/discovery/v1beta1"

@@ -1,3 +1,7 @@
+## v1.9.3 / 2020-01-22
+
+* [CHANGE] Remove experimental hpa metrics kube_hpa_status_current_metrics_average_utilization and kube_hpa_status_current_metrics_average_value #1030
+
 ## v1.9.2 / 2020-01-13
 
 * [BUGFIX] Fix segfault with External metrics #1023

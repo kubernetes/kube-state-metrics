@@ -1,0 +1,14 @@
+apiVersion: coordination.k8s.io/v1
+kind: Lease
+metadata:
+  name: kube-master
+  namespace: kube-node-lease
+  ownerReferences:
+    - apiVersion: v1
+      kind: Node
+      name: kube-master
+      uid: 71c6ca9d-7a35-4380-b2ae-aca4d47800df
+spec:
+  holderIdentity: kube-master
+  leaseDurationSeconds: 40
+  renewTime: "2020-01-26T09:52:23.548762Z"

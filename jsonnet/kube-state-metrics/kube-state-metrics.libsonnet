@@ -137,6 +137,13 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
         'networkpolicies',
       ]) +
       rulesType.withVerbs(['list', 'watch']),
+
+      rulesType.new() +
+      rulesType.withApiGroups(['coordination.k8s.io']) +
+      rulesType.withResources([
+        'leases',
+      ]) +
+      rulesType.withVerbs(['list', 'watch']),
     ];
 
     clusterRole.new() +

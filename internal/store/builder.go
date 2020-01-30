@@ -30,6 +30,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	policy "k8s.io/api/policy/v1beta1"
@@ -168,6 +169,7 @@ var availableStores = map[string]func(f *Builder) cache.Store{
 	"horizontalpodautoscalers":        func(b *Builder) cache.Store { return b.buildHPAStore() },
 	"ingresses":                       func(b *Builder) cache.Store { return b.buildIngressStore() },
 	"jobs":                            func(b *Builder) cache.Store { return b.buildJobStore() },
+	"leases":                          func(b *Builder) cache.Store { return b.buildLeases() },
 	"limitranges":                     func(b *Builder) cache.Store { return b.buildLimitRangeStore() },
 	"mutatingwebhookconfigurations":   func(b *Builder) cache.Store { return b.buildMutatingWebhookConfigurationStore() },
 	"namespaces":                      func(b *Builder) cache.Store { return b.buildNamespaceStore() },
@@ -312,6 +314,10 @@ func (b *Builder) buildVolumeAttachmentStore() cache.Store {
 
 func (b *Builder) buildVPAStore() cache.Store {
 	return b.buildStore(vpaMetricFamilies, &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient))
+}
+
+func (b *Builder) buildLeases() cache.Store {
+	return b.buildStore(leaseMetricFamilies, &coordinationv1.Lease{}, createLeaseListWatch)
 }
 
 func (b *Builder) buildStore(

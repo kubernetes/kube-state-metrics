@@ -54,6 +54,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 - [Horizontal Pod Autoscaler Metrics](horizontalpodautoscaler-metrics.md)
 - [Ingress Metrics](ingress-metrics.md)
 - [Job Metrics](job-metrics.md)
+- [Lease Metrics](lease-metrics.md)
 - [LimitRange Metrics](limitrange-metrics.md)
 - [MutatingWebhookConfiguration Metrics](mutatingwebhookconfiguration.md)
 - [Namespace Metrics](namespace-metrics.md)

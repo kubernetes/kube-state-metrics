@@ -18,7 +18,7 @@ Kubernetes API, this way users have all the data they require and perform
 heuristics as they see fit.
 
 The metrics are exported on the HTTP endpoint `/metrics` on the listening port
-(default 80). They are served as plaintext. They are designed to be consumed
+(default 8080). They are served as plaintext. They are designed to be consumed
 either by Prometheus itself or by a scraper that is compatible with scraping a
 Prometheus client endpoint. You can also open `/metrics` in a browser to see
 the raw metrics.

@@ -1,3 +1,10 @@
+## v1.9.4 / 2020-02-03
+
+* [BUGFIX] Fix VolumeAttachment api version to be used (was v1beta1, should have been v1). #1043
+* [BUGFIX] Fix MutatingWebhookConfiguration api version to be used (was v1beta1, should have been v1). #1043
+* [BUGFIX] Fix ValidatingWebhookConfiguration api version to be used (was v1beta1, should have been v1). #1043
+* [BUGFIX] Use the correct for NetworkPolicy reflector. #1042
+
 ## v1.9.3 / 2020-01-22
 
 * [CHANGE] Remove experimental hpa metrics kube_hpa_status_current_metrics_average_utilization and kube_hpa_status_current_metrics_average_value #1030

@@ -32,6 +32,7 @@ import (
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
@@ -237,7 +238,7 @@ func (b *Builder) buildNamespaceStore() *metricsstore.MetricsStore {
 }
 
 func (b *Builder) buildNetworkPolicyStore() *metricsstore.MetricsStore {
-	return b.buildStore(networkpolicyMetricFamilies, &v1.Namespace{}, createNetworkPolicyListWatch)
+	return b.buildStore(networkpolicyMetricFamilies, &networkingv1.NetworkPolicy{}, createNetworkPolicyListWatch)
 }
 
 func (b *Builder) buildNodeStore() *metricsstore.MetricsStore {

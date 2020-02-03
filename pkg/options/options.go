@@ -41,8 +41,8 @@ type Options struct {
 	TotalShards                          int
 	Pod                                  string
 	Namespace                            string
-	MetricBlacklist                      MetricSet
-	MetricWhitelist                      MetricSet
+	MetricDenylist                       MetricSet
+	MetricAllowlist                      MetricSet
 	Version                              bool
 	DisablePodNonGenericResourceMetrics  bool
 	DisableNodeNonGenericResourceMetrics bool
@@ -56,8 +56,8 @@ type Options struct {
 func NewOptions() *Options {
 	return &Options{
 		Collectors:      CollectorSet{},
-		MetricWhitelist: MetricSet{},
-		MetricBlacklist: MetricSet{},
+		MetricAllowlist: MetricSet{},
+		MetricDenylist:  MetricSet{},
 	}
 }
 
@@ -86,8 +86,8 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.TelemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
 	o.flags.Var(&o.Collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &DefaultCollectors))
 	o.flags.Var(&o.Namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
-	o.flags.Var(&o.MetricWhitelist, "metric-whitelist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The whitelist and blacklist are mutually exclusive.")
-	o.flags.Var(&o.MetricBlacklist, "metric-blacklist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The whitelist and blacklist are mutually exclusive.")
+	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
 	o.flags.IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
 

@@ -37,7 +37,7 @@ type BuilderInterface interface {
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
 	WithVPAClient(c vpaclientset.Interface)
-	WithWhiteBlackList(l WhiteBlackLister)
+	WithAllowDenyList(l AllowDenyLister)
 	WithGenerateStoreFunc(f BuildStoreFunc)
 	DefaultGenerateStoreFunc() BuildStoreFunc
 	Build() []cache.Store
@@ -49,8 +49,8 @@ type BuildStoreFunc func(metricFamilies []generator.FamilyGenerator,
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) cache.Store
 
-// WhiteBlackLister interface for WhiteBlack lister that can allow or exclude metrics by there names
-type WhiteBlackLister interface {
+// AllowDenyLister interface for AllowDeny lister that can allow or exclude metrics by there names
+type AllowDenyLister interface {
 	IsIncluded(string) bool
 	IsExcluded(string) bool
 }

@@ -83,14 +83,14 @@ func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) [
 	}
 }
 
-type whiteBlackLister interface {
+type allowDenyLister interface {
 	IsIncluded(string) bool
 	IsExcluded(string) bool
 }
 
-// FilterMetricFamilies takes a white- and a blacklist and a slice of metric
+// FilterMetricFamilies takes a allow- and a denylist and a slice of metric
 // families and returns a filtered slice.
-func FilterMetricFamilies(l whiteBlackLister, families []FamilyGenerator) []FamilyGenerator {
+func FilterMetricFamilies(l allowDenyLister, families []FamilyGenerator) []FamilyGenerator {
 	filtered := []FamilyGenerator{}
 
 	for _, f := range families {

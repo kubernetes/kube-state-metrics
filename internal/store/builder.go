@@ -58,7 +58,7 @@ type Builder struct {
 	namespaces       options.NamespaceList
 	ctx              context.Context
 	enabledResources []string
-	whiteBlackList   ksmtypes.WhiteBlackLister
+	allowDenyList    ksmtypes.AllowDenyLister
 	metrics          *watch.ListWatchMetrics
 	shard            int32
 	totalShards      int
@@ -119,10 +119,10 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 	b.vpaClient = c
 }
 
-// WithWhiteBlackList configures the white or blacklisted metric to be exposed
+// WithAllowDenyList configures the allow or denylisted metric to be exposed
 // by the store build by the Builder.
-func (b *Builder) WithWhiteBlackList(l ksmtypes.WhiteBlackLister) {
-	b.whiteBlackList = l
+func (b *Builder) WithAllowDenyList(l ksmtypes.AllowDenyLister) {
+	b.allowDenyList = l
 }
 
 // WithGenerateStoreFunc configures a constom generate store function
@@ -137,8 +137,8 @@ func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
 
 // Build initializes and registers all enabled stores.
 func (b *Builder) Build() []cache.Store {
-	if b.whiteBlackList == nil {
-		panic("whiteBlackList should not be nil")
+	if b.allowDenyList == nil {
+		panic("allowDenyList should not be nil")
 	}
 
 	stores := []cache.Store{}
@@ -324,7 +324,7 @@ func (b *Builder) buildStore(
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) cache.Store {
-	filteredMetricFamilies := generator.FilterMetricFamilies(b.whiteBlackList, metricFamilies)
+	filteredMetricFamilies := generator.FilterMetricFamilies(b.allowDenyList, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(filteredMetricFamilies)
 
 	familyHeaders := generator.ExtractMetricFamilyHeaders(filteredMetricFamilies)

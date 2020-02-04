@@ -35,22 +35,22 @@ func TestHPAStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_hpa_labels Kubernetes labels converted to Prometheus labels.
-		# HELP kube_hpa_metadata_generation The generation observed by the HorizontalPodAutoscaler controller.
-		# HELP kube_hpa_spec_max_replicas Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
-		# HELP kube_hpa_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
-		# HELP kube_hpa_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
-		# HELP kube_hpa_status_condition The condition of this autoscaler.
-		# HELP kube_hpa_status_current_replicas Current number of replicas of pods managed by this autoscaler.
-		# HELP kube_hpa_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
-		# TYPE kube_hpa_labels gauge
-		# TYPE kube_hpa_metadata_generation gauge
-		# TYPE kube_hpa_spec_max_replicas gauge
-		# TYPE kube_hpa_spec_min_replicas gauge
-		# TYPE kube_hpa_spec_target_metric gauge
-		# TYPE kube_hpa_status_condition gauge
-		# TYPE kube_hpa_status_current_replicas gauge
-		# TYPE kube_hpa_status_desired_replicas gauge
+		# HELP kube_horizontalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_horizontalpodautoscaler_metadata_generation The generation observed by the HorizontalPodAutoscaler controller.
+		# HELP kube_horizontalpodautoscaler_spec_max_replicas Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
+		# HELP kube_horizontalpodautoscaler_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
+		# HELP kube_horizontalpodautoscaler_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
+		# HELP kube_horizontalpodautoscaler_status_condition The condition of this autoscaler.
+		# HELP kube_horizontalpodautoscaler_status_current_replicas Current number of replicas of pods managed by this autoscaler.
+		# HELP kube_horizontalpodautoscaler_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
+		# TYPE kube_horizontalpodautoscaler_labels gauge
+		# TYPE kube_horizontalpodautoscaler_metadata_generation gauge
+		# TYPE kube_horizontalpodautoscaler_spec_max_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_spec_min_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_spec_target_metric gauge
+		# TYPE kube_horizontalpodautoscaler_status_condition gauge
+		# TYPE kube_horizontalpodautoscaler_status_current_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_status_desired_replicas gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -157,33 +157,33 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_hpa_labels{hpa="hpa1",label_app="foobar",namespace="ns1"} 1
-				kube_hpa_metadata_generation{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_spec_max_replicas{hpa="hpa1",namespace="ns1"} 4
-				kube_hpa_spec_min_replicas{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="events",metric_target_type="average",namespace="ns1"} 30
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="hits",metric_target_type="average",namespace="ns1"} 12
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="hits",metric_target_type="value",namespace="ns1"} 10
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 819200
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="sqs_jobs",metric_target_type="value",namespace="ns1"} 30
-				kube_hpa_spec_target_metric{hpa="hpa1",metric_name="transactions_processed",metric_target_type="average",namespace="ns1"} 33
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="false"} 0
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="true"} 1
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa1",namespace="ns1",status="unknown"} 0
-				kube_hpa_status_current_replicas{hpa="hpa1",namespace="ns1"} 2
-				kube_hpa_status_desired_replicas{hpa="hpa1",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa1",label_app="foobar",namespace="ns1"} 1
+				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 4
+				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="events",metric_target_type="average",namespace="ns1"} 30
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="average",namespace="ns1"} 12
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="value",namespace="ns1"} 10
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 819200
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="sqs_jobs",metric_target_type="value",namespace="ns1"} 30
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="transactions_processed",metric_target_type="average",namespace="ns1"} 33
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="false"} 0
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="true"} 1
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="unknown"} 0
+				kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 			`,
 			MetricNames: []string{
-				"kube_hpa_metadata_generation",
-				"kube_hpa_spec_max_replicas",
-				"kube_hpa_spec_min_replicas",
-				"kube_hpa_spec_target_metric",
-				"kube_hpa_status_current_replicas",
-				"kube_hpa_status_desired_replicas",
-				"kube_hpa_status_condition",
-				"kube_hpa_labels",
+				"kube_horizontalpodautoscaler_metadata_generation",
+				"kube_horizontalpodautoscaler_spec_max_replicas",
+				"kube_horizontalpodautoscaler_spec_min_replicas",
+				"kube_horizontalpodautoscaler_spec_target_metric",
+				"kube_horizontalpodautoscaler_status_current_replicas",
+				"kube_horizontalpodautoscaler_status_desired_replicas",
+				"kube_horizontalpodautoscaler_status_condition",
+				"kube_horizontalpodautoscaler_labels",
 			},
 		},
 		{
@@ -282,29 +282,29 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_hpa_labels{hpa="hpa2",label_app="foobar",namespace="ns1"} 1
-				kube_hpa_metadata_generation{hpa="hpa2",namespace="ns1"} 2
-				kube_hpa_spec_max_replicas{hpa="hpa2",namespace="ns1"} 4
-				kube_hpa_spec_min_replicas{hpa="hpa2",namespace="ns1"} 2
-				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
-				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 75
-				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 100
-				kube_hpa_spec_target_metric{hpa="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 100
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="false"} 0
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="true"} 1
-				kube_hpa_status_condition{condition="AbleToScale",hpa="hpa2",namespace="ns1",status="unknown"} 0
-				kube_hpa_status_current_replicas{hpa="hpa2",namespace="ns1"} 2
-				kube_hpa_status_desired_replicas{hpa="hpa2",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa2",label_app="foobar",namespace="ns1"} 1
+				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 4
+				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 75
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 100
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 100
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="false"} 0
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="true"} 1
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="unknown"} 0
+				kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 			`,
 			MetricNames: []string{
-				"kube_hpa_metadata_generation",
-				"kube_hpa_spec_max_replicas",
-				"kube_hpa_spec_min_replicas",
-				"kube_hpa_spec_target_metric",
-				"kube_hpa_status_current_replicas",
-				"kube_hpa_status_desired_replicas",
-				"kube_hpa_status_condition",
-				"kube_hpa_labels",
+				"kube_horizontalpodautoscaler_metadata_generation",
+				"kube_horizontalpodautoscaler_spec_max_replicas",
+				"kube_horizontalpodautoscaler_spec_min_replicas",
+				"kube_horizontalpodautoscaler_spec_target_metric",
+				"kube_horizontalpodautoscaler_status_current_replicas",
+				"kube_horizontalpodautoscaler_status_desired_replicas",
+				"kube_horizontalpodautoscaler_status_condition",
+				"kube_horizontalpodautoscaler_labels",
 			},
 		},
 	}

@@ -36,11 +36,11 @@ import (
 	"k8s.io/klog"
 
 	"k8s.io/kube-state-metrics/internal/store"
+	"k8s.io/kube-state-metrics/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/pkg/options"
 	"k8s.io/kube-state-metrics/pkg/util/proc"
 	"k8s.io/kube-state-metrics/pkg/version"
-	"k8s.io/kube-state-metrics/pkg/whiteblacklist"
 )
 
 const (
@@ -106,13 +106,13 @@ func main() {
 		storeBuilder.WithNamespaces(opts.Namespaces)
 	}
 
-	whiteBlackList, err := whiteblacklist.New(opts.MetricWhitelist, opts.MetricBlacklist)
+	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
 	if err != nil {
 		klog.Fatal(err)
 	}
 
 	if opts.DisablePodNonGenericResourceMetrics {
-		whiteBlackList.Exclude([]string{
+		allowDenyList.Exclude([]string{
 			"kube_pod_container_resource_requests_cpu_cores",
 			"kube_pod_container_resource_requests_memory_bytes",
 			"kube_pod_container_resource_limits_cpu_cores",
@@ -121,7 +121,7 @@ func main() {
 	}
 
 	if opts.DisableNodeNonGenericResourceMetrics {
-		whiteBlackList.Exclude([]string{
+		allowDenyList.Exclude([]string{
 			"kube_node_status_capacity_cpu_cores",
 			"kube_node_status_capacity_memory_bytes",
 			"kube_node_status_capacity_pods",
@@ -131,14 +131,14 @@ func main() {
 		})
 	}
 
-	err = whiteBlackList.Parse()
+	err = allowDenyList.Parse()
 	if err != nil {
-		klog.Fatalf("error initializing the whiteblack list : %v", err)
+		klog.Fatalf("error initializing the allowdeny list : %v", err)
 	}
 
-	klog.Infof("metric white-blacklisting: %v", whiteBlackList.Status())
+	klog.Infof("metric allow-denylisting: %v", allowDenyList.Status())
 
-	storeBuilder.WithWhiteBlackList(whiteBlackList)
+	storeBuilder.WithAllowDenyList(allowDenyList)
 
 	storeBuilder.WithGenerateStoreFunc(storeBuilder.DefaultGenerateStoreFunc())
 

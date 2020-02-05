@@ -78,10 +78,10 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 	b.internal.WithVPAClient(c)
 }
 
-// WithWhiteBlackList configures the white or blacklisted metric to be exposed
+// WithAllowDenyList configures the allow or denylisted metric to be exposed
 // by the store build by the Builder.
-func (b *Builder) WithWhiteBlackList(l ksmtypes.WhiteBlackLister) {
-	b.internal.WithWhiteBlackList(l)
+func (b *Builder) WithAllowDenyList(l ksmtypes.AllowDenyLister) {
+	b.internal.WithAllowDenyList(l)
 }
 
 // WithGenerateStoreFunc configures a constom generate store function

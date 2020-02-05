@@ -44,17 +44,17 @@
 
 ### How to retrieve none standard Pod state
 
-It is not straightforward to get the Pod states for certain cases like "Terminating" and "Unknow" since it is not stored behind a field in the `Pod.status`.
+It is not straightforward to get the Pod states for certain cases like "Terminating" and "Unknown" since it is not stored behind a field in the `Pod.Status`.
 
-So to get them, you need to compose multiple metrics (like it is done in the `kubectl` command line).
+So to get them, you will need to compose multiple metrics (like it is done in the `kubectl` command line code).
 
 For example:
 
-* To get the list the Pods that are in an `Unknow` state you can to the following promQL query: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod)`
+* To get the list of pods that are in the `Unknown` state, you can run the following promQL query: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod)`
 
 * For Pods in `Terminated` state: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason!="NodeLost"})) by (namespace, pod)`
 
-A useful "Rule" can be to be alerted when a Pod is blocked in `Terminated` state for more than `5m`.
+Here is an example of a Prometheus rule that can be used to alert on a Pod that has been in the `Terminated` state for more than `5m`.
 
 ```yaml
 groups:

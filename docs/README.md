@@ -22,25 +22,6 @@ Stages about metrics are grouped into three categories：
 | STABLE       | Metrics which should have very few backwards-incompatible changes outside of major version updates.                        |
 | DEPRECATED   | Metrics which will be removed once the deprecation timeline is met.                                                        |
 
-## Metrics Deprecation
-
-- **The following non-generic resource metrics for pods are marked deprecated. They will be removed in kube-state-metrics v2.0.0.**
-  `kube_pod_container_resource_requests` and `kube_pod_container_resource_limits` are the replacements with `resource` labels
-  representing the resource name and `unit` labels representing the resource unit.
-  - kube_pod_container_resource_requests_cpu_cores
-  - kube_pod_container_resource_limits_cpu_cores
-  - kube_pod_container_resource_requests_memory_bytes
-  - kube_pod_container_resource_limits_memory_bytes
-- **The following non-generic resource metrics for nodes are marked deprecated. They will be removed in kube-state-metrics v2.0.0.**
-  `kube_node_status_capacity` and `kube_node_status_allocatable` are the replacements with `resource` labels
-  representing the resource name and `unit` labels representing the resource unit.
-  - kube_node_status_capacity_pods
-  - kube_node_status_capacity_cpu_cores
-  - kube_node_status_capacity_memory_bytes
-  - kube_node_status_allocatable_pods
-  - kube_node_status_allocatable_cpu_cores
-  - kube_node_status_allocatable_memory_bytes
-
 ## Exposed Metrics
 
 Per group of metrics there is one file for each metrics. See each file for specific documentation about the exposed metrics:

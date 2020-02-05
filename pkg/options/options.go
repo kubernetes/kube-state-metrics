@@ -28,24 +28,22 @@ import (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	Apiserver                            string
-	Kubeconfig                           string
-	Help                                 bool
-	Port                                 int
-	Host                                 string
-	TelemetryPort                        int
-	TelemetryHost                        string
-	Collectors                           CollectorSet
-	Namespaces                           NamespaceList
-	Shard                                int32
-	TotalShards                          int
-	Pod                                  string
-	Namespace                            string
-	MetricDenylist                       MetricSet
-	MetricAllowlist                      MetricSet
-	Version                              bool
-	DisablePodNonGenericResourceMetrics  bool
-	DisableNodeNonGenericResourceMetrics bool
+	Apiserver       string
+	Kubeconfig      string
+	Help            bool
+	Port            int
+	Host            string
+	TelemetryPort   int
+	TelemetryHost   string
+	Collectors      CollectorSet
+	Namespaces      NamespaceList
+	Shard           int32
+	TotalShards     int
+	Pod             string
+	Namespace       string
+	MetricDenylist  MetricSet
+	MetricAllowlist MetricSet
+	Version         bool
 
 	EnableGZIPEncoding bool
 
@@ -96,8 +94,6 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
 	o.flags.StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
-	o.flags.BoolVarP(&o.DisablePodNonGenericResourceMetrics, "disable-pod-non-generic-resource-metrics", "", false, "Disable pod non generic resource request and limit metrics")
-	o.flags.BoolVarP(&o.DisableNodeNonGenericResourceMetrics, "disable-node-non-generic-resource-metrics", "", false, "Disable node non generic resource request and limit metrics")
 	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
 }
 

@@ -40,3 +40,32 @@
 | kube_pod_status_reason | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;NodeLost\|Evicted\&gt; | EXPERIMENTAL |
 | kube_pod_status_scheduled_time | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
 | kube_pod_status_unschedulable | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
+
+## Useful metrics queries
+
+### How to retrieve none standard Pod state
+
+It is not straightforward to get the Pod states for certain cases like "Terminating" and "Unknow" since it is not stored behind a field in the `Pod.status`.
+
+So to get them, you need to compose multiple metrics (like it is done in the `kubectl` command line).
+
+For example:
+
+* To get the list the Pods that are in an `Unknow` state you can to the following promQL query: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod)`
+
+* For Pods in `Terminated` state: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason!="NodeLost"})) by (namespace, pod)`
+
+A useful "Rule" can be to be alerted when a Pod is blocked in `Terminated` state for more than `5m`.
+
+```yaml
+groups:
+- name: Pod state
+  rules:
+  - alert: PodsBlockInTerminatingState
+    expr: count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason!="NodeLost"})) by (namespace, pod) > 0
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: Pod {{labels.namespace}}/{{labels.pod}} block in terminating state.
+```

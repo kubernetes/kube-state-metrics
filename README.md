@@ -109,7 +109,7 @@ See the [`docs`](docs) directory for more information on the exposed metrics.
 
 ### Kube-state-metrics self metrics
 
-kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 81).
+kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 8081).
 
 kube-state-metrics also exposes list and watch success and error metrics. These can be used to calculate the error rate of list or watch resources.
 If you encounter those errors in the metrics, it is most likely a configuration or permission issue, and the next thing to investigate would be looking

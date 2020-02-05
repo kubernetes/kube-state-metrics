@@ -866,6 +866,32 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod1",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "ns1",
+					UID:               "abc-123-xxx",
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				},
+				Spec: v1.PodSpec{
+					NodeName:          "node1",
+					PriorityClassName: "system-node-critical",
+				},
+				Status: v1.PodStatus{
+					HostIP:    "1.1.1.1",
+					PodIP:     "1.2.3.4",
+					StartTime: &metav1StartTime,
+				},
+			},
+			Want: `
+				# HELP kube_pod_deleted Unix deletion timestamp
+				# TYPE kube_pod_deleted gauge
+				kube_pod_deleted{namespace="ns1",pod="pod1"} 1.8e+09
+`,
+			MetricNames: []string{"kube_pod_deleted"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
 					Namespace: "ns2",
 				},
@@ -1055,14 +1081,58 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			},
 			Want: `
 				# HELP kube_pod_status_phase The pods current phase.
+				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_phase gauge
+				# TYPE kube_pod_status_reason gauge
 				kube_pod_status_phase{namespace="ns4",phase="Failed",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Pending",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Succeeded",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 1
 `,
-			MetricNames: []string{"kube_pod_status_phase"},
+			MetricNames: []string{"kube_pod_status_phase", "kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "Evicted",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "other reason",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1535,7 +1605,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 35
+	expectedFamilies := 37
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

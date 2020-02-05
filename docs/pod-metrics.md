@@ -21,7 +21,8 @@
 | kube_pod_container_status_restarts_total | Counter | `container`=&lt;container-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `pod`=&lt;pod-name&gt; | STABLE |
 | kube_pod_container_resource_requests | Gauge | `resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt; <br> `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; | STABLE |
 | kube_pod_container_resource_limits | Gauge | `resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt; <br> `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; | STABLE |
-| kube_pod_created | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; |
+| kube_pod_created | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
+| kube_pod_deleted | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | EXPERIMENTAL |
 | kube_pod_restart_policy | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `type`=&lt;Always|Never|OnFailure&gt; | STABLE |
 | kube_pod_init_container_info | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `image`=&lt;image-name&gt; <br> `image_id`=&lt;image-id&gt; <br> `container_id`=&lt;containerid&gt; | STABLE |
 | kube_pod_init_container_status_waiting | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
@@ -35,5 +36,35 @@
 | kube_pod_init_container_resource_limits | Gauge | `resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt; <br> `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; | STABLE |
 | kube_pod_spec_volumes_persistentvolumeclaims_info | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `volume`=&lt;volume-name&gt;  <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-claimname&gt; | STABLE |
 | kube_pod_spec_volumes_persistentvolumeclaims_readonly | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt;  <br> `volume`=&lt;volume-name&gt;  <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-claimname&gt; | STABLE |
+| kube_pod_status_reason | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;NodeLost\|Evicted\&gt; | EXPERIMENTAL |
 | kube_pod_status_scheduled_time | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
 | kube_pod_status_unschedulable | Gauge | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
+
+## Useful metrics queries
+
+### How to retrieve none standard Pod state
+
+It is not straightforward to get the Pod states for certain cases like "Terminating" and "Unknown" since it is not stored behind a field in the `Pod.Status`.
+
+So to get them, you will need to compose multiple metrics (like it is done in the `kubectl` command line code).
+
+For example:
+
+* To get the list of pods that are in the `Unknown` state, you can run the following promQL query: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod)`
+
+* For Pods in `Terminated` state: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason!="NodeLost"})) by (namespace, pod)`
+
+Here is an example of a Prometheus rule that can be used to alert on a Pod that has been in the `Terminated` state for more than `5m`.
+
+```yaml
+groups:
+- name: Pod state
+  rules:
+  - alert: PodsBlockInTerminatingState
+    expr: count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason!="NodeLost"})) by (namespace, pod) > 0
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: Pod {{labels.namespace}}/{{labels.pod}} block in terminating state.
+```

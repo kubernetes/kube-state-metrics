@@ -171,6 +171,8 @@ kube_pod_labels{namespace="default",pod="pod0"} 1
 # HELP kube_pod_created Unix creation timestamp
 # TYPE kube_pod_created gauge
 kube_pod_created{namespace="default",pod="pod0"} 1.5e+09
+# HELP kube_pod_deleted Unix deletion timestamp
+# TYPE kube_pod_deleted gauge
 # HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
 # TYPE kube_pod_restart_policy gauge
 kube_pod_restart_policy{namespace="default",pod="pod0",type="Always"} 1
@@ -187,6 +189,10 @@ kube_pod_status_phase{namespace="default",pod="pod0",phase="Running"} 1
 kube_pod_status_phase{namespace="default",pod="pod0",phase="Unknown"} 0
 # HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
 # TYPE kube_pod_status_ready gauge
+# HELP kube_pod_status_reason The pod status reasons
+# TYPE kube_pod_status_reason gauge
+kube_pod_status_reason{namespace="default",pod="pod0",reason="Evicted"} 0
+kube_pod_status_reason{namespace="default",pod="pod0",reason="NodeLost"} 0
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 # TYPE kube_pod_status_scheduled gauge
 # HELP kube_pod_container_info Information about a container in a pod.

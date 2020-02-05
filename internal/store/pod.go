@@ -37,6 +37,7 @@ var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
+	podStatusReasons           = []string{"NodeLost", "Evicted"}
 
 	podMetricFamilies = []generator.FamilyGenerator{
 		{
@@ -198,6 +199,26 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_deleted",
+			Type: metric.Gauge,
+			Help: "Unix deletion timestamp",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if p.DeletionTimestamp != nil && !p.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(p.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_restart_policy",
 			Type: metric.Gauge,
 			Help: "Describes the restart policy in use by this pod.",
@@ -347,6 +368,30 @@ var (
 							ms = append(ms, metric)
 						}
 					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_status_reason",
+			Type: metric.Gauge,
+			Help: "The pod status reasons",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, reason := range podStatusReasons {
+					metric := &metric.Metric{}
+					metric.LabelKeys = []string{"reason"}
+					metric.LabelValues = []string{reason}
+					if p.Status.Reason == reason {
+						metric.Value = boolFloat64(true)
+					} else {
+						metric.Value = boolFloat64(false)
+					}
+					ms = append(ms, metric)
 				}
 
 				return &metric.Family{

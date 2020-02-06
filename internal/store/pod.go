@@ -991,6 +991,41 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_pod_overhead",
+			Type: metric.Gauge,
+			Help: "The pod overhead associated with running a pod.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if p.Spec.Overhead != nil {
+					for resourceName, val := range p.Spec.Overhead {
+						switch resourceName {
+						case v1.ResourceCPU:
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+								Value:       float64(val.MilliValue()) / 1000,
+							})
+
+						case v1.ResourceMemory:
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								Value:       float64(val.Value()),
+							})
+						}
+					}
+
+				}
+
+				for _, metric := range ms {
+					metric.LabelKeys = []string{"resource", "unit"}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
 	}
 )
 

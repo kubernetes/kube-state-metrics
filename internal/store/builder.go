@@ -86,7 +86,7 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	}
 
 	var copy []string
-	copy = append(copy, c...)
+	copy = append(copy, r...)
 
 	sort.Strings(copy)
 

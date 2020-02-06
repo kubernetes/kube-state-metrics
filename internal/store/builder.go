@@ -24,7 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
+	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -32,9 +32,9 @@ import (
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
-	storagev1beta1 "k8s.io/api/storage/v1beta1"
 	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
@@ -247,7 +247,7 @@ func (b *Builder) buildNamespaceStore() cache.Store {
 }
 
 func (b *Builder) buildNetworkPolicyStore() cache.Store {
-	return b.buildStore(networkpolicyMetricFamilies, &v1.Namespace{}, createNetworkPolicyListWatch)
+	return b.buildStore(networkpolicyMetricFamilies, &networkingv1.NetworkPolicy{}, createNetworkPolicyListWatch)
 }
 
 func (b *Builder) buildNodeStore() cache.Store {
@@ -307,7 +307,7 @@ func (b *Builder) buildValidatingWebhookConfigurationStore() cache.Store {
 }
 
 func (b *Builder) buildVolumeAttachmentStore() cache.Store {
-	return b.buildStore(volumeAttachmentMetricFamilies, &storagev1beta1.VolumeAttachment{}, createVolumeAttachmentListWatch)
+	return b.buildStore(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch)
 }
 
 func (b *Builder) buildVPAStore() cache.Store {

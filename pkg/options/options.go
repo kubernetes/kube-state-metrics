@@ -35,7 +35,7 @@ type Options struct {
 	Host            string
 	TelemetryPort   int
 	TelemetryHost   string
-	Collectors      CollectorSet
+	Resources       ResourceSet
 	Namespaces      NamespaceList
 	Shard           int32
 	TotalShards     int
@@ -53,7 +53,7 @@ type Options struct {
 // NewOptions returns a new instance of `Options`.
 func NewOptions() *Options {
 	return &Options{
-		Collectors:      CollectorSet{},
+		Resources:       ResourceSet{},
 		MetricAllowlist: MetricSet{},
 		MetricDenylist:  MetricSet{},
 	}
@@ -82,7 +82,7 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.Host, "host", "0.0.0.0", `Host to expose metrics on.`)
 	o.flags.IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
 	o.flags.StringVar(&o.TelemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
-	o.flags.Var(&o.Collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &DefaultCollectors))
+	o.flags.Var(&o.Resources, "Resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
 	o.flags.Var(&o.Namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")

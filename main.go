@@ -81,17 +81,17 @@ func main() {
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
-	var collectors []string
-	if len(opts.Collectors) == 0 {
-		klog.Info("Using default collectors")
-		collectors = options.DefaultCollectors.AsSlice()
+	var resources []string
+	if len(opts.Resources) == 0 {
+		klog.Info("Using default resources")
+		resources = options.DefaultResources.AsSlice()
 	} else {
-		klog.Infof("Using collectors %s", opts.Collectors.String())
-		collectors = opts.Collectors.AsSlice()
+		klog.Infof("Using resources %s", opts.Resources.String())
+		resources = opts.Resources.AsSlice()
 	}
 
-	if err := storeBuilder.WithEnabledResources(collectors); err != nil {
-		klog.Fatalf("Failed to set up collectors: %v", err)
+	if err := storeBuilder.WithEnabledResources(resources); err != nil {
+		klog.Fatalf("Failed to set up resources: %v", err)
 	}
 
 	if len(opts.Namespaces) == 0 {

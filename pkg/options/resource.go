@@ -24,8 +24,8 @@ var (
 	// DefaultNamespaces is the default namespace selector for selecting and filtering across all namespaces.
 	DefaultNamespaces = NamespaceList{metav1.NamespaceAll}
 
-	// DefaultCollectors represents the default set of collectors in kube-state-metrics.
-	DefaultCollectors = CollectorSet{
+	// DefaultResources represents the default set of resources in kube-state-metrics.
+	DefaultResources = ResourceSet{
 		"certificatesigningrequests":      struct{}{},
 		"configmaps":                      struct{}{},
 		"cronjobs":                        struct{}{},

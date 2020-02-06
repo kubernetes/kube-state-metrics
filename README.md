@@ -92,7 +92,7 @@ those that could be used for actionable alerts. Please contribute PR's for
 additional metrics!
 
 > WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
-> For now, the following metrics and collectors
+> For now, the following metrics and resources
 >
 > **metrics**
 >	* `kube_pod_container_resource_requests_nvidia_gpu_devices`
@@ -102,7 +102,7 @@ additional metrics!
 >
 >	are removed in kube-state-metrics v1.4.0.
 >
-> Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
+> Any resources and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
 > which may be changed at any given release.
 
 See the [`docs`](docs) directory for more information on the exposed metrics.
@@ -259,7 +259,7 @@ subjects:
     namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--collectors`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
 
 ```yaml
 spec:
@@ -268,7 +268,7 @@ spec:
       containers:
       - name: kube-state-metrics
         args:
-          - '--collectors=pods'
+          - '--resources=pods'
           - '--namespace=project1'
 ```
 

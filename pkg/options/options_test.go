@@ -31,8 +31,8 @@ func TestOptionsParse(t *testing.T) {
 		RecoverInvoked bool
 	}{
 		{
-			Desc:           "collectors command line argument",
-			Args:           []string{"./kube-state-metrics", "--collectors=configmaps,pods"},
+			Desc:           "resources command line argument",
+			Args:           []string{"./kube-state-metrics", "--resources=configmaps,pods"},
 			RecoverInvoked: false,
 		},
 		{

@@ -21,23 +21,23 @@ import (
 	"testing"
 )
 
-func TestCollectorSetSet(t *testing.T) {
+func TestResourceSetSet(t *testing.T) {
 	tests := []struct {
 		Desc        string
 		Value       string
-		Wanted      CollectorSet
+		Wanted      ResourceSet
 		WantedError bool
 	}{
 		{
-			Desc:        "empty collectors",
+			Desc:        "empty resources",
 			Value:       "",
-			Wanted:      CollectorSet{},
+			Wanted:      ResourceSet{},
 			WantedError: false,
 		},
 		{
-			Desc:  "normal collectors",
+			Desc:  "normal resources",
 			Value: "configmaps,cronjobs,daemonsets,deployments",
-			Wanted: CollectorSet(map[string]struct{}{
+			Wanted: ResourceSet(map[string]struct{}{
 				"configmaps":  {},
 				"cronjobs":    {},
 				"daemonsets":  {},
@@ -48,7 +48,7 @@ func TestCollectorSetSet(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		cs := &CollectorSet{}
+		cs := &ResourceSet{}
 		gotError := cs.Set(test.Value)
 		if !(((gotError == nil && !test.WantedError) || (gotError != nil && test.WantedError)) && reflect.DeepEqual(*cs, test.Wanted)) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v. Wanted Error: %v, Got Error: %v", test.Desc, test.Wanted, *cs, test.WantedError, gotError)

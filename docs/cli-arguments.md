@@ -28,7 +28,7 @@ Usage of ./kube-state-metrics:
       --add_dir_header                   If true, adds the file directory to the header
       --alsologtostderr                  log to standard error as well as files
       --apiserver string                 The URL of the apiserver to use as a master
-      --collectors string                Comma-separated list of collectors to be enabled. Defaults to "certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments"
+      --resources string                 Comma-separated list of resources to be enabled. Defaults to "certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments"
       --enable-gzip-encoding             Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.
   -h, --help                             Print Help text
       --host string                      Host to expose metrics on. (default "0.0.0.0")

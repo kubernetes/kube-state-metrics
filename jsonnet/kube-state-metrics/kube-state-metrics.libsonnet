@@ -9,7 +9,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
 
   commonLabels:: {
     'app.kubernetes.io/name': 'kube-state-metrics',
-    'app.kubernetes.io/version': 'v' + ksm.version,
+    'app.kubernetes.io/version': ksm.version,
   },
 
   podLabels:: {

@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   labels:
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/version: v1.9.4
+    app.kubernetes.io/version: 1.9.4
   name: kube-state-metrics
   namespace: kube-system
 spec:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/version: v1.9.4
+        app.kubernetes.io/version: 1.9.4
     spec:
       containers:
       - args:

@@ -78,15 +78,15 @@ func (b *Builder) WithMetrics(r *prometheus.Registry) {
 }
 
 // WithEnabledResources sets the enabledResources property of a Builder.
-func (b *Builder) WithEnabledResources(c []string) error {
-	for _, col := range c {
-		if !collectorExists(col) {
-			return errors.Errorf("collector %s does not exist. Available collectors: %s", col, strings.Join(availableCollectors(), ","))
+func (b *Builder) WithEnabledResources(r []string) error {
+	for _, col := range r {
+		if !resourceExists(col) {
+			return errors.Errorf("resource %s does not exist. Available resources: %s", col, strings.Join(availableResources(), ","))
 		}
 	}
 
 	var copy []string
-	copy = append(copy, c...)
+	copy = append(copy, r...)
 
 	sort.Strings(copy)
 
@@ -154,7 +154,7 @@ func (b *Builder) Build() []cache.Store {
 		}
 	}
 
-	klog.Infof("Active collectors: %s", strings.Join(activeStoreNames, ","))
+	klog.Infof("Active resources: %s", strings.Join(activeStoreNames, ","))
 
 	return stores
 }
@@ -191,12 +191,12 @@ var availableStores = map[string]func(f *Builder) cache.Store{
 	"verticalpodautoscalers":          func(b *Builder) cache.Store { return b.buildVPAStore() },
 }
 
-func collectorExists(name string) bool {
+func resourceExists(name string) bool {
 	_, ok := availableStores[name]
 	return ok
 }
 
-func availableCollectors() []string {
+func availableResources() []string {
 	c := []string{}
 	for name := range availableStores {
 		c = append(c, name)

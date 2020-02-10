@@ -60,19 +60,19 @@ func (ms *MetricSet) Type() string {
 	return "string"
 }
 
-// CollectorSet represents a collection which has a unique set of collectors.
-type CollectorSet map[string]struct{}
+// ResourceSet represents a collection which has a unique set of resources.
+type ResourceSet map[string]struct{}
 
-func (c *CollectorSet) String() string {
-	s := *c
+func (r *ResourceSet) String() string {
+	s := *r
 	ss := s.AsSlice()
 	sort.Strings(ss)
 	return strings.Join(ss, ",")
 }
 
-// Set converts a comma-separated string of collectors into a slice and appends it to the CollectorSet.
-func (c *CollectorSet) Set(value string) error {
-	s := *c
+// Set converts a comma-separated string of resources into a slice and appends it to the ResourceSet.
+func (r *ResourceSet) Set(value string) error {
+	s := *r
 	cols := strings.Split(value, ",")
 	for _, col := range cols {
 		col = strings.TrimSpace(col)
@@ -83,17 +83,17 @@ func (c *CollectorSet) Set(value string) error {
 	return nil
 }
 
-// AsSlice returns the Collector in the form of a plain string slice.
-func (c CollectorSet) AsSlice() []string {
-	cols := make([]string, 0, len(c))
-	for col := range c {
+// AsSlice returns the Resource in the form of a plain string slice.
+func (r ResourceSet) AsSlice() []string {
+	cols := make([]string, 0, len(r))
+	for col := range r {
 		cols = append(cols, col)
 	}
 	return cols
 }
 
-// Type returns a descriptive string about the CollectorSet type.
-func (c *CollectorSet) Type() string {
+// Type returns a descriptive string about the ResourceSet type.
+func (r *ResourceSet) Type() string {
 	return "string"
 }
 

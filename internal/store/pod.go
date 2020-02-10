@@ -787,7 +787,7 @@ var (
 						switch resourceName {
 						case v1.ResourceCPU:
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 								Value:       float64(val.MilliValue()) / 1000,
 							})
 						case v1.ResourceStorage:
@@ -796,25 +796,25 @@ var (
 							fallthrough
 						case v1.ResourceMemory:
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						default:
 							if isHugePageResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 									Value:       float64(val.Value()),
 								})
 							}
 							if isAttachableVolumeResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 									Value:       float64(val.Value()),
 								})
 							}
 							if isExtendedResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 									Value:       float64(val.Value()),
 								})
 							}
@@ -823,7 +823,7 @@ var (
 				}
 
 				for _, metric := range ms {
-					metric.LabelKeys = []string{"container", "node", "resource", "unit"}
+					metric.LabelKeys = []string{"container", "resource", "unit"}
 				}
 
 				return &metric.Family{
@@ -846,7 +846,7 @@ var (
 						case v1.ResourceCPU:
 							ms = append(ms, &metric.Metric{
 								Value:       float64(val.MilliValue()) / 1000,
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 							})
 						case v1.ResourceStorage:
 							fallthrough
@@ -854,26 +854,26 @@ var (
 							fallthrough
 						case v1.ResourceMemory:
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						default:
 							if isHugePageResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 									Value:       float64(val.Value()),
 								})
 							}
 							if isAttachableVolumeResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
 									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								})
 							}
 							if isExtendedResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
 									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 								})
 							}
 						}
@@ -881,7 +881,7 @@ var (
 				}
 
 				for _, metric := range ms {
-					metric.LabelKeys = []string{"container", "node", "resource", "unit"}
+					metric.LabelKeys = []string{"container", "resource", "unit"}
 				}
 
 				return &metric.Family{
@@ -904,7 +904,7 @@ var (
 						case v1.ResourceCPU:
 							ms = append(ms, &metric.Metric{
 								Value:       float64(val.MilliValue()) / 1000,
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 							})
 						case v1.ResourceStorage:
 							fallthrough
@@ -912,26 +912,26 @@ var (
 							fallthrough
 						case v1.ResourceMemory:
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						default:
 							if isHugePageResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 									Value:       float64(val.Value()),
 								})
 							}
 							if isAttachableVolumeResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
 									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								})
 							}
 							if isExtendedResourceName(resourceName) {
 								ms = append(ms, &metric.Metric{
 									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 								})
 							}
 						}
@@ -939,7 +939,7 @@ var (
 				}
 
 				for _, metric := range ms {
-					metric.LabelKeys = []string{"container", "node", "resource", "unit"}
+					metric.LabelKeys = []string{"container", "resource", "unit"}
 				}
 
 				return &metric.Family{

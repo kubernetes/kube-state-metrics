@@ -283,24 +283,24 @@ kube_pod_container_status_restarts_total{namespace="default",pod="pod0",containe
 # TYPE kube_pod_init_container_status_restarts_total counter
 # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
 # TYPE kube_pod_container_resource_requests gauge
-kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="nvidia_com_gpu",unit="integer"} 1
-kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
-kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="memory",unit="byte"} 1e+08
-kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="ephemeral_storage",unit="byte"} 3e+08
-kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
-kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
-kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
+kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",resource="nvidia_com_gpu",unit="integer"} 1
+kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",resource="cpu",unit="core"} 0.2
+kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",resource="memory",unit="byte"} 1e+08
+kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",resource="ephemeral_storage",unit="byte"} 3e+08
+kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",resource="storage",unit="byte"} 4e+08
+kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",resource="cpu",unit="core"} 0.3
+kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",resource="memory",unit="byte"} 2e+08
 # HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
 # TYPE kube_pod_init_container_resource_limits gauge
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
 # TYPE kube_pod_container_resource_limits gauge
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="nvidia_com_gpu",unit="integer"} 1
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="memory",unit="byte"} 1e+08
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="ephemeral_storage",unit="byte"} 3e+08
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",resource="nvidia_com_gpu",unit="integer"} 1
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",resource="cpu",unit="core"} 0.2
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",resource="memory",unit="byte"} 1e+08
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",resource="ephemeral_storage",unit="byte"} 3e+08
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",resource="storage",unit="byte"} 4e+08
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",resource="memory",unit="byte"} 2e+08
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",resource="cpu",unit="core"} 0.3
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.

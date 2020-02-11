@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// ListWatchMetrics stores the pointers of kube_state_metrics_[list|watch]_total metrics.
 type ListWatchMetrics struct {
 	WatchTotal *prometheus.CounterVec
 	ListTotal  *prometheus.CounterVec
@@ -58,6 +59,8 @@ func NewListWatchMetrics(r *prometheus.Registry) *ListWatchMetrics {
 	return &m
 }
 
+// InstrumentedListerWatcher provides the kube_state_metrics_watch_total metric
+// with a cache.ListerWatcher obj and the related resource.
 type InstrumentedListerWatcher struct {
 	lw       cache.ListerWatcher
 	metrics  *ListWatchMetrics

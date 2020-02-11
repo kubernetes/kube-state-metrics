@@ -35,10 +35,13 @@ var (
 	framework *Framework
 )
 
+// The Framework stores a pointer to the KSMClient
 type Framework struct {
 	KsmClient *KSMClient
 }
 
+// NewFramework returns a new Framework given the KSM respective url.
+// It delegates the url validation errs to NewKSMClient func.
 func NewFramework(ksmurl string) (*Framework, error) {
 	ksmClient, err := NewKSMClient(ksmurl)
 	if err != nil {
@@ -50,11 +53,14 @@ func NewFramework(ksmurl string) (*Framework, error) {
 	}, nil
 }
 
+// The KSMClient is the Kubernetes State Metric client.
 type KSMClient struct {
 	endpoint *url.URL
 	client   *http.Client
 }
 
+// NewKSMClient retrieves a new KSMClient given an address.
+// In case of error parsing the provided address, it returns an error.
 func NewKSMClient(address string) (*KSMClient, error) {
 	u, err := url.Parse(address)
 	if err != nil {

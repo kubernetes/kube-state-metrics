@@ -1076,7 +1076,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
-					Reason: nodeUnreachablePodReason,
+					Reason: "NodeLost",
 				},
 			},
 			Want: `
@@ -1086,9 +1086,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_status_reason gauge
 				kube_pod_status_phase{namespace="ns4",phase="Failed",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Pending",pod="pod4"} 0
-				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4"} 0
+				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4"} 1
 				kube_pod_status_phase{namespace="ns4",phase="Succeeded",pod="pod4"} 0
-				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4"} 1
+				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 1
 `,

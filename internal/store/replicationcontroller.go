@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"strconv"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -149,6 +151,41 @@ var (
 							Value: float64(r.ObjectMeta.Generation),
 						},
 					},
+				}
+			}),
+		},
+		{
+			Name: "kube_replicationcontroller_owner",
+			Type: metric.Gauge,
+			Help: "Information about the ReplicationController's owner.",
+			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+				ms := []*metric.Metric{}
+
+				owners := r.GetOwnerReferences()
+				if len(owners) == 0 {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{"<none>", "<none>", "<none>"},
+						Value:       1,
+					})
+				} else {
+					for _, owner := range owners {
+						ownerIsController := "false"
+						if owner.Controller != nil {
+							ownerIsController = strconv.FormatBool(*owner.Controller)
+						}
+
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, ownerIsController},
+							Value:       1,
+						})
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		},

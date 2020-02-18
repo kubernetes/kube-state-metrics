@@ -28,17 +28,17 @@ import (
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
-type MetricTargetType int
+type metricTargetType int
 
 const (
-	Value MetricTargetType = iota
-	Utilization
-	Average
+	value metricTargetType = iota
+	utilization
+	average
 
-	MetricTargetTypeCount // Used as a length argument to arrays
+	metricTargetTypeCount // Used as a length argument to arrays
 )
 
-func (m MetricTargetType) String() string {
+func (m metricTargetType) String() string {
 	return [...]string{"value", "utilization", "average"}[m]
 }
 
@@ -101,40 +101,40 @@ var (
 				for _, m := range a.Spec.Metrics {
 					var metricName string
 
-					var v [MetricTargetTypeCount]int64
-					var ok [MetricTargetTypeCount]bool
+					var v [metricTargetTypeCount]int64
+					var ok [metricTargetTypeCount]bool
 
 					switch m.Type {
 					case autoscaling.ObjectMetricSourceType:
 						metricName = m.Object.MetricName
 
-						v[Value], ok[Value] = m.Object.TargetValue.AsInt64()
+						v[value], ok[value] = m.Object.TargetValue.AsInt64()
 						if m.Object.AverageValue != nil {
-							v[Average], ok[Average] = m.Object.AverageValue.AsInt64()
+							v[average], ok[average] = m.Object.AverageValue.AsInt64()
 						}
 					case autoscaling.PodsMetricSourceType:
 						metricName = m.Pods.MetricName
 
-						v[Average], ok[Average] = m.Pods.TargetAverageValue.AsInt64()
+						v[average], ok[average] = m.Pods.TargetAverageValue.AsInt64()
 					case autoscaling.ResourceMetricSourceType:
 						metricName = string(m.Resource.Name)
 
-						if ok[Utilization] = (m.Resource.TargetAverageUtilization != nil); ok[Utilization] {
-							v[Utilization] = int64(*m.Resource.TargetAverageUtilization)
+						if ok[utilization] = (m.Resource.TargetAverageUtilization != nil); ok[utilization] {
+							v[utilization] = int64(*m.Resource.TargetAverageUtilization)
 						}
 
 						if m.Resource.TargetAverageValue != nil {
-							v[Average], ok[Average] = m.Resource.TargetAverageValue.AsInt64()
+							v[average], ok[average] = m.Resource.TargetAverageValue.AsInt64()
 						}
 					case autoscaling.ExternalMetricSourceType:
 						metricName = m.External.MetricName
 
 						// The TargetValue and TargetAverageValue are mutually exclusive
 						if m.External.TargetValue != nil {
-							v[Value], ok[Value] = m.External.TargetValue.AsInt64()
+							v[value], ok[value] = m.External.TargetValue.AsInt64()
 						}
 						if m.External.TargetAverageValue != nil {
-							v[Average], ok[Average] = m.External.TargetAverageValue.AsInt64()
+							v[average], ok[average] = m.External.TargetAverageValue.AsInt64()
 						}
 					default:
 						// Skip unsupported metric type
@@ -145,7 +145,7 @@ var (
 						if ok[i] {
 							ms = append(ms, &metric.Metric{
 								LabelKeys:   targetMetricLabels,
-								LabelValues: []string{metricName, MetricTargetType(i).String()},
+								LabelValues: []string{metricName, metricTargetType(i).String()},
 								Value:       float64(v[i]),
 							})
 						}

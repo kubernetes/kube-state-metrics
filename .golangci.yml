@@ -18,3 +18,6 @@ linters:
 linters-settings:
   goimports:
     local-prefixes: k8s.io/kube-state-metrics
+
+issues:
+  exclude-use-default: false

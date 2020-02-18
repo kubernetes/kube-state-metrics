@@ -5,6 +5,7 @@ TAG_PREFIX = v
 VERSION = $(shell cat VERSION)
 TAG = $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
+DOCKER_CLI ?= docker
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
 BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -70,7 +71,7 @@ test-unit: clean build
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
 
 shellcheck:
-	docker run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
+	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
@@ -97,17 +98,17 @@ container: .container-$(ARCH)
 
 ifeq ($(ARCH), amd64)
 	# Adding check for amd64
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
+	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
+	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
 endif
 
 quay-push: .quay-push-$(ARCH)
 .quay-push-$(ARCH): .container-$(ARCH)
-	docker push $(MULTI_ARCH_IMG):$(TAG)
-	docker push $(MULTI_ARCH_IMG):latest
+	${DOCKER_CLI} push $(MULTI_ARCH_IMG):$(TAG)
+	${DOCKER_CLI} push $(MULTI_ARCH_IMG):latest
 ifeq ($(ARCH), amd64)
-	docker push $(IMAGE):$(TAG)
-	docker push $(IMAGE):latest
+	${DOCKER_CLI} push $(IMAGE):$(TAG)
+	${DOCKER_CLI} push $(IMAGE):latest
 endif
 
 push: .push-$(ARCH)

@@ -17,7 +17,7 @@ limitations under the License.
 package store
 
 import (
-	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
+	admissionregistration "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -80,10 +80,10 @@ var (
 func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().List(opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Watch(opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Watch(opts)
 		},
 	}
 }

@@ -1,3 +1,7 @@
+## v1.9.5 / 2020-02-20
+
+* [BUGFIX] Switch to using only v1 client of validatingwebhookconfiguration #1052
+
 ## v1.9.4 / 2020-02-03
 
 * [BUGFIX] Fix VolumeAttachment api version to be used (was v1beta1, should have been v1). #1043

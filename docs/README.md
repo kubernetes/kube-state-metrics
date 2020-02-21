@@ -62,17 +62,17 @@ When an additional, not provided by default label is needed, a [Prometheus match
 can be used to extend single metrics output.
 
 This example adds `label_release` to the set of default labels of the `kube_pod_status_ready` metric
-and allows you select or group the metrics by helm release label:
+and allows you select or group the metrics by Helm release label:
 
 ```
-kube_pod_status_ready * on (namespace, pod) group_left(label_release)  kube_pod_labels
+kube_pod_status_ready * on (namespace, pod) group_left(label_release) kube_pod_labels
 ```
 
 Another useful example would be to query the memory usage of pods by its `phase`, such as `Running`:
 
 ```
-sum(kube_pod_container_resource_requests_memory_bytes) by (namespace, pod, node)
-  * on (pod) group_left()  (sum(kube_pod_status_phase{phase="Running"}) by (pod, namespace) == 1)
+sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod, node)
+  * on (namespace, pod) group_left() (sum(kube_pod_status_phase{phase="Running"}) by (pod, namespace) == 1)
 ```
 
 ## CLI Arguments

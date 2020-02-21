@@ -47,13 +47,13 @@
 
 It is not straightforward to get the Pod states for certain cases like "Terminating" and "Unknown" since it is not stored behind a field in the `Pod.Status`.
 
-So to get them, you will need to compose multiple metrics (like it is done in the `kubectl` command line code).
+So to mimic the [logic](https://github.com/kubernetes/kubernetes/blob/v1.17.3/pkg/printers/internalversion/printers.go#L624) used by the `kubectl` command line, you will need to compose multiple metrics.
 
 For example:
 
-* To get the list of pods that are in the `Unknown` state, you can run the following PromQL query: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod)`
+* To get the list of pods that are in the `Unknown` state, you can run the following PromQL query: `sum(kube_pod_status_phase{phase="Unknown"}) by (namespace, pod) or (count(kube_pod_deleted) by (namespace, pod) * sum(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod))`
 
-* For Pods in `Terminated` state: `count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason!="NodeLost"}) by (namespace, pod)`
+* For Pods in `Terminating` state: `count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod)`
 
 Here is an example of a Prometheus rule that can be used to alert on a Pod that has been in the `Terminated` state for more than `5m`.
 
@@ -62,10 +62,10 @@ groups:
 - name: Pod state
   rules:
   - alert: PodsBlockInTerminatingState
-    expr: count(kube_pod_status_phase{phase="Running"}) by (namespace, pod) * count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason!="NodeLost"}) by (namespace, pod) > 0
+    expr: count(kube_pod_deleted) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod) > 0
     for: 5m
     labels:
       severity: page
     annotations:
-      summary: Pod {{labels.namespace}}/{{labels.pod}} block in terminating state.
+      summary: Pod {{labels.namespace}}/{{labels.pod}} block in Terminating state.
 ```

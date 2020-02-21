@@ -33,7 +33,7 @@ var (
 	depl2Replicas int32 = 5
 
 	depl1MaxUnavailable = intstr.FromInt(10)
-	depl2MaxUnavailable = intstr.FromString("20%")
+	depl2MaxUnavailable = intstr.FromString("25%")
 
 	depl1MaxSurge = intstr.FromInt(10)
 	depl2MaxSurge = intstr.FromString("20%")

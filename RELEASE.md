@@ -32,7 +32,7 @@ Maintaining the release branches for older minor releases happens on a best effo
   * kube-state-metrics image tag used in Kubernetes deployment yaml config.
 * Cut the new release branch, i.e., `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on
 * Cut the new release tag, i.e., `v1.2.0-rc.0`
-* Ping Googlers(@loburm/@piosz) to build and push newest image to `k8s.gcr.io` (or to `staging-k8s.gcr.io` in case of release candidates)
+* Create issue requesting for image release to `k8s.gcr.io` (or to `staging-k8s.gcr.io` in case of release candidates) and assign it to one of Googlers (@serathius, @loburm)
 * Build and push newest image to `quay.io`(@brancz)
 
 ## Stable release

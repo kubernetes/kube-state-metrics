@@ -883,11 +883,11 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
-				# HELP kube_pod_deleted Unix deletion timestamp
-				# TYPE kube_pod_deleted gauge
-				kube_pod_deleted{namespace="ns1",pod="pod1"} 1.8e+09
+				# HELP kube_pod_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_pod_deletion_timestamp gauge
+				kube_pod_deletion_timestamp{namespace="ns1",pod="pod1"} 1.8e+09
 `,
-			MetricNames: []string{"kube_pod_deleted"},
+			MetricNames: []string{"kube_pod_deletion_timestamp"},
 		},
 		{
 			Obj: &v1.Pod{

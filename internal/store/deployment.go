@@ -184,7 +184,7 @@ var (
 					return &metric.Family{}
 				}
 
-				maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), true)
+				maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
 				if err != nil {
 					panic(err)
 				}

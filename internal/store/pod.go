@@ -197,7 +197,7 @@ var (
 			}),
 		},
 		{
-			Name: "kube_pod_deleted",
+			Name: "kube_pod_deletion_timestamp",
 			Type: metric.Gauge,
 			Help: "Unix deletion timestamp",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {

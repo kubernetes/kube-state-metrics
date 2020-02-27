@@ -37,7 +37,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 - [Job Metrics](job-metrics.md)
 - [Lease Metrics](lease-metrics.md)
 - [LimitRange Metrics](limitrange-metrics.md)
-- [MutatingWebhookConfiguration Metrics](mutatingwebhookconfiguration.md)
+- [MutatingWebhookConfiguration Metrics](mutatingwebhookconfiguration-metrics.md)
 - [Namespace Metrics](namespace-metrics.md)
 - [NetworkPolicy Metrics](networkpolicy-metrics.md)
 - [Node Metrics](node-metrics.md)
@@ -52,7 +52,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 - [Service Metrics](service-metrics.md)
 - [StatefulSet Metrics](statefulset-metrics.md)
 - [StorageClass Metrics](storageclass-metrics.md)
-- [ValidatingWebhookConfiguration Metrics](validatingwebhookconfiguration.md)
+- [ValidatingWebhookConfiguration Metrics](validatingwebhookconfiguration-metrics.md)
 - [VerticalPodAutoscaler Metrics](verticalpodautoscaler-metrics.md)
 - [VolumeAttachment Metrics](volumeattachment-metrics.md)
 

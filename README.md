@@ -49,6 +49,10 @@ the raw metrics.
 
 ### Versioning
 
+> **WARNING**: Please be aware that `master` branch is targeting an upcoming version v2
+> of kube-state-metrics, which includes breaking changes. Documentation for the latest
+> released version (`1.9.5`) is available in the [release-1.9](https://github.com/kubernetes/kube-state-metrics/tree/release-1.9/docs) branch.
+
 #### Kubernetes Version
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
@@ -259,7 +263,7 @@ subjects:
     namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--collectors`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
 
 ```yaml
 spec:
@@ -268,7 +272,7 @@ spec:
       containers:
       - name: kube-state-metrics
         args:
-          - '--collectors=pods'
+          - '--resources=pods'
           - '--namespace=project1'
 ```
 

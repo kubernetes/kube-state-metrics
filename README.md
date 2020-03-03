@@ -259,7 +259,7 @@ subjects:
     namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--collectors`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
 
 ```yaml
 spec:
@@ -268,7 +268,7 @@ spec:
       containers:
       - name: kube-state-metrics
         args:
-          - '--collectors=pods'
+          - '--resources=pods'
           - '--namespace=project1'
 ```
 

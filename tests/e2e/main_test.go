@@ -17,10 +17,15 @@ limitations under the License.
 package e2e
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/prometheus/prometheus/util/promlint"
@@ -75,5 +80,56 @@ func TestLintMetrics(t *testing.T) {
 
 	if len(problems) != 0 {
 		t.Fatalf("the problems encountered in Lint are: %v", problems)
+	}
+}
+
+func TestDefaultCollectorMetricsAvailable(t *testing.T) {
+	buf := &bytes.Buffer{}
+
+	err := framework.KsmClient.metrics(buf)
+	if err != nil {
+		t.Fatalf("failed to get metrics from kube-state-metrics: %v", err)
+	}
+
+	resources := map[string]struct{}{}
+	files, err := ioutil.ReadDir("../../internal/store/")
+	if err != nil {
+		t.Fatalf("failed to read dir to get all resouces name: %v", err)
+	}
+
+	re := regexp.MustCompile(`^([a-z]*).go$`)
+	for _, file := range files {
+		params := re.FindStringSubmatch(file.Name())
+		if len(params) != 2 {
+			continue
+		}
+		if params[1] == "builder" || params[1] == "utils" || params[1] == "testutils" || params[1] == "verticalpodautoscaler" {
+			continue
+		}
+		resources[params[1]] = struct{}{}
+	}
+
+	re = regexp.MustCompile(`^kube_([a-z]*)_`)
+	scanner := bufio.NewScanner(buf)
+	for scanner.Scan() {
+		params := re.FindStringSubmatch(scanner.Text())
+		if len(params) != 2 {
+			continue
+		}
+		delete(resources, params[1])
+	}
+
+	err = scanner.Err()
+	if err != nil {
+		t.Fatalf("failed to scan metrics: %v", err)
+	}
+
+	if len(resources) != 0 {
+		s := []string{}
+		for k := range resources {
+			s = append(s, k)
+		}
+		sort.Strings(s)
+		t.Fatalf("failed to find metrics of resources: %s", strings.Join(s, ", "))
 	}
 }

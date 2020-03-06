@@ -904,7 +904,9 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_start_time{namespace="ns1",pod="pod1",uid="abc-123-xxx"} 1.501569018e+09
 				kube_pod_owner{namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",pod="pod1",uid="abc-123-xxx"} 1
 `,
-			MetricNames: []string{"kube_pod_created", "kube_pod_info", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner"},
+			MetricNames: []string{
+				"kube_pod_created", "kube_pod_info", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner",
+			},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1259,6 +1261,62 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_status_ready{condition="unknown",namespace="ns2",pod="pod2",uid="uid2"} 0
 			`,
 			MetricNames: []string{"kube_pod_status_ready"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+					UID:       "uid2",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodReady,
+							Status: v1.ConditionFalse,
+							LastTransitionTime: metav1.Time{
+								Time: time.Unix(1501666018, 0),
+							},
+						},
+						{
+							Type:   v1.PodScheduled,
+							Status: v1.ConditionTrue,
+							LastTransitionTime: metav1.Time{
+								Time: time.Unix(1501666018, 0),
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_condition The pods conditions.
+				# TYPE kube_pod_status_condition gauge
+				# HELP kube_pod_status_condition_last_transition_time The last transition time of each pod condition.
+				# TYPE kube_pod_status_condition_last_transition_time gauge
+				kube_pod_status_condition{namespace="ns2",pod="pod2",condition_type="PodScheduled",uid="uid2"} 1
+				kube_pod_status_condition{namespace="ns2",pod="pod2",condition_type="Ready",uid="uid2"} 0
+				kube_pod_status_condition_last_transition_time{namespace="ns2",pod="pod2",condition_type="PodScheduled",uid="uid2"} 1.501666018e+09
+				kube_pod_status_condition_last_transition_time{namespace="ns2",pod="pod2",condition_type="Ready",uid="uid2"} 1.501666018e+09
+			`,
+			MetricNames: []string{"kube_pod_status_condition", "kube_pod_status_condition_last_transition_time"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_condition The pods conditions.
+				# TYPE kube_pod_status_condition gauge
+				# HELP kube_pod_status_condition_last_transition_time The last transition time of each pod condition.
+				# TYPE kube_pod_status_condition_last_transition_time gauge
+			`,
+			MetricNames: []string{"kube_pod_status_condition", "kube_pod_status_condition_last_transition_time"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1716,7 +1774,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 50
+	expectedFamilies := 52
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

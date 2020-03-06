@@ -21,7 +21,9 @@ The metrics are exported on the HTTP endpoint `/metrics` on the listening port
 (default 8080). They are served as plaintext. They are designed to be consumed
 either by Prometheus itself or by a scraper that is compatible with scraping a
 Prometheus client endpoint. You can also open `/metrics` in a browser to see
-the raw metrics.
+the raw metrics. Note that the metrics exposed on the `/metrics` endpoint
+reflect the current state of the Kubernetes cluster. When Kubernetes objects
+are deleted they are no longer visible on the `/metrics` endpoint.
 
 ## Table of Contents
 

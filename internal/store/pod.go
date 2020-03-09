@@ -161,6 +161,14 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_controller",
+			Type: metric.Gauge,
+			Help: "Information about the Pod's controller",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				return controllerInfo(p)
+			}),
+		},
+		{
 			Name: "kube_pod_labels",
 			Type: metric.Gauge,
 			Help: "Kubernetes labels converted to Prometheus labels.",

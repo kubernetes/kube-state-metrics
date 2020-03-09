@@ -38,7 +38,7 @@ func TestReplicaSetStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_replicaset_created Unix creation timestamp
 		# TYPE kube_replicaset_created gauge
-	  # HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
+		# HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
 		# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_replicas gauge
@@ -52,6 +52,8 @@ func TestReplicaSetStore(t *testing.T) {
 		# TYPE kube_replicaset_spec_replicas gauge
 		# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
 		# TYPE kube_replicaset_owner gauge
+		# HELP kube_replicaset_controller Information about the ReplicaSet's controller
+		# TYPE kube_replicaset_controller gauge
 		# HELP kube_replicaset_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_replicaset_labels gauge
 	`
@@ -94,6 +96,7 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_status_ready_replicas{namespace="ns1",replicaset="rs1"} 5
 				kube_replicaset_spec_replicas{namespace="ns1",replicaset="rs1"} 5
 				kube_replicaset_owner{namespace="ns1",owner_is_controller="true",owner_kind="Deployment",owner_name="dp-name",replicaset="rs1"} 1
+				kube_replicaset_controller{deployment="dp-name",namespace="ns1",replicaset="rs1"} 1
 `,
 		},
 		{

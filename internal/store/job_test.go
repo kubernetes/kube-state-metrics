@@ -52,6 +52,8 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_created gauge
 		# HELP kube_job_owner Information about the Job's owner.
 		# TYPE kube_job_owner gauge
+		# TYPE kube_job_controller gauge
+		# HELP kube_job_controller Information about the Job's controller
 		# HELP kube_job_complete The job has completed its execution.
 		# TYPE kube_job_complete gauge
 		# HELP kube_job_failed The job has failed its execution.
@@ -111,6 +113,7 @@ func TestJobStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_job_owner{job_name="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="cronjob-name"} 1
+				kube_job_controller{cronjob="cronjob-name",job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_created{job_name="RunningJob1",namespace="ns1"} 1.5e+09
 				kube_job_info{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_labels{job_name="RunningJob1",label_app="example-running-1",namespace="ns1"} 1

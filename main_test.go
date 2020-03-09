@@ -165,6 +165,8 @@ kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",
 # HELP kube_pod_owner Information about the Pod's owner.
 # TYPE kube_pod_owner gauge
 kube_pod_owner{namespace="default",pod="pod0",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
+# HELP kube_pod_controller Information about the Pod's controller
+# TYPE kube_pod_controller gauge
 # HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 # TYPE kube_pod_labels gauge
 kube_pod_labels{namespace="default",pod="pod0"} 1

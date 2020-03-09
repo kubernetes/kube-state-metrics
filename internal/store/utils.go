@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	v1 "k8s.io/api/core/v1"
@@ -122,4 +124,24 @@ func isNativeResource(name v1.ResourceName) bool {
 
 func isPrefixedNativeResource(name v1.ResourceName) bool {
 	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
+}
+
+func controllerInfo(obj metav1.Object) *metric.Family {
+	for _, owner := range obj.GetOwnerReferences() {
+		if owner.Controller != nil && *owner.Controller {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   []string{sanitizeLabelName(strings.ToLower(owner.Kind))},
+						LabelValues: []string{owner.Name},
+						Value:       1,
+					},
+				},
+			}
+		}
+	}
+
+	return &metric.Family{
+		Metrics: []*metric.Metric{},
+	}
 }

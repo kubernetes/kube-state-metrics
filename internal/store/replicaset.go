@@ -187,6 +187,14 @@ var (
 			}),
 		},
 		{
+			Name: "kube_replicaset_controller",
+			Type: metric.Gauge,
+			Help: "Information about the ReplicaSet's controller",
+			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				return controllerInfo(r)
+			}),
+		},
+		{
 			Name: descReplicaSetLabelsName,
 			Type: metric.Gauge,
 			Help: descReplicaSetLabelsHelp,

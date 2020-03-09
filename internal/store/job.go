@@ -307,6 +307,14 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_job_controller",
+			Type: metric.Gauge,
+			Help: "Information about the Job's controller",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				return controllerInfo(j)
+			}),
+		},
 	}
 )
 

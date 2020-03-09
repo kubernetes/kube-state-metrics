@@ -309,8 +309,6 @@ kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod
 # TYPE kube_pod_overhead gauge`
 
 	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
-	sort.Strings(expectedSplit)
-
 	gotSplit := strings.Split(strings.TrimSpace(string(body)), "\n")
 
 	gotFiltered := []string{}
@@ -320,15 +318,25 @@ kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod
 		}
 	}
 
-	sort.Strings(gotFiltered)
-
-	if len(expectedSplit) != len(gotFiltered) {
-		t.Fatalf("expected different output length, expected %d got %d", len(expectedSplit), len(gotFiltered))
+	expectedMap := make(map[string]bool)
+	for _, s := range expectedSplit {
+		expectedMap[s] = true
 	}
 
-	for i := 0; i < len(expectedSplit); i++ {
-		if expectedSplit[i] != gotFiltered[i] {
-			t.Fatalf("expected:\n\n%v, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
+	gotMap := make(map[string]bool)
+	for _, s := range gotFiltered {
+		gotMap[s] = true
+	}
+
+	for exp := range expectedMap {
+		if _, ok := gotMap[exp]; !ok {
+			t.Errorf("Did not get expected line: %v", exp)
+		}
+	}
+
+	for got := range gotMap {
+		if _, ok := expectedMap[got]; !ok {
+			t.Errorf("Got unexpected line: %v", got)
 		}
 	}
 }

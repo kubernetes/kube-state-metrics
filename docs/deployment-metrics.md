@@ -13,5 +13,5 @@
 | kube_deployment_spec_strategy_rollingupdate_max_unavailable | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
 | kube_deployment_spec_strategy_rollingupdate_max_surge | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
 | kube_deployment_metadata_generation | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
-| kube_deployment_labels | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
+| kube_deployment_labels | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; <br> `label_DEPLOYMENT_LABEL`=&lt;DEPLOYMENT_LABEL&gt; | STABLE |
 | kube_deployment_created | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |

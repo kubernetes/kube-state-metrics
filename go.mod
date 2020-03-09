@@ -8,6 +8,7 @@ require (
 	github.com/jsonnet-bundler/jsonnet-bundler v0.1.1-0.20190930114713-10e24cb86976
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0
+	github.com/prometheus/common v0.6.0
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/spf13/pflag v1.0.5

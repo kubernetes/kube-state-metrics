@@ -71,10 +71,10 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 | **v1.6.0**         |         ✓           |         -           |          -           |          -           |          -           |
 | **v1.7.2**         |         ✓           |         ✓           |          -           |          -           |          -           |
 | **v1.8.0**         |         ✓           |         ✓           |          ✓           |          -           |          -           |
-| **v1.9.5**         |         ✓           |         ✓           |          ✓           |          ✓           |          -           |
-| **master**         |         ✓           |         ✓           |          ✓           |          ✓           |          ✓           |
+| **v1.9.5**         |         -           |         -           |          -           |          ✓           |          -           |
+| **master**         |         -           |         -           |          -           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
-- `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
+- `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
 #### Resource group version compatibility
 Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA

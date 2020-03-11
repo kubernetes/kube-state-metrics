@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,15 +30,24 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/expfmt"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/prometheus/util/promlint"
+
+	ksmFramework "k8s.io/kube-state-metrics/tests/e2e/framework"
 )
 
+var framework *ksmFramework.Framework
+
 func TestMain(m *testing.M) {
-	ksmurl := flag.String(
-		"ksmurl",
+	ksmHTTPMetricsURL := flag.String(
+		"ksm-http-metrics-url",
 		"",
 		"url to access the kube-state-metrics service",
+	)
+	ksmTelemetryURL := flag.String(
+		"ksm-telemetry-url",
+		"",
+		"url to access the kube-state-metrics telemetry endpoint",
 	)
 	flag.Parse()
 
@@ -46,7 +56,7 @@ func TestMain(m *testing.M) {
 		exitCode int
 	)
 
-	if framework, err = NewFramework(*ksmurl); err != nil {
+	if framework, err = ksmFramework.New(*ksmHTTPMetricsURL, *ksmTelemetryURL); err != nil {
 		log.Fatalf("failed to setup framework: %v\n", err)
 	}
 
@@ -56,7 +66,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestIsHealthz(t *testing.T) {
-	ok, err := framework.KsmClient.isHealthz()
+	ok, err := framework.KsmClient.IsHealthz()
 	if err != nil {
 		t.Fatalf("kube-state-metrics healthz check failed: %v", err)
 	}
@@ -69,7 +79,7 @@ func TestIsHealthz(t *testing.T) {
 func TestLintMetrics(t *testing.T) {
 	buf := &bytes.Buffer{}
 
-	err := framework.KsmClient.metrics(buf)
+	err := framework.KsmClient.Metrics(buf)
 	if err != nil {
 		t.Fatalf("failed to get metrics from kube-state-metrics: %v", err)
 	}
@@ -91,17 +101,9 @@ func TestDocumentation(t *testing.T) {
 		t.Fatal("Cannot get labels documentation", err)
 	}
 
-	buf := &bytes.Buffer{}
-
-	err = framework.KsmClient.metrics(buf)
+	metricFamilies, err := framework.ParseMetrics(framework.KsmClient.Metrics)
 	if err != nil {
-		t.Fatal("Failed to get metrics from kube-state-metrics", err)
-	}
-
-	parser := &expfmt.TextParser{}
-	metricFamilies, err := parser.TextToMetricFamilies(buf)
-	if err != nil {
-		t.Fatal("Cannot decode metrics", err)
+		t.Fatal("Failed to get or decode metrics", err)
 	}
 
 	for _, metricFamily := range metricFamilies {
@@ -190,4 +192,54 @@ func getLabelsDocumentation() (map[string][]string, error) {
 		}
 	}
 	return documentedMetrics, nil
+}
+
+func TestKubeStateMetricsErrorMetrics(t *testing.T) {
+	metricFamilies, err := framework.ParseMetrics(framework.KsmClient.TelemetryMetrics)
+	if err != nil {
+		t.Fatal("Failed to get or decode telemetry metrics", err)
+	}
+
+	// This map's keys are the metrics expected in kube-state-metrics telemetry.
+	// Its values are booleans, set to true when the metric is found.
+	foundMetricFamily := map[string]bool{
+		"kube_state_metrics_list_total":  false,
+		"kube_state_metrics_watch_total": false,
+	}
+
+	for _, metricFamily := range metricFamilies {
+		name := metricFamily.GetName()
+		if _, expectedMetric := foundMetricFamily[name]; expectedMetric {
+			foundMetricFamily[name] = true
+
+			for _, m := range metricFamily.Metric {
+				if hasLabelError(m) && m.GetCounter().GetValue() > 0 {
+					t.Errorf("Metric %s in telemetry shows a list/watch error", prettyPrintCounter(name, m))
+				}
+			}
+		}
+	}
+
+	for metricFamily, found := range foundMetricFamily {
+		if !found {
+			t.Errorf("Metric family %s was not found in telemetry metrics", metricFamily)
+		}
+	}
+}
+
+func hasLabelError(metric *dto.Metric) bool {
+	for _, l := range metric.Label {
+		if l.GetName() == "result" && l.GetValue() == "error" {
+			return true
+		}
+	}
+	return false
+}
+
+func prettyPrintCounter(name string, metric *dto.Metric) string {
+	labelStrings := []string{}
+	for _, l := range metric.Label {
+		labelStrings = append(labelStrings, fmt.Sprintf(`%s="%s"`, l.GetName(), l.GetValue()))
+	}
+	return fmt.Sprintf("%s{%s} %d", name, strings.Join(labelStrings, ","), int(metric.GetCounter().GetValue()))
 }

@@ -162,10 +162,6 @@ go test -v ./tests/e2e/ --ksmurl=${KSMURL}
 echo "access kube-state-metrics metrics endpoint"
 curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/metrics
 
-echo "check metrics format with promtool"
-[[ -n "${E2E_SETUP_PROMTOOL}" ]] && setup_promtool
-< ${KUBE_STATE_METRICS_LOG_DIR}/metrics promtool check metrics
-
 resources=$(find internal/store/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "builder.go" -not -name "testutils.go" -not -name "utils.go" -print0 | xargs -0 -n1 basename | awk -F. '{print $1}'| grep -v "$EXCLUDED_RESOURCE_REGEX")
 echo "available resources: $resources"
 for resource in ${resources}; do

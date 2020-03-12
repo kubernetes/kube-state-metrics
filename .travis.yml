@@ -17,7 +17,6 @@ env:
   global:
       - E2E_SETUP_MINIKUBE=yes
       - E2E_SETUP_KUBECTL=yes
-      - E2E_SETUP_PROMTOOL=yes
       - MINIKUBE_DRIVER=none
       - SUDO=sudo
 

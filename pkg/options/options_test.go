@@ -36,8 +36,8 @@ func TestOptionsParse(t *testing.T) {
 			RecoverInvoked: false,
 		},
 		{
-			Desc:           "namespace command line argument",
-			Args:           []string{"./kube-state-metrics", "--namespace=default,kube-system"},
+			Desc:           "namespaces command line argument",
+			Args:           []string{"./kube-state-metrics", "--namespaces=default,kube-system"},
 			RecoverInvoked: false,
 		},
 	}

@@ -32,8 +32,6 @@ OS=${OS:-linux}
 
 EXCLUDED_RESOURCE_REGEX="verticalpodautoscaler"
 
-mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
-
 function finish() {
     echo "calling cleanup function"
     # kill kubectl proxy in background
@@ -166,8 +164,11 @@ set -e
 echo "kube-state-metrics is up and running"
 
 echo "start e2e test for kube-state-metrics"
-KSMURL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
-go test -v ./tests/e2e/ --ksmurl=${KSMURL}
+KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
+KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
+go test -v ./tests/e2e/ --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
+
+mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
 
 # TODO: re-implement the following test cases in Go with the goal of removing this file.
 echo "access kube-state-metrics metrics endpoint"

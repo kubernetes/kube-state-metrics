@@ -2,6 +2,10 @@
 documented_metrics
 code_metrics
 
+# E2e tests output
+/log
+*.bak
+
 # Created by https://www.gitignore.io/api/go
 
 ### Go ###

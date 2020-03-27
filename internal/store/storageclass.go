@@ -50,7 +50,7 @@ var (
 				}
 
 				m := metric.Metric{
-					LabelKeys:   []string{"provisioner", "reclaimPolicy", "volumeBindingMode"},
+					LabelKeys:   []string{"provisioner", "reclaim_policy", "volume_binding_mode"},
 					LabelValues: []string{s.Provisioner, string(*s.ReclaimPolicy), string(*s.VolumeBindingMode)},
 					Value:       1,
 				}

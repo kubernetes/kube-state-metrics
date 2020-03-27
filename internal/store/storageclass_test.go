@@ -42,7 +42,7 @@ func TestStorageClassStore(t *testing.T) {
 			Want: `
 					# HELP kube_storageclass_info Information about storageclass.
 					# TYPE kube_storageclass_info gauge
-					kube_storageclass_info{storageclass="test_storageclass-info",provisioner="kubernetes.io/rbd",reclaimPolicy="Delete",volumeBindingMode="Immediate"} 1
+					kube_storageclass_info{storageclass="test_storageclass-info",provisioner="kubernetes.io/rbd",reclaim_policy="Delete",volume_binding_mode="Immediate"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_info",
@@ -60,7 +60,7 @@ func TestStorageClassStore(t *testing.T) {
 			Want: `
 					# HELP kube_storageclass_info Information about storageclass.
 					# TYPE kube_storageclass_info gauge
-					kube_storageclass_info{storageclass="test_storageclass-default-info",provisioner="kubernetes.io/rbd",reclaimPolicy="Delete",volumeBindingMode="Immediate"} 1
+					kube_storageclass_info{storageclass="test_storageclass-default-info",provisioner="kubernetes.io/rbd",reclaim_policy="Delete",volume_binding_mode="Immediate"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_info",

@@ -1,4 +1,4 @@
-# PersistentVolume Metrics
+# VolumeAttachment Metrics
 
 | Metric name| Metric type | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------- |

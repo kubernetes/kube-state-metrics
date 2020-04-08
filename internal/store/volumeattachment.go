@@ -59,7 +59,7 @@ var (
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"attacher", "nodeName"},
+							LabelKeys:   []string{"attacher", "node"},
 							LabelValues: []string{va.Spec.Attacher, va.Spec.NodeName},
 							Value:       1,
 						},

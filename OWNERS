@@ -1,8 +1,11 @@
+component: "Monitoring"
+
 reviewers:
   - brancz
   - paulfantom
   - LiliC
   - s-urbaniak
+
 approvers:
   - brancz
   - paulfantom

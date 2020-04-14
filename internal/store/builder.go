@@ -249,11 +249,11 @@ func (b *Builder) buildNamespaceStore() cache.Store {
 }
 
 func (b *Builder) buildNetworkPolicyStore() cache.Store {
-	return b.buildStore(networkpolicyMetricFamilies, &networkingv1.NetworkPolicy{}, createNetworkPolicyListWatch)
+	return b.buildStoreFunc(networkpolicyMetricFamilies, &networkingv1.NetworkPolicy{}, createNetworkPolicyListWatch)
 }
 
 func (b *Builder) buildNodeStore() cache.Store {
-	return b.buildStore(nodeMetricFamilies, &v1.Node{}, createNodeListWatch)
+	return b.buildStoreFunc(nodeMetricFamilies, &v1.Node{}, createNodeListWatch)
 }
 
 func (b *Builder) buildPersistentVolumeClaimStore() cache.Store {
@@ -309,15 +309,15 @@ func (b *Builder) buildValidatingWebhookConfigurationStore() cache.Store {
 }
 
 func (b *Builder) buildVolumeAttachmentStore() cache.Store {
-	return b.buildStore(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch)
+	return b.buildStoreFunc(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch)
 }
 
 func (b *Builder) buildVPAStore() cache.Store {
-	return b.buildStore(vpaMetricFamilies, &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient))
+	return b.buildStoreFunc(vpaMetricFamilies, &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient))
 }
 
 func (b *Builder) buildLeases() cache.Store {
-	return b.buildStore(leaseMetricFamilies, &coordinationv1.Lease{}, createLeaseListWatch)
+	return b.buildStoreFunc(leaseMetricFamilies, &coordinationv1.Lease{}, createLeaseListWatch)
 }
 
 func (b *Builder) buildStore(

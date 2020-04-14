@@ -23,6 +23,9 @@ env:
 before_script:
 - make install-tools
 
+before_install:
+- sudo apt-get -qq -y install conntrack
+
 install:
 - mkdir -p $HOME/gopath/src/k8s.io
 - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/kube-state-metrics

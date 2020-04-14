@@ -68,7 +68,7 @@ touch "${HOME}"/.kube/config
 export KUBECONFIG=$HOME/.kube/config
 
 if [[ "$MINIKUBE_DRIVER" != "none" ]]; then 
-  export MINIKUBE_PROFILE_ARG="--profile ${MINIKUBE_PROFILE}"
+  export MINIKUBE_PROFILE_ARG=" --profile ${MINIKUBE_PROFILE}"
 else
   export MINIKUBE_PROFILE_ARG=''
 fi

@@ -292,6 +292,8 @@ kube_pod_container_resource_requests{namespace="default",pod="pod0",container="p
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con2",resource="memory",unit="byte"} 2e+08
 # HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
 # TYPE kube_pod_init_container_resource_limits gauge
+# HELP kube_pod_init_container_resource_requests The number of requested resources by the init container.
+# TYPE kube_pod_init_container_resource_requests gauge
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
 # TYPE kube_pod_container_resource_limits gauge
 kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",resource="nvidia_com_gpu",unit="integer"} 1

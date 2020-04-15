@@ -886,6 +886,64 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_resource_requests",
+			Type: metric.Gauge,
+			Help: "The number of requested resources by the init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Requests
+
+					for resourceName, val := range req {
+						switch resourceName {
+						case v1.ResourceCPU:
+							ms = append(ms, &metric.Metric{
+								Value:       float64(val.MilliValue()) / 1000,
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+							})
+						case v1.ResourceStorage:
+							fallthrough
+						case v1.ResourceEphemeralStorage:
+							fallthrough
+						case v1.ResourceMemory:
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								Value:       float64(val.Value()),
+							})
+						default:
+							if isHugePageResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									Value:       float64(val.Value()),
+								})
+							}
+							if isAttachableVolumeResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									Value:       float64(val.Value()),
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								})
+							}
+							if isExtendedResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									Value:       float64(val.Value()),
+									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								})
+							}
+						}
+					}
+				}
+
+				for _, metric := range ms {
+					metric.LabelKeys = []string{"container", "resource", "unit"}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_init_container_resource_limits",
 			Type: metric.Gauge,
 			Help: "The number of requested limit resource by the init container.",

@@ -64,6 +64,7 @@ type Builder struct {
 	shard            int32
 	totalShards      int
 	buildStoreFunc   ksmtypes.BuildStoreFunc
+	allowLabels      ksmtypes.AllowLabels
 }
 
 // NewBuilder returns a new builder.
@@ -134,6 +135,11 @@ func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
 // DefaultGenerateStoreFunc returns default buildStore function
 func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
 	return b.buildStore
+}
+
+// WithAllowLabels configures which labels can be returned for metrics
+func (b *Builder) WithAllowLabels(labels map[string][]string) {
+	b.allowLabels = sanitizeAllowLabels(labels)
 }
 
 // Build initializes and registers all enabled stores.
@@ -326,9 +332,10 @@ func (b *Builder) buildStore(
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) cache.Store {
 	filteredMetricFamilies := generator.FilterMetricFamilies(b.allowDenyList, metricFamilies)
-	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(filteredMetricFamilies)
+	filteredMetricFamiliesLabels := generator.FilterMetricFamiliesLabels(b.allowLabels, filteredMetricFamilies)
+	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(filteredMetricFamiliesLabels)
 
-	familyHeaders := generator.ExtractMetricFamilyHeaders(filteredMetricFamilies)
+	familyHeaders := generator.ExtractMetricFamilyHeaders(filteredMetricFamiliesLabels)
 
 	store := metricsstore.NewMetricsStore(
 		familyHeaders,

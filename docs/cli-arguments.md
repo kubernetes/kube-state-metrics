@@ -32,6 +32,7 @@ Usage of ./kube-state-metrics:
   -h, --help                             Print Help text
       --host string                      Host to expose metrics on. (default "0.0.0.0")
       --kubeconfig string                Absolute path to the kubeconfig file
+      --labels-allow-list string         list of metric names and labels you would like to allow, metric_name=[label1,labeln...],metric_name[]...
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file

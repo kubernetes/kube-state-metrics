@@ -116,3 +116,91 @@ func TestMetricSetSet(t *testing.T) {
 		}
 	}
 }
+
+func TestLabelsAllowListSet(t *testing.T) {
+	tests := []struct {
+		Desc   string
+		Value  string
+		Wanted LabelsAllowList
+		err    bool
+	}{
+		{
+			Desc:   "empty metrics",
+			Value:  "",
+			Wanted: LabelsAllowList{},
+		},
+		{
+			Desc:  "Deny all labels for metric",
+			Value: "kube_cronjob_info=[]",
+			Wanted: LabelsAllowList{
+				"kube_cronjob_info": {},
+			},
+		},
+		{
+			Desc:   "[invalid] space delimited",
+			Value:  "kube_cronjob_info=[somelabel,label2] kube_cronjob_labels=[label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+		{
+			Desc:   "[invalid] normal missing bracket",
+			Value:  "kube_cronjob_info=[somelabel,label2],kube_cronjob_labels=label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+
+		{
+			Desc:   "[invalid] no comma between metrics",
+			Value:  "kube_cronjob_info=[somelabel,label2]kube_cronjob_labels=[label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+		{
+			Desc:   "[invalid] no '=' between name and label list",
+			Value:  "kube_cronjob_info[somelabel,label2]kube_cronjob_labels=[label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+		{
+			Desc:  "normal metrics",
+			Value: "kube_cronjob_info=[somelabel,label2]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"kube_cronjob_info": {
+					"somelabel",
+					"label2",
+				}}),
+		},
+		{
+			Desc:  "normal metrics",
+			Value: "kube_cronjob_info=[somelabel,label2],kube_cronjob_count=[somelabel,label2],kube_cronjob_desc=[somelabel,label2]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"kube_cronjob_info": {
+					"somelabel",
+					"label2"},
+				"kube_cronjob_count": {
+					"somelabel",
+					"label2"},
+				"kube_cronjob_desc": {
+					"somelabel",
+					"label2"}}),
+		},
+		{
+			Desc:  "normal metrics, with empty allow labels",
+			Value: "kube_cronjob_info=[somelabel,label2],kube_cronjob_count=[]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"kube_cronjob_info": {
+					"somelabel",
+					"label2",
+				},
+				"kube_cronjob_count": {}}),
+		},
+	}
+
+	for _, test := range tests {
+		lal := &LabelsAllowList{}
+		gotError := lal.Set(test.Value)
+		if gotError != nil && !test.err || !reflect.DeepEqual(*lal, test.Wanted) {
+			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v. Got Error: %v", test.Desc, test.Wanted, *lal, gotError)
+		}
+	}
+}

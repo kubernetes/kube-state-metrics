@@ -76,6 +76,10 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 	return mapToPrometheusLabels(labels, "label")
 }
 
+func kubeSelectorsToPrometheusSelectors(selectors map[string]string) ([]string, []string) {
+	return mapToPrometheusLabels(selectors, "selector")
+}
+
 func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
 	for k := range labels {

@@ -93,6 +93,20 @@ var (
 			}),
 		},
 		{
+			Name: "kube_service_spec_selectors",
+			Type: metric.Gauge,
+			Help: "Kubernetes selectors converted to Prometheus selectors.",
+			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				selectorKeys, selectorValues := kubeSelectorsToPrometheusSelectors(s.Spec.Selector)
+				m := metric.Metric{
+					LabelKeys:   selectorKeys,
+					LabelValues: selectorValues,
+					Value:       1,
+				}
+				return &metric.Family{Metrics: []*metric.Metric{&m}}
+			}),
+		},
+		{
 			Name: "kube_service_spec_external_ip",
 			Type: metric.Gauge,
 			Help: "Service external ips. One series for each ip",

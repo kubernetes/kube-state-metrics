@@ -42,3 +42,6 @@ help.txt
 
 # jsonnet dependency management
 /scripts/vendor
+
+# Image build tool
+manifest-tool

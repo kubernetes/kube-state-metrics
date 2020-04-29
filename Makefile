@@ -19,7 +19,6 @@ GOLANGCI_VERSION := v1.25.0
 HAS_GOLANGCI := $(shell which golangci-lint)
 
 IMAGE = $(REGISTRY)/kube-state-metrics
-MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
@@ -65,7 +64,7 @@ build-local: clean
 build: clean kube-state-metrics
 
 kube-state-metrics:
-	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
+	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} $(MAKE) ARCH=$(ARCH) build-local
 
 test-unit: clean build
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
@@ -84,41 +83,57 @@ TEMP_DIR := $(shell mktemp -d)
 all: all-container
 
 sub-container-%:
-	$(MAKE) --no-print-directory ARCH=$* container
+	# 'clean' is necessary since build process needs to overwrite kube-state-metrics binary. Otherwise all images end up with binary made for one architecture
+	$(MAKE) --no-print-directory ARCH=$* clean .container-$*
 
 sub-push-%:
-	$(MAKE) --no-print-directory ARCH=$* push
+	# 'clean' is necessary since build process needs to overwrite kube-state-metrics binary. Otherwise all images end up with binary made for one architecture
+	$(MAKE) --no-print-directory ARCH=$* clean .quay-push-$*
 
 all-container: $(addprefix sub-container-,$(ALL_ARCH))
 
 all-push: $(addprefix sub-push-,$(ALL_ARCH))
 
-container: .container-$(ARCH)
-.container-$(ARCH): kube-state-metrics
-	cp -r * "${TEMP_DIR}"
-	${DOCKER_CLI} build -t $(MULTI_ARCH_IMG):$(TAG) "${TEMP_DIR}"
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
-	rm -rf "${TEMP_DIR}"
+manifest-tool:
+	curl -fsSL https://github.com/estesp/manifest-tool/releases/download/v1.0.2/manifest-tool-linux-amd64 > ./manifest-tool
+	chmod +x ./manifest-tool
 
+comma:= ,
+empty:=
+space:= $(empty) $(empty)
+manifest-push: manifest-tool
+	./manifest-tool push from-args --platforms $(subst $(space),$(comma),$(addprefix linux/,$(ALL_ARCH))) --template $(IMAGE):$(TAG)-ARCH --target $(IMAGE):$(TAG)
+	./manifest-tool push from-args --platforms $(subst $(space),$(comma),$(addprefix linux/,$(ALL_ARCH))) --template $(IMAGE):latest-ARCH --target $(IMAGE):latest
+
+release-images: all-push manifest-push
+
+container: .container-$(ARCH)
 ifeq ($(ARCH), amd64)
 	# Adding check for amd64
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
+	${DOCKER_CLI} tag $(IMAGE):$(TAG)-$(ARCH) $(IMAGE):$(TAG)
+	${DOCKER_CLI} tag $(IMAGE):$(TAG)-$(ARCH) $(IMAGE):latest
 endif
 
+.container-%: kube-state-metrics
+	cp -r * "${TEMP_DIR}"
+	${DOCKER_CLI} build -t $(IMAGE):$(TAG)-$* "${TEMP_DIR}"
+	${DOCKER_CLI} tag      $(IMAGE):$(TAG)-$* $(IMAGE):latest-$*
+	rm -rf "${TEMP_DIR}"
+
 quay-push: .quay-push-$(ARCH)
-.quay-push-$(ARCH): .container-$(ARCH)
-	${DOCKER_CLI} push $(MULTI_ARCH_IMG):$(TAG)
-	${DOCKER_CLI} push $(MULTI_ARCH_IMG):latest
 ifeq ($(ARCH), amd64)
 	${DOCKER_CLI} push $(IMAGE):$(TAG)
 	${DOCKER_CLI} push $(IMAGE):latest
 endif
 
-push: .push-$(ARCH)
-.push-$(ARCH): .container-$(ARCH)
-	gcloud docker -- push $(MULTI_ARCH_IMG):$(TAG)
-	gcloud docker -- push $(MULTI_ARCH_IMG):latest
+.quay-push-%: .container-%
+	${DOCKER_CLI} push $(IMAGE):$(TAG)-$*
+	${DOCKER_CLI} push $(IMAGE):latest-$*
+
+push: .push-%
+.push-%: .container-%
+	gcloud docker -- push $(IMAGE):$(TAG)-$*
+	gcloud docker -- push $(IMAGE):latest-$*
 ifeq ($(ARCH), amd64)
 	gcloud docker -- push $(IMAGE):$(TAG)
 	gcloud docker -- push $(IMAGE):latest
@@ -131,7 +146,7 @@ clean:
 e2e:
 	./tests/e2e.sh
 
-generate: build-local
+generate: build
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
 	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
@@ -164,4 +179,4 @@ install-tools:
 	@echo Installing tools from tools.go
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+.PHONY: all build all-push all-container all-manifest test-unit test-benchmark-compare container push quay-push manifest-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd

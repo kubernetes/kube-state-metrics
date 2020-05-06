@@ -17,7 +17,7 @@ limitations under the License.
 package store
 
 import (
-	storagev1beta1 "k8s.io/api/storage/v1beta1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -38,7 +38,7 @@ var (
 			Name: descVolumeAttachmentLabelsName,
 			Type: metric.Gauge,
 			Help: descVolumeAttachmentLabelsHelp,
-			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1beta1.VolumeAttachment) *metric.Family {
+			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(va.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -55,7 +55,7 @@ var (
 			Name: "kube_volumeattachment_info",
 			Type: metric.Gauge,
 			Help: "Information about volumeattachment.",
-			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1beta1.VolumeAttachment) *metric.Family {
+			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -71,7 +71,7 @@ var (
 			Name: "kube_volumeattachment_created",
 			Type: metric.Gauge,
 			Help: "Unix creation timestamp",
-			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1beta1.VolumeAttachment) *metric.Family {
+			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				if !va.CreationTimestamp.IsZero() {
 					m := metric.Metric{
 						LabelKeys:   nil,
@@ -87,7 +87,7 @@ var (
 			Name: "kube_volumeattachment_spec_source_persistentvolume",
 			Type: metric.Gauge,
 			Help: "PersistentVolume source reference.",
-			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1beta1.VolumeAttachment) *metric.Family {
+			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				if va.Spec.Source.PersistentVolumeName != nil {
 					return &metric.Family{
 						Metrics: []*metric.Metric{
@@ -106,7 +106,7 @@ var (
 			Name: "kube_volumeattachment_status_attached",
 			Type: metric.Gauge,
 			Help: "Information about volumeattachment.",
-			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1beta1.VolumeAttachment) *metric.Family {
+			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -122,7 +122,7 @@ var (
 			Name: "kube_volumeattachment_status_attachment_metadata",
 			Type: metric.Gauge,
 			Help: "volumeattachment metadata.",
-			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1beta1.VolumeAttachment) *metric.Family {
+			GenerateFunc: wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				labelKeys, labelValues := mapToPrometheusLabels(va.Status.AttachmentMetadata, "metadata")
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -138,9 +138,9 @@ var (
 	}
 )
 
-func wrapVolumeAttachmentFunc(f func(*storagev1beta1.VolumeAttachment) *metric.Family) func(interface{}) *metric.Family {
+func wrapVolumeAttachmentFunc(f func(*storagev1.VolumeAttachment) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		va := obj.(*storagev1beta1.VolumeAttachment)
+		va := obj.(*storagev1.VolumeAttachment)
 
 		metricFamily := f(va)
 
@@ -156,10 +156,10 @@ func wrapVolumeAttachmentFunc(f func(*storagev1beta1.VolumeAttachment) *metric.F
 func createVolumeAttachmentListWatch(kubeClient clientset.Interface, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1beta1().VolumeAttachments().List(opts)
+			return kubeClient.StorageV1().VolumeAttachments().List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1beta1().VolumeAttachments().Watch(opts)
+			return kubeClient.StorageV1().VolumeAttachments().Watch(opts)
 		},
 	}
 }

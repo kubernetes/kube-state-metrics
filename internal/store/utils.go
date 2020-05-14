@@ -78,15 +78,22 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 
 func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
-	for k := range labels {
-		labelKeys = append(labelKeys, k)
-	}
-	sort.Strings(labelKeys)
-
 	labelValues := make([]string, 0, len(labels))
-	for i, k := range labelKeys {
-		labelKeys[i] = prefix + "_" + sanitizeLabelName(k)
-		labelValues = append(labelValues, labels[k])
+
+	sortedKeys := make([]string, 0)
+	for key := range labels {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	seen := make(map[string]struct{})
+	for _, k := range sortedKeys {
+		labelKey := prefix + "_" + sanitizeLabelName(k)
+		if _, ok := seen[labelKey]; !ok {
+			labelKeys = append(labelKeys, labelKey)
+			labelValues = append(labelValues, labels[k])
+			seen[labelKey] = struct{}{}
+		}
 	}
 	return labelKeys, labelValues
 }

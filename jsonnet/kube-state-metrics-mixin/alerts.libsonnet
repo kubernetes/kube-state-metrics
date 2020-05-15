@@ -1,7 +1,4 @@
 {
-  _config+:: {
-    kubeStateMetricsSelector: error 'must provide selector for kube-state-metrics',
-  },
   prometheusAlerts+:: {
     groups+: [
       {

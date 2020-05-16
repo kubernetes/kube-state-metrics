@@ -17,7 +17,7 @@ limitations under the License.
 package store
 
 import (
-	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -37,7 +37,7 @@ var (
 			Name: "kube_mutatingwebhookconfiguration_info",
 			Type: metric.Gauge,
 			Help: "Information about the MutatingWebhookConfiguration.",
-			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistration.MutatingWebhookConfiguration) *metric.Family {
+			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -51,7 +51,7 @@ var (
 			Name: "kube_mutatingwebhookconfiguration_created",
 			Type: metric.Gauge,
 			Help: "Unix creation timestamp.",
-			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistration.MutatingWebhookConfiguration) *metric.Family {
+			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !mwc.CreationTimestamp.IsZero() {
@@ -68,7 +68,7 @@ var (
 			Name: "kube_mutatingwebhookconfiguration_metadata_resource_version",
 			Type: metric.Gauge,
 			Help: "Resource version representing a specific version of the MutatingWebhookConfiguration.",
-			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistration.MutatingWebhookConfiguration) *metric.Family {
+			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(mwc.ObjectMeta.ResourceVersion),
 				}
@@ -80,17 +80,17 @@ var (
 func createMutatingWebhookConfigurationListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().List(opts)
+			return kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Watch(opts)
+			return kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Watch(opts)
 		},
 	}
 }
 
-func wrapMutatingWebhookConfigurationFunc(f func(*admissionregistration.MutatingWebhookConfiguration) *metric.Family) func(interface{}) *metric.Family {
+func wrapMutatingWebhookConfigurationFunc(f func(*admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		mutatingWebhookConfiguration := obj.(*admissionregistration.MutatingWebhookConfiguration)
+		mutatingWebhookConfiguration := obj.(*admissionregistrationv1.MutatingWebhookConfiguration)
 
 		metricFamily := f(mutatingWebhookConfiguration)
 

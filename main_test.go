@@ -193,6 +193,7 @@ kube_pod_status_phase{namespace="default",pod="pod0",phase="Unknown"} 0
 # TYPE kube_pod_status_reason gauge
 kube_pod_status_reason{namespace="default",pod="pod0",reason="Evicted"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",reason="NodeLost"} 0
+kube_pod_status_reason{namespace="default",pod="pod0",reason="UnexpectedAdmissionError"} 0
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 # TYPE kube_pod_status_scheduled gauge
 # HELP kube_pod_container_info Information about a container in a pod.

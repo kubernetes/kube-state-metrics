@@ -35,7 +35,7 @@ var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
-	podStatusReasons           = []string{"NodeLost", "Evicted"}
+	podStatusReasons           = []string{"NodeLost", "Evicted", "UnexpectedAdmissionError"}
 
 	podMetricFamilies = []generator.FamilyGenerator{
 		{

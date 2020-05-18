@@ -19,7 +19,7 @@ package store
 import (
 	"testing"
 
-	admissionregistration "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
@@ -31,7 +31,7 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &admissionregistration.ValidatingWebhookConfiguration{
+			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "validatingwebhookconfiguration1",
 					Namespace:       "ns1",
@@ -49,7 +49,7 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 			MetricNames: []string{"kube_validatingwebhookconfiguration_info", "kube_validatingwebhookconfiguration_metadata_resource_version"},
 		},
 		{
-			Obj: &admissionregistration.ValidatingWebhookConfiguration{
+			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "validatingwebhookconfiguration2",
 					Namespace:         "ns2",

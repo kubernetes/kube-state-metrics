@@ -102,12 +102,28 @@ var (
 			Type: metric.Gauge,
 			Help: "Information about persistentvolume.",
 			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				var gcePDDiskName, ebsVolumeID string
+				switch {
+				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
+					gcePDDiskName = p.Spec.PersistentVolumeSource.GCEPersistentDisk.PDName
+				case p.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil:
+					ebsVolumeID = p.Spec.PersistentVolumeSource.AWSElasticBlockStore.VolumeID
+				}
+
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"storageclass"},
-							LabelValues: []string{p.Spec.StorageClassName},
-							Value:       1,
+							LabelKeys: []string{
+								"storageclass",
+								"gce_persistent_disk_name",
+								"ebs_volume_id",
+							},
+							LabelValues: []string{
+								p.Spec.StorageClassName,
+								gcePDDiskName,
+								ebsVolumeID,
+							},
+							Value: 1,
 						},
 					},
 				}

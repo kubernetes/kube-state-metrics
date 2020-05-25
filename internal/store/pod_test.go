@@ -1092,6 +1092,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 0
 `,
 			MetricNames: []string{"kube_pod_status_phase", "kube_pod_status_reason"},
 		},
@@ -1112,6 +1113,28 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_status_reason gauge
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 1
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 0
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "UnexpectedAdmissionError",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 1
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -1132,6 +1155,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_status_reason gauge
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},

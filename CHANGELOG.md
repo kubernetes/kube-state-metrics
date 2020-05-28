@@ -1,3 +1,7 @@
+## v1.9.7 / 2020-05-24
+
+* [BUGFIX] internal/store/mutatingwebhookconfiguration.go: Switch to v1 #1144
+
 ## v1.9.6 / 2020-05-06
 
 * [BUGFIX] Fix VolumeAttachment API version mismatch: expected v1 but watching v1beta1 #1136

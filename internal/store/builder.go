@@ -24,7 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	admissionregistration "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -229,7 +229,7 @@ func (b *Builder) buildLimitRangeStore() *metricsstore.MetricsStore {
 }
 
 func (b *Builder) buildMutatingWebhookConfigurationStore() *metricsstore.MetricsStore {
-	return b.buildStore(mutatingWebhookConfigurationMetricFamilies, &admissionregistration.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch)
+	return b.buildStore(mutatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch)
 }
 
 func (b *Builder) buildNamespaceStore() *metricsstore.MetricsStore {
@@ -293,7 +293,7 @@ func (b *Builder) buildCsrStore() *metricsstore.MetricsStore {
 }
 
 func (b *Builder) buildValidatingWebhookConfigurationStore() *metricsstore.MetricsStore {
-	return b.buildStore(validatingWebhookConfigurationMetricFamilies, &admissionregistration.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch)
+	return b.buildStore(validatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch)
 }
 
 func (b *Builder) buildVolumeAttachmentStore() *metricsstore.MetricsStore {

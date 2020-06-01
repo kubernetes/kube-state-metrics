@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/klog"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -93,6 +94,8 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 			labelKeys = append(labelKeys, labelKey)
 			labelValues = append(labelValues, labels[k])
 			seen[labelKey] = struct{}{}
+		} else if klog.V(4) {
+			klog.Warningf("discarding duplicate Prometheus label: %q; corresponding Kubernetes label is: %q", labelKey, k)
 		}
 	}
 	return labelKeys, labelValues

@@ -169,7 +169,53 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{ebs_volume_id="",gce_persistent_disk_name="",persistentvolume="test-pv-available",storageclass=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_info"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
+							PDName: "name",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
+					kube_persistentvolume_info{ebs_volume_id="",gce_persistent_disk_name="name",persistentvolume="test-pv-available",storageclass=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_info"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
+							VolumeID: "aws://eu-west-1c/vol-012d34d567890123b",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
+					kube_persistentvolume_info{ebs_volume_id="aws://eu-west-1c/vol-012d34d567890123b",gce_persistent_disk_name="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},

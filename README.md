@@ -113,6 +113,12 @@ additional metrics!
 
 See the [`docs`](docs) directory for more information on the exposed metrics.
 
+#### Enabling VerticalPodAustoscalers
+
+Please note that the collector for `verticalpodautoscalers` are disabled dy default. 
+This is because Vertical Pod Austocalers are managed as custom resources. If you want to enable this collector, 
+please ensure that you have the `v1beta2` CRDs installed beforehand. They can be found [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
+
 ### Kube-state-metrics self metrics
 
 kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 8081).
@@ -178,7 +184,7 @@ metric-server it too is not responsibile for exporting its metrics anywhere.
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
 
-#### Horizontal scaling (sharding)
+### Horizontal scaling (sharding)
 
 In order to scale kube-state-metrics horizontally, some automated sharding capabilities have been implemented. It is configured with the following flags:
 

@@ -1,3 +1,7 @@
+## MASTER
+
+* [FEATURE] Add ebs_volume_id and gce_persistent_disk_name to kube_persistentvolume_info metric. #1146
+
 ## v1.9.5 / 2020-02-20
 
 * [BUGFIX] Switch to using only v1 client of validatingwebhookconfiguration #1052

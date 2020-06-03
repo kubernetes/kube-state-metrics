@@ -1,6 +1,10 @@
-## MASTER
+## v1.9.7 / 2020-05-24
 
-* [FEATURE] Add ebs_volume_id and gce_persistent_disk_name to kube_persistentvolume_info metric. #1146
+* [BUGFIX] internal/store/mutatingwebhookconfiguration.go: Switch to v1 #1144
+
+## v1.9.6 / 2020-05-06
+
+* [BUGFIX] Fix VolumeAttachment API version mismatch: expected v1 but watching v1beta1 #1136
 
 ## v1.9.5 / 2020-02-20
 

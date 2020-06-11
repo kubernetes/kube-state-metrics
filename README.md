@@ -33,6 +33,8 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Resource group version compatibility](#resource-group-version-compatibility)
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
+  - [Conflict resolution in label names](#conflict-resolution-in-label-names)
+  - [Enabling VerticalPodAustoscalers](#enabling-verticalpodaustoscalers)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
 - [A note on costing](#a-note-on-costing)
@@ -113,10 +115,33 @@ additional metrics!
 
 See the [`docs`](docs) directory for more information on the exposed metrics.
 
+#### Conflict resolution in label names
+
+The `*_labels` family of metrics exposes Kubernetes labels as Prometheus labels.
+As [Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set)
+is more liberal than
+[Prometheus](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels)
+in terms of allowed characters in label names,
+we automatically convert unsupported characters to underscores.
+For example, `app.kubernetes.io/name` becomes `label_app_kubernetes_io_name`.
+
+This conversion can create conflicts when multiple Kubernetes labels like
+`foo-bar` and `foo_bar` would be converted to the same Prometheus label `label_foo_bar`.
+
+Kube-state-metrics automatically adds a suffix `_conflictN` to resolve this conflict,
+so it converts the above labels to
+`label_foo_bar_conflict1` and `label_foo_bar_conflict2`.
+
+If you'd like to have more control over how this conflict is resolved,
+you might want to consider addressing this issue on a different level of the stack,
+e.g. by standardizing Kubernetes labels using an
+[Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
+that ensures that there are no possible conflicts.
+
 #### Enabling VerticalPodAustoscalers
 
-Please note that the collector for `verticalpodautoscalers` are disabled dy default. 
-This is because Vertical Pod Austocalers are managed as custom resources. If you want to enable this collector, 
+Please note that the collector for `verticalpodautoscalers` are disabled dy default.
+This is because Vertical Pod Austocalers are managed as custom resources. If you want to enable this collector,
 please ensure that you have the `v1beta2` CRDs installed beforehand. They can be found [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
 
 ### Kube-state-metrics self metrics

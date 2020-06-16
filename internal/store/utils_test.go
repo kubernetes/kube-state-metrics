@@ -176,6 +176,44 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 			expectKeys:   []string{"label_an", "label_order", "label_test"},
 			expectValues: []string{"", "", ""},
 		},
+		{
+			kubeLabels: map[string]string{
+				"conflicting_label1": "underscore",
+				"conflicting.label1": "dot",
+				"conflicting-label1": "hyphen",
+
+				"conflicting.label2": "dot",
+				"conflicting-label2": "hyphen",
+				"conflicting_label2": "underscore",
+
+				"conflicting-label3": "hyphen",
+				"conflicting_label3": "underscore",
+				"conflicting.label3": "dot",
+			},
+			// keys are sorted alphabetically during sanitization
+			expectKeys: []string{
+				"label_conflicting_label1_conflict1",
+				"label_conflicting_label2_conflict1",
+				"label_conflicting_label3_conflict1",
+				"label_conflicting_label1_conflict2",
+				"label_conflicting_label2_conflict2",
+				"label_conflicting_label3_conflict2",
+				"label_conflicting_label1_conflict3",
+				"label_conflicting_label2_conflict3",
+				"label_conflicting_label3_conflict3",
+			},
+			expectValues: []string{
+				"hyphen",
+				"hyphen",
+				"hyphen",
+				"dot",
+				"dot",
+				"dot",
+				"underscore",
+				"underscore",
+				"underscore",
+			},
+		},
 	}
 
 	for _, tc := range testCases {

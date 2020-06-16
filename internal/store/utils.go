@@ -78,14 +78,44 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 
 func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
-	for k := range labels {
-		labelKeys = append(labelKeys, k)
-	}
-	sort.Strings(labelKeys)
-
 	labelValues := make([]string, 0, len(labels))
-	for i, k := range labelKeys {
-		labelKeys[i] = prefix + "_" + sanitizeLabelName(k)
+
+	sortedKeys := make([]string, 0)
+	for key := range labels {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	// conflictDesc holds some metadata for resolving potential label conflicts
+	type conflictDesc struct {
+		// the number of conflicting label keys we saw so far
+		count int
+
+		// the offset of the initial conflicting label key, so we could
+		// later go back and rename "label_foo" to "label_foo_conflict1"
+		initial int
+	}
+
+	conflicts := make(map[string]*conflictDesc)
+	for _, k := range sortedKeys {
+		labelKey := prefix + "_" + sanitizeLabelName(k)
+		if conflict, ok := conflicts[labelKey]; ok {
+			if conflict.count == 1 {
+				// this is the first conflict for the label,
+				// so we have to go back and rename the initial label that we've already added
+				labelKeys[conflict.initial] = labelConflictSuffix(labelKeys[conflict.initial], conflict.count)
+			}
+
+			conflict.count++
+			labelKey = labelConflictSuffix(labelKey, conflict.count)
+		} else {
+			// we'll need this info later in case there are conflicts
+			conflicts[labelKey] = &conflictDesc{
+				count:   1,
+				initial: len(labelKeys),
+			}
+		}
+		labelKeys = append(labelKeys, labelKey)
 		labelValues = append(labelValues, labels[k])
 	}
 	return labelKeys, labelValues
@@ -93,6 +123,10 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 
 func sanitizeLabelName(s string) string {
 	return invalidLabelCharRE.ReplaceAllString(s, "_")
+}
+
+func labelConflictSuffix(label string, count int) string {
+	return fmt.Sprintf("%s_conflict%d", label, count)
 }
 
 func isHugePageResourceName(name v1.ResourceName) bool {

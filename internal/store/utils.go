@@ -32,6 +32,7 @@ import (
 
 var (
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	matchAllCap        = regexp.MustCompile("([a-z0-9])([A-Z])")
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )
 
@@ -98,7 +99,8 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 
 	conflicts := make(map[string]*conflictDesc)
 	for _, k := range sortedKeys {
-		labelKey := prefix + "_" + sanitizeLabelName(k)
+		labelName := lintLabelName(sanitizeLabelName(k))
+		labelKey := prefix + "_" + labelName
 		if conflict, ok := conflicts[labelKey]; ok {
 			if conflict.count == 1 {
 				// this is the first conflict for the label,
@@ -123,6 +125,15 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 
 func sanitizeLabelName(s string) string {
 	return invalidLabelCharRE.ReplaceAllString(s, "_")
+}
+
+func lintLabelName(s string) string {
+	return toSnakeCase(s)
+}
+
+func toSnakeCase(s string) string {
+	snake := matchAllCap.ReplaceAllString(s, "${1}_${2}")
+	return strings.ToLower(snake)
 }
 
 func labelConflictSuffix(label string, count int) string {

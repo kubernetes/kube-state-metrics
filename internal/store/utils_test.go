@@ -214,6 +214,34 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 				"underscore",
 			},
 		},
+		{
+			kubeLabels: map[string]string{
+				"camelCase": "camel_case",
+			},
+			expectKeys:   []string{"label_camel_case"},
+			expectValues: []string{"camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"snake_camelCase": "snake_and_camel_case",
+			},
+			expectKeys:   []string{"label_snake_camel_case"},
+			expectValues: []string{"snake_and_camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"conflicting_camelCase":  "camel_case",
+				"conflicting_camel_case": "snake_case",
+			},
+			expectKeys: []string{
+				"label_conflicting_camel_case_conflict1",
+				"label_conflicting_camel_case_conflict2",
+			},
+			expectValues: []string{
+				"camel_case",
+				"snake_case",
+			},
+		},
 	}
 
 	for _, tc := range testCases {

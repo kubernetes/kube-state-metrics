@@ -37,11 +37,12 @@ var (
 	descReplicaSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 
 	replicaSetMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_replicaset_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -55,12 +56,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_replicaset_status_replicas",
-			Type: metric.Gauge,
-			Help: "The number of replicas per ReplicaSet.",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_status_replicas",
+			"The number of replicas per ReplicaSet.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -69,12 +71,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicaset_status_fully_labeled_replicas",
-			Type: metric.Gauge,
-			Help: "The number of fully labeled replicas per ReplicaSet.",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_status_fully_labeled_replicas",
+			"The number of fully labeled replicas per ReplicaSet.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -83,12 +86,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicaset_status_ready_replicas",
-			Type: metric.Gauge,
-			Help: "The number of ready replicas per ReplicaSet.",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_status_ready_replicas",
+			"The number of ready replicas per ReplicaSet.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -97,12 +101,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicaset_status_observed_generation",
-			Type: metric.Gauge,
-			Help: "The generation observed by the ReplicaSet controller.",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_status_observed_generation",
+			"The generation observed by the ReplicaSet controller.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -111,12 +116,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicaset_spec_replicas",
-			Type: metric.Gauge,
-			Help: "Number of desired pods for a ReplicaSet.",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_spec_replicas",
+			"Number of desired pods for a ReplicaSet.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if r.Spec.Replicas != nil {
@@ -129,12 +135,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_replicaset_metadata_generation",
-			Type: metric.Gauge,
-			Help: "Sequence number representing a specific generation of the desired state.",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_metadata_generation",
+			"Sequence number representing a specific generation of the desired state.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -143,12 +150,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicaset_owner",
-			Type: metric.Gauge,
-			Help: "Information about the ReplicaSet's owner.",
-			GenerateFunc: wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicaset_owner",
+			"Information about the ReplicaSet's owner.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
 				owners := r.GetOwnerReferences()
 
 				if len(owners) == 0 {
@@ -186,12 +194,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: descReplicaSetLabelsName,
-			Type: metric.Gauge,
-			Help: descReplicaSetLabelsHelp,
-			GenerateFunc: wrapReplicaSetFunc(func(d *v1.ReplicaSet) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			descReplicaSetLabelsName,
+			descReplicaSetLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(d *v1.ReplicaSet) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -203,7 +212,7 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
 )
 

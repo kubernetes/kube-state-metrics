@@ -34,11 +34,12 @@ var (
 	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
 
 	limitRangeMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_limitrange",
-			Type: metric.Gauge,
-			Help: "Information about limit range.",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_limitrange",
+			"Information about limit range.",
+			metric.Gauge,
+			"",
+			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				rawLimitRanges := r.Spec.Limits
@@ -87,12 +88,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_limitrange_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_limitrange_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -106,7 +108,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 

@@ -34,11 +34,12 @@ var (
 	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
 
 	networkpolicyMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_networkpolicy_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp of network policy",
-			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_networkpolicy_created",
+			"Unix creation timestamp of network policy",
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -49,12 +50,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_networkpolicy_labels",
-			Type: metric.Gauge,
-			Help: "Kubernetes labels converted to Prometheus labels",
-			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_networkpolicy_labels",
+			"Kubernetes labels converted to Prometheus labels",
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -66,12 +68,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_networkpolicy_spec_ingress_rules",
-			Type: metric.Gauge,
-			Help: "Number of ingress rules on the networkpolicy",
-			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_networkpolicy_spec_ingress_rules",
+			"Number of ingress rules on the networkpolicy",
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -82,12 +85,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_networkpolicy_spec_egress_rules",
-			Type: metric.Gauge,
-			Help: "Number of egress rules on the networkpolicy",
-			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_networkpolicy_spec_egress_rules",
+			"Number of egress rules on the networkpolicy",
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -98,7 +102,7 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
 )
 

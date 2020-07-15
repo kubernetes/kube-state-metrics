@@ -1060,9 +1060,9 @@ var (
 			}),
 		},
 		{
-			Name: "kube_pod_init_container_resource_requests",
+			Name: "kube_pod_init_container_resource_requests_cpu_cores",
 			Type: metric.Gauge,
-			Help: "The number of requested resources by the init container.",
+			Help: "The number of CPU cores requested by an init container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -1070,40 +1070,127 @@ var (
 					req := c.Resources.Requests
 
 					for resourceName, val := range req {
-						switch resourceName {
-						case v1.ResourceCPU:
+						if resourceName == v1.ResourceCPU {
 							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
 								Value:       float64(val.MilliValue()) / 1000,
-								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 							})
-						case v1.ResourceStorage:
-							fallthrough
-						case v1.ResourceEphemeralStorage:
-							fallthrough
-						case v1.ResourceMemory:
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_resource_requests_memory_bytes",
+			Type: metric.Gauge,
+			Help: "Bytes of memory requested by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Requests
+
+					for resourceName, val := range req {
+						if resourceName == v1.ResourceMemory {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
+								Value:       float64(val.Value()),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_resource_requests_storage_bytes",
+			Type: metric.Gauge,
+			Help: "Bytes of storage requested by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Requests
+
+					for resourceName, val := range req {
+						if resourceName == v1.ResourceStorage {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
+								Value:       float64(val.Value()),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_resource_requests_ephemeral_storage_bytes",
+			Type: metric.Gauge,
+			Help: "Bytes of ephemeral-storage requested by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Requests
+
+					for resourceName, val := range req {
+						if resourceName == v1.ResourceEphemeralStorage {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
+								Value:       float64(val.Value()),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_resource_requests",
+			Type: metric.Gauge,
+			Help: "The number of requested request resource by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Requests
+
+					for resourceName, val := range req {
+						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
-						default:
-							if isHugePageResourceName(resourceName) {
-								ms = append(ms, &metric.Metric{
-									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
-									Value:       float64(val.Value()),
-								})
-							}
-							if isAttachableVolumeResourceName(resourceName) {
-								ms = append(ms, &metric.Metric{
-									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
-								})
-							}
-							if isExtendedResourceName(resourceName) {
-								ms = append(ms, &metric.Metric{
-									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
-								})
-							}
+						}
+						if isAttachableVolumeResourceName(resourceName) {
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								Value:       float64(val.Value()),
+							})
+						}
+						if isExtendedResourceName(resourceName) {
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								Value:       float64(val.Value()),
+							})
 						}
 					}
 				}
@@ -1118,9 +1205,113 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_init_container_resource_limits_cpu_cores",
+			Type: metric.Gauge,
+			Help: "The number of CPU cores requested limit by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Limits
+
+					for resourceName, val := range req {
+						if resourceName == v1.ResourceCPU {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
+								Value:       float64(val.MilliValue()) / 1000,
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_resource_limits_memory_bytes",
+			Type: metric.Gauge,
+			Help: "Bytes of memory requested limit by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Limits
+
+					for resourceName, val := range req {
+						if resourceName == v1.ResourceMemory {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
+								Value:       float64(val.Value()),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_resource_limits_storage_bytes",
+			Type: metric.Gauge,
+			Help: "Bytes of storage requested limit by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Limits
+
+					for resourceName, val := range req {
+						if resourceName == v1.ResourceStorage {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
+								Value:       float64(val.Value()),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_init_container_resource_limits_ephemeral_storage_bytes",
+			Type: metric.Gauge,
+			Help: "Bytes of ephemeral-storage requested limit by an init container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, c := range p.Spec.InitContainers {
+					req := c.Resources.Limits
+
+					for resourceName, val := range req {
+						if resourceName == v1.ResourceEphemeralStorage {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"container"},
+								LabelValues: []string{c.Name},
+								Value:       float64(val.Value()),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_init_container_resource_limits",
 			Type: metric.Gauge,
-			Help: "The number of requested limit resource by the init container.",
+			Help: "The number of requested limit resource by an init container.",
 			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -1128,40 +1319,23 @@ var (
 					lim := c.Resources.Limits
 
 					for resourceName, val := range lim {
-						switch resourceName {
-						case v1.ResourceCPU:
-							ms = append(ms, &metric.Metric{
-								Value:       float64(val.MilliValue()) / 1000,
-								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							})
-						case v1.ResourceStorage:
-							fallthrough
-						case v1.ResourceEphemeralStorage:
-							fallthrough
-						case v1.ResourceMemory:
+						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
-						default:
-							if isHugePageResourceName(resourceName) {
-								ms = append(ms, &metric.Metric{
-									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
-									Value:       float64(val.Value()),
-								})
-							}
-							if isAttachableVolumeResourceName(resourceName) {
-								ms = append(ms, &metric.Metric{
-									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
-								})
-							}
-							if isExtendedResourceName(resourceName) {
-								ms = append(ms, &metric.Metric{
-									Value:       float64(val.Value()),
-									LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
-								})
-							}
+						}
+						if isAttachableVolumeResourceName(resourceName) {
+							ms = append(ms, &metric.Metric{
+								Value:       float64(val.Value()),
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+							})
+						}
+						if isExtendedResourceName(resourceName) {
+							ms = append(ms, &metric.Metric{
+								Value:       float64(val.Value()),
+								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+							})
 						}
 					}
 				}

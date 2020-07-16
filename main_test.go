@@ -340,8 +340,10 @@ kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
-# HELP kube_pod_overhead The pod overhead associated with running a pod.
-# TYPE kube_pod_overhead gauge
+# HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
+# TYPE kube_pod_overhead_cpu_cores gauge
+# HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
+# TYPE kube_pod_overhead_memory_bytes gauge
 `
 
 	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")

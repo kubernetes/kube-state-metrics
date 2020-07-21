@@ -79,8 +79,6 @@ test-benchmark-compare: $(BENCHCMP_BINARY)
 	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
-TEMP_DIR := $(shell mktemp -d)
-
 all: all-container
 
 sub-container-%:
@@ -94,11 +92,9 @@ all-container: $(addprefix sub-container-,$(ALL_ARCH))
 all-push: $(addprefix sub-push-,$(ALL_ARCH))
 
 container: .container-$(ARCH)
-.container-$(ARCH): kube-state-metrics
-	cp -r * "${TEMP_DIR}"
-	${DOCKER_CLI} build -t $(MULTI_ARCH_IMG):$(TAG) "${TEMP_DIR}"
+.container-$(ARCH):
+	${DOCKER_CLI} build -t $(MULTI_ARCH_IMG):$(TAG) --build-arg GOARCH=$(ARCH) .
 	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
-	rm -rf "${TEMP_DIR}"
 
 ifeq ($(ARCH), amd64)
 	# Adding check for amd64

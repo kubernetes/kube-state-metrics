@@ -76,8 +76,6 @@ test-benchmark-compare: $(BENCHCMP_BINARY)
 	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
-TEMP_DIR := $(shell mktemp -d)
-
 all: all-container
 
 sub-container-%:
@@ -92,11 +90,8 @@ all-push: $(addprefix sub-push-,$(ALL_ARCH))
 
 container: .container-$(ARCH)
 .container-$(ARCH):
-	docker run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=linux -e GOARCH=$(ARCH) -e CGO_ENABLED=0 golang:${GO_VERSION} go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
-	cp -r * "${TEMP_DIR}"
-	docker build -t $(MULTI_ARCH_IMG):$(TAG) "${TEMP_DIR}"
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
-	rm -rf "${TEMP_DIR}"
+	${DOCKER_CLI} build -t $(MULTI_ARCH_IMG):$(TAG) --build-arg GOARCH=$(ARCH) .
+	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
 
 ifeq ($(ARCH), amd64)
 	# Adding check for amd64

@@ -42,28 +42,40 @@ var (
 			Type: metric.Gauge,
 			Help: "Information about a cluster node.",
 			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+				labelKeys := []string{
+					"kernel_version",
+					"os_image",
+					"container_runtime_version",
+					"kubelet_version",
+					"kubeproxy_version",
+					"provider_id",
+					"pod_cidr",
+				}
+				labelValues := []string{
+					n.Status.NodeInfo.KernelVersion,
+					n.Status.NodeInfo.OSImage,
+					n.Status.NodeInfo.ContainerRuntimeVersion,
+					n.Status.NodeInfo.KubeletVersion,
+					n.Status.NodeInfo.KubeProxyVersion,
+					n.Spec.ProviderID,
+					n.Spec.PodCIDR,
+				}
+
+				internalIP := ""
+				for _, address := range n.Status.Addresses {
+					if address.Type == "InternalIP" {
+						internalIP = address.Address
+					}
+				}
+				labelKeys = append(labelKeys, "internal_ip")
+				labelValues = append(labelValues, internalIP)
+
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys: []string{
-								"kernel_version",
-								"os_image",
-								"container_runtime_version",
-								"kubelet_version",
-								"kubeproxy_version",
-								"provider_id",
-								"pod_cidr",
-							},
-							LabelValues: []string{
-								n.Status.NodeInfo.KernelVersion,
-								n.Status.NodeInfo.OSImage,
-								n.Status.NodeInfo.ContainerRuntimeVersion,
-								n.Status.NodeInfo.KubeletVersion,
-								n.Status.NodeInfo.KubeProxyVersion,
-								n.Spec.ProviderID,
-								n.Spec.PodCIDR,
-							},
-							Value: 1,
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
 						},
 					},
 				}

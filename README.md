@@ -89,10 +89,6 @@ The latest container image can be found at:
 * `quay.io/coreos/kube-state-metrics:v1.9.7`
 * `k8s.gcr.io/kube-state-metrics:v1.9.7`
 
-**Note**:
-The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on
-`gcr.io` is only maintained on best effort as it requires external help from Google employees.
-
 ### Metrics Documentation
 
 There are many more metrics we could report, but this first pass is focused on

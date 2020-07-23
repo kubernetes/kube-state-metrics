@@ -1,4 +1,4 @@
-FROM golang:1.14 as builder
+FROM golang:1.13 as builder
 ARG GOARCH
 ENV GOARCH=${GOARCH}
 WORKDIR /go/src/k8s.io/kube-state-metrics/

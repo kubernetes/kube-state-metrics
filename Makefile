@@ -58,11 +58,13 @@ doccheck: generate
 	@cd docs; for doc in *.md; do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
-build-local: clean
+build-local:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
 
-build: clean
-	docker run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
+build: kube-state-metrics
+
+kube-state-metrics:
+	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
 
 test-unit: clean build
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)

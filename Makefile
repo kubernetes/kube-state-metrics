@@ -1,6 +1,6 @@
 FLAGS =
 TESTENVVAR =
-REGISTRY = quay.io/coreos
+REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
 TAG_PREFIX = v
 VERSION = $(shell cat VERSION)
 TAG = $(TAG_PREFIX)$(VERSION)

@@ -148,8 +148,7 @@ func main() {
 	// Run MetricsHandler
 	{
 		g.Add(func() error {
-			klog.Errorf("metricshandler error: %v", m.Run(ctx))
-			return ctx.Err()
+			return m.Run(ctx)
 		}, func(error) {
 			//cancel()
 		})
@@ -174,9 +173,7 @@ func main() {
 	{
 		g.Add(func() error {
 			klog.Infof("Starting kube-state-metrics self metrics server: %s", telemetryListenAddress)
-			err = telemetryServer.Serve(telemetryLn)
-			klog.Errorf("kube-state-metrics self metrics server error: %v", err)
-			return err
+			return telemetryServer.Serve(telemetryLn)
 		}, func(error) {
 			telemetryServer.Shutdown(ctx)
 		})
@@ -185,16 +182,14 @@ func main() {
 	{
 		g.Add(func() error {
 			klog.Infof("Starting metrics server: %s", metricsServerListenAddress)
-			err = metricsServer.Serve(metricsServerLn)
-			klog.Errorf("metrics server error: %v", err)
-			return err
+			return metricsServer.Serve(metricsServerLn)
 		}, func(error) {
 			metricsServer.Shutdown(ctx)
 		})
 	}
 
 	if err := g.Run(); err != nil {
-		klog.Fatalf("Failed to run Run Group: %v", err)
+		klog.Fatalf("RunGroup Error: %v", err)
 	}
 	klog.Info("Exiting")
 }

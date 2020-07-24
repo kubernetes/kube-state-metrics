@@ -148,39 +148,48 @@ func main() {
 	// Run MetricsHandler
 	{
 		g.Add(func() error {
-			err = m.Run(ctx)
-			klog.Errorf("metricshandler error: %v", err)
-			return err
+			klog.Errorf("metricshandler error: %v", m.Run(ctx))
+			return ctx.Err()
 		}, func(error) {
-			ctx.Done()
+			//cancel()
 		})
 	}
 
 	telemetryMux := buildTelemetryServer(ksmMetricsRegistry)
+	telemetryServer := http.Server{Handler: telemetryMux}
+	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
+	telemetryLn, err := net.Listen("tcp", telemetryListenAddress)
+	if err != nil {
+		klog.Fatalf("Failed to create Telemetry Listener: %v", err)
+	}
 	metricsMux := buildMetricsServer(kubeClient, storeBuilder, m, opts)
+	metricsServer := http.Server{Handler: metricsMux}
+	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
+	metricsServerLn, err := net.Listen("tcp", metricsServerListenAddress)
+	if err != nil {
+		klog.Fatalf("Failed to create MetricsServer Listener: %v", err)
+	}
 
 	// Run Telemetry server
 	{
 		g.Add(func() error {
-			listenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
-			klog.Infof("Starting kube-state-metrics self metrics server: %s", listenAddress)
-			err = http.ListenAndServe(listenAddress, telemetryMux)
+			klog.Infof("Starting kube-state-metrics self metrics server: %s", telemetryListenAddress)
+			err = telemetryServer.Serve(telemetryLn)
 			klog.Errorf("kube-state-metrics self metrics server error: %v", err)
 			return err
 		}, func(error) {
-			ctx.Done()
+			telemetryServer.Shutdown(ctx)
 		})
 	}
 	// Run Metrics server
 	{
 		g.Add(func() error {
-			listenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
-			klog.Infof("Starting metrics server: %s", listenAddress)
-			err = http.ListenAndServe(listenAddress, metricsMux)
+			klog.Infof("Starting metrics server: %s", metricsServerListenAddress)
+			err = metricsServer.Serve(metricsServerLn)
 			klog.Errorf("metrics server error: %v", err)
 			return err
 		}, func(error) {
-			ctx.Done()
+			metricsServer.Shutdown(ctx)
 		})
 	}
 

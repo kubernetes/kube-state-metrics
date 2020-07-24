@@ -27,6 +27,7 @@ E2E_SETUP_PROMTOOL=${E2E_SETUP_PROMTOOL:-}
 MINIKUBE_VERSION=v1.3.1
 MINIKUBE_DRIVER=${MINIKUBE_DRIVER:-virtualbox}
 SUDO=${SUDO:-}
+MINIKUBE_PROFILE=${MINIKUBE_PROFILE:-ksm-e2e}
 
 OS=$(uname -s | awk '{print tolower($0)}')
 OS=${OS:-linux}
@@ -77,9 +78,16 @@ mkdir "${HOME}"/.kube || true
 touch "${HOME}"/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
-${SUDO} minikube start --vm-driver="${MINIKUBE_DRIVER}" --kubernetes-version=${KUBERNETES_VERSION} --logtostderr
 
-minikube update-context
+if [[ "$MINIKUBE_DRIVER" != "none" ]]; then 
+  export MINIKUBE_PROFILE_ARG="--profile ${MINIKUBE_PROFILE}"
+else
+  export MINIKUBE_PROFILE_ARG=''
+fi
+
+${SUDO} minikube start --vm-driver="${MINIKUBE_DRIVER}" "${MINIKUBE_PROFILE_ARG}" --kubernetes-version=${KUBERNETES_VERSION} --logtostderr
+
+minikube update-context "${MINIKUBE_PROFILE_ARG}"
 
 set +e
 
@@ -98,7 +106,7 @@ for _ in {1..90}; do # timeout for 3 minutes
 done
 
 if [[ ${is_kube_running} == "false" ]]; then
-   minikube logs
+   minikube logs "${MINIKUBE_PROFILE_ARG}"
    echo "Kubernetes does not start within 3 minutes"
    exit 1
 fi
@@ -107,8 +115,11 @@ set -e
 
 kubectl version
 
+# Build binary
+make build
+
 # ensure that we build docker image in minikube
-[[ "$MINIKUBE_DRIVER" != "none" ]] && eval "$(minikube docker-env)"
+[[ "$MINIKUBE_DRIVER" != "none" ]] && eval "$(minikube docker-env "${MINIKUBE_PROFILE_ARG}")" && export DOCKER_CLI='docker'
 
 # query kube-state-metrics image tag
 make container

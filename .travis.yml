@@ -47,4 +47,4 @@ jobs:
     - name: Build
       script: make build
     - name: End to end tests
-      script: make e2e
+      script: REGISTRY="quay.io/coreos" make e2e

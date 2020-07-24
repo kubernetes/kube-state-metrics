@@ -151,6 +151,22 @@ var (
 			}),
 		},
 		{
+			Name: "kube_daemonset_status_observed_generation",
+			Type: metric.Gauge,
+			Help: "The most recent generation observed by the daemon set controller.",
+			GenerateFunc: wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(d.Status.ObservedGeneration),
+						},
+					},
+				}
+			}),
+		},
+		{
 			Name: "kube_daemonset_updated_number_scheduled",
 			Type: metric.Gauge,
 			Help: "The total number of nodes that are running updated daemon pod",

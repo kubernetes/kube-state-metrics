@@ -43,6 +43,7 @@ func TestDaemonSetStore(t *testing.T) {
 					NumberMisscheduled:     10,
 					DesiredNumberScheduled: 5,
 					NumberReady:            5,
+					ObservedGeneration:     2,
 				},
 			},
 			Want: `
@@ -54,6 +55,7 @@ func TestDaemonSetStore(t *testing.T) {
 				# HELP kube_daemonset_status_number_misscheduled The number of nodes running a daemon pod but are not supposed to.
 				# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
 				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
+				# HELP kube_daemonset_status_observed_generation The most recent generation observed by the daemon set controller.
 				# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
 				# TYPE kube_daemonset_labels gauge
 				# TYPE kube_daemonset_metadata_generation gauge
@@ -63,6 +65,7 @@ func TestDaemonSetStore(t *testing.T) {
 				# TYPE kube_daemonset_status_number_misscheduled gauge
 				# TYPE kube_daemonset_status_number_ready gauge
 				# TYPE kube_daemonset_status_number_unavailable gauge
+				# TYPE kube_daemonset_status_observed_generation gauge
 				# TYPE kube_daemonset_updated_number_scheduled gauge
 				kube_daemonset_metadata_generation{daemonset="ds1",namespace="ns1"} 21
 				kube_daemonset_status_current_number_scheduled{daemonset="ds1",namespace="ns1"} 15
@@ -71,6 +74,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_misscheduled{daemonset="ds1",namespace="ns1"} 10
 				kube_daemonset_status_number_ready{daemonset="ds1",namespace="ns1"} 5
 				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
+				kube_daemonset_status_observed_generation{daemonset="ds1",namespace="ns1"} 2
 				kube_daemonset_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_labels{daemonset="ds1",label_app="example1",namespace="ns1"} 1
 `,
@@ -83,6 +87,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_misscheduled",
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
+				"kube_daemonset_status_observed_generation",
 				"kube_daemonset_updated_number_scheduled",
 			},
 		},

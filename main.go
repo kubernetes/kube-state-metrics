@@ -19,13 +19,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strconv"
 
+	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -136,9 +136,58 @@ func main() {
 		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
 		prometheus.NewGoCollector(),
 	)
-	go telemetryServer(ksmMetricsRegistry, opts.TelemetryHost, opts.TelemetryPort)
 
-	serveMetrics(ctx, kubeClient, storeBuilder, opts, opts.Host, opts.Port, opts.EnableGZIPEncoding)
+	var g run.Group
+	m := metricshandler.New(
+		opts,
+		kubeClient,
+		storeBuilder,
+		opts.EnableGZIPEncoding,
+	)
+
+	// Run MetricsHandler
+	{
+		g.Add(func() error {
+			err = m.Run(ctx)
+			klog.Errorf("metricshandler error: %v", err)
+			return err
+		}, func(error) {
+			ctx.Done()
+		})
+	}
+
+	telemetryMux := buildTelemetryServer(ksmMetricsRegistry)
+	metricsMux := buildMetricsServer(kubeClient, storeBuilder, m, opts)
+
+	// Run Telemetry server
+	{
+		g.Add(func() error {
+			listenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
+			klog.Infof("Starting kube-state-metrics self metrics server: %s", listenAddress)
+			err = http.ListenAndServe(listenAddress, telemetryMux)
+			klog.Errorf("kube-state-metrics self metrics server error: %v", err)
+			return err
+		}, func(error) {
+			ctx.Done()
+		})
+	}
+	// Run Metrics server
+	{
+		g.Add(func() error {
+			listenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
+			klog.Infof("Starting metrics server: %s", listenAddress)
+			err = http.ListenAndServe(listenAddress, metricsMux)
+			klog.Errorf("metrics server error: %v", err)
+			return err
+		}, func(error) {
+			ctx.Done()
+		})
+	}
+
+	if err := g.Run(); err != nil {
+		klog.Fatalf("Failed to run Run Group: %v", err)
+	}
+	klog.Info("Exiting")
 }
 
 func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, vpaclientset.Interface, error) {
@@ -175,12 +224,7 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	return kubeClient, vpaClient, nil
 }
 
-func telemetryServer(registry prometheus.Gatherer, host string, port int) {
-	// Address to listen on for web interface and telemetry
-	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
-
-	klog.Infof("Starting kube-state-metrics self metrics server: %s", listenAddress)
-
+func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Add metricsPath
@@ -197,15 +241,10 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(listenAddress, mux))
+	return mux
 }
 
-func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuilder *store.Builder, opts *options.Options, host string, port int, enableGZIPEncoding bool) {
-	// Address to listen on for web interface and telemetry
-	listenAddress := net.JoinHostPort(host, strconv.Itoa(port))
-
-	klog.Infof("Starting metrics server: %s", listenAddress)
-
+func buildMetricsServer(kubeClient clientset.Interface, storeBuilder *store.Builder, m *metricshandler.MetricsHandler, opts *options.Options) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// TODO: This doesn't belong into serveMetrics
@@ -215,13 +254,6 @@ func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuil
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-	m := metricshandler.New(
-		opts,
-		kubeClient,
-		storeBuilder,
-		enableGZIPEncoding,
-	)
-	go m.Run(ctx)
 	mux.Handle(metricsPath, m)
 
 	// Add healthzPath
@@ -242,5 +274,5 @@ func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuil
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(listenAddress, mux))
+	return mux
 }

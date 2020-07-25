@@ -56,7 +56,7 @@ func TestDaemonSetStore(t *testing.T) {
 				# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
 				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
 				# HELP kube_daemonset_status_observed_generation The most recent generation observed by the daemon set controller.
-				# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
+				# HELP kube_daemonset_status_updated_number_scheduled The total number of nodes that are running updated daemon pod
 				# TYPE kube_daemonset_labels gauge
 				# TYPE kube_daemonset_metadata_generation gauge
 				# TYPE kube_daemonset_status_current_number_scheduled gauge
@@ -66,7 +66,7 @@ func TestDaemonSetStore(t *testing.T) {
 				# TYPE kube_daemonset_status_number_ready gauge
 				# TYPE kube_daemonset_status_number_unavailable gauge
 				# TYPE kube_daemonset_status_observed_generation gauge
-				# TYPE kube_daemonset_updated_number_scheduled gauge
+				# TYPE kube_daemonset_status_updated_number_scheduled gauge
 				kube_daemonset_metadata_generation{daemonset="ds1",namespace="ns1"} 21
 				kube_daemonset_status_current_number_scheduled{daemonset="ds1",namespace="ns1"} 15
 				kube_daemonset_status_desired_number_scheduled{daemonset="ds1",namespace="ns1"} 5
@@ -75,7 +75,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_ready{daemonset="ds1",namespace="ns1"} 5
 				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_status_observed_generation{daemonset="ds1",namespace="ns1"} 2
-				kube_daemonset_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
+				kube_daemonset_status_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_labels{daemonset="ds1",label_app="example1",namespace="ns1"} 1
 `,
 			MetricNames: []string{
@@ -88,7 +88,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
 				"kube_daemonset_status_observed_generation",
-				"kube_daemonset_updated_number_scheduled",
+				"kube_daemonset_status_updated_number_scheduled",
 			},
 		},
 		{
@@ -124,8 +124,8 @@ func TestDaemonSetStore(t *testing.T) {
 				# TYPE kube_daemonset_status_number_ready gauge
 				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
 				# TYPE kube_daemonset_status_number_unavailable gauge
-				# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
-				# TYPE kube_daemonset_updated_number_scheduled gauge
+				# HELP kube_daemonset_status_updated_number_scheduled The total number of nodes that are running updated daemon pod
+				# TYPE kube_daemonset_status_updated_number_scheduled gauge
 				# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
 				# TYPE kube_daemonset_metadata_generation gauge
 				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
@@ -137,7 +137,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_misscheduled{daemonset="ds2",namespace="ns2"} 5
 				kube_daemonset_status_number_ready{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_status_number_unavailable{daemonset="ds2",namespace="ns2"} 0
-				kube_daemonset_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
+				kube_daemonset_status_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_labels{daemonset="ds2",label_app="example2",namespace="ns2"} 1
 				kube_daemonset_created{namespace="ns2",daemonset="ds2"} 1.5e+09
 `,
@@ -151,7 +151,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_misscheduled",
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
-				"kube_daemonset_updated_number_scheduled",
+				"kube_daemonset_status_updated_number_scheduled",
 			},
 		},
 		{
@@ -190,8 +190,8 @@ func TestDaemonSetStore(t *testing.T) {
 				# TYPE kube_daemonset_status_number_ready gauge
 				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
 				# TYPE kube_daemonset_status_number_unavailable gauge
-				# HELP kube_daemonset_updated_number_scheduled The total number of nodes that are running updated daemon pod
-				# TYPE kube_daemonset_updated_number_scheduled gauge
+				# HELP kube_daemonset_status_updated_number_scheduled The total number of nodes that are running updated daemon pod
+				# TYPE kube_daemonset_status_updated_number_scheduled gauge
 				# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
 				# TYPE kube_daemonset_metadata_generation gauge
 				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
@@ -204,7 +204,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_misscheduled{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_status_number_ready{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_status_number_unavailable{daemonset="ds3",namespace="ns3"} 5
-				kube_daemonset_updated_number_scheduled{daemonset="ds3",namespace="ns3"} 5
+				kube_daemonset_status_updated_number_scheduled{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_labels{daemonset="ds3",label_app="example3",namespace="ns3"} 1
 `,
 			MetricNames: []string{
@@ -217,7 +217,7 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_number_misscheduled",
 				"kube_daemonset_status_number_ready",
 				"kube_daemonset_status_number_unavailable",
-				"kube_daemonset_updated_number_scheduled",
+				"kube_daemonset_status_updated_number_scheduled",
 			},
 		},
 	}

@@ -81,7 +81,6 @@ var (
 						Value:       float64((p.Status.StartTime).Unix()),
 					})
 				}
-
 				return &metric.Family{
 					Metrics: ms,
 				}

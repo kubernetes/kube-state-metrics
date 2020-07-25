@@ -167,7 +167,7 @@ var (
 			}),
 		},
 		{
-			Name: "kube_daemonset_updated_number_scheduled",
+			Name: "kube_daemonset_status_updated_number_scheduled",
 			Type: metric.Gauge,
 			Help: "The total number of nodes that are running updated daemon pod",
 			GenerateFunc: wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {

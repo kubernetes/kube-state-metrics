@@ -160,8 +160,6 @@ func TestFullScrapeCycle(t *testing.T) {
 kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-0",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class="",host_network="false"} 1
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # TYPE kube_pod_start_time gauge
-# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
-# TYPE kube_pod_container_state_started gauge
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
 # TYPE kube_pod_completion_time gauge
 # HELP kube_pod_owner Information about the Pod's owner.

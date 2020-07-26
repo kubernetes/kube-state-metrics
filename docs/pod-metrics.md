@@ -14,6 +14,7 @@
 | kube_pod_container_status_waiting | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
 | kube_pod_container_status_waiting_reason | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;ContainerCreating\|CrashLoopBackOff\|ErrImagePull\|ImagePullBackOff\|CreateContainerConfigError\|InvalidImageName\|CreateContainerError&gt; | STABLE |
 | kube_pod_container_status_running | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
+| kube_pod_container_state_started | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
 | kube_pod_container_status_terminated | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; | STABLE |
 | kube_pod_container_status_terminated_reason | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;OOMKilled\|Error\|Completed\|ContainerCannotRun\|DeadlineExceeded&gt; | STABLE |
 | kube_pod_container_status_last_terminated_reason | Gauge | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;OOMKilled\|Error\|Completed\|ContainerCannotRun\|DeadlineExceeded&gt; | STABLE |

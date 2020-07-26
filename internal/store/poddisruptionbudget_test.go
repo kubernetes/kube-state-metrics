@@ -53,11 +53,11 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 					Generation:        21,
 				},
 				Status: v1beta1.PodDisruptionBudgetStatus{
-					CurrentHealthy:        12,
-					DesiredHealthy:        10,
-					PodDisruptionsAllowed: 2,
-					ExpectedPods:          15,
-					ObservedGeneration:    111,
+					CurrentHealthy:     12,
+					DesiredHealthy:     10,
+					DisruptionsAllowed: 2,
+					ExpectedPods:       15,
+					ObservedGeneration: 111,
 				},
 			},
 			Want: metadata + `
@@ -77,11 +77,11 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 					Generation: 14,
 				},
 				Status: v1beta1.PodDisruptionBudgetStatus{
-					CurrentHealthy:        8,
-					DesiredHealthy:        9,
-					PodDisruptionsAllowed: 0,
-					ExpectedPods:          10,
-					ObservedGeneration:    1111,
+					CurrentHealthy:     8,
+					DesiredHealthy:     9,
+					DisruptionsAllowed: 0,
+					ExpectedPods:       10,
+					ObservedGeneration: 1111,
 				},
 			},
 			Want: metadata + `

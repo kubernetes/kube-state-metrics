@@ -76,7 +76,9 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_start_time gauge
 		# HELP kube_job_status_succeeded The number of pods which reached Phase Succeeded.
 		# TYPE kube_job_status_succeeded gauge
-	`
+		# HELP kube_job_status_failed_reason The reason why the job failed its execution.
+		# TYPE kube_job_status_failed_reason gauge`
+
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1batch.Job{
@@ -97,6 +99,17 @@ func TestJobStore(t *testing.T) {
 					},
 				},
 				Status: v1batch.JobStatus{
+					Conditions:    []v1batch.JobCondition{
+						{
+							Type:               v1batch.JobFailed,
+							Status:             v1.ConditionTrue,
+							Reason:             "Evicted",
+						},
+						{
+							Type:               v1batch.JobFailed,
+							Status:             v1.ConditionFalse,
+						},
+					},
 					Active:         1,
 					Failed:         0,
 					Succeeded:      0,
@@ -121,6 +134,18 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="RunningJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="RunningJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="RunningJob1",namespace="ns1",reason="",status="false"} 1
+				kube_job_status_failed_reason{condition="Failed",job_name="RunningJob1",namespace="ns1",reason="",status="true"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="RunningJob1",namespace="ns1",reason="",status="unknown"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="RunningJob1",namespace="ns1",reason="Evicted",status="false"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="RunningJob1",namespace="ns1",reason="Evicted",status="true"} 1
+				kube_job_status_failed_reason{condition="Failed",job_name="RunningJob1",namespace="ns1",reason="Evicted",status="unknown"} 0
+				kube_job_failed{condition="false",job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_failed{condition="false",job_name="RunningJob1",namespace="ns1"} 1
+				kube_job_failed{condition="true",job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_failed{condition="true",job_name="RunningJob1",namespace="ns1"} 1
+				kube_job_failed{condition="unknown",job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_failed{condition="unknown",job_name="RunningJob1",namespace="ns1"} 0
 `,
 		},
 		{
@@ -184,6 +209,8 @@ func TestJobStore(t *testing.T) {
 					StartTime:      &metav1.Time{Time: FailedJob1StartTime},
 					Conditions: []v1batch.JobCondition{
 						{Type: v1batch.JobFailed, Status: v1.ConditionTrue},
+						{Type: v1batch.JobFailed, Status: v1.ConditionTrue, Reason: "BackoffLimitExceeded"},
+						{Type: v1batch.JobFailed, Status: v1.ConditionTrue, Reason: "DeadLineExceeded"},
 					},
 				},
 				Spec: v1batch.JobSpec{
@@ -194,9 +221,15 @@ func TestJobStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_job_owner{job_name="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
-				kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
-				kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
-				kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
+		        kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
+		        kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
+		        kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
+		        kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
+		        kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
+		        kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
+		        kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
+		        kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
+		        kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_info{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_labels{job_name="FailedJob1",label_app="example-failed-1",namespace="ns1"} 1
 				kube_job_spec_active_deadline_seconds{job_name="FailedJob1",namespace="ns1"} 900
@@ -207,6 +240,15 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="",status="false"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="",status="true"} 1
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="",status="unknown"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="false"} 0
+		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="true"} 1
+		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="unknown"} 0
+		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="false"} 0
+		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="true"} 1
+		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="unknown"} 0
 `,
 		},
 		{

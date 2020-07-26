@@ -99,16 +99,9 @@ func TestJobStore(t *testing.T) {
 					},
 				},
 				Status: v1batch.JobStatus{
-					Conditions:    []v1batch.JobCondition{
-						{
-							Type:               v1batch.JobFailed,
-							Status:             v1.ConditionTrue,
-							Reason:             "Evicted",
-						},
-						{
-							Type:               v1batch.JobFailed,
-							Status:             v1.ConditionFalse,
-						},
+					Conditions: []v1batch.JobCondition{
+						{Type: v1batch.JobFailed, Status: v1.ConditionTrue, Reason: "Evicted"},
+						{Type: v1batch.JobFailed, Status: v1.ConditionFalse},
 					},
 					Active:         1,
 					Failed:         0,

@@ -16,3 +16,4 @@
 | kube_job_complete | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
 | kube_job_failed | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
 | kube_job_created | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
+| kube_job_status_failed_reason | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; <br> `condition`=&lt;condition&gt; <br> `reason`=&lt;failure reason&gt; <br> `status`=&lt;status&gt; | STABLE |

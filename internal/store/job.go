@@ -307,6 +307,35 @@ var (
 				}
 			}),
 		},
+		{
+			Name: "kube_job_status_failed_reason",
+			Type: metric.Gauge,
+			Help: "The reason why the job failed its execution.",
+			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				var ms []*metric.Metric
+
+				for _, condition := range j.Status.Conditions {
+
+					if condition.Type != v1batch.JobFailed {
+						continue
+					}
+
+					conditionMetrics := addConditionMetrics(condition.Status)
+
+					for _, m := range conditionMetrics {
+						metric := m
+						metric.LabelKeys = []string{"condition", "reason", "status"}
+						metric.LabelValues = append([]string{string(condition.Type), condition.Reason}, metric.LabelValues...)
+
+						ms = append(ms, metric)
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
 	}
 )
 

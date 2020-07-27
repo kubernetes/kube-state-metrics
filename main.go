@@ -60,6 +60,8 @@ func main() {
 	opts := options.NewOptions()
 	opts.AddFlags()
 
+	ctx := context.Background()
+
 	err := opts.Parse()
 	if err != nil {
 		klog.Fatalf("Error: %s", err)
@@ -145,9 +147,9 @@ func main() {
 	)
 	// Run MetricsHandler
 	{
-		ctx, cancel := context.WithCancel(context.Background())
+		ctxMetricsHandler, cancel := context.WithCancel(ctx)
 		g.Add(func() error {
-			return m.Run(ctx)
+			return m.Run(ctxMetricsHandler)
 		}, func(error) {
 			cancel()
 		})
@@ -174,7 +176,7 @@ func main() {
 			klog.Infof("Starting kube-state-metrics self metrics server: %s", telemetryListenAddress)
 			return telemetryServer.Serve(telemetryLn)
 		}, func(error) {
-			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
 			telemetryServer.Shutdown(ctxShutDown)
 		})
@@ -185,7 +187,7 @@ func main() {
 			klog.Infof("Starting metrics server: %s", metricsServerListenAddress)
 			return metricsServer.Serve(metricsServerLn)
 		}, func(error) {
-			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
 			metricsServer.Shutdown(ctxShutDown)
 		})

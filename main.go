@@ -144,8 +144,8 @@ func main() {
 		opts.EnableGZIPEncoding,
 	)
 	// Run MetricsHandler
-	ctx, cancel := context.WithCancel(context.Background())
 	{
+		ctx, cancel := context.WithCancel(context.Background())
 		g.Add(func() error {
 			return m.Run(ctx)
 		}, func(error) {

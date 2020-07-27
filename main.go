@@ -24,6 +24,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
@@ -58,9 +59,6 @@ func (pl promLogger) Println(v ...interface{}) {
 func main() {
 	opts := options.NewOptions()
 	opts.AddFlags()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	err := opts.Parse()
 	if err != nil {
@@ -138,19 +136,20 @@ func main() {
 	)
 
 	var g run.Group
+
 	m := metricshandler.New(
 		opts,
 		kubeClient,
 		storeBuilder,
 		opts.EnableGZIPEncoding,
 	)
-
 	// Run MetricsHandler
+	ctx, cancel := context.WithCancel(context.Background())
 	{
 		g.Add(func() error {
 			return m.Run(ctx)
 		}, func(error) {
-			//cancel()
+			cancel()
 		})
 	}
 
@@ -175,7 +174,9 @@ func main() {
 			klog.Infof("Starting kube-state-metrics self metrics server: %s", telemetryListenAddress)
 			return telemetryServer.Serve(telemetryLn)
 		}, func(error) {
-			telemetryServer.Shutdown(ctx)
+			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+			defer cancel()
+			telemetryServer.Shutdown(ctxShutDown)
 		})
 	}
 	// Run Metrics server
@@ -184,7 +185,9 @@ func main() {
 			klog.Infof("Starting metrics server: %s", metricsServerListenAddress)
 			return metricsServer.Serve(metricsServerLn)
 		}, func(error) {
-			metricsServer.Shutdown(ctx)
+			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+			defer cancel()
+			metricsServer.Shutdown(ctxShutDown)
 		})
 	}
 

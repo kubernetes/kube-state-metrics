@@ -17,7 +17,7 @@ limitations under the License.
 package store
 
 import (
-	admissionregistration "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -37,7 +37,7 @@ var (
 			Name: "kube_validatingwebhookconfiguration_info",
 			Type: metric.Gauge,
 			Help: "Information about the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistration.ValidatingWebhookConfiguration) *metric.Family {
+			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -51,7 +51,7 @@ var (
 			Name: "kube_validatingwebhookconfiguration_created",
 			Type: metric.Gauge,
 			Help: "Unix creation timestamp.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistration.ValidatingWebhookConfiguration) *metric.Family {
+			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !vwc.CreationTimestamp.IsZero() {
@@ -68,7 +68,7 @@ var (
 			Name: "kube_validatingwebhookconfiguration_metadata_resource_version",
 			Type: metric.Gauge,
 			Help: "Resource version representing a specific version of the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistration.ValidatingWebhookConfiguration) *metric.Family {
+			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(vwc.ObjectMeta.ResourceVersion),
 				}
@@ -88,9 +88,9 @@ func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interfac
 	}
 }
 
-func wrapValidatingWebhookConfigurationFunc(f func(*admissionregistration.ValidatingWebhookConfiguration) *metric.Family) func(interface{}) *metric.Family {
+func wrapValidatingWebhookConfigurationFunc(f func(*admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		mutatingWebhookConfiguration := obj.(*admissionregistration.ValidatingWebhookConfiguration)
+		mutatingWebhookConfiguration := obj.(*admissionregistrationv1.ValidatingWebhookConfiguration)
 
 		metricFamily := f(mutatingWebhookConfiguration)
 

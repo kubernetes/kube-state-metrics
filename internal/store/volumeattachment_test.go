@@ -19,9 +19,8 @@ package store
 import (
 	"testing"
 
-	storagev1beta1 "k8s.io/api/storage/v1beta1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 )
 
@@ -45,7 +44,7 @@ func TestVolumeAttachmentStore(t *testing.T) {
 		volumename = "pvc-44f6ff3f-ba9b-49c4-9b95-8b01c4bd4bab"
 		cases      = []generateMetricsTestCase{
 			{
-				Obj: &storagev1beta1.VolumeAttachment{
+				Obj: &storagev1.VolumeAttachment{
 					ObjectMeta: metav1.ObjectMeta{
 						Generation: 2,
 						Name:       "csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224",
@@ -53,15 +52,15 @@ func TestVolumeAttachmentStore(t *testing.T) {
 							"app": "foobar",
 						},
 					},
-					Spec: storagev1beta1.VolumeAttachmentSpec{
+					Spec: storagev1.VolumeAttachmentSpec{
 						Attacher: "cinder.csi.openstack.org",
 						NodeName: "node1",
-						Source: storagev1beta1.VolumeAttachmentSource{
+						Source: storagev1.VolumeAttachmentSource{
 							PersistentVolumeName: &volumename,
 							InlineVolumeSpec:     nil,
 						},
 					},
-					Status: storagev1beta1.VolumeAttachmentStatus{
+					Status: storagev1.VolumeAttachmentStatus{
 						Attached: true,
 						AttachmentMetadata: map[string]string{
 							"DevicePath": "/dev/sdd",

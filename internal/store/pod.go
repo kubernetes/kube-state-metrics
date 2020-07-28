@@ -81,6 +81,27 @@ var (
 						Value:       float64((p.Status.StartTime).Unix()),
 					})
 				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		},
+		{
+			Name: "kube_pod_container_state_started",
+			Type: metric.Gauge,
+			Help: "Start time in unix timestamp for a pod container.",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				for _, cs := range p.Status.ContainerStatuses {
+					if cs.State.Running != nil {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"container"},
+							LabelValues: []string{cs.Name},
+							Value:       float64((cs.State.Running.StartedAt).Unix()),
+						})
+					}
+				}
 
 				return &metric.Family{
 					Metrics: ms,

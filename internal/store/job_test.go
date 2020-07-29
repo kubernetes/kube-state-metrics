@@ -237,11 +237,11 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="",status="true"} 1
 				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="",status="unknown"} 0
 				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="false"} 0
-		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="true"} 1
-		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="unknown"} 0
-		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="false"} 0
-		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="true"} 1
-		        kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="unknown"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="true"} 1
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded",status="unknown"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="false"} 0
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="true"} 1
+				kube_job_status_failed_reason{condition="Failed",job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded",status="unknown"} 0
 `,
 		},
 		{

@@ -60,12 +60,13 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.13** | **Kubernetes 1.14** |  **Kubernetes 1.15** |  **Kubernetes 1.16** |  **Kubernetes 1.17** |
-|--------------------|---------------------|---------------------|----------------------|----------------------|----------------------|
-| **v1.6.0**         |         ✓           |         -           |          -           |          -           |          -           |
-| **v1.7.2**         |         ✓           |         ✓           |          -           |          -           |          -           |
-| **v1.8.0**         |         ✓           |         ✓           |          ✓           |          -           |          -           |
-| **v1.9.5**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
+| kube-state-metrics | **Kubernetes 1.12** | **Kubernetes 1.13** | **Kubernetes 1.14** |  **Kubernetes 1.15** |  **Kubernetes 1.16** |
+|--------------------|---------------------|---------------------|---------------------|----------------------|----------------------|
+| **v1.5.0**         |         ✓           |         -           |         -           |          -           |          -           |
+| **v1.6.0**         |         ✓           |         ✓           |         -           |          -           |          -           |
+| **v1.7.2**         |         ✓           |         ✓           |         ✓           |          -           |          -           |
+| **v1.8.0**         |         ✓           |         ✓           |         ✓           |          ✓           |          -           |
+| **v1.9.7**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
 | **master**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
@@ -78,8 +79,8 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v1.9.5`
-* `k8s.gcr.io/kube-state-metrics:v1.9.5`
+* `quay.io/coreos/kube-state-metrics:v1.9.7`
+* `k8s.gcr.io/kube-state-metrics:v1.9.7`
 
 **Note**:
 The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on

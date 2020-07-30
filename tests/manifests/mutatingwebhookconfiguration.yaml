@@ -1,4 +1,4 @@
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: example-mutatingwebhookconfiguration
@@ -11,6 +11,9 @@ webhooks:
       namespace: apples
       path: /apple
     caBundle: "YXBwbGVz"
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
+  timeoutSeconds: 5
   namespaceSelector:
     matchExpressions:
     - key: production

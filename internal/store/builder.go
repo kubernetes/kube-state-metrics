@@ -24,7 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	admissionregistration "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -239,7 +239,7 @@ func (b *Builder) buildLimitRangeStore() cache.Store {
 }
 
 func (b *Builder) buildMutatingWebhookConfigurationStore() cache.Store {
-	return b.buildStoreFunc(mutatingWebhookConfigurationMetricFamilies, &admissionregistration.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch)
+	return b.buildStoreFunc(mutatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch)
 }
 
 func (b *Builder) buildNamespaceStore() cache.Store {
@@ -303,7 +303,7 @@ func (b *Builder) buildCsrStore() cache.Store {
 }
 
 func (b *Builder) buildValidatingWebhookConfigurationStore() cache.Store {
-	return b.buildStoreFunc(validatingWebhookConfigurationMetricFamilies, &admissionregistration.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch)
+	return b.buildStoreFunc(validatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch)
 }
 
 func (b *Builder) buildVolumeAttachmentStore() cache.Store {

@@ -563,7 +563,7 @@ func configMap(client *fake.Clientset, index int) error {
 			UID:             types.UID("abc-" + i),
 		},
 	}
-	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(&configMap)
+	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(context.TODO(), &configMap, metav1.CreateOptions{})
 	return err
 }
 
@@ -577,7 +577,7 @@ func service(client *fake.Clientset, index int) error {
 			UID:             types.UID("abc-" + i),
 		},
 	}
-	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(&service)
+	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})
 	return err
 }
 
@@ -660,6 +660,6 @@ func pod(client *fake.Clientset, index int) error {
 		},
 	}
 
-	_, err := client.CoreV1().Pods(metav1.NamespaceDefault).Create(&pod)
+	_, err := client.CoreV1().Pods(metav1.NamespaceDefault).Create(context.TODO(), &pod, metav1.CreateOptions{})
 	return err
 }

@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -104,10 +106,10 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(interface{
 func createLeaseListWatch(kubeClient clientset.Interface, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoordinationV1().Leases("kube-node-lease").List(opts)
+			return kubeClient.CoordinationV1().Leases("kube-node-lease").List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoordinationV1().Leases("kube-node-lease").Watch(opts)
+			return kubeClient.CoordinationV1().Leases("kube-node-lease").Watch(context.TODO(), opts)
 		},
 	}
 }

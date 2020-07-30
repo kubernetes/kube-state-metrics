@@ -44,7 +44,7 @@ func TestAsLibrary(t *testing.T) {
 		},
 	}
 
-	_, err := kubeClient.CoreV1().Services(metav1.NamespaceDefault).Create(&service)
+	_, err := kubeClient.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,10 +68,10 @@ func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore
 
 	lw := cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).List(opts)
+			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).Watch(opts)
+			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).Watch(context.TODO(), opts)
 		},
 	}
 

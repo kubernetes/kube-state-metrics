@@ -126,7 +126,7 @@ func (b *Builder) WithAllowDenyList(l ksmtypes.AllowDenyLister) {
 	b.allowDenyList = l
 }
 
-// WithGenerateStoreFunc configures a constom generate store function
+// WithGenerateStoreFunc configures a custom generate store function
 func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
 	b.buildStoreFunc = f
 }

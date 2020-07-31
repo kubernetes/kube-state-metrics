@@ -33,7 +33,7 @@ type Family struct {
 	Metrics []*Metric
 }
 
-// Inspect use to instact the inside of a Family
+// Inspect use to inspect the inside of a Family
 func (f Family) Inspect(inspect func(Family)) {
 	inspect(f)
 }

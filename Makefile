@@ -81,43 +81,39 @@ test-benchmark-compare: $(BENCHCMP_BINARY)
 
 all: all-container
 
+# Container build for multiple architectures as defined in ALL_ARCH
+
+container: container-$(ARCH)
+
+container-%:
+	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOARCH=$* .
+
 sub-container-%:
 	$(MAKE) --no-print-directory ARCH=$* container
 
-sub-push-%:
-	$(MAKE) --no-print-directory ARCH=$* push
-
 all-container: $(addprefix sub-container-,$(ALL_ARCH))
 
-all-push: $(addprefix sub-push-,$(ALL_ARCH))
+# Container push, push is the target to push for multiple architectures as defined in ALL_ARCH
 
-container: .container-$(ARCH)
-.container-$(ARCH):
-	${DOCKER_CLI} build -t $(MULTI_ARCH_IMG):$(TAG) --build-arg GOARCH=$(ARCH) .
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
+push: $(addprefix sub-push-,$(ALL_ARCH)) push-multi-arch;
 
-ifeq ($(ARCH), amd64)
-	# Adding check for amd64
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
-endif
+sub-push-%: container-% do-push-% ;
+
+do-push-%:
+	${DOCKER_CLI} push $(IMAGE)-$*:$(TAG)
+
+push-multi-arch:
+	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:${TAG}; done
+	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
 quay-push: .quay-push-$(ARCH)
-.quay-push-$(ARCH): .container-$(ARCH)
+.quay-push-$(ARCH): container-$(ARCH)
 	${DOCKER_CLI} push $(MULTI_ARCH_IMG):$(TAG)
 	${DOCKER_CLI} push $(MULTI_ARCH_IMG):latest
 ifeq ($(ARCH), amd64)
 	${DOCKER_CLI} push $(IMAGE):$(TAG)
 	${DOCKER_CLI} push $(IMAGE):latest
-endif
-
-push: .push-$(ARCH)
-.push-$(ARCH): .container-$(ARCH)
-	gcloud docker -- push $(MULTI_ARCH_IMG):$(TAG)
-	gcloud docker -- push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	gcloud docker -- push $(IMAGE):$(TAG)
-	gcloud docker -- push $(IMAGE):latest
 endif
 
 clean:
@@ -160,4 +156,4 @@ install-tools:
 	@echo Installing tools from tools.go
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd

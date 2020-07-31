@@ -21,6 +21,8 @@ HAS_GOLANGCI := $(shell command -v golangci-lint)
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
+export DOCKER_CLI_EXPERIMENTAL=enabled
+
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
 	go mod verify

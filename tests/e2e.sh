@@ -17,9 +17,15 @@
 set -e
 set -o pipefail
 
+case $(uname -m) in
+	aarch64)	ARCH="arm64";;
+	x86_64)		ARCH="amd64";;
+	*)		ARCH="$(uname -m)";;
+esac
+
 KUBERNETES_VERSION=v1.17.3
 KUBE_STATE_METRICS_LOG_DIR=./log
-KUBE_STATE_METRICS_IMAGE_NAME='quay.io/coreos/kube-state-metrics'
+KUBE_STATE_METRICS_IMAGE_NAME="quay.io/coreos/kube-state-metrics-${ARCH}"
 PROMETHEUS_VERSION=2.12.0
 E2E_SETUP_MINIKUBE=${E2E_SETUP_MINIKUBE:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
@@ -45,13 +51,13 @@ function finish() {
 }
 
 function setup_minikube() {
-    curl -sLo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-"${OS}"-amd64 \
+    curl -sLo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-"${OS}"-"${ARCH}" \
         && chmod +x minikube \
         && ${SUDO} mv minikube /usr/local/bin/
 }
 
 function setup_kubectl() {
-    curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/"$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"/bin/"${OS}"/amd64/kubectl \
+    curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/"$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"/bin/"${OS}"/"${ARCH}"/kubectl \
         && chmod +x kubectl \
         && ${SUDO} mv kubectl /usr/local/bin/
 }
@@ -115,20 +121,17 @@ set -e
 
 kubectl version
 
-# Build binary
-make build
-
 # ensure that we build docker image in minikube
 [[ "$MINIKUBE_DRIVER" != "none" ]] && eval "$(minikube docker-env "${MINIKUBE_PROFILE_ARG}")" && export DOCKER_CLI='docker'
 
 # query kube-state-metrics image tag
 make container
 docker images -a
-KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep 'quay.io/coreos/kube-state-metrics'|grep -v 'latest'|awk '{print $2}'|sort -u)
+KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep "${KUBE_STATE_METRICS_IMAGE_NAME}" |grep -v 'latest'|awk '{print $2}'|sort -u)
 echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"
 
 # update kube-state-metrics image tag in deployment.yaml
-sed -i.bak "s|${KUBE_STATE_METRICS_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
+sed -i.bak "s|${KUBE_STATE_METRICS_IMAGE_NAME%-*}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
 cat ./examples/standard/deployment.yaml
 
 trap finish EXIT

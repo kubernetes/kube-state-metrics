@@ -1,0 +1,64 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  E2E_SETUP_KIND: yes
+  E2E_SETUP_KUBECTL: yes
+  SUDO: sudo
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Install CI
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Lint
+      run: |
+        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
+        make lint
+
+    - name: Validate generated manifests
+      run: |
+        make validate-manifests
+
+    - name: Validate vendor is in sync with go modules
+      run: |
+        make validate-modules
+
+    - name: Check that all metrics are documented
+      run: |
+        make doccheck
+
+    - name: Unit tests
+      run: |
+        make test-unit
+
+    - name: Benchmark tests
+      run: |
+        make test-benchmark-compare
+
+    - name: Build
+      run: |
+        make build
+
+    - name: End-to-end tests
+      run: |
+        REGISTRY="quay.io/coreos" make e2e

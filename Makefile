@@ -12,12 +12,7 @@ BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.14.6
-FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
-BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.19.1
-HAS_GOLANGCI := $(shell which golangci-lint)
-
+GO_VERSION = 1.14.7
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
@@ -43,9 +38,6 @@ licensecheck:
        fi
 
 lint: shellcheck licensecheck
-ifndef HAS_GOLANGCI
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin ${GOLANGCI_VERSION}
-endif
 	golangci-lint run
 
 doccheck: generate
@@ -77,7 +69,8 @@ shellcheck:
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
-test-benchmark-compare: $(BENCHCMP_BINARY)
+test-benchmark-compare:
+	@git fetch
 	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
@@ -128,7 +121,7 @@ e2e:
 generate: build-local
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
-	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+	embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
 validate-manifests: examples
 	@git diff --exit-code

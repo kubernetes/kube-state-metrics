@@ -12,7 +12,7 @@ BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.14.6
+GO_VERSION = 1.14.7
 FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
 BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
 GOLANGCI_VERSION := v1.29.0
@@ -88,7 +88,7 @@ all: all-container
 container: container-$(ARCH)
 
 container-%:
-	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOARCH=$* .
+	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
 
 sub-container-%:
 	$(MAKE) --no-print-directory ARCH=$* container

@@ -81,7 +81,7 @@ all: all-container
 container: container-$(ARCH)
 
 container-%:
-	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOARCH=$* .
+	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
 
 sub-container-%:
 	$(MAKE) --no-print-directory ARCH=$* container

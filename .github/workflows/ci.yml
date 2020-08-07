@@ -1,10 +1,17 @@
-name: Build
+name: Kube-state-metrics CI checks
 
 on:
   push:
-    branches: [ master ]
+    branches:
+    - master
+    - release*
+    tags:
+    - v1.*
+    - v2.*
   pull_request:
-    branches: [ master ]
+    branches:
+    - master
+    - release*
 
 env:
   E2E_SETUP_KIND: yes
@@ -12,8 +19,8 @@ env:
   SUDO: sudo
 
 jobs:
-  build:
-    name: Build
+  job1:
+    name: Run Go Lint
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -25,7 +32,7 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Install CI
+    - name: Setup environment
       run: |
         go get -v -t -d ./...
         make install-tools
@@ -35,29 +42,155 @@ jobs:
         curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
         make lint
 
+  job2:
+    name: Validate Manifests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
     - name: Validate generated manifests
       run: |
         make validate-manifests
+
+  job3:
+    name: Validate Go Modules
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
 
     - name: Validate vendor is in sync with go modules
       run: |
         make validate-modules
 
+  job4:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
     - name: Check that all metrics are documented
       run: |
         make doccheck
+
+  job5:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
 
     - name: Unit tests
       run: |
         make test-unit
 
+  job6:
+    name: Run Benchmark Tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
     - name: Benchmark tests
       run: |
         make test-benchmark-compare
 
+  job7:
+    name: Build Kube-State-Metrics
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
     - name: Build
       run: |
         make build
+
+  job8:
+    name: Run E2E tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
 
     - name: End-to-end tests
       run: |

@@ -36,11 +36,12 @@ var (
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 
 	serviceMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_service_info",
-			Type: metric.Gauge,
-			Help: "Information about service.",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_service_info",
+			"Information about service.",
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
 					LabelKeys:   []string{"cluster_ip", "external_name", "load_balancer_ip"},
 					LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
@@ -48,12 +49,13 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: "kube_service_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_service_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if !s.CreationTimestamp.IsZero() {
 					m := metric.Metric{
 						LabelKeys:   nil,
@@ -64,12 +66,13 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{}}
 			}),
-		},
-		{
-			Name: "kube_service_spec_type",
-			Type: metric.Gauge,
-			Help: "Type about service.",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_service_spec_type",
+			"Type about service.",
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
 
 					LabelKeys:   []string{"type"},
@@ -78,12 +81,13 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: descServiceLabelsName,
-			Type: metric.Gauge,
-			Help: descServiceLabelsHelp,
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			descServiceLabelsName,
+			descServiceLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 				m := metric.Metric{
 
@@ -93,12 +97,13 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: "kube_service_spec_external_ip",
-			Type: metric.Gauge,
-			Help: "Service external ips. One series for each ip",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_service_spec_external_ip",
+			"Service external ips. One series for each ip",
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if len(s.Spec.ExternalIPs) == 0 {
 					return &metric.Family{
 						Metrics: []*metric.Metric{},
@@ -119,12 +124,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_service_status_load_balancer_ingress",
-			Type: metric.Gauge,
-			Help: "Service load balancer ingress status",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_service_status_load_balancer_ingress",
+			"Service load balancer ingress status",
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if len(s.Status.LoadBalancer.Ingress) == 0 {
 					return &metric.Family{
 						Metrics: []*metric.Metric{},
@@ -145,7 +151,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 

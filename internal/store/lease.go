@@ -34,11 +34,12 @@ var (
 	descLeaseLabelsDefaultLabels = []string{"lease"}
 
 	leaseMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_lease_owner",
-			Type: metric.Gauge,
-			Help: "Information about the Lease's owner.",
-			GenerateFunc: wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_lease_owner",
+			"Information about the Lease's owner.",
+			metric.Gauge,
+			"",
+			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name"}
 
 				owners := l.GetOwnerReferences()
@@ -67,12 +68,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_lease_renew_time",
-			Type: metric.Gauge,
-			Help: "Kube lease renew time.",
-			GenerateFunc: wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_lease_renew_time",
+			"Kube lease renew time.",
+			metric.Gauge,
+			"",
+			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !l.Spec.RenewTime.IsZero() {
@@ -84,7 +86,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 

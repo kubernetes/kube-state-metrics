@@ -17,6 +17,7 @@ limitations under the License.
 package generator
 
 import (
+	"fmt"
 	"strings"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -24,11 +25,29 @@ import (
 
 // FamilyGenerator provides everything needed to generate a metric family with a
 // Kubernetes object.
+// DeprecatedVersion is defined only if the metric for which this options applies is,
+// in fact, deprecated.
 type FamilyGenerator struct {
-	Name         string
-	Help         string
-	Type         metric.Type
-	GenerateFunc func(obj interface{}) *metric.Family
+	Name              string
+	Help              string
+	Type              metric.Type
+	DeprecatedVersion string
+	GenerateFunc      func(obj interface{}) *metric.Family
+}
+
+// NewFamilyGenerator creates new FamilyGenerator instances.
+func NewFamilyGenerator(name string, help string, metricType metric.Type, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+	f := &FamilyGenerator{
+		Name:              name,
+		Type:              metricType,
+		Help:              help,
+		DeprecatedVersion: deprecatedVersion,
+		GenerateFunc:      generateFunc,
+	}
+	if deprecatedVersion != "" {
+		f.Help = fmt.Sprintf("(Deprecated since %s) %s", deprecatedVersion, help)
+	}
+	return f
 }
 
 // Generate calls the FamilyGenerator.GenerateFunc and gives the family its

@@ -35,11 +35,12 @@ var (
 	descValidatingWebhookConfigurationDefaultLabels = []string{"namespace", "validatingwebhookconfiguration"}
 
 	validatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_validatingwebhookconfiguration_info",
-			Type: metric.Gauge,
-			Help: "Information about the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_info",
+			"Information about the ValidatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -48,12 +49,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_validatingwebhookconfiguration_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_created",
+			"Unix creation timestamp.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !vwc.CreationTimestamp.IsZero() {
@@ -65,17 +67,18 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_validatingwebhookconfiguration_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_metadata_resource_version",
+			"Resource version representing a specific version of the ValidatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(vwc.ObjectMeta.ResourceVersion),
 				}
 			}),
-		},
+		),
 	}
 )
 

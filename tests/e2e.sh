@@ -45,7 +45,7 @@ function finish() {
 }
 
 function setup_kind() {
-    curl -sLo kind https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-"${OS}"-amd64 \
+    curl -sLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-${OS}-${ARCH}" \
         && chmod +x kind \
         && ${SUDO} mv kind /usr/local/bin/
 }

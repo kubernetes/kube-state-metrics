@@ -17,7 +17,8 @@
               severity: 'critical',
             },
             annotations: {
-              message: 'kube-state-metrics is experiencing errors at an elevated rate in list operations. This is likely causing it to not be able to expose metrics about Kubernetes objects correctly or at all.',
+              summary: 'kube-state-metrics is experiencing errors in list operations.',
+              description: 'kube-state-metrics is experiencing errors at an elevated rate in list operations. This is likely causing it to not be able to expose metrics about Kubernetes objects correctly or at all.',
             },
           },
           {
@@ -33,7 +34,8 @@
               severity: 'critical',
             },
             annotations: {
-              message: 'kube-state-metrics is experiencing errors at an elevated rate in watch operations. This is likely causing it to not be able to expose metrics about Kubernetes objects correctly or at all.',
+              summary: 'kube-state-metrics is experiencing errors in watch operations.',
+              description: 'kube-state-metrics is experiencing errors at an elevated rate in watch operations. This is likely causing it to not be able to expose metrics about Kubernetes objects correctly or at all.',
             },
           },
         ],

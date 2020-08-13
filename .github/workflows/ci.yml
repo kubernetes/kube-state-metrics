@@ -1,4 +1,4 @@
-name: Kube-state-metrics CI checks
+name: continuous-integration
 
 on:
   push:

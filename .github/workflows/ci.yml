@@ -20,7 +20,7 @@ env:
 
 jobs:
   job1:
-    name: Run Go Lint
+    name: ci/go-lint
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -43,7 +43,7 @@ jobs:
         make lint
 
   job2:
-    name: Validate Manifests
+    name: ci/validate-manifests
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -65,7 +65,7 @@ jobs:
         make validate-manifests
 
   job3:
-    name: Validate Go Modules
+    name: ci/validate-go-modules
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -87,7 +87,7 @@ jobs:
         make validate-modules
 
   job4:
-    name: Validate Documentation
+    name: ci/validate-docs
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -109,7 +109,7 @@ jobs:
         make doccheck
 
   job5:
-    name: Run Unit Tests
+    name: ci/unit-tests
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -131,7 +131,7 @@ jobs:
         make test-unit
 
   job6:
-    name: Run Benchmark Tests
+    name: ci/benchmark-tests
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -153,7 +153,7 @@ jobs:
         make test-benchmark-compare
 
   job7:
-    name: Build Kube-State-Metrics
+    name: ci/build-kube-state-merics
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -175,7 +175,7 @@ jobs:
         make build
 
   job8:
-    name: Run E2E tests
+    name: ci/e2e-tests
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x

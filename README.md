@@ -1,6 +1,6 @@
 # Overview
 
-[![Build Status](https://github.com/kubernetes/kube-state-metrics/workflows/Build/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions)
+[![Build Status](https://github.com/kubernetes/kube-state-metrics/workflows/continuous-integration/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc](https://godoc.org/github.com/kubernetes/kube-state-metrics?status.svg)](https://godoc.org/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics is a simple service that listens to the Kubernetes API

@@ -224,8 +224,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						FC: &v1.FCVolumeSource{
-							Lun: int32ptr(123),
-							TargetWWNs: []string{"0123456789abcdef","abcdef0123456789"},
+							Lun:        int32ptr(123),
+							TargetWWNs: []string{"0123456789abcdef", "abcdef0123456789"},
 						},
 					},
 				},
@@ -248,7 +248,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						FC: &v1.FCVolumeSource{
-							WWIDs: []string{"0123456789abcdef","abcdef0123456789"},
+							WWIDs: []string{"0123456789abcdef", "abcdef0123456789"},
 						},
 					},
 				},
@@ -272,8 +272,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						ISCSI: &v1.ISCSIPersistentVolumeSource{
 							TargetPortal: "1.2.3.4:3260",
-							IQN: "iqn.my.test.server.target00",
-							Lun: int32(123),
+							IQN:          "iqn.my.test.server.target00",
+							Lun:          int32(123),
 						},
 					},
 				},
@@ -297,7 +297,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						NFS: &v1.NFSVolumeSource{
 							Server: "1.2.3.4",
-							Path: "/myPath",
+							Path:   "/myPath",
 						},
 					},
 				},

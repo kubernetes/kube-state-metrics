@@ -117,17 +117,17 @@ var (
 				case p.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil:
 					ebsVolumeID = p.Spec.PersistentVolumeSource.AWSElasticBlockStore.VolumeID
 				case p.Spec.PersistentVolumeSource.FC != nil:
-					if (p.Spec.PersistentVolumeSource.FC.Lun != nil) {
+					if p.Spec.PersistentVolumeSource.FC.Lun != nil {
 						fcLun = strconv.FormatInt(int64(*p.Spec.PersistentVolumeSource.FC.Lun), 10)
 					}
 					for _, wwn := range p.Spec.PersistentVolumeSource.FC.TargetWWNs {
-						if (len(fcTargetWWNs) != 0) {
+						if len(fcTargetWWNs) != 0 {
 							fcTargetWWNs += ","
 						}
 						fcTargetWWNs += wwn
 					}
 					for _, wwid := range p.Spec.PersistentVolumeSource.FC.WWIDs {
-						if (len(fcWWIDs) != 0) {
+						if len(fcWWIDs) != 0 {
 							fcWWIDs += ","
 						}
 						fcWWIDs += wwid

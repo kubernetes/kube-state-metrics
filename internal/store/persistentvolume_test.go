@@ -175,6 +175,25 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+					Labels: map[string]string{
+						"fc_lun": "456",
+					},
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
+					kube_persistentvolume_info{ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",persistentvolume="test-pv-available",storageclass=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_info"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{

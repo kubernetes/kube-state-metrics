@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
@@ -28,8 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
-	"strconv"
 )
 
 var (

@@ -19,7 +19,7 @@ env:
   SUDO: sudo
 
 jobs:
-  job1:
+  ci/go-lint:
     name: ci/go-lint
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +42,7 @@ jobs:
         curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
         make lint
 
-  job2:
+  ci/validate-manifests:
     name: ci/validate-manifests
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +64,7 @@ jobs:
       run: |
         make validate-manifests
 
-  job3:
+  ci/validate-go-modules:
     name: ci/validate-go-modules
     runs-on: ubuntu-latest
     steps:
@@ -86,7 +86,7 @@ jobs:
       run: |
         make validate-modules
 
-  job4:
+  ci/validate-docs:
     name: ci/validate-docs
     runs-on: ubuntu-latest
     steps:
@@ -108,7 +108,7 @@ jobs:
       run: |
         make doccheck
 
-  job5:
+  ci/unit-tests:
     name: ci/unit-tests
     runs-on: ubuntu-latest
     steps:
@@ -130,7 +130,7 @@ jobs:
       run: |
         make test-unit
 
-  job6:
+  ci/benchmark-tests:
     name: ci/benchmark-tests
     runs-on: ubuntu-latest
     steps:
@@ -152,8 +152,8 @@ jobs:
       run: |
         make test-benchmark-compare
 
-  job7:
-    name: ci/build-kube-state-merics
+  ci/build-kube-state-metrics:
+    name: ci/build-kube-state-metrics
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -174,7 +174,7 @@ jobs:
       run: |
         make build
 
-  job8:
+  ci/e2e-tests:
     name: ci/e2e-tests
     runs-on: ubuntu-latest
     steps:

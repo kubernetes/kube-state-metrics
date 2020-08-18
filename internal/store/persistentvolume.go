@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
@@ -107,12 +108,36 @@ var (
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				var gcePDDiskName, ebsVolumeID string
+				var gcePDDiskName, ebsVolumeID, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, nfsServer, nfsPath string
+
 				switch {
 				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
 					gcePDDiskName = p.Spec.PersistentVolumeSource.GCEPersistentDisk.PDName
 				case p.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil:
 					ebsVolumeID = p.Spec.PersistentVolumeSource.AWSElasticBlockStore.VolumeID
+				case p.Spec.PersistentVolumeSource.FC != nil:
+					if p.Spec.PersistentVolumeSource.FC.Lun != nil {
+						fcLun = strconv.FormatInt(int64(*p.Spec.PersistentVolumeSource.FC.Lun), 10)
+					}
+					for _, wwn := range p.Spec.PersistentVolumeSource.FC.TargetWWNs {
+						if len(fcTargetWWNs) != 0 {
+							fcTargetWWNs += ","
+						}
+						fcTargetWWNs += wwn
+					}
+					for _, wwid := range p.Spec.PersistentVolumeSource.FC.WWIDs {
+						if len(fcWWIDs) != 0 {
+							fcWWIDs += ","
+						}
+						fcWWIDs += wwid
+					}
+				case p.Spec.PersistentVolumeSource.ISCSI != nil:
+					iscsiTargetPortal = p.Spec.PersistentVolumeSource.ISCSI.TargetPortal
+					iscsiIQN = p.Spec.PersistentVolumeSource.ISCSI.IQN
+					iscsiLun = strconv.FormatInt(int64(p.Spec.PersistentVolumeSource.ISCSI.Lun), 10)
+				case p.Spec.PersistentVolumeSource.NFS != nil:
+					nfsServer = p.Spec.PersistentVolumeSource.NFS.Server
+					nfsPath = p.Spec.PersistentVolumeSource.NFS.Path
 				}
 
 				return &metric.Family{
@@ -122,11 +147,27 @@ var (
 								"storageclass",
 								"gce_persistent_disk_name",
 								"ebs_volume_id",
+								"fc_wwids",
+								"fc_lun",
+								"fc_target_wwns",
+								"iscsi_target_portal",
+								"iscsi_iqn",
+								"iscsi_lun",
+								"nfs_server",
+								"nfs_path",
 							},
 							LabelValues: []string{
 								p.Spec.StorageClassName,
 								gcePDDiskName,
 								ebsVolumeID,
+								fcWWIDs,
+								fcLun,
+								fcTargetWWNs,
+								iscsiTargetPortal,
+								iscsiIQN,
+								iscsiLun,
+								nfsServer,
+								nfsPath,
 							},
 							Value: 1,
 						},

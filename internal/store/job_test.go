@@ -70,7 +70,7 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_active gauge
 		# HELP kube_job_status_completion_time CompletionTime represents time when the job was completed.
 		# TYPE kube_job_status_completion_time gauge
-		# HELP kube_job_status_failed The number of pods which reached Phase Failed & their failure reasons.
+		# HELP kube_job_status_failed The number of pods which reached Phase Failed & their failure reason.
 		# TYPE kube_job_status_failed gauge
 		# HELP kube_job_status_start_time StartTime represents time when the job was acknowledged by the Job Manager.
 		# TYPE kube_job_status_start_time gauge

@@ -34,6 +34,7 @@ var (
 	descJobLabelsName          = "kube_job_labels"
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
+	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
 
 	jobMetricFamilies = []generator.FamilyGenerator{
 		{
@@ -156,14 +157,47 @@ var (
 		{
 			Name: "kube_job_status_failed",
 			Type: metric.Gauge,
-			Help: "The number of pods which reached Phase Failed.",
+			Help: "The number of pods which reached Phase Failed & their failure reasons.",
 			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(j.Status.Failed),
+				var ms []*metric.Metric
+
+				if float64(j.Status.Failed) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
+								Value: float64(j.Status.Failed),
+							},
 						},
-					},
+					}
+				}
+
+				for _, condition := range j.Status.Conditions {
+
+					if condition.Type == v1batch.JobFailed {
+						reasonKnown := false
+						for _, reason := range jobFailureReasons {
+							reasonKnown = reasonKnown || failureReason(&condition, reason)
+
+							// for known reasons
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"condition", "reason"},
+								LabelValues: []string{string(condition.Type), reason},
+								Value:       boolFloat64(failureReason(&condition, reason)),
+							})
+						}
+						// for unknown reasons
+						if !reasonKnown {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"condition", "reason"},
+								LabelValues: []string{string(condition.Type), ""},
+								Value:       float64(j.Status.Failed),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		},
@@ -307,35 +341,6 @@ var (
 				}
 			}),
 		},
-		{
-			Name: "kube_job_status_failed_reason",
-			Type: metric.Gauge,
-			Help: "The reason why the job failed its execution.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				var ms []*metric.Metric
-
-				for _, condition := range j.Status.Conditions {
-
-					if condition.Type != v1batch.JobFailed {
-						continue
-					}
-
-					conditionMetrics := addConditionMetrics(condition.Status)
-
-					for _, m := range conditionMetrics {
-						metric := m
-						metric.LabelKeys = []string{"condition", "reason", "status"}
-						metric.LabelValues = append([]string{string(condition.Type), condition.Reason}, metric.LabelValues...)
-
-						ms = append(ms, metric)
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
 	}
 )
 
@@ -363,4 +368,11 @@ func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListerW
 			return kubeClient.BatchV1().Jobs(ns).Watch(opts)
 		},
 	}
+}
+
+func failureReason(jc *v1batch.JobCondition, reason string) bool {
+	if jc == nil {
+		return false
+	}
+	return jc.Reason == reason
 }

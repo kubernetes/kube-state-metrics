@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"strings"
 
 	"k8s.io/kube-state-metrics/pkg/constant"
@@ -37,11 +38,12 @@ var (
 	descNodeLabelsDefaultLabels = []string{"node"}
 
 	nodeMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_node_info",
-			Type: metric.Gauge,
-			Help: "Information about a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_node_info",
+			"Information about a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				labelKeys := []string{
 					"kernel_version",
 					"os_image",
@@ -80,12 +82,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_node_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !n.CreationTimestamp.IsZero() {
@@ -99,12 +102,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: descNodeLabelsName,
-			Type: metric.Gauge,
-			Help: descNodeLabelsHelp,
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			descNodeLabelsName,
+			descNodeLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -116,12 +120,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_node_role",
-			Type: metric.Gauge,
-			Help: "The role of a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_role",
+			"The role of a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				const prefix = "node-role.kubernetes.io/"
 				ms := []*metric.Metric{}
 				for lbl := range n.Labels {
@@ -137,12 +142,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_node_spec_unschedulable",
-			Type: metric.Gauge,
-			Help: "Whether a node can schedule new pods.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_spec_unschedulable",
+			"Whether a node can schedule new pods.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -151,12 +157,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_node_spec_taint",
-			Type: metric.Gauge,
-			Help: "The taint of a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_spec_taint",
+			"The taint of a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := make([]*metric.Metric, len(n.Spec.Taints))
 
 				for i, taint := range n.Spec.Taints {
@@ -174,16 +181,17 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 		// This all-in-one metric family contains all conditions for extensibility.
 		// Third party plugin may report customized condition for cluster node
 		// (e.g. node-problem-detector), and Kubernetes may add new core
 		// conditions in future.
-		{
-			Name: "kube_node_status_condition",
-			Type: metric.Gauge,
-			Help: "The condition of a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_node_status_condition",
+			"The condition of a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
 
 				// Collect node conditions and while default to false.
@@ -204,12 +212,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_node_status_capacity",
-			Type: metric.Gauge,
-			Help: "The capacity for different resources of a node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_status_capacity",
+			"The capacity for different resources of a node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
 
 				capacity := n.Status.Capacity
@@ -282,12 +291,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_node_status_allocatable",
-			Type: metric.Gauge,
-			Help: "The allocatable for different resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_status_allocatable",
+			"The allocatable for different resources of a node that are available for scheduling.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
 
 				allocatable := n.Status.Allocatable
@@ -361,7 +371,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -383,10 +393,10 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 func createNodeListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Nodes().List(opts)
+			return kubeClient.CoreV1().Nodes().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Nodes().Watch(opts)
+			return kubeClient.CoreV1().Nodes().Watch(context.TODO(), opts)
 		},
 	}
 }

@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,11 +34,12 @@ var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
 	resourceQuotaMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_resourcequota_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_resourcequota_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -50,12 +53,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_resourcequota",
-			Type: metric.Gauge,
-			Help: "Information about resource quota.",
-			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_resourcequota",
+			"Information about resource quota.",
+			metric.Gauge,
+			"",
+			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				for res, qty := range r.Status.Hard {
@@ -79,7 +83,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -101,10 +105,10 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interf
 func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().ResourceQuotas(ns).List(opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

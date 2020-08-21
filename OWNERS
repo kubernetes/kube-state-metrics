@@ -1,11 +1,11 @@
 reviewers:
   - brancz
-  - andyxning
-  - zouyee
   - tariq1890
   - LiliC
 approvers:
   - brancz
-  - andyxning
   - tariq1890
   - LiliC
+emeritus-approvers:
+  - andyxning
+  - zouyee

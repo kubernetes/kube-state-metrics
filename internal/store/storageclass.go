@@ -14,6 +14,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -34,11 +36,12 @@ var (
 	defaultVolumeBindingMode            = storagev1.VolumeBindingImmediate
 
 	storageClassMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_storageclass_info",
-			Type: metric.Gauge,
-			Help: "Information about storageclass.",
-			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_storageclass_info",
+			"Information about storageclass.",
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 
 				// Add default values if missing.
 				if s.ReclaimPolicy == nil {
@@ -56,12 +59,13 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: "kube_storageclass_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_storageclass_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				ms := []*metric.Metric{}
 				if !s.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
@@ -72,12 +76,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: descStorageClassLabelsName,
-			Type: metric.Gauge,
-			Help: descStorageClassLabelsHelp,
-			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			descStorageClassLabelsName,
+			descStorageClassLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -89,7 +94,7 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -111,10 +116,10 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(i
 func createStorageClassListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1().StorageClasses().List(opts)
+			return kubeClient.StorageV1().StorageClasses().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1().StorageClasses().Watch(opts)
+			return kubeClient.StorageV1().StorageClasses().Watch(context.TODO(), opts)
 		},
 	}
 }

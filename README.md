@@ -1,6 +1,7 @@
 # Overview
 
-[![Build Status](https://travis-ci.org/kubernetes/kube-state-metrics.svg?branch=master)](https://travis-ci.org/kubernetes/kube-state-metrics)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc](https://godoc.org/github.com/kubernetes/kube-state-metrics?status.svg)](https://godoc.org/github.com/kubernetes/kube-state-metrics)
+[![Build Status](https://github.com/kubernetes/kube-state-metrics/workflows/continuous-integration/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc](https://godoc.org/github.com/kubernetes/kube-state-metrics?status.svg)](https://godoc.org/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics is a simple service that listens to the Kubernetes API
 server and generates metrics about the state of the objects. (See examples in
@@ -88,10 +89,6 @@ release.
 The latest container image can be found at:
 * `quay.io/coreos/kube-state-metrics:v1.9.7`
 * `k8s.gcr.io/kube-state-metrics:v1.9.7`
-
-**Note**:
-The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on
-`gcr.io` is only maintained on best effort as it requires external help from Google employees.
 
 ### Metrics Documentation
 

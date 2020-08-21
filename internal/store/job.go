@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"strconv"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -37,11 +38,12 @@ var (
 	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
 
 	jobMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: descJobLabelsName,
-			Type: metric.Gauge,
-			Help: descJobLabelsHelp,
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		*generator.NewFamilyGenerator(
+			descJobLabelsName,
+			descJobLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -53,12 +55,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_job_info",
-			Type: metric.Gauge,
-			Help: "Information about job.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_info",
+			"Information about job.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -67,12 +70,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_job_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !j.CreationTimestamp.IsZero() {
@@ -85,12 +89,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_spec_parallelism",
-			Type: metric.Gauge,
-			Help: "The maximum desired number of pods the job should run at any given time.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_spec_parallelism",
+			"The maximum desired number of pods the job should run at any given time.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.Parallelism != nil {
@@ -103,12 +108,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_spec_completions",
-			Type: metric.Gauge,
-			Help: "The desired number of successfully finished pods the job should be run with.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_spec_completions",
+			"The desired number of successfully finished pods the job should be run with.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.Completions != nil {
@@ -121,12 +127,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_spec_active_deadline_seconds",
-			Type: metric.Gauge,
-			Help: "The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_spec_active_deadline_seconds",
+			"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Spec.ActiveDeadlineSeconds != nil {
@@ -139,12 +146,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_status_succeeded",
-			Type: metric.Gauge,
-			Help: "The number of pods which reached Phase Succeeded.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_status_succeeded",
+			"The number of pods which reached Phase Succeeded.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -153,12 +161,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_job_status_failed",
-			Type: metric.Gauge,
-			Help: "The number of pods which reached Phase Failed & their failure reasons.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_status_failed",
+			"The number of pods which reached Phase Failed & their failure reason.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				var ms []*metric.Metric
 
 				if float64(j.Status.Failed) == 0 {
@@ -200,12 +209,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_status_active",
-			Type: metric.Gauge,
-			Help: "The number of actively running pods.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_status_active",
+			"The number of actively running pods.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -214,12 +224,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_job_complete",
-			Type: metric.Gauge,
-			Help: "The job has completed its execution.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_complete",
+			"The job has completed its execution.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, c := range j.Status.Conditions {
 					if c.Type == v1batch.JobComplete {
@@ -236,12 +247,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_failed",
-			Type: metric.Gauge,
-			Help: "The job has failed its execution.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_failed",
+			"The job has failed its execution.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				for _, c := range j.Status.Conditions {
@@ -259,12 +271,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_status_start_time",
-			Type: metric.Gauge,
-			Help: "StartTime represents time when the job was acknowledged by the Job Manager.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_status_start_time",
+			"StartTime represents time when the job was acknowledged by the Job Manager.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if j.Status.StartTime != nil {
@@ -278,12 +291,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_status_completion_time",
-			Type: metric.Gauge,
-			Help: "CompletionTime represents time when the job was completed.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_status_completion_time",
+			"CompletionTime represents time when the job was completed.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 				if j.Status.CompletionTime != nil {
 					ms = append(ms, &metric.Metric{
@@ -296,12 +310,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_job_owner",
-			Type: metric.Gauge,
-			Help: "Information about the Job's owner.",
-			GenerateFunc: wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_job_owner",
+			"Information about the Job's owner.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
 
 				owners := j.GetOwnerReferences()
@@ -340,7 +355,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -362,10 +377,10 @@ func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.
 func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.BatchV1().Jobs(ns).List(opts)
+			return kubeClient.BatchV1().Jobs(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.BatchV1().Jobs(ns).Watch(opts)
+			return kubeClient.BatchV1().Jobs(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

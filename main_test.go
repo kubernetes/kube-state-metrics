@@ -160,6 +160,8 @@ func TestFullScrapeCycle(t *testing.T) {
 kube_pod_info{namespace="default",pod="pod0",host_ip="1.1.1.1",pod_ip="1.2.3.4",uid="abc-0",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class="",host_network="false"} 1
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # TYPE kube_pod_start_time gauge
+# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
+# TYPE kube_pod_container_state_started gauge
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
 # TYPE kube_pod_completion_time gauge
 # HELP kube_pod_owner Information about the Pod's owner.
@@ -561,7 +563,7 @@ func configMap(client *fake.Clientset, index int) error {
 			UID:             types.UID("abc-" + i),
 		},
 	}
-	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(&configMap)
+	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(context.TODO(), &configMap, metav1.CreateOptions{})
 	return err
 }
 
@@ -575,7 +577,7 @@ func service(client *fake.Clientset, index int) error {
 			UID:             types.UID("abc-" + i),
 		},
 	}
-	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(&service)
+	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})
 	return err
 }
 
@@ -658,6 +660,6 @@ func pod(client *fake.Clientset, index int) error {
 		},
 	}
 
-	_, err := client.CoreV1().Pods(metav1.NamespaceDefault).Create(&pod)
+	_, err := client.CoreV1().Pods(metav1.NamespaceDefault).Create(context.TODO(), &pod, metav1.CreateOptions{})
 	return err
 }

@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -34,11 +36,12 @@ var (
 	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest"}
 
 	csrMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: descCSRLabelsName,
-			Type: metric.Gauge,
-			Help: descCSRLabelsHelp,
-			GenerateFunc: wrapCSRFunc(func(j *certv1beta1.CertificateSigningRequest) *metric.Family {
+		*generator.NewFamilyGenerator(
+			descCSRLabelsName,
+			descCSRLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapCSRFunc(func(j *certv1beta1.CertificateSigningRequest) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -50,12 +53,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_certificatesigningrequest_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_certificatesigningrequest_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
 				ms := []*metric.Metric{}
 				if !csr.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
@@ -69,22 +73,24 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_certificatesigningrequest_condition",
-			Type: metric.Gauge,
-			Help: "The number of each certificatesigningrequest condition",
-			GenerateFunc: wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_certificatesigningrequest_condition",
+			"The number of each certificatesigningrequest condition",
+			metric.Gauge,
+			"",
+			wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: addCSRConditionMetrics(csr.Status),
 				}
 			}),
-		},
-		{
-			Name: "kube_certificatesigningrequest_cert_length",
-			Type: metric.Gauge,
-			Help: "Length of the issued cert",
-			GenerateFunc: wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_certificatesigningrequest_cert_length",
+			"Length of the issued cert",
+			metric.Gauge,
+			"",
+			wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -95,7 +101,7 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -117,10 +123,10 @@ func wrapCSRFunc(f func(*certv1beta1.CertificateSigningRequest) *metric.Family) 
 func createCSRListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().List(opts)
+			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().Watch(opts)
+			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().Watch(context.TODO(), opts)
 		},
 	}
 }

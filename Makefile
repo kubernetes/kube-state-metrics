@@ -12,14 +12,11 @@ BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 Commit = $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.14.2
-FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
-BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.25.0
-HAS_GOLANGCI := $(shell which golangci-lint)
-
+GO_VERSION = 1.14.7
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
+
+export DOCKER_CLI_EXPERIMENTAL=enabled
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
@@ -41,9 +38,6 @@ licensecheck:
        fi
 
 lint: shellcheck licensecheck
-ifndef HAS_GOLANGCI
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin ${GOLANGCI_VERSION}
-endif
 	golangci-lint run
 
 doccheck: generate
@@ -75,49 +69,46 @@ shellcheck:
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
-test-benchmark-compare: $(BENCHCMP_BINARY)
+test-benchmark-compare:
+	@git fetch
 	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
 all: all-container
 
+# Container build for multiple architectures as defined in ALL_ARCH
+
+container: container-$(ARCH)
+
+container-%:
+	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
+
 sub-container-%:
 	$(MAKE) --no-print-directory ARCH=$* container
 
-sub-push-%:
-	$(MAKE) --no-print-directory ARCH=$* push
-
 all-container: $(addprefix sub-container-,$(ALL_ARCH))
 
-all-push: $(addprefix sub-push-,$(ALL_ARCH))
+# Container push, push is the target to push for multiple architectures as defined in ALL_ARCH
 
-container: .container-$(ARCH)
-.container-$(ARCH):
-	${DOCKER_CLI} build -t $(MULTI_ARCH_IMG):$(TAG) --build-arg GOARCH=$(ARCH) .
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
+push: $(addprefix sub-push-,$(ALL_ARCH)) push-multi-arch;
 
-ifeq ($(ARCH), amd64)
-	# Adding check for amd64
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
-	${DOCKER_CLI} tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
-endif
+sub-push-%: container-% do-push-% ;
+
+do-push-%:
+	${DOCKER_CLI} push $(IMAGE)-$*:$(TAG)
+
+push-multi-arch:
+	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:${TAG}; done
+	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
 quay-push: .quay-push-$(ARCH)
-.quay-push-$(ARCH): .container-$(ARCH)
+.quay-push-$(ARCH): container-$(ARCH)
 	${DOCKER_CLI} push $(MULTI_ARCH_IMG):$(TAG)
 	${DOCKER_CLI} push $(MULTI_ARCH_IMG):latest
 ifeq ($(ARCH), amd64)
 	${DOCKER_CLI} push $(IMAGE):$(TAG)
 	${DOCKER_CLI} push $(IMAGE):latest
-endif
-
-push: .push-$(ARCH)
-.push-$(ARCH): .container-$(ARCH)
-	gcloud docker -- push $(MULTI_ARCH_IMG):$(TAG)
-	gcloud docker -- push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	gcloud docker -- push $(IMAGE):$(TAG)
-	gcloud docker -- push $(IMAGE):latest
 endif
 
 clean:
@@ -130,7 +121,7 @@ e2e:
 generate: build-local
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
-	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+	embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
 validate-manifests: examples
 	@git diff --exit-code
@@ -160,4 +151,4 @@ install-tools:
 	@echo Installing tools from tools.go
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd

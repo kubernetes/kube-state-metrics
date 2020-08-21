@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,11 +35,12 @@ var (
 	descValidatingWebhookConfigurationDefaultLabels = []string{"namespace", "validatingwebhookconfiguration"}
 
 	validatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_validatingwebhookconfiguration_info",
-			Type: metric.Gauge,
-			Help: "Information about the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_info",
+			"Information about the ValidatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -46,12 +49,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_validatingwebhookconfiguration_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_created",
+			"Unix creation timestamp.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !vwc.CreationTimestamp.IsZero() {
@@ -63,27 +67,28 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_validatingwebhookconfiguration_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_metadata_resource_version",
+			"Resource version representing a specific version of the ValidatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(vwc.ObjectMeta.ResourceVersion),
 				}
 			}),
-		},
+		),
 	}
 )
 
 func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Watch(opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Watch(context.TODO(), opts)
 		},
 	}
 }

@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,11 +36,12 @@ var (
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 
 	secretMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_secret_info",
-			Type: metric.Gauge,
-			Help: "Information about secret.",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_secret_info",
+			"Information about secret.",
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -47,12 +50,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_secret_type",
-			Type: metric.Gauge,
-			Help: "Type about secret.",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_secret_type",
+			"Type about secret.",
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -63,12 +67,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: descSecretLabelsName,
-			Type: metric.Gauge,
-			Help: descSecretLabelsHelp,
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			descSecretLabelsName,
+			descSecretLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -81,12 +86,13 @@ var (
 				}
 
 			}),
-		},
-		{
-			Name: "kube_secret_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_secret_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !s.CreationTimestamp.IsZero() {
@@ -99,17 +105,18 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_secret_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of secret.",
-			GenerateFunc: wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_secret_metadata_resource_version",
+			"Resource version representing a specific version of secret.",
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(s.ObjectMeta.ResourceVersion),
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -131,10 +138,10 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric
 func createSecretListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Secrets(ns).List(opts)
+			return kubeClient.CoreV1().Secrets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Secrets(ns).Watch(opts)
+			return kubeClient.CoreV1().Secrets(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

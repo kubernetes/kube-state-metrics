@@ -235,7 +235,7 @@ func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 }
 
 func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {
-	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(podName, metav1.GetOptions{})
+	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieve pod %s for sharding", podName)
 	}
@@ -246,7 +246,7 @@ func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName s
 			continue
 		}
 
-		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(o.Name, metav1.GetOptions{})
+		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(context.TODO(), o.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.Wrapf(err, "retrieve shard's StatefulSet: %s/%s", namespaceName, o.Name)
 		}

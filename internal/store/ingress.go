@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -35,11 +37,12 @@ var (
 	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
 
 	ingressMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_ingress_info",
-			Type: metric.Gauge,
-			Help: "Information about ingress.",
-			GenerateFunc: wrapIngressFunc(func(s *v1beta1.Ingress) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_ingress_info",
+			"Information about ingress.",
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(s *v1beta1.Ingress) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -47,12 +50,13 @@ var (
 						},
 					}}
 			}),
-		},
-		{
-			Name: descIngressLabelsName,
-			Type: metric.Gauge,
-			Help: descIngressLabelsHelp,
-			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			descIngressLabelsName,
+			descIngressLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				labelKeys, labelValues := kubeLabelsToPrometheusLabels(i.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -64,12 +68,13 @@ var (
 					}}
 
 			}),
-		},
-		{
-			Name: "kube_ingress_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_ingress_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !i.CreationTimestamp.IsZero() {
@@ -82,22 +87,24 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_ingress_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of ingress.",
-			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_ingress_metadata_resource_version",
+			"Resource version representing a specific version of ingress.",
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(i.ObjectMeta.ResourceVersion),
 				}
 			}),
-		},
-		{
-			Name: "kube_ingress_path",
-			Type: metric.Gauge,
-			Help: "Ingress host, paths and backend service information.",
-			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_ingress_path",
+			"Ingress host, paths and backend service information.",
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, rule := range i.Spec.Rules {
 					if rule.HTTP != nil {
@@ -114,12 +121,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_ingress_tls",
-			Type: metric.Gauge,
-			Help: "Ingress TLS host and secret information.",
-			GenerateFunc: wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_ingress_tls",
+			"Ingress TLS host and secret information.",
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *v1beta1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, tls := range i.Spec.TLS {
 					for _, host := range tls.Hosts {
@@ -134,7 +142,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -156,10 +164,10 @@ func wrapIngressFunc(f func(*v1beta1.Ingress) *metric.Family) func(interface{}) 
 func createIngressListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.ExtensionsV1beta1().Ingresses(ns).List(opts)
+			return kubeClient.ExtensionsV1beta1().Ingresses(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.ExtensionsV1beta1().Ingresses(ns).Watch(opts)
+			return kubeClient.ExtensionsV1beta1().Ingresses(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

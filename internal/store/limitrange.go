@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,11 +34,12 @@ var (
 	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
 
 	limitRangeMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_limitrange",
-			Type: metric.Gauge,
-			Help: "Information about limit range.",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_limitrange",
+			"Information about limit range.",
+			metric.Gauge,
+			"",
+			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				rawLimitRanges := r.Spec.Limits
@@ -85,12 +88,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_limitrange_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_limitrange_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -104,7 +108,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 
@@ -126,10 +130,10 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(interface{})
 func createLimitRangeListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().LimitRanges(ns).List(opts)
+			return kubeClient.CoreV1().LimitRanges(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().LimitRanges(ns).Watch(opts)
+			return kubeClient.CoreV1().LimitRanges(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

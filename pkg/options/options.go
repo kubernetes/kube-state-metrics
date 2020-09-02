@@ -44,6 +44,7 @@ type Options struct {
 	MetricDenylist  MetricSet
 	MetricAllowlist MetricSet
 	Version         bool
+	LabelsAllowList LabelsAllowList
 
 	EnableGZIPEncoding bool
 
@@ -56,6 +57,7 @@ func NewOptions() *Options {
 		Resources:       ResourceSet{},
 		MetricAllowlist: MetricSet{},
 		MetricDenylist:  MetricSet{},
+		LabelsAllowList: LabelsAllowList{},
 	}
 }
 
@@ -95,6 +97,7 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
 	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
+	o.flags.Var(&o.LabelsAllowList, "labels-allow-list", "list of metric names and labels you would like to allow, metric_name=[label1,labeln...],metric_name[]...")
 }
 
 // Parse parses the flag definitions from the argument list.

@@ -23,10 +23,10 @@ import (
 	"strconv"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	v1 "k8s.io/api/core/v1"
-
+	"k8s.io/kube-state-metrics/pkg/allow"
 	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
@@ -73,6 +73,14 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 	return ms
 }
 
+func sanitizeAllowLabels(l map[string][]string) allow.Labels {
+	allowLabels := make(map[string][]string)
+	for m, labels := range l {
+		allowLabels[sanitizeLabelName(m)] = labels
+	}
+	return allowLabels
+}
+
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
 	return mapToPrometheusLabels(labels, "label")
 }
@@ -99,8 +107,7 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 
 	conflicts := make(map[string]*conflictDesc)
 	for _, k := range sortedKeys {
-		labelName := lintLabelName(sanitizeLabelName(k))
-		labelKey := prefix + "_" + labelName
+		labelKey := labelName(prefix, k)
 		if conflict, ok := conflicts[labelKey]; ok {
 			if conflict.count == 1 {
 				// this is the first conflict for the label,
@@ -121,6 +128,10 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 		labelValues = append(labelValues, labels[k])
 	}
 	return labelKeys, labelValues
+}
+
+func labelName(prefix, labelName string) string {
+	return prefix + "_" + lintLabelName(sanitizeLabelName(labelName))
 }
 
 func sanitizeLabelName(s string) string {

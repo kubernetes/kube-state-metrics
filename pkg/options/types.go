@@ -17,11 +17,17 @@ limitations under the License.
 package options
 
 import (
+	"errors"
+	"regexp"
 	"sort"
 	"strings"
+	"text/scanner"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
+var labelsAllowListFormat = regexp.MustCompile("^[a-zA-Z0-9_]+$")
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -124,5 +130,85 @@ func (n *NamespaceList) Set(value string) error {
 
 // Type returns a descriptive string about the NamespaceList type.
 func (n *NamespaceList) Type() string {
+	return "string"
+}
+
+// LabelsAllowList represents a list of allowed labels for metrics.
+type LabelsAllowList map[string][]string
+
+// Set converts a comma-separated string of metrics and their allowed labels and appends to the LabelsAllowList.
+func (l *LabelsAllowList) Set(value string) error {
+	var s scanner.Scanner
+	s.Init(strings.NewReader(value))
+
+	var (
+		m        = make(map[string][]string, len(*l))
+		previous rune
+		next     rune
+		inLabels bool
+		name     string
+	)
+	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
+		next = s.Peek()
+		switch tok {
+		case '=':
+			if previous == ',' || next != '[' {
+				return errLabelsAllowListFormat
+			}
+		case '[':
+			if previous != '=' {
+				return errLabelsAllowListFormat
+			}
+			inLabels = true
+		case ']':
+			// if after metric group, has char not comma or end.
+			if next != scanner.EOF && next != ',' {
+				return errLabelsAllowListFormat
+			}
+			inLabels = false
+		case ',':
+			// if starts or ends with comma
+			if previous == tok || next == scanner.EOF {
+				return errLabelsAllowListFormat
+			}
+			continue
+		default:
+			text := s.TokenText()
+			if !labelsAllowListFormat.MatchString(text) {
+				return errLabelsAllowListFormat
+			}
+			if !inLabels {
+				name = text
+				m[name] = []string{}
+			} else {
+				m[name] = append(m[name], text)
+			}
+		}
+		previous = tok
+	}
+
+	*l = m
+
+	return nil
+}
+
+// asSlice returns the LabelsAllowList in the form of plain string slice.
+func (l LabelsAllowList) asSlice() []string {
+	metrics := make([]string, 0, len(l))
+	for metric := range l {
+		metrics = append(metrics, metric)
+	}
+	return metrics
+}
+
+func (l *LabelsAllowList) String() string {
+	s := *l
+	ss := s.asSlice()
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
+}
+
+// Type returns a descriptive string about the LabelsAllowList type.
+func (l *LabelsAllowList) Type() string {
 	return "string"
 }

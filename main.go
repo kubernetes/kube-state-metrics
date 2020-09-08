@@ -49,6 +49,18 @@ const (
 	healthzPath = "/healthz"
 )
 
+var (
+	durationVec = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:        "http_request_duration_seconds",
+			Help:        "A histogram of requests for kube-state-metrics metrics handler.",
+			Buckets:     prometheus.DefBuckets,
+			ConstLabels: prometheus.Labels{"handler": "metrics"},
+		},
+		[]string{"method"},
+	)
+)
+
 // promLogger implements promhttp.Logger
 type promLogger struct{}
 
@@ -79,6 +91,7 @@ func main() {
 	storeBuilder := store.NewBuilder()
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
+	ksmMetricsRegistry.MustRegister(durationVec)
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
 	var resources []string
@@ -264,7 +277,7 @@ func buildMetricsServer(kubeClient clientset.Interface, storeBuilder *store.Buil
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-	mux.Handle(metricsPath, m)
+	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationVec, m))
 
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {

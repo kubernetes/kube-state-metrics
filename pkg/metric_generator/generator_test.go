@@ -18,6 +18,7 @@ package generator
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"k8s.io/kube-state-metrics/pkg/allow"
@@ -249,10 +250,25 @@ func TestFilterMetricFamiliesLabels(t *testing.T) {
 			for i := range results {
 				result := results[i].GenerateFunc(nil)
 				expected := test.results[i].GenerateFunc(nil)
-				if !reflect.DeepEqual(result, expected) {
-					t.Fatalf("Families don't equal, got %v, expected %v", result, expected)
+				for _, resultMetric := range result.Metrics {
+					for _, expectedMetric := range expected.Metrics {
+						assertEqualSlices(t, expectedMetric.LabelKeys, resultMetric.LabelKeys, "keys")
+						assertEqualSlices(t, expectedMetric.LabelValues, resultMetric.LabelValues, "values")
+
+						if expectedMetric.Value != resultMetric.Value {
+							t.Fatalf("value - expected %v, got %v", expectedMetric.Value, resultMetric.Value)
+						}
+					}
 				}
 			}
 		})
+	}
+}
+
+func assertEqualSlices(t *testing.T, expected, actual []string, kind string) {
+	sort.Strings(expected)
+	sort.Strings(actual)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("%s - expected %v, got %v", kind, expected, actual)
 	}
 }

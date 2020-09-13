@@ -18,6 +18,7 @@ package watch
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -33,30 +34,23 @@ type ListWatchMetrics struct {
 // NewListWatchMetrics takes in a prometheus registry and initializes
 // and registers the kube_state_metrics_list_total and
 // kube_state_metrics_watch_total metrics. It returns those registered metrics.
-func NewListWatchMetrics(r *prometheus.Registry) *ListWatchMetrics {
-	var m ListWatchMetrics
-	m.WatchTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "kube_state_metrics_watch_total",
-			Help: "Number of total resource watches in kube-state-metrics",
-		},
-		[]string{"result", "resource"},
-	)
-
-	m.ListTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "kube_state_metrics_list_total",
-			Help: "Number of total resource list in kube-state-metrics",
-		},
-		[]string{"result", "resource"},
-	)
-	if r != nil {
-		r.MustRegister(
-			m.ListTotal,
-			m.WatchTotal,
-		)
+func NewListWatchMetrics(r prometheus.Registerer) *ListWatchMetrics {
+	return &ListWatchMetrics{
+		WatchTotal: promauto.With(r).NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "kube_state_metrics_watch_total",
+				Help: "Number of total resource watches in kube-state-metrics",
+			},
+			[]string{"result", "resource"},
+		),
+		ListTotal: promauto.With(r).NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "kube_state_metrics_list_total",
+				Help: "Number of total resource list in kube-state-metrics",
+			},
+			[]string{"result", "resource"},
+		),
 	}
-	return &m
 }
 
 // InstrumentedListerWatcher provides the kube_state_metrics_watch_total metric

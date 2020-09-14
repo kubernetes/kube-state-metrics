@@ -74,7 +74,7 @@ func NewBuilder() *Builder {
 }
 
 // WithMetrics sets the metrics property of a Builder.
-func (b *Builder) WithMetrics(r *prometheus.Registry) {
+func (b *Builder) WithMetrics(r prometheus.Registerer) {
 	b.metrics = watch.NewListWatchMetrics(r)
 }
 

@@ -29,6 +29,7 @@ import (
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
@@ -47,18 +48,6 @@ import (
 const (
 	metricsPath = "/metrics"
 	healthzPath = "/healthz"
-)
-
-var (
-	durationVec = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:        "http_request_duration_seconds",
-			Help:        "A histogram of requests for kube-state-metrics metrics handler.",
-			Buckets:     prometheus.DefBuckets,
-			ConstLabels: prometheus.Labels{"handler": "metrics"},
-		},
-		[]string{"method"},
-	)
 )
 
 // promLogger implements promhttp.Logger
@@ -91,7 +80,14 @@ func main() {
 	storeBuilder := store.NewBuilder()
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
-	ksmMetricsRegistry.MustRegister(durationVec)
+	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:        "http_request_duration_seconds",
+			Help:        "A histogram of requests for kube-state-metrics metrics handler.",
+			Buckets:     prometheus.DefBuckets,
+			ConstLabels: prometheus.Labels{"handler": "metrics"},
+		}, []string{"method"},
+	)
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
 	var resources []string
@@ -176,7 +172,7 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Failed to create Telemetry Listener: %v", err)
 	}
-	metricsMux := buildMetricsServer(kubeClient, storeBuilder, m, opts)
+	metricsMux := buildMetricsServer(m, durationVec)
 	metricsServer := http.Server{Handler: metricsMux}
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	metricsServerLn, err := net.Listen("tcp", metricsServerListenAddress)
@@ -267,7 +263,7 @@ func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 	return mux
 }
 
-func buildMetricsServer(kubeClient clientset.Interface, storeBuilder *store.Builder, m *metricshandler.MetricsHandler, opts *options.Options) *http.ServeMux {
+func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// TODO: This doesn't belong into serveMetrics
@@ -277,7 +273,7 @@ func buildMetricsServer(kubeClient clientset.Interface, storeBuilder *store.Buil
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationVec, m))
+	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationObserver, m))
 
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {

@@ -30,7 +30,7 @@ import (
 
 // BuilderInterface represent all methods that a Builder should implements
 type BuilderInterface interface {
-	WithMetrics(r *prometheus.Registry)
+	WithMetrics(r prometheus.Registerer)
 	WithEnabledResources(c []string) error
 	WithNamespaces(n options.NamespaceList)
 	WithSharding(shard int32, totalShards int)

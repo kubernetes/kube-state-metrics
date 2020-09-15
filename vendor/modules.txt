@@ -85,13 +85,17 @@ github.com/hashicorp/golang-lru/simplelru
 github.com/imdario/mergo
 # github.com/json-iterator/go v1.1.10
 github.com/json-iterator/go
-# github.com/jsonnet-bundler/jsonnet-bundler v0.1.1-0.20190930114713-10e24cb86976
+# github.com/jsonnet-bundler/jsonnet-bundler v0.4.1-0.20200708074244-ada055a225fa
 ## explicit
 github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 github.com/jsonnet-bundler/jsonnet-bundler/pkg
 github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile
-github.com/jsonnet-bundler/jsonnet-bundler/spec
-# github.com/mattn/go-colorable v0.1.4
+github.com/jsonnet-bundler/jsonnet-bundler/spec/v0
+github.com/jsonnet-bundler/jsonnet-bundler/spec/v1
+github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps
+github.com/jsonnet-bundler/jsonnet-bundler/tool/rewrite
+# github.com/mattn/go-colorable v0.1.7
+## explicit
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
@@ -151,7 +155,8 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
+# golang.org/x/sys v0.0.0-20200915084602-288bc346aa39
+## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows

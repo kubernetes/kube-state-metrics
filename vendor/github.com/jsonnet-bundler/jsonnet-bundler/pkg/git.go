@@ -19,6 +19,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,61 +33,52 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
 type GitPackage struct {
-	Source *spec.GitSource
+	Source *deps.Git
 }
 
-func NewGitPackage(source *spec.GitSource) Interface {
+func NewGitPackage(source *deps.Git) Interface {
 	return &GitPackage{
 		Source: source,
 	}
 }
 
-func downloadGitHubArchive(filepath string, url string) (string, error) {
+var GitQuiet = false
+
+func downloadGitHubArchive(filepath string, url string) error {
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return err
 	}
-	color.Cyan("GET %s %d", url, resp.StatusCode)
+	if !GitQuiet {
+		color.Cyan("GET %s %d", url, resp.StatusCode)
+	}
 	if resp.StatusCode != 200 {
-		return "", errors.New(fmt.Sprintf("unexpected status code %d", resp.StatusCode))
+		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 
-	// GitHub conveniently uses the commit SHA1 at the ETag
-	// signature for the archive. This is needed when doing `jb update`
-	// to resolve a ref (ie. "master") to a commit SHA1 for the lock file
-	etagValue := resp.Header.Get(http.CanonicalHeaderKey("ETag"))
-	if etagValue == "" {
-		return "", errors.New("ETag header is missing from response")
-	}
-
-	commitShaPattern, _ := regexp.Compile("^\"([0-9a-f]{40})\"$")
-	m := commitShaPattern.FindStringSubmatch(etagValue)
-	if len(m) < 2 {
-		return "", errors.New(fmt.Sprintf("etag value \"%s\" does not look like a SHA1", etagValue))
-	}
-	commitSha := m[1]
 	defer resp.Body.Close()
 
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer out.Close()
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return commitSha, nil
+	return nil
 }
 
 func gzipUntar(dst string, r io.Reader, subDir string) error {
@@ -132,61 +125,108 @@ func gzipUntar(dst string, r io.Reader, subDir string) error {
 
 		// create directories as needed
 		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
-					return err
-				}
+			if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
+				return err
 			}
 
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err := os.MkdirAll(filepath.Dir(target), os.ModePerm); err != nil {
+				return err
+			}
+
+			err := func() error {
+				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				// copy over contents
+				if _, err := io.Copy(f, tr); err != nil {
+					return err
+				}
+				return nil
+			}()
+
 			if err != nil {
 				return err
 			}
 
-			// copy over contents
-			if _, err := io.Copy(f, tr); err != nil {
+		case tar.TypeSymlink:
+			if err := os.MkdirAll(filepath.Dir(target), os.ModePerm); err != nil {
 				return err
 			}
 
-			// Explicitly release the file handle inside the inner loop
-			// Using defer would accumulate an unbounded quantity of
-			// handles and release them all at once at function end.
-			f.Close()
+			if err := os.Symlink(header.Linkname, target); err != nil {
+				return err
+			}
 		}
 	}
+}
+
+func remoteResolveRef(ctx context.Context, remote string, ref string) (string, error) {
+	b := &bytes.Buffer{}
+	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--heads", "--tags", "--refs", "--quiet", remote, ref)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = b
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	commitShaPattern := regexp.MustCompile("^([0-9a-f]{40,})\\b")
+	commitSha := commitShaPattern.FindString(b.String())
+	return commitSha, nil
 }
 
 func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (string, error) {
 	destPath := path.Join(dir, name)
 
-	tmpDir, err := ioutil.TempDir(filepath.Join(dir, ".tmp"), fmt.Sprintf("jsonnetpkg-%s-%s", name, version))
+	pkgh := sha256.Sum256([]byte(fmt.Sprintf("jsonnetpkg-%s-%s", strings.Replace(name, "/", "-", -1), version)))
+	// using 16 bytes should be a good middle ground between length and collision resistance
+	tmpDir, err := ioutil.TempDir(filepath.Join(dir, ".tmp"), hex.EncodeToString(pkgh[:16]))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create tmp dir")
 	}
 	defer os.RemoveAll(tmpDir)
 
 	// Optimization for GitHub sources: download a tarball archive of the requested
-	// version instead of cloning the entire repository. The SHA1 is discovered through
-	// the ETag header included in the response.
-	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote)
+	// version instead of cloning the entire
+	isGitHubRemote, err := regexp.MatchString(`^(https|ssh)://github\.com/.+$`, p.Source.Remote())
 	if isGitHubRemote {
-		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", p.Source.Remote, version)
+		// Let git ls-remote decide if "version" is a ref or a commit SHA in the unlikely
+		// but possible event that a ref is comprised of 40 or more hex characters
+		commitSha, err := remoteResolveRef(ctx, p.Source.Remote(), version)
+
+		// If the ref resolution failed and "version" looks like a SHA,
+		// assume it is one and proceed.
+		commitShaPattern := regexp.MustCompile("^([0-9a-f]{40,})$")
+		if commitSha == "" && commitShaPattern.MatchString(version) {
+			commitSha = version
+		}
+
+		archiveUrl := fmt.Sprintf("%s/archive/%s.tar.gz", strings.TrimSuffix(p.Source.Remote(), ".git"), commitSha)
 		archiveFilepath := fmt.Sprintf("%s.tar.gz", tmpDir)
 
 		defer os.Remove(archiveFilepath)
-		commitSha, err := downloadGitHubArchive(archiveFilepath, archiveUrl)
+		err = downloadGitHubArchive(archiveFilepath, archiveUrl)
 		if err == nil {
-			r, err := os.Open(archiveFilepath)
-			defer r.Close()
+			var ar *os.File
+			ar, err = os.Open(archiveFilepath)
+			defer ar.Close()
 			if err == nil {
 				// Extract the sub-directory (if any) from the archive
 				// If none specified, the entire archive is unpacked
-				err = gzipUntar(tmpDir, r, p.Source.Subdir)
+				err = gzipUntar(tmpDir, ar, p.Source.Subdir)
 
 				// Move the extracted directory to its final destination
 				if err == nil {
-					err = os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath)
+					if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+						panic(err)
+					}
+					if err := os.Rename(path.Join(tmpDir, p.Source.Subdir), destPath); err != nil {
+						panic(err)
+					}
 				}
 			}
 		}
@@ -201,40 +241,38 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		color.Yellow("retrying with git...")
 	}
 
-	cmd := exec.CommandContext(ctx, "git", "init")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	gitCmd := func(args ...string) *exec.Cmd {
+		cmd := exec.CommandContext(ctx, "git", args...)
+		cmd.Stdin = os.Stdin
+		if GitQuiet {
+			cmd.Stdout = nil
+			cmd.Stderr = nil
+		} else {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
+		cmd.Dir = tmpDir
+		return cmd
+	}
+
+	cmd := gitCmd("init")
 	err = cmd.Run()
 	if err != nil {
 		return "", err
 	}
 
-	cmd = exec.CommandContext(ctx, "git", "remote", "add", "origin", p.Source.Remote)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	cmd = gitCmd("remote", "add", "origin", p.Source.Remote())
 	err = cmd.Run()
 	if err != nil {
 		return "", err
 	}
 
 	// Attempt shallow fetch at specific revision
-	cmd = exec.CommandContext(ctx, "git", "fetch", "--depth", "1", "origin", version)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	cmd = gitCmd("fetch", "--tags", "--depth", "1", "origin", version)
 	err = cmd.Run()
 	if err != nil {
 		// Fall back to normal fetch (all revisions)
-		cmd = exec.CommandContext(ctx, "git", "fetch", "origin")
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Dir = tmpDir
+		cmd = gitCmd("fetch", "origin")
 		err = cmd.Run()
 		if err != nil {
 			return "", err
@@ -244,11 +282,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 	// Sparse checkout optimization: if a Subdir is specified,
 	// there is no need to do a full checkout
 	if p.Source.Subdir != "" {
-		cmd = exec.CommandContext(ctx, "git", "config", "core.sparsecheckout", "true")
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Dir = tmpDir
+		cmd = gitCmd("config", "core.sparsecheckout", "true")
 		err = cmd.Run()
 		if err != nil {
 			return "", err
@@ -261,11 +295,7 @@ func (p *GitPackage) Install(ctx context.Context, name, dir, version string) (st
 		}
 	}
 
-	cmd = exec.CommandContext(ctx, "git", "-c", "advice.detachedHead=false", "checkout", version)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	cmd = gitCmd("-c", "advice.detachedHead=false", "checkout", version)
 	err = cmd.Run()
 	if err != nil {
 		return "", err

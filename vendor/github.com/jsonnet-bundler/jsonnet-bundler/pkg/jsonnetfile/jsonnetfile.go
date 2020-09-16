@@ -18,56 +18,69 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"path"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
 	"github.com/pkg/errors"
+
+	v0 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v0"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 )
 
-const File = "jsonnetfile.json"
-const LockFile = "jsonnetfile.lock.json"
+const (
+	File     = "jsonnetfile.json"
+	LockFile = "jsonnetfile.lock.json"
+)
 
-var ErrNoFile = errors.New("no jsonnetfile")
+var (
+	ErrUpdateJB = errors.New("jsonnetfile version unknown, update jb")
+)
 
-func Choose(dir string) (string, bool, error) {
-	jsonnetfileLock := path.Join(dir, LockFile)
-	jsonnetfile := path.Join(dir, File)
-
-	lockExists, err := fileExists(jsonnetfileLock)
-	if err != nil {
-		return "", false, err
-	}
-	if lockExists {
-		return jsonnetfileLock, true, nil
-	}
-
-	fileExists, err := fileExists(jsonnetfile)
-	if err != nil {
-		return "", false, err
-	}
-	if fileExists {
-		return jsonnetfile, false, nil
-	}
-
-	return "", false, ErrNoFile
-}
-
-func Load(filepath string) (spec.JsonnetFile, error) {
-	m := spec.JsonnetFile{}
-
+// Load reads a jsonnetfile.(lock).json from disk
+func Load(filepath string) (v1.JsonnetFile, error) {
 	bytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return m, errors.Wrap(err, "failed to read file")
+		return v1.New(), err
 	}
 
-	if err := json.Unmarshal(bytes, &m); err != nil {
-		return m, errors.Wrap(err, "failed to unmarshal file")
-	}
-
-	return m, nil
+	return Unmarshal(bytes)
 }
 
-func fileExists(path string) (bool, error) {
+// Unmarshal creates a spec.JsonnetFile from bytes. Empty bytes
+// will create an empty spec.
+func Unmarshal(bytes []byte) (v1.JsonnetFile, error) {
+	m := v1.New()
+
+	if len(bytes) == 0 {
+		return m, nil
+	}
+
+	versions := struct {
+		Version uint `json:"version"`
+	}{}
+
+	err := json.Unmarshal(bytes, &versions)
+	if err != nil {
+		return m, err
+	}
+
+	switch versions.Version {
+	case v0.Version:
+		var mv0 v0.JsonnetFile
+		if err := json.Unmarshal(bytes, &mv0); err != nil {
+			return m, errors.Wrap(err, "failed to unmarshal jsonnetfile")
+		}
+		return v1.FromV0(mv0)
+	case v1.Version:
+		if err := json.Unmarshal(bytes, &m); err != nil {
+			return m, errors.Wrap(err, "failed to unmarshal v1 file")
+		}
+		return m, nil
+	default:
+		return m, ErrUpdateJB
+	}
+}
+
+// Exists returns whether the file at the given path exists
+func Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil

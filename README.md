@@ -52,12 +52,6 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Development](#development)
   - [Developer Contributions](#developer-contributions)
 
-### Versioning
-
-> **WARNING**: Please be aware that `master` branch is targeting an upcoming version v2
-> of kube-state-metrics, which includes breaking changes. Documentation for the latest
-> released version (`1.9.5`) is available in the [release-1.9](https://github.com/kubernetes/kube-state-metrics/tree/release-1.9/docs) branch.
-
 #### Kubernetes Version
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
@@ -69,13 +63,12 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.13** | **Kubernetes 1.14** |  **Kubernetes 1.15** |  **Kubernetes 1.16** |  **Kubernetes 1.17** |
+| kube-state-metrics | **Kubernetes 1.15** | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |
 |--------------------|---------------------|---------------------|----------------------|----------------------|----------------------|
-| **v1.6.0**         |         ✓           |         -           |          -           |          -           |          -           |
-| **v1.7.2**         |         ✓           |         ✓           |          -           |          -           |          -           |
-| **v1.8.0**         |         ✓           |         ✓           |          ✓           |          -           |          -           |
-| **v1.9.7**         |         -           |         -           |          -           |          ✓           |          -           |
-| **master**         |         -           |         -           |          -           |          ✓           |          ✓           |
+| **v1.8.0**         |         ✓           |         -           |          -           |          -           |          -           |
+| **v1.9.7**         |         -           |         ✓           |          -           |          -           |          -           |
+| **v2.0.0-alpha**   |         -           |         ✓           |          ✓           |          ✓           |          ✓           |
+| **master**         |         -           |         ✓           |          ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
@@ -87,28 +80,13 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v1.9.7`
-* `k8s.gcr.io/kube-state-metrics:v1.9.7`
+* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha`
+* `k8s.gcr.io/kube-state-metrics:v2.0.0-alpha`
 
 ### Metrics Documentation
 
-There are many more metrics we could report, but this first pass is focused on
-those that could be used for actionable alerts. Please contribute PR's for
-additional metrics!
-
-> WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
-> For now, the following metrics and resources
->
-> **metrics**
->	* `kube_pod_container_resource_requests_nvidia_gpu_devices`
->	* `kube_pod_container_resource_limits_nvidia_gpu_devices`
->	* `kube_node_status_capacity_nvidia_gpu_cards`
->	* `kube_node_status_allocatable_nvidia_gpu_cards`
->
->	are removed in kube-state-metrics v1.4.0.
->
-> Any resources and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
-> which may be changed at any given release.
+Any resources and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
+which may be changed at any given release.
 
 See the [`docs`](docs) directory for more information on the exposed metrics.
 
@@ -154,6 +132,16 @@ Example of the above mentioned metrics:
 kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
 kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
 kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
+```
+
+kube-state-metrics also exposes some http request metrics, examples of those are:
+```
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="2.5"} 30
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="5"} 30
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="10"} 30
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="+Inf"} 30
+http_request_duration_seconds_sum{handler="metrics",method="get"} 0.021113919999999998
+http_request_duration_seconds_count{handler="metrics",method="get"} 30
 ```
 
 ### Scaling kube-state-metrics

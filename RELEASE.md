@@ -33,7 +33,7 @@ Maintaining the release branches for older minor releases happens on a best effo
 * Cut the new release branch, i.e., `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on
 * Cut the new release tag, i.e., `v1.2.0-rc.0`
 * New images are automatically built and pushed to `gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics`
-* Promote image by sending a PR to kubernetes/k8s.io repo.
+* Promote image by sending a PR to [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io) repo. Follow the [example PR](https://github.com/kubernetes/k8s.io/pull/1260).
 * Build and push newest image to `quay.io/coreos`(@brancz, @lilic)
 
 ## Stable release

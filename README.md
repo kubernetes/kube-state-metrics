@@ -81,7 +81,9 @@ release.
 
 The latest container image can be found at:
 * `quay.io/coreos/kube-state-metrics:v2.0.0-alpha`
-* `k8s.gcr.io/kube-state-metrics:v2.0.0-alpha`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:2.0.0-alpha`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm:2.0.0-alpha`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm64:2.0.0-alpha`
 
 ### Metrics Documentation
 

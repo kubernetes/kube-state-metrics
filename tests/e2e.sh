@@ -28,7 +28,7 @@ KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME="quay.io/coreos/kube-state-metrics-${ARCH}"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
-KIND_VERSION=v0.8.1
+KIND_VERSION=v0.9.0
 SUDO=${SUDO:-}
 
 OS=$(uname -s | awk '{print tolower($0)}')

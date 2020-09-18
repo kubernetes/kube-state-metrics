@@ -1,0 +1,33 @@
+name: Helm CI
+
+on:
+  pull_request:
+    paths:
+      - 'charts/**'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Lint chart
+        id: lint
+        uses: helm/chart-testing-action@v1.0.0
+        with:
+          command: lint
+          config: tests/ct.yaml
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.0.0
+        if: steps.lint.outputs.changed == 'true'
+
+      - name: Install chart
+        uses: helm/chart-testing-action@v1.0.0
+        if: steps.lint.outputs.changed == 'true'
+        with:
+          command: install
+          config: tests/ct.yaml

@@ -108,7 +108,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				var gcePDDiskName, ebsVolumeID, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, nfsServer, nfsPath string
+				var gcePDDiskName, ebsVolumeID, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, iscsiInitiatorName, nfsServer, nfsPath string
 
 				switch {
 				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
@@ -135,6 +135,9 @@ var (
 					iscsiTargetPortal = p.Spec.PersistentVolumeSource.ISCSI.TargetPortal
 					iscsiIQN = p.Spec.PersistentVolumeSource.ISCSI.IQN
 					iscsiLun = strconv.FormatInt(int64(p.Spec.PersistentVolumeSource.ISCSI.Lun), 10)
+					if p.Spec.PersistentVolumeSource.ISCSI.InitiatorName != nil {
+						iscsiInitiatorName = *p.Spec.PersistentVolumeSource.ISCSI.InitiatorName
+					}
 				case p.Spec.PersistentVolumeSource.NFS != nil:
 					nfsServer = p.Spec.PersistentVolumeSource.NFS.Server
 					nfsPath = p.Spec.PersistentVolumeSource.NFS.Path
@@ -153,6 +156,7 @@ var (
 								"iscsi_target_portal",
 								"iscsi_iqn",
 								"iscsi_lun",
+								"iscsi_initiator_name",
 								"nfs_server",
 								"nfs_path",
 							},
@@ -166,6 +170,7 @@ var (
 								iscsiTargetPortal,
 								iscsiIQN,
 								iscsiLun,
+								iscsiInitiatorName,
 								nfsServer,
 								nfsPath,
 							},

@@ -42,13 +42,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
 
-	ksmtypes "k8s.io/kube-state-metrics/pkg/builder/types"
-	"k8s.io/kube-state-metrics/pkg/listwatch"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
-	"k8s.io/kube-state-metrics/pkg/options"
-	"k8s.io/kube-state-metrics/pkg/sharding"
-	"k8s.io/kube-state-metrics/pkg/watch"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	"k8s.io/kube-state-metrics/v2/pkg/listwatch"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
+	"k8s.io/kube-state-metrics/v2/pkg/sharding"
+	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
 
 // Builder helps to build store. It follows the builder pattern

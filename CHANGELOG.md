@@ -2,6 +2,7 @@
 
 NOTE: This is a major new alpha 2.0 release with breaking changes and removed metrics. See details below!
 
+* [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238
 * [CHANGE] Update DaemonSet updated_number_scheduled metric name to be consistent #1181
 Metric was changed from kube_daemonset_updated_number_scheduled to kube_daemonset_status_updated_number_scheduled 
 * [CHANGE] Rework resource metrics #1168

@@ -30,8 +30,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 )
 
 func TestAsLibrary(t *testing.T) {

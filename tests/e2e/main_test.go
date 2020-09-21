@@ -33,7 +33,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/prometheus/util/promlint"
 
-	ksmFramework "k8s.io/kube-state-metrics/tests/e2e/framework"
+	ksmFramework "k8s.io/kube-state-metrics/v2/tests/e2e/framework"
 )
 
 var framework *ksmFramework.Framework

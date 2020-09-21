@@ -26,8 +26,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	"k8s.io/kube-state-metrics/pkg/allow"
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 var (

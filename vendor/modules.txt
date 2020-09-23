@@ -1,6 +1,7 @@
 # cloud.google.com/go v0.38.0
 cloud.google.com/go/compute/metadata
 # github.com/Azure/go-autorest/autorest v0.10.0
+## explicit
 github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/azure
 # github.com/Azure/go-autorest/autorest/adal v0.8.2
@@ -15,6 +16,7 @@ github.com/Azure/go-autorest/tracing
 github.com/alecthomas/template
 github.com/alecthomas/template/parse
 # github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
+## explicit
 github.com/alecthomas/units
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
@@ -37,12 +39,15 @@ github.com/dgryski/go-jump
 # github.com/evanphx/json-patch v4.2.0+incompatible
 github.com/evanphx/json-patch
 # github.com/fatih/color v1.9.0
+## explicit
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
+# github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
+## explicit
 # github.com/golang/protobuf v1.4.2
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -71,6 +76,7 @@ github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 # github.com/gophercloud/gophercloud v0.8.0
+## explicit
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
 github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
@@ -94,6 +100,8 @@ github.com/jsonnet-bundler/jsonnet-bundler/spec/v0
 github.com/jsonnet-bundler/jsonnet-bundler/spec/v1
 github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps
 github.com/jsonnet-bundler/jsonnet-bundler/tool/rewrite
+# github.com/kr/pretty v0.2.0
+## explicit
 # github.com/mattn/go-colorable v0.1.7
 ## explicit
 github.com/mattn/go-colorable
@@ -131,7 +139,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/prometheus/prometheus v1.8.2-0.20200326161412-ae041f97cfc6
+# github.com/prometheus/prometheus v2.5.0+incompatible
 ## explicit
 github.com/prometheus/prometheus/util/promlint
 # github.com/robfig/cron/v3 v3.0.0
@@ -143,6 +151,7 @@ github.com/spf13/pflag
 # golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -150,6 +159,7 @@ golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+## explicit
 golang.org/x/oauth2
 golang.org/x/oauth2/google
 golang.org/x/oauth2/internal

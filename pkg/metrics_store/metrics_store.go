@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 // MetricsStore implements the k8s.io/client-go/tools/cache.Store

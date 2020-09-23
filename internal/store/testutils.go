@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 type generateMetricsTestCase struct {

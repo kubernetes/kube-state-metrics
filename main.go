@@ -37,12 +37,12 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 
-	"k8s.io/kube-state-metrics/internal/store"
-	"k8s.io/kube-state-metrics/pkg/allowdenylist"
-	"k8s.io/kube-state-metrics/pkg/metricshandler"
-	"k8s.io/kube-state-metrics/pkg/options"
-	"k8s.io/kube-state-metrics/pkg/util/proc"
-	"k8s.io/kube-state-metrics/pkg/version"
+	"k8s.io/kube-state-metrics/v2/internal/store"
+	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
+	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
+	"k8s.io/kube-state-metrics/v2/pkg/version"
 )
 
 const (

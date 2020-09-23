@@ -35,7 +35,7 @@ github.com/evanphx/json-patch
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
-# github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
+# github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/protobuf v1.3.2
@@ -58,9 +58,9 @@ github.com/google/go-jsonnet/cmd/jsonnet
 github.com/google/go-jsonnet/internal/errors
 github.com/google/go-jsonnet/internal/parser
 github.com/google/go-jsonnet/internal/program
-# github.com/google/gofuzz v1.0.0
+# github.com/google/gofuzz v1.1.0
 github.com/google/gofuzz
-# github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d
+# github.com/googleapis/gnostic v0.1.0
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -102,7 +102,7 @@ github.com/pmezard/go-difflib/difflib
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
-# github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
+# github.com/prometheus/client_model v0.2.0
 github.com/prometheus/client_model/go
 # github.com/prometheus/common v0.6.0
 github.com/prometheus/common/expfmt
@@ -118,7 +118,7 @@ github.com/prometheus/prometheus/util/promlint
 github.com/robfig/cron/v3
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
+# golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 golang.org/x/net/context
@@ -133,7 +133,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20191010194322-b09406accb47
+# golang.org/x/sys v0.0.0-20191022100944-742c48ecaeb7
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.2
@@ -161,9 +161,9 @@ google.golang.org/appengine/urlfetch
 gopkg.in/alecthomas/kingpin.v2
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.2.4
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# k8s.io/api v0.17.2
+# k8s.io/api v0.18.8
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -204,7 +204,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.17.2
+# k8s.io/apimachinery v0.18.8
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/api/resource
@@ -247,7 +247,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/autoscaler/vertical-pod-autoscaler v0.0.0-20200123122250-fa95810cfc1e
+# k8s.io/autoscaler/vertical-pod-autoscaler v0.0.0-20200727194258-b7922d74509c
 k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1
 k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta1
 k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2
@@ -258,7 +258,7 @@ k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/a
 k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1beta1
 k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/autoscaling.k8s.io/v1beta2
 k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned/typed/poc.autoscaling.k8s.io/v1alpha1
-# k8s.io/client-go v0.17.2
+# k8s.io/client-go v0.18.8
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/kubernetes
@@ -374,14 +374,16 @@ k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/homedir
 k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
-k8s.io/client-go/util/retry
+k8s.io/client-go/util/workqueue
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
+# k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 k8s.io/kube-openapi/pkg/util/proto
-# k8s.io/utils v0.0.0-20200109141947-94aeca20bf09
+# k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/trace
-# sigs.k8s.io/yaml v1.1.0
+# sigs.k8s.io/structured-merge-diff/v3 v3.0.0
+sigs.k8s.io/structured-merge-diff/v3/value
+# sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml

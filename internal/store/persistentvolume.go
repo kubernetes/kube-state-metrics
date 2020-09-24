@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -149,10 +150,10 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(
 func createPersistentVolumeListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().PersistentVolumes().List(opts)
+			return kubeClient.CoreV1().PersistentVolumes().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().PersistentVolumes().Watch(opts)
+			return kubeClient.CoreV1().PersistentVolumes().Watch(context.TODO(), opts)
 		},
 	}
 }

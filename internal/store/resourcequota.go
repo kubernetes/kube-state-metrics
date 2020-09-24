@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -101,10 +102,10 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interf
 func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().ResourceQuotas(ns).List(opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

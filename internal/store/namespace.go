@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -138,10 +139,10 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *
 func createNamespaceListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Namespaces().List(opts)
+			return kubeClient.CoreV1().Namespaces().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Namespaces().Watch(opts)
+			return kubeClient.CoreV1().Namespaces().Watch(context.TODO(), opts)
 		},
 	}
 }

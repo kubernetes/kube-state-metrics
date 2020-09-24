@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -117,10 +118,10 @@ func wrapCSRFunc(f func(*certv1beta1.CertificateSigningRequest) *metric.Family) 
 func createCSRListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().List(opts)
+			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().Watch(opts)
+			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().Watch(context.TODO(), opts)
 		},
 	}
 }

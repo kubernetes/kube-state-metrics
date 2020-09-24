@@ -14,6 +14,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -111,10 +112,10 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(i
 func createStorageClassListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1().StorageClasses().List(opts)
+			return kubeClient.StorageV1().StorageClasses().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1().StorageClasses().Watch(opts)
+			return kubeClient.StorageV1().StorageClasses().Watch(context.TODO(), opts)
 		},
 	}
 }

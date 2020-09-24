@@ -17,6 +17,7 @@ limitations under the License.
 package listwatch
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -82,7 +83,7 @@ func NewFilteredUnprivilegedNamespaceListWatchFromClient(c cache.Getter, allowed
 				Resource("namespaces").
 				Name(name).
 				VersionedParams(&options, scheme.ParameterCodec).
-				Do().
+				Do(context.TODO()).
 				Into(result)
 			if err != nil {
 				return nil, err

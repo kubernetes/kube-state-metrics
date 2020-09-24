@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -156,10 +157,10 @@ func wrapIngressFunc(f func(*v1beta1.Ingress) *metric.Family) func(interface{}) 
 func createIngressListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.ExtensionsV1beta1().Ingresses(ns).List(opts)
+			return kubeClient.ExtensionsV1beta1().Ingresses(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.ExtensionsV1beta1().Ingresses(ns).Watch(opts)
+			return kubeClient.ExtensionsV1beta1().Ingresses(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

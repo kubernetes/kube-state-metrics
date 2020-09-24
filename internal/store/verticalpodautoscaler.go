@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -259,10 +261,10 @@ func createVPAListWatchFunc(vpaClient vpaclientset.Interface) func(kubeClient cl
 	return func(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 		return &cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-				return vpaClient.AutoscalingV1beta2().VerticalPodAutoscalers(ns).List(opts)
+				return vpaClient.AutoscalingV1beta2().VerticalPodAutoscalers(ns).List(context.TODO(), opts)
 			},
 			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-				return vpaClient.AutoscalingV1beta2().VerticalPodAutoscalers(ns).Watch(opts)
+				return vpaClient.AutoscalingV1beta2().VerticalPodAutoscalers(ns).Watch(context.TODO(), opts)
 			},
 		}
 	}

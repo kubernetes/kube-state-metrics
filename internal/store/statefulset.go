@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"k8s.io/kube-state-metrics/pkg/metric"
 	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
 
@@ -224,10 +225,10 @@ func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(interface{
 func createStatefulSetListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AppsV1().StatefulSets(ns).List(opts)
+			return kubeClient.AppsV1().StatefulSets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AppsV1().StatefulSets(ns).Watch(opts)
+			return kubeClient.AppsV1().StatefulSets(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

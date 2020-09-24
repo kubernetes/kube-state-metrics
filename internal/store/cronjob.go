@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -212,10 +213,10 @@ func wrapCronJobFunc(f func(*batchv1beta1.CronJob) *metric.Family) func(interfac
 func createCronJobListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.BatchV1beta1().CronJobs(ns).List(opts)
+			return kubeClient.BatchV1beta1().CronJobs(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.BatchV1beta1().CronJobs(ns).Watch(opts)
+			return kubeClient.BatchV1beta1().CronJobs(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

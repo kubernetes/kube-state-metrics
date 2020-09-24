@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -218,10 +219,10 @@ func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(interface{}) *
 func createDaemonSetListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AppsV1().DaemonSets(ns).List(opts)
+			return kubeClient.AppsV1().DaemonSets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AppsV1().DaemonSets(ns).Watch(opts)
+			return kubeClient.AppsV1().DaemonSets(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

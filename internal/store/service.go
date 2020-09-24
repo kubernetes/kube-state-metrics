@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -165,10 +166,10 @@ func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.F
 func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Services(ns).List(opts)
+			return kubeClient.CoreV1().Services(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Services(ns).Watch(opts)
+			return kubeClient.CoreV1().Services(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"strings"
 
 	"k8s.io/kube-state-metrics/pkg/constant"
@@ -525,10 +526,10 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 func createNodeListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Nodes().List(opts)
+			return kubeClient.CoreV1().Nodes().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Nodes().Watch(opts)
+			return kubeClient.CoreV1().Nodes().Watch(context.TODO(), opts)
 		},
 	}
 }

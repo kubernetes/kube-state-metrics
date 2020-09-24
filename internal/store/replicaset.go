@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"strconv"
 
 	"k8s.io/kube-state-metrics/pkg/metric"
@@ -224,10 +225,10 @@ func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(interface{})
 func createReplicaSetListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AppsV1().ReplicaSets(ns).List(opts)
+			return kubeClient.AppsV1().ReplicaSets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AppsV1().ReplicaSets(ns).Watch(opts)
+			return kubeClient.AppsV1().ReplicaSets(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

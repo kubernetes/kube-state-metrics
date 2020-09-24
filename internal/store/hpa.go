@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -243,10 +244,10 @@ func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) fu
 func createHPAListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).List(opts)
+			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Watch(opts)
+			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

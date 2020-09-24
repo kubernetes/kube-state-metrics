@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -156,10 +157,10 @@ func wrapVolumeAttachmentFunc(f func(*storagev1.VolumeAttachment) *metric.Family
 func createVolumeAttachmentListWatch(kubeClient clientset.Interface, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1().VolumeAttachments().List(opts)
+			return kubeClient.StorageV1().VolumeAttachments().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1().VolumeAttachments().Watch(opts)
+			return kubeClient.StorageV1().VolumeAttachments().Watch(context.TODO(), opts)
 		},
 	}
 }

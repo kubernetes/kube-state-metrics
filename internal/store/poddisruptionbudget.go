@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,7 +88,7 @@ var (
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(p.Status.PodDisruptionsAllowed),
+							Value: float64(p.Status.DisruptionsAllowed),
 						},
 					},
 				}
@@ -141,10 +143,10 @@ func wrapPodDisruptionBudgetFunc(f func(*v1beta1.PodDisruptionBudget) *metric.Fa
 func createPodDisruptionBudgetListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).List(opts)
+			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).Watch(opts)
+			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

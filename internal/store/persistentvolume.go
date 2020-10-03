@@ -32,11 +32,45 @@ import (
 )
 
 var (
+	descPersistentVolumeClaimRefName          = "kube_persistentvolume_claim_ref"
+	descPersistentVolumeClaimRefHelp          = "Information about the Persitant Volume Claim Reference."
+	descPersistentVolumeClaimRefDefaultLabels = []string{"persistentvolume"}
+
 	descPersistentVolumeLabelsName          = "kube_persistentvolume_labels"
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 
 	persistentVolumeMetricFamilies = []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			descPersistentVolumeClaimRefName,
+			descPersistentVolumeClaimRefHelp,
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				claimRef := p.Spec.ClaimRef
+
+				if claimRef == nil {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys: []string{
+								"name",
+								"claim_namespace",
+							},
+							LabelValues: []string{
+								p.Spec.ClaimRef.Name,
+								p.Spec.ClaimRef.Namespace,
+							},
+							Value: 1,
+						},
+					},
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			descPersistentVolumeLabelsName,
 			descPersistentVolumeLabelsHelp,

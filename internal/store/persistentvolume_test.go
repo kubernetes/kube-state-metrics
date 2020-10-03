@@ -402,6 +402,46 @@ func TestPersistentVolumeStore(t *testing.T) {
 		{
 			Obj: &v1.PersistentVolume{
 				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-claimed-pv",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumePending,
+				},
+				Spec: v1.PersistentVolumeSpec{
+					StorageClassName: "test",
+					ClaimRef: &v1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "PersistentVolumeClaim",
+						Name:       "pv-claim",
+						Namespace:  "default",
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_claim_ref Information about the Persitant Volume Claim Reference.
+					# TYPE kube_persistentvolume_claim_ref gauge
+					kube_persistentvolume_claim_ref{claim_namespace="default",name="pv-claim",persistentvolume="test-claimed-pv"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_claim_ref"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-unclaimed-pv",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_claim_ref Information about the Persitant Volume Claim Reference.
+					# TYPE kube_persistentvolume_claim_ref gauge
+				`,
+			MetricNames: []string{"kube_persistentvolume_claim_ref"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-pv",
 				},
 				Spec: v1.PersistentVolumeSpec{

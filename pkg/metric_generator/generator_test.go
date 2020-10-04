@@ -18,6 +18,7 @@ package generator
 
 import (
 	"reflect"
+	"regexp"
 	"sort"
 	"testing"
 
@@ -34,7 +35,7 @@ func TestFilterMetricFamiliesLabels(t *testing.T) {
 	}{
 		{
 			name:        "Returns all the metric's keys and values if not annotation/label metric by default",
-			allowLabels: allow.Labels(map[string][]string{}),
+			allowLabels: allow.Labels(map[string][]*regexp.Regexp{}),
 			familyGenerators: []FamilyGenerator{
 				{
 					Name: "node_info",
@@ -74,7 +75,7 @@ func TestFilterMetricFamiliesLabels(t *testing.T) {
 		},
 		{
 			name:        "Returns no labels if it's an annotation metric and no allowed labels specified",
-			allowLabels: allow.Labels(map[string][]string{}),
+			allowLabels: allow.Labels(map[string][]*regexp.Regexp{}),
 			familyGenerators: []FamilyGenerator{
 				{
 					Name: "node_annotations",
@@ -112,7 +113,7 @@ func TestFilterMetricFamiliesLabels(t *testing.T) {
 		},
 		{
 			name:        "Returns no labels if it's an label metric and no allowed labels specified",
-			allowLabels: allow.Labels(map[string][]string{}),
+			allowLabels: allow.Labels(map[string][]*regexp.Regexp{}),
 			familyGenerators: []FamilyGenerator{
 				{
 					Name: "node_labels",
@@ -150,10 +151,10 @@ func TestFilterMetricFamiliesLabels(t *testing.T) {
 		},
 		{
 			name: "Returns allowed labels for metric and label and value pairs are correct",
-			allowLabels: allow.Labels(map[string][]string{
+			allowLabels: allow.Labels(map[string][]*regexp.Regexp{
 				"node_info": {
-					"two",
-					"one",
+					regexp.MustCompile("two"),
+					regexp.MustCompile("one"),
 				},
 			}),
 			familyGenerators: []FamilyGenerator{
@@ -195,10 +196,10 @@ func TestFilterMetricFamiliesLabels(t *testing.T) {
 		},
 		{
 			name: "Returns allowed labels for metric",
-			allowLabels: allow.Labels(map[string][]string{
+			allowLabels: allow.Labels(map[string][]*regexp.Regexp{
 				"node_labels": {
-					"one",
-					"two",
+					regexp.MustCompile("one"),
+					regexp.MustCompile("two"),
 				},
 			}),
 			familyGenerators: []FamilyGenerator{
@@ -230,6 +231,95 @@ func TestFilterMetricFamiliesLabels(t *testing.T) {
 								{
 									LabelKeys:   []string{"one", "two"},
 									LabelValues: []string{"value-one", "value-two"},
+									Value:       1,
+								},
+							},
+						}
+					},
+				},
+			},
+		},
+		{
+			name: "Returns regex allow all labels for metric",
+			allowLabels: allow.Labels(map[string][]*regexp.Regexp{
+				"node_labels": {
+					regexp.MustCompile("^label1$"),
+				},
+			}),
+			familyGenerators: []FamilyGenerator{
+				{
+					Name: "node_labels",
+					Help: "some help",
+					Type: metric.Gauge,
+					GenerateFunc: func(obj interface{}) *metric.Family {
+						return &metric.Family{
+							Metrics: []*metric.Metric{
+								{
+									LabelKeys:   []string{"label1", "label11", "label111"},
+									LabelValues: []string{"value-one", "value-two", "value-three"},
+									Value:       1,
+								},
+							},
+						}
+					},
+				},
+			},
+			results: []FamilyGenerator{
+				{
+					Name: "node_labels",
+					Help: "some help",
+					Type: metric.Gauge,
+					GenerateFunc: func(obj interface{}) *metric.Family {
+						return &metric.Family{
+							Metrics: []*metric.Metric{
+								{
+									LabelKeys:   []string{"label1"},
+									LabelValues: []string{"value-one"},
+									Value:       1,
+								},
+							},
+						}
+					},
+				},
+			},
+		},
+		{
+			name: "Returns deduplicated metrics even though multiple regex's match",
+			allowLabels: allow.Labels(map[string][]*regexp.Regexp{
+				"node_labels": {
+					regexp.MustCompile("myprefix.*"),
+					regexp.MustCompile(".*"),
+				},
+			}),
+			familyGenerators: []FamilyGenerator{
+				{
+					Name: "node_labels",
+					Help: "some help",
+					Type: metric.Gauge,
+					GenerateFunc: func(obj interface{}) *metric.Family {
+						return &metric.Family{
+							Metrics: []*metric.Metric{
+								{
+									LabelKeys:   []string{"one", "myprefix-label", "myprefix-label2"},
+									LabelValues: []string{"value-one", "value-two", "value-three"},
+									Value:       1,
+								},
+							},
+						}
+					},
+				},
+			},
+			results: []FamilyGenerator{
+				{
+					Name: "node_labels",
+					Help: "some help",
+					Type: metric.Gauge,
+					GenerateFunc: func(obj interface{}) *metric.Family {
+						return &metric.Family{
+							Metrics: []*metric.Metric{
+								{
+									LabelKeys:   []string{"one", "myprefix-label", "myprefix-label2"},
+									LabelValues: []string{"value-one", "value-two", "value-three"},
 									Value:       1,
 								},
 							},

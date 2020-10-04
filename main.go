@@ -26,6 +26,8 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
+
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -140,7 +142,11 @@ func main() {
 	storeBuilder.WithKubeClient(kubeClient)
 	storeBuilder.WithVPAClient(vpaClient)
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
-	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
+	labels, err := allow.ParseLabels(opts.LabelsAllowList)
+	if err != nil {
+		klog.Fatalf("error initializing the allowLabels list : %v", err)
+	}
+	storeBuilder.WithAllowLabels(labels)
 
 	ksmMetricsRegistry.MustRegister(
 		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),

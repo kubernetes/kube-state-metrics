@@ -26,7 +26,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
@@ -71,14 +70,6 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 	}
 
 	return ms
-}
-
-func sanitizeAllowLabels(l map[string][]string) allow.Labels {
-	allowLabels := make(map[string][]string)
-	for m, labels := range l {
-		allowLabels[sanitizeLabelName(m)] = labels
-	}
-	return allowLabels
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {

@@ -163,22 +163,13 @@ func TestLabelsAllowListSet(t *testing.T) {
 		},
 		{
 			Desc:  "normal metrics",
-			Value: "kube_cronjob_info=[somelabel,label2]",
+			Value: "kube_cronjob_info=[^somelabel$,label2],kube_cronjob_count=[somelabel.*,label2],kube_cronjob_desc=[somelabel,label2]",
 			Wanted: LabelsAllowList(map[string][]string{
 				"kube_cronjob_info": {
-					"somelabel",
-					"label2",
-				}}),
-		},
-		{
-			Desc:  "normal metrics",
-			Value: "kube_cronjob_info=[somelabel,label2],kube_cronjob_count=[somelabel,label2],kube_cronjob_desc=[somelabel,label2]",
-			Wanted: LabelsAllowList(map[string][]string{
-				"kube_cronjob_info": {
-					"somelabel",
+					"^somelabel$",
 					"label2"},
 				"kube_cronjob_count": {
-					"somelabel",
+					"somelabel.*",
 					"label2"},
 				"kube_cronjob_desc": {
 					"somelabel",

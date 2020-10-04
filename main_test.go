@@ -28,6 +28,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allow"
+
 	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -75,7 +77,11 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	}
 	builder.WithAllowDenyList(l)
 
-	builder.WithAllowLabels(map[string][]string{})
+	allowLabels, err := allow.ParseLabels(map[string][]string{})
+	if err != nil {
+		b.Fatal(err)
+	}
+	builder.WithAllowLabels(allowLabels)
 
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
@@ -139,12 +145,17 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	builder.WithAllowDenyList(l)
-	builder.WithAllowLabels(map[string][]string{
+
+	allowLabels, err := allow.ParseLabels(map[string][]string{
 		"kube_pod_labels": {
 			"namespace",
 			"pod",
 		},
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	builder.WithAllowLabels(allowLabels)
 
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
@@ -391,6 +402,11 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	allowLabels, err := allow.ParseLabels(map[string][]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	reg := prometheus.NewRegistry()
 	unshardedBuilder := store.NewBuilder()
 	unshardedBuilder.WithMetrics(reg)
@@ -398,7 +414,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	unshardedBuilder.WithKubeClient(kubeClient)
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
 	unshardedBuilder.WithAllowDenyList(l)
-	unshardedBuilder.WithAllowLabels(map[string][]string{})
+	unshardedBuilder.WithAllowLabels(allowLabels)
 	unshardedBuilder.WithGenerateStoreFunc(unshardedBuilder.DefaultGenerateStoreFunc())
 
 	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
@@ -411,7 +427,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder1.WithKubeClient(kubeClient)
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder1.WithAllowDenyList(l)
-	shardedBuilder1.WithAllowLabels(map[string][]string{})
+	shardedBuilder1.WithAllowLabels(allowLabels)
 	shardedBuilder1.WithGenerateStoreFunc(shardedBuilder1.DefaultGenerateStoreFunc())
 
 	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
@@ -424,7 +440,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder2.WithKubeClient(kubeClient)
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder2.WithAllowDenyList(l)
-	shardedBuilder2.WithAllowLabels(map[string][]string{})
+	shardedBuilder2.WithAllowLabels(allowLabels)
 	shardedBuilder2.WithGenerateStoreFunc(shardedBuilder2.DefaultGenerateStoreFunc())
 
 	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)

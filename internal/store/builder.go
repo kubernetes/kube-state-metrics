@@ -137,8 +137,8 @@ func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
 }
 
 // WithAllowLabels configures which labels can be returned for metrics
-func (b *Builder) WithAllowLabels(labels map[string][]string) {
-	b.allowLabels = sanitizeAllowLabels(labels)
+func (b *Builder) WithAllowLabels(labels ksmtypes.AllowLabels) {
+	b.allowLabels = labels
 }
 
 // Build initializes and registers all enabled stores.

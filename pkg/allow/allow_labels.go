@@ -20,15 +20,32 @@ import (
 	"regexp"
 )
 
-var defaultMetricLabels = map[*regexp.Regexp][]string{
+var defaultMetricLabels = map[*regexp.Regexp][]*regexp.Regexp{
 	regexp.MustCompile(".*_labels$"):      {},
 	regexp.MustCompile(".*_annotations$"): {},
+}
+
+// ParseLabels parses and compiles all of the regexes for Labels
+func ParseLabels(l map[string][]string) (Labels, error) {
+	labels := make(map[string][]*regexp.Regexp)
+	for metric, lbls := range l {
+		var labelsRegex []*regexp.Regexp
+		for _, lbl := range lbls {
+			reg, err := regexp.Compile(lbl)
+			if err != nil {
+				return nil, err
+			}
+			labelsRegex = append(labelsRegex, reg)
+		}
+		labels[metric] = labelsRegex
+	}
+	return labels, nil
 }
 
 // Labels provide a way to allow only specified labels for metrics.
 // Falls back to default labels, if your metric doesn't have defaults
 // then all labels are allowed.
-type Labels map[string][]string
+type Labels map[string][]*regexp.Regexp
 
 // Allowed returns allowed metric keys and values for the metric.
 func (a Labels) Allowed(metric string, labels, values []string) ([]string, []string) {
@@ -49,11 +66,17 @@ func (a Labels) Allowed(metric string, labels, values []string) ([]string, []str
 
 	var finalLabels, finalValues []string
 	labelSet := labelSet(allowedLabels)
+	alreadyMatched := make(map[string]interface{}) // used to prevent duplicate labels
 	for _, allowedLabel := range labelSet {
 		for i, label := range labels {
-			if label == allowedLabel {
+			_, ok := alreadyMatched[label]
+			if ok {
+				continue
+			}
+			if allowedLabel.MatchString(label) {
 				finalLabels = append(finalLabels, label)
 				finalValues = append(finalValues, values[i])
+				alreadyMatched[label] = struct{}{}
 			}
 		}
 	}
@@ -61,13 +84,13 @@ func (a Labels) Allowed(metric string, labels, values []string) ([]string, []str
 	return finalLabels, finalValues
 }
 
-func labelSet(lists ...[]string) []string {
+func labelSet(lists ...[]*regexp.Regexp) []*regexp.Regexp {
 	m := make(map[string]interface{})
-	var set []string
+	var set []*regexp.Regexp
 	for _, list := range lists {
 		for _, e := range list {
-			if _, ok := m[e]; !ok {
-				m[e] = struct{}{}
+			if _, ok := m[e.String()]; !ok {
+				m[e.String()] = struct{}{}
 				set = append(set, e)
 			}
 		}

@@ -17,17 +17,16 @@ limitations under the License.
 package options
 
 import (
+	"bufio"
 	"errors"
-	"regexp"
+	"io"
 	"sort"
 	"strings"
-	"text/scanner"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
-var labelsAllowListFormat = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,^label2.*,labeln...],metricN=[]")
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -138,18 +137,36 @@ type LabelsAllowList map[string][]string
 
 // Set converts a comma-separated string of metrics and their allowed labels and appends to the LabelsAllowList.
 func (l *LabelsAllowList) Set(value string) error {
-	var s scanner.Scanner
-	s.Init(strings.NewReader(value))
+	s := bufio.NewReader(strings.NewReader(value))
 
 	var (
 		m        = make(map[string][]string, len(*l))
-		previous rune
-		next     rune
+		previous byte
+		next     byte
 		inLabels bool
 		name     string
+		label    string
+		end      bool
 	)
-	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		next = s.Peek()
+	for {
+		tok, err := s.ReadByte()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+
+		tmp, err := s.Peek(1)
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			end = true
+		} else {
+			next = tmp[0]
+		}
+
 		switch tok {
 		case '=':
 			if previous == ',' || next != '[' {
@@ -160,28 +177,35 @@ func (l *LabelsAllowList) Set(value string) error {
 				return errLabelsAllowListFormat
 			}
 			inLabels = true
+			if name != "" {
+				m[name] = []string{}
+			}
 		case ']':
 			// if after metric group, has char not comma or end.
-			if next != scanner.EOF && next != ',' {
+			if !end && next != ',' {
 				return errLabelsAllowListFormat
 			}
 			inLabels = false
+			if label != "" {
+				m[name] = append(m[name], label)
+			}
+			label = ""
+			name = ""
 		case ',':
 			// if starts or ends with comma
-			if previous == tok || next == scanner.EOF {
+			if previous == tok {
 				return errLabelsAllowListFormat
 			}
+			if label != "" {
+				m[name] = append(m[name], label)
+			}
+			label = ""
 			continue
 		default:
-			text := s.TokenText()
-			if !labelsAllowListFormat.MatchString(text) {
-				return errLabelsAllowListFormat
-			}
 			if !inLabels {
-				name = text
-				m[name] = []string{}
+				name += string(tok)
 			} else {
-				m[name] = append(m[name], text)
+				label += string(tok)
 			}
 		}
 		previous = tok

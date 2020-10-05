@@ -231,6 +231,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
       roleBinding.mixin.metadata.withLabels(ksm.commonLabels) +
       roleBinding.mixin.roleRef.withApiGroup('rbac.authorization.k8s.io') +
       roleBinding.mixin.roleRef.withName(ksm.name) +
+      roleBinding.mixin.roleRef.withNamespace(ksm.namespace) +
       roleBinding.mixin.roleRef.mixinInstance({ kind: 'Role' }) +
       roleBinding.withSubjects([{ kind: 'ServiceAccount', name: ksm.name }]),
 

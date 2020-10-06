@@ -1,8 +1,11 @@
 ## v2.0.0.-alpha / 2020-05-24
+* [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238
+
+## v2.0.0.-alpha / 2020-09-16
 
 NOTE: This is a major new alpha 2.0 release with breaking changes and removed metrics. See details below!
 
-* [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238
+* [CHANGE] Apply boundaries to metrics and allow via flag (--labels-allow-list) what labels to include #1125 
 * [CHANGE] Update DaemonSet updated_number_scheduled metric name to be consistent #1181
 Metric was changed from kube_daemonset_updated_number_scheduled to kube_daemonset_status_updated_number_scheduled 
 * [CHANGE] Rework resource metrics #1168
@@ -15,7 +18,8 @@ Metrics kube_pod_container_resource_requests, kube_pod_container_resource_limits
 * [CHANGE] v2: Rename collector flag to resource flag #1006
 --resources is the new flag
 * [CHANGE] Remove non-identifying labels from pod metrics #1009 
-* [CHANGE] v2: Remove deprecated metrics #1004
+* [CHANGE] v2: Remove deprecated stable metrics #1004
+Note that some of these were replaced with EXPERIMENTAL resource metrics. See #1168 for more details.
   `kube_pod_container_resource_requests` and `kube_pod_container_resource_limits` are the replacements with `resource` labels
   representing the resource name and `unit` labels representing the resource unit.
   - kube_pod_container_resource_requests_cpu_cores
@@ -37,7 +41,6 @@ New flags are --metric-allowlist and --metric-denylist
 All metrics with prefix of kube_hpa_ were renamed to kube_horizontalpodautoscaler_
 * [CHANGE] v2: change metrics port to 8080, telemetry port to 8081 #1005 
 * [FEATURE] Add http request metric for kube-state-metrics main /metrics #1218  
-* [FEATURE] Apply boundaries to metrics and allow via flag (--labels-allow-list) what labels to include #1125 
 * [FEATURE] Add fc/iscsi/nfs identifier tags to persistentvolume_info metric #1208 
 * [FEATURE] Adds new pod metric kube_pod_container_state_started #1183 
 * [FEATURE] Add observedGeneration metric (kube_daemonset_status_observed_generation) for DaemonSets #1178

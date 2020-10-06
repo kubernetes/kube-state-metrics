@@ -1,7 +1,12 @@
-## v2.0.0.-alpha / 2020-05-24
-* [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238
+## v2.0.0-alpha.1 / 2020-10-06
 
-## v2.0.0.-alpha / 2020-09-16
+* [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238
+* [CHANGE] Bump klog to v2 and client-go to 1.19 #1250
+* [FEATURE] Add iscsi initiator name to persistentvolume_info #1235 
+* [BUGFIX] Added Namespace to Rolebinding Jsonnet #1233 
+* [BUGFIX] Reference closure scoped family generator #1240 
+
+## v2.0.0-alpha / 2020-09-16
 
 NOTE: This is a major new alpha 2.0 release with breaking changes and removed metrics. See details below!
 

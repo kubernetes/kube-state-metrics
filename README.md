@@ -67,8 +67,8 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 |--------------------|---------------------|---------------------|----------------------|----------------------|----------------------|
 | **v1.8.0**         |         ✓           |         -           |          -           |          -           |          -           |
 | **v1.9.7**         |         -           |         ✓           |          -           |          -           |          -           |
-| **v2.0.0-alpha**   |         -           |         ✓           |          ✓           |          ✓           |          ✓           |
-| **master**         |         -           |         ✓           |          ✓           |          ✓           |          ✓           |
+| **v2.0.0-alpha.1** |         -           |         -           |          ✓           |          ✓           |          ✓           |
+| **master**         |         -           |         -           |          ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
@@ -80,10 +80,10 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:2.0.0-alpha`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm:2.0.0-alpha`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm64:2.0.0-alpha`
+* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha.1`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:2.0.0-alpha.1`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm:2.0.0-alpha.1`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm64:2.0.0-alpha.1`
 
 ### Metrics Documentation
 

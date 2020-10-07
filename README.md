@@ -184,14 +184,14 @@ It is a cluster level component which periodically scrapes metrics from all
 Kubernetes nodes served by Kubelet through Summary API. The metrics are
 aggregated, stored in memory and served in [Metrics API
 format](https://git.k8s.io/metrics/pkg/apis/metrics/v1alpha1/types.go). The
-metric-server stores the latest values only and is not responsible for
+metrics-server stores the latest values only and is not responsible for
 forwarding metrics to third-party destinations.
 
 kube-state-metrics is focused on generating completely new metrics from
 Kubernetes' object state (e.g. metrics based on deployments, replica sets,
 etc.). It holds an entire snapshot of Kubernetes state in memory and
 continuously generates new metrics based off of it. And just like the
-metric-server it too is not responsibile for exporting its metrics anywhere.
+metrics-server it too is not responsibile for exporting its metrics anywhere.
 
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.

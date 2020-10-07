@@ -23,7 +23,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // StartReaper starts a goroutine to reap processes if called from a process

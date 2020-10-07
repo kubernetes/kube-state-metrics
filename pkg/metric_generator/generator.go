@@ -135,7 +135,7 @@ func FilterMetricFamiliesLabels(allowLabels allowLabels, families []FamilyGenera
 				metricFamily := familyGenerator.GenerateFunc(obj)
 
 				for _, m := range metricFamily.Metrics {
-					m.LabelKeys, m.LabelValues = allowLabels.Allowed(f.Name, m.LabelKeys, m.LabelValues)
+					m.LabelKeys, m.LabelValues = allowLabels.Allowed(familyGenerator.Name, m.LabelKeys, m.LabelValues)
 				}
 				return metricFamily
 			}

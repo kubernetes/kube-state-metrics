@@ -138,7 +138,12 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	builder.WithAllowDenyList(l)
-	builder.WithAllowLabels(map[string][]string{})
+	builder.WithAllowLabels(map[string][]string{
+		"kube_pod_labels": {
+			"namespace",
+			"pod",
+		},
+	})
 
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)

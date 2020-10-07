@@ -25,7 +25,7 @@ spec:
 ```txt
 $ kube-state-metrics -h
 Usage of ./kube-state-metrics:
-      --add_dir_header                   If true, adds the file directory to the header
+      --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
       --apiserver string                 The URL of the apiserver to use as a master
       --enable-gzip-encoding             Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.

@@ -49,7 +49,7 @@ func (a Labels) Allowed(metric string, labels, values []string) ([]string, []str
 
 	var finalLabels, finalValues []string
 	labelSet := labelSet(allowedLabels)
-	for allowedLabel := range labelSet {
+	for _, allowedLabel := range labelSet {
 		for i, label := range labels {
 			if label == allowedLabel {
 				finalLabels = append(finalLabels, label)
@@ -61,12 +61,16 @@ func (a Labels) Allowed(metric string, labels, values []string) ([]string, []str
 	return finalLabels, finalValues
 }
 
-func labelSet(lists ...[]string) map[string]interface{} {
+func labelSet(lists ...[]string) []string {
 	m := make(map[string]interface{})
+	var set []string
 	for _, list := range lists {
 		for _, e := range list {
-			m[e] = struct{}{}
+			if _, ok := m[e]; !ok {
+				m[e] = struct{}{}
+				set = append(set, e)
+			}
 		}
 	}
-	return m
+	return set
 }

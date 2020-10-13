@@ -58,7 +58,6 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
         'daemonsets',
         'deployments',
         'replicasets',
-        'ingresses',
       ]) +
       rulesType.withVerbs(['list', 'watch']),
 
@@ -135,6 +134,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
       rulesType.withApiGroups(['networking.k8s.io']) +
       rulesType.withResources([
         'networkpolicies',
+        'ingresses',
       ]) +
       rulesType.withVerbs(['list', 'watch']),
 
@@ -228,10 +228,10 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
 
       roleBinding.new() +
       roleBinding.mixin.metadata.withName(ksm.name) +
+      roleBinding.mixin.metadata.withNamespace(ksm.namespace) +
       roleBinding.mixin.metadata.withLabels(ksm.commonLabels) +
       roleBinding.mixin.roleRef.withApiGroup('rbac.authorization.k8s.io') +
       roleBinding.mixin.roleRef.withName(ksm.name) +
-      roleBinding.mixin.roleRef.withNamespace(ksm.namespace) +
       roleBinding.mixin.roleRef.mixinInstance({ kind: 'Role' }) +
       roleBinding.withSubjects([{ kind: 'ServiceAccount', name: ksm.name }]),
 

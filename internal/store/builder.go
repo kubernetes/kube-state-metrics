@@ -32,7 +32,6 @@ import (
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -235,7 +234,7 @@ func (b *Builder) buildHPAStore() cache.Store {
 }
 
 func (b *Builder) buildIngressStore() cache.Store {
-	return b.buildStoreFunc(ingressMetricFamilies, &extensions.Ingress{}, createIngressListWatch)
+	return b.buildStoreFunc(ingressMetricFamilies, &networkingv1.Ingress{}, createIngressListWatch)
 }
 
 func (b *Builder) buildJobStore() cache.Store {

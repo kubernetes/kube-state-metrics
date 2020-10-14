@@ -28,4 +28,4 @@ require (
 	k8s.io/klog/v2 v2.2.0
 )
 
-go 1.14
+go 1.15

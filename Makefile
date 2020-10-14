@@ -9,7 +9,7 @@ DOCKER_CLI ?= docker
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
 BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-Commit = $(shell git rev-parse --short HEAD)
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/pkg
 GO_VERSION = 1.14.7
@@ -54,7 +54,7 @@ doccheck: generate
 	@echo OK
 
 build-local:
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
+	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${GIT_COMMIT} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
 
 build: kube-state-metrics
 
@@ -99,7 +99,7 @@ do-push-%:
 
 push-multi-arch:
 	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:${TAG}; done
+	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
 	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
 quay-push: .quay-push-$(ARCH)

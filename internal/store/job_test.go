@@ -70,13 +70,13 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_active gauge
 		# HELP kube_job_status_completion_time CompletionTime represents time when the job was completed.
 		# TYPE kube_job_status_completion_time gauge
-		# HELP kube_job_status_failed The number of pods which reached Phase Failed.
+		# HELP kube_job_status_failed The number of pods which reached Phase Failed and the reason for failure.
 		# TYPE kube_job_status_failed gauge
 		# HELP kube_job_status_start_time StartTime represents time when the job was acknowledged by the Job Manager.
 		# TYPE kube_job_status_start_time gauge
 		# HELP kube_job_status_succeeded The number of pods which reached Phase Succeeded.
-		# TYPE kube_job_status_succeeded gauge
-	`
+		# TYPE kube_job_status_succeeded gauge`
+
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1batch.Job{
@@ -183,7 +183,7 @@ func TestJobStore(t *testing.T) {
 					CompletionTime: &metav1.Time{Time: FailedJob1CompletionTime},
 					StartTime:      &metav1.Time{Time: FailedJob1StartTime},
 					Conditions: []v1batch.JobCondition{
-						{Type: v1batch.JobFailed, Status: v1.ConditionTrue},
+						{Type: v1batch.JobFailed, Status: v1.ConditionTrue, Reason: "BackoffLimitExceeded"},
 					},
 				},
 				Spec: v1batch.JobSpec{
@@ -204,7 +204,9 @@ func TestJobStore(t *testing.T) {
 				kube_job_spec_parallelism{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_status_active{job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_status_completion_time{job_name="FailedJob1",namespace="ns1"} 1.495810807e+09
-				kube_job_status_failed{job_name="FailedJob1",namespace="ns1"} 1
+				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded"} 1
+				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded"} 0
+				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="Evicted"} 0
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
 `,

@@ -35,6 +35,7 @@ var (
 	descJobLabelsName          = "kube_job_labels"
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
+	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
 
 	jobMetricFamilies = []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
@@ -163,16 +164,48 @@ var (
 		),
 		*generator.NewFamilyGenerator(
 			"kube_job_status_failed",
-			"The number of pods which reached Phase Failed.",
+			"The number of pods which reached Phase Failed and the reason for failure.",
 			metric.Gauge,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(j.Status.Failed),
+				var ms []*metric.Metric
+
+				if float64(j.Status.Failed) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
+								Value: float64(j.Status.Failed),
+							},
 						},
-					},
+					}
+				}
+
+				for _, condition := range j.Status.Conditions {
+					if condition.Type == v1batch.JobFailed {
+						reasonKnown := false
+						for _, reason := range jobFailureReasons {
+							reasonKnown = reasonKnown || failureReason(&condition, reason)
+
+							// for known reasons
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"reason"},
+								LabelValues: []string{reason},
+								Value:       boolFloat64(failureReason(&condition, reason)),
+							})
+						}
+						// for unknown reasons
+						if !reasonKnown {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   []string{"reason"},
+								LabelValues: []string{""},
+								Value:       float64(j.Status.Failed),
+							})
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -349,4 +382,11 @@ func createJobListWatch(kubeClient clientset.Interface, ns string) cache.ListerW
 			return kubeClient.BatchV1().Jobs(ns).Watch(context.TODO(), opts)
 		},
 	}
+}
+
+func failureReason(jc *v1batch.JobCondition, reason string) bool {
+	if jc == nil {
+		return false
+	}
+	return jc.Reason == reason
 }

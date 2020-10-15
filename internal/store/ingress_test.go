@@ -19,9 +19,8 @@ package store
 import (
 	"testing"
 
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -48,7 +47,7 @@ func TestIngressStore(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.Ingress{
+			Obj: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "ingress1",
 					Namespace:       "ns1",
@@ -63,7 +62,7 @@ func TestIngressStore(t *testing.T) {
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},
 		{
-			Obj: &v1beta1.Ingress{
+			Obj: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "ingress2",
 					Namespace:         "ns2",
@@ -80,7 +79,7 @@ func TestIngressStore(t *testing.T) {
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},
 		{
-			Obj: &v1beta1.Ingress{
+			Obj: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "ingress3",
 					Namespace:         "ns3",
@@ -97,7 +96,7 @@ func TestIngressStore(t *testing.T) {
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},
 		{
-			Obj: &v1beta1.Ingress{
+			Obj: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "ingress4",
 					Namespace:         "ns4",
@@ -105,18 +104,22 @@ func TestIngressStore(t *testing.T) {
 					Labels:            map[string]string{"test-4": "test-4"},
 					ResourceVersion:   "abcdef",
 				},
-				Spec: v1beta1.IngressSpec{
-					Rules: []v1beta1.IngressRule{
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
 						{
 							Host: "somehost",
-							IngressRuleValue: v1beta1.IngressRuleValue{
-								HTTP: &v1beta1.HTTPIngressRuleValue{
-									Paths: []v1beta1.HTTPIngressPath{
+							IngressRuleValue: networkingv1.IngressRuleValue{
+								HTTP: &networkingv1.HTTPIngressRuleValue{
+									Paths: []networkingv1.HTTPIngressPath{
 										{
 											Path: "/somepath",
-											Backend: v1beta1.IngressBackend{
-												ServiceName: "someservice",
-												ServicePort: intstr.FromInt(1234),
+											Backend: networkingv1.IngressBackend{
+												Service: &networkingv1.IngressServiceBackend{
+													Name: "someservice",
+													Port: networkingv1.ServiceBackendPort{
+														Number: 1234,
+													},
+												},
 											},
 										},
 									},
@@ -138,7 +141,7 @@ func TestIngressStore(t *testing.T) {
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},
 		{
-			Obj: &v1beta1.Ingress{
+			Obj: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "ingress5",
 					Namespace:         "ns5",
@@ -146,8 +149,8 @@ func TestIngressStore(t *testing.T) {
 					Labels:            map[string]string{"test-5": "test-5"},
 					ResourceVersion:   "abcdef",
 				},
-				Spec: v1beta1.IngressSpec{
-					TLS: []v1beta1.IngressTLS{
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
 						{
 							Hosts:      []string{"somehost1", "somehost2"},
 							SecretName: "somesecret",

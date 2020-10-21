@@ -30,6 +30,7 @@ rules:
   - daemonsets
   - deployments
   - replicasets
+  - ingresses
   verbs:
   - list
   - watch

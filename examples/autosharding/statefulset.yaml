@@ -24,12 +24,10 @@ spec:
         - --pod-namespace=$(POD_NAMESPACE)
         env:
         - name: POD_NAME
-          value: ""
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
         - name: POD_NAMESPACE
-          value: ""
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -57,4 +55,3 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: kube-state-metrics
-  volumeClaimTemplates: []

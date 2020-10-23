@@ -1317,6 +1317,27 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_pod_runtimeclass_name_info",
+			"The runtimeclass associated with the pod.",
+			metric.Gauge,
+			"",
+			wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if p.Spec.RuntimeClassName != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"runtimeclass_name"},
+						LabelValues: []string{*p.Spec.RuntimeClassName},
+						Value:       1,
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 )
 

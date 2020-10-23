@@ -202,6 +202,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
 # HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
+# HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
 # HELP kube_pod_owner Information about the Pod's owner.
 # HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
@@ -251,6 +252,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_labels gauge
 # TYPE kube_pod_overhead_cpu_cores gauge
 # TYPE kube_pod_overhead_memory_bytes gauge
+# TYPE kube_pod_runtimeclass_name_info gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge

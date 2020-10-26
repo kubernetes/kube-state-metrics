@@ -29,6 +29,7 @@ import (
 
 func TestPodStore(t *testing.T) {
 	var test = true
+	runtimeclass := "foo"
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
@@ -1575,6 +1576,28 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					Labels: map[string]string{
+						"app": "example",
+					},
+				},
+				Spec: v1.PodSpec{
+					RuntimeClassName: &runtimeclass,
+				},
+			},
+			Want: `
+				# HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
+				# TYPE kube_pod_runtimeclass_name_info gauge
+				kube_pod_runtimeclass_name_info{namespace="ns1",pod="pod1",runtimeclass_name="foo"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_runtimeclass_name_info",
+			},
+		},
 	}
 
 	for i, c := range cases {
@@ -1650,7 +1673,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 49
+	expectedFamilies := 50
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

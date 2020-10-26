@@ -35,6 +35,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
   - [Conflict resolution in label names](#conflict-resolution-in-label-names)
+  - [Exposing kubernetes labels](#enabling-kubernetes-labels)
   - [Enabling VerticalPodAutoscalers](#enabling-verticalpodautoscalers)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
@@ -51,6 +52,8 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Limited privileges environment](#limited-privileges-environment)
   - [Development](#development)
   - [Developer Contributions](#developer-contributions)
+
+### Versioning
 
 #### Kubernetes Version
 
@@ -114,6 +117,19 @@ you might want to consider addressing this issue on a different level of the sta
 e.g. by standardizing Kubernetes labels using an
 [Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 that ensures that there are no possible conflicts.
+
+#### Enabling Kubernetes labels
+
+In order to prevent high cardinality of the `*_labels` family of metrics, kube-state-metrics only exposes specifically allowed labels.
+The labels can be configured through the use of the `--labels-allow-list` flag. The flag accepts a comma separated
+list of `<metric>=[<labels>]`, where `<labels>` are again comma separated full label names. For example:
+
+```
+--labels-allow-list kube_deployment_labels[label_app,label_env,deployment,namespace],kube_pod_labels[label_app,label_env,pod,namespace]
+```
+
+Note that the current implementation requires the inclusion of all wanted labels, this includes the metrics own labels like `deployment`, `node`, `pod`, etc. and `namespace`.
+When `--labels-allow-list` is specified multiple times, only the last will be honoured.
 
 #### Enabling VerticalPodAutoscalers
 

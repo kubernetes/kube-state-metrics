@@ -1,3 +1,13 @@
+## v2.0.0-alpha.2 / 2020-10-27
+
+* [CHANGE] Migrate ingress and certificates to new stable APIs #1260
+* [CHANGE] Revert "Rework resource metrics" #1278
+To better align with future Kubernetes resource metrics, the changes to resource metrics were reverted, new metrics are:
+kube_pod_container_resource_requests and kube_pod_container_resource_limits
+* [FEATURE] Added the job failure reason in kube_job_status_failed metric #1214
+* [FEATURE] feat(persistentvolume): claimRef info to labels (kube_persistentvolume_claim_ref) #1244
+* [FEATURE] pod: add gauge for runtimeclass handler (kube_pod_runtimeclass_name_info) #1276
+
 ## v2.0.0-alpha.1 / 2020-10-06
 
 * [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238

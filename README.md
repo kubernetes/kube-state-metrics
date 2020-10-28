@@ -26,6 +26,8 @@ the raw metrics. Note that the metrics exposed on the `/metrics` endpoint
 reflect the current state of the Kubernetes cluster. When Kubernetes objects
 are deleted they are no longer visible on the `/metrics` endpoint.
 
+Note that any new features will be merged into master but released with v2.1.0 release, as currently v2.0.0 is in post feature freeze and only accepting bug fixes.
+
 ## Table of Contents
 
 - [Versioning](#versioning)
@@ -61,18 +63,22 @@ The compatibility matrix for client-go and Kubernetes cluster can be found
 All additional compatibility is only best effort, or happens to still/already be supported.
 
 #### Compatibility matrix
+
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
 | kube-state-metrics | **Kubernetes 1.15** | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |
 |--------------------|---------------------|---------------------|----------------------|----------------------|----------------------|
 | **v1.8.0**         |         ✓           |         -           |          -           |          -           |          -           |
 | **v1.9.7**         |         -           |         ✓           |          -           |          -           |          -           |
-| **v2.0.0-alpha.1** |         -           |         -           |          ✓           |          ✓           |          ✓           |
-| **master**         |         -           |         -           |          ✓           |          ✓           |          ✓           |
+| **v2.0.0-alpha.2** |         -           |         -           |          -/✓         |         -/✓          |          ✓           |
+| **master**         |         -           |         -           |          -/✓         |          -/✓         |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
+**Note:** The `v2.0.0-alpha.2+` and `master` releases of kube-state-metrics work on Kubernetes v1.17 and v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics and are on an older Kubernetes version, use v2.0.0-alpha.1 or v1.9.7 kube-state-metrics release. 
+
 #### Resource group version compatibility
+
 Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
 in different Kubernetes versions. For now, kube-state-metrics will only use the oldest API available in the latest
 release.
@@ -80,10 +86,10 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha.1`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:2.0.0-alpha.1`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm:2.0.0-alpha.1`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm64:2.0.0-alpha.1`
+* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha.2`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:2.0.0-alpha.2`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm:2.0.0-alpha.2`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm64:2.0.0-alpha.2`
 
 ### Metrics Documentation
 
@@ -184,14 +190,14 @@ It is a cluster level component which periodically scrapes metrics from all
 Kubernetes nodes served by Kubelet through Summary API. The metrics are
 aggregated, stored in memory and served in [Metrics API
 format](https://git.k8s.io/metrics/pkg/apis/metrics/v1alpha1/types.go). The
-metric-server stores the latest values only and is not responsible for
+metrics-server stores the latest values only and is not responsible for
 forwarding metrics to third-party destinations.
 
 kube-state-metrics is focused on generating completely new metrics from
 Kubernetes' object state (e.g. metrics based on deployments, replica sets,
 etc.). It holds an entire snapshot of Kubernetes state in memory and
 continuously generates new metrics based off of it. And just like the
-metric-server it too is not responsibile for exporting its metrics anywhere.
+metrics-server it too is not responsibile for exporting its metrics anywhere.
 
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
@@ -283,7 +289,7 @@ subjects:
     namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+- then specify a set of namespaces (using the `--namespaces` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
 
 ```yaml
 spec:
@@ -293,7 +299,7 @@ spec:
       - name: kube-state-metrics
         args:
           - '--resources=pods'
-          - '--namespace=project1'
+          - '--namespaces=project1'
 ```
 
 For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)

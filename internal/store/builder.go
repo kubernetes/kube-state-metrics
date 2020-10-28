@@ -29,10 +29,9 @@ import (
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	certv1beta1 "k8s.io/api/certificates/v1beta1"
+	certv1 "k8s.io/api/certificates/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -235,7 +234,7 @@ func (b *Builder) buildHPAStore() cache.Store {
 }
 
 func (b *Builder) buildIngressStore() cache.Store {
-	return b.buildStoreFunc(ingressMetricFamilies, &extensions.Ingress{}, createIngressListWatch)
+	return b.buildStoreFunc(ingressMetricFamilies, &networkingv1.Ingress{}, createIngressListWatch)
 }
 
 func (b *Builder) buildJobStore() cache.Store {
@@ -307,7 +306,7 @@ func (b *Builder) buildPodStore() cache.Store {
 }
 
 func (b *Builder) buildCsrStore() cache.Store {
-	return b.buildStoreFunc(csrMetricFamilies, &certv1beta1.CertificateSigningRequest{}, createCSRListWatch)
+	return b.buildStoreFunc(csrMetricFamilies, &certv1.CertificateSigningRequest{}, createCSRListWatch)
 }
 
 func (b *Builder) buildValidatingWebhookConfigurationStore() cache.Store {

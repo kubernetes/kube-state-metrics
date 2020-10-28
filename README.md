@@ -125,10 +125,9 @@ The labels can be configured through the use of the `--labels-allow-list` flag. 
 list of `<metric>=[<labels>]`, where `<labels>` are again comma separated full label names. For example:
 
 ```
---labels-allow-list kube_deployment_labels[label_app,label_env,deployment,namespace],kube_pod_labels[label_app,label_env,pod,namespace]
+--labels-allow-list kube_deployment_labels[label_app,label_env],kube_pod_labels[label_app,label_env]
 ```
 
-Note that the current implementation requires the inclusion of all wanted labels, this includes the metrics own labels like `deployment`, `node`, `pod`, etc. and `namespace`.
 When `--labels-allow-list` is specified multiple times, only the last will be honoured.
 
 #### Enabling VerticalPodAutoscalers

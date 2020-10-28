@@ -86,8 +86,8 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha.2` (Support for amd64 only)
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-alpha.2` (Support for amd64, arm, arm64, ppc64le and s390x)
+* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha.2` (arch: `amd64`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-alpha.2` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

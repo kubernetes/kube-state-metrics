@@ -125,7 +125,7 @@ The labels can be configured through the use of the `--labels-allow-list` flag. 
 list of `<metric>=[<labels>]`, where `<labels>` are again comma separated full label names. For example:
 
 ```
---labels-allow-list kube_deployment_labels[label_app,label_env],kube_pod_labels[label_app,label_env]
+--labels-allow-list kube_deployment_labels=[label_app,label_env],kube_pod_labels=[label_app,label_env]
 ```
 
 When `--labels-allow-list` is specified multiple times, only the last will be honoured.

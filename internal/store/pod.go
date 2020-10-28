@@ -825,114 +825,6 @@ var (
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_requests_cpu_cores",
-			"The number of CPU cores requested by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Requests
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceCPU {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.MilliValue()) / 1000,
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_requests_memory_bytes",
-			"Bytes of memory requested by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Requests
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceMemory {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.Value()),
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_requests_storage_bytes",
-			"Bytes of storage requested by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Requests
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceStorage {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.Value()),
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_requests_ephemeral_storage_bytes",
-			"Bytes of ephemeral-storage requested by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Requests
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceEphemeralStorage {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.Value()),
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
 			"kube_pod_container_resource_requests",
 			"The number of requested request resource by a container.",
 			metric.Gauge,
@@ -944,137 +836,46 @@ var (
 					req := c.Resources.Requests
 
 					for resourceName, val := range req {
-						if isHugePageResourceName(resourceName) {
+						switch resourceName {
+						case v1.ResourceCPU:
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+								Value:       float64(val.MilliValue()) / 1000,
+							})
+						case v1.ResourceStorage:
+							fallthrough
+						case v1.ResourceEphemeralStorage:
+							fallthrough
+						case v1.ResourceMemory:
+							ms = append(ms, &metric.Metric{
+								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
-						}
-						if isAttachableVolumeResourceName(resourceName) {
-							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
-								Value:       float64(val.Value()),
-							})
-						}
-						if isExtendedResourceName(resourceName) {
-							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
-								Value:       float64(val.Value()),
-							})
+						default:
+							if isHugePageResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									Value:       float64(val.Value()),
+								})
+							}
+							if isAttachableVolumeResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+									Value:       float64(val.Value()),
+								})
+							}
+							if isExtendedResourceName(resourceName) {
+								ms = append(ms, &metric.Metric{
+									LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+									Value:       float64(val.Value()),
+								})
+							}
 						}
 					}
 				}
 
 				for _, metric := range ms {
-					metric.LabelKeys = []string{"container", "resource", "unit"}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_limits_cpu_cores",
-			"The number of CPU cores requested limit by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Limits
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceCPU {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.MilliValue()) / 1000,
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_limits_memory_bytes",
-			"Bytes of memory requested limit by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Limits
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceMemory {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.Value()),
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_limits_storage_bytes",
-			"Bytes of storage requested limit by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Limits
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceStorage {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.Value()),
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_pod_container_resource_limits_ephemeral_storage_bytes",
-			"Bytes of ephemeral-storage requested limit by a container.",
-			metric.Gauge,
-			"",
-			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range p.Spec.Containers {
-					req := c.Resources.Limits
-
-					for resourceName, val := range req {
-						if resourceName == v1.ResourceEphemeralStorage {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"container"},
-								LabelValues: []string{c.Name},
-								Value:       float64(val.Value()),
-							})
-						}
-					}
+					metric.LabelKeys = []string{"container", "node", "resource", "unit"}
 				}
 
 				return &metric.Family{
@@ -1509,6 +1310,27 @@ var (
 							})
 						}
 					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_pod_runtimeclass_name_info",
+			"The runtimeclass associated with the pod.",
+			metric.Gauge,
+			"",
+			wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if p.Spec.RuntimeClassName != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"runtimeclass_name"},
+						LabelValues: []string{*p.Spec.RuntimeClassName},
+						Value:       1,
+					})
 				}
 
 				return &metric.Family{

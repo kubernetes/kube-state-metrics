@@ -20,7 +20,8 @@ import (
 	"regexp"
 )
 
-var defaultMetricLabels = map[*regexp.Regexp][]string{
+// DefaultMetricLabels is a list of all available resources default prometheus labels
+var DefaultMetricLabels = map[*regexp.Regexp][]string{
 	regexp.MustCompile(".*_labels$"):      {},
 	regexp.MustCompile(".*_annotations$"): {},
 }
@@ -35,7 +36,7 @@ func (a Labels) Allowed(metric string, labels, values []string) ([]string, []str
 	allowedLabels, ok := a[metric]
 	if !ok {
 		var defaultsPresent bool
-		for metricReg, lbls := range defaultMetricLabels {
+		for metricReg, lbls := range DefaultMetricLabels {
 			if metricReg.MatchString(metric) {
 				allowedLabels = append(allowedLabels, lbls...)
 				defaultsPresent = true

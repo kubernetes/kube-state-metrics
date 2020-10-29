@@ -91,7 +91,7 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns3",ingress="ingress3"} 1
 				kube_ingress_created{namespace="ns3",ingress="ingress3"} 1.501569018e+09
-				kube_ingress_labels{label_test_3="test-3",namespace="ns3",ingress="ingress3"} 1
+				kube_ingress_labels{namespace="ns3",ingress="ingress3"} 1
 `,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},
@@ -135,7 +135,7 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
-				kube_ingress_labels{label_test_4="test-4",namespace="ns4",ingress="ingress4"} 1
+				kube_ingress_labels{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
 `,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
@@ -161,7 +161,7 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_created{namespace="ns5",ingress="ingress5"} 1.501569018e+09
-				kube_ingress_labels{label_test_5="test-5",namespace="ns5",ingress="ingress5"} 1
+				kube_ingress_labels{namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost1",secret="somesecret"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost2",secret="somesecret"} 1
 `,
@@ -169,8 +169,8 @@ func TestIngressStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

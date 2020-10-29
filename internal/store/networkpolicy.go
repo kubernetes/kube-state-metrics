@@ -32,8 +32,10 @@ import (
 
 var (
 	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
+)
 
-	networkpolicyMetricFamilies = []generator.FamilyGenerator{
+func networkPolicyMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_networkpolicy_created",
 			"Unix creation timestamp of network policy",
@@ -57,7 +59,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -104,7 +106,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

@@ -18,16 +18,18 @@ package options
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
 	"text/scanner"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
-var labelsAllowListFormat = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var labelsAllowListFormat = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -138,6 +140,8 @@ type LabelsAllowList map[string][]string
 
 // Set converts a comma-separated string of metrics and their allowed labels and appends to the LabelsAllowList.
 func (l *LabelsAllowList) Set(value string) error {
+	fmt.Println("value:")
+	fmt.Println(value)
 	var s scanner.Scanner
 	s.Init(strings.NewReader(value))
 
@@ -174,14 +178,24 @@ func (l *LabelsAllowList) Set(value string) error {
 			continue
 		default:
 			text := s.TokenText()
-			if !labelsAllowListFormat.MatchString(text) {
-				return errLabelsAllowListFormat
-			}
+			// it's either a resource name or a label key name
+			fmt.Println("text")
 			if !inLabels {
 				name = text
 				m[name] = []string{}
+				fmt.Printf("not in labels: %s\n", text)
 			} else {
 				m[name] = append(m[name], text)
+				m[name] = append(m[name], "managed-by")
+				fmt.Printf("yes in labels: %s\n", text)
+
+				// Validate label key name.
+				// TODO: fix k
+				k := "app.kubernetes.io/component"
+				if errs := validation.IsQualifiedName(k); len(errs) != 0 {
+					return fmt.Errorf("invalid label key %q: %s", k, strings.Join(errs, "; "))
+				}
+
 			}
 		}
 		previous = tok

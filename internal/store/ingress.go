@@ -35,8 +35,10 @@ var (
 	descIngressLabelsName          = "kube_ingress_labels"
 	descIngressLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
+)
 
-	ingressMetricFamilies = []generator.FamilyGenerator{
+func ingressMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_ingress_info",
 			"Information about ingress.",
@@ -57,7 +59,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(i.Labels)
+				labelKeys, labelValues := createLabelKeysValues(i.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -144,7 +146,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapIngressFunc(f func(*networkingv1.Ingress) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

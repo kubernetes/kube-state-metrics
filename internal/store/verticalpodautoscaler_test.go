@@ -114,7 +114,7 @@ func TestVPAStore(t *testing.T) {
 				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 1.073741824e+10
 				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
 				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
-				kube_verticalpodautoscaler_labels{label_app="foobar",namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
+				kube_verticalpodautoscaler_labels{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
 				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",update_mode="Auto",verticalpodautoscaler="vpa1"} 0
 				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",update_mode="Initial",verticalpodautoscaler="vpa1"} 0
 				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",update_mode="Off",verticalpodautoscaler="vpa1"} 0
@@ -133,8 +133,8 @@ func TestVPAStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

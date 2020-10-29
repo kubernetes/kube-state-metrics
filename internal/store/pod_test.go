@@ -1520,7 +1520,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			Want: `
 				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_pod_labels gauge
-				kube_pod_labels{label_app="example",namespace="ns1",pod="pod1"} 1
+				kube_pod_labels{namespace="ns1",pod="pod1"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_labels",
@@ -1607,8 +1607,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -1618,7 +1618,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 func BenchmarkPodStore(b *testing.B) {
 	b.ReportAllocs()
 
-	f := generator.ComposeMetricGenFuncs(podMetricFamilies)
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil))
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/internal/store"
 	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"

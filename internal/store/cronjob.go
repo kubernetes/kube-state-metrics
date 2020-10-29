@@ -37,15 +37,17 @@ var (
 	descCronJobLabelsName          = "kube_cronjob_labels"
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
+)
 
-	cronJobMetricFamilies = []generator.FamilyGenerator{
+func cronJobMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			descCronJobLabelsName,
 			descCronJobLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+				labelKeys, labelValues := createLabelKeysValues(j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -201,7 +203,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapCronJobFunc(f func(*batchv1beta1.CronJob) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

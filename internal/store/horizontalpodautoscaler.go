@@ -50,8 +50,10 @@ var (
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "horizontalpodautoscaler"}
 
 	targetMetricLabels = []string{"metric_name", "metric_target_type"}
+)
 
-	hpaMetricFamilies = []generator.FamilyGenerator{
+func hpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_horizontalpodautoscaler_metadata_generation",
 			"The generation observed by the HorizontalPodAutoscaler controller.",
@@ -196,7 +198,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(a.Labels)
+				labelKeys, labelValues := createLabelKeysValues(a.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -233,7 +235,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

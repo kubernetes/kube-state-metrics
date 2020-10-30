@@ -121,7 +121,7 @@ that ensures that there are no possible conflicts.
 
 #### Enabling VerticalPodAutoscalers
 
-Please note that the collector for `verticalpodautoscalers` are disabled dy default.
+Please note that the collector for `verticalpodautoscalers` are disabled by default.
 This is because Vertical Pod Autoscalers are managed as custom resources. If you want to enable this collector,
 please ensure that you have the `v1beta2` CRDs installed beforehand. They can be found [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
 
@@ -195,7 +195,7 @@ kube-state-metrics is focused on generating completely new metrics from
 Kubernetes' object state (e.g. metrics based on deployments, replica sets,
 etc.). It holds an entire snapshot of Kubernetes state in memory and
 continuously generates new metrics based off of it. And just like the
-metrics-server it too is not responsibile for exporting its metrics anywhere.
+metrics-server it too is not responsible for exporting its metrics anywhere.
 
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.

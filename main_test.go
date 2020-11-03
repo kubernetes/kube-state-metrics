@@ -266,7 +266,13 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_unschedulable gauge
 kube_pod_container_info{namespace="default",pod="pod0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
-kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",resource="nvidia_com_gpu",unit="integer"} 1
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="ephemeral_storage",unit="byte"} 3e+08
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="memory",unit="byte"} 1e+08
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="nvidia_com_gpu",unit="integer"} 1
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
+kube_pod_container_resource_limits{namespace="default",pod="pod0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="ephemeral_storage",unit="byte"} 3e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",container="pod1_con1",node="node1",resource="memory",unit="byte"} 1e+08

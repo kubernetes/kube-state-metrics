@@ -120,30 +120,3 @@ func FilterMetricFamilies(l allowDenyLister, families []FamilyGenerator) []Famil
 
 	return filtered
 }
-
-type allowLabels interface {
-	Allowed(metric string, labels, values []string) (allowedLabels, allowedValues []string)
-}
-
-// FilterMetricFamiliesLabels takes a AllowLabels and a slice of metric
-// families and returns a filtered slice with metric families with their functions adapted to include only allowed labels for that metric Family.
-func FilterMetricFamiliesLabels(allowLabels allowLabels, families []FamilyGenerator) []FamilyGenerator {
-	var filtered []FamilyGenerator
-	for _, f := range families {
-		generateFunc := func(familyGenerator FamilyGenerator) func(obj interface{}) *metric.Family {
-			return func(obj interface{}) *metric.Family {
-				metricFamily := familyGenerator.GenerateFunc(obj)
-
-				for _, m := range metricFamily.Metrics {
-					m.LabelKeys, m.LabelValues = allowLabels.Allowed(familyGenerator.Name, m.LabelKeys, m.LabelValues)
-				}
-				return metricFamily
-			}
-		}(f)
-
-		f.GenerateFunc = generateFunc
-		filtered = append(filtered, f)
-	}
-
-	return filtered
-}

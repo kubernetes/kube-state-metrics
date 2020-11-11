@@ -18,18 +18,13 @@ package options
 
 import (
 	"errors"
-	"fmt"
-	"regexp"
 	"sort"
 	"strings"
-	"text/scanner"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
-var labelsAllowListFormat = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -138,71 +133,68 @@ func (n *NamespaceList) Type() string {
 // LabelsAllowList represents a list of allowed labels for metrics.
 type LabelsAllowList map[string][]string
 
-// Set converts a comma-separated string of metrics and their allowed labels and appends to the LabelsAllowList.
+// Set converts a comma-separated string of resources and their allowed Kubernetes labels and appends to the LabelsAllowList.
+// Value is in the following format:
+// resource=[k8s-label-name,another-ks8-label],another-resource[ks8-label]
+// Example: pods=[app.kubernetes.io/component,app],resource=[blah]
 func (l *LabelsAllowList) Set(value string) error {
-	fmt.Println("value:")
-	fmt.Println(value)
-	var s scanner.Scanner
-	s.Init(strings.NewReader(value))
-
+	// Taken from text/scanner EOF constant.
+	const EOF = -1
 	var (
-		m        = make(map[string][]string, len(*l))
-		previous rune
-		next     rune
-		inLabels bool
-		name     string
+		m            = make(map[string][]string, len(*l))
+		previous     rune
+		next         rune
+		firstWordPos int
+		name         string
 	)
-	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		next = s.Peek()
-		switch tok {
+	firstWordPos = 0
+
+	for i, v := range value {
+		if i+1 == len(value) {
+			next = EOF
+		} else {
+			next = []rune(value)[i+1]
+		}
+		if i-1 >= 0 {
+			previous = []rune(value)[i-1]
+		} else {
+			previous = v
+		}
+
+		switch v {
 		case '=':
 			if previous == ',' || next != '[' {
 				return errLabelsAllowListFormat
 			}
+			name = strings.TrimSpace(string(([]rune(value)[firstWordPos:i])))
+			m[name] = []string{}
+			firstWordPos = i + 1
 		case '[':
 			if previous != '=' {
 				return errLabelsAllowListFormat
 			}
-			inLabels = true
+			firstWordPos = i + 1
 		case ']':
 			// if after metric group, has char not comma or end.
-			if next != scanner.EOF && next != ',' {
+			if next != EOF && next != ',' {
 				return errLabelsAllowListFormat
 			}
-			inLabels = false
+			if previous != '[' {
+				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+			}
+			firstWordPos = i + 1
 		case ',':
 			// if starts or ends with comma
-			if previous == tok || next == scanner.EOF {
+			if previous == v || next == EOF || next == ']' {
 				return errLabelsAllowListFormat
 			}
-			continue
-		default:
-			text := s.TokenText()
-			// it's either a resource name or a label key name
-			fmt.Println("text")
-			if !inLabels {
-				name = text
-				m[name] = []string{}
-				fmt.Printf("not in labels: %s\n", text)
-			} else {
-				m[name] = append(m[name], text)
-				m[name] = append(m[name], "managed-by")
-				fmt.Printf("yes in labels: %s\n", text)
-
-				// Validate label key name.
-				// TODO: fix k
-				k := "app.kubernetes.io/component"
-				if errs := validation.IsQualifiedName(k); len(errs) != 0 {
-					return fmt.Errorf("invalid label key %q: %s", k, strings.Join(errs, "; "))
-				}
-
+			if previous != ']' {
+				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
 			}
+			firstWordPos = i + 1
 		}
-		previous = tok
 	}
-
 	*l = m
-
 	return nil
 }
 

@@ -54,8 +54,3 @@ type AllowDenyLister interface {
 	IsIncluded(string) bool
 	IsExcluded(string) bool
 }
-
-// AllowLabels interface to only allow certain labels for a given metric.
-type AllowLabels interface {
-	Allowed(metric string, labels, values []string) (allowedLabels, allowedValues []string)
-}

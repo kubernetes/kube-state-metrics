@@ -34,15 +34,17 @@ var (
 	descCSRLabelsName          = "kube_certificatesigningrequest_labels"
 	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest"}
+)
 
-	csrMetricFamilies = []generator.FamilyGenerator{
+func csrMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			descCSRLabelsName,
 			descCSRLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+				labelKeys, labelValues := createLabelKeysValues(j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -103,7 +105,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

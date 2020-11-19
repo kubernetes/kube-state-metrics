@@ -34,15 +34,17 @@ var (
 	descPersistentVolumeClaimLabelsName          = "kube_persistentvolumeclaim_labels"
 	descPersistentVolumeClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
+)
 
-	persistentVolumeClaimMetricFamilies = []generator.FamilyGenerator{
+func persistentVolumeClaimMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			descPersistentVolumeClaimLabelsName,
 			descPersistentVolumeClaimLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
+				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -179,7 +181,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

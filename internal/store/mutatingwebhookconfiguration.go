@@ -31,7 +31,6 @@ import (
 )
 
 var (
-	descMutatingWebhookConfigurationHelp          = "Kubernetes labels converted to Prometheus labels."
 	descMutatingWebhookConfigurationDefaultLabels = []string{"namespace", "mutatingwebhookconfiguration"}
 
 	mutatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{

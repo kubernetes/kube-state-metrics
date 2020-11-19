@@ -157,7 +157,7 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa1",label_app="foobar",namespace="ns1"} 1
+				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa1",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 4
 				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
@@ -282,7 +282,7 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa2",label_app="foobar",namespace="ns1"} 1
+				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa2",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 4
 				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
@@ -309,8 +309,8 @@ func TestHPAStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(hpaMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(hpaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(hpaMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(hpaMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

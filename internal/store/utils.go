@@ -26,7 +26,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	"k8s.io/kube-state-metrics/v2/pkg/allow"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
@@ -71,14 +70,6 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 	}
 
 	return ms
-}
-
-func sanitizeAllowLabels(l map[string][]string) allow.Labels {
-	allowLabels := make(map[string][]string)
-	for m, labels := range l {
-		allowLabels[sanitizeLabelName(m)] = labels
-	}
-	return allowLabels
 }
 
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
@@ -178,4 +169,20 @@ func isNativeResource(name v1.ResourceName) bool {
 
 func isPrefixedNativeResource(name v1.ResourceName) bool {
 	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
+}
+
+// createLabelKeysValues takes in passed kubernetes labels and allowed list in kubernetes label format
+// it returns only those allowed labels that exist in the list converting them to Prometheus labels.
+func createLabelKeysValues(allKubeLabels map[string]string, allowList []string) ([]string, []string) {
+	allowedKubeLabels := make(map[string]string)
+
+	if len(allowList) > 0 {
+		for _, l := range allowList {
+			v, found := allKubeLabels[l]
+			if found {
+				allowedKubeLabels[l] = v
+			}
+		}
+	}
+	return kubeLabelsToPrometheusLabels(allowedKubeLabels)
 }

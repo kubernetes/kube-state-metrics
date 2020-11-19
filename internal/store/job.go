@@ -36,15 +36,17 @@ var (
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
+)
 
-	jobMetricFamilies = []generator.FamilyGenerator{
+func jobMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			descJobLabelsName,
 			descJobLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+				labelKeys, labelValues := createLabelKeysValues(j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -356,7 +358,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

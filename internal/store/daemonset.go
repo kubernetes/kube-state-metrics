@@ -34,8 +34,10 @@ var (
 	descDaemonSetLabelsName          = "kube_daemonset_labels"
 	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
+)
 
-	daemonSetMetricFamilies = []generator.FamilyGenerator{
+func daemonSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_daemonset_created",
 			"Unix creation timestamp",
@@ -214,7 +216,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.ObjectMeta.Labels)
+				labelKeys, labelValues := createLabelKeysValues(d.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -227,7 +229,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

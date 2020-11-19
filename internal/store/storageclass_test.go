@@ -100,7 +100,7 @@ func TestStorageClassStore(t *testing.T) {
 			Want: `
 					# HELP kube_storageclass_labels Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_storageclass_labels gauge
-					kube_storageclass_labels{storageclass="test_storageclass-labels",label_foo="bar"} 1
+					kube_storageclass_labels{storageclass="test_storageclass-labels"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_labels",
@@ -108,8 +108,8 @@ func TestStorageClassStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

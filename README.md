@@ -70,7 +70,7 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 |--------------------|---------------------|---------------------|----------------------|----------------------|----------------------|
 | **v1.8.0**         |         ✓           |         -           |          -           |          -           |          -           |
 | **v1.9.7**         |         -           |         ✓           |          -           |          -           |          -           |
-| **v2.0.0-alpha.2** |         -           |         -           |          -/✓         |         -/✓          |          ✓           |
+| **v2.0.0-alpha.3** |         -           |         -           |          -/✓         |         -/✓          |          ✓           |
 | **master**         |         -           |         -           |          -/✓         |          -/✓         |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
@@ -86,10 +86,8 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha.2`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:2.0.0-alpha.2`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm:2.0.0-alpha.2`
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics-arm64:2.0.0-alpha.2`
+* `quay.io/coreos/kube-state-metrics:v2.0.0-alpha.3` (arch: `amd64`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-alpha.3` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

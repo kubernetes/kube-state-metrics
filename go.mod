@@ -10,6 +10,7 @@ require (
 	github.com/google/go-jsonnet v0.14.0
 	github.com/jsonnet-bundler/jsonnet-bundler v0.4.1-0.20200708074244-ada055a225fa
 	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/oklog/run v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
@@ -20,11 +21,11 @@ require (
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/sys v0.0.0-20200915084602-288bc346aa39 // indirect
-	golang.org/x/tools v0.0.0-20200305205014-bc073721adb6
-	k8s.io/api v0.19.2
-	k8s.io/apimachinery v0.19.2
+	golang.org/x/tools v0.0.0-20200616133436-c1934b75d054
+	k8s.io/api v0.19.3
+	k8s.io/apimachinery v0.19.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.0.0-20200727194258-b7922d74509c
-	k8s.io/client-go v0.19.2
+	k8s.io/client-go v0.19.3
 	k8s.io/klog/v2 v2.2.0
 )
 

@@ -76,7 +76,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_status_observed_generation{daemonset="ds1",namespace="ns1"} 2
 				kube_daemonset_status_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
-				kube_daemonset_labels{daemonset="ds1",label_app="example1",namespace="ns1"} 1
+				kube_daemonset_labels{daemonset="ds1",namespace="ns1"} 1
 `,
 			MetricNames: []string{
 				"kube_daemonset_labels",
@@ -138,7 +138,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_ready{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_status_number_unavailable{daemonset="ds2",namespace="ns2"} 0
 				kube_daemonset_status_updated_number_scheduled{daemonset="ds2",namespace="ns2"} 0
-				kube_daemonset_labels{daemonset="ds2",label_app="example2",namespace="ns2"} 1
+				kube_daemonset_labels{daemonset="ds2",namespace="ns2"} 1
 				kube_daemonset_created{namespace="ns2",daemonset="ds2"} 1.5e+09
 `,
 			MetricNames: []string{
@@ -205,7 +205,7 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_ready{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_status_number_unavailable{daemonset="ds3",namespace="ns3"} 5
 				kube_daemonset_status_updated_number_scheduled{daemonset="ds3",namespace="ns3"} 5
-				kube_daemonset_labels{daemonset="ds3",label_app="example3",namespace="ns3"} 1
+				kube_daemonset_labels{daemonset="ds3",namespace="ns3"} 1
 `,
 			MetricNames: []string{
 				"kube_daemonset_created",
@@ -222,8 +222,8 @@ func TestDaemonSetStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(daemonSetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(daemonSetMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

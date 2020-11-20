@@ -37,8 +37,10 @@ var (
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
 	podStatusReasons           = []string{"NodeLost", "Evicted", "UnexpectedAdmissionError"}
+)
 
-	podMetricFamilies = []generator.FamilyGenerator{
+func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_pod_info",
 			"Information about pod.",
@@ -193,7 +195,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
+				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
 				m := metric.Metric{
 					LabelKeys:   labelKeys,
 					LabelValues: labelValues,
@@ -272,15 +274,12 @@ var (
 				ms := []*metric.Metric{}
 
 				for _, c := range p.Status.Conditions {
-					switch c.Type {
-					case v1.PodScheduled:
-						if c.Status == v1.ConditionTrue {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{},
-								LabelValues: []string{},
-								Value:       float64(c.LastTransitionTime.Unix()),
-							})
-						}
+					if c.Type == v1.PodScheduled && c.Status == v1.ConditionTrue {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       float64(c.LastTransitionTime.Unix()),
+						})
 					}
 				}
 
@@ -298,15 +297,12 @@ var (
 				ms := []*metric.Metric{}
 
 				for _, c := range p.Status.Conditions {
-					switch c.Type {
-					case v1.PodScheduled:
-						if c.Status == v1.ConditionFalse {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{},
-								LabelValues: []string{},
-								Value:       1,
-							})
-						}
+					if c.Type == v1.PodScheduled && c.Status == v1.ConditionFalse {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       1,
+						})
 					}
 				}
 
@@ -364,8 +360,7 @@ var (
 				ms := []*metric.Metric{}
 
 				for _, c := range p.Status.Conditions {
-					switch c.Type {
-					case v1.PodReady:
+					if c.Type == v1.PodReady {
 						conditionMetrics := addConditionMetrics(c.Status)
 
 						for _, m := range conditionMetrics {
@@ -390,8 +385,7 @@ var (
 				ms := []*metric.Metric{}
 
 				for _, c := range p.Status.Conditions {
-					switch c.Type {
-					case v1.PodScheduled:
+					if c.Type == v1.PodScheduled {
 						conditionMetrics := addConditionMetrics(c.Status)
 
 						for _, m := range conditionMetrics {
@@ -1357,7 +1351,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

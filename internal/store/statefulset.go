@@ -34,8 +34,10 @@ var (
 	descStatefulSetLabelsName          = "kube_statefulset_labels"
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
+)
 
-	statefulSetMetricFamilies = []generator.FamilyGenerator{
+func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_statefulset_created",
 			"Unix creation timestamp",
@@ -170,7 +172,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -217,8 +219,7 @@ var (
 			}),
 		),
 	}
-)
-
+}
 func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		statefulSet := obj.(*v1.StatefulSet)

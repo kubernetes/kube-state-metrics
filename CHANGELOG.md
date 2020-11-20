@@ -1,3 +1,9 @@
+## v2.0.0-alpha.3 / 2020-11-19
+
+* [BUGFIX] Fix container resource limits metrics, which got dropped #1293
+* [BUGFIX] Adjust and refactor allowing labels to work for Kubernetes labels metrics #1301
+Note this is a breaking change, if you were using --labels-allow-list, look at the PR details for more information.
+
 ## v2.0.0-alpha.2 / 2020-10-27
 
 * [CHANGE] Migrate ingress and certificates to new stable APIs #1260

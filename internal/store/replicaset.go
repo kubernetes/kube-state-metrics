@@ -35,8 +35,10 @@ var (
 	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
 	descReplicaSetLabelsName          = "kube_replicaset_labels"
 	descReplicaSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+)
 
-	replicaSetMetricFamilies = []generator.FamilyGenerator{
+func replicaSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_replicaset_created",
 			"Unix creation timestamp",
@@ -200,8 +202,8 @@ var (
 			descReplicaSetLabelsHelp,
 			metric.Gauge,
 			"",
-			wrapReplicaSetFunc(func(d *v1.ReplicaSet) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(r.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -214,7 +216,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

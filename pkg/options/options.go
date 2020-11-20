@@ -97,7 +97,7 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
 	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
-	o.flags.Var(&o.LabelsAllowList, "labels-allow-list", "list of metric names and labels you would like to allow, metric_name=[label1,labeln...],metric_name[]...")
+	o.flags.Var(&o.LabelsAllowList, "labels-metric-allow-list", "Allows to pass a list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[\"k8s-label-1\",\"k8s-label-n\",...],pods=[\"app\"],...)'")
 }
 
 // Parse parses the flag definitions from the argument list.

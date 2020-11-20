@@ -34,8 +34,10 @@ var (
 	descNamespaceLabelsName          = "kube_namespace_labels"
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
+)
 
-	namespaceMetricFamilies = []generator.FamilyGenerator{
+func namespaceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_namespace_created",
 			"Unix creation timestamp",
@@ -60,7 +62,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -124,7 +126,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

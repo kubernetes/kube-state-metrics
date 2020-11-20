@@ -36,8 +36,10 @@ var (
 	descNodeLabelsName          = "kube_node_labels"
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
+)
 
-	nodeMetricFamilies = []generator.FamilyGenerator{
+func nodeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_node_info",
 			"Information about a cluster node.",
@@ -109,7 +111,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -373,7 +375,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

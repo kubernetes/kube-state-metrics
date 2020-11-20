@@ -34,8 +34,10 @@ var (
 	descServiceLabelsName          = "kube_service_labels"
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
+)
 
-	serviceMetricFamilies = []generator.FamilyGenerator{
+func serviceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_service_info",
 			"Information about service.",
@@ -88,9 +90,8 @@ var (
 			metric.Gauge,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
 				m := metric.Metric{
-
 					LabelKeys:   labelKeys,
 					LabelValues: labelValues,
 					Value:       1,
@@ -153,7 +154,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

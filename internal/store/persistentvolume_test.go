@@ -379,7 +379,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{label_app="mysql-server",persistentvolume="test-labeled-pv"} 1
+					kube_persistentvolume_labels{persistentvolume="test-labeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
@@ -459,8 +459,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

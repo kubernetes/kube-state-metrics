@@ -1,13 +1,18 @@
 component: "Monitoring"
 
 reviewers:
-  - brancz
   - paulfantom
   - LiliC
   - s-urbaniak
+  - simonpasquier
+  - dgrisonnet
 
 approvers:
-  - brancz
   - paulfantom
   - LiliC
   - s-urbaniak
+  - simonpasquier
+  - dgrisonnet
+
+emeritus_approvers:
+  - brancz

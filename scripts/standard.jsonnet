@@ -5,5 +5,5 @@ ksm {
   name:: 'kube-state-metrics',
   namespace:: 'kube-system',
   version:: version,
-  image:: 'quay.io/coreos/kube-state-metrics:v' + version,
+  image:: 'k8s.gcr.io/kube-state-metrics/kube-state-metrics:v' + version,
 }

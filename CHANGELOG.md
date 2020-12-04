@@ -1,3 +1,6 @@
+## v2.0.0-beta / 2020-12-04
+Promotion to beta release after a period of no bugs.
+
 ## v2.0.0-alpha.3 / 2020-11-19
 
 * [BUGFIX] Fix container resource limits metrics, which got dropped #1293

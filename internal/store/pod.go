@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
+	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
 	podStatusReasons           = []string{"NodeLost", "Evicted", "UnexpectedAdmissionError"}
@@ -61,8 +61,8 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 
 				m := metric.Metric{
 
-					LabelKeys:   []string{"host_ip", "pod_ip", "uid", "node", "created_by_kind", "created_by_name", "priority_class", "host_network"},
-					LabelValues: []string{p.Status.HostIP, p.Status.PodIP, string(p.UID), p.Spec.NodeName, createdByKind, createdByName, p.Spec.PriorityClassName, strconv.FormatBool(p.Spec.HostNetwork)},
+					LabelKeys:   []string{"host_ip", "pod_ip", "node", "created_by_kind", "created_by_name", "priority_class", "host_network"},
+					LabelValues: []string{p.Status.HostIP, p.Status.PodIP, p.Spec.NodeName, createdByKind, createdByName, p.Spec.PriorityClassName, strconv.FormatBool(p.Spec.HostNetwork)},
 					Value:       1,
 				}
 
@@ -1361,7 +1361,7 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Famil
 
 		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descPodLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{pod.Namespace, pod.Name}, m.LabelValues...)
+			m.LabelValues = append([]string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelValues...)
 		}
 
 		return metricFamily

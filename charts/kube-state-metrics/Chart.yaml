@@ -12,8 +12,6 @@ home: https://github.com/kubernetes/kube-state-metrics/
 sources:
 - https://github.com/kubernetes/kube-state-metrics/
 maintainers:
-- name: fiunchinho
-  email: jose@armesto.net
 - name: tariq1890
   email: tariq.ibrahim@mulesoft.com
 - name: mrueg

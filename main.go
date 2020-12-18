@@ -31,6 +31,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/version"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -42,7 +43,6 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
-	"k8s.io/kube-state-metrics/v2/pkg/version"
 )
 
 const (
@@ -69,7 +69,7 @@ func main() {
 	}
 
 	if opts.Version {
-		fmt.Printf("%#v\n", version.GetVersion())
+		fmt.Printf("%s\n", version.Print("kube-state-metrics"))
 		os.Exit(0)
 	}
 
@@ -80,6 +80,7 @@ func main() {
 	storeBuilder := store.NewBuilder()
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
+	ksmMetricsRegistry.MustRegister(version.NewCollector("kube_state_metrics"))
 	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:        "http_request_duration_seconds",
@@ -215,7 +216,7 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 		return nil, nil, err
 	}
 
-	config.UserAgent = version.GetVersion().String()
+	config.UserAgent = version.Version
 	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 	config.ContentType = "application/vnd.kubernetes.protobuf"
 

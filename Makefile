@@ -5,16 +5,19 @@ TAG_PREFIX = v
 VERSION = $(shell cat VERSION)
 TAG ?= $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
+BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
 DOCKER_CLI ?= docker
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
 BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
-PKG = k8s.io/kube-state-metrics/v2/pkg
+PKG = github.com/prometheus/common
 GO_VERSION = 1.15.3
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
+USER ?= $(shell id -u -n)
+HOST ?= $(shell hostname)
 
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
@@ -52,7 +55,7 @@ doccheck: generate
 	@echo OK
 
 build-local:
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${GIT_COMMIT} -X ${PKG}/version.BuildDate=${BUILD_DATE}" -o kube-state-metrics
+	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE}" -o kube-state-metrics
 
 build: kube-state-metrics
 

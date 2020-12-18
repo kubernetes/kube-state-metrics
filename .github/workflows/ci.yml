@@ -82,7 +82,7 @@ jobs:
         go get -v -t -d ./...
         make install-tools
 
-    - name: Validate vendor is in sync with go modules
+    - name: Validate go modules
       run: |
         make validate-modules
 

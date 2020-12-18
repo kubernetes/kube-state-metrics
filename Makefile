@@ -23,9 +23,7 @@ validate-modules:
 	go mod verify
 	@echo "- Checking for any unused/missing packages in go.mod..."
 	go mod tidy
-	@echo "- Checking for unused packages in vendor..."
-	go mod vendor
-	@git diff --exit-code -- go.sum go.mod vendor/
+	@git diff --exit-code -- go.sum go.mod
 
 licensecheck:
 	@echo ">> checking license header"

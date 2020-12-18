@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -80,6 +81,7 @@ func main() {
 	storeBuilder := store.NewBuilder()
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
+	registerBuildInfo(ksmMetricsRegistry)
 	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:        "http_request_duration_seconds",
@@ -294,4 +296,19 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
              </html>`))
 	})
 	return mux
+}
+
+func registerBuildInfo(r prometheus.Registerer) {
+	v := version.GetVersion()
+	promauto.With(r).NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "kube_state_metrics_build_info",
+		Help: "A metric with a constant '1' value labeled by version, revision, and " +
+			"goversion from which kube-state-metrics was built.",
+		ConstLabels: prometheus.Labels{
+			"version":   v.Release,
+			"revision":  v.GitCommit,
+			"goversion": runtime.Version(),
+		}},
+		func() float64 { return 1 },
+	)
 }

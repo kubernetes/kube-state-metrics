@@ -150,6 +150,12 @@ http_request_duration_seconds_sum{handler="metrics",method="get"} 0.021113919999
 http_request_duration_seconds_count{handler="metrics",method="get"} 30
 ```
 
+kube-state-metrics exposes the build info metric:
+```
+kube_state_metrics_build_info{goversion="go1.14.7",revision="a832eebc",version="v2.0.0-beta"} 1
+```
+
+
 ### Scaling kube-state-metrics
 
 #### Resource recommendation

@@ -369,6 +369,54 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
 	}
+
+	telemetryMux := buildTelemetryServer(reg)
+
+	req2 := httptest.NewRequest("GET", "http://localhost:8081/metrics", nil)
+
+	w2 := httptest.NewRecorder()
+	telemetryMux.ServeHTTP(w2, req2)
+
+	resp2 := w2.Result()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+	}
+
+	body2, _ := ioutil.ReadAll(resp2.Body)
+
+	expected2 := `# HELP kube_state_metrics_shard_ordinal Current sharding ordinal/index of this instance
+# HELP kube_state_metrics_total_shards Number of total shards this instance is aware of
+# TYPE kube_state_metrics_shard_ordinal gauge
+# TYPE kube_state_metrics_total_shards gauge
+kube_state_metrics_shard_ordinal 0
+kube_state_metrics_total_shards 1
+`
+
+	expectedSplit2 := strings.Split(strings.TrimSpace(expected2), "\n")
+	sort.Strings(expectedSplit2)
+
+	gotSplit2 := strings.Split(strings.TrimSpace(string(body2)), "\n")
+
+	gotFiltered2 := []string{}
+	for _, l := range gotSplit2 {
+		if strings.Contains(l, "_shard") {
+			gotFiltered2 = append(gotFiltered2, l)
+		}
+	}
+
+	sort.Strings(gotFiltered2)
+
+	if len(expectedSplit2) != len(gotFiltered2) {
+		fmt.Println(len(expectedSplit2))
+		fmt.Println(len(gotFiltered2))
+		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected2, strings.Join(gotFiltered2, "\n"))
+	}
+
+	for i := 0; i < len(expectedSplit2); i++ {
+		if expectedSplit2[i] != gotFiltered2[i] {
+			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit2[i], gotFiltered2[i])
+		}
+	}
 }
 
 // TestShardingEquivalenceScrapeCycle is a simple smoke test covering the entire cycle from

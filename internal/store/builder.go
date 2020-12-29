@@ -59,7 +59,8 @@ type Builder struct {
 	ctx              context.Context
 	enabledResources []string
 	allowDenyList    ksmtypes.AllowDenyLister
-	metrics          *watch.ListWatchMetrics
+	listWatchMetrics *watch.ListWatchMetrics
+	shardingMetrics  *sharding.Metrics
 	shard            int32
 	totalShards      int
 	buildStoreFunc   ksmtypes.BuildStoreFunc
@@ -74,7 +75,8 @@ func NewBuilder() *Builder {
 
 // WithMetrics sets the metrics property of a Builder.
 func (b *Builder) WithMetrics(r prometheus.Registerer) {
-	b.metrics = watch.NewListWatchMetrics(r)
+	b.listWatchMetrics = watch.NewListWatchMetrics(r)
+	b.shardingMetrics = sharding.NewShardingMetrics(r)
 }
 
 // WithEnabledResources sets the enabledResources property of a Builder.
@@ -102,7 +104,9 @@ func (b *Builder) WithNamespaces(n options.NamespaceList) {
 // WithSharding sets the shard and totalShards property of a Builder.
 func (b *Builder) WithSharding(shard int32, totalShards int) {
 	b.shard = shard
+	b.shardingMetrics.Ordinal.Set(float64(shard))
 	b.totalShards = totalShards
+	b.shardingMetrics.Total.Set(float64(totalShards))
 }
 
 // WithContext sets the ctx property of a Builder.
@@ -354,7 +358,7 @@ func (b *Builder) reflectorPerNamespace(
 ) {
 	lwf := func(ns string) cache.ListerWatcher { return listWatchFunc(b.kubeClient, ns) }
 	lw := listwatch.MultiNamespaceListerWatcher(b.namespaces, nil, lwf)
-	instrumentedListWatch := watch.NewInstrumentedListerWatcher(lw, b.metrics, reflect.TypeOf(expectedType).String())
+	instrumentedListWatch := watch.NewInstrumentedListerWatcher(lw, b.listWatchMetrics, reflect.TypeOf(expectedType).String())
 	reflector := cache.NewReflector(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, 0)
 	go reflector.Run(b.ctx.Done())
 }

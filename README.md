@@ -150,14 +150,15 @@ http_request_duration_seconds_sum{handler="metrics",method="get"} 0.021113919999
 http_request_duration_seconds_count{handler="metrics",method="get"} 30
 ```
 
-kube-state-metrics exposes the build info metric:
+kube-state-metrics also exposes build and configuration metrics:
 ```
 kube_state_metrics_build_info{branch="master",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
+kube_state_metrics_shard_ordinal 0
+kube_state_metrics_total_shards 1
 ```
 
 `kube_state_metrics_build_info` is used to expose version and other build information. For more usage about the info pattern,
 please check the blog post [here](https://www.robustperception.io/exposing-the-software-version-to-prometheus).
-
 
 ### Scaling kube-state-metrics
 

@@ -64,7 +64,7 @@ build-local: clean
 build: clean
 	docker run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
 
-test-unit: clean build
+test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
 
 shellcheck:

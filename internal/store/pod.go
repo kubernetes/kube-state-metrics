@@ -91,7 +91,6 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
-		createPodStatusConditionFamilyGenerator(),
 		createPodStatusConditionLastTransitionTimeFamilyGenerator(),
 	}
 }
@@ -1408,39 +1407,6 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 					LabelKeys:   []string{"phase"},
 					LabelValues: []string{p.n},
 					Value:       boolFloat64(p.v),
-				}
-			}
-
-			return &metric.Family{
-				Metrics: ms,
-			}
-		}),
-	)
-}
-
-func createPodStatusConditionFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
-		"kube_pod_status_condition",
-		"The pods conditions.",
-		metric.Gauge,
-		"",
-		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			conditions := p.Status.Conditions
-
-			ms := make([]*metric.Metric, len(conditions))
-
-			for i, condition := range conditions {
-				conditionType := string(condition.Type)
-				conditionStatusStr := string(condition.Status)
-				conditionStatus, err := strconv.ParseBool(conditionStatusStr)
-				if err != nil {
-					return nil
-				}
-				ms[i] = &metric.Metric{
-
-					LabelKeys:   []string{"condition_type"},
-					LabelValues: []string{conditionType},
-					Value:       boolFloat64(conditionStatus),
 				}
 			}
 

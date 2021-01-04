@@ -1289,16 +1289,12 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
-				# HELP kube_pod_status_condition The pods conditions.
-				# TYPE kube_pod_status_condition gauge
 				# HELP kube_pod_status_condition_last_transition_time The last transition time of each pod condition.
 				# TYPE kube_pod_status_condition_last_transition_time gauge
-				kube_pod_status_condition{namespace="ns2",pod="pod2",condition_type="PodScheduled",uid="uid2"} 1
-				kube_pod_status_condition{namespace="ns2",pod="pod2",condition_type="Ready",uid="uid2"} 0
 				kube_pod_status_condition_last_transition_time{namespace="ns2",pod="pod2",condition_type="PodScheduled",uid="uid2"} 1.501666018e+09
 				kube_pod_status_condition_last_transition_time{namespace="ns2",pod="pod2",condition_type="Ready",uid="uid2"} 1.501666018e+09
 			`,
-			MetricNames: []string{"kube_pod_status_condition", "kube_pod_status_condition_last_transition_time"},
+			MetricNames: []string{"kube_pod_status_condition_last_transition_time"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1311,12 +1307,10 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
-				# HELP kube_pod_status_condition The pods conditions.
-				# TYPE kube_pod_status_condition gauge
 				# HELP kube_pod_status_condition_last_transition_time The last transition time of each pod condition.
 				# TYPE kube_pod_status_condition_last_transition_time gauge
 			`,
-			MetricNames: []string{"kube_pod_status_condition", "kube_pod_status_condition_last_transition_time"},
+			MetricNames: []string{"kube_pod_status_condition_last_transition_time"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1774,7 +1768,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 52
+	expectedFamilies := 51
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

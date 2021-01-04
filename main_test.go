@@ -209,7 +209,6 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
-# HELP kube_pod_status_condition The pods conditions.
 # HELP kube_pod_status_condition_last_transition_time The last transition time of each pod condition.
 # HELP kube_pod_status_phase The pods current phase.
 # HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
@@ -261,7 +260,6 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge
-# TYPE kube_pod_status_condition gauge
 # TYPE kube_pod_status_condition_last_transition_time gauge
 # TYPE kube_pod_status_phase gauge
 # TYPE kube_pod_status_ready gauge

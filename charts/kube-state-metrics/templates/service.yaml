@@ -28,7 +28,7 @@ spec:
     nodePort: {{ .Values.service.nodePort }}
   {{- end }}
     targetPort: 8080
-  {{ if .Values.selfMonitor }}
+  {{ if .Values.selfMonitor.enabled }}
   - name: "metrics"
     protocol: TCP
     port: {{ .Values.selfMonitor.telemetryPort | default 8081 }}

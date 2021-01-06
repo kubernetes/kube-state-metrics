@@ -2,6 +2,13 @@
 
 Installs the [kube-state-metrics agent](https://github.com/kubernetes/kube-state-metrics).
 
+## Warning
+
+**The integration is still work in progress. As of now, the mentioned repositories below are not fully set up yet.
+You can still use the deprecated [helm/stable](https://charts.helm.sh/stable/) repository and migrate at a later point to the new location.
+At this point in time, no significant changes to the chart were made in this repository.
+For more information, please see: https://github.com/kubernetes/kube-state-metrics/pull/1325#issuecomment-749732052**
+
 ## Get Repo Info
 
 ```console

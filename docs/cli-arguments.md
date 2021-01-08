@@ -30,7 +30,7 @@ Usage of ./kube-state-metrics:
       --apiserver string                  The URL of the apiserver to use as a master
       --enable-gzip-encoding              Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.
   -h, --help                              Print Help text
-      --host string                       Host to expose metrics on. (default "0.0.0.0")
+      --host string                       Host to expose metrics on. (default "::")
       --kubeconfig string                 Absolute path to the kubeconfig file
       --labels-metric-allow-list string   Allows to pass a list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=["k8s-label-1","k8s-label-n",...],pods=["app"],...)'
       --log_backtrace_at traceLocation    when logging hits line file:N, emit a stack trace (default :0)
@@ -49,7 +49,7 @@ Usage of ./kube-state-metrics:
       --skip_headers                      If true, avoid header prefixes in the log messages
       --skip_log_headers                  If true, avoid headers when opening log files
       --stderrthreshold severity          logs at or above this threshold go to stderr (default 2)
-      --telemetry-host string             Host to expose kube-state-metrics self metrics on. (default "0.0.0.0")
+      --telemetry-host string             Host to expose kube-state-metrics self metrics on. (default "::")
       --telemetry-port int                Port to expose kube-state-metrics self metrics on. (default 8081)
       --total-shards int                  The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
   -v, --v Level                           number for the log level verbosity

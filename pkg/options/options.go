@@ -35,6 +35,7 @@ type Options struct {
 	Host            string
 	TelemetryPort   int
 	TelemetryHost   string
+	TLSConfig       string
 	Resources       ResourceSet
 	Namespaces      NamespaceList
 	Shard           int32
@@ -79,6 +80,7 @@ func (o *Options) AddFlags() {
 
 	o.flags.StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	o.flags.StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
+	o.flags.StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.flags.BoolVarP(&o.Help, "help", "h", false, "Print Help text")
 	o.flags.IntVar(&o.Port, "port", 8080, `Port to expose metrics on.`)
 	o.flags.StringVar(&o.Host, "host", "::", `Host to expose metrics on.`)

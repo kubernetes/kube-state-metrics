@@ -32,6 +32,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
+	"github.com/prometheus/exporter-toolkit/web"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -57,9 +58,17 @@ func (pl promLogger) Println(v ...interface{}) {
 	klog.Error(v...)
 }
 
+// promLogger implements the Logger interface
+func (pl promLogger) Log(v ...interface{}) error {
+	klog.Info(v...)
+	return nil
+}
+
 func main() {
 	opts := options.NewOptions()
 	opts.AddFlags()
+
+	promLogger := promLogger{}
 
 	ctx := context.Background()
 
@@ -166,26 +175,21 @@ func main() {
 		})
 	}
 
+	tlsConfig := opts.TLSConfig
+
 	telemetryMux := buildTelemetryServer(ksmMetricsRegistry)
-	telemetryServer := http.Server{Handler: telemetryMux}
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
-	telemetryLn, err := net.Listen("tcp", telemetryListenAddress)
-	if err != nil {
-		klog.Fatalf("Failed to create Telemetry Listener: %v", err)
-	}
+	telemetryServer := http.Server{Handler: telemetryMux, Addr: telemetryListenAddress}
+
 	metricsMux := buildMetricsServer(m, durationVec)
-	metricsServer := http.Server{Handler: metricsMux}
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
-	metricsServerLn, err := net.Listen("tcp", metricsServerListenAddress)
-	if err != nil {
-		klog.Fatalf("Failed to create MetricsServer Listener: %v", err)
-	}
+	metricsServer := http.Server{Handler: metricsMux, Addr: metricsServerListenAddress}
 
 	// Run Telemetry server
 	{
 		g.Add(func() error {
 			klog.Infof("Starting kube-state-metrics self metrics server: %s", telemetryListenAddress)
-			return telemetryServer.Serve(telemetryLn)
+			return web.ListenAndServe(&telemetryServer, tlsConfig, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -196,7 +200,7 @@ func main() {
 	{
 		g.Add(func() error {
 			klog.Infof("Starting metrics server: %s", metricsServerListenAddress)
-			return metricsServer.Serve(metricsServerLn)
+			return web.ListenAndServe(&metricsServer, tlsConfig, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()

@@ -20,6 +20,7 @@ import (
 	"context"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -104,7 +105,9 @@ func (b *Builder) WithNamespaces(n options.NamespaceList) {
 // WithSharding sets the shard and totalShards property of a Builder.
 func (b *Builder) WithSharding(shard int32, totalShards int) {
 	b.shard = shard
-	b.shardingMetrics.Ordinal.Set(float64(shard))
+	labels := map[string]string{sharding.LabelOrdinal: strconv.Itoa(int(shard))}
+	b.shardingMetrics.Ordinal.Reset()
+	b.shardingMetrics.Ordinal.With(labels).Set(float64(shard))
 	b.totalShards = totalShards
 	b.shardingMetrics.Total.Set(float64(totalShards))
 }

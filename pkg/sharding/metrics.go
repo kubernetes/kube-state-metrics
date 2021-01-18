@@ -21,10 +21,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+const (
+	// Name of Prometheus metric label to use in conjunction with kube_state_metrics_shard_ordinal.
+	LabelOrdinal = "shard_ordinal"
+)
+
 // Metrics stores the pointers of kube_state_metrics_shard_ordinal
 // and kube_state_metrics_total_shards metrics.
 type Metrics struct {
-	Ordinal prometheus.Gauge
+	Ordinal *prometheus.GaugeVec
 	Total   prometheus.Gauge
 }
 
@@ -32,11 +37,11 @@ type Metrics struct {
 // and registers sharding configuration metrics. It returns those registered metrics.
 func NewShardingMetrics(r prometheus.Registerer) *Metrics {
 	return &Metrics{
-		Ordinal: promauto.With(r).NewGauge(
+		Ordinal: promauto.With(r).NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "kube_state_metrics_shard_ordinal",
 				Help: "Current sharding ordinal/index of this instance",
-			},
+			}, []string{LabelOrdinal},
 		),
 		Total: promauto.With(r).NewGauge(
 			prometheus.GaugeOpts{

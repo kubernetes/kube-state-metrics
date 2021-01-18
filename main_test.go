@@ -388,7 +388,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 # HELP kube_state_metrics_total_shards Number of total shards this instance is aware of
 # TYPE kube_state_metrics_shard_ordinal gauge
 # TYPE kube_state_metrics_total_shards gauge
-kube_state_metrics_shard_ordinal 0
+kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
 kube_state_metrics_total_shards 1
 `
 

@@ -1,8 +1,8 @@
 # Default values for kube-state-metrics.
 prometheusScrape: true
 image:
-  repository: quay.io/coreos/kube-state-metrics
-  tag: v1.9.7
+  repository: k8s.gcr.io/kube-state-metrics/kube-state-metrics
+  tag: v2.0.0-beta
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -110,7 +110,7 @@ podAnnotations: {}
 podDisruptionBudget: {}
 
 # Available collectors for kube-state-metrics. By default all available
-# collectors are enabled.
+# resources are enabled.
 collectors:
   certificatesigningrequests: true
   configmaps: true
@@ -147,8 +147,8 @@ kubeconfig:
   # base64 encoded kube-config file
   secret:
 
-# Namespace to be enabled for collecting resources. By default all namespaces are collected.
-# namespace: ""
+# Namespaces to be enabled for collecting resources. By default all namespaces are collected.
+# namespaces: ""
 
 ## Override the deployment namespace
 ##

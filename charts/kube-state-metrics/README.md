@@ -14,11 +14,7 @@ _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation
 ## Install Chart
 
 ```console
-# Helm 3
 $ helm install [RELEASE_NAME] kube-state-metrics/kube-state-metrics [flags]
-
-# Helm 2
-$ helm install --name [RELEASE_NAME] kube-state-metrics/kube-state-metrics [flags]
 ```
 
 _See [configuration](#configuration) below._
@@ -28,11 +24,7 @@ _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documen
 ## Uninstall Chart
 
 ```console
-# Helm 3
 $ helm uninstall [RELEASE_NAME]
-
-# Helm 2
-# helm delete --purge [RELEASE_NAME]
 ```
 
 This removes all the Kubernetes components associated with the chart and deletes the release.
@@ -42,7 +34,6 @@ _See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command doc
 ## Upgrading Chart
 
 ```console
-# Helm 3 or 2
 $ helm upgrade [RELEASE_NAME] kube-state-metrics/kube-state-metrics [flags]
 ```
 
@@ -63,4 +54,4 @@ See [Customizing the Chart Before Installing](https://helm.sh/docs/intro/using_h
 helm show values kube-state-metrics/kube-state-metrics
 ```
 
-You may also `helm show values` on this chart's [dependencies](#dependencies) for additional options.
+You may also run `helm show values` on this chart's [dependencies](#dependencies) for additional options.

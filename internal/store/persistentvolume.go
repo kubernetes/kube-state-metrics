@@ -144,13 +144,15 @@ func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.Family
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				var gcePDDiskName, ebsVolumeID, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, iscsiInitiatorName, nfsServer, nfsPath string
+				var gcePDDiskName, ebsVolumeID, azureDiskName, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, iscsiInitiatorName, nfsServer, nfsPath string
 
 				switch {
 				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
 					gcePDDiskName = p.Spec.PersistentVolumeSource.GCEPersistentDisk.PDName
 				case p.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil:
 					ebsVolumeID = p.Spec.PersistentVolumeSource.AWSElasticBlockStore.VolumeID
+				case p.Spec.PersistentVolumeSource.AzureDisk != nil:
+					azureDiskName = p.Spec.PersistentVolumeSource.AzureDisk.DiskName
 				case p.Spec.PersistentVolumeSource.FC != nil:
 					if p.Spec.PersistentVolumeSource.FC.Lun != nil {
 						fcLun = strconv.FormatInt(int64(*p.Spec.PersistentVolumeSource.FC.Lun), 10)
@@ -186,6 +188,7 @@ func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.Family
 								"storageclass",
 								"gce_persistent_disk_name",
 								"ebs_volume_id",
+								"azure_disk_name",
 								"fc_wwids",
 								"fc_lun",
 								"fc_target_wwns",
@@ -200,6 +203,7 @@ func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.Family
 								p.Spec.StorageClassName,
 								gcePDDiskName,
 								ebsVolumeID,
+								azureDiskName,
 								fcWWIDs,
 								fcLun,
 								fcTargetWWNs,

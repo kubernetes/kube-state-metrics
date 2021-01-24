@@ -16,8 +16,8 @@ _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation
 ```console
 # Helm 3
 $ helm install [RELEASE_NAME] kube-state-metrics/kube-state-metrics [flags]
-# Helm 2
 
+# Helm 2
 $ helm install --name [RELEASE_NAME] kube-state-metrics/kube-state-metrics [flags]
 ```
 

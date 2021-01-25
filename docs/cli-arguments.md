@@ -51,6 +51,7 @@ Usage of ./kube-state-metrics:
       --stderrthreshold severity          logs at or above this threshold go to stderr (default 2)
       --telemetry-host string             Host to expose kube-state-metrics self metrics on. (default "::")
       --telemetry-port int                Port to expose kube-state-metrics self metrics on. (default 8081)
+      --tls-config string                 Path to the TLS configuration file
       --total-shards int                  The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
   -v, --v Level                           number for the log level verbosity
       --version                           kube-state-metrics build version information

@@ -2,7 +2,6 @@ module k8s.io/kube-state-metrics/v2
 
 require (
 	github.com/Azure/go-autorest/autorest v0.10.0 // indirect
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/brancz/gojsontoyaml v0.0.0-20190425155809-e8bd32d46b3d
 	github.com/campoy/embedmd v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
@@ -15,7 +14,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.10.0
+	github.com/prometheus/common v0.15.0
+	github.com/prometheus/exporter-toolkit v0.5.1
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/spf13/pflag v1.0.5

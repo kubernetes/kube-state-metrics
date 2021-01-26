@@ -23,13 +23,14 @@ case $(uname -m) in
 	*)		ARCH="$(uname -m)";;
 esac
 
-KUBERNETES_VERSION=v1.19.1
+KUBERNETES_VERSION="v1.19.1"
+NODE_IMAGE_NAME="docker.io/kindest/node"
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME="quay.io/coreos/kube-state-metrics-${ARCH}"
 KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
-KIND_VERSION=v0.9.0
+KIND_VERSION=v0.10.0
 SUDO=${SUDO:-}
 
 OS=$(uname -s | awk '{print tolower($0)}')
@@ -68,7 +69,7 @@ touch "${HOME}"/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
 
-kind create cluster --image=kindest/node:${KUBERNETES_VERSION}
+kind create cluster --image=${NODE_IMAGE_NAME}:${KUBERNETES_VERSION}
 
 kind export kubeconfig
 

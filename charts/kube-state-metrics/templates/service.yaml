@@ -32,7 +32,7 @@ spec:
   - name: "metrics"
     protocol: TCP
     port: {{ .Values.selfMonitor.telemetryPort | default 8081 }}
-    targetPort: {{ .Values.selfMonitor.telemetryPort | default 8081 }}
+    targetPort: 8081
   {{ end }}
 {{- if .Values.service.loadBalancerIP }}
   loadBalancerIP: "{{ .Values.service.loadBalancerIP }}"

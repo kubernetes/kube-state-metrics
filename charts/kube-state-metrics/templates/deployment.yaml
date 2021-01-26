@@ -159,9 +159,7 @@ spec:
 {{ if .Values.selfMonitor.telemetryHost }}
         - --telemetry-host={{ .Values.selfMonitor.telemetryHost }}
 {{ end }}
-{{ if .Values.selfMonitor.telemetryPort }}
-        - --telemetry-port={{ .Values.selfMonitor.telemetryPort }}
-{{ end }}
+        - --telemetry-port=8081
 {{- if .Values.kubeconfig.enabled }}
         volumeMounts:
         - name: kubeconfig

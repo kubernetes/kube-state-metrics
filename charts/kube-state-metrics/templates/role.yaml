@@ -2,6 +2,7 @@
 {{- if eq .Values.rbac.useClusterRole false }}
 {{-   range (split "," $.Values.namespace) }}
 {{- end }}
+{{- end -}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 {{- if eq .Values.rbac.useClusterRole false }}
@@ -188,5 +189,4 @@ rules:
     - verticalpodautoscalers
   verbs: ["list", "watch"]
 {{ end -}}
-{{- end -}}
 {{- end -}}

@@ -161,6 +161,10 @@ spec:
 {{ if .Values.kubeconfig.enabled }}
         - --kubeconfig=/opt/k8s/.kube/config
 {{ end }}
+{{ if .Values.selfMonitor.telemetryHost }}
+        - --telemetry-host={{ .Values.selfMonitor.telemetryHost }}
+{{ end }}
+        - --telemetry-port=8081
 {{- if .Values.kubeconfig.enabled }}
         volumeMounts:
         - name: kubeconfig

@@ -152,7 +152,7 @@ spec:
         - --collectors=volumeattachments
 {{  end  }}
 {{ if .Values.namespace }}
-        - --namespace={{ .Values.namespace }}
+        - --namespace={{ .Values.namespace | join "," }}
 {{ end }}
 {{ if .Values.autosharding.enabled }}
         - --pod=$(POD_NAME)

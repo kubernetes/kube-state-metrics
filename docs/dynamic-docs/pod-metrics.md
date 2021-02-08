@@ -1,0 +1,83 @@
+# Pod Metrics
+
+| Metric name| Metric type | Description | Unit (where applicable) | Labels/tags | Status |
+| ---------- | ----------- | ----------- | ----------------------- | ----------- | ------ |
+| kube_pod_info | Gauge | Information about pod | | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `host_ip`=&lt;host-ip&gt; <br> `pod_ip`=&lt;pod-ip&gt; <br> `node`=&lt;node-name&gt;<br> `created_by_kind`=&lt;created_by_kind&gt;<br> `created_by_name`=&lt;created_by_name&gt;<br> `uid`=&lt;pod-uid&gt;<br> `priority_class`=&lt;priority_class&gt;<br> `host_network`=&lt;host_network&gt;| STABLE |
+| kube_pod_start_time | Gauge | Start time in unix timestamp for a pod | seconds | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_completion_time | Gauge | Completion time in unix timestamp for a pod | seconds | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_owner | Gauge | Information about the Pod's owne | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `owner_kind`=&lt;owner kind&gt; <br> `owner_name`=&lt;owner name&gt; <br> `owner_is_controller`=&lt;whether owner is controller&gt; <br> `uid`=&lt;pod-uid&gt;  | STABLE |
+| kube_pod_labels | Gauge | Kubernetes labels converted to Prometheus labels | | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `label_POD_LABEL`=&lt;POD_LABEL&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_status_phase | Gauge | The pods current phase | | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `phase`=&lt;Pending\|Running\|Succeeded\|Failed\|Unknown&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_status_ready | Gauge | Describes whether the pod is ready to serve requests | | `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `condition`=&lt;true\|false\|unknown&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_status_scheduled | Gauge | Describes the status of the scheduling process for the pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `condition`=&lt;true\|false\|unknown&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_info | Gauge | Information about a container in a pod | | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `image`=&lt;image-name&gt; <br> `image_id`=&lt;image-id&gt; <br> `container_id`=&lt;containerid&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_waiting | Gauge | Describes whether the container is currently in waiting state | | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_waiting_reason | Gauge | Describes the reason the container is currently in waiting state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;ContainerCreating\|CrashLoopBackOff\|ErrImagePull\|ImagePullBackOff\|CreateContainerConfigError\|InvalidImageName\|CreateContainerError&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_running | Gauge | Describes whether the container is currently in running state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_state_started | Gauge | Start time in unix timestamp for a pod container | seconds |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_terminated | Gauge | Describes whether the container is currently in terminated state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_terminated_reason | Gauge | Describes the reason the container is currently in terminated state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;OOMKilled\|Error\|Completed\|ContainerCannotRun\|DeadlineExceeded\|Evicted&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_last_terminated_reason | Gauge | Describes the last reason the container was in terminated state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;OOMKilled\|Error\|Completed\|ContainerCannotRun\|DeadlineExceeded\|Evicted&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_ready | Gauge | Describes whether the containers readiness check succeeded | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_status_restarts_total | Counter | The number of container restarts per container | | `container`=&lt;container-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `pod`=&lt;pod-name&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_container_resource_requests | Gauge | The number of requested request resource by a container | `cpu`=&lt;core&gt; <br> `memory`=&lt;bytes&gt; |`resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt; <br> `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_container_resource_limits | Gauge | The number of requested limit resource by a container | `cpu`=&lt;core&gt; <br> `memory`=&lt;bytes&gt; |`resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt; <br> `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `node`=&lt; node-name&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_overhead_cpu_cores | Gauge | The pod overhead in regards to cpu cores associated with running a pod | core |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_overhead_memory_bytes | Gauge | The pod overhead in regards to memory associated with running a pod | bytes |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_runtimeclass_name_info | Gauge | The runtimeclass associated with the pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_created | Gauge | Unix creation timestamp | seconds |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_deletion_timestamp | Gauge | Unix deletion timestamp | seconds |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_restart_policy | Gauge | Describes the restart policy in use by this pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `type`=&lt;Always\|Never\|OnFailure&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_info | Gauge | Information about an init container in a pod | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `image`=&lt;image-name&gt; <br> `image_id`=&lt;image-id&gt; <br> `container_id`=&lt;containerid&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_waiting | Gauge | Describes whether the init container is currently in waiting state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_waiting_reason | Gauge | Describes the reason the init container is currently in waiting state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;ContainerCreating\|CrashLoopBackOff\|ErrImagePull\|ImagePullBackOff\|CreateContainerConfigError\|CreateContainerError\|InvalidImageName&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_running | Gauge | Describes whether the init container is currently in running state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_terminated | Gauge | Describes whether the init container is currently in terminated state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_terminated_reason | Gauge | Describes the reason the init container is currently in terminated state | | `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;OOMKilled\|Error\|Completed\|ContainerCannotRun\|DeadlineExceeded\|Evicted&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_last_terminated_reason | Gauge | Describes the last reason the init container was in terminated state | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;OOMKilled\|Error\|Completed\|ContainerCannotRun\|DeadlineExceeded\|Evicted&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_ready | Gauge | Describes whether the init containers readiness check succeeded | |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_status_restarts_total | Counter | The number of restarts for the init container | integer |`container`=&lt;container-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `pod`=&lt;pod-name&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_init_container_resource_limits | Gauge | The number of CPU cores requested limit by an init container | `cpu`=&lt;core&gt; <br> `memory`=&lt;bytes&gt; |`resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt; <br> `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_limits_cpu_cores | Gauge | The number of CPU cores requested limit by an init container | core |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_limits_memory_bytes | Gauge | Bytes of memory requested limit by an init container | bytes |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_limits_storage_bytes | Gauge | Bytes of storage requested limit by an init container | bytes |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_limits_ephemeral_storage_bytes | Gauge | Bytes of ephemeral-storage requested limit by an init container | bytes |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_requests | Gauge | The number of CPU cores requested by an init container | integer |`resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt; <br> `container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_requests_cpu_cores | Gauge | The number of CPU cores requested by an init container | core |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_requests_memory_bytes | Gauge | Bytes of memory requested by an init container | bytes |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_requests_storage_bytes | Gauge | Bytes of storage requested by an init container | bytes |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_init_container_resource_requests_ephemeral_storage_bytes | Gauge | Bytes of ephemeral-storage requested by an init container | bytes |`container`=&lt;container-name&gt; <br> `pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_spec_volumes_persistentvolumeclaims_info | Gauge | Information about persistentvolumeclaim volumes in a pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `volume`=&lt;volume-name&gt;  <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-claimname&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_spec_volumes_persistentvolumeclaims_readonly | Gauge | Describes whether a persistentvolumeclaim is mounted read only | bool |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt;  <br> `volume`=&lt;volume-name&gt;  <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-claimname&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_status_reason | Gauge | The pod status reasons | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;NodeLost\|Evicted\|UnexpectedAdmissionError&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_status_scheduled_time | Gauge | Unix timestamp when pod moved into scheduled status | seconds |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_status_unschedulable | Gauge | Describes the unschedulable status for the pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+
+## Useful metrics queries
+
+### How to retrieve non-standard Pod state
+
+It is not straightforward to get the Pod states for certain cases like "Terminating" and "Unknown" since it is not stored behind a field in the `Pod.Status`.
+
+So to mimic the [logic](https://github.com/kubernetes/kubernetes/blob/v1.17.3/pkg/printers/internalversion/printers.go#L624) used by the `kubectl` command line, you will need to compose multiple metrics.
+
+For example:
+
+* To get the list of pods that are in the `Unknown` state, you can run the following PromQL query: `sum(kube_pod_status_phase{phase="Unknown"}) by (namespace, pod) or (count(kube_pod_deletion_timestamp) by (namespace, pod) * sum(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod))`
+
+* For Pods in `Terminating` state: `count(kube_pod_deletion_timestamp) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod)`
+
+Here is an example of a Prometheus rule that can be used to alert on a Pod that has been in the `Terminated` state for more than `5m`.
+
+```yaml
+groups:
+- name: Pod state
+  rules:
+  - alert: PodsBlockInTerminatingState
+    expr: count(kube_pod_deletion_timestamp) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod) > 0
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: Pod {{labels.namespace}}/{{labels.pod}} block in Terminating state.
+```

@@ -365,3 +365,9 @@ func (b *Builder) reflectorPerNamespace(
 	reflector := cache.NewReflector(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, 0)
 	go reflector.Run(b.ctx.Done())
 }
+
+//GetFamily Fetches Details From FamilyGenerator Declarations From the Store
+func GetFamily() (testreturn []generator.FamilyGenerator) {
+	test := configMapMetricFamilies
+	return test
+}

@@ -167,9 +167,17 @@ func (mlw multiListerWatcher) Watch(options metav1.ListOptions) (watch.Interface
 	resourceVersions := make([]string, len(mlw))
 	// Allow resource versions to be "".
 	if options.ResourceVersion != "" {
-		rvs := strings.Split(options.ResourceVersion, "/")
-		if len(rvs) != len(mlw) {
-			return nil, fmt.Errorf("expected resource version to have %d parts to match the number of ListerWatchers", len(mlw))
+		rvs := make([]string, 0, len(mlw))
+		if strings.Contains(options.ResourceVersion, "/") {
+			rvs = strings.Split(options.ResourceVersion, "/")
+			if len(rvs) != len(mlw) {
+				return nil, fmt.Errorf("expected resource version to have %d parts to match the number of ListerWatchers， actual: %d", len(mlw), len(rvs))
+			}
+		} else {
+			// watch reconnected and resource version is the latest one from event.Object has no "/"
+			for i := 0; i < len(mlw); i++ {
+				rvs = append(rvs, options.ResourceVersion)
+			}
 		}
 		resourceVersions = rvs
 	}

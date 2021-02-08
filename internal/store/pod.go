@@ -34,7 +34,6 @@ import (
 
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
 	podStatusReasons           = []string{"NodeLost", "Evicted", "UnexpectedAdmissionError"}
 )
@@ -518,18 +517,17 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerWaitingReasons))
-
-				for i, cs := range p.Status.ContainerStatuses {
-					for j, reason := range containerWaitingReasons {
-						ms[i*len(containerWaitingReasons)+j] = &metric.Metric{
+				ms := []*metric.Metric{}
+				for _, cs := range p.Status.ContainerStatuses {
+					// Skip creating series for running containers.
+					if cs.State.Waiting != nil {
+						ms = append(ms, &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
-							LabelValues: []string{cs.Name, reason},
-							Value:       boolFloat64(waitingReason(cs, reason)),
-						}
+							LabelValues: []string{cs.Name, cs.State.Waiting.Reason},
+							Value:       1,
+						})
 					}
 				}
-
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -541,15 +539,15 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerWaitingReasons))
-
-				for i, cs := range p.Status.InitContainerStatuses {
-					for j, reason := range containerWaitingReasons {
-						ms[i*len(containerWaitingReasons)+j] = &metric.Metric{
+				ms := []*metric.Metric{}
+				for _, cs := range p.Status.InitContainerStatuses {
+					// Skip creating series for running containers.
+					if cs.State.Waiting != nil {
+						ms = append(ms, &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
-							LabelValues: []string{cs.Name, reason},
-							Value:       boolFloat64(waitingReason(cs, reason)),
-						}
+							LabelValues: []string{cs.Name, cs.State.Waiting.Reason},
+							Value:       1,
+						})
 					}
 				}
 
@@ -1377,13 +1375,6 @@ func createPodListWatch(kubeClient clientset.Interface, ns string) cache.ListerW
 			return kubeClient.CoreV1().Pods(ns).Watch(context.TODO(), opts)
 		},
 	}
-}
-
-func waitingReason(cs v1.ContainerStatus, reason string) bool {
-	if cs.State.Waiting == nil {
-		return false
-	}
-	return cs.State.Waiting.Reason == reason
 }
 
 func terminationReason(cs v1.ContainerStatus, reason string) bool {

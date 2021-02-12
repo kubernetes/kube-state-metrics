@@ -130,6 +130,18 @@ jobs:
       run: |
         make test-unit
 
+  ci-rule-tests:
+    name: ci-rule-tests
+    runs-on: ubuntu-latest
+    container:
+      image: prom/prometheus:v2.24.1
+    steps:
+      - name: Rule tests
+        run: |
+          pwd
+          ls -lA
+          promtool test rules tests/rules/alerts-test.yaml
+
   ci-benchmark-tests:
     name: ci-benchmark-tests
     runs-on: ubuntu-latest

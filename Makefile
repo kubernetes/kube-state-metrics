@@ -65,6 +65,9 @@ kube-state-metrics:
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
 
+test-rules:
+	promtool test rules tests/rules/alerts-test.yaml
+
 shellcheck:
 	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
 
@@ -152,4 +155,4 @@ install-tools:
 	@echo Installing tools from tools.go
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd

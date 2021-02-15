@@ -135,14 +135,13 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: prom/prometheus:v2.24.1
-      volumes:
-        - .:/mnt
     steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
       - name: Rule tests
         run: |
-          pwd
-          ls -lA
-          promtool test rules /mnt/tests/rules/alerts-test.yaml
+          promtool test rules "$GITHUB_WORKSPACE/tests/rules/alerts-test.yaml"
 
   ci-benchmark-tests:
     name: ci-benchmark-tests

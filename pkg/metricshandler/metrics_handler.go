@@ -199,7 +199,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, s := range m.stores {
-		s.WriteAll(w)
+		s.WriteAll(writer)
 	}
 
 	// In case we gzipped the response, we have to close the writer.

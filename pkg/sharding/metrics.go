@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	// Name of Prometheus metric label to use in conjunction with kube_state_metrics_shard_ordinal.
+	// LabelOrdinal is name of Prometheus metric label to use in conjunction with kube_state_metrics_shard_ordinal.
 	LabelOrdinal = "shard_ordinal"
 )
 

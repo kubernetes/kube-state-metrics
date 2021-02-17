@@ -130,6 +130,21 @@ jobs:
       run: |
         make test-unit
 
+  ci-rule-tests:
+    name: ci-rule-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Setup promtool
+        run: |
+          make install-promtool
+
+      - name: Rule tests
+        run: |
+          PROMTOOL_CLI=./promtool make test-rules
+
   ci-benchmark-tests:
     name: ci-benchmark-tests
     runs-on: ubuntu-latest

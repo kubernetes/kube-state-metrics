@@ -7,6 +7,7 @@ TAG ?= $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
 BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
 DOCKER_CLI ?= docker
+PROMTOOL_CLI ?= promtool
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
 BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -64,6 +65,9 @@ kube-state-metrics:
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
+
+test-rules:
+	${PROMTOOL_CLI} test rules tests/rules/alerts-test.yaml
 
 shellcheck:
 	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
@@ -152,4 +156,8 @@ install-tools:
 	@echo Installing tools from tools.go
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+install-promtool:
+	@echo Installing promtool
+	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v2.24.1/prometheus-2.24.1.linux-amd64.tar.gz" | tar xvz --strip-components=1
+
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd

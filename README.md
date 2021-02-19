@@ -67,7 +67,7 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 | **v1.6.0**         |         ✓           |         ✓           |         -           |          -           |          -           |
 | **v1.7.2**         |         ✓           |         ✓           |         ✓           |          -           |          -           |
 | **v1.8.0**         |         ✓           |         ✓           |         ✓           |          ✓           |          -           |
-| **v1.9.7**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
+| **v1.9.8**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
 | **master**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
@@ -80,12 +80,14 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v1.9.7`
-* `k8s.gcr.io/kube-state-metrics:v1.9.7`
+* `quay.io/coreos/kube-state-metrics:v1.9.8`
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v1.9.8` (arch: amd64, arm, arm64, ppc64le and s390x)
 
 **Note**:
-The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on
-`gcr.io` is only maintained on best effort as it requires external help from Google employees.
+The recommended docker registry for kube-state-metrics is `quay.io`.
+
+**BONUS**: v1.9.8 of `kube-state-metrics` also includes multi-arch support. To take advantage of this, you can pull
+`k8s.gcr.io/kube-state-metrics/kube-state-metrics:v1.9.8`.
 
 ### Metrics Documentation
 

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/version: v1.9.7
+    app.kubernetes.io/version: v1.9.8
   name: kube-state-metrics
   namespace: kube-system
 spec:
@@ -15,10 +15,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/version: v1.9.7
+        app.kubernetes.io/version: v1.9.8
     spec:
       containers:
-      - image: quay.io/coreos/kube-state-metrics:v1.9.7
+      - image: quay.io/coreos/kube-state-metrics:v1.9.8
         livenessProbe:
           httpGet:
             path: /healthz

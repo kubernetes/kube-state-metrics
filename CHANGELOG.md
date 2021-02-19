@@ -1,3 +1,11 @@
+## v1.9.8 / 2021-02-19
+
+* [BUGFIX] Metric encoding is broken when using --enable-gzip-encoding flag #1372
+* [CHANGE] Update to golang-1.15 #1261
+* [ENHANCEMENT] Makefile: Set tag via cloudbuild #1264
+* [CHANGE] Migrate to Github Actions from TravisCI for CI checks #1199 
+* [FEATURE] Support for multi-arch docker images of kube-state-metrics #1197
+
 ## v1.9.7 / 2020-05-24
 
 * [BUGFIX] internal/store/mutatingwebhookconfiguration.go: Switch to v1 #1144

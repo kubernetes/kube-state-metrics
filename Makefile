@@ -3,21 +3,16 @@ TESTENVVAR =
 REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
 TAG_PREFIX = v
 VERSION = $(shell cat VERSION)
-TAG = $(TAG_PREFIX)$(VERSION)
+TAG ?= $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
 DOCKER_CLI ?= docker
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
-BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-Commit = $(shell git rev-parse --short HEAD)
+BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.13
-FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
-BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.19.1
-HAS_GOLANGCI := $(shell which golangci-lint)
-
+GO_VERSION = 1.15.7
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
@@ -43,9 +38,6 @@ licensecheck:
        fi
 
 lint: shellcheck licensecheck
-ifndef HAS_GOLANGCI
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin ${GOLANGCI_VERSION}
-endif
 	golangci-lint run
 
 doccheck: generate
@@ -62,7 +54,7 @@ doccheck: generate
 	@echo OK
 
 build-local:
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
+	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${GIT_COMMIT} -X ${PKG}/version.BuildDate=${BUILD_DATE}" -o kube-state-metrics
 
 build: kube-state-metrics
 
@@ -77,7 +69,8 @@ shellcheck:
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
-test-benchmark-compare: $(BENCHCMP_BINARY)
+test-benchmark-compare:
+	@git fetch
 	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
@@ -88,7 +81,7 @@ all: all-container
 container: container-$(ARCH)
 
 container-%:
-	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOARCH=$* .
+	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
 
 sub-container-%:
 	$(MAKE) --no-print-directory ARCH=$* container
@@ -106,7 +99,7 @@ do-push-%:
 
 push-multi-arch:
 	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:${TAG}; done
+	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
 	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
 quay-push: .quay-push-$(ARCH)
@@ -128,7 +121,7 @@ e2e:
 generate: build-local
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
-	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+	embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
 validate-manifests: examples
 	@git diff --exit-code

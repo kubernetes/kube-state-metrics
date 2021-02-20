@@ -12,10 +12,8 @@ kind: ClusterRole
 {{- end }}
 metadata:
   labels:
-    app.kubernetes.io/name: {{ template "kube-state-metrics.name" $ }}
-    helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
-    app.kubernetes.io/managed-by: {{ $.Release.Service }}
-    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app: {{ template "kube-state-metrics.name" . }}
+{{ include "kube-state-metrics.labels" . | indent 4 }}
   name: {{ template "kube-state-metrics.fullname" $ }}
 {{- if eq .Values.rbac.useClusterRole false }}
   namespace: {{ . }}

@@ -4,10 +4,8 @@ kind: PodSecurityPolicy
 metadata:
   name: {{ template "kube-state-metrics.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ template "kube-state-metrics.name" . }}
-    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    app: {{ template "kube-state-metrics.name" . }}
+{{ include "kube-state-metrics.labels" . | indent 4 }}
 {{- if .Values.podSecurityPolicy.annotations }}
   annotations:
 {{ toYaml .Values.podSecurityPolicy.annotations | indent 4 }}

@@ -24,6 +24,19 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
+{{/* Generate basic labels */}}
+{{- define "kube-state-metrics.labels" }}
+app.kubernetes.io/name: {{ template "kube-state-metrics.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/version: "{{ .Chart.Version }}"
+app.kubernetes.io/part-of: {{ template "kube-state-metrics.name" . }} 
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }} 
+{{- if .Values.customLabels }}
+{{ toYaml .Values.customLabels | indent 4 }}
+{{- end }}
+{{- end }}
+
 {{/*
 Create the name of the service account to use
 */}}

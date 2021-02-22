@@ -65,6 +65,9 @@ func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, err
 			res.Items = append(res.Items, runtime.RawExtension{Object: item})
 		}
 	}
+	
+	metaObj, err := meta.ListAccessor(list)
+        res.ListMeta.ResourceVersion = metaObj.GetResourceVersion()
 
 	return res, nil
 }

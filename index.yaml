@@ -2,6 +2,28 @@ apiVersion: v1
 entries:
   kube-state-metrics:
   - apiVersion: v1
+    appVersion: 1.9.8
+    created: "2021-02-23T10:14:32.680931102Z"
+    description: Install kube-state-metrics to generate and expose cluster-level metrics
+    digest: 10af3e647fc0c18d1ee7a817eb4927f801b94cf81091a39a1101375e07ce08fd
+    home: https://github.com/kubernetes/kube-state-metrics/
+    keywords:
+    - metric
+    - monitoring
+    - prometheus
+    - kubernetes
+    maintainers:
+    - email: tariq.ibrahim@mulesoft.com
+      name: tariq1890
+    - email: manuel@rueg.eu
+      name: mrueg
+    name: kube-state-metrics
+    sources:
+    - https://github.com/kubernetes/kube-state-metrics/
+    urls:
+    - https://github.com/kubernetes/kube-state-metrics/releases/download/kube-state-metrics-helm-chart-2.13.0/kube-state-metrics-2.13.0.tgz
+    version: 2.13.0
+  - apiVersion: v1
     appVersion: 1.9.7
     created: "2021-02-11T16:04:51.239987063Z"
     description: Install kube-state-metrics to generate and expose cluster-level metrics

@@ -691,15 +691,15 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerTerminatedReasons))
+				ms := []*metric.Metric{}
 
-				for i, cs := range p.Status.ContainerStatuses {
-					for j, reason := range containerTerminatedReasons {
-						ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+				for _, cs := range p.Status.ContainerStatuses {
+					if cs.LastTerminationState.Terminated != nil {
+						ms = append(ms, &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
-							LabelValues: []string{cs.Name, reason},
-							Value:       boolFloat64(lastTerminationReason(cs, reason)),
-						}
+							LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
+							Value:       1,
+						})
 					}
 				}
 
@@ -714,15 +714,15 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerTerminatedReasons))
+				ms := []*metric.Metric{}
 
-				for i, cs := range p.Status.InitContainerStatuses {
-					for j, reason := range containerTerminatedReasons {
-						ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+				for _, cs := range p.Status.InitContainerStatuses {
+					if cs.LastTerminationState.Terminated != nil {
+						ms = append(ms, &metric.Metric{
 							LabelKeys:   []string{"container", "reason"},
-							LabelValues: []string{cs.Name, reason},
-							Value:       boolFloat64(lastTerminationReason(cs, reason)),
-						}
+							LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
+							Value:       1,
+						})
 					}
 				}
 
@@ -1374,18 +1374,4 @@ func createPodListWatch(kubeClient clientset.Interface, ns string) cache.ListerW
 			return kubeClient.CoreV1().Pods(ns).Watch(context.TODO(), opts)
 		},
 	}
-}
-
-func terminationReason(cs v1.ContainerStatus, reason string) bool {
-	if cs.State.Terminated == nil {
-		return false
-	}
-	return cs.State.Terminated.Reason == reason
-}
-
-func lastTerminationReason(cs v1.ContainerStatus, reason string) bool {
-	if cs.LastTerminationState.Terminated == nil {
-		return false
-	}
-	return cs.LastTerminationState.Terminated.Reason == reason
 }

@@ -444,12 +444,6 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3"} 0
 				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3"} 1
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff"} 1
-kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Evicted"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="DeadlineExceeded"} 0
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -512,12 +506,7 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 				kube_pod_container_state_started{container="container7",namespace="ns6",pod="pod6"} 1.501777018e+09
 				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6"} 0
-kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Evicted"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled"} 1
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="DeadlineExceeded"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_last_terminated_reason",
@@ -573,11 +562,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				kube_pod_container_state_started{container="container7",namespace="ns7",pod="pod7"} 1.501777018e+09
 				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns7",pod="pod7"} 0
-kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Evicted"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="OOMKilled"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded"} 1
 			`,
 			MetricNames: []string{

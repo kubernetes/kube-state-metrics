@@ -34,7 +34,6 @@ import (
 
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
-	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
 	podStatusReasons           = []string{"NodeLost", "Evicted", "UnexpectedAdmissionError"}
 )
 
@@ -517,7 +516,7 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
 				for _, cs := range p.Status.ContainerStatuses {
 					// Skip creating series for running containers.
 					if cs.State.Waiting != nil {
@@ -539,7 +538,7 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
 				for _, cs := range p.Status.InitContainerStatuses {
 					// Skip creating series for running containers.
 					if cs.State.Waiting != nil {
@@ -626,7 +625,6 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
-
 				for i, cs := range p.Status.InitContainerStatuses {
 					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},
@@ -646,7 +644,7 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
+				ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
 				for _, cs := range p.Status.ContainerStatuses {
 					if cs.State.Terminated != nil {
 						ms = append(ms, &metric.Metric{
@@ -668,8 +666,7 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
+				ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
 				for _, cs := range p.Status.InitContainerStatuses {
 					if cs.State.Terminated != nil {
 						ms = append(ms, &metric.Metric{
@@ -691,8 +688,7 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
+				ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
 				for _, cs := range p.Status.ContainerStatuses {
 					if cs.LastTerminationState.Terminated != nil {
 						ms = append(ms, &metric.Metric{
@@ -714,8 +710,7 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			metric.Gauge,
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
-				ms := []*metric.Metric{}
-
+				ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
 				for _, cs := range p.Status.InitContainerStatuses {
 					if cs.LastTerminationState.Terminated != nil {
 						ms = append(ms, &metric.Metric{
@@ -738,7 +733,6 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			"",
 			wrapPodFunc(func(p *v1.Pod) *metric.Family {
 				ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
-
 				for i, cs := range p.Status.ContainerStatuses {
 					ms[i] = &metric.Metric{
 						LabelKeys:   []string{"container"},

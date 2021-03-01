@@ -32,4 +32,4 @@ replace (
 	k8s.io/client-go v0.18.3 => k8s.io/client-go v0.20.0
 )
 
-go 1.14
+go 1.16

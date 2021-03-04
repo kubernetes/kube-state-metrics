@@ -6,7 +6,7 @@ kind: RoleBinding
 metadata:
   labels:
     app: {{ template "kube-state-metrics.name" . }}
-{{ include "kube-state-metrics.labels" . | indent 4 }}
+{{- include "kube-state-metrics.labels" . | indent 4 }}
   name: {{ template "kube-state-metrics.fullname" $ }}
   namespace: {{ . }}
 roleRef:

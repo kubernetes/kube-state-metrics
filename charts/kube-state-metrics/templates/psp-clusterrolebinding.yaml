@@ -4,7 +4,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     app: {{ template "kube-state-metrics.name" . }}
-{{ include "kube-state-metrics.labels" . | indent 4 }}
+{{- include "kube-state-metrics.labels" . | indent 4 }}
   name: psp-{{ template "kube-state-metrics.fullname" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io

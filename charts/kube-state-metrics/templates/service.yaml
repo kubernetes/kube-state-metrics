@@ -5,7 +5,7 @@ metadata:
   namespace: {{ template "kube-state-metrics.namespace" . }}
   labels:
     app: {{ template "kube-state-metrics.name" . }}
-{{ include "kube-state-metrics.labels" . | indent 4 }}
+{{- include "kube-state-metrics.labels" . | indent 4 }}
   annotations:
     {{- if .Values.prometheusScrape }}
     prometheus.io/scrape: '{{ .Values.prometheusScrape }}'

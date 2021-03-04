@@ -32,7 +32,7 @@ Usage of ./kube-state-metrics:
   -h, --help                              Print Help text
       --host string                       Host to expose metrics on. (default "0.0.0.0")
       --kubeconfig string                 Absolute path to the kubeconfig file
-      --labels-metric-allow-list string   Allows to pass a list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=["k8s-label-1","k8s-label-n",...],pods=["app"],...)'
+      --labels-metric-allow-list string   Allows to pass a list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'
       --log_backtrace_at traceLocation    when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                    If non-empty, write log files in this directory
       --log_file string                   If non-empty, use this log file

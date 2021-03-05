@@ -66,12 +66,12 @@ All additional compatibility is only best effort, or happens to still/already be
 
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.15** | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |
-|--------------------|---------------------|---------------------|----------------------|----------------------|----------------------|
-| **v1.8.0**         |         ✓           |         -           |          -           |          -           |          -           |
-| **v1.9.7**         |         -           |         ✓           |          -           |          -           |          -           |
-| **v2.0.0-beta**    |         -           |         -           |          -/✓         |         -/✓          |          ✓           |
-| **master**         |         -           |         -           |          -/✓         |         -/✓          |          ✓           |
+| kube-state-metrics | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |
+|--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
+| **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
+| **v1.9.7**         |         ✓           |          -           |          -           |          -           |          -           |
+| **v2.0.0-rc.0**    |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
+| **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
@@ -86,8 +86,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v2.0.0-beta` (arch: `amd64`)
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-beta` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-rc.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

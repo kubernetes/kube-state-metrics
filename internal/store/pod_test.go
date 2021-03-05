@@ -343,45 +343,18 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_init_container_status_terminated_reason gauge
 				# TYPE kube_pod_init_container_status_waiting gauge
 				# TYPE kube_pod_init_container_status_waiting_reason gauge
-				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 1
 				kube_pod_container_state_started{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 1.501777018e+09
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed",uid="uid1"} 0
-                kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun",uid="uid1"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error",uid="uid1"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Evicted",uid="uid1"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled",uid="uid1"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="DeadlineExceeded",uid="uid1"} 0
-                kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 0
+				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 1
+				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 0
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCreating",uid="uid1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ImagePullBackOff",uid="uid1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff",uid="uid1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ErrImagePull",uid="uid1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerConfigError",uid="uid1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerError",uid="uid1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="InvalidImageName",uid="uid1"} 0
 				kube_pod_init_container_status_running{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} 1
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Completed",uid="uid1"} 0
-                kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCannotRun",uid="uid1"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Error",uid="uid1"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Evicted",uid="uid1"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="OOMKilled",uid="uid1"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="DeadlineExceeded",uid="uid1"} 0
-                kube_pod_init_container_status_terminated{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} 0
+				kube_pod_init_container_status_terminated{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} 0
 				kube_pod_init_container_status_waiting{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCreating",uid="uid1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ImagePullBackOff",uid="uid1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff",uid="uid1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ErrImagePull",uid="uid1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CreateContainerConfigError",uid="uid1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CreateContainerError",uid="uid1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="InvalidImageName",uid="uid1"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
 				"kube_pod_container_state_started",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_init_container_status_running",
@@ -431,42 +404,17 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 0
-                kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 0
-				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 1
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Completed",uid="uid2"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCannotRun",uid="uid2"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Error",uid="uid2"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Evicted",uid="uid2"} 0
+				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 0
 				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled",uid="uid2"} 1
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="DeadlineExceeded",uid="uid2"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Completed",uid="uid2"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun",uid="uid2"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error",uid="uid2"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Evicted",uid="uid2"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled",uid="uid2"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="DeadlineExceeded",uid="uid2"} 0
+				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 1
+				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 0
+				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCreating",uid="uid2"} 1
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 0
-                kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 1
-                kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCreating",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ImagePullBackOff",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CrashLoopBackOff",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ErrImagePull",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CreateContainerConfigError",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CreateContainerError",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="InvalidImageName",uid="uid2"} 0
-                kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCreating",uid="uid2"} 1
-                kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CrashLoopBackOff",uid="uid2"} 0
-                kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ErrImagePull",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ImagePullBackOff",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CreateContainerConfigError",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CreateContainerError",uid="uid2"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="InvalidImageName",uid="uid2"} 0
+				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 1
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 			},
@@ -506,26 +454,8 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container4",namespace="ns3",pod="pod3",uid="uid3"} 0
 				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3",uid="uid3"} 0
-kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed",uid="uid3"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun",uid="uid3"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error",uid="uid3"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Evicted",uid="uid3"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled",uid="uid3"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="DeadlineExceeded",uid="uid3"} 0
-				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3",uid="uid3"} 1
-kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCreating",uid="uid3"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ImagePullBackOff",uid="uid3"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff",uid="uid3"} 1
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ErrImagePull",uid="uid3"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerConfigError",uid="uid3"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerError",uid="uid3"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="InvalidImageName",uid="uid3"} 0
-kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed",uid="uid3"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun",uid="uid3"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error",uid="uid3"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Evicted",uid="uid3"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled",uid="uid3"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="DeadlineExceeded",uid="uid3"} 0
+				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3",uid="uid3"} 1
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -535,10 +465,6 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
-				"kube_pod_container_status_waiting_reason",
-				"kube_pod_container_status_waiting_reason",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_last_terminated_reason",
 				"kube_pod_container_status_last_terminated_reason",
@@ -592,26 +518,8 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 				kube_pod_container_status_running{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 1
 				kube_pod_container_state_started{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 1.501777018e+09
 				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 0
-kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed",uid="uid6"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun",uid="uid6"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error",uid="uid6"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Evicted",uid="uid6"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="DeadlineExceeded",uid="uid6"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 0
-kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCreating",uid="uid6"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ImagePullBackOff",uid="uid6"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CrashLoopBackOff",uid="uid6"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ErrImagePull",uid="uid6"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CreateContainerConfigError",uid="uid6"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CreateContainerError",uid="uid6"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="InvalidImageName",uid="uid6"} 0
-kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed",uid="uid6"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun",uid="uid6"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error",uid="uid6"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Evicted",uid="uid6"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6"} 1
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="DeadlineExceeded",uid="uid6"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_last_terminated_reason",
@@ -620,7 +528,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 			},
 		},
 		{
@@ -665,29 +572,11 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_container_status_terminated_reason gauge
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
-				kube_pod_container_status_running{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1
 				kube_pod_container_state_started{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1.501777018e+09
-				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
-kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Completed",uid="uid7"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCannotRun",uid="uid7"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Error",uid="uid7"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Evicted",uid="uid7"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="OOMKilled",uid="uid7"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 0
-				kube_pod_container_status_waiting{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
-kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCreating",uid="uid7"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="ImagePullBackOff",uid="uid7"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CrashLoopBackOff",uid="uid7"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="ErrImagePull",uid="uid7"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CreateContainerConfigError",uid="uid7"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CreateContainerError",uid="uid7"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="InvalidImageName",uid="uid7"} 0
-kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Completed",uid="uid7"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCannotRun",uid="uid7"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Error",uid="uid7"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Evicted",uid="uid7"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="OOMKilled",uid="uid7"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 1
+				kube_pod_container_status_running{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1
+				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
+				kube_pod_container_status_waiting{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -695,7 +584,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_last_terminated_reason",
 			},
 		},
@@ -732,20 +620,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container5",namespace="ns4",pod="pod4",uid="uid4"} 0
 				kube_pod_container_status_terminated{container="container5",namespace="ns4",pod="pod4",uid="uid4"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Completed",uid="uid4"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCannotRun",uid="uid4"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Error",uid="uid4"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="OOMKilled",uid="uid4"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="DeadlineExceeded",uid="uid4"} 0
-				kube_pod_container_status_waiting{container="container5",namespace="ns4",pod="pod4",uid="uid4"} 1
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCreating",uid="uid4"} 0
 				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ImagePullBackOff",uid="uid4"} 1
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CrashLoopBackOff",uid="uid4"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ErrImagePull",uid="uid4"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CreateContainerConfigError",uid="uid4"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CreateContainerError",uid="uid4"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="InvalidImageName",uid="uid4"} 0
+				kube_pod_container_status_waiting{container="container5",namespace="ns4",pod="pod4",uid="uid4"} 1
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -788,20 +664,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container6",namespace="ns5",pod="pod5",uid="uid5"} 0
 				kube_pod_container_status_terminated{container="container6",namespace="ns5",pod="pod5",uid="uid5"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Completed",uid="uid5"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCannotRun",uid="uid5"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Error",uid="uid5"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Evicted",uid="uid5"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="OOMKilled",uid="uid5"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="DeadlineExceeded",uid="uid5"} 0
-				kube_pod_container_status_waiting{container="container6",namespace="ns5",pod="pod5",uid="uid5"} 1
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCreating",uid="uid5"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ImagePullBackOff",uid="uid5"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CrashLoopBackOff",uid="uid5"} 0
 				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ErrImagePull",uid="uid5"} 1
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CreateContainerConfigError",uid="uid5"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CreateContainerError",uid="uid5"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="InvalidImageName",uid="uid5"} 0
+				kube_pod_container_status_waiting{container="container6",namespace="ns5",pod="pod5",uid="uid5"} 1
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -844,20 +708,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					# TYPE kube_pod_container_status_waiting_reason gauge
 					kube_pod_container_status_running{container="container8",namespace="ns7",pod="pod7",uid="uid7"} 0
 					kube_pod_container_status_terminated{container="container8",namespace="ns7",pod="pod7",uid="uid7"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Completed",uid="uid7"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="ContainerCannotRun",uid="uid7"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Error",uid="uid7"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Evicted",uid="uid7"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="OOMKilled",uid="uid7"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 0
-					kube_pod_container_status_waiting{container="container8",namespace="ns7",pod="pod7",uid="uid7"} 1
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ContainerCreating",uid="uid7"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ImagePullBackOff",uid="uid7"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CrashLoopBackOff",uid="uid7"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ErrImagePull",uid="uid7"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CreateContainerError",uid="uid7"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="InvalidImageName",uid="uid7"} 0
 					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CreateContainerConfigError",uid="uid7"} 1
+					kube_pod_container_status_waiting{container="container8",namespace="ns7",pod="pod7",uid="uid7"} 1
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",

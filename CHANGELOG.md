@@ -1,3 +1,14 @@
+## v2.0.0-rc.0 / 2021-03-04
+
+* [CHANGE] internal/store/pod.go: Only create waiting_reason series if pods are in waiting state #1378
+* [CHANGE] internal/store/pod.go: Only create terminated_reason series if pods are in terminated state #1381
+* [CHANGE] internal/store/pod.go: Only create last_terminated containers series if containers are terminated state #1397
+* [FEATURE] Bump client-go and friends to v0.20 (kubernetes v1.20) #1328
+* [FEATURE] Bump go version to 1.16+ #1399
+* [BUGFIX] Fix gzip writer #1372
+* [BUGFIX] fix labels-metric-allow-list documentation #1404
+* [BUGFIX] Propagate resource version when sharded #1402
+
 ## v2.0.0-beta / 2020-12-04
 Promotion to beta release after a period of no bugs.
 

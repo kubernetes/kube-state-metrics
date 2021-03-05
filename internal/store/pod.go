@@ -34,8 +34,6 @@ import (
 
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
-	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff", "CreateContainerError", "InvalidImageName"}
-	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun", "DeadlineExceeded", "Evicted"}
 	podStatusReasons           = []string{"NodeLost", "Evicted", "UnexpectedAdmissionError"}
 )
 
@@ -311,15 +309,14 @@ func createPodContainerStatusLastTerminatedReasonFamilyGenerator() generator.Fam
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerTerminatedReasons))
-
-			for i, cs := range p.Status.ContainerStatuses {
-				for j, reason := range containerTerminatedReasons {
-					ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
+			for _, cs := range p.Status.ContainerStatuses {
+				if cs.LastTerminationState.Terminated != nil {
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, reason},
-						Value:       boolFloat64(lastTerminationReason(cs, reason)),
-					}
+						LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
+						Value:       1,
+					})
 				}
 			}
 
@@ -338,7 +335,6 @@ func createPodContainerStatusReadyFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
-
 			for i, cs := range p.Status.ContainerStatuses {
 				ms[i] = &metric.Metric{
 					LabelKeys:   []string{"container"},
@@ -433,15 +429,14 @@ func createPodContainerStatusTerminatedReasonFamilyGenerator() generator.FamilyG
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerTerminatedReasons))
-
-			for i, cs := range p.Status.ContainerStatuses {
-				for j, reason := range containerTerminatedReasons {
-					ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
+			for _, cs := range p.Status.ContainerStatuses {
+				if cs.State.Terminated != nil {
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, reason},
-						Value:       boolFloat64(terminationReason(cs, reason)),
-					}
+						LabelValues: []string{cs.Name, cs.State.Terminated.Reason},
+						Value:       1,
+					})
 				}
 			}
 
@@ -483,18 +478,17 @@ func createPodContainerStatusWaitingReasonFamilyGenerator() generator.FamilyGene
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses)*len(containerWaitingReasons))
-
-			for i, cs := range p.Status.ContainerStatuses {
-				for j, reason := range containerWaitingReasons {
-					ms[i*len(containerWaitingReasons)+j] = &metric.Metric{
+			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
+			for _, cs := range p.Status.ContainerStatuses {
+				// Skip creating series for running containers.
+				if cs.State.Waiting != nil {
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, reason},
-						Value:       boolFloat64(waitingReason(cs, reason)),
-					}
+						LabelValues: []string{cs.Name, cs.State.Waiting.Reason},
+						Value:       1,
+					})
 				}
 			}
-
 			return &metric.Family{
 				Metrics: ms,
 			}
@@ -929,7 +923,6 @@ func createPodInitContainerResourceRequestsStorageBytesFamilyGenerator() generat
 					}
 				}
 			}
-
 			return &metric.Family{
 				Metrics: ms,
 			}
@@ -944,18 +937,16 @@ func createPodInitContainerStatusLastTerminatedReasonFamilyGenerator() generator
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerTerminatedReasons))
-
-			for i, cs := range p.Status.InitContainerStatuses {
-				for j, reason := range containerTerminatedReasons {
-					ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
+			for _, cs := range p.Status.InitContainerStatuses {
+				if cs.LastTerminationState.Terminated != nil {
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, reason},
-						Value:       boolFloat64(lastTerminationReason(cs, reason)),
-					}
+						LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
+						Value:       1,
+					})
 				}
 			}
-
 			return &metric.Family{
 				Metrics: ms,
 			}
@@ -1066,15 +1057,14 @@ func createPodInitContainerStatusTerminatedReasonFamilyGenerator() generator.Fam
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerTerminatedReasons))
-
-			for i, cs := range p.Status.InitContainerStatuses {
-				for j, reason := range containerTerminatedReasons {
-					ms[i*len(containerTerminatedReasons)+j] = &metric.Metric{
+			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
+			for _, cs := range p.Status.InitContainerStatuses {
+				if cs.State.Terminated != nil {
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, reason},
-						Value:       boolFloat64(terminationReason(cs, reason)),
-					}
+						LabelValues: []string{cs.Name, cs.State.Terminated.Reason},
+						Value:       1,
+					})
 				}
 			}
 
@@ -1116,15 +1106,15 @@ func createPodInitContainerStatusWaitingReasonFamilyGenerator() generator.Family
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses)*len(containerWaitingReasons))
-
-			for i, cs := range p.Status.InitContainerStatuses {
-				for j, reason := range containerWaitingReasons {
-					ms[i*len(containerWaitingReasons)+j] = &metric.Metric{
+			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
+			for _, cs := range p.Status.InitContainerStatuses {
+				// Skip creating series for running containers.
+				if cs.State.Waiting != nil {
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, reason},
-						Value:       boolFloat64(waitingReason(cs, reason)),
-					}
+						LabelValues: []string{cs.Name, cs.State.Waiting.Reason},
+						Value:       1,
+					})
 				}
 			}
 
@@ -1173,7 +1163,6 @@ func createPodOverheadCPUCoresFamilyGenerator() generator.FamilyGenerator {
 					}
 				}
 			}
-
 			return &metric.Family{
 				Metrics: ms,
 			}
@@ -1576,25 +1565,4 @@ func createPodListWatch(kubeClient clientset.Interface, ns string) cache.ListerW
 			return kubeClient.CoreV1().Pods(ns).Watch(context.TODO(), opts)
 		},
 	}
-}
-
-func waitingReason(cs v1.ContainerStatus, reason string) bool {
-	if cs.State.Waiting == nil {
-		return false
-	}
-	return cs.State.Waiting.Reason == reason
-}
-
-func terminationReason(cs v1.ContainerStatus, reason string) bool {
-	if cs.State.Terminated == nil {
-		return false
-	}
-	return cs.State.Terminated.Reason == reason
-}
-
-func lastTerminationReason(cs v1.ContainerStatus, reason string) bool {
-	if cs.LastTerminationState.Terminated == nil {
-		return false
-	}
-	return cs.LastTerminationState.Terminated.Reason == reason
 }

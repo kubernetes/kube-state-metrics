@@ -17,7 +17,6 @@ Maintaining the release branches for older minor releases happens on a best effo
 * Bump the version in the `VERSION` file in the root of the repository.
 * Run `make examples`, which will re-generate all example manifests to use the new version.
 * Make a PR to update:
-  * kube-state-metrics image tag for both `quay.io` and `gcr.io/k8s-staging-kube-state-metrics`.
   * [Compatibility matrix](README.md#compatibility-matrix)
   * Changelog entry
     * Only include user relevant changes
@@ -34,7 +33,6 @@ Maintaining the release branches for older minor releases happens on a best effo
 * Cut the new release tag, i.e., `v1.2.0-rc.0`
 * New images are automatically built and pushed to `gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics`
 * Promote image by sending a PR to [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io) repo. Follow the [example PR](https://github.com/kubernetes/k8s.io/pull/1260).
-* Build and push newest image to `quay.io/coreos`(@brancz, @lilic)
 
 ## Stable release
 

@@ -23,8 +23,8 @@ case $(uname -m) in
 	*)		ARCH="$(uname -m)";;
 esac
 
-KUBERNETES_VERSION="v1.19.1"
 NODE_IMAGE_NAME="docker.io/kindest/node"
+KUBERNETES_VERSION=v1.20.0
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_IMAGE_NAME="quay.io/coreos/kube-state-metrics-${ARCH}"
 KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics"

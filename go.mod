@@ -1,7 +1,6 @@
 module k8s.io/kube-state-metrics/v2
 
 require (
-	github.com/Azure/go-autorest/autorest v0.10.0 // indirect
 	github.com/brancz/gojsontoyaml v0.0.0-20190425155809-e8bd32d46b3d
 	github.com/campoy/embedmd v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
@@ -19,14 +18,18 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/sys v0.0.0-20200915084602-288bc346aa39 // indirect
 	golang.org/x/tools v0.0.0-20200616133436-c1934b75d054
-	k8s.io/api v0.19.3
-	k8s.io/apimachinery v0.19.3
+	k8s.io/api v0.20.0
+	k8s.io/apimachinery v0.20.0
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.0.0-20200727194258-b7922d74509c
-	k8s.io/client-go v0.19.3
-	k8s.io/klog/v2 v2.2.0
+	k8s.io/client-go v0.20.0
+	k8s.io/klog/v2 v2.4.0
 )
 
-go 1.14
+replace (
+	k8s.io/api v0.18.3 => k8s.io/api v0.20.0
+	k8s.io/apimachinery v0.18.3 => k8s.io/apimachinery v0.18.3
+	k8s.io/client-go v0.18.3 => k8s.io/client-go v0.20.0
+)
+
+go 1.16

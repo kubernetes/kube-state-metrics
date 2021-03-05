@@ -32,7 +32,7 @@ Usage of ./kube-state-metrics:
   -h, --help                              Print Help text
       --host string                       Host to expose metrics on. (default "::")
       --kubeconfig string                 Absolute path to the kubeconfig file
-      --labels-metric-allow-list string   Allows to pass a list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=["k8s-label-1","k8s-label-n",...],pods=["app"],...)'
+      --labels-metric-allow-list string   Allows to pass a list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'
       --log_backtrace_at traceLocation    when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                    If non-empty, write log files in this directory
       --log_file string                   If non-empty, use this log file
@@ -41,6 +41,7 @@ Usage of ./kube-state-metrics:
       --metric-allowlist string           Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.
       --metric-denylist string            Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.
       --namespaces string                 Comma-separated list of namespaces to be enabled. Defaults to ""
+      --one_output                        If true, only write logs to their native severity level (vs also writing to each lower severity level
       --pod string                        Name of the pod that contains the kube-state-metrics container. When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice.
       --pod-namespace string              Name of the namespace of the pod specified by --pod. When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice.
       --port int                          Port to expose metrics on. (default 8080)

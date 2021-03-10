@@ -120,9 +120,10 @@ that ensures that there are no possible conflicts.
 
 #### Enabling VerticalPodAutoscalers
 
-Please note that the collector for `verticalpodautoscalers` are disabled by default.
-This is because Vertical Pod Autoscalers are managed as custom resources. If you want to enable this collector,
-please ensure that you have the `v1beta2` CRDs installed beforehand. They can be found [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
+Please note that the collector for `verticalpodautoscalers` is **disabled** by default; Vertical Pod Autoscaler metrics will not be collected until the collector is enabled. This is because Vertical Pod Autoscalers are managed as custom resources.
+
+If you want to enable this collector,
+please review the [instructions](./docs/verticalpodautoscaler-metrics.md#Configuration) in the [Vertical Pod Autoscaler Metrics](./docs/verticalpodautoscaler-metrics.md) documentation.
 
 ### Kube-state-metrics self metrics
 

@@ -123,7 +123,7 @@ that ensures that there are no possible conflicts.
 Please note that the collector for `verticalpodautoscalers` is **disabled** by default; Vertical Pod Autoscaler metrics will not be collected until the collector is enabled. This is because Vertical Pod Autoscalers are managed as custom resources.
 
 If you want to enable this collector,
-please review the [instructions](./docs/verticalpodautoscaler-metrics.md#Configuration) in the [Vertical Pod Autoscaler Metrics](./docs/verticalpodautoscaler-metrics.md) documentation.
+the [instructions](./docs/verticalpodautoscaler-metrics.md#Configuration) are located in the [Vertical Pod Autoscaler Metrics](./docs/verticalpodautoscaler-metrics.md) documentation.
 
 ### Kube-state-metrics self metrics
 

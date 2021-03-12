@@ -252,6 +252,12 @@ make container
 Simply build and run kube-state-metrics inside a Kubernetes pod which has a
 service account token that has read-only access to the Kubernetes cluster.
 
+### For users of prometheus-operator/kube-prometheus stack
+
+The ([`kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus/)) stack installs kube-state-metrics as one of its [components](https://github.com/prometheus-operator/kube-prometheus#kube-prometheus); you do not need to install kube-state-metrics if you're using the kube-prometheus stack.
+
+If you want to revise the default configuration for kube-prometheus, for example to enable non-default metrics, have a look at [Customizing Kube-Prometheus](https://github.com/prometheus-operator/kube-prometheus#customizing-kube-prometheus).
+
 #### Kubernetes Deployment
 
 To deploy this project, you can simply run `kubectl apply -f examples/standard` and a

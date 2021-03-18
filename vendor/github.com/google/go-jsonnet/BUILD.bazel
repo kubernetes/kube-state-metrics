@@ -19,6 +19,7 @@ go_library(
         "interpreter.go",
         "runtime_error.go",
         "thunks.go",
+        "util.go",
         "value.go",
         "vm.go",
     ],
@@ -28,6 +29,7 @@ go_library(
         "//ast:go_default_library",
         "//astgen:go_default_library",
         "//internal/errors:go_default_library",
+        "//internal/parser:go_default_library",
         "//internal/program:go_default_library",
     ],
 )
@@ -35,6 +37,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "builtins_benchmark_test.go",
         "interpreter_test.go",
         "jsonnet_test.go",
         "main_test.go",
@@ -44,6 +47,6 @@ go_test(
     deps = [
         "//ast:go_default_library",
         "//internal/parser:go_default_library",
-        "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
+        "//internal/testutils:go_default_library",
     ],
 )

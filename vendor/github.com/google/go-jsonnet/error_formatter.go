@@ -69,7 +69,7 @@ func (ef *termErrorFormatter) Format(err error) string {
 	case RuntimeError:
 		return ef.formatRuntime(&err)
 	case errors.StaticError:
-		return ef.formatStatic(&err)
+		return ef.formatStatic(err)
 	default:
 		return ef.formatInternal(err)
 	}
@@ -79,10 +79,10 @@ func (ef *termErrorFormatter) formatRuntime(err *RuntimeError) string {
 	return err.Error() + "\n" + ef.buildStackTrace(err.StackTrace)
 }
 
-func (ef *termErrorFormatter) formatStatic(err *errors.StaticError) string {
+func (ef *termErrorFormatter) formatStatic(err errors.StaticError) string {
 	var buf bytes.Buffer
 	buf.WriteString(err.Error() + "\n")
-	ef.showCode(&buf, err.Loc)
+	ef.showCode(&buf, err.Loc())
 	return buf.String()
 }
 
@@ -105,7 +105,7 @@ func (ef *termErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange)
 		beginning := ast.LineBeginning(&loc)
 		ending := ast.LineEnding(&loc)
 		fmt.Fprintf(buf, "%v", ef.sp.GetSnippet(beginning))
-		errFprintf(buf, "%v", ef.sp.GetSnippet(loc))
+		errFprintf(buf, "%v", ef.sp.GetSnippet(loc)) //nolint:errcheck
 		fmt.Fprintf(buf, "%v", ef.sp.GetSnippet(ending))
 		buf.WriteByte('\n')
 	}

@@ -1,0 +1,9 @@
+include *.go
+graft internal
+graft ast
+graft toolutils
+graft astgen
+include cpp-jsonnet/include/libjsonnet.h
+include go.mod
+include go.sum
+graft c-bindings

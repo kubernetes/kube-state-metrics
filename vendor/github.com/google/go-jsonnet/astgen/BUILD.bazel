@@ -2,7 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 genrule(
     name = "dumpstdlibast",
-    srcs = ["//cpp-jsonnet/stdlib"],
+    srcs = ["@cpp_jsonnet//stdlib"],
     outs = ["stdast.go"],
     cmd = "./$(location //cmd/dumpstdlibast) \"$<\" > \"$@\"",
     tools = ["//cmd/dumpstdlibast"],

@@ -87,7 +87,7 @@ func MakeFodderElement(kind FodderKind, blanks int, indent int, comment []string
 		panic(fmt.Sprintf("FodderInterstitial but comment == %v.", comment))
 	}
 	if kind == FodderParagraph && len(comment) == 0 {
-		panic(fmt.Sprintf("FodderParagraph but comment was empty"))
+		panic("FodderParagraph but comment was empty")
 	}
 	return FodderElement{Kind: kind, Blanks: blanks, Indent: indent, Comment: comment}
 }

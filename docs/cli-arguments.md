@@ -41,7 +41,7 @@ Usage of ./kube-state-metrics:
       --metric-allowlist string           Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.
       --metric-denylist string            Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.
       --namespaces string                 Comma-separated list of namespaces to be enabled. Defaults to ""
-      --one_output                        If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                        If true, only write logs to their native severity level (vs also writing to each lower severity level)
       --pod string                        Name of the pod that contains the kube-state-metrics container. When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice.
       --pod-namespace string              Name of the namespace of the pod specified by --pod. When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice.
       --port int                          Port to expose metrics on. (default 8080)

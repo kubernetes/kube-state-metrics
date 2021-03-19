@@ -69,7 +69,7 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 | kube-state-metrics | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |
 |--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
 | **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
-| **v1.9.7**         |         ✓           |          -           |          -           |          -           |          -           |
+| **v1.9.8**         |         ✓           |          -           |          -           |          -           |          -           |
 | **v2.0.0-rc.0**    |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 | **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 - `✓` Fully supported version range.

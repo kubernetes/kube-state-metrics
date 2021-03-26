@@ -1,3 +1,12 @@
+## v2.0.0-rc.1 / 2021-03-26
+
+* [CHANGE] Rename --labels-metric-allow-list to --metric-labels-allowlist #1424
+* [CHANGE] Remove deprecated Kubernetes APIs #1423
+* [CHANGE] go.mod: Update Dependencies #1419
+* [CHANGE] Remove vendor folder #1419
+* [CHANGE] `k8s.gcr.io/kube-state-metrics/kube-state-metrics` becomes the authoritative registry
+Location on quay.io will not be updated anymore. Previously pushed images will be kept around to avoid breaking existing deployments.
+
 ## v2.0.0-rc.0 / 2021-03-04
 
 * [CHANGE] internal/store/pod.go: Only create waiting_reason series if pods are in waiting state #1378

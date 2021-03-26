@@ -57,15 +57,6 @@
         verbs: ['list', 'watch'],
       },
       {
-        apiGroups: ['extensions'],
-        resources: [
-          'daemonsets',
-          'deployments',
-          'replicasets',
-        ],
-        verbs: ['list', 'watch'],
-      },
-      {
         apiGroups: ['apps'],
         resources: [
           'statefulsets',

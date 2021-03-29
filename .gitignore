@@ -13,7 +13,6 @@ code_metrics
 *.o
 *.a
 *.so
-vendor
 
 # Folders
 _obj

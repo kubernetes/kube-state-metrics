@@ -70,12 +70,12 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 |--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
 | **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
 | **v1.9.8**         |         ✓           |          -           |          -           |          -           |          -           |
-| **v2.0.0-rc.0**    |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
+| **v2.0.0-rc.1**    |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 | **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
-**Note:** The `v2.0.0-alpha.2+` and `master` releases of kube-state-metrics work on Kubernetes v1.17 and v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics and are on an older Kubernetes version, use v2.0.0-alpha.1 or v1.9.7 kube-state-metrics release. 
+**Note:** The `v2.0.0-alpha.2+` and `master` releases of kube-state-metrics work on Kubernetes v1.17 and v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics and are on an older Kubernetes version, use v2.0.0-alpha.1 or v1.9.8 kube-state-metrics release.
 
 #### Resource group version compatibility
 
@@ -86,7 +86,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-rc.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-rc.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

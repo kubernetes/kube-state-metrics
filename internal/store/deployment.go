@@ -18,8 +18,9 @@ package store
 
 import (
 	"context"
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,13 +35,16 @@ var (
 	descDeploymentLabelsName          = "kube_deployment_labels"
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
+)
 
-	deploymentMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_deployment_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_deployment_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !d.CreationTimestamp.IsZero() {
@@ -53,12 +57,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_status_replicas",
-			Type: metric.Gauge,
-			Help: "The number of replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_status_replicas",
+			"The number of replicas per deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -67,12 +72,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_status_replicas_available",
-			Type: metric.Gauge,
-			Help: "The number of available replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_status_replicas_available",
+			"The number of available replicas per deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -81,12 +87,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_status_replicas_unavailable",
-			Type: metric.Gauge,
-			Help: "The number of unavailable replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_status_replicas_unavailable",
+			"The number of unavailable replicas per deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -95,12 +102,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_status_replicas_updated",
-			Type: metric.Gauge,
-			Help: "The number of updated replicas per deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_status_replicas_updated",
+			"The number of updated replicas per deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -109,12 +117,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_status_observed_generation",
-			Type: metric.Gauge,
-			Help: "The generation observed by the deployment controller.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_status_observed_generation",
+			"The generation observed by the deployment controller.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -123,12 +132,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_status_condition",
-			Type: metric.Gauge,
-			Help: "The current status conditions of a deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_status_condition",
+			"The current status conditions of a deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				ms := make([]*metric.Metric, len(d.Status.Conditions)*len(conditionStatuses))
 
 				for i, c := range d.Status.Conditions {
@@ -147,12 +157,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_spec_replicas",
-			Type: metric.Gauge,
-			Help: "Number of desired pods for a deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_spec_replicas",
+			"Number of desired pods for a deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -161,12 +172,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_spec_paused",
-			Type: metric.Gauge,
-			Help: "Whether the deployment is paused and will not be processed by the deployment controller.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_spec_paused",
+			"Whether the deployment is paused and will not be processed by the deployment controller.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -175,17 +187,18 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_spec_strategy_rollingupdate_max_unavailable",
-			Type: metric.Gauge,
-			Help: "Maximum number of unavailable replicas during a rolling update of a deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+			"Maximum number of unavailable replicas during a rolling update of a deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				if d.Spec.Strategy.RollingUpdate == nil {
 					return &metric.Family{}
 				}
 
-				maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), true)
+				maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
 				if err != nil {
 					panic(err)
 				}
@@ -198,12 +211,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_spec_strategy_rollingupdate_max_surge",
-			Type: metric.Gauge,
-			Help: "Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_spec_strategy_rollingupdate_max_surge",
+			"Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				if d.Spec.Strategy.RollingUpdate == nil {
 					return &metric.Family{}
 				}
@@ -221,12 +235,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_deployment_metadata_generation",
-			Type: metric.Gauge,
-			Help: "Sequence number representing a specific generation of the desired state.",
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_metadata_generation",
+			"Sequence number representing a specific generation of the desired state.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -235,13 +250,14 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: descDeploymentLabelsName,
-			Type: metric.Gauge,
-			Help: descDeploymentLabelsHelp,
-			GenerateFunc: wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(d.Labels)
+		),
+		*generator.NewFamilyGenerator(
+			descDeploymentLabelsName,
+			descDeploymentLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(d.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -252,9 +268,9 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
-)
+}
 
 func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

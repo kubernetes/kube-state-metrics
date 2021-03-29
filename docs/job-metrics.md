@@ -10,9 +10,9 @@
 | kube_job_spec_active_deadline_seconds | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
 | kube_job_status_active | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
 | kube_job_status_succeeded | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
-| kube_job_status_failed | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
+| kube_job_status_failed | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; <br> `reason`=&lt;failure reason&gt; | STABLE |
 | kube_job_status_start_time | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
 | kube_job_status_completion_time | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
-| kube_job_complete | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
-| kube_job_failed | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |
+| kube_job_complete | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; <br> `condition`=&lt;true\|false\|unknown&gt; | STABLE |
+| kube_job_failed | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; <br> `condition`=&lt;true\|false\|unknown&gt; | STABLE |
 | kube_job_created | Gauge | `job_name`=&lt;job-name&gt; <br> `namespace`=&lt;job-namespace&gt; | STABLE |

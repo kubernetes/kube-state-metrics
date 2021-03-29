@@ -28,24 +28,23 @@ import (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	Apiserver                            string
-	Kubeconfig                           string
-	Help                                 bool
-	Port                                 int
-	Host                                 string
-	TelemetryPort                        int
-	TelemetryHost                        string
-	Collectors                           CollectorSet
-	Namespaces                           NamespaceList
-	Shard                                int32
-	TotalShards                          int
-	Pod                                  string
-	Namespace                            string
-	MetricBlacklist                      MetricSet
-	MetricWhitelist                      MetricSet
-	Version                              bool
-	DisablePodNonGenericResourceMetrics  bool
-	DisableNodeNonGenericResourceMetrics bool
+	Apiserver       string
+	Kubeconfig      string
+	Help            bool
+	Port            int
+	Host            string
+	TelemetryPort   int
+	TelemetryHost   string
+	Resources       ResourceSet
+	Namespaces      NamespaceList
+	Shard           int32
+	TotalShards     int
+	Pod             string
+	Namespace       string
+	MetricDenylist  MetricSet
+	MetricAllowlist MetricSet
+	Version         bool
+	LabelsAllowList LabelsAllowList
 
 	EnableGZIPEncoding bool
 
@@ -55,9 +54,10 @@ type Options struct {
 // NewOptions returns a new instance of `Options`.
 func NewOptions() *Options {
 	return &Options{
-		Collectors:      CollectorSet{},
-		MetricWhitelist: MetricSet{},
-		MetricBlacklist: MetricSet{},
+		Resources:       ResourceSet{},
+		MetricAllowlist: MetricSet{},
+		MetricDenylist:  MetricSet{},
+		LabelsAllowList: LabelsAllowList{},
 	}
 }
 
@@ -80,14 +80,14 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	o.flags.StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	o.flags.BoolVarP(&o.Help, "help", "h", false, "Print Help text")
-	o.flags.IntVar(&o.Port, "port", 80, `Port to expose metrics on.`)
+	o.flags.IntVar(&o.Port, "port", 8080, `Port to expose metrics on.`)
 	o.flags.StringVar(&o.Host, "host", "0.0.0.0", `Host to expose metrics on.`)
-	o.flags.IntVar(&o.TelemetryPort, "telemetry-port", 81, `Port to expose kube-state-metrics self metrics on.`)
+	o.flags.IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
 	o.flags.StringVar(&o.TelemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
-	o.flags.Var(&o.Collectors, "collectors", fmt.Sprintf("Comma-separated list of collectors to be enabled. Defaults to %q", &DefaultCollectors))
-	o.flags.Var(&o.Namespaces, "namespace", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
-	o.flags.Var(&o.MetricWhitelist, "metric-whitelist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The whitelist and blacklist are mutually exclusive.")
-	o.flags.Var(&o.MetricBlacklist, "metric-blacklist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The whitelist and blacklist are mutually exclusive.")
+	o.flags.Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
+	o.flags.Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
+	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
 	o.flags.IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
 
@@ -96,9 +96,8 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
 	o.flags.StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
-	o.flags.BoolVarP(&o.DisablePodNonGenericResourceMetrics, "disable-pod-non-generic-resource-metrics", "", false, "Disable pod non generic resource request and limit metrics")
-	o.flags.BoolVarP(&o.DisableNodeNonGenericResourceMetrics, "disable-node-non-generic-resource-metrics", "", false, "Disable node non generic resource request and limit metrics")
 	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
+	o.flags.Var(&o.LabelsAllowList, "labels-metric-allow-list", "Allows to pass a list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'")
 }
 
 // Parse parses the flag definitions from the argument list.

@@ -18,8 +18,10 @@ package store
 
 import (
 	"context"
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	"strconv"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,17 +32,54 @@ import (
 )
 
 var (
+	descPersistentVolumeClaimRefName          = "kube_persistentvolume_claim_ref"
+	descPersistentVolumeClaimRefHelp          = "Information about the Persitant Volume Claim Reference."
+	descPersistentVolumeClaimRefDefaultLabels = []string{"persistentvolume"}
+
 	descPersistentVolumeLabelsName          = "kube_persistentvolume_labels"
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
+)
 
-	persistentVolumeMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: descPersistentVolumeLabelsName,
-			Type: metric.Gauge,
-			Help: descPersistentVolumeLabelsHelp,
-			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(p.Labels)
+func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			descPersistentVolumeClaimRefName,
+			descPersistentVolumeClaimRefHelp,
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				claimRef := p.Spec.ClaimRef
+
+				if claimRef == nil {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys: []string{
+								"name",
+								"claim_namespace",
+							},
+							LabelValues: []string{
+								p.Spec.ClaimRef.Name,
+								p.Spec.ClaimRef.Namespace,
+							},
+							Value: 1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descPersistentVolumeLabelsName,
+			descPersistentVolumeLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -51,12 +90,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_persistentvolume_status_phase",
-			Type: metric.Gauge,
-			Help: "The phase indicates if a volume is available, bound to a claim, or released by a claim.",
-			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_persistentvolume_status_phase",
+			"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				phase := p.Status.Phase
 
 				if phase == "" {
@@ -97,28 +137,91 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_persistentvolume_info",
-			Type: metric.Gauge,
-			Help: "Information about persistentvolume.",
-			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_persistentvolume_info",
+			"Information about persistentvolume.",
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				var gcePDDiskName, ebsVolumeID, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, iscsiInitiatorName, nfsServer, nfsPath string
+
+				switch {
+				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
+					gcePDDiskName = p.Spec.PersistentVolumeSource.GCEPersistentDisk.PDName
+				case p.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil:
+					ebsVolumeID = p.Spec.PersistentVolumeSource.AWSElasticBlockStore.VolumeID
+				case p.Spec.PersistentVolumeSource.FC != nil:
+					if p.Spec.PersistentVolumeSource.FC.Lun != nil {
+						fcLun = strconv.FormatInt(int64(*p.Spec.PersistentVolumeSource.FC.Lun), 10)
+					}
+					for _, wwn := range p.Spec.PersistentVolumeSource.FC.TargetWWNs {
+						if len(fcTargetWWNs) != 0 {
+							fcTargetWWNs += ","
+						}
+						fcTargetWWNs += wwn
+					}
+					for _, wwid := range p.Spec.PersistentVolumeSource.FC.WWIDs {
+						if len(fcWWIDs) != 0 {
+							fcWWIDs += ","
+						}
+						fcWWIDs += wwid
+					}
+				case p.Spec.PersistentVolumeSource.ISCSI != nil:
+					iscsiTargetPortal = p.Spec.PersistentVolumeSource.ISCSI.TargetPortal
+					iscsiIQN = p.Spec.PersistentVolumeSource.ISCSI.IQN
+					iscsiLun = strconv.FormatInt(int64(p.Spec.PersistentVolumeSource.ISCSI.Lun), 10)
+					if p.Spec.PersistentVolumeSource.ISCSI.InitiatorName != nil {
+						iscsiInitiatorName = *p.Spec.PersistentVolumeSource.ISCSI.InitiatorName
+					}
+				case p.Spec.PersistentVolumeSource.NFS != nil:
+					nfsServer = p.Spec.PersistentVolumeSource.NFS.Server
+					nfsPath = p.Spec.PersistentVolumeSource.NFS.Path
+				}
+
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"storageclass"},
-							LabelValues: []string{p.Spec.StorageClassName},
-							Value:       1,
+							LabelKeys: []string{
+								"storageclass",
+								"gce_persistent_disk_name",
+								"ebs_volume_id",
+								"fc_wwids",
+								"fc_lun",
+								"fc_target_wwns",
+								"iscsi_target_portal",
+								"iscsi_iqn",
+								"iscsi_lun",
+								"iscsi_initiator_name",
+								"nfs_server",
+								"nfs_path",
+							},
+							LabelValues: []string{
+								p.Spec.StorageClassName,
+								gcePDDiskName,
+								ebsVolumeID,
+								fcWWIDs,
+								fcLun,
+								fcTargetWWNs,
+								iscsiTargetPortal,
+								iscsiIQN,
+								iscsiLun,
+								iscsiInitiatorName,
+								nfsServer,
+								nfsPath,
+							},
+							Value: 1,
 						},
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_persistentvolume_capacity_bytes",
-			Type: metric.Gauge,
-			Help: "Persistentvolume capacity in bytes.",
-			GenerateFunc: wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_persistentvolume_capacity_bytes",
+			"Persistentvolume capacity in bytes.",
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				storage := p.Spec.Capacity[v1.ResourceStorage]
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -128,9 +231,9 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
-)
+}
 
 func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

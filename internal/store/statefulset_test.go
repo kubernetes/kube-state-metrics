@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -92,7 +92,7 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_status_observed_generation{namespace="ns1",statefulset="statefulset1"} 1
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_metadata_generation{namespace="ns1",statefulset="statefulset1"} 3
-				kube_statefulset_labels{label_app="example1",namespace="ns1",statefulset="statefulset1"} 1
+				kube_statefulset_labels{namespace="ns1",statefulset="statefulset1"} 1
 `,
 			MetricNames: []string{
 				"kube_statefulset_created",
@@ -161,7 +161,7 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_status_observed_generation{namespace="ns2",statefulset="statefulset2"} 2
  				kube_statefulset_replicas{namespace="ns2",statefulset="statefulset2"} 6
  				kube_statefulset_metadata_generation{namespace="ns2",statefulset="statefulset2"} 21
-				kube_statefulset_labels{label_app="example2",namespace="ns2",statefulset="statefulset2"} 1
+				kube_statefulset_labels{namespace="ns2",statefulset="statefulset2"} 1
 				kube_statefulset_status_current_revision{namespace="ns2",revision="cr2",statefulset="statefulset2"} 1
 `,
 			MetricNames: []string{
@@ -224,7 +224,7 @@ func TestStatefulSetStore(t *testing.T) {
 				kube_statefulset_status_replicas_updated{namespace="ns3",statefulset="statefulset3"} 0
  				kube_statefulset_replicas{namespace="ns3",statefulset="statefulset3"} 9
  				kube_statefulset_metadata_generation{namespace="ns3",statefulset="statefulset3"} 36
-				kube_statefulset_labels{label_app="example3",namespace="ns3",statefulset="statefulset3"} 1
+				kube_statefulset_labels{namespace="ns3",statefulset="statefulset3"} 1
 				kube_statefulset_status_current_revision{namespace="ns3",revision="cr3",statefulset="statefulset3"} 1
  			`,
 			MetricNames: []string{
@@ -241,8 +241,8 @@ func TestStatefulSetStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

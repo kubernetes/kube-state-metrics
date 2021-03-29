@@ -33,9 +33,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/internal/store"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
-	"k8s.io/kube-state-metrics/pkg/options"
+	"k8s.io/kube-state-metrics/v2/internal/store"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
@@ -200,7 +200,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, s := range m.stores {
 		ms := s.(*metricsstore.MetricsStore)
-		ms.WriteAll(w)
+		ms.WriteAll(writer)
 	}
 
 	// In case we gzipped the response, we have to close the writer.

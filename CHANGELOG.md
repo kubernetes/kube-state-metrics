@@ -1,3 +1,101 @@
+## v2.0.0-rc.0 / 2021-03-04
+
+* [CHANGE] internal/store/pod.go: Only create waiting_reason series if pods are in waiting state #1378
+* [CHANGE] internal/store/pod.go: Only create terminated_reason series if pods are in terminated state #1381
+* [CHANGE] internal/store/pod.go: Only create last_terminated containers series if containers are terminated state #1397
+* [FEATURE] Bump client-go and friends to v0.20 (kubernetes v1.20) #1328
+* [FEATURE] Bump go version to 1.16+ #1399
+* [BUGFIX] Fix gzip writer #1372
+* [BUGFIX] fix labels-metric-allow-list documentation #1404
+* [BUGFIX] Propagate resource version when sharded #1402
+
+## v2.0.0-beta / 2020-12-04
+Promotion to beta release after a period of no bugs.
+
+## v2.0.0-alpha.3 / 2020-11-19
+
+* [BUGFIX] Fix container resource limits metrics, which got dropped #1293
+* [BUGFIX] Adjust and refactor allowing labels to work for Kubernetes labels metrics #1301
+Note this is a breaking change, if you were using --labels-allow-list, look at the PR details for more information.
+
+## v2.0.0-alpha.2 / 2020-10-27
+
+* [CHANGE] Migrate ingress and certificates to new stable APIs #1260
+* [CHANGE] Revert "Rework resource metrics" #1278
+To better align with future Kubernetes resource metrics, the changes to resource metrics were reverted, new metrics are:
+kube_pod_container_resource_requests and kube_pod_container_resource_limits
+* [FEATURE] Added the job failure reason in kube_job_status_failed metric #1214
+* [FEATURE] feat(persistentvolume): claimRef info to labels (kube_persistentvolume_claim_ref) #1244
+* [FEATURE] pod: add gauge for runtimeclass handler (kube_pod_runtimeclass_name_info) #1276
+
+## v2.0.0-alpha.1 / 2020-10-06
+
+* [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238
+* [CHANGE] Bump klog to v2 and client-go to 1.19 #1250
+* [FEATURE] Add iscsi initiator name to persistentvolume_info #1235 
+* [BUGFIX] Added Namespace to Rolebinding Jsonnet #1233 
+* [BUGFIX] Reference closure scoped family generator #1240 
+
+## v2.0.0-alpha / 2020-09-16
+
+NOTE: This is a major new alpha 2.0 release with breaking changes and removed metrics. See details below!
+
+* [CHANGE] Apply boundaries to metrics and allow via flag (--labels-allow-list) what labels to include #1125 
+* [CHANGE] Update DaemonSet updated_number_scheduled metric name to be consistent #1181
+Metric was changed from kube_daemonset_updated_number_scheduled to kube_daemonset_status_updated_number_scheduled 
+* [CHANGE] Rework resource metrics #1168
+Metrics kube_pod_container_resource_requests, kube_pod_container_resource_limits, kube_pod_overhead, kube_pod_init_container_resource_limits, kube_pod_init_container_resource_requests changed
+* [CHANGE] Convert k8s labels to snake case #1165 
+* [CHANGE] Mutatingwebhookconfiguration.go: Switch to v1 #1144 
+* [CHANGE] v2: Rename storage class labels reclaimPolicy to reclaim_policy and volumeBindingMode to volume_binding_mode #1107
+* [CHANGE] v2: Renamed --namespace flag to --namespaces #1098
+* [CHANGE] Rename kube_pod_deleted to kube_pod_deletion_timestamp #1079
+* [CHANGE] v2: Rename collector flag to resource flag #1006
+--resources is the new flag
+* [CHANGE] Remove non-identifying labels from pod metrics #1009 
+* [CHANGE] v2: Remove deprecated stable metrics #1004
+Note that some of these were replaced with EXPERIMENTAL resource metrics. See #1168 for more details.
+  `kube_pod_container_resource_requests` and `kube_pod_container_resource_limits` are the replacements with `resource` labels
+  representing the resource name and `unit` labels representing the resource unit.
+  - kube_pod_container_resource_requests_cpu_cores
+  - kube_pod_container_resource_limits_cpu_cores
+  - kube_pod_container_resource_requests_memory_bytes
+  - kube_pod_container_resource_limits_memory_bytes
+  - `kube_node_status_capacity` and `kube_node_status_allocatable` are the replacements with `resource` labels
+  representing the resource name and `unit` labels representing the resource unit.
+  - kube_node_status_capacity_pods
+  - kube_node_status_capacity_cpu_cores
+  - kube_node_status_capacity_memory_bytes
+  - kube_node_status_allocatable_pods
+  - kube_node_status_allocatable_cpu_cores
+  - kube_node_status_allocatable_memory_bytes
+* [CHANGE] Rename black-/whitelist to allow/deny-list #1045
+New flags are --metric-allowlist and --metric-denylist
+* [CHANGE] Update telemetry port to 8081 #1049 
+* [CHANGE] v2: Rename hpa metrics to use full horizontalpodautoscaler #1003 
+All metrics with prefix of kube_hpa_ were renamed to kube_horizontalpodautoscaler_
+* [CHANGE] v2: change metrics port to 8080, telemetry port to 8081 #1005 
+* [FEATURE] Add http request metric for kube-state-metrics main /metrics #1218  
+* [FEATURE] Add fc/iscsi/nfs identifier tags to persistentvolume_info metric #1208 
+* [FEATURE] Adds new pod metric kube_pod_container_state_started #1183 
+* [FEATURE] Add observedGeneration metric (kube_daemonset_status_observed_generation) for DaemonSets #1178
+* [FEATURE] Add internal_ip to node_info #1172 
+* [FEATURE] Avoid conflicts when mapping Kubernetes labels to Prometheus labels #1156 
+* [FEATURE] Add aws/gce volume id to kube_persistentvolume_info #1146
+* [FEATURE] Add UnexpectedAdmissionError to kube_pod_status_reason metric #1145
+* [FEATURE] Add init container requests (kube_pod_init_container_resource_requests) #1123
+* [FEATURE] Add host_network to kube_pod_info #1100 
+* [FEATURE] Add kube_replicationcontroller_owner #1058 
+* [FEATURE] Pod: add gauges for pod overhead (kube_pod_overhead) #1053 
+* [FEATURE] Add "Terminating" status in kube_pod_status_phase metrics #1013 
+* [FEATURE] Add lease collector metrics #1038 
+* [ENHANCEMENT] Add DeprecatedVersion to struct FamilyGenerator and func NewFamilyGenerator #1160
+* [ENHANCEMENT] Add security context to deployment and statefulset #1034 
+* [BUGFIX] Fix VolumeAttachment API version mismatch: expected v1 but watching v1beta1 #1136
+* [BUGFIX] Fix various CI issues (kube_volumeattachment_info nodeName -> node label rename) #1117 
+* [BUGFIX] Fix maxUnavailable to round down instead up #1076 
+
+
 ## v1.9.7 / 2020-05-24
 
 * [BUGFIX] internal/store/mutatingwebhookconfiguration.go: Switch to v1 #1144

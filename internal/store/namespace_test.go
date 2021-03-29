@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestNamespaceStore(t *testing.T) {
@@ -128,7 +128,7 @@ func TestNamespaceStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_namespace_created{namespace="ns1"} 1.5e+09
-				kube_namespace_labels{label_app="example1",namespace="ns1"} 1
+				kube_namespace_labels{namespace="ns1"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
 `,
@@ -150,7 +150,7 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
+				kube_namespace_labels{namespace="ns2"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
 `,
@@ -158,8 +158,8 @@ func TestNamespaceStore(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(namespaceMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(namespaceMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(namespaceMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(namespaceMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

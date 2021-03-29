@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	autoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestVPAStore(t *testing.T) {
@@ -70,7 +70,7 @@ func TestVPAStore(t *testing.T) {
 				},
 				Spec: autoscaling.VerticalPodAutoscalerSpec{
 					TargetRef: &k8sautoscaling.CrossVersionObjectReference{
-						APIVersion: "extensions/v1beta1",
+						APIVersion: "apps/v1",
 						Kind:       "Deployment",
 						Name:       "deployment1",
 					},
@@ -102,23 +102,23 @@ func TestVPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
-				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
-				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 1
-				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 4.294967296e+09
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="container1",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 1
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="container1",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 4.294967296e+09
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{container="container1",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 3
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{container="container1",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 7.516192768e+09
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 6
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 1.073741824e+10
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="cpu",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
-				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="memory",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
-				kube_verticalpodautoscaler_labels{label_app="foobar",namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
-				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",update_mode="Auto",verticalpodautoscaler="vpa1"} 0
-				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",update_mode="Initial",verticalpodautoscaler="vpa1"} 0
-				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",update_mode="Off",verticalpodautoscaler="vpa1"} 0
-				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="extensions/v1beta1",target_kind="Deployment",target_name="deployment1",update_mode="Recreate",verticalpodautoscaler="vpa1"} 1
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 1
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 4.294967296e+09
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="container1",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 1
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="container1",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 4.294967296e+09
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{container="container1",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 3
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{container="container1",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 7.516192768e+09
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 6
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 1.073741824e+10
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
+				kube_verticalpodautoscaler_labels{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",update_mode="Auto",verticalpodautoscaler="vpa1"} 0
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",update_mode="Initial",verticalpodautoscaler="vpa1"} 0
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",update_mode="Off",verticalpodautoscaler="vpa1"} 0
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",update_mode="Recreate",verticalpodautoscaler="vpa1"} 1
 			`,
 			MetricNames: []string{
 				"kube_verticalpodautoscaler_labels",
@@ -133,8 +133,8 @@ func TestVPAStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

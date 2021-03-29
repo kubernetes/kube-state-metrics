@@ -21,7 +21,8 @@ import (
 
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestVolumeAttachmentStore(t *testing.T) {
@@ -68,11 +69,11 @@ func TestVolumeAttachmentStore(t *testing.T) {
 					},
 				},
 				Want: metadata + `
-		        kube_volumeattachment_info{attacher="cinder.csi.openstack.org",nodeName="node1",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
+		        kube_volumeattachment_info{attacher="cinder.csi.openstack.org",node="node1",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
         		kube_volumeattachment_labels{label_app="foobar",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
 		        kube_volumeattachment_spec_source_persistentvolume{volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224",volumename="pvc-44f6ff3f-ba9b-49c4-9b95-8b01c4bd4bab"} 1
 		        kube_volumeattachment_status_attached{volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
-		        kube_volumeattachment_status_attachment_metadata{metadata_DevicePath="/dev/sdd",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
+		        kube_volumeattachment_status_attachment_metadata{metadata_device_path="/dev/sdd",volumeattachment="csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224"} 1
 			`,
 				MetricNames: []string{
 					"kube_volumeattachment_labels",

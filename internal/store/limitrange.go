@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,19 +26,20 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
 	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
 
 	limitRangeMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_limitrange",
-			Type: metric.Gauge,
-			Help: "Information about limit range.",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_limitrange",
+			"Information about limit range.",
+			metric.Gauge,
+			"",
+			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				rawLimitRanges := r.Spec.Limits
@@ -86,12 +88,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_limitrange_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_limitrange_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -105,7 +108,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 

@@ -20,9 +20,9 @@ import (
 	"context"
 	"strings"
 
-	"k8s.io/kube-state-metrics/pkg/constant"
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/constant"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,45 +36,61 @@ var (
 	descNodeLabelsName          = "kube_node_labels"
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
+)
 
-	nodeMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_node_info",
-			Type: metric.Gauge,
-			Help: "Information about a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+func nodeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_node_info",
+			"Information about a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
+				labelKeys := []string{
+					"kernel_version",
+					"os_image",
+					"container_runtime_version",
+					"kubelet_version",
+					"kubeproxy_version",
+					"provider_id",
+					"pod_cidr",
+				}
+				labelValues := []string{
+					n.Status.NodeInfo.KernelVersion,
+					n.Status.NodeInfo.OSImage,
+					n.Status.NodeInfo.ContainerRuntimeVersion,
+					n.Status.NodeInfo.KubeletVersion,
+					n.Status.NodeInfo.KubeProxyVersion,
+					n.Spec.ProviderID,
+					n.Spec.PodCIDR,
+				}
+
+				internalIP := ""
+				for _, address := range n.Status.Addresses {
+					if address.Type == "InternalIP" {
+						internalIP = address.Address
+					}
+				}
+				labelKeys = append(labelKeys, "internal_ip")
+				labelValues = append(labelValues, internalIP)
+
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys: []string{
-								"kernel_version",
-								"os_image",
-								"container_runtime_version",
-								"kubelet_version",
-								"kubeproxy_version",
-								"provider_id",
-								"pod_cidr",
-							},
-							LabelValues: []string{
-								n.Status.NodeInfo.KernelVersion,
-								n.Status.NodeInfo.OSImage,
-								n.Status.NodeInfo.ContainerRuntimeVersion,
-								n.Status.NodeInfo.KubeletVersion,
-								n.Status.NodeInfo.KubeProxyVersion,
-								n.Spec.ProviderID,
-								n.Spec.PodCIDR,
-							},
-							Value: 1,
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
 						},
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_node_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !n.CreationTimestamp.IsZero() {
@@ -88,13 +104,14 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: descNodeLabelsName,
-			Type: metric.Gauge,
-			Help: descNodeLabelsHelp,
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+		),
+		*generator.NewFamilyGenerator(
+			descNodeLabelsName,
+			descNodeLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -105,12 +122,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_node_role",
-			Type: metric.Gauge,
-			Help: "The role of a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_role",
+			"The role of a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				const prefix = "node-role.kubernetes.io/"
 				ms := []*metric.Metric{}
 				for lbl := range n.Labels {
@@ -126,12 +144,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_node_spec_unschedulable",
-			Type: metric.Gauge,
-			Help: "Whether a node can schedule new pods.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_spec_unschedulable",
+			"Whether a node can schedule new pods.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -140,12 +159,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_node_spec_taint",
-			Type: metric.Gauge,
-			Help: "The taint of a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_spec_taint",
+			"The taint of a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := make([]*metric.Metric, len(n.Spec.Taints))
 
 				for i, taint := range n.Spec.Taints {
@@ -163,16 +183,17 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 		// This all-in-one metric family contains all conditions for extensibility.
 		// Third party plugin may report customized condition for cluster node
 		// (e.g. node-problem-detector), and Kubernetes may add new core
 		// conditions in future.
-		{
-			Name: "kube_node_status_condition",
-			Type: metric.Gauge,
-			Help: "The condition of a cluster node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_node_status_condition",
+			"The condition of a cluster node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
 
 				// Collect node conditions and while default to false.
@@ -193,50 +214,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_node_status_phase",
-			Type: metric.Gauge,
-			Help: "The phase the node is currently in.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				p := n.Status.Phase
-
-				if p == "" {
-					return &metric.Family{
-						Metrics: []*metric.Metric{},
-					}
-				}
-
-				// Set current phase to 1, others to 0 if it is set.
-				ms := []*metric.Metric{
-					{
-						LabelValues: []string{string(v1.NodePending)},
-						Value:       boolFloat64(p == v1.NodePending),
-					},
-					{
-						LabelValues: []string{string(v1.NodeRunning)},
-						Value:       boolFloat64(p == v1.NodeRunning),
-					},
-					{
-						LabelValues: []string{string(v1.NodeTerminated)},
-						Value:       boolFloat64(p == v1.NodeTerminated),
-					},
-				}
-
-				for _, metric := range ms {
-					metric.LabelKeys = []string{"phase"}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_capacity",
-			Type: metric.Gauge,
-			Help: "The capacity for different resources of a node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_status_capacity",
+			"The capacity for different resources of a node.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
 
 				capacity := n.Status.Capacity
@@ -309,70 +293,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_node_status_capacity_pods",
-			Type: metric.Gauge,
-			Help: "The total pod resources of the node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Capacity[v1.ResourcePods]; ok {
-					ms = append(ms, &metric.Metric{
-
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_capacity_cpu_cores",
-			Type: metric.Gauge,
-			Help: "The total CPU resources of the node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Capacity[v1.ResourceCPU]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_capacity_memory_bytes",
-			Type: metric.Gauge,
-			Help: "The total memory resources of the node.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Capacity[v1.ResourceMemory]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_allocatable",
-			Type: metric.Gauge,
-			Help: "The allocatable for different resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_node_status_allocatable",
+			"The allocatable for different resources of a node that are available for scheduling.",
+			metric.Gauge,
+			"",
+			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				ms := []*metric.Metric{}
 
 				allocatable := n.Status.Allocatable
@@ -446,67 +373,9 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_node_status_allocatable_pods",
-			Type: metric.Gauge,
-			Help: "The pod resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Allocatable[v1.ResourcePods]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_allocatable_cpu_cores",
-			Type: metric.Gauge,
-			Help: "The CPU resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Allocatable[v1.ResourceCPU]; ok {
-					ms = append(ms, &metric.Metric{
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
-		{
-			Name: "kube_node_status_allocatable_memory_bytes",
-			Type: metric.Gauge,
-			Help: "The memory resources of a node that are available for scheduling.",
-			GenerateFunc: wrapNodeFunc(func(n *v1.Node) *metric.Family {
-				ms := []*metric.Metric{}
-
-				// Add capacity and allocatable resources if they are set.
-				if v, ok := n.Status.Allocatable[v1.ResourceMemory]; ok {
-					ms = append(ms, &metric.Metric{
-
-						Value: float64(v.MilliValue()) / 1000,
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		},
+		),
 	}
-)
+}
 
 func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

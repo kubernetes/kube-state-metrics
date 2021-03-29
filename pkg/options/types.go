@@ -17,11 +17,14 @@ limitations under the License.
 package options
 
 import (
+	"errors"
 	"sort"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -60,19 +63,19 @@ func (ms *MetricSet) Type() string {
 	return "string"
 }
 
-// CollectorSet represents a collection which has a unique set of collectors.
-type CollectorSet map[string]struct{}
+// ResourceSet represents a collection which has a unique set of resources.
+type ResourceSet map[string]struct{}
 
-func (c *CollectorSet) String() string {
-	s := *c
+func (r *ResourceSet) String() string {
+	s := *r
 	ss := s.AsSlice()
 	sort.Strings(ss)
 	return strings.Join(ss, ",")
 }
 
-// Set converts a comma-separated string of collectors into a slice and appends it to the CollectorSet.
-func (c *CollectorSet) Set(value string) error {
-	s := *c
+// Set converts a comma-separated string of resources into a slice and appends it to the ResourceSet.
+func (r *ResourceSet) Set(value string) error {
+	s := *r
 	cols := strings.Split(value, ",")
 	for _, col := range cols {
 		col = strings.TrimSpace(col)
@@ -83,17 +86,17 @@ func (c *CollectorSet) Set(value string) error {
 	return nil
 }
 
-// AsSlice returns the Collector in the form of a plain string slice.
-func (c CollectorSet) AsSlice() []string {
-	cols := make([]string, 0, len(c))
-	for col := range c {
+// AsSlice returns the Resource in the form of a plain string slice.
+func (r ResourceSet) AsSlice() []string {
+	cols := make([]string, 0, len(r))
+	for col := range r {
 		cols = append(cols, col)
 	}
 	return cols
 }
 
-// Type returns a descriptive string about the CollectorSet type.
-func (c *CollectorSet) Type() string {
+// Type returns a descriptive string about the ResourceSet type.
+func (r *ResourceSet) Type() string {
 	return "string"
 }
 
@@ -124,5 +127,94 @@ func (n *NamespaceList) Set(value string) error {
 
 // Type returns a descriptive string about the NamespaceList type.
 func (n *NamespaceList) Type() string {
+	return "string"
+}
+
+// LabelsAllowList represents a list of allowed labels for metrics.
+type LabelsAllowList map[string][]string
+
+// Set converts a comma-separated string of resources and their allowed Kubernetes labels and appends to the LabelsAllowList.
+// Value is in the following format:
+// resource=[k8s-label-name,another-ks8-label],another-resource[ks8-label]
+// Example: pods=[app.kubernetes.io/component,app],resource=[blah]
+func (l *LabelsAllowList) Set(value string) error {
+	// Taken from text/scanner EOF constant.
+	const EOF = -1
+	var (
+		m            = make(map[string][]string, len(*l))
+		previous     rune
+		next         rune
+		firstWordPos int
+		name         string
+	)
+	firstWordPos = 0
+
+	for i, v := range value {
+		if i+1 == len(value) {
+			next = EOF
+		} else {
+			next = []rune(value)[i+1]
+		}
+		if i-1 >= 0 {
+			previous = []rune(value)[i-1]
+		} else {
+			previous = v
+		}
+
+		switch v {
+		case '=':
+			if previous == ',' || next != '[' {
+				return errLabelsAllowListFormat
+			}
+			name = strings.TrimSpace(string(([]rune(value)[firstWordPos:i])))
+			m[name] = []string{}
+			firstWordPos = i + 1
+		case '[':
+			if previous != '=' {
+				return errLabelsAllowListFormat
+			}
+			firstWordPos = i + 1
+		case ']':
+			// if after metric group, has char not comma or end.
+			if next != EOF && next != ',' {
+				return errLabelsAllowListFormat
+			}
+			if previous != '[' {
+				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+			}
+			firstWordPos = i + 1
+		case ',':
+			// if starts or ends with comma
+			if previous == v || next == EOF || next == ']' {
+				return errLabelsAllowListFormat
+			}
+			if previous != ']' {
+				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+			}
+			firstWordPos = i + 1
+		}
+	}
+	*l = m
+	return nil
+}
+
+// asSlice returns the LabelsAllowList in the form of plain string slice.
+func (l LabelsAllowList) asSlice() []string {
+	metrics := make([]string, 0, len(l))
+	for metric := range l {
+		metrics = append(metrics, metric)
+	}
+	return metrics
+}
+
+func (l *LabelsAllowList) String() string {
+	s := *l
+	ss := s.asSlice()
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
+}
+
+// Type returns a descriptive string about the LabelsAllowList type.
+func (l *LabelsAllowList) Type() string {
 	return "string"
 }

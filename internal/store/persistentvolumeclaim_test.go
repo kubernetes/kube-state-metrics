@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestPersistentVolumeClaimStore(t *testing.T) {
@@ -78,7 +78,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Pending"} 0
 				kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace="default",persistentvolumeclaim="mysql-data"} 1.073741824e+09
-				kube_persistentvolumeclaim_labels{label_app="mysql-server",namespace="default",persistentvolumeclaim="mysql-data"} 1
+				kube_persistentvolumeclaim_labels{namespace="default",persistentvolumeclaim="mysql-data"} 1
 				kube_persistentvolumeclaim_access_mode{namespace="default",persistentvolumeclaim="mysql-data",access_mode="ReadWriteOnce"} 1
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="false",condition="CustomizedType"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="false",condition="FileSystemResizePending"} 1
@@ -183,8 +183,8 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

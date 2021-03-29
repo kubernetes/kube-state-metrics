@@ -31,13 +31,13 @@ func TestOptionsParse(t *testing.T) {
 		RecoverInvoked bool
 	}{
 		{
-			Desc:           "collectors command line argument",
-			Args:           []string{"./kube-state-metrics", "--collectors=configmaps,pods"},
+			Desc:           "resources command line argument",
+			Args:           []string{"./kube-state-metrics", "--resources=configmaps,pods"},
 			RecoverInvoked: false,
 		},
 		{
-			Desc:           "namespace command line argument",
-			Args:           []string{"./kube-state-metrics", "--namespace=default,kube-system"},
+			Desc:           "namespaces command line argument",
+			Args:           []string{"./kube-state-metrics", "--namespaces=default,kube-system"},
 			RecoverInvoked: false,
 		},
 	}

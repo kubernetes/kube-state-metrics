@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 	depl2Replicas int32 = 5
 
 	depl1MaxUnavailable = intstr.FromInt(10)
-	depl2MaxUnavailable = intstr.FromString("20%")
+	depl2MaxUnavailable = intstr.FromString("25%")
 
 	depl1MaxSurge = intstr.FromInt(10)
 	depl2MaxSurge = intstr.FromString("20%")
@@ -105,7 +105,7 @@ func TestDeploymentStore(t *testing.T) {
 			},
 			Want: metadata + `
         kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
-        kube_deployment_labels{deployment="depl1",label_app="example1",namespace="ns1"} 1
+        kube_deployment_labels{deployment="depl1",namespace="ns1"} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
         kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
         kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
@@ -158,7 +158,7 @@ func TestDeploymentStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-       	kube_deployment_labels{deployment="depl2",label_app="example2",namespace="ns2"} 1
+       	kube_deployment_labels{deployment="depl2",namespace="ns2"} 1
         kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
         kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
@@ -183,8 +183,8 @@ func TestDeploymentStore(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

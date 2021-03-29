@@ -1,0 +1,197 @@
+name: continuous-integration
+
+on:
+  push:
+    branches:
+    - master
+    - release*
+    tags:
+    - v1.*
+    - v2.*
+  pull_request:
+    branches:
+    - master
+    - release*
+
+env:
+  E2E_SETUP_KIND: yes
+  E2E_SETUP_KUBECTL: yes
+  SUDO: sudo
+
+jobs:
+  ci-go-lint:
+    name: ci-go-lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Lint
+      run: |
+        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
+        make lint
+
+  ci-validate-manifests:
+    name: ci-validate-manifests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Validate generated manifests
+      run: |
+        make validate-manifests
+
+  ci-validate-go-modules:
+    name: ci-validate-go-modules
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Validate go modules
+      run: |
+        make validate-modules
+
+  ci-validate-docs:
+    name: ci-validate-docs
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Check that all metrics are documented
+      run: |
+        make doccheck
+
+  ci-unit-tests:
+    name: ci-unit-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Unit tests
+      run: |
+        make test-unit
+
+  ci-benchmark-tests:
+    name: ci-benchmark-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Benchmark tests
+      run: |
+        make test-benchmark-compare
+
+  ci-build-kube-state-metrics:
+    name: ci-build-kube-state-metrics
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Build
+      run: |
+        make build
+
+  ci-e2e-tests:
+    name: ci-e2e-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.16
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: End-to-end tests
+      run: |
+        REGISTRY="quay.io/coreos" make e2e

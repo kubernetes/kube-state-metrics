@@ -20,7 +20,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestStorageClassStore(t *testing.T) {
@@ -42,7 +42,7 @@ func TestStorageClassStore(t *testing.T) {
 			Want: `
 					# HELP kube_storageclass_info Information about storageclass.
 					# TYPE kube_storageclass_info gauge
-					kube_storageclass_info{storageclass="test_storageclass-info",provisioner="kubernetes.io/rbd",reclaimPolicy="Delete",volumeBindingMode="Immediate"} 1
+					kube_storageclass_info{storageclass="test_storageclass-info",provisioner="kubernetes.io/rbd",reclaim_policy="Delete",volume_binding_mode="Immediate"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_info",
@@ -60,7 +60,7 @@ func TestStorageClassStore(t *testing.T) {
 			Want: `
 					# HELP kube_storageclass_info Information about storageclass.
 					# TYPE kube_storageclass_info gauge
-					kube_storageclass_info{storageclass="test_storageclass-default-info",provisioner="kubernetes.io/rbd",reclaimPolicy="Delete",volumeBindingMode="Immediate"} 1
+					kube_storageclass_info{storageclass="test_storageclass-default-info",provisioner="kubernetes.io/rbd",reclaim_policy="Delete",volume_binding_mode="Immediate"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_info",
@@ -100,7 +100,7 @@ func TestStorageClassStore(t *testing.T) {
 			Want: `
 					# HELP kube_storageclass_labels Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_storageclass_labels gauge
-					kube_storageclass_labels{storageclass="test_storageclass-labels",label_foo="bar"} 1
+					kube_storageclass_labels{storageclass="test_storageclass-labels"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_labels",
@@ -108,8 +108,8 @@ func TestStorageClassStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

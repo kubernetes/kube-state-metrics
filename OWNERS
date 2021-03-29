@@ -1,18 +1,19 @@
+
 component: "Monitoring"
 
 reviewers:
   - paulfantom
-  - LiliC
   - s-urbaniak
   - simonpasquier
   - dgrisonnet
+  - kakkoyun
 
 approvers:
   - paulfantom
-  - LiliC
   - s-urbaniak
   - simonpasquier
   - dgrisonnet
+  - kakkoyun
 
 emeritus_approvers:
   - brancz

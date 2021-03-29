@@ -1,0 +1,87 @@
+# This is an example goreleaser.yaml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+    ignore:
+      - goos: darwin
+      - goarch: 386
+
+    id: jsonnet
+    main: ./cmd/jsonnet
+    binary: jsonnet
+
+  # goreleaser complains about unexpected keys, so there's nowhere to hang an
+  # anchor, so we have to repeat the common elements :(
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+    ignore:
+      - goos: darwin
+      - goarch: 386
+
+    id: jsonnetfmt
+    main: ./cmd/jsonnetfmt
+    binary: jsonnetfmt
+
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+
+nfpms:
+  - id: jsonnet
+    package_name: jsonnet-go
+    builds:
+      - jsonnet
+    description: A data templating language for app and tool developers
+    homepage: https://github.com/google/go-jsonnet
+    license: Apache 2.0
+    formats:
+      - deb
+    bindir: /usr/bin
+    maintainer: David Cunningham <dcunnin@google.com>
+    file_name_template: "jsonnet-go_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    overrides:
+      deb:
+        conflicts:
+          # See: https://packages.ubuntu.com/jsonnet
+          - jsonnet
+  - id: jsonnetfmt
+    package_name: jsonnetfmt-go
+    builds:
+      - jsonnetfmt
+    homepage: https://github.com/google/go-jsonnet
+    license: Apache 2.0
+    formats:
+      - deb
+    bindir: /usr/bin
+    file_name_template: "jsonnetfmt-go_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    overrides:
+      deb:
+        conflicts:
+          # See: https://packages.ubuntu.com/jsonnet
+          - jsonnetfmt

@@ -1,0 +1,32 @@
+*~
+*.prof
+*.so
+*.a
+.*.swp
+*.pyc
+coverage.out
+build/
+dist/
+gojsonnet.egg-info/
+/bazel-bin
+/bazel-genfiles
+/bazel-go-jsonnet
+/bazel-out
+/bazel-testlogs
+/dumpstdlibast
+
+# built binaries
+/jsonnet
+/jsonnet.exe
+
+# "old" built binaries (for doing benchmark comparisons)
+/jsonnet-old
+/jsonnet-old.exe
+
+/jsonnetfmt
+/linter/jsonnet-lint/jsonnet-lint
+/tests_path.source
+
+/jsonnet-lint
+
+/builtin-benchmark-results

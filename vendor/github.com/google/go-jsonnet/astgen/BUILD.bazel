@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+genrule(
+    name = "dumpstdlibast",
+    srcs = ["@cpp_jsonnet//stdlib"],
+    outs = ["stdast.go"],
+    cmd = "./$(location //cmd/dumpstdlibast) \"$<\" > \"$@\"",
+    tools = ["//cmd/dumpstdlibast"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["stdast.go"],
+    importpath = "github.com/google/go-jsonnet/astgen",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ast:go_default_library",  # keep
+    ],
+)

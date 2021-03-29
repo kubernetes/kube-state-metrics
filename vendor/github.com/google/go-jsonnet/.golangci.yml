@@ -1,0 +1,15 @@
+run:
+  skip-files: ast/identifier_set.go
+linters:
+  enable:
+    - stylecheck
+    - gochecknoinits
+    - golint
+issues:
+  exclude-use-default: false
+  exclude:
+    - "should have a package comment, unless it's in another file for this package"
+    - "the surrounding loop is unconditionally terminated"
+linters-settings:
+  golint:
+    min-confidence: 0

@@ -3,7 +3,10 @@ name: Release Charts
 on:
   push:
     branches:
-      - master
+    - release*
+    tags:
+    - v1.*
+    - v2.*
     paths:
       - 'charts/**'
 
@@ -27,4 +30,4 @@ jobs:
           charts_dir: charts
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          CR_RELEASE_NAME_TEMPLATE: "kube-state-metrics-helm-chart-{{ .Version }}"
+          CR_RELEASE_NAME_TEMPLATE: "kube-state-metrics-v2-helm-chart-{{ .Version }}"

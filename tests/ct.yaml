@@ -2,4 +2,5 @@
 remote: origin
 chart-dirs:
   - charts
+check-version-increment: false
 helm-extra-args: --timeout 600s

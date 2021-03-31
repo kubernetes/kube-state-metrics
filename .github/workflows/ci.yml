@@ -194,4 +194,4 @@ jobs:
 
     - name: End-to-end tests
       run: |
-        REGISTRY="quay.io/coreos" make e2e
+        make e2e

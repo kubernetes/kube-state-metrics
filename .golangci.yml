@@ -18,3 +18,9 @@ linters:
 linters-settings:
   goimports:
     local-prefixes: k8s.io/kube-state-metrics
+  gocyclo:
+    # temporary until we refactor the pod function 
+    min-complexity: 128
+
+issues:
+  exclude-use-default: false

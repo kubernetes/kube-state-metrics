@@ -15,8 +15,9 @@ package store
 
 import (
 	"context"
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -33,13 +34,16 @@ var (
 	descStorageClassLabelsDefaultLabels = []string{"storageclass"}
 	defaultReclaimPolicy                = v1.PersistentVolumeReclaimDelete
 	defaultVolumeBindingMode            = storagev1.VolumeBindingImmediate
+)
 
-	storageClassMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_storageclass_info",
-			Type: metric.Gauge,
-			Help: "Information about storageclass.",
-			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+func storageClassMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_storageclass_info",
+			"Information about storageclass.",
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 
 				// Add default values if missing.
 				if s.ReclaimPolicy == nil {
@@ -51,18 +55,19 @@ var (
 				}
 
 				m := metric.Metric{
-					LabelKeys:   []string{"provisioner", "reclaimPolicy", "volumeBindingMode"},
+					LabelKeys:   []string{"provisioner", "reclaim_policy", "volume_binding_mode"},
 					LabelValues: []string{s.Provisioner, string(*s.ReclaimPolicy), string(*s.VolumeBindingMode)},
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: "kube_storageclass_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_storageclass_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				ms := []*metric.Metric{}
 				if !s.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
@@ -73,13 +78,14 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: descStorageClassLabelsName,
-			Type: metric.Gauge,
-			Help: descStorageClassLabelsHelp,
-			GenerateFunc: wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+		),
+		*generator.NewFamilyGenerator(
+			descStorageClassLabelsName,
+			descStorageClassLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -90,9 +96,9 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
-)
+}
 
 func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

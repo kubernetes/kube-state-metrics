@@ -21,23 +21,23 @@ import (
 	"testing"
 )
 
-func TestCollectorSetSet(t *testing.T) {
+func TestResourceSetSet(t *testing.T) {
 	tests := []struct {
 		Desc        string
 		Value       string
-		Wanted      CollectorSet
+		Wanted      ResourceSet
 		WantedError bool
 	}{
 		{
-			Desc:        "empty collectors",
+			Desc:        "empty resources",
 			Value:       "",
-			Wanted:      CollectorSet{},
+			Wanted:      ResourceSet{},
 			WantedError: false,
 		},
 		{
-			Desc:  "normal collectors",
+			Desc:  "normal resources",
 			Value: "configmaps,cronjobs,daemonsets,deployments",
-			Wanted: CollectorSet(map[string]struct{}{
+			Wanted: ResourceSet(map[string]struct{}{
 				"configmaps":  {},
 				"cronjobs":    {},
 				"daemonsets":  {},
@@ -48,7 +48,7 @@ func TestCollectorSetSet(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		cs := &CollectorSet{}
+		cs := &ResourceSet{}
 		gotError := cs.Set(test.Value)
 		if !(((gotError == nil && !test.WantedError) || (gotError != nil && test.WantedError)) && reflect.DeepEqual(*cs, test.Wanted)) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v. Wanted Error: %v, Got Error: %v", test.Desc, test.Wanted, *cs, test.WantedError, gotError)
@@ -113,6 +113,87 @@ func TestMetricSetSet(t *testing.T) {
 		gotError := ms.Set(test.Value)
 		if gotError != nil || !reflect.DeepEqual(*ms, test.Wanted) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v. Got Error: %v", test.Desc, test.Wanted, *ms, gotError)
+		}
+	}
+}
+
+func TestLabelsAllowListSet(t *testing.T) {
+	tests := []struct {
+		Desc   string
+		Value  string
+		Wanted LabelsAllowList
+		err    bool
+	}{
+		{
+			Desc:   "empty labels list",
+			Value:  "",
+			Wanted: LabelsAllowList{},
+		},
+		{
+			Desc:   "[invalid] space delimited",
+			Value:  "cronjobs=[somelabel,label2] cronjobs=[label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+		{
+			Desc:   "[invalid] normal missing bracket",
+			Value:  "cronjobs=[somelabel,label2],cronjobs=label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+
+		{
+			Desc:   "[invalid] no comma between metrics",
+			Value:  "cronjobs=[somelabel,label2]cronjobs=[label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+		{
+			Desc:   "[invalid] no '=' between name and label list",
+			Value:  "cronjobs[somelabel,label2]cronjobs=[label3,label4]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
+		{
+			Desc:  "one resource",
+			Value: "cronjobs=[somelabel.io,label2/blah]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"cronjobs": {
+					"somelabel.io",
+					"label2/blah",
+				}}),
+		},
+		{
+			Desc:  "two resources",
+			Value: "pods=[podsone,pods-two],nodes=[nodesone,nodestwo],namespaces=[nsone,nstwo]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"pods": {
+					"podsone",
+					"pods-two"},
+				"nodes": {
+					"nodesone",
+					"nodestwo"},
+				"namespaces": {
+					"nsone",
+					"nstwo"}}),
+		},
+		{
+			Desc:  "with empty allow labels",
+			Value: "cronjobs=[somelabel,label2],pods=[]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"cronjobs": {
+					"somelabel",
+					"label2",
+				},
+				"pods": {}}),
+		},
+	}
+
+	for _, test := range tests {
+		lal := &LabelsAllowList{}
+		gotError := lal.Set(test.Value)
+		if gotError != nil && !test.err || !reflect.DeepEqual(*lal, test.Wanted) {
+			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v\n Got Error: %#v", test.Desc, test.Wanted, *lal, gotError)
 		}
 	}
 }

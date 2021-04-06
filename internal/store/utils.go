@@ -23,15 +23,15 @@ import (
 	"strconv"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	v1 "k8s.io/api/core/v1"
-
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 var (
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	matchAllCap        = regexp.MustCompile("([a-z0-9])([A-Z])")
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )
 
@@ -78,21 +78,68 @@ func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string)
 
 func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
-	for k := range labels {
-		labelKeys = append(labelKeys, k)
-	}
-	sort.Strings(labelKeys)
-
 	labelValues := make([]string, 0, len(labels))
-	for i, k := range labelKeys {
-		labelKeys[i] = prefix + "_" + sanitizeLabelName(k)
+
+	sortedKeys := make([]string, 0)
+	for key := range labels {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	// conflictDesc holds some metadata for resolving potential label conflicts
+	type conflictDesc struct {
+		// the number of conflicting label keys we saw so far
+		count int
+
+		// the offset of the initial conflicting label key, so we could
+		// later go back and rename "label_foo" to "label_foo_conflict1"
+		initial int
+	}
+
+	conflicts := make(map[string]*conflictDesc)
+	for _, k := range sortedKeys {
+		labelKey := labelName(prefix, k)
+		if conflict, ok := conflicts[labelKey]; ok {
+			if conflict.count == 1 {
+				// this is the first conflict for the label,
+				// so we have to go back and rename the initial label that we've already added
+				labelKeys[conflict.initial] = labelConflictSuffix(labelKeys[conflict.initial], conflict.count)
+			}
+
+			conflict.count++
+			labelKey = labelConflictSuffix(labelKey, conflict.count)
+		} else {
+			// we'll need this info later in case there are conflicts
+			conflicts[labelKey] = &conflictDesc{
+				count:   1,
+				initial: len(labelKeys),
+			}
+		}
+		labelKeys = append(labelKeys, labelKey)
 		labelValues = append(labelValues, labels[k])
 	}
 	return labelKeys, labelValues
 }
 
+func labelName(prefix, labelName string) string {
+	return prefix + "_" + lintLabelName(sanitizeLabelName(labelName))
+}
+
 func sanitizeLabelName(s string) string {
 	return invalidLabelCharRE.ReplaceAllString(s, "_")
+}
+
+func lintLabelName(s string) string {
+	return toSnakeCase(s)
+}
+
+func toSnakeCase(s string) string {
+	snake := matchAllCap.ReplaceAllString(s, "${1}_${2}")
+	return strings.ToLower(snake)
+}
+
+func labelConflictSuffix(label string, count int) string {
+	return fmt.Sprintf("%s_conflict%d", label, count)
 }
 
 func isHugePageResourceName(name v1.ResourceName) bool {
@@ -122,4 +169,20 @@ func isNativeResource(name v1.ResourceName) bool {
 
 func isPrefixedNativeResource(name v1.ResourceName) bool {
 	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
+}
+
+// createLabelKeysValues takes in passed kubernetes labels and allowed list in kubernetes label format
+// it returns only those allowed labels that exist in the list converting them to Prometheus labels.
+func createLabelKeysValues(allKubeLabels map[string]string, allowList []string) ([]string, []string) {
+	allowedKubeLabels := make(map[string]string)
+
+	if len(allowList) > 0 {
+		for _, l := range allowList {
+			v, found := allKubeLabels[l]
+			if found {
+				allowedKubeLabels[l] = v
+			}
+		}
+	}
+	return kubeLabelsToPrometheusLabels(allowedKubeLabels)
 }

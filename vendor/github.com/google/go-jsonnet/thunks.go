@@ -16,7 +16,9 @@ limitations under the License.
 
 package jsonnet
 
-import "github.com/google/go-jsonnet/ast"
+import (
+	"github.com/google/go-jsonnet/ast"
+)
 
 // readyValue
 // -------------------------------------
@@ -30,22 +32,12 @@ type readyValue struct {
 	content value
 }
 
-func (rv *readyValue) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
+func (rv *readyValue) evaluate(i *interpreter, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
 	return rv.content, nil
 }
 
-func (rv *readyValue) aPotentialValue() {}
-
 // potentialValues
 // -------------------------------------
-
-// evaluable is something that can be evaluated and the result is always the same
-// It may require computation every time evaluation is requested (in contrast with
-// potentialValue which guarantees that computation happens at most once).
-type evaluable interface {
-	// fromWhere keeps the information from where the evaluation was requested.
-	getValue(i *interpreter, fromWhere traceElement) (value, error)
-}
 
 // cachedThunk is a wrapper that caches the value of a potentialValue after
 // the first evaluation.
@@ -66,14 +58,14 @@ func readyThunk(content value) *cachedThunk {
 	return &cachedThunk{content: content}
 }
 
-func (t *cachedThunk) getValue(i *interpreter, trace traceElement) (value, error) {
+func (t *cachedThunk) getValue(i *interpreter) (value, error) {
 	if t.content != nil {
 		return t.content, nil
 	}
 	if t.err != nil {
 		return nil, t.err
 	}
-	v, err := i.EvalInCleanEnv(trace, t.env, t.body, false)
+	v, err := i.EvalInCleanEnv(t.env, t.body, false)
 	if err != nil {
 		// TODO(sbarzowski) perhaps cache errors as well
 		// may be necessary if we allow handling them in any way
@@ -95,9 +87,9 @@ type codeUnboundField struct {
 	body ast.Node
 }
 
-func (f *codeUnboundField) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
+func (f *codeUnboundField) evaluate(i *interpreter, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
 	env := makeEnvironment(origBindings, sb)
-	return i.EvalInCleanEnv(trace, &env, f.body, false)
+	return i.EvalInCleanEnv(&env, f.body, false)
 }
 
 // Provide additional bindings for a field. It shadows bindings from the object.
@@ -107,16 +99,15 @@ type bindingsUnboundField struct {
 	bindings bindingFrame
 }
 
-func (f *bindingsUnboundField) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
-	var upValues bindingFrame
-	upValues = make(bindingFrame)
+func (f *bindingsUnboundField) evaluate(i *interpreter, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
+	upValues := make(bindingFrame)
 	for variable, pvalue := range origBindings {
 		upValues[variable] = pvalue
 	}
 	for variable, pvalue := range f.bindings {
 		upValues[variable] = pvalue
 	}
-	return f.inner.evaluate(i, trace, sb, upValues, fieldName)
+	return f.inner.evaluate(i, sb, upValues, fieldName)
 }
 
 // plusSuperUnboundField represents a `field+: ...` that hasn't been bound to an object.
@@ -124,19 +115,19 @@ type plusSuperUnboundField struct {
 	inner unboundField
 }
 
-func (f *plusSuperUnboundField) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
-	right, err := f.inner.evaluate(i, trace, sb, origBinding, fieldName)
+func (f *plusSuperUnboundField) evaluate(i *interpreter, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
+	right, err := f.inner.evaluate(i, sb, origBinding, fieldName)
 	if err != nil {
 		return nil, err
 	}
 	if !objectHasField(sb.super(), fieldName, withHidden) {
 		return right, nil
 	}
-	left, err := objectIndex(i, trace, sb.super(), fieldName)
+	left, err := objectIndex(i, sb.super(), fieldName)
 	if err != nil {
 		return nil, err
 	}
-	return builtinPlus(i, trace, left, right)
+	return builtinPlus(i, left, right)
 }
 
 // evalCallables
@@ -147,12 +138,12 @@ type closure struct {
 	// arguments should be added to it, before executing it
 	env      environment
 	function *ast.Function
-	params   parameters
+	params   []namedParameter
 }
 
-func forceThunks(i *interpreter, trace traceElement, args *bindingFrame) error {
+func forceThunks(i *interpreter, args *bindingFrame) error {
 	for _, arg := range *args {
-		_, err := arg.getValue(i, trace)
+		_, err := arg.getValue(i)
 		if err != nil {
 			return err
 		}
@@ -160,17 +151,11 @@ func forceThunks(i *interpreter, trace traceElement, args *bindingFrame) error {
 	return nil
 }
 
-func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace traceElement) (value, error) {
+func (closure *closure) evalCall(arguments callArguments, i *interpreter) (value, error) {
 	argThunks := make(bindingFrame)
-	parameters := closure.Parameters()
+	parameters := closure.parameters()
 	for i, arg := range arguments.positional {
-		var name ast.Identifier
-		if i < len(parameters.required) {
-			name = parameters.required[i]
-		} else {
-			name = parameters.optional[i-len(parameters.required)].name
-		}
-		argThunks[name] = arg
+		argThunks[parameters[i].name] = arg
 	}
 
 	for _, arg := range arguments.named {
@@ -179,8 +164,7 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 
 	var calledEnvironment environment
 
-	for i := range parameters.optional {
-		param := &parameters.optional[i]
+	for _, param := range parameters {
 		if _, exists := argThunks[param.name]; !exists {
 			argThunks[param.name] = &cachedThunk{
 				// Default arguments are evaluated in the same environment as function body
@@ -191,7 +175,7 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 	}
 
 	if arguments.tailstrict {
-		err := forceThunks(i, trace, &argThunks)
+		err := forceThunks(i, &argThunks)
 		if err != nil {
 			return nil, err
 		}
@@ -201,26 +185,23 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 		addBindings(closure.env.upValues, argThunks),
 		closure.env.selfBinding,
 	)
-	return i.EvalInCleanEnv(trace, &calledEnvironment, closure.function.Body, arguments.tailstrict)
+	return i.EvalInCleanEnv(&calledEnvironment, closure.function.Body, arguments.tailstrict)
 }
 
-func (closure *closure) Parameters() parameters {
+func (closure *closure) parameters() []namedParameter {
 	return closure.params
 
 }
 
-func prepareClosureParameters(params ast.Parameters, env environment) parameters {
-	optionalParameters := make([]namedParameter, 0, len(params.Optional))
-	for _, named := range params.Optional {
-		optionalParameters = append(optionalParameters, namedParameter{
+func prepareClosureParameters(params []ast.Parameter, env environment) []namedParameter {
+	preparedParams := make([]namedParameter, 0, len(params))
+	for _, named := range params {
+		preparedParams = append(preparedParams, namedParameter{
 			name:       named.Name,
 			defaultArg: named.DefaultArg,
 		})
 	}
-	return parameters{
-		required: params.Required,
-		optional: optionalParameters,
-	}
+	return preparedParams
 }
 
 func makeClosure(env environment, function *ast.Function) *closure {
@@ -239,15 +220,15 @@ type NativeFunction struct {
 }
 
 // evalCall evaluates a call to a NativeFunction and returns the result.
-func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, trace traceElement) (value, error) {
-	flatArgs := flattenArgs(arguments, native.Parameters(), []value{})
+func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter) (value, error) {
+	flatArgs := flattenArgs(arguments, native.parameters(), []value{})
 	nativeArgs := make([]interface{}, 0, len(flatArgs))
 	for _, arg := range flatArgs {
-		v, err := i.evaluatePV(arg, trace)
+		v, err := i.evaluatePV(arg)
 		if err != nil {
 			return nil, err
 		}
-		json, err := i.manifestJSON(trace, v)
+		json, err := i.manifestJSON(v)
 		if err != nil {
 			return nil, err
 		}
@@ -255,22 +236,16 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, 
 	}
 	resultJSON, err := native.Func(nativeArgs)
 	if err != nil {
-		return nil, i.Error(err.Error(), trace)
+		return nil, i.Error(err.Error())
 	}
-	return jsonToValue(i, trace, resultJSON)
+	return jsonToValue(i, resultJSON)
 }
 
-// parameters returns a NativeFunction's parameters.
-func (native *NativeFunction) Parameters() parameters {
-	return parameters{required: native.Params}
-}
-
-// -------------------------------------
-
-type defaultArgument struct {
-	body ast.Node
-}
-
-func (da *defaultArgument) inEnv(env *environment) potentialValue {
-	return &cachedThunk{env: env, body: da.body}
+// Parameters returns a NativeFunction's parameters.
+func (native *NativeFunction) parameters() []namedParameter {
+	ret := make([]namedParameter, len(native.Params))
+	for i := range ret {
+		ret[i].name = native.Params[i]
+	}
+	return ret
 }

@@ -30,14 +30,14 @@ const anonymous = "anonymous"
 // package or a separate internal astutils package. The only reason I'm not doing it
 // right now is that it's a pretty invasive change that deserves a separate PR.
 
-// directChildren are children of AST node that are executed in the same context
+// DirectChildren are children of AST node that are executed in the same context
 // and environment as their parent. It supports ASTs before and after desugaring.
 //
 // They must satisfy the following rules:
 // * (no-delayed-evaluation) They are evaluated when their parent is evaluated or never.
 // * (no-indirect-evaluation) They cannot be evaluated during evaluation of any non-direct children
 // * (same-environment) They must be evaluated in the same environment as their parent
-func directChildren(node ast.Node) []ast.Node {
+func DirectChildren(node ast.Node) []ast.Node {
 	switch node := node.(type) {
 	case *ast.Apply:
 		return []ast.Node{node.Target}
@@ -155,7 +155,7 @@ func thunkChildren(node ast.Node) []ast.Node {
 	case *ast.Apply:
 		var nodes []ast.Node
 		for _, arg := range node.Arguments.Positional {
-			nodes = append(nodes, arg)
+			nodes = append(nodes, arg.Expr)
 		}
 		for _, arg := range node.Arguments.Named {
 			nodes = append(nodes, arg.Arg)
@@ -164,7 +164,11 @@ func thunkChildren(node ast.Node) []ast.Node {
 	case *ast.ApplyBrace:
 		return nil
 	case *ast.Array:
-		return node.Elements
+		var nodes []ast.Node
+		for _, element := range node.Elements {
+			nodes = append(nodes, element.Expr)
+		}
+		return nodes
 	case *ast.Assert:
 		return nil
 	case *ast.Binary:
@@ -233,7 +237,7 @@ func objectFieldsDirectChildren(fields ast.ObjectFields) ast.Nodes {
 func inObjectFieldsChildren(fields ast.ObjectFields) ast.Nodes {
 	result := ast.Nodes{}
 	for _, field := range fields {
-		if field.MethodSugar {
+		if field.Method != nil {
 			result = append(result, field.Method)
 		} else {
 			if field.Expr2 != nil {
@@ -294,8 +298,10 @@ func specialChildren(node ast.Node) []ast.Node {
 		return nil
 	case *ast.Function:
 		children := []ast.Node{node.Body}
-		for _, child := range node.Parameters.Optional {
-			children = append(children, child.DefaultArg)
+		for _, child := range node.Parameters {
+			if child.DefaultArg != nil {
+				children = append(children, child.DefaultArg)
+			}
 		}
 		return children
 	case *ast.Import:
@@ -348,7 +354,7 @@ func specialChildren(node ast.Node) []ast.Node {
 // Children returns all children of a node. It supports ASTs before and after desugaring.
 func Children(node ast.Node) []ast.Node {
 	var result []ast.Node
-	result = append(result, directChildren(node)...)
+	result = append(result, DirectChildren(node)...)
 	result = append(result, thunkChildren(node)...)
 	result = append(result, specialChildren(node)...)
 	return result
@@ -385,14 +391,16 @@ func addContext(node ast.Node, context *string, bind string) {
 	case *ast.Function:
 		funContext := functionContext(bind)
 		addContext(node.Body, funContext, anonymous)
-		for i := range node.Parameters.Optional {
-			// Default arguments have the same context as the function body.
-			addContext(node.Parameters.Optional[i].DefaultArg, funContext, anonymous)
+		for i := range node.Parameters {
+			if node.Parameters[i].DefaultArg != nil {
+				// Default arguments have the same context as the function body.
+				addContext(node.Parameters[i].DefaultArg, funContext, anonymous)
+			}
 		}
 	case *ast.Object:
 		// TODO(sbarzowski) include fieldname, maybe even chains
 
-		outOfObject := directChildren(node)
+		outOfObject := DirectChildren(node)
 		for _, f := range outOfObject {
 			// This actually is evaluated outside of object
 			addContext(f, context, anonymous)
@@ -406,7 +414,7 @@ func addContext(node ast.Node, context *string, bind string) {
 		}
 
 	case *ast.ObjectComp:
-		outOfObject := directChildren(node)
+		outOfObject := DirectChildren(node)
 		for _, f := range outOfObject {
 			// This actually is evaluated outside of object
 			addContext(f, context, anonymous)
@@ -430,7 +438,7 @@ func addContext(node ast.Node, context *string, bind string) {
 		}
 		addContext(node.Body, context, bind)
 	default:
-		for _, child := range directChildren(node) {
+		for _, child := range DirectChildren(node) {
 			addContext(child, context, anonymous)
 		}
 

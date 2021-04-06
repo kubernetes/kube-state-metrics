@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,20 +26,20 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
-	descMutatingWebhookConfigurationHelp          = "Kubernetes labels converted to Prometheus labels."
 	descMutatingWebhookConfigurationDefaultLabels = []string{"namespace", "mutatingwebhookconfiguration"}
 
 	mutatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_mutatingwebhookconfiguration_info",
-			Type: metric.Gauge,
-			Help: "Information about the MutatingWebhookConfiguration.",
-			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_mutatingwebhookconfiguration_info",
+			"Information about the MutatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -47,12 +48,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_mutatingwebhookconfiguration_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp.",
-			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_mutatingwebhookconfiguration_created",
+			"Unix creation timestamp.",
+			metric.Gauge,
+			"",
+			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !mwc.CreationTimestamp.IsZero() {
@@ -64,17 +66,18 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_mutatingwebhookconfiguration_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of the MutatingWebhookConfiguration.",
-			GenerateFunc: wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_mutatingwebhookconfiguration_metadata_resource_version",
+			"Resource version representing a specific version of the MutatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(mwc.ObjectMeta.ResourceVersion),
 				}
 			}),
-		},
+		),
 	}
 )
 

@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,21 +26,24 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
 	descEndpointLabelsName          = "kube_endpoint_labels"
 	descEndpointLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
+)
 
-	endpointMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_endpoint_info",
-			Type: metric.Gauge,
-			Help: "Information about endpoint.",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_endpoint_info",
+			"Information about endpoint.",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -48,12 +52,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_endpoint_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_endpoint_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !e.CreationTimestamp.IsZero() {
@@ -67,13 +72,14 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: descEndpointLabelsName,
-			Type: metric.Gauge,
-			Help: descEndpointLabelsHelp,
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(e.Labels)
+		),
+		*generator.NewFamilyGenerator(
+			descEndpointLabelsName,
+			descEndpointLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(e.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -84,12 +90,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_endpoint_address_available",
-			Type: metric.Gauge,
-			Help: "Number of addresses available in endpoint.",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_endpoint_address_available",
+			"Number of addresses available in endpoint.",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var available int
 				for _, s := range e.Subsets {
 					available += len(s.Addresses) * len(s.Ports)
@@ -103,12 +110,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_endpoint_address_not_ready",
-			Type: metric.Gauge,
-			Help: "Number of addresses not ready in endpoint",
-			GenerateFunc: wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_endpoint_address_not_ready",
+			"Number of addresses not ready in endpoint",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var notReady int
 				for _, s := range e.Subsets {
 					notReady += len(s.NotReadyAddresses) * len(s.Ports)
@@ -121,9 +129,9 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
-)
+}
 
 func wrapEndpointFunc(f func(*v1.Endpoints) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

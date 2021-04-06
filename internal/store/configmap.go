@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,19 +26,20 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 
 	configMapMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_configmap_info",
-			Type: metric.Gauge,
-			Help: "Information about configmap.",
-			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_configmap_info",
+			"Information about configmap.",
+			metric.Gauge,
+			"",
+			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},
@@ -46,12 +48,13 @@ var (
 					}},
 				}
 			}),
-		},
-		{
-			Name: "kube_configmap_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_configmap_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !c.CreationTimestamp.IsZero() {
@@ -66,17 +69,18 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_configmap_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of the configmap.",
-			GenerateFunc: wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_configmap_metadata_resource_version",
+			"Resource version representing a specific version of the configmap.",
+			metric.Gauge,
+			"",
+			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(c.ObjectMeta.ResourceVersion),
 				}
 			}),
-		},
+		),
 	}
 )
 

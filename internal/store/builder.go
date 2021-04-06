@@ -29,9 +29,9 @@ import (
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	certv1beta1 "k8s.io/api/certificates/v1beta1"
+	certv1 "k8s.io/api/certificates/v1"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -41,13 +41,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
-	ksmtypes "k8s.io/kube-state-metrics/pkg/builder/types"
-	"k8s.io/kube-state-metrics/pkg/listwatch"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
-	"k8s.io/kube-state-metrics/pkg/options"
-	"k8s.io/kube-state-metrics/pkg/sharding"
-	"k8s.io/kube-state-metrics/pkg/watch"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	"k8s.io/kube-state-metrics/v2/pkg/listwatch"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
+	"k8s.io/kube-state-metrics/v2/pkg/sharding"
+	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
 
 // Builder helps to build store. It follows the builder pattern
@@ -58,11 +58,12 @@ type Builder struct {
 	namespaces       options.NamespaceList
 	ctx              context.Context
 	enabledResources []string
-	whiteBlackList   ksmtypes.WhiteBlackLister
+	allowDenyList    ksmtypes.AllowDenyLister
 	metrics          *watch.ListWatchMetrics
 	shard            int32
 	totalShards      int
 	buildStoreFunc   ksmtypes.BuildStoreFunc
+	allowLabelsList  map[string][]string
 }
 
 // NewBuilder returns a new builder.
@@ -72,20 +73,20 @@ func NewBuilder() *Builder {
 }
 
 // WithMetrics sets the metrics property of a Builder.
-func (b *Builder) WithMetrics(r *prometheus.Registry) {
+func (b *Builder) WithMetrics(r prometheus.Registerer) {
 	b.metrics = watch.NewListWatchMetrics(r)
 }
 
 // WithEnabledResources sets the enabledResources property of a Builder.
-func (b *Builder) WithEnabledResources(c []string) error {
-	for _, col := range c {
-		if !collectorExists(col) {
-			return errors.Errorf("collector %s does not exist. Available collectors: %s", col, strings.Join(availableCollectors(), ","))
+func (b *Builder) WithEnabledResources(r []string) error {
+	for _, col := range r {
+		if !resourceExists(col) {
+			return errors.Errorf("resource %s does not exist. Available resources: %s", col, strings.Join(availableResources(), ","))
 		}
 	}
 
 	var copy []string
-	copy = append(copy, c...)
+	copy = append(copy, r...)
 
 	sort.Strings(copy)
 
@@ -119,13 +120,13 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 	b.vpaClient = c
 }
 
-// WithWhiteBlackList configures the white or blacklisted metric to be exposed
+// WithAllowDenyList configures the allow or denylisted metric to be exposed
 // by the store build by the Builder.
-func (b *Builder) WithWhiteBlackList(l ksmtypes.WhiteBlackLister) {
-	b.whiteBlackList = l
+func (b *Builder) WithAllowDenyList(l ksmtypes.AllowDenyLister) {
+	b.allowDenyList = l
 }
 
-// WithGenerateStoreFunc configures a constom generate store function
+// WithGenerateStoreFunc configures a custom generate store function
 func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
 	b.buildStoreFunc = f
 }
@@ -135,10 +136,17 @@ func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
 	return b.buildStore
 }
 
+// WithAllowLabels configures which labels can be returned for metrics
+func (b *Builder) WithAllowLabels(labels map[string][]string) {
+	if len(labels) > 0 {
+		b.allowLabelsList = labels
+	}
+}
+
 // Build initializes and registers all enabled stores.
 func (b *Builder) Build() []cache.Store {
-	if b.whiteBlackList == nil {
-		panic("whiteBlackList should not be nil")
+	if b.allowDenyList == nil {
+		panic("allowDenyList should not be nil")
 	}
 
 	stores := []cache.Store{}
@@ -153,7 +161,7 @@ func (b *Builder) Build() []cache.Store {
 		}
 	}
 
-	klog.Infof("Active collectors: %s", strings.Join(activeStoreNames, ","))
+	klog.Infof("Active resources: %s", strings.Join(activeStoreNames, ","))
 
 	return stores
 }
@@ -168,6 +176,7 @@ var availableStores = map[string]func(f *Builder) cache.Store{
 	"horizontalpodautoscalers":        func(b *Builder) cache.Store { return b.buildHPAStore() },
 	"ingresses":                       func(b *Builder) cache.Store { return b.buildIngressStore() },
 	"jobs":                            func(b *Builder) cache.Store { return b.buildJobStore() },
+	"leases":                          func(b *Builder) cache.Store { return b.buildLeases() },
 	"limitranges":                     func(b *Builder) cache.Store { return b.buildLimitRangeStore() },
 	"mutatingwebhookconfigurations":   func(b *Builder) cache.Store { return b.buildMutatingWebhookConfigurationStore() },
 	"namespaces":                      func(b *Builder) cache.Store { return b.buildNamespaceStore() },
@@ -189,12 +198,12 @@ var availableStores = map[string]func(f *Builder) cache.Store{
 	"verticalpodautoscalers":          func(b *Builder) cache.Store { return b.buildVPAStore() },
 }
 
-func collectorExists(name string) bool {
+func resourceExists(name string) bool {
 	_, ok := availableStores[name]
 	return ok
 }
 
-func availableCollectors() []string {
+func availableResources() []string {
 	c := []string{}
 	for name := range availableStores {
 		c = append(c, name)
@@ -207,31 +216,31 @@ func (b *Builder) buildConfigMapStore() cache.Store {
 }
 
 func (b *Builder) buildCronJobStore() cache.Store {
-	return b.buildStoreFunc(cronJobMetricFamilies, &batchv1beta1.CronJob{}, createCronJobListWatch)
+	return b.buildStoreFunc(cronJobMetricFamilies(b.allowLabelsList["cronjobs"]), &batchv1beta1.CronJob{}, createCronJobListWatch)
 }
 
 func (b *Builder) buildDaemonSetStore() cache.Store {
-	return b.buildStoreFunc(daemonSetMetricFamilies, &appsv1.DaemonSet{}, createDaemonSetListWatch)
+	return b.buildStoreFunc(daemonSetMetricFamilies(b.allowLabelsList["daemonsets"]), &appsv1.DaemonSet{}, createDaemonSetListWatch)
 }
 
 func (b *Builder) buildDeploymentStore() cache.Store {
-	return b.buildStoreFunc(deploymentMetricFamilies, &appsv1.Deployment{}, createDeploymentListWatch)
+	return b.buildStoreFunc(deploymentMetricFamilies(b.allowLabelsList["deployments"]), &appsv1.Deployment{}, createDeploymentListWatch)
 }
 
 func (b *Builder) buildEndpointsStore() cache.Store {
-	return b.buildStoreFunc(endpointMetricFamilies, &v1.Endpoints{}, createEndpointsListWatch)
+	return b.buildStoreFunc(endpointMetricFamilies(b.allowLabelsList["endpoints"]), &v1.Endpoints{}, createEndpointsListWatch)
 }
 
 func (b *Builder) buildHPAStore() cache.Store {
-	return b.buildStoreFunc(hpaMetricFamilies, &autoscaling.HorizontalPodAutoscaler{}, createHPAListWatch)
+	return b.buildStoreFunc(hpaMetricFamilies(b.allowLabelsList["horizontalpodautoscalers"]), &autoscaling.HorizontalPodAutoscaler{}, createHPAListWatch)
 }
 
 func (b *Builder) buildIngressStore() cache.Store {
-	return b.buildStoreFunc(ingressMetricFamilies, &extensions.Ingress{}, createIngressListWatch)
+	return b.buildStoreFunc(ingressMetricFamilies(b.allowLabelsList["ingresses"]), &networkingv1.Ingress{}, createIngressListWatch)
 }
 
 func (b *Builder) buildJobStore() cache.Store {
-	return b.buildStoreFunc(jobMetricFamilies, &batchv1.Job{}, createJobListWatch)
+	return b.buildStoreFunc(jobMetricFamilies(b.allowLabelsList["jobs"]), &batchv1.Job{}, createJobListWatch)
 }
 
 func (b *Builder) buildLimitRangeStore() cache.Store {
@@ -243,23 +252,23 @@ func (b *Builder) buildMutatingWebhookConfigurationStore() cache.Store {
 }
 
 func (b *Builder) buildNamespaceStore() cache.Store {
-	return b.buildStoreFunc(namespaceMetricFamilies, &v1.Namespace{}, createNamespaceListWatch)
+	return b.buildStoreFunc(namespaceMetricFamilies(b.allowLabelsList["namespaces"]), &v1.Namespace{}, createNamespaceListWatch)
 }
 
 func (b *Builder) buildNetworkPolicyStore() cache.Store {
-	return b.buildStore(networkpolicyMetricFamilies, &networkingv1.NetworkPolicy{}, createNetworkPolicyListWatch)
+	return b.buildStoreFunc(networkPolicyMetricFamilies(b.allowLabelsList["networkpolicies"]), &networkingv1.NetworkPolicy{}, createNetworkPolicyListWatch)
 }
 
 func (b *Builder) buildNodeStore() cache.Store {
-	return b.buildStore(nodeMetricFamilies, &v1.Node{}, createNodeListWatch)
+	return b.buildStoreFunc(nodeMetricFamilies(b.allowLabelsList["nodes"]), &v1.Node{}, createNodeListWatch)
 }
 
 func (b *Builder) buildPersistentVolumeClaimStore() cache.Store {
-	return b.buildStoreFunc(persistentVolumeClaimMetricFamilies, &v1.PersistentVolumeClaim{}, createPersistentVolumeClaimListWatch)
+	return b.buildStoreFunc(persistentVolumeClaimMetricFamilies(b.allowLabelsList["persistentvolumeclaims"]), &v1.PersistentVolumeClaim{}, createPersistentVolumeClaimListWatch)
 }
 
 func (b *Builder) buildPersistentVolumeStore() cache.Store {
-	return b.buildStoreFunc(persistentVolumeMetricFamilies, &v1.PersistentVolume{}, createPersistentVolumeListWatch)
+	return b.buildStoreFunc(persistentVolumeMetricFamilies(b.allowLabelsList["persistentvolumes"]), &v1.PersistentVolume{}, createPersistentVolumeListWatch)
 }
 
 func (b *Builder) buildPodDisruptionBudgetStore() cache.Store {
@@ -267,7 +276,7 @@ func (b *Builder) buildPodDisruptionBudgetStore() cache.Store {
 }
 
 func (b *Builder) buildReplicaSetStore() cache.Store {
-	return b.buildStoreFunc(replicaSetMetricFamilies, &appsv1.ReplicaSet{}, createReplicaSetListWatch)
+	return b.buildStoreFunc(replicaSetMetricFamilies(b.allowLabelsList["replicasets"]), &appsv1.ReplicaSet{}, createReplicaSetListWatch)
 }
 
 func (b *Builder) buildReplicationControllerStore() cache.Store {
@@ -279,27 +288,27 @@ func (b *Builder) buildResourceQuotaStore() cache.Store {
 }
 
 func (b *Builder) buildSecretStore() cache.Store {
-	return b.buildStoreFunc(secretMetricFamilies, &v1.Secret{}, createSecretListWatch)
+	return b.buildStoreFunc(secretMetricFamilies(b.allowLabelsList["secrets"]), &v1.Secret{}, createSecretListWatch)
 }
 
 func (b *Builder) buildServiceStore() cache.Store {
-	return b.buildStoreFunc(serviceMetricFamilies, &v1.Service{}, createServiceListWatch)
+	return b.buildStoreFunc(serviceMetricFamilies(b.allowLabelsList["services"]), &v1.Service{}, createServiceListWatch)
 }
 
 func (b *Builder) buildStatefulSetStore() cache.Store {
-	return b.buildStoreFunc(statefulSetMetricFamilies, &appsv1.StatefulSet{}, createStatefulSetListWatch)
+	return b.buildStoreFunc(statefulSetMetricFamilies(b.allowLabelsList["statefulsets"]), &appsv1.StatefulSet{}, createStatefulSetListWatch)
 }
 
 func (b *Builder) buildStorageClassStore() cache.Store {
-	return b.buildStoreFunc(storageClassMetricFamilies, &storagev1.StorageClass{}, createStorageClassListWatch)
+	return b.buildStoreFunc(storageClassMetricFamilies(b.allowLabelsList["storageclasses"]), &storagev1.StorageClass{}, createStorageClassListWatch)
 }
 
 func (b *Builder) buildPodStore() cache.Store {
-	return b.buildStoreFunc(podMetricFamilies, &v1.Pod{}, createPodListWatch)
+	return b.buildStoreFunc(podMetricFamilies(b.allowLabelsList["pods"]), &v1.Pod{}, createPodListWatch)
 }
 
 func (b *Builder) buildCsrStore() cache.Store {
-	return b.buildStoreFunc(csrMetricFamilies, &certv1beta1.CertificateSigningRequest{}, createCSRListWatch)
+	return b.buildStoreFunc(csrMetricFamilies(b.allowLabelsList["certificatesigningrequests"]), &certv1.CertificateSigningRequest{}, createCSRListWatch)
 }
 
 func (b *Builder) buildValidatingWebhookConfigurationStore() cache.Store {
@@ -307,11 +316,15 @@ func (b *Builder) buildValidatingWebhookConfigurationStore() cache.Store {
 }
 
 func (b *Builder) buildVolumeAttachmentStore() cache.Store {
-	return b.buildStore(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch)
+	return b.buildStoreFunc(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch)
 }
 
 func (b *Builder) buildVPAStore() cache.Store {
-	return b.buildStore(vpaMetricFamilies, &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient))
+	return b.buildStoreFunc(vpaMetricFamilies(b.allowLabelsList["verticalpodautoscalers"]), &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient))
+}
+
+func (b *Builder) buildLeases() cache.Store {
+	return b.buildStoreFunc(leaseMetricFamilies, &coordinationv1.Lease{}, createLeaseListWatch)
 }
 
 func (b *Builder) buildStore(
@@ -319,10 +332,9 @@ func (b *Builder) buildStore(
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) cache.Store {
-	filteredMetricFamilies := generator.FilterMetricFamilies(b.whiteBlackList, metricFamilies)
-	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(filteredMetricFamilies)
-
-	familyHeaders := generator.ExtractMetricFamilyHeaders(filteredMetricFamilies)
+	metricFamilies = generator.FilterMetricFamilies(b.allowDenyList, metricFamilies)
+	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
+	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
 
 	store := metricsstore.NewMetricsStore(
 		familyHeaders,

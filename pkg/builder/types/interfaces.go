@@ -24,20 +24,20 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
-	"k8s.io/kube-state-metrics/pkg/options"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 // BuilderInterface represent all methods that a Builder should implements
 type BuilderInterface interface {
-	WithMetrics(r *prometheus.Registry)
+	WithMetrics(r prometheus.Registerer)
 	WithEnabledResources(c []string) error
 	WithNamespaces(n options.NamespaceList)
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
 	WithVPAClient(c vpaclientset.Interface)
-	WithWhiteBlackList(l WhiteBlackLister)
+	WithAllowDenyList(l AllowDenyLister)
 	WithGenerateStoreFunc(f BuildStoreFunc)
 	DefaultGenerateStoreFunc() BuildStoreFunc
 	Build() []cache.Store
@@ -49,8 +49,8 @@ type BuildStoreFunc func(metricFamilies []generator.FamilyGenerator,
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) cache.Store
 
-// WhiteBlackLister interface for WhiteBlack lister that can allow or exclude metrics by there names
-type WhiteBlackLister interface {
+// AllowDenyLister interface for AllowDeny lister that can allow or exclude metrics by there names
+type AllowDenyLister interface {
 	IsIncluded(string) bool
 	IsExcluded(string) bool
 }

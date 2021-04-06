@@ -16,19 +16,20 @@ package pkg
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
 type LocalPackage struct {
-	Source *spec.LocalSource
+	Source *deps.Local
 }
 
-func NewLocalPackage(source *spec.LocalSource) Interface {
+func NewLocalPackage(source *deps.Local) Interface {
 	return &LocalPackage{
 		Source: source,
 	}
@@ -37,20 +38,33 @@ func NewLocalPackage(source *spec.LocalSource) Interface {
 func (p *LocalPackage) Install(ctx context.Context, name, dir, version string) (lockVersion string, err error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %v", err)
+		return "", errors.Wrap(err, "failed to get current working directory: %w")
 	}
 
-	destPath := filepath.Join(dir, name)
+	oldname := filepath.Join(wd, p.Source.Directory)
+	newname := filepath.Join(dir, name)
+	linkname, err := filepath.Rel(dir, oldname)
 
-	err = os.RemoveAll(destPath)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to clean previous destination path")
+		linkname = oldname
 	}
 
-	err = os.Symlink(filepath.Join(wd, p.Source.Directory), filepath.Join(wd, destPath))
+	err = os.RemoveAll(newname)
 	if err != nil {
-		return "", fmt.Errorf("failed to create symlink for local dependency: %v", err)
+		return "", errors.Wrap(err, "failed to clean previous destination path: %w")
 	}
+
+	_, err = os.Stat(oldname)
+	if os.IsNotExist(err) {
+		return "", errors.Wrap(err, "symlink destination path does not exist: %w")
+	}
+
+	err = os.Symlink(linkname, newname)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create symlink for local dependency: %w")
+	}
+
+	color.Magenta("LOCAL %s -> %s", name, oldname)
 
 	return "", nil
 }

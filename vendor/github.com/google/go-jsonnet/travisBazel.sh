@@ -8,7 +8,7 @@ bazel --host_jvm_args=-Xmx500m \
     --spawn_strategy=standalone \
     --genrule_strategy=standalone \
     --test_strategy=standalone \
-    --local_resources=1536,1.5,0.5 \
+    --local_ram_resources=1536 \
     --noshow_progress \
     --verbose_failures \
     --test_output=errors \

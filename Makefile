@@ -1,33 +1,29 @@
 FLAGS =
 TESTENVVAR =
-REGISTRY = quay.io/coreos
+REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
 TAG_PREFIX = v
 VERSION = $(shell cat VERSION)
-TAG = $(TAG_PREFIX)$(VERSION)
+TAG ?= $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
+DOCKER_CLI ?= docker
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
-BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-Commit = $(shell git rev-parse --short HEAD)
+BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
-PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.13
-FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
-BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.22.2
-HAS_GOLANGCI := $(shell which golangci-lint)
-
+PKG = k8s.io/kube-state-metrics/v2/pkg
+GO_VERSION = 1.16.3
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
+
+export DOCKER_CLI_EXPERIMENTAL=enabled
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
 	go mod verify
 	@echo "- Checking for any unused/missing packages in go.mod..."
 	go mod tidy
-	@echo "- Checking for unused packages in vendor..."
-	go mod vendor
-	@git diff --exit-code -- go.sum go.mod vendor/
+	@git diff --exit-code -- go.sum go.mod
 
 licensecheck:
 	@echo ">> checking license header"
@@ -40,17 +36,14 @@ licensecheck:
        fi
 
 lint: shellcheck licensecheck
-ifndef HAS_GOLANGCI
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin ${GOLANGCI_VERSION}
-endif
 	golangci-lint run
 
 doccheck: generate
 	@echo "- Checking if the generated documentation is up to date..."
 	@git diff --exit-code
 	@echo "- Checking if the documentation is in sync with the code..."
-	@grep -hoE '(kube_[^ |]+)' docs/* --exclude=README.md| sort -u > documented_metrics
-	@find internal/store -type f -not -name '*_test.go' -exec sed -nE 's/.*"(kube_[^"]+)"/\1/p' {} \; | sed -E 's/,//g' | sort -u > code_metrics
+	@grep -hoE -d skip '\| kube_[^ |]+' docs/* --exclude=README.md | sed -E 's/\| //g' | sort -u > documented_metrics
+	@find internal/store -type f -not -name '*_test.go' -exec sed -nE 's/.*"(kube_[^"]+)".*/\1/p' {} \; | sort -u > code_metrics
 	@diff -u0 code_metrics documented_metrics || (echo "ERROR: Metrics with - are present in code but missing in documentation, metrics with + are documented but not found in code."; exit 1)
 	@echo OK
 	@rm -f code_metrics documented_metrics
@@ -58,69 +51,54 @@ doccheck: generate
 	@cd docs; for doc in *.md; do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
-build-local: clean
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
+build-local:
+	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${GIT_COMMIT} -X ${PKG}/version.BuildDate=${BUILD_DATE}" -o kube-state-metrics
 
-build: clean
-	docker run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
+build: kube-state-metrics
+
+kube-state-metrics:
+	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
 
 shellcheck:
-	docker run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
+	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
-test-benchmark-compare: $(BENCHCMP_BINARY)
+test-benchmark-compare:
+	@git fetch
 	./tests/compare_benchmarks.sh master
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
-TEMP_DIR := $(shell mktemp -d)
-
 all: all-container
+
+# Container build for multiple architectures as defined in ALL_ARCH
+
+container: container-$(ARCH)
+
+container-%:
+	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
 
 sub-container-%:
 	$(MAKE) --no-print-directory ARCH=$* container
 
-sub-push-%:
-	$(MAKE) --no-print-directory ARCH=$* push
-
 all-container: $(addprefix sub-container-,$(ALL_ARCH))
 
-all-push: $(addprefix sub-push-,$(ALL_ARCH))
+# Container push, push is the target to push for multiple architectures as defined in ALL_ARCH
 
-container: .container-$(ARCH)
-.container-$(ARCH):
-	docker run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=linux -e GOARCH=$(ARCH) -e CGO_ENABLED=0 golang:${GO_VERSION} go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
-	cp -r * "${TEMP_DIR}"
-	docker build -t $(MULTI_ARCH_IMG):$(TAG) "${TEMP_DIR}"
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
-	rm -rf "${TEMP_DIR}"
+push: $(addprefix sub-push-,$(ALL_ARCH)) push-multi-arch;
 
-ifeq ($(ARCH), amd64)
-	# Adding check for amd64
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
-endif
+sub-push-%: container-% do-push-% ;
 
-quay-push: .quay-push-$(ARCH)
-.quay-push-$(ARCH): .container-$(ARCH)
-	docker push $(MULTI_ARCH_IMG):$(TAG)
-	docker push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	docker push $(IMAGE):$(TAG)
-	docker push $(IMAGE):latest
-endif
+do-push-%:
+	${DOCKER_CLI} push $(IMAGE)-$*:$(TAG)
 
-push: .push-$(ARCH)
-.push-$(ARCH): .container-$(ARCH)
-	gcloud docker -- push $(MULTI_ARCH_IMG):$(TAG)
-	gcloud docker -- push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	gcloud docker -- push $(IMAGE):$(TAG)
-	gcloud docker -- push $(IMAGE):latest
-endif
+push-multi-arch:
+	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
+	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
 clean:
 	rm -f kube-state-metrics
@@ -132,7 +110,7 @@ e2e:
 generate: build-local
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
-	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+	embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
 validate-manifests: examples
 	@git diff --exit-code
@@ -162,4 +140,4 @@ install-tools:
 	@echo Installing tools from tools.go
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd

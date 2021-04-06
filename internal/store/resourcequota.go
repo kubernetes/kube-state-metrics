@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,19 +26,20 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
 	resourceQuotaMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_resourcequota_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
+		*generator.NewFamilyGenerator(
+			"kube_resourcequota_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -51,12 +53,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_resourcequota",
-			Type: metric.Gauge,
-			Help: "Information about resource quota.",
-			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_resourcequota",
+			"Information about resource quota.",
+			metric.Gauge,
+			"",
+			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				for res, qty := range r.Status.Hard {
@@ -80,7 +83,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
 )
 

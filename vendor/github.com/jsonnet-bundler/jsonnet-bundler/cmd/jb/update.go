@@ -15,50 +15,55 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"io/ioutil"
-	"net/url"
 	"os"
+	"path/filepath"
+
+	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-	"gopkg.in/alecthomas/kingpin.v2"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 )
 
-func updateCommand(jsonnetHome string, urls ...*url.URL) int {
-	m, err := pkg.LoadJsonnetfile(jsonnetfile.File)
-	if err != nil {
-		kingpin.Fatalf("failed to load jsonnetfile: %v", err)
-		return 1
+func updateCommand(dir, jsonnetHome string, uris []string) int {
+	if dir == "" {
+		dir = "."
 	}
 
-	err = os.MkdirAll(jsonnetHome, os.ModePerm)
-	if err != nil {
-		kingpin.Fatalf("failed to create jsonnet home path: %v", err)
-		return 3
+	// load jsonnetfiles
+	jsonnetFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.File))
+	kingpin.FatalIfError(err, "failed to load jsonnetfile")
+
+	lockFile, err := jsonnetfile.Load(filepath.Join(dir, jsonnetfile.LockFile))
+	kingpin.FatalIfError(err, "failed to load lockfile")
+
+	kingpin.FatalIfError(
+		os.MkdirAll(filepath.Join(dir, jsonnetHome, ".tmp"), os.ModePerm),
+		"creating vendor folder")
+
+	locks := lockFile.Dependencies
+
+	for _, u := range uris {
+		d := deps.Parse(dir, u)
+		if d == nil {
+			kingpin.Fatalf("Unable to parse package URI `%s`", u)
+		}
+
+		delete(locks, d.Name())
 	}
 
-	// When updating, the lockfile is explicitly ignored.
-	isLock := false
-	lock, err := pkg.Install(context.TODO(), isLock, jsonnetfile.File, m, jsonnetHome)
-	if err != nil {
-		kingpin.Fatalf("failed to install: %v", err)
-		return 3
+	// no uris: update all
+	if len(uris) == 0 {
+		locks = make(map[string]deps.Dependency)
 	}
 
-	b, err := json.MarshalIndent(lock, "", "    ")
-	if err != nil {
-		kingpin.Fatalf("failed to encode jsonnet file: %v", err)
-		return 3
-	}
-	b = append(b, []byte("\n")...)
+	newLocks, err := pkg.Ensure(jsonnetFile, filepath.Join(dir, jsonnetHome), locks)
+	kingpin.FatalIfError(err, "updating")
 
-	err = ioutil.WriteFile(jsonnetfile.LockFile, b, 0644)
-	if err != nil {
-		kingpin.Fatalf("failed to write lock file: %v", err)
-		return 3
-	}
+	kingpin.FatalIfError(
+		writeJSONFile(filepath.Join(dir, jsonnetfile.LockFile), v1.JsonnetFile{Dependencies: newLocks}),
+		"updating jsonnetfile.lock.json")
 
 	return 0
 }

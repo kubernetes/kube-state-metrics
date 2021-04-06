@@ -24,11 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestPodStore(t *testing.T) {
 	var test = true
+	runtimeclass := "foo"
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
@@ -291,7 +292,11 @@ func TestPodStore(t *testing.T) {
 						{
 							Name: "container1",
 							State: v1.ContainerState{
-								Running: &v1.ContainerStateRunning{},
+								Running: &v1.ContainerStateRunning{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
+								},
 							},
 						},
 					},
@@ -307,6 +312,7 @@ func TestPodStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
 				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
@@ -317,6 +323,7 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
 				# HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
 				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_state_started gauge
 				# TYPE kube_pod_container_status_terminated gauge
 				# TYPE kube_pod_container_status_terminated_reason gauge
 				# TYPE kube_pod_container_status_waiting gauge
@@ -327,42 +334,17 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_init_container_status_waiting gauge
 				# TYPE kube_pod_init_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1"} 1
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed"} 0
-                kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Evicted"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="DeadlineExceeded"} 0
+				kube_pod_container_state_started{container="container1",namespace="ns1",pod="pod1"} 1.501777018e+09
                 kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1"} 0
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container1",namespace="ns1",pod="pod1",reason="InvalidImageName"} 0
 				kube_pod_init_container_status_running{container="initcontainer1",namespace="ns1",pod="pod1"} 1
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Completed"} 0
-                kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCannotRun"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Error"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="Evicted"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="OOMKilled"} 0
-				kube_pod_init_container_status_terminated_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="DeadlineExceeded"} 0
                 kube_pod_init_container_status_terminated{container="initcontainer1",namespace="ns1",pod="pod1"} 0
 				kube_pod_init_container_status_waiting{container="initcontainer1",namespace="ns1",pod="pod1"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ContainerCreating"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ImagePullBackOff"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CrashLoopBackOff"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="ErrImagePull"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CreateContainerConfigError"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="CreateContainerError"} 0
-				kube_pod_init_container_status_waiting_reason{container="initcontainer1",namespace="ns1",pod="pod1",reason="InvalidImageName"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
+				"kube_pod_container_state_started",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_init_container_status_running",
@@ -413,40 +395,15 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2"} 0
                 kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2"} 0
 				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2"} 1
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="Evicted"} 0
 				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled"} 1
-				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="DeadlineExceeded"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Completed"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCannotRun"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Error"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="Evicted"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="OOMKilled"} 0
-                kube_pod_container_status_terminated_reason{container="container3",namespace="ns2",pod="pod2",reason="DeadlineExceeded"} 0
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2"} 0
                 kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2"} 1
-                kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container2",namespace="ns2",pod="pod2",reason="InvalidImageName"} 0
                 kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCreating"} 1
-                kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CrashLoopBackOff"} 0
-                kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="InvalidImageName"} 0
+				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2"} 0
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 			},
@@ -485,26 +442,8 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container4",namespace="ns3",pod="pod3"} 0
 				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3"} 0
-kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Evicted"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="DeadlineExceeded"} 0
 				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3"} 1
-kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ImagePullBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff"} 1
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="InvalidImageName"} 0
-kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="Evicted"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="OOMKilled"} 0
-				kube_pod_container_status_last_terminated_reason{container="container4",namespace="ns3",pod="pod3",reason="DeadlineExceeded"} 0
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -514,10 +453,6 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
-				"kube_pod_container_status_waiting_reason",
-				"kube_pod_container_status_waiting_reason",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_last_terminated_reason",
 				"kube_pod_container_status_last_terminated_reason",
@@ -537,7 +472,11 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 						{
 							Name: "container7",
 							State: v1.ContainerState{
-								Running: &v1.ContainerStateRunning{},
+								Running: &v1.ContainerStateRunning{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
+								},
 							},
 							LastTerminationState: v1.ContainerState{
 								Terminated: &v1.ContainerStateTerminated{
@@ -555,42 +494,27 @@ kube_pod_container_status_last_terminated_reason{container="container4",namespac
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
 				# TYPE kube_pod_container_status_last_terminated_reason gauge
 				# TYPE kube_pod_container_status_running gauge
 				# TYPE kube_pod_container_status_terminated gauge
 				# TYPE kube_pod_container_status_terminated_reason gauge
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
+				# TYPE kube_pod_container_state_started gauge
 				kube_pod_container_status_running{container="container7",namespace="ns6",pod="pod6"} 1
+				kube_pod_container_state_started{container="container7",namespace="ns6",pod="pod6"} 1.501777018e+09
 				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6"} 0
-kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Evicted"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="DeadlineExceeded"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6"} 0
-kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns6",pod="pod6",reason="InvalidImageName"} 0
-kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="Evicted"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled"} 1
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="DeadlineExceeded"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_last_terminated_reason",
 				"kube_pod_container_status_running",
+				"kube_pod_container_state_started",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 			},
 		},
 		{
@@ -604,7 +528,11 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 						{
 							Name: "container7",
 							State: v1.ContainerState{
-								Running: &v1.ContainerStateRunning{},
+								Running: &v1.ContainerStateRunning{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
+								},
 							},
 							LastTerminationState: v1.ContainerState{
 								Terminated: &v1.ContainerStateTerminated{
@@ -618,45 +546,30 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			Want: `
 				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
 				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
 				# TYPE kube_pod_container_status_last_terminated_reason gauge
 				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_state_started gauge
 				# TYPE kube_pod_container_status_terminated gauge
 				# TYPE kube_pod_container_status_terminated_reason gauge
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container7",namespace="ns7",pod="pod7"} 1
+				kube_pod_container_state_started{container="container7",namespace="ns7",pod="pod7"} 1.501777018e+09
 				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7"} 0
-kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Evicted"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns7",pod="pod7"} 0
-kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container7",namespace="ns7",pod="pod7",reason="InvalidImageName"} 0
-kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Completed"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Error"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="Evicted"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="OOMKilled"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded"} 1
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
+				"kube_pod_container_state_started",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_waiting",
-				"kube_pod_container_status_waiting_reason",
 				"kube_pod_container_status_last_terminated_reason",
 			},
 		},
@@ -692,20 +605,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container5",namespace="ns4",pod="pod4"} 0
 				kube_pod_container_status_terminated{container="container5",namespace="ns4",pod="pod4"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="Evicted"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container5",namespace="ns4",pod="pod4",reason="DeadlineExceeded"} 0
 				kube_pod_container_status_waiting{container="container5",namespace="ns4",pod="pod4"} 1
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ContainerCreating"} 0
 				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ImagePullBackOff"} 1
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CrashLoopBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="ErrImagePull"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container5",namespace="ns4",pod="pod4",reason="InvalidImageName"} 0
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -747,20 +648,8 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container6",namespace="ns5",pod="pod5"} 0
 				kube_pod_container_status_terminated{container="container6",namespace="ns5",pod="pod5"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Completed"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCannotRun"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Error"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="Evicted"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="OOMKilled"} 0
-				kube_pod_container_status_terminated_reason{container="container6",namespace="ns5",pod="pod5",reason="DeadlineExceeded"} 0
 				kube_pod_container_status_waiting{container="container6",namespace="ns5",pod="pod5"} 1
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ContainerCreating"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ImagePullBackOff"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CrashLoopBackOff"} 0
 				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="ErrImagePull"} 1
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CreateContainerConfigError"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="CreateContainerError"} 0
-				kube_pod_container_status_waiting_reason{container="container6",namespace="ns5",pod="pod5",reason="InvalidImageName"} 0
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
@@ -802,19 +691,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					# TYPE kube_pod_container_status_waiting_reason gauge
 					kube_pod_container_status_running{container="container8",namespace="ns7",pod="pod7"} 0
 					kube_pod_container_status_terminated{container="container8",namespace="ns7",pod="pod7"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Completed"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="ContainerCannotRun"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Error"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="Evicted"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="OOMKilled"} 0
-					kube_pod_container_status_terminated_reason{container="container8",namespace="ns7",pod="pod7",reason="DeadlineExceeded"} 0
 					kube_pod_container_status_waiting{container="container8",namespace="ns7",pod="pod7"} 1
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ContainerCreating"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ImagePullBackOff"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CrashLoopBackOff"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="ErrImagePull"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CreateContainerError"} 0
-					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="InvalidImageName"} 0
 					kube_pod_container_status_waiting_reason{container="container8",namespace="ns7",pod="pod7",reason="CreateContainerConfigError"} 1
 			`,
 			MetricNames: []string{
@@ -837,6 +714,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				Spec: v1.PodSpec{
 					NodeName:          "node1",
 					PriorityClassName: "system-node-critical",
+					HostNetwork:       true,
 				},
 				Status: v1.PodStatus{
 					HostIP:    "1.1.1.1",
@@ -857,11 +735,37 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_owner gauge
 				# TYPE kube_pod_start_time gauge
 				kube_pod_created{namespace="ns1",pod="pod1"} 1.5e+09
-				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical"} 1
+				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical",host_network="true"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1"} 1.501569018e+09
 				kube_pod_owner{namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",pod="pod1"} 1
 `,
 			MetricNames: []string{"kube_pod_created", "kube_pod_info", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod1",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "ns1",
+					UID:               "abc-123-xxx",
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				},
+				Spec: v1.PodSpec{
+					NodeName:          "node1",
+					PriorityClassName: "system-node-critical",
+				},
+				Status: v1.PodStatus{
+					HostIP:    "1.1.1.1",
+					PodIP:     "1.2.3.4",
+					StartTime: &metav1StartTime,
+				},
+			},
+			Want: `
+				# HELP kube_pod_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_pod_deletion_timestamp gauge
+				kube_pod_deletion_timestamp{namespace="ns1",pod="pod1"} 1.8e+09
+`,
+			MetricNames: []string{"kube_pod_deletion_timestamp"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -971,7 +875,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				# TYPE kube_pod_info gauge
 				# TYPE kube_pod_owner gauge
 				# TYPE kube_pod_start_time gauge
-				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx",priority_class=""} 1
+				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx",priority_class="",host_network="false"} 1
 				kube_pod_completion_time{namespace="ns2",pod="pod2"} 1.501888018e+09
 				kube_pod_owner{namespace="ns2",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="rs-name",pod="pod2"} 1
 				`,
@@ -1050,19 +954,87 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
-					Reason: nodeUnreachablePodReason,
+					Reason: "NodeLost",
 				},
 			},
 			Want: `
 				# HELP kube_pod_status_phase The pods current phase.
+				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_phase gauge
+				# TYPE kube_pod_status_reason gauge
 				kube_pod_status_phase{namespace="ns4",phase="Failed",pod="pod4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Pending",pod="pod4"} 0
-				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4"} 0
+				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4"} 1
 				kube_pod_status_phase{namespace="ns4",phase="Succeeded",pod="pod4"} 0
-				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4"} 1
+				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 0
 `,
-			MetricNames: []string{"kube_pod_status_phase"},
+			MetricNames: []string{"kube_pod_status_phase", "kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "Evicted",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 0
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "UnexpectedAdmissionError",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 1
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "other reason",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError"} 0
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1199,7 +1171,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					Namespace: "ns1",
 				},
 				Spec: v1.PodSpec{
-					NodeName: "node1",
 					Containers: []v1.Container{
 						{
 							Name: "pod1_con1",
@@ -1258,58 +1229,62 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
-				# HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
-				# HELP kube_pod_container_resource_limits_cpu_cores The limit on cpu cores to be used by a container.
-				# HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
-				# HELP kube_pod_container_resource_requests The number of requested request resource by a container.
-				# HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
-				# HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
-				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
-				# HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
-				# TYPE kube_pod_container_resource_limits gauge
-				# TYPE kube_pod_container_resource_limits_cpu_cores gauge
-				# TYPE kube_pod_container_resource_limits_memory_bytes gauge
-				# TYPE kube_pod_container_resource_requests gauge
-				# TYPE kube_pod_container_resource_requests_cpu_cores gauge
-				# TYPE kube_pod_container_resource_requests_memory_bytes gauge
-				# TYPE kube_pod_init_container_resource_limits gauge
-				# TYPE kube_pod_init_container_status_last_terminated_reason gauge
-				kube_pod_container_resource_requests_cpu_cores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 0.2
-				kube_pod_container_resource_requests_cpu_cores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 0.3
-				kube_pod_container_resource_requests_memory_bytes{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 1e+08
-				kube_pod_container_resource_requests_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
-				kube_pod_container_resource_limits_cpu_cores{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 0.2
-				kube_pod_container_resource_limits_cpu_cores{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 0.3
-				kube_pod_container_resource_limits_memory_bytes{container="pod1_con1",namespace="ns1",node="node1",pod="pod1"} 1e+08
-				kube_pod_container_resource_limits_memory_bytes{container="pod1_con2",namespace="ns1",node="node1",pod="pod1"} 2e+08
-				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
-				kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.3
-				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
-				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 1e+08
-				kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 2e+08
-				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
-				kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
-				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
-				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
-				kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.3
-				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 1e+08
-				kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 2e+08
-				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
-				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="cpu",unit="core"} 0.2
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="memory",unit="byte"} 1e+08
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
-                kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",node="node1",pod="pod1",resource="storage",unit="byte"} 4e+08
+		# HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
+        # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
+        # HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
+        # HELP kube_pod_init_container_resource_limits_cpu_cores The number of CPU cores requested limit by an init container.
+        # HELP kube_pod_init_container_resource_limits_ephemeral_storage_bytes Bytes of ephemeral-storage requested limit by an init container.
+        # HELP kube_pod_init_container_resource_limits_memory_bytes Bytes of memory requested limit by an init container.
+        # HELP kube_pod_init_container_resource_limits_storage_bytes Bytes of storage requested limit by an init container.
+        # HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
+        # HELP kube_pod_init_container_resource_requests_cpu_cores The number of CPU cores requested by an init container.
+        # HELP kube_pod_init_container_resource_requests_ephemeral_storage_bytes Bytes of ephemeral-storage requested by an init container.
+        # HELP kube_pod_init_container_resource_requests_memory_bytes Bytes of memory requested by an init container.
+        # HELP kube_pod_init_container_resource_requests_storage_bytes Bytes of storage requested by an init container.
+        # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
+        # TYPE kube_pod_container_resource_limits gauge
+        # TYPE kube_pod_container_resource_requests gauge
+        # TYPE kube_pod_init_container_resource_limits gauge
+        # TYPE kube_pod_init_container_resource_limits_cpu_cores gauge
+        # TYPE kube_pod_init_container_resource_limits_ephemeral_storage_bytes gauge
+        # TYPE kube_pod_init_container_resource_limits_memory_bytes gauge
+        # TYPE kube_pod_init_container_resource_limits_storage_bytes gauge
+        # TYPE kube_pod_init_container_resource_requests gauge
+        # TYPE kube_pod_init_container_resource_requests_cpu_cores gauge
+        # TYPE kube_pod_init_container_resource_requests_ephemeral_storage_bytes gauge
+        # TYPE kube_pod_init_container_resource_requests_memory_bytes gauge
+        # TYPE kube_pod_init_container_resource_requests_storage_bytes gauge
+        # TYPE kube_pod_init_container_status_last_terminated_reason gauge
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core"} 0.2
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte"} 1e+08
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="storage",unit="byte"} 4e+08
+        kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core"} 0.3
+        kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte"} 2e+08
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core"} 0.2
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="ephemeral_storage",unit="byte"} 3e+08
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte"} 1e+08
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="storage",unit="byte"} 4e+08
+        kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core"} 0.3
+        kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte"} 2e+08
+        kube_pod_init_container_resource_limits_cpu_cores{container="pod1_initcon1",namespace="ns1",pod="pod1"} 0.2
+        kube_pod_init_container_resource_limits_ephemeral_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1"} 3e+08
+        kube_pod_init_container_resource_limits_memory_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1"} 1e+08
+        kube_pod_init_container_resource_limits_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1"} 4e+08
+        kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
+        kube_pod_init_container_resource_requests_cpu_cores{container="pod1_initcon1",namespace="ns1",pod="pod1"} 0.2
+        kube_pod_init_container_resource_requests_ephemeral_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1"} 3e+08
+        kube_pod_init_container_resource_requests_memory_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1"} 1e+08
+        kube_pod_init_container_resource_requests_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1"} 4e+08
+        kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",pod="pod1",resource="nvidia_com_gpu",unit="integer"} 1
 		`,
 			MetricNames: []string{
-				"kube_pod_container_resource_requests_cpu_cores",
-				"kube_pod_container_resource_requests_memory_bytes",
-				"kube_pod_container_resource_limits_cpu_cores",
-				"kube_pod_container_resource_limits_memory_bytes",
 				"kube_pod_container_resource_requests",
 				"kube_pod_container_resource_limits",
 				"kube_pod_init_container_resource_limits",
+				"kube_pod_init_container_resource_requests",
 				"kube_pod_init_container_status_last_terminated_reason",
 			},
 		},
@@ -1321,7 +1296,6 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 					Namespace: "ns2",
 				},
 				Spec: v1.PodSpec{
-					NodeName: "node2",
 					Containers: []v1.Container{
 						{
 							Name: "pod2_con1",
@@ -1372,60 +1346,16 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				},
 			},
 			Want: `
-				# HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
-				# HELP kube_pod_container_resource_limits_cpu_cores The limit on cpu cores to be used by a container.
-				# HELP kube_pod_container_resource_limits_memory_bytes The limit on memory to be used by a container in bytes.
-				# HELP kube_pod_container_resource_requests The number of requested request resource by a container.
-				# HELP kube_pod_container_resource_requests_cpu_cores The number of requested cpu cores by a container.
-				# HELP kube_pod_container_resource_requests_memory_bytes The number of requested memory bytes by a container.
-				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by the init container.
-				# TYPE kube_pod_container_resource_limits gauge
-				# TYPE kube_pod_container_resource_limits_cpu_cores gauge
-				# TYPE kube_pod_container_resource_limits_memory_bytes gauge
-				# TYPE kube_pod_container_resource_requests gauge
-				# TYPE kube_pod_container_resource_requests_cpu_cores gauge
-				# TYPE kube_pod_container_resource_requests_memory_bytes gauge
-				# TYPE kube_pod_init_container_resource_limits gauge
-				kube_pod_container_resource_requests_cpu_cores{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 0.4
-				kube_pod_container_resource_requests_cpu_cores{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 0.5
-				kube_pod_container_resource_requests_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
-				kube_pod_container_resource_requests_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
-				kube_pod_container_resource_limits_cpu_cores{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 0.4
-				kube_pod_container_resource_limits_cpu_cores{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 0.5
-				kube_pod_container_resource_limits_memory_bytes{container="pod2_con1",namespace="ns2",node="node2",pod="pod2"} 3e+08
-				kube_pod_container_resource_limits_memory_bytes{container="pod2_con2",namespace="ns2",node="node2",pod="pod2"} 4e+08
-				kube_pod_container_resource_requests{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.4
-				kube_pod_container_resource_requests{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.5
-				kube_pod_container_resource_requests{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
-				kube_pod_container_resource_requests{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 4e+08
-				kube_pod_container_resource_limits{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.4
-				kube_pod_container_resource_limits{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.5
-				kube_pod_container_resource_limits{container="pod2_con1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
-				kube_pod_container_resource_limits{container="pod2_con2",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 4e+08
-                kube_pod_init_container_resource_limits{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="cpu",unit="core"} 0.4
-                kube_pod_init_container_resource_limits{container="pod2_initcon1",namespace="ns2",node="node2",pod="pod2",resource="memory",unit="byte"} 3e+08
+		# HELP kube_pod_init_container_resource_limits_cpu_cores The number of CPU cores requested limit by an init container.
+        # HELP kube_pod_init_container_resource_limits_memory_bytes Bytes of memory requested limit by an init container.
+        # TYPE kube_pod_init_container_resource_limits_cpu_cores gauge
+        # TYPE kube_pod_init_container_resource_limits_memory_bytes gauge
+        kube_pod_init_container_resource_limits_cpu_cores{container="pod2_initcon1",namespace="ns2",pod="pod2"} 0.4
+        kube_pod_init_container_resource_limits_memory_bytes{container="pod2_initcon1",namespace="ns2",pod="pod2"} 3e+08
 		`,
 			MetricNames: []string{
-				"kube_pod_container_resource_requests_cpu_cores",
-				"kube_pod_container_resource_requests_cpu_cores",
-				"kube_pod_container_resource_requests_memory_bytes",
-				"kube_pod_container_resource_requests_memory_bytes",
-				"kube_pod_container_resource_limits_cpu_cores",
-				"kube_pod_container_resource_limits_cpu_cores",
-				"kube_pod_container_resource_limits_memory_bytes",
-				"kube_pod_container_resource_limits_memory_bytes",
-				"kube_pod_container_resource_requests",
-				"kube_pod_container_resource_requests",
-				"kube_pod_container_resource_requests",
-				"kube_pod_container_resource_requests",
-				"kube_pod_container_resource_limits",
-				"kube_pod_container_resource_limits",
-				"kube_pod_container_resource_limits",
-				"kube_pod_container_resource_limits",
-				"kube_pod_init_container_resource_limits",
-				"kube_pod_init_container_resource_limits",
-				"kube_pod_init_container_resource_limits",
-				"kube_pod_init_container_resource_limits",
+				"kube_pod_init_container_resource_limits_cpu_cores",
+				"kube_pod_init_container_resource_limits_memory_bytes",
 			},
 		},
 		{
@@ -1442,7 +1372,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 			Want: `
 				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_pod_labels gauge
-				kube_pod_labels{label_app="example",namespace="ns1",pod="pod1"} 1
+				kube_pod_labels{namespace="ns1",pod="pod1"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_labels",
@@ -1504,11 +1434,33 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					Labels: map[string]string{
+						"app": "example",
+					},
+				},
+				Spec: v1.PodSpec{
+					RuntimeClassName: &runtimeclass,
+				},
+			},
+			Want: `
+				# HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
+				# TYPE kube_pod_runtimeclass_name_info gauge
+				kube_pod_runtimeclass_name_info{namespace="ns1",pod="pod1",runtimeclass_name="foo"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_runtimeclass_name_info",
+			},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -1518,7 +1470,7 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 func BenchmarkPodStore(b *testing.B) {
 	b.ReportAllocs()
 
-	f := generator.ComposeMetricGenFuncs(podMetricFamilies)
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil))
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1579,7 +1531,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 39
+	expectedFamilies := 50
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

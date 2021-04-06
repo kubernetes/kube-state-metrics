@@ -176,6 +176,72 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 			expectKeys:   []string{"label_an", "label_order", "label_test"},
 			expectValues: []string{"", "", ""},
 		},
+		{
+			kubeLabels: map[string]string{
+				"conflicting_label1": "underscore",
+				"conflicting.label1": "dot",
+				"conflicting-label1": "hyphen",
+
+				"conflicting.label2": "dot",
+				"conflicting-label2": "hyphen",
+				"conflicting_label2": "underscore",
+
+				"conflicting-label3": "hyphen",
+				"conflicting_label3": "underscore",
+				"conflicting.label3": "dot",
+			},
+			// keys are sorted alphabetically during sanitization
+			expectKeys: []string{
+				"label_conflicting_label1_conflict1",
+				"label_conflicting_label2_conflict1",
+				"label_conflicting_label3_conflict1",
+				"label_conflicting_label1_conflict2",
+				"label_conflicting_label2_conflict2",
+				"label_conflicting_label3_conflict2",
+				"label_conflicting_label1_conflict3",
+				"label_conflicting_label2_conflict3",
+				"label_conflicting_label3_conflict3",
+			},
+			expectValues: []string{
+				"hyphen",
+				"hyphen",
+				"hyphen",
+				"dot",
+				"dot",
+				"dot",
+				"underscore",
+				"underscore",
+				"underscore",
+			},
+		},
+		{
+			kubeLabels: map[string]string{
+				"camelCase": "camel_case",
+			},
+			expectKeys:   []string{"label_camel_case"},
+			expectValues: []string{"camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"snake_camelCase": "snake_and_camel_case",
+			},
+			expectKeys:   []string{"label_snake_camel_case"},
+			expectValues: []string{"snake_and_camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"conflicting_camelCase":  "camel_case",
+				"conflicting_camel_case": "snake_case",
+			},
+			expectKeys: []string{
+				"label_conflicting_camel_case_conflict1",
+				"label_conflicting_camel_case_conflict2",
+			},
+			expectValues: []string{
+				"camel_case",
+				"snake_case",
+			},
+		},
 	}
 
 	for _, tc := range testCases {

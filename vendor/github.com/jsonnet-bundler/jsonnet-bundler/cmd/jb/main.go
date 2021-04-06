@@ -17,33 +17,23 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
-	"regexp"
-	"strings"
 
-	"github.com/jsonnet-bundler/jsonnet-bundler/spec"
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"gopkg.in/alecthomas/kingpin.v2"
+
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg"
 )
 
 const (
 	installActionName = "install"
 	updateActionName  = "update"
 	initActionName    = "init"
+	rewriteActionName = "rewrite"
 )
 
-var (
-	gitSSHRegex                   = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git")
-	gitSSHWithVersionRegex        = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git@(.*)")
-	gitSSHWithPathRegex           = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)")
-	gitSSHWithPathAndVersionRegex = regexp.MustCompile("git\\+ssh://git@([^:]+):([^/]+)/([^/]+).git/(.*)@(.*)")
-
-	githubSlugRegex                   = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)")
-	githubSlugWithVersionRegex        = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)@(.*)")
-	githubSlugWithPathRegex           = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)")
-	githubSlugWithPathAndVersionRegex = regexp.MustCompile("github.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)/(.*)@(.*)")
-)
+var Version = "dev"
 
 func main() {
 	os.Exit(Main())
@@ -54,18 +44,26 @@ func Main() int {
 		JsonnetHome string
 	}{}
 
-	a := kingpin.New(filepath.Base(os.Args[0]), "A jsonnet package manager")
+	color.Output = color.Error
+
+	a := kingpin.New(filepath.Base(os.Args[0]), "A jsonnet package manager").Version(Version)
 	a.HelpFlag.Short('h')
 
 	a.Flag("jsonnetpkg-home", "The directory used to cache packages in.").
 		Default("vendor").StringVar(&cfg.JsonnetHome)
+	a.Flag("quiet", "Suppress any output from git command.").
+		Short('q').BoolVar(&pkg.GitQuiet)
 
 	initCmd := a.Command(initActionName, "Initialize a new empty jsonnetfile")
 
-	installCmd := a.Command(installActionName, "Install all dependencies or install specific ones")
+	installCmd := a.Command(installActionName, "Install new dependencies. Existing ones are silently skipped")
 	installCmdURIs := installCmd.Arg("uris", "URIs to packages to install, URLs or file paths").Strings()
+	installCmdSingle := installCmd.Flag("single", "install package without dependencies").Short('1').Bool()
 
-	updateCmd := a.Command(updateActionName, "Update all dependencies.")
+	updateCmd := a.Command(updateActionName, "Update all or specific dependencies.")
+	updateCmdURIs := updateCmd.Arg("uris", "URIs to packages to update, URLs or file paths").Strings()
+
+	rewriteCmd := a.Command(rewriteActionName, "Automatically rewrite legacy imports to absolute ones")
 
 	command, err := a.Parse(os.Args[1:])
 	if err != nil {
@@ -79,168 +77,20 @@ func Main() int {
 		return 1
 	}
 
+	cfg.JsonnetHome = filepath.Clean(cfg.JsonnetHome)
+
 	switch command {
 	case initCmd.FullCommand():
 		return initCommand(workdir)
 	case installCmd.FullCommand():
-		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs...)
+		return installCommand(workdir, cfg.JsonnetHome, *installCmdURIs, *installCmdSingle)
 	case updateCmd.FullCommand():
-		return updateCommand(cfg.JsonnetHome)
+		return updateCommand(workdir, cfg.JsonnetHome, *updateCmdURIs)
+	case rewriteCmd.FullCommand():
+		return rewriteCommand(workdir, cfg.JsonnetHome)
 	default:
-		installCommand(workdir, cfg.JsonnetHome)
+		installCommand(workdir, cfg.JsonnetHome, []string{}, false)
 	}
 
 	return 0
-}
-
-func parseDependency(dir, uri string) *spec.Dependency {
-	if d := parseGitSSHDependency(uri); d != nil {
-		return d
-	}
-
-	if d := parseGithubDependency(uri); d != nil {
-		return d
-	}
-
-	if d := parseLocalDependency(dir, uri); d != nil {
-		return d
-	}
-
-	return nil
-}
-
-func parseGitSSHDependency(p string) *spec.Dependency {
-	if !gitSSHRegex.MatchString(p) {
-		return nil
-	}
-
-	subdir := ""
-	host := ""
-	org := ""
-	repo := ""
-	version := "master"
-
-	if gitSSHWithPathAndVersionRegex.MatchString(p) {
-		matches := gitSSHWithPathAndVersionRegex.FindStringSubmatch(p)
-		host = matches[1]
-		org = matches[2]
-		repo = matches[3]
-		subdir = matches[4]
-		version = matches[5]
-	} else if gitSSHWithPathRegex.MatchString(p) {
-		matches := gitSSHWithPathRegex.FindStringSubmatch(p)
-		host = matches[1]
-		org = matches[2]
-		repo = matches[3]
-		subdir = matches[4]
-	} else if gitSSHWithVersionRegex.MatchString(p) {
-		matches := gitSSHWithVersionRegex.FindStringSubmatch(p)
-		host = matches[1]
-		org = matches[2]
-		repo = matches[3]
-		version = matches[4]
-	} else {
-		matches := gitSSHRegex.FindStringSubmatch(p)
-		host = matches[1]
-		org = matches[2]
-		repo = matches[3]
-	}
-
-	return &spec.Dependency{
-		Name: repo,
-		Source: spec.Source{
-			GitSource: &spec.GitSource{
-				Remote: fmt.Sprintf("git@%s:%s/%s", host, org, repo),
-				Subdir: subdir,
-			},
-		},
-		Version: version,
-	}
-}
-
-func parseGithubDependency(p string) *spec.Dependency {
-	if !githubSlugRegex.MatchString(p) {
-		return nil
-	}
-
-	name := ""
-	user := ""
-	repo := ""
-	subdir := ""
-	version := "master"
-
-	if githubSlugWithPathRegex.MatchString(p) {
-		if githubSlugWithPathAndVersionRegex.MatchString(p) {
-			matches := githubSlugWithPathAndVersionRegex.FindStringSubmatch(p)
-			user = matches[1]
-			repo = matches[2]
-			subdir = matches[3]
-			version = matches[4]
-			name = path.Base(subdir)
-		} else {
-			matches := githubSlugWithPathRegex.FindStringSubmatch(p)
-			user = matches[1]
-			repo = matches[2]
-			subdir = matches[3]
-			name = path.Base(subdir)
-		}
-	} else {
-		if githubSlugWithVersionRegex.MatchString(p) {
-			matches := githubSlugWithVersionRegex.FindStringSubmatch(p)
-			user = matches[1]
-			repo = matches[2]
-			name = repo
-			version = matches[3]
-		} else {
-			matches := githubSlugRegex.FindStringSubmatch(p)
-			user = matches[1]
-			repo = matches[2]
-			name = repo
-		}
-	}
-
-	return &spec.Dependency{
-		Name: name,
-		Source: spec.Source{
-			GitSource: &spec.GitSource{
-				Remote: fmt.Sprintf("https://github.com/%s/%s", user, repo),
-				Subdir: subdir,
-			},
-		},
-		Version: version,
-	}
-}
-
-func parseLocalDependency(dir, p string) *spec.Dependency {
-	if p == "" {
-		return nil
-	}
-	if strings.HasPrefix(p, "github.com") {
-		return nil
-	}
-	if strings.HasPrefix(p, "git+ssh") {
-		return nil
-	}
-
-	clean := filepath.Clean(p)
-	abs := filepath.Join(dir, clean)
-
-	info, err := os.Stat(abs)
-	if err != nil {
-		return nil
-	}
-
-	if !info.IsDir() {
-		return nil
-	}
-
-	return &spec.Dependency{
-		Name: info.Name(),
-		Source: spec.Source{
-			LocalSource: &spec.LocalSource{
-				Directory: clean,
-			},
-		},
-		Version: "",
-	}
 }

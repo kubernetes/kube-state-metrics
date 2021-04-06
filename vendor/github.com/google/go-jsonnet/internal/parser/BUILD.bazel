@@ -7,6 +7,7 @@ go_library(
         "lexer.go",
         "literalfield_set.go",
         "parser.go",
+        "string_util.go",
     ],
     importpath = "github.com/google/go-jsonnet/internal/parser",
     visibility = ["//:__subpackages__"],

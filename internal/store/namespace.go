@@ -18,8 +18,9 @@ package store
 
 import (
 	"context"
-	"k8s.io/kube-state-metrics/pkg/metric"
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,13 +34,16 @@ var (
 	descNamespaceLabelsName          = "kube_namespace_labels"
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
+)
 
-	namespaceMetricFamilies = []generator.FamilyGenerator{
-		{
-			Name: "kube_namespace_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+func namespaceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_namespace_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := []*metric.Metric{}
 				if !n.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
@@ -51,13 +55,14 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: descNamespaceLabelsName,
-			Type: metric.Gauge,
-			Help: descNamespaceLabelsHelp,
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
+		),
+		*generator.NewFamilyGenerator(
+			descNamespaceLabelsName,
+			descNamespaceLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -68,12 +73,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_namespace_status_phase",
-			Type: metric.Gauge,
-			Help: "kubernetes namespace status phase.",
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_namespace_status_phase",
+			"kubernetes namespace status phase.",
+			metric.Gauge,
+			"",
+			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := []*metric.Metric{
 					{
 						LabelValues: []string{string(v1.NamespaceActive)},
@@ -93,12 +99,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_namespace_status_condition",
-			Type: metric.Gauge,
-			Help: "The condition of a namespace.",
-			GenerateFunc: wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_namespace_status_condition",
+			"The condition of a namespace.",
+			metric.Gauge,
+			"",
+			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
 				for i, c := range n.Status.Conditions {
 					conditionMetrics := addConditionMetrics(c.Status)
@@ -117,9 +124,9 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
-)
+}
 
 func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

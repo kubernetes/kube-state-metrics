@@ -1,6 +1,7 @@
 # Overview
 
-[![Build Status](https://travis-ci.org/kubernetes/kube-state-metrics.svg?branch=master)](https://travis-ci.org/kubernetes/kube-state-metrics)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc](https://godoc.org/github.com/kubernetes/kube-state-metrics?status.svg)](https://godoc.org/github.com/kubernetes/kube-state-metrics)
+[![Build Status](https://github.com/kubernetes/kube-state-metrics/workflows/continuous-integration/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc](https://godoc.org/github.com/kubernetes/kube-state-metrics?status.svg)](https://godoc.org/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics is a simple service that listens to the Kubernetes API
 server and generates metrics about the state of the objects. (See examples in
@@ -18,10 +19,14 @@ Kubernetes API, this way users have all the data they require and perform
 heuristics as they see fit.
 
 The metrics are exported on the HTTP endpoint `/metrics` on the listening port
-(default 80). They are served as plaintext. They are designed to be consumed
+(default 8080). They are served as plaintext. They are designed to be consumed
 either by Prometheus itself or by a scraper that is compatible with scraping a
 Prometheus client endpoint. You can also open `/metrics` in a browser to see
-the raw metrics.
+the raw metrics. Note that the metrics exposed on the `/metrics` endpoint
+reflect the current state of the Kubernetes cluster. When Kubernetes objects
+are deleted they are no longer visible on the `/metrics` endpoint.
+
+Note that any new features will be merged into master but released with v2.1.0 release, as currently v2.0.0 is in post feature freeze and only accepting bug fixes.
 
 ## Table of Contents
 
@@ -31,6 +36,8 @@ the raw metrics.
   - [Resource group version compatibility](#resource-group-version-compatibility)
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
+  - [Conflict resolution in label names](#conflict-resolution-in-label-names)
+  - [Enabling VerticalPodAutoscalers](#enabling-verticalpodautoscalers)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
 - [A note on costing](#a-note-on-costing)
@@ -47,8 +54,6 @@ the raw metrics.
   - [Development](#development)
   - [Developer Contributions](#developer-contributions)
 
-### Versioning
-
 #### Kubernetes Version
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
@@ -58,20 +63,22 @@ The compatibility matrix for client-go and Kubernetes cluster can be found
 All additional compatibility is only best effort, or happens to still/already be supported.
 
 #### Compatibility matrix
+
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.12** | **Kubernetes 1.13** | **Kubernetes 1.14** |  **Kubernetes 1.15** |  **Kubernetes 1.16** |
-|--------------------|---------------------|---------------------|---------------------|----------------------|----------------------|
-| **v1.5.0**         |         ✓           |         -           |         -           |          -           |          -           |
-| **v1.6.0**         |         ✓           |         ✓           |         -           |          -           |          -           |
-| **v1.7.2**         |         ✓           |         ✓           |         ✓           |          -           |          -           |
-| **v1.8.0**         |         ✓           |         ✓           |         ✓           |          ✓           |          -           |
-| **v1.9.7**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
-| **master**         |         ✓           |         ✓           |         ✓           |          ✓           |          ✓           |
+| kube-state-metrics | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |
+|--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
+| **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
+| **v1.9.8**         |         ✓           |          -           |          -           |          -           |          -           |
+| **v2.0.0-rc.1**    |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
+| **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 - `✓` Fully supported version range.
-- `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, etc).
+- `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
+
+**Note:** The `v2.0.0-alpha.2+` and `master` releases of kube-state-metrics work on Kubernetes v1.17 and v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics and are on an older Kubernetes version, use v2.0.0-alpha.1 or v1.9.8 kube-state-metrics release.
 
 #### Resource group version compatibility
+
 Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
 in different Kubernetes versions. For now, kube-state-metrics will only use the oldest API available in the latest
 release.
@@ -79,38 +86,47 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v1.9.7`
-* `k8s.gcr.io/kube-state-metrics:v1.9.7`
-
-**Note**:
-The recommended docker registry for kube-state-metrics is `quay.io`. kube-state-metrics on
-`gcr.io` is only maintained on best effort as it requires external help from Google employees.
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-rc.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 
-There are many more metrics we could report, but this first pass is focused on
-those that could be used for actionable alerts. Please contribute PR's for
-additional metrics!
-
-> WARNING: THESE METRIC/TAG NAMES ARE UNSTABLE AND MAY CHANGE IN A FUTURE RELEASE.
-> For now, the following metrics and collectors
->
-> **metrics**
->	* `kube_pod_container_resource_requests_nvidia_gpu_devices`
->	* `kube_pod_container_resource_limits_nvidia_gpu_devices`
->	* `kube_node_status_capacity_nvidia_gpu_cards`
->	* `kube_node_status_allocatable_nvidia_gpu_cards`
->
->	are removed in kube-state-metrics v1.4.0.
->
-> Any collectors and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
-> which may be changed at any given release.
+Any resources and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
+which may be changed at any given release.
 
 See the [`docs`](docs) directory for more information on the exposed metrics.
 
+#### Conflict resolution in label names
+
+The `*_labels` family of metrics exposes Kubernetes labels as Prometheus labels.
+As [Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set)
+is more liberal than
+[Prometheus](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels)
+in terms of allowed characters in label names,
+we automatically convert unsupported characters to underscores.
+For example, `app.kubernetes.io/name` becomes `label_app_kubernetes_io_name`.
+
+This conversion can create conflicts when multiple Kubernetes labels like
+`foo-bar` and `foo_bar` would be converted to the same Prometheus label `label_foo_bar`.
+
+Kube-state-metrics automatically adds a suffix `_conflictN` to resolve this conflict,
+so it converts the above labels to
+`label_foo_bar_conflict1` and `label_foo_bar_conflict2`.
+
+If you'd like to have more control over how this conflict is resolved,
+you might want to consider addressing this issue on a different level of the stack,
+e.g. by standardizing Kubernetes labels using an
+[Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
+that ensures that there are no possible conflicts.
+
+#### Enabling VerticalPodAutoscalers
+
+Please note that the collector for `verticalpodautoscalers` are disabled dy default.
+This is because Vertical Pod Autoscalers are managed as custom resources. If you want to enable this collector,
+please ensure that you have the `v1beta2` CRDs installed beforehand. They can be found [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
+
 ### Kube-state-metrics self metrics
 
-kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 81).
+kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 8081).
 
 kube-state-metrics also exposes list and watch success and error metrics. These can be used to calculate the error rate of list or watch resources.
 If you encounter those errors in the metrics, it is most likely a configuration or permission issue, and the next thing to investigate would be looking
@@ -121,6 +137,16 @@ Example of the above mentioned metrics:
 kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
 kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
 kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
+```
+
+kube-state-metrics also exposes some http request metrics, examples of those are:
+```
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="2.5"} 30
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="5"} 30
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="10"} 30
+http_request_duration_seconds_bucket{handler="metrics",method="get",le="+Inf"} 30
+http_request_duration_seconds_sum{handler="metrics",method="get"} 0.021113919999999998
+http_request_duration_seconds_count{handler="metrics",method="get"} 30
 ```
 
 ### Scaling kube-state-metrics
@@ -161,19 +187,19 @@ It is a cluster level component which periodically scrapes metrics from all
 Kubernetes nodes served by Kubelet through Summary API. The metrics are
 aggregated, stored in memory and served in [Metrics API
 format](https://git.k8s.io/metrics/pkg/apis/metrics/v1alpha1/types.go). The
-metric-server stores the latest values only and is not responsible for
+metrics-server stores the latest values only and is not responsible for
 forwarding metrics to third-party destinations.
 
 kube-state-metrics is focused on generating completely new metrics from
 Kubernetes' object state (e.g. metrics based on deployments, replica sets,
 etc.). It holds an entire snapshot of Kubernetes state in memory and
 continuously generates new metrics based off of it. And just like the
-metric-server it too is not responsibile for exporting its metrics anywhere.
+metrics-server it too is not responsibile for exporting its metrics anywhere.
 
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
 
-#### Horizontal scaling (sharding)
+### Horizontal scaling (sharding)
 
 In order to scale kube-state-metrics horizontally, some automated sharding capabilities have been implemented. It is configured with the following flags:
 
@@ -260,7 +286,7 @@ subjects:
     namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- then specify a set of namespaces (using the `--namespace` option) and a set of kubernetes objects (using the `--collectors`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+- then specify a set of namespaces (using the `--namespaces` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
 
 ```yaml
 spec:
@@ -269,8 +295,8 @@ spec:
       containers:
       - name: kube-state-metrics
         args:
-          - '--collectors=pods'
-          - '--namespace=project1'
+          - '--resources=pods'
+          - '--namespaces=project1'
 ```
 
 For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)

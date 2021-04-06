@@ -27,26 +27,45 @@ import (
 
 // StaticError represents an error during parsing/lexing or static analysis.
 // TODO(sbarzowski) Make it possible to have multiple static errors and warnings
-type StaticError struct {
-	Loc ast.LocationRange
-	Msg string
+type StaticError interface {
+	// WithContext returns a new StaticError with additional context before the error message.
+	WithContext(string) StaticError
+	// Error returns the string representation of a StaticError.
+	Error() string
+	// Loc returns the place in the source code that triggerred the error.
+	Loc() ast.LocationRange
 }
 
-// MakeStaticErrorMsg returns a StaticError with a message.
+type staticError struct {
+	loc ast.LocationRange
+	msg string
+}
+
+func (err staticError) WithContext(context string) StaticError {
+	return staticError{
+		loc: err.loc,
+		msg: fmt.Sprintf("%v while %s", err.msg, context),
+	}
+}
+
+func (err staticError) Error() string {
+	loc := ""
+	if err.loc.IsSet() {
+		loc = err.loc.String()
+	}
+	return fmt.Sprintf("%v %v", loc, err.msg)
+}
+
+func (err staticError) Loc() ast.LocationRange {
+	return err.loc
+}
+
+// MakeStaticErrorMsg returns a staticError with a message.
 func MakeStaticErrorMsg(msg string) StaticError {
-	return StaticError{Msg: msg}
+	return staticError{msg: msg}
 }
 
 // MakeStaticError returns a StaticError with a message and a LocationRange.
 func MakeStaticError(msg string, lr ast.LocationRange) StaticError {
-	return StaticError{Msg: msg, Loc: lr}
-}
-
-// Error returns the string representation of a StaticError.
-func (err StaticError) Error() string {
-	loc := ""
-	if err.Loc.IsSet() {
-		loc = err.Loc.String()
-	}
-	return fmt.Sprintf("%v %v", loc, err.Msg)
+	return staticError{msg: msg, loc: lr}
 }

@@ -26,7 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	generator "k8s.io/kube-state-metrics/pkg/metric_generator"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -139,7 +139,7 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_status_active gauge
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
-				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",label_app="example-active-running-1",namespace="ns1"} 1
+				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_suspend{cronjob="ActiveRunningCronJob1",namespace="ns1"} 0
 				kube_cronjob_status_active{cronjob="ActiveRunningCronJob1",namespace="ns1"} 2
@@ -185,7 +185,7 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_status_active gauge
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
-				kube_cronjob_labels{cronjob="SuspendedCronJob1",label_app="example-suspended-1",namespace="ns1"} 1
+				kube_cronjob_labels{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="SuspendedCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_suspend{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_status_active{cronjob="SuspendedCronJob1",namespace="ns1"} 0
@@ -235,7 +235,7 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_spec_suspend{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 0
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.520766296e+09
-				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",label_app="example-active-no-last-scheduled-1",namespace="ns1"} 1
+				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1
 ` +
 				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveCronJob1NoLastScheduled\",namespace=\"ns1\"} %ve+09\n",
 					float64(ActiveCronJob1NoLastScheduledNextScheduleTime.Unix())/math.Pow10(9)),
@@ -243,8 +243,8 @@ func TestCronJobStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

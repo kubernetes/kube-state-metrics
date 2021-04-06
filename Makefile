@@ -12,7 +12,7 @@ BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = k8s.io/kube-state-metrics/v2/pkg
-GO_VERSION = 1.16.2
+GO_VERSION = 1.16.3
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 
@@ -100,15 +100,6 @@ push-multi-arch:
 	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
 	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
-quay-push: .quay-push-$(ARCH)
-.quay-push-$(ARCH): container-$(ARCH)
-	${DOCKER_CLI} push $(MULTI_ARCH_IMG):$(TAG)
-	${DOCKER_CLI} push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	${DOCKER_CLI} push $(IMAGE):$(TAG)
-	${DOCKER_CLI} push $(IMAGE):latest
-endif
-
 clean:
 	rm -f kube-state-metrics
 	git clean -Xfd .
@@ -149,4 +140,4 @@ install-tools:
 	@echo Installing tools from tools.go
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
 
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd

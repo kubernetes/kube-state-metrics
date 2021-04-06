@@ -112,6 +112,20 @@ func nodeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			"",
 			wrapNodeFunc(func(n *v1.Node) *metric.Family {
 				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
+				// TODO(simonpasquier): remove the next block once CMO
+				// configures the list of node labels to allow.
+				//
+				// Some of the Telemetry rules need specific node labels to be
+				// present to provide the expected results. The set of allowed
+				// labels will be configured in CMO but it can't happen before
+				// kube-state-metrics is bumped to v2.0 (chicken and egg problem).
+				// As a temporary fix, the downstream kube-state-metrics will
+				// expose all of the node labels if the list of allowed labels
+				// is empty.
+				if len(allowLabelsList) == 0 {
+					labelKeys, labelValues = kubeLabelsToPrometheusLabels(n.Labels)
+				}
+				// TODO(simonpasquier): end of removal
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

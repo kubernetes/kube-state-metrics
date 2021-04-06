@@ -66,16 +66,16 @@ All additional compatibility is only best effort, or happens to still/already be
 
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.15** | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |
-|--------------------|---------------------|---------------------|----------------------|----------------------|----------------------|
-| **v1.8.0**         |         ✓           |         -           |          -           |          -           |          -           |
-| **v1.9.7**         |         -           |         ✓           |          -           |          -           |          -           |
-| **v2.0.0-beta**    |         -           |         -           |          -/✓         |         -/✓          |          ✓           |
-| **master**         |         -           |         -           |          -/✓         |         -/✓          |          ✓           |
+| kube-state-metrics | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |
+|--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
+| **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
+| **v1.9.8**         |         ✓           |          -           |          -           |          -           |          -           |
+| **v2.0.0-rc.1**    |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
+| **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
-**Note:** The `v2.0.0-alpha.2+` and `master` releases of kube-state-metrics work on Kubernetes v1.17 and v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics and are on an older Kubernetes version, use v2.0.0-alpha.1 or v1.9.7 kube-state-metrics release. 
+**Note:** The `v2.0.0-alpha.2+` and `master` releases of kube-state-metrics work on Kubernetes v1.17 and v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics and are on an older Kubernetes version, use v2.0.0-alpha.1 or v1.9.8 kube-state-metrics release.
 
 #### Resource group version compatibility
 
@@ -86,8 +86,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `quay.io/coreos/kube-state-metrics:v2.0.0-beta` (arch: `amd64`)
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-beta` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-rc.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 
@@ -121,9 +120,10 @@ that ensures that there are no possible conflicts.
 
 #### Enabling VerticalPodAutoscalers
 
-Please note that the collector for `verticalpodautoscalers` are disabled by default.
-This is because Vertical Pod Autoscalers are managed as custom resources. If you want to enable this collector,
-please ensure that you have the `v1beta2` CRDs installed beforehand. They can be found [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
+Please note that the collector for `verticalpodautoscalers` is **disabled** by default; Vertical Pod Autoscaler metrics will not be collected until the collector is enabled. This is because Vertical Pod Autoscalers are managed as custom resources.
+
+If you want to enable this collector,
+the [instructions](./docs/verticalpodautoscaler-metrics.md#Configuration) are located in the [Vertical Pod Autoscaler Metrics](./docs/verticalpodautoscaler-metrics.md) documentation.
 
 ### Kube-state-metrics self metrics
 
@@ -251,6 +251,12 @@ make container
 
 Simply build and run kube-state-metrics inside a Kubernetes pod which has a
 service account token that has read-only access to the Kubernetes cluster.
+
+### For users of prometheus-operator/kube-prometheus stack
+
+The ([`kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus/)) stack installs kube-state-metrics as one of its [components](https://github.com/prometheus-operator/kube-prometheus#kube-prometheus); you do not need to install kube-state-metrics if you're using the kube-prometheus stack.
+
+If you want to revise the default configuration for kube-prometheus, for example to enable non-default metrics, have a look at [Customizing Kube-Prometheus](https://github.com/prometheus-operator/kube-prometheus#customizing-kube-prometheus).
 
 #### Kubernetes Deployment
 

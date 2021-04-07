@@ -16,6 +16,9 @@ metadata:
     helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
     app.kubernetes.io/managed-by: {{ $.Release.Service }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
+{{- if .Values.customLabels }}
+{{ toYaml .Values.customLabels | indent 4 }}
+{{- end }}
   name: {{ template "kube-state-metrics.fullname" $ }}
 {{- if eq .Values.rbac.useClusterRole false }}
   namespace: {{ . }}

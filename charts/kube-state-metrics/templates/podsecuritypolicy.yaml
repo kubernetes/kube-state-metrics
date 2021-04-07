@@ -8,6 +8,9 @@ metadata:
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/instance: {{ .Release.Name }}
+{{- if .Values.customLabels }}
+{{ toYaml .Values.customLabels | indent 4 }}
+{{- end }}
 {{- if .Values.podSecurityPolicy.annotations }}
   annotations:
 {{ toYaml .Values.podSecurityPolicy.annotations | indent 4 }}

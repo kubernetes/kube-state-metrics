@@ -19,6 +19,7 @@ To enable the Vertical Pod Autoscaler collector, please:
 
 1. Ensure that the Vertical Pod Autoscaler CRDs are installed in the cluster. The CRDs are [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
 2. Ensure that `verticalpodautoscalers` is included in list of `Resources` enabled using the flag `--resources` when `kube-state-metrics` is run (see below).
+3. Ensure that `verticalpodautoscalers` is added in cluster-role under `autoscaling.k8s.io` API group with list/watch permissions.
 
 One of the [command line arguments](./docs/cli-arguments.md) for `kube-state-metrics` is `--resources`. If this flag is omitted, a default set of Resources is enabled. This default list does **not** include Vertical Pod Autoscalers.
 

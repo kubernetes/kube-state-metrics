@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 func TestPodStore(t *testing.T) {
@@ -1492,11 +1493,55 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_runtimeclass_name_info",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+					Labels: map[string]string{
+						"app": "example",
+					},
+				},
+				Spec: v1.PodSpec{},
+			},
+			AllowLabelsList: []string{"wildcard-not-first", options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_pod_labels gauge
+				kube_pod_labels{namespace="ns1",pod="pod1",uid="uid1"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_labels",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+					Labels: map[string]string{
+						"app": "example",
+					},
+				},
+				Spec: v1.PodSpec{},
+			},
+			AllowLabelsList: []string{options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_pod_labels gauge
+				kube_pod_labels{label_app="example",namespace="ns1",pod="pod1",uid="uid1"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_labels",
+			},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -187,6 +187,21 @@ func TestLabelsAllowListSet(t *testing.T) {
 				},
 				"pods": {}}),
 		},
+		{
+			Desc:  "with wildcard",
+			Value: "cronjobs=[*],pods=[*,foo],namespaces=[bar,*]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"cronjobs": {
+					"*",
+				},
+				"pods": {
+					"*",
+					"foo",
+				},
+				"namespaces": {
+					"bar",
+					"*"}}),
+		},
 	}
 
 	for _, test := range tests {

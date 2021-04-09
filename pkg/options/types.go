@@ -130,6 +130,9 @@ func (n *NamespaceList) Type() string {
 	return "string"
 }
 
+// LabelWildcard allowlists any label
+const LabelWildcard = "*"
+
 // LabelsAllowList represents a list of allowed labels for metrics.
 type LabelsAllowList map[string][]string
 

@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 var (
@@ -177,6 +178,10 @@ func createLabelKeysValues(allKubeLabels map[string]string, allowList []string) 
 	allowedKubeLabels := make(map[string]string)
 
 	if len(allowList) > 0 {
+		if allowList[0] == options.LabelWildcard {
+			return kubeLabelsToPrometheusLabels(allKubeLabels)
+		}
+
 		for _, l := range allowList {
 			v, found := allKubeLabels[l]
 			if found {

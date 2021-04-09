@@ -63,6 +63,33 @@ jobs:
     - name: Validate generated manifests
       run: |
         make validate-manifests
+  
+  ci-generate-docs: 
+    name: ci-generate-docs  
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.15
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Setup environment
+      run: |
+        go get -v -t -d ./...
+        make install-tools
+
+    - name: Automatic Docs Generation
+      run: |
+        make docs    
+
+    - name: Check that all metrics are documented(Dynamically Created Docs)
+      run: |
+        make doccheck-dynamicdocs      
+
 
   ci-validate-go-modules:
     name: ci-validate-go-modules
@@ -103,10 +130,11 @@ jobs:
       run: |
         go get -v -t -d ./...
         make install-tools
-
+    
     - name: Check that all metrics are documented
       run: |
         make doccheck
+               
 
   ci-unit-tests:
     name: ci-unit-tests

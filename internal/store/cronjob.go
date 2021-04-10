@@ -202,6 +202,17 @@ func cronJobMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_cronjob_metadata_resource_version",
+			"Resource version representing a specific version of the cronjob.",
+			metric.Gauge,
+			"",
+			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
+				return &metric.Family{
+					Metrics: resourceVersionMetric(j.ObjectMeta.ResourceVersion),
+				}
+			}),
+		),
 	}
 }
 

@@ -69,7 +69,7 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 |--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
 | **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
 | **v1.9.8**         |         ✓           |          -           |          -           |          -           |          -           |
-| **v2.0.0-rc.1**    |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
+| **v2.0.0**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 | **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
@@ -85,7 +85,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-rc.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

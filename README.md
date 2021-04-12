@@ -26,8 +26,6 @@ the raw metrics. Note that the metrics exposed on the `/metrics` endpoint
 reflect the current state of the Kubernetes cluster. When Kubernetes objects
 are deleted they are no longer visible on the `/metrics` endpoint.
 
-Note that any new features will be merged into master but released with v2.1.0 release, as currently v2.0.0 is in post feature freeze and only accepting bug fixes.
-
 ## Table of Contents
 
 - [Versioning](#versioning)
@@ -40,6 +38,7 @@ Note that any new features will be merged into master but released with v2.1.0 r
   - [Enabling VerticalPodAutoscalers](#enabling-verticalpodautoscalers)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
+- [Latency](#latency)
 - [A note on costing](#a-note-on-costing)
 - [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
 - [Scaling kube-state-metrics](#scaling-kube-state-metrics)
@@ -153,24 +152,25 @@ http_request_duration_seconds_count{handler="metrics",method="get"} 30
 
 #### Resource recommendation
 
-> Note: These recommendations are based on scalability tests done over a year ago. They may differ significantly today.
-
 Resource usage for kube-state-metrics changes with the Kubernetes objects (Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
 To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
 
-As a general rule, you should allocate
+As a general rule, you should allocate:
 
-* 200MiB memory
+* 250MiB memory
 * 0.1 cores
 
-For clusters of more than 100 nodes, allocate at least
+Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation or CPU throttling, try increasing the CPU limits.
 
-* 2MiB memory per node
-* 0.001 cores per node
+### Latency
 
-These numbers are based on [scalability tests](https://github.com/kubernetes/kube-state-metrics/issues/124#issuecomment-318394185) at 30 pods per node.
+In a 100 node cluster scaling test the latency numbers were as follows:
 
-Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation, try increasing the CPU limits.
+```
+"Perc50": 259615384 ns,
+"Perc90": 475000000 ns,
+"Perc99": 906666666 ns.
+```
 
 ### A note on costing
 

@@ -6,13 +6,10 @@ keywords:
 - monitoring
 - prometheus
 - kubernetes
-version: 2.13.2
+version: 2.13.3
 appVersion: 1.9.8
 home: https://github.com/kubernetes/kube-state-metrics/
 sources:
 - https://github.com/kubernetes/kube-state-metrics/
-maintainers:
-- name: tariq1890
-  email: tariq.ibrahim@mulesoft.com
-- name: mrueg
-  email: manuel@rueg.eu
+# This chart is deprecated in favor of https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics
+deprecated: true

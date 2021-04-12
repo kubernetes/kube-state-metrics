@@ -25,6 +25,7 @@ esac
 
 KUBERNETES_VERSION=v1.20.0
 KUBE_STATE_METRICS_LOG_DIR=./log
+KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics"
 KUBE_STATE_METRICS_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics-${ARCH}"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
@@ -105,7 +106,7 @@ echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"
 kind load docker-image "${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}"
 
 # update kube-state-metrics image tag in deployment.yaml
-sed -i.bak "s|${KUBE_STATE_METRICS_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
+sed -i.bak "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
 cat ./examples/standard/deployment.yaml
 
 trap finish EXIT

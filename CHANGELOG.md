@@ -1,3 +1,7 @@
+## v2.0.0 / 2021-04-13
+
+* [CHANGE] Update go version and dependencies #1440
+
 ## v2.0.0-rc.1 / 2021-03-26
 
 * [CHANGE] Rename --labels-metric-allow-list to --metric-labels-allowlist #1424

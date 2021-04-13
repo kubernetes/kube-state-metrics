@@ -18,7 +18,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.19.0
+	github.com/prometheus/common v0.18.0
 	github.com/prometheus/exporter-toolkit v0.5.1
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/robfig/cron/v3 v3.0.1
@@ -30,17 +30,17 @@ require (
 	golang.org/x/tools v0.1.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.20.4
-	k8s.io/apimachinery v0.20.4
+	k8s.io/api v0.20.5
+	k8s.io/apimachinery v0.20.5
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.9.2
-	k8s.io/client-go v0.20.4
+	k8s.io/client-go v0.20.5
 	k8s.io/klog/v2 v2.8.0
 )
 
 replace (
-	k8s.io/api v0.18.3 => k8s.io/api v0.20.4
-	k8s.io/apimachinery v0.18.3 => k8s.io/apimachinery v0.20.4
-	k8s.io/client-go v0.18.3 => k8s.io/client-go v0.20.4
+	k8s.io/api v0.18.3 => k8s.io/api v0.20.5
+	k8s.io/apimachinery v0.18.3 => k8s.io/apimachinery v0.20.5
+	k8s.io/client-go v0.18.3 => k8s.io/client-go v0.20.5
 )
 
 go 1.16

@@ -15,8 +15,8 @@ GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
-GO_VERSION = 1.16.2
 PROMETHEUS_VERSION = 2.25.2
+GO_VERSION = 1.16.3
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
@@ -109,15 +109,6 @@ push-multi-arch:
 	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
 	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
-quay-push: .quay-push-$(ARCH)
-.quay-push-$(ARCH): container-$(ARCH)
-	${DOCKER_CLI} push $(MULTI_ARCH_IMG):$(TAG)
-	${DOCKER_CLI} push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	${DOCKER_CLI} push $(IMAGE):$(TAG)
-	${DOCKER_CLI} push $(IMAGE):latest
-endif
-
 clean:
 	rm -f kube-state-metrics
 	git clean -Xfd .
@@ -162,4 +153,4 @@ install-promtool:
 	@echo Installing promtool
 	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" | tar xvz --strip-components=1
 
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch quay-push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint generate embedmd

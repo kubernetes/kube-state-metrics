@@ -65,12 +65,12 @@ All additional compatibility is only best effort, or happens to still/already be
 
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |
-|--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
+| kube-state-metrics | **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |  **Kubernetes 1.21** |
+|--------------------|---------------------|----------------------|----------------------|----------------------|----------------------|
 | **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
-| **v1.9.8**         |         ✓           |          -           |          -           |          -           |          -           |
-| **v2.0.0**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
-| **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
+| **v1.9.8**         |         -           |          -           |          -           |          -           |          -           |
+| **v2.0.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          -/✓         |
+| **master**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 

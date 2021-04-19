@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"sort"
 	"strconv"
@@ -163,7 +163,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	expected := `# HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
 # HELP kube_pod_container_info Information about a container in a pod.
@@ -346,7 +346,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
 	}
 
-	body2, _ := ioutil.ReadAll(resp2.Body)
+	body2, _ := io.ReadAll(resp2.Body)
 
 	expected2 := `# HELP kube_state_metrics_shard_ordinal Current sharding ordinal/index of this instance
 # HELP kube_state_metrics_total_shards Number of total shards this instance is aware of
@@ -457,7 +457,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	expected := string(body)
 
 	// sharded requests
@@ -473,7 +473,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
 	}
 
-	body, _ = ioutil.ReadAll(resp.Body)
+	body, _ = io.ReadAll(resp.Body)
 	got1 := string(body)
 
 	// request second shard
@@ -487,7 +487,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
 	}
 
-	body, _ = ioutil.ReadAll(resp.Body)
+	body, _ = io.ReadAll(resp.Body)
 	got2 := string(body)
 
 	// normalize results:

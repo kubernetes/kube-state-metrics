@@ -103,9 +103,10 @@ func TestCronJobStore(t *testing.T) {
 		{
 			Obj: &batchv1beta1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:       "ActiveRunningCronJob1",
-					Namespace:  "ns1",
-					Generation: 1,
+					Name:            "ActiveRunningCronJob1",
+					Namespace:       "ns1",
+					Generation:      1,
+					ResourceVersion: "11111",
 					Labels: map[string]string{
 						"app": "example-active-running-1",
 					},
@@ -129,6 +130,7 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
+                # HELP kube_cronjob_metadata_resource_version Resource version representing a specific version of the cronjob.
 				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
@@ -137,23 +139,26 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
 				# TYPE kube_cronjob_spec_suspend gauge
 				# TYPE kube_cronjob_status_active gauge
+                # TYPE kube_cronjob_metadata_resource_version gauge
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
 				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_suspend{cronjob="ActiveRunningCronJob1",namespace="ns1"} 0
 				kube_cronjob_status_active{cronjob="ActiveRunningCronJob1",namespace="ns1"} 2
+                kube_cronjob_metadata_resource_version{cronjob="ActiveRunningCronJob1",namespace="ns1"} 11111
 				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.520742896e+09
 ` + fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveRunningCronJob1\",namespace=\"ns1\"} %ve+09\n",
 				float64(ActiveRunningCronJob1NextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:       "SuspendedCronJob1",
-					Namespace:  "ns1",
-					Generation: 1,
+					Name:            "SuspendedCronJob1",
+					Namespace:       "ns1",
+					Generation:      1,
+					ResourceVersion: "22222",
 					Labels: map[string]string{
 						"app": "example-suspended-1",
 					},
@@ -176,6 +181,7 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
+                # HELP kube_cronjob_metadata_resource_version Resource version representing a specific version of the cronjob.
 				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
@@ -183,15 +189,17 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
 				# TYPE kube_cronjob_spec_suspend gauge
 				# TYPE kube_cronjob_status_active gauge
+                # TYPE kube_cronjob_metadata_resource_version gauge
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
 				kube_cronjob_labels{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="SuspendedCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_suspend{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_status_active{cronjob="SuspendedCronJob1",namespace="ns1"} 0
+				kube_cronjob_metadata_resource_version{cronjob="SuspendedCronJob1",namespace="ns1"} 22222
 				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.520762696e+09
 `,
-			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
+			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -200,6 +208,7 @@ func TestCronJobStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
 					Namespace:         "ns1",
 					Generation:        1,
+					ResourceVersion:   "33333",
 					Labels: map[string]string{
 						"app": "example-active-no-last-scheduled-1",
 					},
@@ -223,6 +232,7 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
+                # HELP kube_cronjob_metadata_resource_version Resource version representing a specific version of the cronjob.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_labels gauge
@@ -230,8 +240,10 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
 				# TYPE kube_cronjob_spec_suspend gauge
 				# TYPE kube_cronjob_status_active gauge
+                # TYPE kube_cronjob_metadata_resource_version gauge
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 300
 				kube_cronjob_status_active{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 0
+				kube_cronjob_metadata_resource_version{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 33333
 				kube_cronjob_spec_suspend{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 0
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.520766296e+09
@@ -239,7 +251,7 @@ func TestCronJobStore(t *testing.T) {
 ` +
 				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveCronJob1NoLastScheduled\",namespace=\"ns1\"} %ve+09\n",
 					float64(ActiveCronJob1NoLastScheduledNextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels"},
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels"},
 		},
 	}
 	for i, c := range cases {

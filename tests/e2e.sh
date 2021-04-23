@@ -24,7 +24,7 @@ case $(uname -m) in
 esac
 
 NODE_IMAGE_NAME="docker.io/kindest/node"
-KUBERNETES_VERSION=v1.20.0
+KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.20.0"}
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics"
 KUBE_STATE_METRICS_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics-${ARCH}"
@@ -69,7 +69,7 @@ touch "${HOME}"/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
 
-kind create cluster --image=${NODE_IMAGE_NAME}:${KUBERNETES_VERSION}
+kind create cluster --image="${NODE_IMAGE_NAME}:${KUBERNETES_VERSION}"
 
 kind export kubeconfig
 

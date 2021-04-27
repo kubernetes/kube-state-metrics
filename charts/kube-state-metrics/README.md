@@ -1,5 +1,8 @@
 # kube-state-metrics Helm Chart
 
+> **UPDATE**: This chart is deprecated in favor of https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics
+We decided to migrate the chart into this repository as maintaining it with the source code caused issues for non-helm users.
+
 Installs the [kube-state-metrics agent](https://github.com/kubernetes/kube-state-metrics).
 
 ## Get Repo Info

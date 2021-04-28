@@ -294,6 +294,6 @@ Then curl the metrics endpoint
 
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
 
-#### Developer Contributions
+#### Developer Contributions 
 
 When developing, there are certain code patterns to follow to better your contributing experience and likelihood of e2e and other ci tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).

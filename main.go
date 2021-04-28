@@ -56,6 +56,7 @@ func (pl promLogger) Println(v ...interface{}) {
 }
 
 func main() {
+
 	opts := options.NewOptions()
 	opts.AddFlags()
 

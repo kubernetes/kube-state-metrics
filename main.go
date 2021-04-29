@@ -150,6 +150,7 @@ func main() {
 	storeBuilder.WithKubeClient(kubeClient)
 	storeBuilder.WithVPAClient(vpaClient)
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
+	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
 	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
 
 	ksmMetricsRegistry.MustRegister(

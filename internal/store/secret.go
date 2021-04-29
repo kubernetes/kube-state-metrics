@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descSecretAnnotationsName     = "kube_secret_annotations"
+	descSecretAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descSecretLabelsName          = "kube_secret_labels"
 	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 )
 
-func secretMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_secret_info",
@@ -68,6 +70,25 @@ func secretMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator 
 						},
 					},
 				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descSecretAnnotationsName,
+			descSecretAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+
 			}),
 		),
 		*generator.NewFamilyGenerator(

@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descNamespaceAnnotationsName     = "kube_namespace_annotations"
+	descNamespaceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descNamespaceLabelsName          = "kube_namespace_labels"
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
 )
 
-func namespaceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_namespace_created",
@@ -53,6 +55,24 @@ func namespaceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerat
 
 				return &metric.Family{
 					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descNamespaceAnnotationsName,
+			descNamespaceAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(n.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
 				}
 			}),
 		),

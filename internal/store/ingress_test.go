@@ -169,8 +169,8 @@ func TestIngressStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

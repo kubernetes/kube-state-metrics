@@ -29,6 +29,8 @@ import (
 )
 
 var (
+	descStorageClassAnnotationsName     = "kube_storageclass_annotations"
+	descStorageClassAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descStorageClassLabelsName          = "kube_storageclass_labels"
 	descStorageClassLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStorageClassLabelsDefaultLabels = []string{"storageclass"}
@@ -36,7 +38,7 @@ var (
 	defaultVolumeBindingMode            = storagev1.VolumeBindingImmediate
 )
 
-func storageClassMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_storageclass_info",
@@ -76,6 +78,24 @@ func storageClassMetricFamilies(allowLabelsList []string) []generator.FamilyGene
 				}
 				return &metric.Family{
 					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descStorageClassAnnotationsName,
+			descStorageClassAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
 				}
 			}),
 		),

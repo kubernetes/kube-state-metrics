@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descDaemonSetAnnotationsName     = "kube_daemonset_annotations"
+	descDaemonSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descDaemonSetLabelsName          = "kube_daemonset_labels"
 	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 )
 
-func daemonSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_daemonset_created",
@@ -205,6 +207,24 @@ func daemonSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerat
 							LabelKeys:   []string{},
 							LabelValues: []string{},
 							Value:       float64(d.ObjectMeta.Generation),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descDaemonSetAnnotationsName,
+			descDaemonSetAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(d.Annotations, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
 						},
 					},
 				}

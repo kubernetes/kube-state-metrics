@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descStatefulSetAnnotationsName     = "kube_statefulset_annotations"
+	descStatefulSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descStatefulSetLabelsName          = "kube_statefulset_labels"
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 )
 
-func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_statefulset_created",
@@ -161,6 +163,24 @@ func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGener
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(s.ObjectMeta.Generation),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descStatefulSetAnnotationsName,
+			descStatefulSetAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
 						},
 					},
 				}

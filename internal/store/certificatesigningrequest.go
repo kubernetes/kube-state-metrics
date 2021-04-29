@@ -31,13 +31,33 @@ import (
 )
 
 var (
+	descCSRAnnotationsName     = "kube_certificatesigningrequest_annotations"
+	descCSRAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCSRLabelsName          = "kube_certificatesigningrequest_labels"
 	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest"}
 )
 
-func csrMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			descCSRAnnotationsName,
+			descCSRAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(j.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			descCSRLabelsName,
 			descCSRLabelsHelp,

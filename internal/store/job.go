@@ -32,14 +32,34 @@ import (
 )
 
 var (
+	descJobAnnotationsName     = "kube_job_annotations"
+	descJobAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descJobLabelsName          = "kube_job_labels"
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
 )
 
-func jobMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			descJobAnnotationsName,
+			descJobAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(j.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			descJobLabelsName,
 			descJobLabelsHelp,

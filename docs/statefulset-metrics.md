@@ -2,6 +2,7 @@
 
 | Metric name| Metric type | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------- |
+| kube_statefulset_annotations | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt; <br> `annotation_STATEFULSET_LABEL`=&lt;STATEFULSET_ANNOTATION&gt; | STABLE |
 | kube_statefulset_status_replicas | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  | STABLE |
 | kube_statefulset_status_replicas_current | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  | STABLE |
 | kube_statefulset_status_replicas_ready | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  | STABLE |

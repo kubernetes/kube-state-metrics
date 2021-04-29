@@ -212,8 +212,8 @@ func TestCsrStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(csrMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(csrMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(csrMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(csrMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected error when collecting result in %vth run:\n%s", i, err)
 		}

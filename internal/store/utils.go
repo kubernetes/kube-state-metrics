@@ -73,6 +73,10 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 	return ms
 }
 
+func kubeAnnotationssToPrometheusLabels(annotations map[string]string) ([]string, []string) {
+	return mapToPrometheusLabels(annotations, "annotation")
+}
+
 func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
 	return mapToPrometheusLabels(labels, "label")
 }
@@ -170,6 +174,26 @@ func isNativeResource(name v1.ResourceName) bool {
 
 func isPrefixedNativeResource(name v1.ResourceName) bool {
 	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
+}
+
+// createAnnotationKeysValues takes in passed kubernetes annotations and allowed list in kubernetes label format
+// it returns only those allowed annotations that exist in the list converting them to Prometheus labels.
+func createAnnotationKeysValues(allKubeAnnotations map[string]string, allowList []string) ([]string, []string) {
+	allowedKubeAnnotations := make(map[string]string)
+
+	if len(allowList) > 0 {
+		if allowList[0] == options.LabelWildcard {
+			return kubeAnnotationssToPrometheusLabels(allKubeAnnotations)
+		}
+
+		for _, l := range allowList {
+			v, found := allKubeAnnotations[l]
+			if found {
+				allowedKubeAnnotations[l] = v
+			}
+		}
+	}
+	return kubeAnnotationssToPrometheusLabels(allowedKubeAnnotations)
 }
 
 // createLabelKeysValues takes in passed kubernetes labels and allowed list in kubernetes label format

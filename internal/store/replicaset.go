@@ -33,11 +33,13 @@ import (
 
 var (
 	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
+	descReplicaSetAnnotationsName     = "kube_replicaset_annotations"
+	descReplicaSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descReplicaSetLabelsName          = "kube_replicaset_labels"
 	descReplicaSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 )
 
-func replicaSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_replicaset_created",
@@ -194,6 +196,24 @@ func replicaSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 
 				return &metric.Family{
 					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descReplicaSetAnnotationsName,
+			descReplicaSetAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(r.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
 				}
 			}),
 		),

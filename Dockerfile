@@ -12,6 +12,6 @@ COPY --from=builder /go/src/k8s.io/kube-state-metrics/kube-state-metrics /
 
 USER nobody
 
-ENTRYPOINT ["/kube-state-metrics", "--port=8080", "--telemetry-port=8081"]
+ENTRYPOINT ["/kube-state-metrics", "--port=8080", "--telemetry-port=8081", "--enable-gzip-encoding"]
 
 EXPOSE 8080 8081

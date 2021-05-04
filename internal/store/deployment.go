@@ -269,6 +269,29 @@ func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_deployment_spec_nodeselector",
+			"The node Selector for the deployment",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				if d.Spec.Template.Spec.NodeSelector == nil {
+					return &metric.Family{}
+				}
+
+				selectorlabelKeys, selectorlabelValues := kubeLabelsToPrometheusLabels(d.Spec.Template.Spec.NodeSelector)
+
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   selectorlabelKeys,
+							LabelValues: selectorlabelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
 }
 

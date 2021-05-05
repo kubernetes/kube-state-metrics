@@ -106,8 +106,8 @@ func TestDeploymentStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-		kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
-		kube_deployment_spec_nodeselector{namespace="ns1",deployment="d1"} 1
+	  kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
+	  kube_deployment_spec_nodeselector{namespace="ns1",deployment="d1"} 1
         kube_deployment_labels{deployment="depl1",namespace="ns1"} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
         kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
@@ -162,8 +162,8 @@ func TestDeploymentStore(t *testing.T) {
 			},
 			Want: metadata + `
        	kube_deployment_labels{deployment="depl2",namespace="ns2"} 1
-		kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
-		kube_deployment_spec_nodeselector{namespace="ns1",deployment="d1"} 1
+	  kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
+	  kube_deployment_spec_nodeselector{namespace="ns1",deployment="d1"} 1
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
         kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
         kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl2",namespace="ns2"} 1

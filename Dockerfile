@@ -15,3 +15,4 @@ USER nobody
 ENTRYPOINT ["/kube-state-metrics", "--port=8080", "--telemetry-port=8081", "--enable-gzip-encoding"]
 
 EXPOSE 8080 8081
+

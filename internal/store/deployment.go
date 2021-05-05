@@ -271,7 +271,7 @@ func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 		),
 		*generator.NewFamilyGenerator(
 			"kube_deployment_spec_nodeselector",
-			"The node Selector for the deployment",
+			"Node selector of the deployment",
 			metric.Gauge,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {

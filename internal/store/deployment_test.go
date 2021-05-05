@@ -69,7 +69,7 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
 		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
-		# HELP kube_deployment_spec_nodeselector The node Selector lables for the deployment converted to prometheus labels.
+		# HELP kube_deployment_spec_nodeselector Node selector labels for the deployment converted to Prometheus labels.
 		# TYPE kube_deployment_spec_nodeselector gauge
 	`
 	cases := []generateMetricsTestCase{

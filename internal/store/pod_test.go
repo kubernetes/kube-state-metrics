@@ -1462,7 +1462,6 @@ func TestPodStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
-					UID:       "uid1",
 					Labels: map[string]string{
 						"app": "example",
 					},
@@ -1473,7 +1472,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_pod_labels gauge
-				kube_pod_labels{namespace="ns1",pod="pod1",uid="uid1"} 1
+				kube_pod_labels{namespace="ns1",pod="pod1"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_labels",
@@ -1484,7 +1483,6 @@ func TestPodStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
-					UID:       "uid1",
 					Labels: map[string]string{
 						"app": "example",
 					},
@@ -1495,7 +1493,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_pod_labels gauge
-				kube_pod_labels{label_app="example",namespace="ns1",pod="pod1",uid="uid1"} 1
+				kube_pod_labels{label_app="example",namespace="ns1",pod="pod1"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_labels",

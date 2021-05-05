@@ -15,4 +15,4 @@
 | kube_deployment_metadata_generation | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
 | kube_deployment_labels | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; <br> `label_DEPLOYMENT_LABEL`=&lt;DEPLOYMENT_LABEL&gt; | STABLE |
 | kube_deployment_created | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; | STABLE |
-| kube_deployment_spec_nodeselector | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; <br> `label_SELECTOR_LABEL`=&lt;NODE_SELECTOR_LABEL&gt;| STABLE |
+| kube_deployment_spec_nodeselector | Gauge | `deployment`=&lt;deployment-name&gt; <br> `namespace`=&lt;deployment-namespace&gt; <br> `label_NODE_SELECTOR_LABEL`=&lt;NODE_SELECTOR_LABEL&gt; | STABLE |

@@ -50,6 +50,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 - [Usage](#usage)
   - [Kubernetes Deployment](#kubernetes-deployment)
   - [Limited privileges environment](#limited-privileges-environment)
+  - [Helm Chart](#helm-chart)
   - [Development](#development)
   - [Developer Contributions](#developer-contributions)
 
@@ -319,6 +320,11 @@ spec:
 ```
 
 For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
+
+
+#### Helm Chart
+
+The official Helm chart is maintained in [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics).
 
 #### Development
 

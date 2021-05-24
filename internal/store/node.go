@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 	"strings"
+	"time"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -422,6 +423,13 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descNodeLabelsDefaultLabels, m.LabelKeys...)
 			m.LabelValues = append([]string{node.Name}, m.LabelValues...)
+		}
+
+		// Removed node doesn't need metrics.
+		t := node.GetDeletionTimestamp()
+		if t != nil && time.Now().After(t.Time) {
+			metricFamily.Metrics = nil
+			return metricFamily
 		}
 
 		return metricFamily

@@ -79,6 +79,77 @@ func TestNodeStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_node_info"},
 		},
+		// Verify removed node metrics are none.
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "127.0.0.1",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Labels: map[string]string{
+						"node-role.kubernetes.io/master": "",
+					},
+					DeletionTimestamp: &metav1.Time{Time: time.Now().Add(-1 * time.Minute)},
+				},
+				Spec: v1.NodeSpec{
+					Unschedulable: true,
+					ProviderID:    "provider://i-randomidentifier",
+					PodCIDR:       "172.24.10.0/24",
+				},
+				Status: v1.NodeStatus{
+					NodeInfo: v1.NodeSystemInfo{
+						KernelVersion:           "kernel",
+						KubeletVersion:          "kubelet",
+						KubeProxyVersion:        "kubeproxy",
+						OSImage:                 "osimage",
+						ContainerRuntimeVersion: "rkt",
+					},
+					Addresses: []v1.NodeAddress{
+						{Type: "InternalIP", Address: "1.2.3.4"},
+					},
+					Capacity: v1.ResourceList{
+						v1.ResourceCPU:                    resource.MustParse("4.3"),
+						v1.ResourceMemory:                 resource.MustParse("2G"),
+						v1.ResourcePods:                   resource.MustParse("1000"),
+						v1.ResourceStorage:                resource.MustParse("3G"),
+						v1.ResourceEphemeralStorage:       resource.MustParse("4G"),
+						v1.ResourceName("nvidia.com/gpu"): resource.MustParse("4"),
+					},
+					Allocatable: v1.ResourceList{
+						v1.ResourceCPU:                    resource.MustParse("3"),
+						v1.ResourceMemory:                 resource.MustParse("1G"),
+						v1.ResourcePods:                   resource.MustParse("555"),
+						v1.ResourceStorage:                resource.MustParse("2G"),
+						v1.ResourceEphemeralStorage:       resource.MustParse("3G"),
+						v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
+					},
+				},
+			},
+			Want: `
+		# HELP kube_node_created Unix creation timestamp
+		# HELP kube_node_info Information about a cluster node.
+		# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_node_role The role of a cluster node.
+		# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
+		# HELP kube_node_status_allocatable The allocatable for different resources of a node that are available for scheduling.
+		# HELP kube_node_status_capacity The capacity for different resources of a node.
+		# TYPE kube_node_created gauge
+		# TYPE kube_node_info gauge
+		# TYPE kube_node_labels gauge
+		# TYPE kube_node_role gauge
+		# TYPE kube_node_spec_unschedulable gauge
+		# TYPE kube_node_status_allocatable gauge
+		# TYPE kube_node_status_capacity gauge
+			`,
+			MetricNames: []string{
+				"kube_node_status_capacity",
+				"kube_node_status_allocatable",
+				"kube_node_spec_unschedulable",
+				"kube_node_labels",
+				"kube_node_role",
+				"kube_node_info",
+				"kube_node_created",
+			},
+		},
 		// Verify resource metric.
 		{
 			Obj: &v1.Node{

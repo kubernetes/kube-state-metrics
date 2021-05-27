@@ -19,7 +19,7 @@ package store
 import (
 	"context"
 
-	"k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -45,7 +45,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			descPodDisruptionBudgetAnnotationsHelp,
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -63,7 +63,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			descPodDisruptionBudgetLabelsHelp,
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -81,7 +81,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"Unix creation timestamp",
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !p.CreationTimestamp.IsZero() {
@@ -100,7 +100,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"Current number of healthy pods",
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -115,7 +115,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"Minimum desired number of healthy pods",
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -130,7 +130,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"Number of pod disruptions that are currently allowed",
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -145,7 +145,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"Total number of pods counted by this disruption budget",
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -160,7 +160,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"Most recent generation observed when updating this PDB status",
 			metric.Gauge,
 			"",
-			wrapPodDisruptionBudgetFunc(func(p *v1beta1.PodDisruptionBudget) *metric.Family {
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -173,9 +173,9 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 	}
 }
 
-func wrapPodDisruptionBudgetFunc(f func(*v1beta1.PodDisruptionBudget) *metric.Family) func(interface{}) *metric.Family {
+func wrapPodDisruptionBudgetFunc(f func(*policyv1.PodDisruptionBudget) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		podDisruptionBudget := obj.(*v1beta1.PodDisruptionBudget)
+		podDisruptionBudget := obj.(*policyv1.PodDisruptionBudget)
 
 		metricFamily := f(podDisruptionBudget)
 
@@ -192,11 +192,11 @@ func createPodDisruptionBudgetListWatch(kubeClient clientset.Interface, ns strin
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).List(context.TODO(), opts)
+			return kubeClient.PolicyV1().PodDisruptionBudgets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).Watch(context.TODO(), opts)
+			return kubeClient.PolicyV1().PodDisruptionBudgets(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

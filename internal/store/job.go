@@ -20,15 +20,15 @@ import (
 	"context"
 	"strconv"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	v1batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -38,26 +38,9 @@ var (
 	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
 )
 
-func jobMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
-			descJobLabelsName,
-			descJobLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(j.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
+func jobMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
+
 		*generator.NewFamilyGenerator(
 			"kube_job_info",
 			"Information about job.",
@@ -358,6 +341,47 @@ func jobMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descJobLabelsName,
+			descJobLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(j.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_job_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(j.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.Family {

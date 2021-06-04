@@ -61,7 +61,6 @@ func TestStatefulSetStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_statefulset_created Unix creation timestamp
-				# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_status_current_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
@@ -72,7 +71,6 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
 				# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
 				# TYPE kube_statefulset_created gauge
-				# TYPE kube_statefulset_labels gauge
 				# TYPE kube_statefulset_metadata_generation gauge
 				# TYPE kube_statefulset_replicas gauge
 				# TYPE kube_statefulset_status_current_revision gauge
@@ -92,11 +90,9 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_status_observed_generation{namespace="ns1",statefulset="statefulset1"} 1
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_metadata_generation{namespace="ns1",statefulset="statefulset1"} 3
-				kube_statefulset_labels{namespace="ns1",statefulset="statefulset1"} 1
 `,
 			MetricNames: []string{
 				"kube_statefulset_created",
-				"kube_statefulset_labels",
 				"kube_statefulset_metadata_generation",
 				"kube_statefulset_replicas",
 				"kube_statefulset_status_observed_generation",
@@ -133,7 +129,6 @@ func TestStatefulSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_status_current_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
@@ -143,7 +138,6 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_status_replicas_ready The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
 				# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
-				# TYPE kube_statefulset_labels gauge
 				# TYPE kube_statefulset_metadata_generation gauge
 				# TYPE kube_statefulset_replicas gauge
 				# TYPE kube_statefulset_status_current_revision gauge
@@ -161,11 +155,9 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_status_observed_generation{namespace="ns2",statefulset="statefulset2"} 2
  				kube_statefulset_replicas{namespace="ns2",statefulset="statefulset2"} 6
  				kube_statefulset_metadata_generation{namespace="ns2",statefulset="statefulset2"} 21
-				kube_statefulset_labels{namespace="ns2",statefulset="statefulset2"} 1
 				kube_statefulset_status_current_revision{namespace="ns2",revision="cr2",statefulset="statefulset2"} 1
 `,
 			MetricNames: []string{
-				"kube_statefulset_labels",
 				"kube_statefulset_metadata_generation",
 				"kube_statefulset_replicas",
 				"kube_statefulset_status_observed_generation",
@@ -199,7 +191,6 @@ func TestStatefulSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_replicas Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_status_current_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
@@ -208,7 +199,6 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_status_replicas_ready The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated The number of updated replicas per StatefulSet.
 				# HELP kube_statefulset_status_update_revision Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
-				# TYPE kube_statefulset_labels gauge
 				# TYPE kube_statefulset_metadata_generation gauge
 				# TYPE kube_statefulset_replicas gauge
 				# TYPE kube_statefulset_status_current_revision gauge
@@ -224,11 +214,9 @@ func TestStatefulSetStore(t *testing.T) {
 				kube_statefulset_status_replicas_updated{namespace="ns3",statefulset="statefulset3"} 0
  				kube_statefulset_replicas{namespace="ns3",statefulset="statefulset3"} 9
  				kube_statefulset_metadata_generation{namespace="ns3",statefulset="statefulset3"} 36
-				kube_statefulset_labels{namespace="ns3",statefulset="statefulset3"} 1
 				kube_statefulset_status_current_revision{namespace="ns3",revision="cr3",statefulset="statefulset3"} 1
  			`,
 			MetricNames: []string{
-				"kube_statefulset_labels",
 				"kube_statefulset_metadata_generation",
 				"kube_statefulset_replicas",
 				"kube_statefulset_status_replicas",
@@ -239,10 +227,39 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_current_revision",
 			},
 		},
+		{
+			Obj: &v1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "statefulset4",
+					Namespace: "ns4",
+					Labels: map[string]string{
+						"app": "example4",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+					Generation: 36,
+				},
+			},
+			Want: `
+				# HELP kube_statefulset_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_statefulset_labels gauge
+
+				# HELP kube_statefulset_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_statefulset_annotations gauge
+				kube_statefulset_annotations{annotation_allowlisted="true",namespace="ns4",statefulset="statefulset4"} 1
+				kube_statefulset_labels{label_app="example4",namespace="ns4",statefulset="statefulset4"} 1
+
+ 			`,
+			MetricNames:          []string{"kube_statefulset_labels", "kube_statefulset_annotations"},
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

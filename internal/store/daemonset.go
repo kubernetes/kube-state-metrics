@@ -36,8 +36,8 @@ var (
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 )
 
-func daemonSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func daemonSetMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_daemonset_created",
 			"Unix creation timestamp",
@@ -210,7 +210,9 @@ func daemonSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
 			descDaemonSetLabelsName,
 			descDaemonSetLabelsHelp,
 			metric.Gauge,
@@ -227,8 +229,29 @@ func daemonSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerat
 					},
 				}
 			}),
-		),
+		))
 	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_daemonset_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(d.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(interface{}) *metric.Family {

@@ -16,9 +16,6 @@ package store
 import (
 	"context"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -36,8 +36,8 @@ var (
 	defaultVolumeBindingMode            = storagev1.VolumeBindingImmediate
 )
 
-func storageClassMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func storageClassMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_storageclass_info",
 			"Information about storageclass.",
@@ -79,7 +79,9 @@ func storageClassMetricFamilies(allowLabelsList []string) []generator.FamilyGene
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
 			descStorageClassLabelsName,
 			descStorageClassLabelsHelp,
 			metric.Gauge,
@@ -96,8 +98,29 @@ func storageClassMetricFamilies(allowLabelsList []string) []generator.FamilyGene
 					},
 				}
 			}),
-		),
+		))
 	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_storageclass_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(interface{}) *metric.Family {

@@ -30,12 +30,13 @@ import (
 )
 
 type generateMetricsTestCase struct {
-	Obj             interface{}
-	MetricNames     []string
-	AllowLabelsList []string
-	Want            string
-	Headers         []string
-	Func            func(interface{}) []metric.FamilyInterface
+	Obj                  interface{}
+	MetricNames          []string
+	AllowLabelsList      []string
+	AllowAnnotationsList []string
+	Want                 string
+	Headers              []string
+	Func                 func(interface{}) []metric.FamilyInterface
 }
 
 func (testCase *generateMetricsTestCase) run() error {

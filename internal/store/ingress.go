@@ -37,8 +37,8 @@ var (
 	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
 )
 
-func ingressMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func ingressMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_ingress_info",
 			"Information about ingress.",
@@ -51,24 +51,6 @@ func ingressMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 							Value: 1,
 						},
 					}}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			descIngressLabelsName,
-			descIngressLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(i.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					}}
-
 			}),
 		),
 		*generator.NewFamilyGenerator(
@@ -146,6 +128,47 @@ func ingressMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descIngressLabelsName,
+			descIngressLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(i.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					}}
+
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_ingress_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(i.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					}}
+
+			}),
+		))
+	}
+	return families
 }
 
 func wrapIngressFunc(f func(*networkingv1.Ingress) *metric.Family) func(interface{}) *metric.Family {

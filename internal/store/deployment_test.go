@@ -67,8 +67,6 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
 		# HELP kube_deployment_spec_strategy_rollingupdate_max_surge Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
-		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_deployment_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -105,7 +103,6 @@ func TestDeploymentStore(t *testing.T) {
 			},
 			Want: metadata + `
         kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
-        kube_deployment_labels{deployment="depl1",namespace="ns1"} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
         kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
         kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
@@ -121,7 +118,7 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="false"} 0
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="false"} 0
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="unknown"} 0
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="unknown"} 0
+		kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="unknown"} 0
 `,
 		},
 		{
@@ -131,6 +128,10 @@ func TestDeploymentStore(t *testing.T) {
 					Namespace: "ns2",
 					Labels: map[string]string{
 						"app": "example2",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
 					},
 					Generation: 14,
 				},
@@ -158,7 +159,11 @@ func TestDeploymentStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-       	kube_deployment_labels{deployment="depl2",namespace="ns2"} 1
+		# HELP kube_deployment_labels Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_deployment_labels gauge
+		# HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_deployment_annotations gauge
+       	kube_deployment_labels{deployment="depl2",label_app="example2",namespace="ns2"} 1
         kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
         kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
@@ -177,14 +182,17 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="false"} 0
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="unknown"} 0
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="unknown"} 0
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="unknown"} 0
+		kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="unknown"} 0
+		kube_deployment_annotations{annotation_allowlisted="true",deployment="depl2",namespace="ns2"} 1
 `,
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

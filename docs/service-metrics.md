@@ -8,3 +8,4 @@
 | kube_service_spec_type | Gauge | Type about service | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `type`=&lt;ClusterIP\|NodePort\|LoadBalancer\|ExternalName&gt; | STABLE |
 | kube_service_spec_external_ip | Gauge | Service external ips. One series for each ip | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `external_ip`=&lt;external-ip&gt; | STABLE |
 | kube_service_status_load_balancer_ingress | Gauge | Service load balancer ingress status | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `ip`=&lt;load-balancer-ingress-ip&gt; <br> `hostname`=&lt;load-balancer-ingress-hostname&gt; | STABLE |
+| kube_service_annotations | Gauge | Kubernetes annotations converted to Prometheus labels | |`annotation_SERVICE_ANNOTATION`=&lt;SERVICE_ANNOTATION&gt; <br> `service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; | EXPERIMENTAL |

@@ -145,12 +145,13 @@ func main() {
 
 	kubeClient, vpaClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
-		klog.Fatalf("Failed to create client: %v", err)
+		klog.Exitf("Failed to create client: %v", err)
 	}
 	storeBuilder.WithKubeClient(kubeClient)
 	storeBuilder.WithVPAClient(vpaClient)
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
+	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
 
 	ksmMetricsRegistry.MustRegister(
 		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),

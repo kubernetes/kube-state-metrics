@@ -41,8 +41,8 @@ var (
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 )
 
-func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func persistentVolumeMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			descPersistentVolumeClaimRefName,
 			descPersistentVolumeClaimRefHelp,
@@ -68,24 +68,6 @@ func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.Family
 								p.Spec.ClaimRef.Namespace,
 							},
 							Value: 1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			descPersistentVolumeLabelsName,
-			descPersistentVolumeLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
 						},
 					},
 				}
@@ -237,6 +219,47 @@ func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.Family
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descPersistentVolumeLabelsName,
+			descPersistentVolumeLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_persistentvolume_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(p.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(interface{}) *metric.Family {

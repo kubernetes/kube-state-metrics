@@ -32,8 +32,6 @@ func TestNamespaceStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_namespace_created Unix creation timestamp
 		# TYPE kube_namespace_created gauge
-		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_namespace_labels gauge
 		# HELP kube_namespace_status_phase kubernetes namespace status phase.
 		# TYPE kube_namespace_status_phase gauge
 		# HELP kube_namespace_status_condition The condition of a namespace.
@@ -54,7 +52,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{namespace="nsActiveTest"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Active"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Terminating"} 0
 `,
@@ -72,7 +69,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Terminating"} 1
 `,
@@ -95,7 +91,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{namespace="nsTerminateWithConditionTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Terminating"} 1
 				kube_namespace_status_condition{condition="NamespaceDeletionContentFailure",namespace="nsTerminateWithConditionTest",status="false"} 0
@@ -128,7 +123,6 @@ func TestNamespaceStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_namespace_created{namespace="ns1"} 1.5e+09
-				kube_namespace_labels{namespace="ns1"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
 `,
@@ -141,6 +135,10 @@ func TestNamespaceStore(t *testing.T) {
 						"app": "example2",
 						"l2":  "label2",
 					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
 				},
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
@@ -150,16 +148,52 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{namespace="ns2"} 1
+				# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_namespace_annotations gauge
+				kube_namespace_annotations{namespace="ns2",annotation_allowlisted="true"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
 `,
+			AllowAnnotationsList: []string{"allowlisted"},
+		},
+		{
+			Obj: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "ns3",
+					Labels: map[string]string{
+						"app": "example3",
+						"l2":  "label2",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+				},
+				Spec: v1.NamespaceSpec{
+					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
+				},
+				Status: v1.NamespaceStatus{
+					Phase: v1.NamespaceActive,
+				},
+			},
+			Want: metadata + `
+				# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_namespace_annotations gauge
+				# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_namespace_labels gauge
+				kube_namespace_annotations{annotation_allowlisted="true",namespace="ns3"} 1
+				kube_namespace_labels{label_app="example3",namespace="ns3"} 1
+				kube_namespace_status_phase{namespace="ns3",phase="Active"} 1
+				kube_namespace_status_phase{namespace="ns3",phase="Terminating"} 0
+`,
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(namespaceMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(namespaceMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(namespaceMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(namespaceMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

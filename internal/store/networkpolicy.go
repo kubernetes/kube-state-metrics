@@ -34,8 +34,8 @@ var (
 	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
 )
 
-func networkPolicyMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func networkPolicyMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_networkpolicy_created",
 			"Unix creation timestamp of network policy",
@@ -48,24 +48,6 @@ func networkPolicyMetricFamilies(allowLabelsList []string) []generator.FamilyGen
 							LabelKeys:   []string{},
 							LabelValues: []string{},
 							Value:       float64(n.CreationTimestamp.Unix()),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			"kube_networkpolicy_labels",
-			"Kubernetes labels converted to Prometheus labels",
-			metric.Gauge,
-			"",
-			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
 						},
 					},
 				}
@@ -106,6 +88,47 @@ func networkPolicyMetricFamilies(allowLabelsList []string) []generator.FamilyGen
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_networkpolicy_labels",
+			"Kubernetes labels converted to Prometheus labels",
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_networkpolicy_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(n.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) func(interface{}) *metric.Family {

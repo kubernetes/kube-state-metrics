@@ -73,10 +73,6 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 	return ms
 }
 
-func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
-	return mapToPrometheusLabels(labels, "label")
-}
-
 func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
 	labelKeys := make([]string, 0, len(labels))
 	labelValues := make([]string, 0, len(labels))
@@ -172,14 +168,14 @@ func isPrefixedNativeResource(name v1.ResourceName) bool {
 	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
 }
 
-// createLabelKeysValues takes in passed kubernetes labels and allowed list in kubernetes label format
-// it returns only those allowed labels that exist in the list converting them to Prometheus labels.
-func createLabelKeysValues(allKubeLabels map[string]string, allowList []string) ([]string, []string) {
+// createPrefixKeysValues filters allKubeLabels leaving only those in allowList
+// and creates Prometheus labels with specified prefix
+func createPrefixKeysValues(allKubeLabels map[string]string, allowList []string, prefix string) ([]string, []string) {
 	allowedKubeLabels := make(map[string]string)
 
 	if len(allowList) > 0 {
 		if allowList[0] == options.LabelWildcard {
-			return kubeLabelsToPrometheusLabels(allKubeLabels)
+			return mapToPrometheusLabels(allKubeLabels, prefix)
 		}
 
 		for _, l := range allowList {
@@ -189,5 +185,17 @@ func createLabelKeysValues(allKubeLabels map[string]string, allowList []string) 
 			}
 		}
 	}
-	return kubeLabelsToPrometheusLabels(allowedKubeLabels)
+	return mapToPrometheusLabels(allowedKubeLabels, prefix)
+}
+
+// createLabelKeysValues takes in passed kubernetes labels and allowed list in kubernetes label format
+// it returns only those allowed labels that exist in the list converting them to Prometheus labels.
+func createLabelKeysValues(allKubeLabels map[string]string, allowList []string) ([]string, []string) {
+	return createPrefixKeysValues(allKubeLabels, allowList, "label")
+}
+
+// createAnnotationKeysValues takes in passed kubernetes annotations and allowed list in kubernetes label format
+// it returns only those allowed annotations that exist in the list converting them to Prometheus labels.
+func createAnnotationKeysValues(allKubeAnnotations map[string]string, allowList []string) ([]string, []string) {
+	return createPrefixKeysValues(allKubeAnnotations, allowList, "annotation")
 }

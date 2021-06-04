@@ -36,8 +36,8 @@ var (
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 )
 
-func secretMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func secretMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_secret_info",
 			"Information about secret.",
@@ -71,25 +71,6 @@ func secretMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator 
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			descSecretLabelsName,
-			descSecretLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-
-			}),
-		),
-		*generator.NewFamilyGenerator(
 			"kube_secret_created",
 			"Unix creation timestamp",
 			metric.Gauge,
@@ -120,7 +101,48 @@ func secretMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator 
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descSecretLabelsName,
+			descSecretLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
 
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_secret_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric.Family {

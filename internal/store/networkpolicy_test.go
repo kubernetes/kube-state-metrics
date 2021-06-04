@@ -29,10 +29,6 @@ func TestNetworkPolicyStore(t *testing.T) {
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	const metadata = `
-		# HELP kube_verticalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_verticalpodautoscaler_labels gauge
-		`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &networkingv1.NetworkPolicy{
@@ -55,20 +51,51 @@ func TestNetworkPolicyStore(t *testing.T) {
 			},
 			Want: `
 			kube_networkpolicy_created{namespace="ns1",networkpolicy="netpol1"} 1.501569018e+09
-			kube_networkpolicy_labels{namespace="ns1",networkpolicy="netpol1"} 1
 			kube_networkpolicy_spec_egress_rules{namespace="ns1",networkpolicy="netpol1"} 3
 			kube_networkpolicy_spec_ingress_rules{namespace="ns1",networkpolicy="netpol1"} 2
 			`,
 			MetricNames: []string{
 				"kube_networkpolicy_created",
-				"kube_networkpolicy_labels",
 				"kube_networkpolicy_spec_egress_rules",
 				"kube_networkpolicy_spec_ingress_rules",
 			},
 		},
+		{
+			Obj: &networkingv1.NetworkPolicy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "netpol1",
+					Namespace:         "ns1",
+					CreationTimestamp: metav1StartTime,
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+				},
+				Spec: networkingv1.NetworkPolicySpec{
+					Ingress: []networkingv1.NetworkPolicyIngressRule{
+						{},
+						{},
+					},
+					Egress: []networkingv1.NetworkPolicyEgressRule{
+						{},
+						{},
+						{},
+					},
+				},
+			},
+			Want: `
+			kube_networkpolicy_annotations{annotation_allowlisted="true",namespace="ns1",networkpolicy="netpol1"} 1
+			kube_networkpolicy_created{namespace="ns1",networkpolicy="netpol1"} 1.501569018e+09
+			kube_networkpolicy_labels{namespace="ns1",networkpolicy="netpol1"} 1
+			kube_networkpolicy_spec_egress_rules{namespace="ns1",networkpolicy="netpol1"} 3
+			kube_networkpolicy_spec_ingress_rules{namespace="ns1",networkpolicy="netpol1"} 2
+			`,
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(networkPolicyMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(networkPolicyMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%s", i, err)
 		}

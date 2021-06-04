@@ -20,15 +20,15 @@ import (
 	"context"
 	"strconv"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -37,8 +37,8 @@ var (
 	descReplicaSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 )
 
-func replicaSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func replicaSetMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_replicaset_created",
 			"Unix creation timestamp",
@@ -197,7 +197,9 @@ func replicaSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
 			descReplicaSetLabelsName,
 			descReplicaSetLabelsHelp,
 			metric.Gauge,
@@ -214,8 +216,29 @@ func replicaSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 					},
 				}
 			}),
-		),
+		))
 	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_replicaset_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(r.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(interface{}) *metric.Family {

@@ -7,3 +7,4 @@
 | kube_endpoint_info | Gauge | `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt;  | STABLE |
 | kube_endpoint_labels | Gauge | `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt; <br> `label_ENDPOINT_LABEL`=&lt;ENDPOINT_LABEL&gt;  | STABLE |
 | kube_endpoint_created | Gauge | `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt; | STABLE |
+| kube_endpoint_annotations | Gauge | `annotation_ENDPOINT_ANNOTATION`=&lt;ENDPOINT_ANNOTATION&gt; <br> `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt; | EXPERIMENTAL |

@@ -52,6 +52,7 @@
 | kube_pod_status_reason | Gauge | The pod status reasons | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;NodeLost\|Evicted\|UnexpectedAdmissionError&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
 | kube_pod_status_scheduled_time | Gauge | Unix timestamp when pod moved into scheduled status | seconds |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
 | kube_pod_status_unschedulable | Gauge | Describes the unschedulable status for the pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
+| kube_pod_annotations | Gauge | Kubernetes annotations converted to Prometheus labels | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `annotation_POD_ANNOTATION`=&lt;POD_ANNOTATIONL&gt;  | EXPERIMENTAL |
 
 ## Useful metrics queries
 

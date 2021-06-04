@@ -7,3 +7,4 @@
 | kube_networkpolicy_labels             | Gauge       | `namespace`=&lt;namespace name&gt; `networkpolicy`=&lt;networkpolicy name&gt;  | EXPERIMENTAL |
 | kube_networkpolicy_spec_egress_rules  | Gauge       | `namespace`=&lt;namespace name&gt; `networkpolicy`=&lt;networkpolicy name&gt;  | EXPERIMENTAL |
 | kube_networkpolicy_spec_ingress_rules | Gauge       | `namespace`=&lt;namespace name&gt; `networkpolicy`=&lt;networkpolicy name&gt;  | EXPERIMENTAL |
+| kube_networkpolicy_annotations        | Gauge       | `namespace`=&lt;namespace name&gt; `networkpolicy`=&lt;networkpolicy name&gt; <br> `annotation_NETWORKPOLICY_ANNOTATION`=&lt;NETWORKPOLICY_ANNOTATIONL&gt;  | EXPERIMENTAL |

@@ -41,20 +41,17 @@ func TestSecretStore(t *testing.T) {
 			Want: `
 				# HELP kube_secret_created Unix creation timestamp
 				# HELP kube_secret_info Information about secret.
-				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
 				# HELP kube_secret_type Type about secret.
 				# TYPE kube_secret_created gauge
 				# TYPE kube_secret_info gauge
-				# TYPE kube_secret_labels gauge
 				# TYPE kube_secret_metadata_resource_version gauge
 				# TYPE kube_secret_type gauge
 				kube_secret_info{namespace="ns1",secret="secret1"} 1
 				kube_secret_type{namespace="ns1",secret="secret1",type="Opaque"} 1
 				kube_secret_metadata_resource_version{namespace="ns1",secret="secret1"} 0
-				kube_secret_labels{namespace="ns1",secret="secret1"} 1
 `,
-			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
+			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_type"},
 		},
 		{
 			Obj: &v1.Secret{
@@ -69,20 +66,17 @@ func TestSecretStore(t *testing.T) {
 			Want: `
 				# HELP kube_secret_created Unix creation timestamp
 				# HELP kube_secret_info Information about secret.
-				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
 				# HELP kube_secret_type Type about secret.
 				# TYPE kube_secret_created gauge
 				# TYPE kube_secret_info gauge
-				# TYPE kube_secret_labels gauge
 				# TYPE kube_secret_metadata_resource_version gauge
 				# TYPE kube_secret_type gauge
 				kube_secret_info{namespace="ns2",secret="secret2"} 1
 				kube_secret_type{namespace="ns2",secret="secret2",type="kubernetes.io/service-account-token"} 1
 				kube_secret_created{namespace="ns2",secret="secret2"} 1.501569018e+09
-				kube_secret_labels{namespace="ns2",secret="secret2"} 1
 				`,
-			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
+			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_type"},
 		},
 		{
 			Obj: &v1.Secret{
@@ -91,33 +85,41 @@ func TestSecretStore(t *testing.T) {
 					Namespace:         "ns3",
 					CreationTimestamp: metav1StartTime,
 					Labels:            map[string]string{"test-3": "test-3"},
-					ResourceVersion:   "0",
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+					ResourceVersion: "0",
 				},
 				Type: v1.SecretTypeDockercfg,
 			},
 			Want: `
+				# HELP kube_secret_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_secret_created Unix creation timestamp
 				# HELP kube_secret_info Information about secret.
 				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
 				# HELP kube_secret_type Type about secret.
+				# TYPE kube_secret_annotations gauge
 				# TYPE kube_secret_created gauge
 				# TYPE kube_secret_info gauge
 				# TYPE kube_secret_labels gauge
 				# TYPE kube_secret_metadata_resource_version gauge
 				# TYPE kube_secret_type gauge
+				kube_secret_annotations{annotation_allowlisted="true",namespace="ns3",secret="secret3"} 1				
 				kube_secret_info{namespace="ns3",secret="secret3"} 1
 				kube_secret_type{namespace="ns3",secret="secret3",type="kubernetes.io/dockercfg"} 1
 				kube_secret_created{namespace="ns3",secret="secret3"} 1.501569018e+09
 				kube_secret_metadata_resource_version{namespace="ns3",secret="secret3"} 0
-				kube_secret_labels{namespace="ns3",secret="secret3"} 1
+				kube_secret_labels{namespace="ns3",secret="secret3"} 1	
 `,
-			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(secretMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(secretMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(secretMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(secretMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

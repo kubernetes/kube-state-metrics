@@ -36,8 +36,8 @@ var (
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 )
 
-func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func endpointMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_endpoint_info",
 			"Information about endpoint.",
@@ -70,24 +70,6 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 
 				return &metric.Family{
 					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			descEndpointLabelsName,
-			descEndpointLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(e.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
 				}
 			}),
 		),
@@ -131,6 +113,47 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descEndpointLabelsName,
+			descEndpointLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(e.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_endpoint_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(e.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapEndpointFunc(f func(*v1.Endpoints) *metric.Family) func(interface{}) *metric.Family {

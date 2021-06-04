@@ -52,8 +52,6 @@ func TestReplicaSetStore(t *testing.T) {
 		# TYPE kube_replicaset_spec_replicas gauge
 		# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
 		# TYPE kube_replicaset_owner gauge
-		# HELP kube_replicaset_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_replicaset_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -85,7 +83,6 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_replicaset_labels{replicaset="rs1",namespace="ns1"} 1
 				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
 				kube_replicaset_status_replicas{namespace="ns1",replicaset="rs1"} 5
@@ -106,6 +103,10 @@ func TestReplicaSetStore(t *testing.T) {
 						"app": "example2",
 						"env": "ex",
 					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
 				},
 				Status: v1.ReplicaSetStatus{
 					Replicas:             0,
@@ -118,7 +119,12 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_replicaset_labels{replicaset="rs2",namespace="ns2"} 1
+				# HELP kube_replicaset_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_replicaset_labels gauge
+				# HELP kube_replicaset_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_replicaset_annotations gauge
+				kube_replicaset_annotations{annotation_allowlisted="true",namespace="ns2",replicaset="rs2"} 1
+				kube_replicaset_labels{label_app="example2",replicaset="rs2",namespace="ns2"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_status_observed_generation{namespace="ns2",replicaset="rs2"} 5
@@ -127,11 +133,13 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_spec_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_owner{namespace="ns2",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",replicaset="rs2"} 1
 			`,
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(replicaSetMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(replicaSetMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(replicaSetMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(replicaSetMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

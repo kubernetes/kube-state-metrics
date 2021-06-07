@@ -538,12 +538,12 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal("shard 2 has 0 metrics when it shouldn't")
 	}
 
-	gotFiltered := append(got1Filtered, got2Filtered...)
-	sort.Strings(gotFiltered)
+	got1Filtered = append(got1Filtered, got2Filtered...)
+	sort.Strings(got1Filtered)
 
 	for i := 0; i < len(expectedFiltered); i++ {
 		expected := strings.TrimSpace(expectedFiltered[i])
-		got := strings.TrimSpace(gotFiltered[i])
+		got := strings.TrimSpace(got1Filtered[i])
 		if expected != got {
 			t.Fatalf("\n\nexpected:\n\n%q\n\nbut got:\n\n%q\n\n", expected, got)
 		}

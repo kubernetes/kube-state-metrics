@@ -1,3 +1,21 @@
+## v2.1.0 / 2021-06-04
+
+* [CHANGE] Update go version and dependencies #1493
+
+## v2.1.0-rc.0 / 2021-05-20
+
+* [FEATURE] Add support for native TLS #1354
+* [FEATURE] Add wildcard option to metric-labels-allowlist #1403
+* [FEATURE] Add build info metric #1332
+* [CHANGE] Add "uid" label to every pod metric #1304
+* [CHANGE] Add resourceVersion to CronJob metrics #1447
+* [CHANGE] Update go version and dependencies #1474
+* [CHANGE] Bump client-go and friends to v0.21 (Kubernetes v1.21) #1463
+* [CHANGE] Replace deprecated use of ioutil #1458
+* [BUGFIX] Fix builder.Builder WithMetrics signature #1455
+* [BUGFIX] Fix pod-metric missing reasons #1287
+* [BUGFIX] Fix multiListWatch resourceVersion mismatch if watch reconnected #1377
+
 ## v2.0.0 / 2021-04-13
 
 * [CHANGE] Update go version and dependencies #1440

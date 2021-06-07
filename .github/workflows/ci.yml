@@ -39,7 +39,7 @@ jobs:
 
     - name: Lint
       run: |
-        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.39.0
+        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.40.0
         make lint
 
   ci-validate-manifests:
@@ -192,13 +192,6 @@ jobs:
   ci-e2e-tests:
     name: ci-e2e-tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        cluster_version:
-         - 'v1.18.0'
-         - 'v1.19.0'
-         - 'v1.20.0'
-         - 'v1.21.0'
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
@@ -215,7 +208,5 @@ jobs:
         make install-tools
 
     - name: End-to-end tests
-      env:
-        KUBERNETES_VERSION: ${{cluster_version}}
       run: |
         make e2e

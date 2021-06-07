@@ -50,6 +50,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 - [Usage](#usage)
   - [Kubernetes Deployment](#kubernetes-deployment)
   - [Limited privileges environment](#limited-privileges-environment)
+  - [Helm Chart](#helm-chart)
   - [Development](#development)
   - [Developer Contributions](#developer-contributions)
 
@@ -67,9 +68,9 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 
 | kube-state-metrics | **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |  **Kubernetes 1.21** |
 |--------------------|---------------------|----------------------|----------------------|----------------------|----------------------|
-| **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
 | **v1.9.8**         |         -           |          -           |          -           |          -           |          -           |
 | **v2.0.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          -/✓         |
+| **v2.1.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
 | **master**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
@@ -85,7 +86,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.1.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 
@@ -319,6 +320,11 @@ spec:
 ```
 
 For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
+
+
+#### Helm Chart
+
+The official Helm chart is maintained in [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics).
 
 #### Development
 

@@ -19,6 +19,8 @@ package types
 import (
 	"context"
 
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+
 	"github.com/prometheus/client_golang/prometheus"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
@@ -41,14 +43,14 @@ type BuilderInterface interface {
 	WithGenerateStoreFunc(f BuildStoreFunc)
 	WithAllowLabels(l map[string][]string)
 	DefaultGenerateStoreFunc() BuildStoreFunc
-	Build() []cache.Store
+	Build() []metricsstore.MetricsWriter
 }
 
-// BuildStoreFunc function signature that is use to returns a cache.Store
+// BuildStoreFunc function signature that is use to returns a list of metricsstore.MetricsStore
 type BuildStoreFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
-) cache.Store
+) []*metricsstore.MetricsStore
 
 // AllowDenyLister interface for AllowDeny lister that can allow or exclude metrics by there names
 type AllowDenyLister interface {

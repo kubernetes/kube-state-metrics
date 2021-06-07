@@ -1,3 +1,7 @@
+## v2.1.0 / 2021-06-04
+
+* [CHANGE] Update go version and dependencies #1493
+
 ## v2.1.0-rc.0 / 2021-05-20
 
 * [FEATURE] Add support for native TLS #1354

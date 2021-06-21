@@ -17,7 +17,6 @@ limitations under the License.
 package listwatch
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -25,81 +24,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 )
-
-// NewUnprivilegedNamespaceListWatchFromClient mimics
-// cache.NewListWatchFromClient.
-// It allows for the creation of a cache.ListWatch for namespaces from a client
-// that does not have `List` privileges. If the slice of namespaces contains
-// only v1.NamespaceAll, then this func assumes that the client has List and
-// Watch privileges and returns a regular cache.ListWatch, since there is no
-// other way to get all namespaces.
-//
-// The allowed namespaces and denied namespaces are mutually exclusive.
-// See NewFilteredUnprivilegedNamespaceListWatchFromClient for a description on how they are applied.
-func NewUnprivilegedNamespaceListWatchFromClient(c cache.Getter, allowedNamespaces, deniedNamespaces []string, fieldSelector fields.Selector) cache.ListerWatcher {
-	optionsModifier := func(options *metav1.ListOptions) {
-		options.FieldSelector = fieldSelector.String()
-	}
-	return NewFilteredUnprivilegedNamespaceListWatchFromClient(c, allowedNamespaces, deniedNamespaces, optionsModifier)
-}
-
-// NewFilteredUnprivilegedNamespaceListWatchFromClient mimics
-// cache.NewUnprivilegedNamespaceListWatchFromClient.
-// It allows for the creation of a cache.ListWatch for allowed or denied namespaces
-// from a client that does not have `List` privileges.
-//
-// If the given allowed namespaces contain only v1.NamespaceAll,
-// then this function assumes that the client has List and
-// Watch privileges and returns a regular cache.ListWatch, since there is no
-// other way to get all namespaces.
-//
-// The given allowed and denied namespaces are mutually exclusive.
-// If allowed namespaces contain multiple items, the given denied namespaces have no effect.
-// If the allowed namespaces includes exactly one entry with the value v1.NamespaceAll (empty string),
-// the given denied namespaces are applied.
-func NewFilteredUnprivilegedNamespaceListWatchFromClient(c cache.Getter, allowedNamespaces, deniedNamespaces []string, optionsModifier func(options *metav1.ListOptions)) cache.ListerWatcher {
-	// If the only namespace given is `v1.NamespaceAll`, then this
-	// cache.ListWatch must be privileged. In this case, return a regular
-	// cache.ListWatch decorated with a denylist watcher
-	// filtering the given denied namespaces.
-	if IsAllNamespaces(allowedNamespaces) {
-		return newDenylistListerWatcher(
-			deniedNamespaces,
-			cache.NewFilteredListWatchFromClient(c, "namespaces", metav1.NamespaceAll, optionsModifier),
-		)
-	}
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		optionsModifier(&options)
-		list := &v1.NamespaceList{}
-		for _, name := range allowedNamespaces {
-			result := &v1.Namespace{}
-			err := c.Get().
-				Resource("namespaces").
-				Name(name).
-				VersionedParams(&options, scheme.ParameterCodec).
-				Do(context.TODO()).
-				Into(result)
-			if err != nil {
-				return nil, err
-			}
-			list.Items = append(list.Items, *result)
-		}
-		return list, nil
-	}
-	watchFunc := func(_ metav1.ListOptions) (watch.Interface, error) {
-		// Since the client does not have Watch privileges, do not
-		// actually watch anything. Use a watch.FakeWatcher here to
-		// implement watch.Interface but not send any events.
-		return watch.NewFake(), nil
-	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
-}
 
 // MultiNamespaceListerWatcher takes allowed and denied namespaces and a
 // cache.ListerWatcher generator func and returns a single cache.ListerWatcher

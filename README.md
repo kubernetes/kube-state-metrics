@@ -72,10 +72,11 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 | **v2.0.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          -/✓         |
 | **v2.1.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
 | **master**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
+
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
-**Note:** The `v2.0.0-alpha.2+` and `master` releases of kube-state-metrics work on Kubernetes v1.17 and v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics and are on an older Kubernetes version, use v2.0.0-alpha.1 or v1.9.8 kube-state-metrics release.
+**Note:** kube-state-metrics releases from `v2.0.0` work on Kubernetes v1.17 and v1.18 but the Ingress and CertificateSigningRequest resource metrics are missing. If you require those metrics and are on an older Kubernetes version you can use the `v1.9.8` kube-state-metrics release; but please be aware that due to CLI flag changes this image is not compatible with `v2.0.0` and later.
 
 #### Resource group version compatibility
 
@@ -324,7 +325,7 @@ For the full list of arguments available, see the documentation in [docs/cli-arg
 
 #### Helm Chart
 
-The official Helm chart is maintained in [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics).
+The official [Helm chart](https://artifacthub.io/packages/helm/prometheus-community/kube-state-metrics/) is maintained in [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics).
 
 #### Development
 

@@ -90,14 +90,14 @@ func (b *Builder) WithAllowLabels(l map[string][]string) {
 	b.internal.WithAllowLabels(l)
 }
 
-// WithGenerateStoreFunc configures a custom generate store function
-func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
-	b.internal.WithGenerateStoreFunc(f)
+// WithGenerateStoresFunc configures a custom generate store function
+func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
+	b.internal.WithGenerateStoresFunc(f)
 }
 
-// DefaultGenerateStoreFunc returns default buildStore function
-func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
-	return b.internal.DefaultGenerateStoreFunc()
+// DefaultGenerateStoresFunc returns default buildStore function
+func (b *Builder) DefaultGenerateStoresFunc() ksmtypes.BuildStoresFunc {
+	return b.internal.DefaultGenerateStoresFunc()
 }
 
 // Build initializes and registers all enabled stores.

@@ -40,14 +40,14 @@ type BuilderInterface interface {
 	WithKubeClient(c clientset.Interface)
 	WithVPAClient(c vpaclientset.Interface)
 	WithAllowDenyList(l AllowDenyLister)
-	WithGenerateStoreFunc(f BuildStoreFunc)
 	WithAllowLabels(l map[string][]string)
-	DefaultGenerateStoreFunc() BuildStoreFunc
+	WithGenerateStoresFunc(f BuildStoresFunc)
+	DefaultGenerateStoresFunc() BuildStoresFunc
 	Build() []metricsstore.MetricsWriter
 }
 
-// BuildStoreFunc function signature that is use to returns a list of metricsstore.MetricsStore
-type BuildStoreFunc func(metricFamilies []generator.FamilyGenerator,
+// BuildStoresFunc function signature that is use to returns a list of metricsstore.MetricsStore
+type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 ) []*metricsstore.MetricsStore

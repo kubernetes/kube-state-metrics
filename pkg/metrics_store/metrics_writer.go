@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors All rights reserved.
+Copyright 2021 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ type MetricsWriter interface {
 
 // MultiStoreMetricsWriter is a struct that holds multiple MetricsStore(s) and
 // implements the MetricsWriter interface.
-// It should be used with stores which have the same metric headers headers.
+// It should be used with stores which have the same metric headers.
 //
 // MultiStoreMetricsWriter writes out metrics from the underlying stores so that
 // metrics with the same name coming from different stores end up grouped together.

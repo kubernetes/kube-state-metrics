@@ -28,7 +28,7 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 )
 
-func TestMultiNamespaceMetricsWriter_SingleStores_WriteAll(t *testing.T) {
+func TestWriteAllWithSingleStore(t *testing.T) {
 	genFunc := func(obj interface{}) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
@@ -112,7 +112,7 @@ func TestMultiNamespaceMetricsWriter_SingleStores_WriteAll(t *testing.T) {
 	}
 }
 
-func TestMultiNamespaceMetricsWriter_MultipleStores_WriteAll(t *testing.T) {
+func TestWriteAllWithMultipleStores(t *testing.T) {
 	genFunc := func(obj interface{}) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {

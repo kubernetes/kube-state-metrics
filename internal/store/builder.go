@@ -36,6 +36,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
@@ -176,6 +177,7 @@ func (b *Builder) Build() []cache.Store {
 var availableStores = map[string]func(f *Builder) cache.Store{
 	"certificatesigningrequests":      func(b *Builder) cache.Store { return b.buildCsrStore() },
 	"configmaps":                      func(b *Builder) cache.Store { return b.buildConfigMapStore() },
+	"crds":                            func(b *Builder) cache.Store { return b.buildCrdStore() },
 	"cronjobs":                        func(b *Builder) cache.Store { return b.buildCronJobStore() },
 	"daemonsets":                      func(b *Builder) cache.Store { return b.buildDaemonSetStore() },
 	"deployments":                     func(b *Builder) cache.Store { return b.buildDeploymentStore() },
@@ -220,6 +222,10 @@ func availableResources() []string {
 
 func (b *Builder) buildConfigMapStore() cache.Store {
 	return b.buildStoreFunc(configMapMetricFamilies, &v1.ConfigMap{}, createConfigMapListWatch)
+}
+
+func (b *Builder) buildCrdStore() cache.Store {
+	return b.buildStoreFunc(crdMetricFamilies(b.allowLabelsList["crds"]), &apiextensionsv1.CustomResourceDefinition{}, createCrdListWatch)
 }
 
 func (b *Builder) buildCronJobStore() cache.Store {

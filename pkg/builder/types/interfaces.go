@@ -39,6 +39,7 @@ type BuilderInterface interface {
 	WithVPAClient(c vpaclientset.Interface)
 	WithAllowDenyList(l AllowDenyLister)
 	WithGenerateStoreFunc(f BuildStoreFunc)
+	WithAllowLabels(l map[string][]string)
 	DefaultGenerateStoreFunc() BuildStoreFunc
 	Build() []cache.Store
 }

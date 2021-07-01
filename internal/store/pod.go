@@ -292,6 +292,12 @@ func createPodContainerStateStartedFamilyGenerator() generator.FamilyGenerator {
 						LabelValues: []string{cs.Name},
 						Value:       float64((cs.State.Running.StartedAt).Unix()),
 					})
+				} else if cs.State.Terminated != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
+						Value:       float64((cs.State.Terminated.StartedAt).Unix()),
+					})
 				}
 			}
 

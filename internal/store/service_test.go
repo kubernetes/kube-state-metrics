@@ -42,6 +42,8 @@ func TestServiceStore(t *testing.T) {
 		# TYPE kube_service_spec_external_ip gauge
 		# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status
 		# TYPE kube_service_status_load_balancer_ingress gauge
+		# HELP kube_service_spec_selectors Service selectors
+		# TYPE kube_service_spec_selectors gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -57,6 +59,10 @@ func TestServiceStore(t *testing.T) {
 				Spec: v1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
 					Type:      v1.ServiceTypeClusterIP,
+					Selector: map[string]string{
+						"app":  "example1",
+						"app2": "example2",
+					},
 				},
 			},
 			Want: `
@@ -64,20 +70,24 @@ func TestServiceStore(t *testing.T) {
 				# HELP kube_service_info Information about service.
 				# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_service_spec_type Type about service.
+				# HELP kube_service_spec_selectors Service selectors
 				# TYPE kube_service_created gauge
 				# TYPE kube_service_info gauge
 				# TYPE kube_service_labels gauge
 				# TYPE kube_service_spec_type gauge
+				# TYPE kube_service_spec_selectors gauge
 				kube_service_created{namespace="default",service="test-service1"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.4",external_name="",load_balancer_ip="",namespace="default",service="test-service1"} 1
 				kube_service_labels{namespace="default",service="test-service1"} 1
 				kube_service_spec_type{namespace="default",service="test-service1",type="ClusterIP"} 1
+				kube_service_spec_selectors{namespace="default",service="test-service1",selector_app="example1",selector_app2="example2"} 1
 `,
 			MetricNames: []string{
 				"kube_service_created",
 				"kube_service_info",
 				"kube_service_labels",
 				"kube_service_spec_type",
+				"kube_service_spec_selectors",
 			},
 		},
 		{
@@ -94,6 +104,9 @@ func TestServiceStore(t *testing.T) {
 				Spec: v1.ServiceSpec{
 					ClusterIP: "1.2.3.5",
 					Type:      v1.ServiceTypeNodePort,
+					Selector: map[string]string{
+						"app": "example2",
+					},
 				},
 			},
 			Want: metadata + `
@@ -101,6 +114,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="1.2.3.5",external_name="",load_balancer_ip="",namespace="default",service="test-service2"} 1
 				kube_service_labels{namespace="default",service="test-service2"} 1
 				kube_service_spec_type{namespace="default",service="test-service2",type="NodePort"} 1
+				kube_service_spec_selectors{namespace="default",service="test-service2",selector_app="example2"} 1
 `,
 		},
 		{
@@ -117,6 +131,9 @@ func TestServiceStore(t *testing.T) {
 					ClusterIP:      "1.2.3.6",
 					LoadBalancerIP: "1.2.3.7",
 					Type:           v1.ServiceTypeLoadBalancer,
+					Selector: map[string]string{
+						"app": "example3",
+					},
 				},
 			},
 			Want: metadata + `
@@ -124,6 +141,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="1.2.3.6",external_name="",load_balancer_ip="1.2.3.7",namespace="default",service="test-service3"} 1
 				kube_service_labels{namespace="default",service="test-service3"} 1
 				kube_service_spec_type{namespace="default",service="test-service3",type="LoadBalancer"} 1
+				kube_service_spec_selectors{namespace="default",service="test-service3",selector_app="example3"} 1
 `,
 		},
 		{
@@ -139,6 +157,9 @@ func TestServiceStore(t *testing.T) {
 				Spec: v1.ServiceSpec{
 					ExternalName: "www.example.com",
 					Type:         v1.ServiceTypeExternalName,
+					Selector: map[string]string{
+						"app": "example4",
+					},
 				},
 			},
 			Want: metadata + `
@@ -146,6 +167,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="",external_name="www.example.com",load_balancer_ip="",namespace="default",service="test-service4"} 1
 				kube_service_labels{namespace="default",service="test-service4"} 1
 				kube_service_spec_type{namespace="default",service="test-service4",type="ExternalName"} 1
+				kube_service_spec_selectors{namespace="default",service="test-service4",selector_app="example4"} 1
 			`,
 		},
 		{
@@ -160,6 +182,9 @@ func TestServiceStore(t *testing.T) {
 				},
 				Spec: v1.ServiceSpec{
 					Type: v1.ServiceTypeLoadBalancer,
+					Selector: map[string]string{
+						"app": "example5",
+					},
 				},
 				Status: v1.ServiceStatus{
 					LoadBalancer: v1.LoadBalancerStatus{
@@ -178,6 +203,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_labels{namespace="default",service="test-service5"} 1
 				kube_service_spec_type{namespace="default",service="test-service5",type="LoadBalancer"} 1
 				kube_service_status_load_balancer_ingress{hostname="www.example.com",ip="1.2.3.8",namespace="default",service="test-service5"} 1
+				kube_service_spec_selectors{namespace="default",service="test-service5",selector_app="example5"} 1
 			`,
 		},
 		{
@@ -196,6 +222,9 @@ func TestServiceStore(t *testing.T) {
 						"1.2.3.9",
 						"1.2.3.10",
 					},
+					Selector: map[string]string{
+						"app": "example6",
+					},
 				},
 			},
 			Want: metadata + `
@@ -205,6 +234,7 @@ func TestServiceStore(t *testing.T) {
 				kube_service_spec_type{namespace="default",service="test-service6",type="ClusterIP"} 1
 				kube_service_spec_external_ip{external_ip="1.2.3.9",namespace="default",service="test-service6"} 1
 				kube_service_spec_external_ip{external_ip="1.2.3.10",namespace="default",service="test-service6"} 1
+				kube_service_spec_selectors{namespace="default",service="test-service6",selector_app="example6"} 1
 			`,
 		},
 	}

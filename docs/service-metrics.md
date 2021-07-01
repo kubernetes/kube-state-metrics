@@ -7,4 +7,5 @@
 | kube_service_created | Gauge | Unix creation timestamp | seconds |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; | STABLE |
 | kube_service_spec_type | Gauge | Type about service | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `type`=&lt;ClusterIP\|NodePort\|LoadBalancer\|ExternalName&gt; | STABLE |
 | kube_service_spec_external_ip | Gauge | Service external ips. One series for each ip | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `external_ip`=&lt;external-ip&gt; | STABLE |
+| kube_service_spec_selectors | Gauge | Service selectors | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `selector_SERVICE_SELECTOR`=&lt;SERVICE_SELECTOR&gt;` | STABLE |
 | kube_service_status_load_balancer_ingress | Gauge | Service load balancer ingress status | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `ip`=&lt;load-balancer-ingress-ip&gt; <br> `hostname`=&lt;load-balancer-ingress-hostname&gt; | STABLE |

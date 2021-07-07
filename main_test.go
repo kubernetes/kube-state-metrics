@@ -215,6 +215,9 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
+# HELP kube_pod_container_privileged Tells whether the container of the pod is in privilege mode.
+# HELP kube_pod_container_liveness_probe Tells whether the container of the pod has liveness probe.
+# HELP kube_pod_container_readiness_probe Tells whether the container of the pod has readiness probe.
 # TYPE kube_pod_completion_time gauge
 # TYPE kube_pod_container_info gauge
 # TYPE kube_pod_container_resource_limits gauge
@@ -265,6 +268,9 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
+# TYPE kube_pod_container_privileged gauge
+# TYPE kube_pod_container_liveness_probe gauge
+# TYPE kube_pod_container_readiness_probe gauge
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
@@ -306,6 +312,12 @@ kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Unknown"
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Evicted"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="NodeLost"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="UnexpectedAdmissionError"} 0
+kube_pod_container_liveness_probe{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0
+kube_pod_container_liveness_probe{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 1
+kube_pod_container_privileged{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 1
+kube_pod_container_privileged{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
+kube_pod_container_readiness_probe{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0
+kube_pod_container_readiness_probe{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 1
 `
 
 	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
@@ -596,6 +608,7 @@ func service(client *fake.Clientset, index int) error {
 
 func pod(client *fake.Clientset, index int) error {
 	i := strconv.Itoa(index)
+	test := true
 
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -626,6 +639,9 @@ func pod(client *fake.Clientset, index int) error {
 							v1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
 						},
 					},
+					SecurityContext: &v1.SecurityContext{
+						Privileged: &test,
+					},
 				},
 				{
 					Name: "pod1_con2",
@@ -638,6 +654,20 @@ func pod(client *fake.Clientset, index int) error {
 							v1.ResourceCPU:    resource.MustParse("300m"),
 							v1.ResourceMemory: resource.MustParse("200M"),
 						},
+					},
+					ReadinessProbe: &v1.Probe{
+						InitialDelaySeconds: 5,
+						FailureThreshold: 3,
+						PeriodSeconds: 5,
+						SuccessThreshold: 2,
+						TimeoutSeconds: 1,
+					},
+					LivenessProbe: &v1.Probe{
+						InitialDelaySeconds: 5,
+						FailureThreshold: 3,
+						PeriodSeconds: 5,
+						SuccessThreshold: 1,
+						TimeoutSeconds: 1,
 					},
 				},
 			},

@@ -89,7 +89,97 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
+		createPodReadinessProbeFamilyGenerator(),
+		createPodLivenessProbeFamilyGenerator(),
+		createPodPrivilegedFamilyGenerator(),
 	}
+}
+
+func createPodPrivilegedFamilyGenerator() generator.FamilyGenerator  {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_container_privileged",
+		"Tells whether the container of the pod is in privilege mode.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := make([]*metric.Metric, len(p.Spec.Containers))
+			labelKeys := []string{"container"}
+
+			for i, c := range p.Spec.Containers {
+				isPrivileged := 0
+				if c.SecurityContext != nil && c.SecurityContext.Privileged != nil && *c.SecurityContext.Privileged {
+					isPrivileged = 1
+				}
+				ms[i] = &metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: []string{c.Name},
+					Value:       float64(isPrivileged),
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodLivenessProbeFamilyGenerator() generator.FamilyGenerator  {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_container_liveness_probe",
+		"Tells whether the container of the pod has liveness probe.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := make([]*metric.Metric, len(p.Spec.Containers))
+			labelKeys := []string{"container"}
+
+			for i, c := range p.Spec.Containers {
+				livenessProbe := 0
+				if c.LivenessProbe != nil {
+					livenessProbe = 1
+				}
+				ms[i] = &metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: []string{c.Name},
+					Value:       float64(livenessProbe),
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodReadinessProbeFamilyGenerator() generator.FamilyGenerator  {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_container_readiness_probe",
+		"Tells whether the container of the pod has readiness probe.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := make([]*metric.Metric, len(p.Spec.Containers))
+			labelKeys := []string{"container"}
+
+			for i, c := range p.Spec.Containers {
+				readinessProbe := 0
+				if c.ReadinessProbe != nil {
+					readinessProbe = 1
+				}
+				ms[i] = &metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: []string{c.Name},
+					Value:       float64(readinessProbe),
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
 }
 
 func createPodCompletionTimeFamilyGenerator() generator.FamilyGenerator {

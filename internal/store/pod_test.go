@@ -1537,6 +1537,81 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_labels",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name: "pod1_con1",
+							ReadinessProbe: &v1.Probe{
+								InitialDelaySeconds: 5,
+								FailureThreshold: 3,
+								PeriodSeconds: 5,
+								SuccessThreshold: 2,
+								TimeoutSeconds: 1,
+								},
+						},
+						{
+							Name: "pod1_con2",
+							LivenessProbe: &v1.Probe{
+								InitialDelaySeconds: 5,
+								FailureThreshold: 3,
+								PeriodSeconds: 5,
+								SuccessThreshold: 1,
+								TimeoutSeconds: 1,
+							},
+						},
+						{
+							Name: "pod1_con3",
+							ReadinessProbe: &v1.Probe{
+								InitialDelaySeconds: 5,
+								FailureThreshold: 3,
+								PeriodSeconds: 5,
+								SuccessThreshold: 2,
+								TimeoutSeconds: 1,
+							},
+							LivenessProbe: &v1.Probe{
+								InitialDelaySeconds: 5,
+								FailureThreshold: 3,
+								PeriodSeconds: 5,
+								SuccessThreshold: 1,
+								TimeoutSeconds: 1,
+							},
+							SecurityContext: &v1.SecurityContext{
+								Privileged:  &test,
+							},
+						},
+					},
+				},
+			},
+			Want: `
+		# HELP kube_pod_container_privileged Tells whether the container of the pod is in privilege mode.
+        # HELP kube_pod_container_liveness_probe Tells whether the container of the pod has liveness probe.
+        # HELP kube_pod_container_readiness_probe Tells whether the container of the pod has readiness probe.
+        # TYPE kube_pod_container_privileged gauge
+        # TYPE kube_pod_container_liveness_probe gauge
+        # TYPE kube_pod_container_readiness_probe gauge
+        kube_pod_container_privileged{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 0
+        kube_pod_container_privileged{container="pod1_con2",namespace="ns1",pod="pod1",uid="uid1"} 0
+        kube_pod_container_privileged{container="pod1_con3",namespace="ns1",pod="pod1",uid="uid1"} 1
+        kube_pod_container_liveness_probe{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 0
+        kube_pod_container_liveness_probe{container="pod1_con2",namespace="ns1",pod="pod1",uid="uid1"} 1
+        kube_pod_container_liveness_probe{container="pod1_con3",namespace="ns1",pod="pod1",uid="uid1"} 1
+        kube_pod_container_readiness_probe{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 1
+        kube_pod_container_readiness_probe{container="pod1_con2",namespace="ns1",pod="pod1",uid="uid1"} 0
+        kube_pod_container_readiness_probe{container="pod1_con3",namespace="ns1",pod="pod1",uid="uid1"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_container_privileged",
+				"kube_pod_container_liveness_probe",
+				"kube_pod_container_readiness_probe",
+			},
+		},
 	}
 
 	for i, c := range cases {

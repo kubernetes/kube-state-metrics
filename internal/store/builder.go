@@ -51,6 +51,10 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
 
+// Make sure the internal Builder implements the public BuilderInterface.
+// New Builder methods should be added to the public BuilderInterface.
+var _ ksmtypes.BuilderInterface = &Builder{}
+
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {

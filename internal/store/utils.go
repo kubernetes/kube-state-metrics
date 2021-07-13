@@ -190,5 +190,5 @@ func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]strin
 			}
 		}
 	}
-	return kubeMapToPrometheusLabels(prefix, allKubeData)
+	return kubeMapToPrometheusLabels(prefix, allowedKubeData)
 }

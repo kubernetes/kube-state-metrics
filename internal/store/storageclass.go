@@ -87,7 +87,7 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			metric.Gauge,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -105,7 +105,7 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			metric.Gauge,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

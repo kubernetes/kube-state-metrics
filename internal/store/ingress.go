@@ -61,7 +61,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			metric.Gauge,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(i.Annotations, allowLabelsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -79,7 +79,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			metric.Gauge,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(i.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", i.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

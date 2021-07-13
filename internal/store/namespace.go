@@ -64,7 +64,7 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			"",
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(n.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -82,7 +82,7 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			"",
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

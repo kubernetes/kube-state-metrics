@@ -174,7 +174,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			metric.Gauge,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -192,7 +192,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			metric.Gauge,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

@@ -259,7 +259,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			metric.Gauge,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(d.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -277,7 +277,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			metric.Gauge,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(d.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

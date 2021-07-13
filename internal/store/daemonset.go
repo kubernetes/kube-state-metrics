@@ -218,7 +218,7 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(d.Annotations, allowLabelsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -236,7 +236,7 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(d.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

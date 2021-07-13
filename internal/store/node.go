@@ -133,7 +133,7 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 		metric.Gauge,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
-			annotationKeys, annotationValues := createAnnotationKeysValues(n.Annotations, allowAnnotationsList)
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
@@ -154,7 +154,7 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 		metric.Gauge,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
-			labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{

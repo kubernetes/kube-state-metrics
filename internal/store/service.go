@@ -92,7 +92,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			metric.Gauge,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				m := metric.Metric{
 					LabelKeys:   annotationKeys,
 					LabelValues: annotationValues,
@@ -107,7 +107,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			metric.Gauge,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				m := metric.Metric{
 					LabelKeys:   labelKeys,
 					LabelValues: labelValues,

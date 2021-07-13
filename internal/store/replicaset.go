@@ -205,7 +205,7 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			metric.Gauge,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(r.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -223,7 +223,7 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			metric.Gauge,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(r.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

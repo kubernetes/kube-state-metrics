@@ -81,7 +81,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(p.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -99,7 +99,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

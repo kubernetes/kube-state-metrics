@@ -78,7 +78,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			metric.Gauge,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
-				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -97,7 +97,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			metric.Gauge,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

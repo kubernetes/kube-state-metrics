@@ -202,13 +202,48 @@ func TestLabelsAllowListSet(t *testing.T) {
 					"bar",
 					"*"}}),
 		},
+		{
+			Desc:  "with quoted tokens",
+			Value: `"nodes=["kubernetes.io/arch","gpu.infra/intel","network.infra/fast"]"`,
+			Wanted: LabelsAllowList(map[string][]string{
+				"nodes": {
+					"kubernetes.io/arch",
+					"gpu.infra/intel",
+					"network.infra/fast",
+				}}),
+		},
+		{
+			Desc:  "with quoted labels",
+			Value: `nodes=["kubernetes.io/arch","gpu.infra/intel","network.infra/fast"]`,
+			Wanted: LabelsAllowList(map[string][]string{
+				"nodes": {
+					"kubernetes.io/arch",
+					"gpu.infra/intel",
+					"network.infra/fast",
+				}}),
+		},
+		{
+			Desc:  "with quoted array",
+			Value: `"nodes=[kubernetes.io/arch,gpu.infra/intel,network.infra/fast]"`,
+			Wanted: LabelsAllowList(map[string][]string{
+				"nodes": {
+					"kubernetes.io/arch",
+					"gpu.infra/intel",
+					"network.infra/fast",
+				}}),
+		},
 	}
 
 	for _, test := range tests {
-		lal := &LabelsAllowList{}
-		gotError := lal.Set(test.Value)
-		if gotError != nil && !test.err || !reflect.DeepEqual(*lal, test.Wanted) {
-			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v\n Got Error: %#v", test.Desc, test.Wanted, *lal, gotError)
-		}
+		t.Run(test.Desc, func(t *testing.T) {
+			test := test
+
+			lal := &LabelsAllowList{}
+			gotError := lal.Set(test.Value)
+			if gotError != nil && !test.err || !reflect.DeepEqual(*lal, test.Wanted) {
+				t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v\n Got Error: %#v", test.Desc, test.Wanted, *lal, gotError)
+			}
+		})
+
 	}
 }

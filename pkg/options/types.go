@@ -169,7 +169,8 @@ func (l *LabelsAllowList) Set(value string) error {
 			if previous == ',' || next != '[' {
 				return errLabelsAllowListFormat
 			}
-			name = strings.TrimSpace(string(([]rune(value)[firstWordPos:i])))
+			token := string([]rune(value)[firstWordPos:i])
+			name = strings.Trim(token, `"' `)
 			m[name] = []string{}
 			firstWordPos = i + 1
 		case '[':
@@ -179,11 +180,12 @@ func (l *LabelsAllowList) Set(value string) error {
 			firstWordPos = i + 1
 		case ']':
 			// if after metric group, has char not comma or end.
-			if next != EOF && next != ',' {
+			if next != EOF && next != ',' && next != '"' {
 				return errLabelsAllowListFormat
 			}
 			if previous != '[' {
-				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+				token := string([]rune(value)[firstWordPos:i])
+				m[name] = append(m[name], strings.Trim(token, `"' `))
 			}
 			firstWordPos = i + 1
 		case ',':
@@ -192,7 +194,8 @@ func (l *LabelsAllowList) Set(value string) error {
 				return errLabelsAllowListFormat
 			}
 			if previous != ']' {
-				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+				token := string([]rune(value)[firstWordPos:i])
+				m[name] = append(m[name], strings.Trim(token, `"' `))
 			}
 			firstWordPos = i + 1
 		}

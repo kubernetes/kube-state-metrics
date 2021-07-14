@@ -15,10 +15,10 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/tools v0.1.4
-	k8s.io/api v0.21.2
-	k8s.io/apimachinery v0.21.2
+	k8s.io/api v0.22.0-beta.1
+	k8s.io/apimachinery v0.22.0-beta.1
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.9.2
-	k8s.io/client-go v0.21.2
+	k8s.io/client-go v0.22.0-beta.1
 	k8s.io/klog/v2 v2.9.0
 )
 

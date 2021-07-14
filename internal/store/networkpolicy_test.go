@@ -68,7 +68,7 @@ func TestNetworkPolicyStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(networkPolicyMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(networkPolicyMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%s", i, err)
 		}

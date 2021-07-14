@@ -45,6 +45,8 @@ func (m metricTargetType) String() string {
 }
 
 var (
+	descHorizontalPodAutoscalerAnnotationsName     = "kube_horizontalpodautoscaler_annotations"
+	descHorizontalPodAutoscalerAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsName          = "kube_horizontalpodautoscaler_labels"
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "horizontalpodautoscaler"}
@@ -52,7 +54,7 @@ var (
 	targetMetricLabels = []string{"metric_name", "metric_target_type"}
 )
 
-func hpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_horizontalpodautoscaler_metadata_generation",
@@ -193,12 +195,30 @@ func hpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			descHorizontalPodAutoscalerAnnotationsName,
+			descHorizontalPodAutoscalerAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			descHorizontalPodAutoscalerLabelsName,
 			descHorizontalPodAutoscalerLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(a.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

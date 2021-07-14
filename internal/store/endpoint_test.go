@@ -30,6 +30,8 @@ func TestEndpointStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_endpoint_annotations gauge
 		# HELP kube_endpoint_address_available Number of addresses available in endpoint.
 		# TYPE kube_endpoint_address_available gauge
 		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
@@ -84,6 +86,7 @@ func TestEndpointStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_endpoint_annotations{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
@@ -93,8 +96,8 @@ func TestEndpointStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -109,6 +112,8 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		# TYPE kube_endpoint_address_available gauge
 		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
 		# TYPE kube_endpoint_address_not_ready gauge
+		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_endpoint_annotations gauge
 		# HELP kube_endpoint_created Unix creation timestamp
 		# TYPE kube_endpoint_created gauge
 		# HELP kube_endpoint_info Information about endpoint.
@@ -123,6 +128,9 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 					Name:              "test-endpoint",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "default",
+					Annotations: map[string]string{
+						"app": "foobar",
+					},
 					Labels: map[string]string{
 						"app": "foobar",
 					},
@@ -161,6 +169,7 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 			Want: metadata + `
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_annotations{endpoint="test-endpoint",annotation_app="foobar",namespace="default"} 1
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="test-endpoint",label_app="foobar",namespace="default"} 1
@@ -168,11 +177,14 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
+		allowAnnotations := []string{
+			"app",
+		}
 		allowLabels := []string{
 			"app",
 		}
-		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(allowLabels))
-		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(allowLabels))
+		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(allowAnnotations, allowLabels))
+		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(allowAnnotations, allowLabels))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

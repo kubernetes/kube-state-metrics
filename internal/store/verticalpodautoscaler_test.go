@@ -133,8 +133,8 @@ func TestVPAStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

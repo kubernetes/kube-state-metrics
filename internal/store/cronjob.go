@@ -34,20 +34,40 @@ import (
 )
 
 var (
+	descCronJobAnnotationsName     = "kube_cronjob_annotations"
+	descCronJobAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCronJobLabelsName          = "kube_cronjob_labels"
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
 )
 
-func cronJobMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			descCronJobAnnotationsName,
+			descCronJobAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("label", j.Annotations, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			descCronJobLabelsName,
 			descCronJobLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(j.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

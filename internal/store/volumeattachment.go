@@ -42,7 +42,7 @@ var (
 			metric.Gauge,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(va.Labels)
+				labelKeys, labelValues := kubeMapToPrometheusLabels("label", va.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

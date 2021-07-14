@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descServiceAnnotationsName     = "kube_service_annotations"
+	descServiceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descServiceLabelsName          = "kube_service_labels"
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 )
 
-func serviceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_service_info",
@@ -85,12 +87,27 @@ func serviceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			descServiceAnnotationsName,
+			descServiceAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
+				m := metric.Metric{
+					LabelKeys:   annotationKeys,
+					LabelValues: annotationValues,
+					Value:       1,
+				}
+				return &metric.Family{Metrics: []*metric.Metric{&m}}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			descServiceLabelsName,
 			descServiceLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				m := metric.Metric{
 					LabelKeys:   labelKeys,
 					LabelValues: labelValues,

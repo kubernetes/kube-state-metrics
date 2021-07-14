@@ -153,6 +153,21 @@ func serviceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_service_spec_selectors",
+			"Service selectors",
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				selectorKeys, selectorValues := mapToPrometheusLabels(s.Spec.Selector, "selector")
+				m := metric.Metric{
+					LabelKeys:   selectorKeys,
+					LabelValues: selectorValues,
+					Value:       1,
+				}
+				return &metric.Family{Metrics: []*metric.Metric{&m}}
+			}),
+		),
 	}
 }
 

@@ -30,6 +30,7 @@ import (
 
 func TestVPAStore(t *testing.T) {
 	const metadata = `
+		# HELP kube_verticalpodautoscaler_annotations Kubernetes annotations converted to Prometheus labels.
 		# HELP kube_verticalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
         # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed Maximum resources the VerticalPodAutoscaler can set for containers matching the name.
         # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed Minimum resources the VerticalPodAutoscaler can set for containers matching the name.
@@ -37,7 +38,8 @@ func TestVPAStore(t *testing.T) {
         # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum resources the container can use before the VerticalPodAutoscaler updater evicts it.
         # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target Target resources the VerticalPodAutoscaler recommends for the container.
         # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget Target resources the VerticalPodAutoscaler recommends for the container ignoring bounds.
-        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+		# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+		# TYPE kube_verticalpodautoscaler_annotations gauge
         # TYPE kube_verticalpodautoscaler_labels gauge
         # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed gauge
         # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed gauge
@@ -66,6 +68,10 @@ func TestVPAStore(t *testing.T) {
 					Namespace:  "ns1",
 					Labels: map[string]string{
 						"app": "foobar",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
 					},
 				},
 				Spec: autoscaling.VerticalPodAutoscalerSpec{
@@ -102,6 +108,7 @@ func TestVPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_verticalpodautoscaler_annotations{annotation_allowlisted="true",namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
 				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 1
@@ -114,7 +121,7 @@ func TestVPAStore(t *testing.T) {
 				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 1.073741824e+10
 				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="core",verticalpodautoscaler="vpa1"} 4
 				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns1",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",unit="byte",verticalpodautoscaler="vpa1"} 8.589934592e+09
-				kube_verticalpodautoscaler_labels{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
+				kube_verticalpodautoscaler_labels{label_app="foobar",namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",verticalpodautoscaler="vpa1"} 1
 				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",update_mode="Auto",verticalpodautoscaler="vpa1"} 0
 				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",update_mode="Initial",verticalpodautoscaler="vpa1"} 0
 				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns1",target_api_version="apps/v1",target_kind="Deployment",target_name="deployment1",update_mode="Off",verticalpodautoscaler="vpa1"} 0
@@ -129,12 +136,15 @@ func TestVPAStore(t *testing.T) {
 				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound",
 				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target",
 				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget",
+				"kube_verticalpodautoscaler_annotations",
 			},
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(vpaMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

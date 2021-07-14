@@ -52,8 +52,8 @@ var (
 	targetMetricLabels = []string{"metric_name", "metric_target_type"}
 )
 
-func hpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func hpaMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_horizontalpodautoscaler_metadata_generation",
 			"The generation observed by the HorizontalPodAutoscaler controller.",
@@ -193,24 +193,6 @@ func hpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			descHorizontalPodAutoscalerLabelsName,
-			descHorizontalPodAutoscalerLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(a.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
 			"kube_horizontalpodautoscaler_status_condition",
 			"The condition of this autoscaler.",
 			metric.Gauge,
@@ -235,6 +217,47 @@ func hpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descHorizontalPodAutoscalerLabelsName,
+			descHorizontalPodAutoscalerLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(a.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_horizontalpodautoscaler_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(a.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(interface{}) *metric.Family {

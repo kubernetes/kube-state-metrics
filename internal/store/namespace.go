@@ -36,8 +36,8 @@ var (
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
 )
 
-func namespaceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func namespaceMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_namespace_created",
 			"Unix creation timestamp",
@@ -53,24 +53,6 @@ func namespaceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerat
 
 				return &metric.Family{
 					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			descNamespaceLabelsName,
-			descNamespaceLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
 				}
 			}),
 		),
@@ -126,6 +108,47 @@ func namespaceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerat
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descNamespaceLabelsName,
+			descNamespaceLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_namespace_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(n.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *metric.Family {

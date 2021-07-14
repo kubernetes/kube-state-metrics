@@ -402,9 +402,10 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{persistentvolume="test-labeled-pv"} 1
+					kube_persistentvolume_labels{label_app="mysql-server",persistentvolume="test-labeled-pv"} 1
 				`,
-			MetricNames: []string{"kube_persistentvolume_labels"},
+			MetricNames:     []string{"kube_persistentvolume_labels"},
+			AllowLabelsList: []string{"app"},
 		},
 		{
 			Obj: &v1.PersistentVolume{
@@ -420,7 +421,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 					# TYPE kube_persistentvolume_labels gauge
 					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
-			MetricNames: []string{"kube_persistentvolume_labels"},
+			MetricNames:     []string{"kube_persistentvolume_labels"},
+			AllowLabelsList: []string{"app"},
 		},
 		{
 			Obj: &v1.PersistentVolume{
@@ -480,10 +482,33 @@ func TestPersistentVolumeStore(t *testing.T) {
 				`,
 			MetricNames: []string{"kube_persistentvolume_capacity_bytes"},
 		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv",
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+				},
+				Spec: v1.PersistentVolumeSpec{
+					Capacity: v1.ResourceList{
+						v1.ResourceStorage: resource.MustParse("5Gi"),
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_annotations Kubernetes annotations converted to Prometheus labels.
+					# TYPE kube_persistentvolume_annotations gauge
+					kube_persistentvolume_annotations{annotation_allowlisted="true",persistentvolume="test-pv"} 1
+				`,
+			MetricNames:          []string{"kube_persistentvolume_annotations"},
+			AllowAnnotationsList: []string{"allowlisted"},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -38,11 +38,10 @@ var (
 	descNodeLabelsDefaultLabels = []string{"node"}
 )
 
-func nodeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func nodeMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		createNodeCreatedFamilyGenerator(),
 		createNodeInfoFamilyGenerator(),
-		createNodeLabelsGenerator(allowLabelsList),
 		createNodeRoleFamilyGenerator(),
 		createNodeSpecTaintFamilyGenerator(),
 		createNodeSpecUnschedulableFamilyGenerator(),
@@ -50,6 +49,13 @@ func nodeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 		createNodeStatusCapacityFamilyGenerator(),
 		createNodeStatusConditionFamilyGenerator(),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, createNodeLabelsGenerator(allowLabelsList))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, createNodeAnnotationsGenerator(allowAnnotationsList))
+	}
+	return families
 }
 
 func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {
@@ -136,6 +142,27 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 					{
 						LabelKeys:   labelKeys,
 						LabelValues: labelValues,
+						Value:       1,
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_node_annotations",
+		"Kubernetes annotations converted to Prometheus labels.",
+		metric.Gauge,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			annotationKeys, annotationValues := createAnnotationKeysValues(n.Annotations, allowAnnotationsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
 						Value:       1,
 					},
 				},

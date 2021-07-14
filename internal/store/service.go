@@ -36,8 +36,8 @@ var (
 	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
 )
 
-func serviceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func serviceMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_service_info",
 			"Information about service.",
@@ -79,21 +79,6 @@ func serviceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 
 					LabelKeys:   []string{"type"},
 					LabelValues: []string{string(s.Spec.Type)},
-					Value:       1,
-				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
-			}),
-		),
-		*generator.NewFamilyGenerator(
-			descServiceLabelsName,
-			descServiceLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
-				m := metric.Metric{
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
@@ -154,6 +139,44 @@ func serviceMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descServiceLabelsName,
+			descServiceLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				m := metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				}
+				return &metric.Family{Metrics: []*metric.Metric{&m}}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_service_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.Family {

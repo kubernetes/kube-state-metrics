@@ -125,7 +125,6 @@ func TestCronJobStore(t *testing.T) {
 			Want: `
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
-				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_cronjob_next_schedule_time Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
@@ -134,7 +133,6 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
-				# TYPE kube_cronjob_labels gauge
 				# TYPE kube_cronjob_next_schedule_time gauge
 				# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
 				# TYPE kube_cronjob_spec_suspend gauge
@@ -142,7 +140,6 @@ func TestCronJobStore(t *testing.T) {
                 # TYPE kube_cronjob_metadata_resource_version gauge
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
-				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_suspend{cronjob="ActiveRunningCronJob1",namespace="ns1"} 0
 				kube_cronjob_status_active{cronjob="ActiveRunningCronJob1",namespace="ns1"} 2
@@ -150,7 +147,7 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.520742896e+09
 ` + fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveRunningCronJob1\",namespace=\"ns1\"} %ve+09\n",
 				float64(ActiveRunningCronJob1NextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -177,7 +174,6 @@ func TestCronJobStore(t *testing.T) {
 			Want: `
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
-				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
@@ -185,21 +181,19 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
-				# TYPE kube_cronjob_labels gauge
 				# TYPE kube_cronjob_spec_starting_deadline_seconds gauge
 				# TYPE kube_cronjob_spec_suspend gauge
 				# TYPE kube_cronjob_status_active gauge
                 # TYPE kube_cronjob_metadata_resource_version gauge
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
-				kube_cronjob_labels{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="SuspendedCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_suspend{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_status_active{cronjob="SuspendedCronJob1",namespace="ns1"} 0
 				kube_cronjob_metadata_resource_version{cronjob="SuspendedCronJob1",namespace="ns1"} 22222
 				kube_cronjob_status_last_schedule_time{cronjob="SuspendedCronJob1",namespace="ns1"} 1.520762696e+09
 `,
-			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time"},
+			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -211,6 +205,10 @@ func TestCronJobStore(t *testing.T) {
 					ResourceVersion:   "33333",
 					Labels: map[string]string{
 						"app": "example-active-no-last-scheduled-1",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
 					},
 				},
 				Status: batchv1beta1.CronJobStatus{
@@ -225,6 +223,8 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
+			    # HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
+			    # TYPE kube_cronjob_annotations gauge
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
 				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
@@ -247,16 +247,19 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_spec_suspend{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 0
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.520766296e+09
-				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1
+				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",label_app="example-active-no-last-scheduled-1",namespace="ns1"} 1
+				kube_cronjob_annotations{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",annotation_allowlisted="true"} 1
 ` +
 				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveCronJob1NoLastScheduled\",namespace=\"ns1\"} %ve+09\n",
 					float64(ActiveCronJob1NoLastScheduledNextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels"},
+			MetricNames:          []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_annotations"},
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

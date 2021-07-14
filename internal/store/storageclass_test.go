@@ -105,11 +105,38 @@ func TestStorageClassStore(t *testing.T) {
 			MetricNames: []string{
 				"kube_storageclass_labels",
 			},
+			AllowLabelsList: []string{"app"},
+		},
+		{
+			Obj: &storagev1.StorageClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test_storageclass-annotations",
+					Labels: map[string]string{
+						"foo": "bar",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+				},
+				Provisioner:       "kubernetes.io/rbd",
+				ReclaimPolicy:     &reclaimPolicy,
+				VolumeBindingMode: &volumeBindingMode,
+			},
+			Want: `
+					# HELP kube_storageclass_annotations Kubernetes annotations converted to Prometheus labels.
+					# TYPE kube_storageclass_annotations gauge
+					kube_storageclass_annotations{annotation_allowlisted="true",storageclass="test_storageclass-annotations"} 1
+				`,
+			MetricNames: []string{
+				"kube_storageclass_annotations",
+			},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

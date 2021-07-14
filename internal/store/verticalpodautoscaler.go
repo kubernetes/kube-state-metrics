@@ -39,26 +39,8 @@ var (
 	descVerticalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "verticalpodautoscaler", "target_api_version", "target_kind", "target_name"}
 )
 
-func vpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
-			descVerticalPodAutoscalerLabelsName,
-			descVerticalPodAutoscalerLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(a.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
+func vpaMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_verticalpodautoscaler_spec_updatepolicy_updatemode",
 			"Update mode of the VerticalPodAutoscaler.",
@@ -223,6 +205,47 @@ func vpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descVerticalPodAutoscalerLabelsName,
+			descVerticalPodAutoscalerLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(a.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_verticalpodautoscaler_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(a.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 
 func vpaResourcesToMetrics(containerName string, resources v1.ResourceList) []*metric.Metric {

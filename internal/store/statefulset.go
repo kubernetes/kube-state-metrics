@@ -19,15 +19,15 @@ package store
 import (
 	"context"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -36,8 +36,8 @@ var (
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 )
 
-func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+func statefulSetMetricFamilies(allowLabelsList []string, allowAnnotationsList []string) []generator.FamilyGenerator {
+	families := []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_statefulset_created",
 			"Unix creation timestamp",
@@ -167,24 +167,6 @@ func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGener
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			descStatefulSetLabelsName,
-			descStatefulSetLabelsHelp,
-			metric.Gauge,
-			"",
-			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGenerator(
 			"kube_statefulset_status_current_revision",
 			"Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).",
 			metric.Gauge,
@@ -219,6 +201,47 @@ func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGener
 			}),
 		),
 	}
+	if len(allowLabelsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			descStatefulSetLabelsName,
+			descStatefulSetLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	if len(allowAnnotationsList) > 0 {
+		families = append(families, *generator.NewFamilyGenerator(
+			"kube_statefulset_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				annotationKeys, annotationValues := createAnnotationKeysValues(s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		))
+	}
+	return families
 }
 func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

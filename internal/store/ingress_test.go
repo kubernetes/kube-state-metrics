@@ -34,13 +34,11 @@ func TestIngressStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_ingress_created Unix creation timestamp
 		# HELP kube_ingress_info Information about ingress.
-		# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
 		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
 		# HELP kube_ingress_path Ingress host, paths and backend service information.
 		# HELP kube_ingress_tls Ingress TLS host and secret information.
 		# TYPE kube_ingress_created gauge
 		# TYPE kube_ingress_info gauge
-		# TYPE kube_ingress_labels gauge
 		# TYPE kube_ingress_metadata_resource_version gauge
 		# TYPE kube_ingress_path gauge
 		# TYPE kube_ingress_tls gauge
@@ -52,14 +50,18 @@ func TestIngressStore(t *testing.T) {
 					Name:            "ingress1",
 					Namespace:       "ns1",
 					ResourceVersion: "000000",
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
 				},
 			},
 			Want: metadata + `
 				kube_ingress_info{namespace="ns1",ingress="ingress1"} 1
 				kube_ingress_metadata_resource_version{namespace="ns1",ingress="ingress1"} 0
-				kube_ingress_labels{namespace="ns1",ingress="ingress1"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames:          []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_path", "kube_ingress_tls"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -74,9 +76,8 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_info{namespace="ns2",ingress="ingress2"} 1
 				kube_ingress_created{namespace="ns2",ingress="ingress2"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns2",ingress="ingress2"} 123456
-				kube_ingress_labels{namespace="ns2",ingress="ingress2"} 1
 				`,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_path", "kube_ingress_tls"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -91,9 +92,8 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns3",ingress="ingress3"} 1
 				kube_ingress_created{namespace="ns3",ingress="ingress3"} 1.501569018e+09
-				kube_ingress_labels{namespace="ns3",ingress="ingress3"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_path", "kube_ingress_tls"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -135,10 +135,9 @@ func TestIngressStore(t *testing.T) {
 			Want: metadata + `
 				kube_ingress_info{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
-				kube_ingress_labels{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_path", "kube_ingress_tls"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -147,7 +146,11 @@ func TestIngressStore(t *testing.T) {
 					Namespace:         "ns5",
 					CreationTimestamp: metav1StartTime,
 					Labels:            map[string]string{"test-5": "test-5"},
-					ResourceVersion:   "abcdef",
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+					ResourceVersion: "abcdef",
 				},
 				Spec: networkingv1.IngressSpec{
 					TLS: []networkingv1.IngressTLS{
@@ -159,18 +162,25 @@ func TestIngressStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_ingress_labels gauge
+				# HELP kube_ingress_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_ingress_annotations gauge
+				kube_ingress_annotations{annotation_allowlisted="true",ingress="ingress5",namespace="ns5"} 1
 				kube_ingress_info{namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_created{namespace="ns5",ingress="ingress5"} 1.501569018e+09
 				kube_ingress_labels{namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost1",secret="somesecret"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost2",secret="somesecret"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames:          []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_annotations"},
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

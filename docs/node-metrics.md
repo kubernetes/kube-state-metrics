@@ -11,3 +11,4 @@
 | kube_node_status_allocatable | Gauge | The allocatable for different resources of a node that are available for scheduling | byte |`node`=&lt;node-address&gt; <br> `resource`=&lt;resource-name&gt; <br> `unit`=&lt;resource-unit&gt;| STABLE |
 | kube_node_status_condition | Gauge | The condition of a cluster node | |`node`=&lt;node-address&gt; <br> `condition`=&lt;node-condition&gt; <br> `status`=&lt;true\|false\|unknown&gt; | STABLE |
 | kube_node_created | Gauge | Unix creation timestamp | seconds |`node`=&lt;node-address&gt;| STABLE |
+| kube_node_annotations | Gauge | Kubernetes annotations converted to Prometheus labels | |`node`=&lt;node-address&gt; <br> `annotation_NODE_ANNOTATION`=&lt;NODE_ANNOTATIONL&gt; | EXPERIMENTAL |

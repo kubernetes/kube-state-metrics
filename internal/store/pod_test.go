@@ -1412,6 +1412,7 @@ func TestPodStore(t *testing.T) {
 			MetricNames: []string{
 				"kube_pod_labels",
 			},
+			AllowLabelsList: []string{""},
 		},
 		{
 			Obj: &v1.Pod{
@@ -1537,11 +1538,36 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_labels",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+					Labels: map[string]string{
+						"app": "example",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
+        		# TYPE kube_pod_annotations gauge
+				kube_pod_annotations{annotation_allowlisted="true",namespace="ns1",pod="pod1",uid="uid1"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_annotations",
+			},
+			AllowAnnotationsList: []string{"allowlisted"},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(c.AllowLabelsList))
-		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(c.AllowLabelsList))
+		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -1551,7 +1577,7 @@ func TestPodStore(t *testing.T) {
 func BenchmarkPodStore(b *testing.B) {
 	b.ReportAllocs()
 
-	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil))
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil))
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1613,7 +1639,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 50
+	expectedFamilies := 49
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

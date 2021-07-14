@@ -38,8 +38,8 @@ func TestEndpointStore(t *testing.T) {
 		# TYPE kube_endpoint_created gauge
 		# HELP kube_endpoint_info Information about endpoint.
 		# TYPE kube_endpoint_info gauge
-		# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_endpoint_labels gauge
+		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_endpoint_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -50,6 +50,10 @@ func TestEndpointStore(t *testing.T) {
 					Namespace:         "default",
 					Labels: map[string]string{
 						"app": "foobar",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
 					},
 				},
 				Subsets: []v1.EndpointSubset{
@@ -88,13 +92,14 @@ func TestEndpointStore(t *testing.T) {
 				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
-				kube_endpoint_labels{endpoint="test-endpoint",namespace="default"} 1
+				kube_endpoint_annotations{annotation_allowlisted="true",endpoint="test-endpoint",namespace="default"} 1
 			`,
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -115,6 +120,8 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		# TYPE kube_endpoint_info gauge
 		# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_endpoint_labels gauge
+		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_endpoint_annotations gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -125,6 +132,10 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 					Namespace:         "default",
 					Labels: map[string]string{
 						"app": "foobar",
+					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
 					},
 				},
 				Subsets: []v1.EndpointSubset{
@@ -164,15 +175,18 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="test-endpoint",label_app="foobar",namespace="default"} 1
+				kube_endpoint_annotations{annotation_allowlisted="true",endpoint="test-endpoint",namespace="default"} 1
 			`,
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
 		allowLabels := []string{
 			"app",
 		}
-		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(allowLabels))
-		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(allowLabels))
+		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(allowLabels, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(allowLabels, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

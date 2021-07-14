@@ -58,8 +58,6 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_failed gauge
 		# HELP kube_job_info Information about job.
 		# TYPE kube_job_info gauge
-		# HELP kube_job_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_job_labels gauge
 		# HELP kube_job_spec_active_deadline_seconds The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
 		# TYPE kube_job_spec_active_deadline_seconds gauge
 		# HELP kube_job_spec_completions The desired number of successfully finished pods the job should be run with.
@@ -113,7 +111,6 @@ func TestJobStore(t *testing.T) {
 				kube_job_owner{job_name="RunningJob1",namespace="ns1",owner_is_controller="true",owner_kind="CronJob",owner_name="cronjob-name"} 1
 				kube_job_created{job_name="RunningJob1",namespace="ns1"} 1.5e+09
 				kube_job_info{job_name="RunningJob1",namespace="ns1"} 1
-				kube_job_labels{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_spec_active_deadline_seconds{job_name="RunningJob1",namespace="ns1"} 900
 				kube_job_spec_completions{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_spec_parallelism{job_name="RunningJob1",namespace="ns1"} 1
@@ -155,7 +152,6 @@ func TestJobStore(t *testing.T) {
 				kube_job_complete{condition="true",job_name="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_complete{condition="unknown",job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_info{job_name="SuccessfulJob1",namespace="ns1"} 1
-				kube_job_labels{job_name="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_spec_active_deadline_seconds{job_name="SuccessfulJob1",namespace="ns1"} 900
 				kube_job_spec_completions{job_name="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_spec_parallelism{job_name="SuccessfulJob1",namespace="ns1"} 1
@@ -198,7 +194,6 @@ func TestJobStore(t *testing.T) {
 				kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_info{job_name="FailedJob1",namespace="ns1"} 1
-				kube_job_labels{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_spec_active_deadline_seconds{job_name="FailedJob1",namespace="ns1"} 900
 				kube_job_spec_completions{job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_spec_parallelism{job_name="FailedJob1",namespace="ns1"} 1
@@ -220,6 +215,10 @@ func TestJobStore(t *testing.T) {
 					Labels: map[string]string{
 						"app": "example-successful-2",
 					},
+					Annotations: map[string]string{
+						"allowlisted": "true",
+						"denylisted":  "true",
+					},
 				},
 				Status: v1batch.JobStatus{
 					Active:         0,
@@ -238,13 +237,17 @@ func TestJobStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				# HELP kube_job_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_job_labels gauge
+				# HELP kube_job_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_job_annotations gauge
+				kube_job_annotations{annotation_allowlisted="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_owner{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
-
 				kube_job_complete{condition="unknown",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_info{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
-				kube_job_labels{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_labels{job_name="SuccessfulJob2NoActiveDeadlineSeconds",label_app="example-successful-2",namespace="ns1"} 1
 				kube_job_spec_completions{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_spec_parallelism{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_status_active{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
@@ -253,11 +256,13 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 `,
+			AllowLabelsList:      []string{"app"},
+			AllowAnnotationsList: []string{"allowlisted"},
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(jobMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(jobMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(jobMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(jobMetricFamilies(c.AllowLabelsList, c.AllowAnnotationsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

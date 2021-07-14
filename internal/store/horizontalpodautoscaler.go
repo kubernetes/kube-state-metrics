@@ -38,6 +38,7 @@ const (
 	average
 
 	metricTargetTypeCount // Used as a length argument to arrays
+	metricCurrentTypeCount
 )
 
 func (m metricTargetType) String() string {
@@ -175,6 +176,69 @@ func hpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 						},
 					},
 				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_horizontalpodautoscaler_status_current_metric",
+			"The metric current status used by this autoscaler when calculating the desired replica count.",
+			metric.Gauge,
+			"",
+			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+				for _, m := range a.Status.CurrentMetrics {
+					var metricName string
+
+					var v [metricCurrentTypeCount]int64
+					var ok [metricCurrentTypeCount]bool
+
+					switch m.Type {
+					case autoscaling.ObjectMetricSourceType:
+						metricName = m.Object.MetricName
+
+						v[value], ok[value] = m.Object.CurrentValue.AsInt64()
+						if m.Object.AverageValue != nil {
+							v[average], ok[average] = m.Object.AverageValue.AsInt64()
+						}
+					case autoscaling.PodsMetricSourceType:
+						metricName = m.Pods.MetricName
+
+						v[average], ok[average] = m.Pods.CurrentAverageValue.AsInt64()
+					case autoscaling.ResourceMetricSourceType:
+						metricName = string(m.Resource.Name)
+
+						if ok[utilization] = (m.Resource.CurrentAverageUtilization != nil); ok[utilization] {
+							v[utilization] = int64(*m.Resource.CurrentAverageUtilization)
+						}
+
+						if m.Resource.CurrentAverageValue.Value() != 0 {
+							v[average], ok[average] = m.Resource.CurrentAverageValue.AsInt64()
+						}
+					case autoscaling.ExternalMetricSourceType:
+						metricName = m.External.MetricName
+
+						// The CurrentValue and CurrentAverageValue are mutually exclusive
+						if m.External.CurrentValue.Value() != 0 {
+							v[value], ok[value] = m.External.CurrentValue.AsInt64()
+						}
+						if m.External.CurrentAverageValue != nil {
+							v[average], ok[average] = m.External.CurrentAverageValue.AsInt64()
+						}
+					default:
+						// Skip unsupported metric type
+						continue
+					}
+
+					for i := range ok {
+						if ok[i] {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   targetMetricLabels,
+								LabelValues: []string{metricName, metricTargetType(i).String()},
+								Value:       float64(v[i]),
+							})
+						}
+					}
+				}
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGenerator(

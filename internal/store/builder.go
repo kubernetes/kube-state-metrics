@@ -29,12 +29,11 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	certv1 "k8s.io/api/certificates/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	policy "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
@@ -227,7 +226,7 @@ func (b *Builder) buildConfigMapStore() cache.Store {
 }
 
 func (b *Builder) buildCronJobStore() cache.Store {
-	return b.buildStoreFunc(cronJobMetricFamilies(b.allowLabelsList["cronjobs"]), &batchv1beta1.CronJob{}, createCronJobListWatch)
+	return b.buildStoreFunc(cronJobMetricFamilies(b.allowLabelsList["cronjobs"]), &batchv1.CronJob{}, createCronJobListWatch)
 }
 
 func (b *Builder) buildDaemonSetStore() cache.Store {
@@ -283,7 +282,7 @@ func (b *Builder) buildPersistentVolumeStore() cache.Store {
 }
 
 func (b *Builder) buildPodDisruptionBudgetStore() cache.Store {
-	return b.buildStoreFunc(podDisruptionBudgetMetricFamilies, &policy.PodDisruptionBudget{}, createPodDisruptionBudgetListWatch)
+	return b.buildStoreFunc(podDisruptionBudgetMetricFamilies, &policyv1.PodDisruptionBudget{}, createPodDisruptionBudgetListWatch)
 }
 
 func (b *Builder) buildReplicaSetStore() cache.Store {

@@ -192,6 +192,11 @@ jobs:
   ci-e2e-tests:
     name: ci-e2e-tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cluster_version:
+         - 'v1.19.7'
+         - 'v1.20.2'
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
@@ -208,5 +213,7 @@ jobs:
         make install-tools
 
     - name: End-to-end tests
+      env:
+        KUBERNETES_VERSION: ${{ matrix.cluster_version }}
       run: |
         make e2e

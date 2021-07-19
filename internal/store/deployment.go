@@ -74,6 +74,21 @@ func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			"kube_deployment_status_ready_replicas",
+			"The number of ready replicas per deployment.",
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(d.Status.ReadyReplicas),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			"kube_deployment_status_replicas_available",
 			"The number of available replicas per deployment.",
 			metric.Gauge,

@@ -74,7 +74,7 @@ func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_deployment_status_ready_replicas",
+			"kube_deployment_status_replicas_ready",
 			"The number of ready replicas per deployment.",
 			metric.Gauge,
 			"",

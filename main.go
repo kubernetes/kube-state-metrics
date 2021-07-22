@@ -29,6 +29,7 @@ import (
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
@@ -139,7 +140,7 @@ func main() {
 
 	storeBuilder.WithAllowDenyList(allowDenyList)
 
-	storeBuilder.WithGenerateStoreFunc(storeBuilder.DefaultGenerateStoreFunc())
+	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc())
 
 	proc.StartReaper()
 
@@ -153,8 +154,8 @@ func main() {
 	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
 
 	ksmMetricsRegistry.MustRegister(
-		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
-		prometheus.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		collectors.NewGoCollector(),
 	)
 
 	var g run.Group

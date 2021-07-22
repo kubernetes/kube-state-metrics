@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/v2/internal/store"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -43,7 +43,7 @@ import (
 type MetricsHandler struct {
 	opts               *options.Options
 	kubeClient         kubernetes.Interface
-	storeBuilder       *store.Builder
+	storeBuilder       ksmtypes.BuilderInterface
 	enableGZIPEncoding bool
 
 	cancel func()
@@ -56,7 +56,7 @@ type MetricsHandler struct {
 }
 
 // New creates and returns a new MetricsHandler with the given options.
-func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder *store.Builder, enableGZIPEncoding bool) *MetricsHandler {
+func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
 	return &MetricsHandler{
 		opts:               opts,
 		kubeClient:         kubeClient,

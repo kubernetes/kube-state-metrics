@@ -235,10 +235,10 @@ There are example manifests demonstrating the autosharding functionality in [`/e
 
 ### Setup
 
-Install this project to your `$GOPATH` using `go get`:
+Install this project to your `$GOPATH` using `go install`:
 
 ```
-go get k8s.io/kube-state-metrics
+go install k8s.io/kube-state-metrics/v2@v2.1.0
 ```
 
 #### Building the Docker container

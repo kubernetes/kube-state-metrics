@@ -1,9 +1,9 @@
 ## v2.1.1 / 2021-07-28
 
-* [CHANGE] Replace multiListWatcher with independent listWatchers per namespace #1499
 * [CHANGE] go.mod: Update and minimize dependencies #1529
-* [BUGFIX] Use BuilderInterface instead of internal/store.Builder in metricshandler #1537
-* [BUGFIX] Add WithAllowLabels to public BuilderInterface #1514
+* [CHANGE] Use BuilderInterface instead of internal/store.Builder in metricshandler #1537
+* [CHANGE] Add WithAllowLabels to public BuilderInterface #1514
+* [BUGFIX] Fixes a bug where KSM did not export any metrics when it had no permissions for resources in at least one namespace #1499
 
 ## v2.1.0 / 2021-06-04
 

@@ -1,11 +1,11 @@
-reviewers:
-  - brancz
-  - andyxning
-  - zouyee
-  - tariq1890
-  - LiliC
+# DO NOT EDIT; this file is auto-generated using https://github.com/openshift/ci-tools.
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
 approvers:
-  - brancz
-  - andyxning
-  - tariq1890
-  - LiliC
+- morvencao
+options: {}
+reviewers:
+- bjoydeep
+- clyang82
+- marcolan018
+- songleo

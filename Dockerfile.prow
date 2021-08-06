@@ -2,11 +2,10 @@
 
 FROM registry.ci.openshift.org/open-cluster-management/builder:go1.16-linux AS builder
 
-WORKDIR /go/src/k8s.io/kube-state-metrics
+WORKDIR /workspace
 COPY . .
 ENV GOFLAGS="-mod=vendor"
 RUN make build-local
-
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
@@ -15,7 +14,6 @@ LABEL io.k8s.display-name="kube-state-metrics" \
       io.k8s.description="This is a component that exposes metrics about Kubernetes objects." \
       summary="This is a component that exposes metrics about Kubernetes objects."
 
-ARG FROM_DIRECTORY=/go/src/k8s.io/kube-state-metrics
-COPY --from=builder ${FROM_DIRECTORY}/kube-state-metrics  /usr/bin/kube-state-metrics
+COPY --from=builder /workspace/kube-state-metrics  /usr/bin/kube-state-metrics
 USER nobody
 ENTRYPOINT ["/usr/bin/kube-state-metrics"]

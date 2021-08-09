@@ -11,3 +11,5 @@
 | kube_cronjob_spec_suspend | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | STABLE
 | kube_cronjob_spec_starting_deadline_seconds | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | STABLE
 | kube_cronjob_metadata_resource_version| Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | STABLE
+| kube_cronjob_spec_successful_job_history_limit | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | EXPERIMENTAL
+| kube_cronjob_spec_failed_job_history_limit | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | EXPERIMENTAL

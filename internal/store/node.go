@@ -96,6 +96,7 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 				"kubeproxy_version",
 				"provider_id",
 				"pod_cidr",
+				"system_uuid",
 			}
 			labelValues := []string{
 				n.Status.NodeInfo.KernelVersion,
@@ -105,6 +106,7 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 				n.Status.NodeInfo.KubeProxyVersion,
 				n.Spec.ProviderID,
 				n.Spec.PodCIDR,
+				n.Status.NodeInfo.SystemUUID,
 			}
 
 			internalIP := ""

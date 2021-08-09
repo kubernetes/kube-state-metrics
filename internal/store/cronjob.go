@@ -195,6 +195,48 @@ func cronJobMetricFamilies(allowLabelsList []string, allowAnnotationsList []stri
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_cronjob_spec_successful_job_history_limit",
+			"Successful job history limit tells the controller how many completed jobs should be preserved.",
+			metric.Gauge,
+			"",
+			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if j.Spec.SuccessfulJobsHistoryLimit != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(*j.Spec.SuccessfulJobsHistoryLimit),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_cronjob_spec_failed_job_history_limit",
+			"Failed job history limit tells the controller how many failed jobs should be preserved.",
+			metric.Gauge,
+			"",
+			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if j.Spec.FailedJobsHistoryLimit != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(*j.Spec.FailedJobsHistoryLimit),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 	if len(allowLabelsList) > 0 {
 		families = append(families, *generator.NewFamilyGenerator(

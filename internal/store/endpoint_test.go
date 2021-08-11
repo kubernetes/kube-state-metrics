@@ -30,9 +30,13 @@ func TestEndpointStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_endpoint_address_available Number of addresses available in endpoint.
+		# HELP kube_endpoint_address_available_count Number of addresses available in endpoint.
+		# TYPE kube_endpoint_address_available_count gauge
+		# HELP kube_endpoint_address_not_ready_count Number of addresses not ready in endpoint
+		# TYPE kube_endpoint_address_not_ready_count gauge
+		# HELP kube_endpoint_address_available Addresses available in endpoint
 		# TYPE kube_endpoint_address_available gauge
-		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
+		# HELP kube_endpoint_address_not_ready Addresses not ready in endpoint
 		# TYPE kube_endpoint_address_not_ready gauge
 		# HELP kube_endpoint_created Unix creation timestamp
 		# TYPE kube_endpoint_created gauge
@@ -84,8 +88,12 @@ func TestEndpointStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_available_count{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_not_ready_count{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="127.0.0.1|10.0.0.1",ports="8080|8081"} 1 
+				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="172.22.23.202",ports="8443|9090"} 1
+				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default",addresses="192.168.1.1",ports="1234|5678"} 1
+				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default",addresses="192.168.1.3|192.168.2.2",ports="1234|5678"} 1
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="test-endpoint",namespace="default"} 1
@@ -105,9 +113,13 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_endpoint_address_available Number of addresses available in endpoint.
+		# HELP kube_endpoint_address_available_count Number of addresses available in endpoint.
+		# TYPE kube_endpoint_address_available_count gauge
+		# HELP kube_endpoint_address_not_ready_count Number of addresses not ready in endpoint
+		# TYPE kube_endpoint_address_not_ready_count gauge
+		# HELP kube_endpoint_address_available Addresses available in endpoint
 		# TYPE kube_endpoint_address_available gauge
-		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
+		# HELP kube_endpoint_address_not_ready Addresses not ready in endpoint
 		# TYPE kube_endpoint_address_not_ready gauge
 		# HELP kube_endpoint_created Unix creation timestamp
 		# TYPE kube_endpoint_created gauge
@@ -159,8 +171,12 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_available_count{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_not_ready_count{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="127.0.0.1|10.0.0.1",ports="8080|8081"} 1 
+				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="172.22.23.202",ports="8443|9090"} 1
+				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default",addresses="192.168.1.1",ports="1234|5678"} 1
+				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default",addresses="192.168.1.3|192.168.2.2",ports="1234|5678"} 1
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="test-endpoint",label_app="foobar",namespace="default"} 1

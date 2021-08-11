@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +93,7 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_endpoint_address_available",
+			"kube_endpoint_address_available_count",
 			"Number of addresses available in endpoint.",
 			metric.Gauge,
 			"",
@@ -112,7 +113,7 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_endpoint_address_not_ready",
+			"kube_endpoint_address_not_ready_count",
 			"Number of addresses not ready in endpoint",
 			metric.Gauge,
 			"",
@@ -127,6 +128,90 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 							Value: float64(notReady),
 						},
 					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_endpoint_address_available",
+			"Addresses available in endpoint",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				var addresses string
+				var ports string
+				ms := []*metric.Metric{}
+				for _, s := range e.Subsets {
+					for _, address := range s.Addresses {
+						addresses += address.IP + "|"
+					}
+					// Trim last "," character from addresses
+					if len(addresses)>0 {
+						addresses = addresses[:len(addresses)-1]
+					}
+
+					for _, port := range s.Ports {
+						ports += strconv.FormatInt(int64(port.Port), 10) + "|"
+					}
+					// Trim last "," character from ports
+					if len(ports)>0 {
+						ports = ports[:len(ports)-1]
+					}
+
+					// not add to ms list if addresses not belong to available
+					if addresses != "" {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"addresses","ports"},
+							LabelValues: []string{addresses,ports},
+							Value:       1,
+						})
+					}
+					addresses = ""
+					ports = ""
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_endpoint_address_not_ready",
+			"Addresses not ready in endpoint",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				var notReadyAddresses string
+				var ports string
+				ms := []*metric.Metric{}
+				for _, s := range e.Subsets {
+					for _, notReadyAddress := range s.NotReadyAddresses {
+						notReadyAddresses += notReadyAddress.IP + "|"
+					}
+					// Trim last "," character from notReadyAddresses
+					if len(notReadyAddresses)>0 {
+						notReadyAddresses = notReadyAddresses[:len(notReadyAddresses)-1]
+					}
+
+					for _, port := range s.Ports {
+						ports += strconv.FormatInt(int64(port.Port),10) + "|"
+					}
+					// Trim last "," character from ports
+					if len(ports)>0 {
+						ports = ports[:len(ports)-1]
+					}
+
+					// not add to ms list if addresses not belong to not ready
+					if notReadyAddresses != "" {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"addresses","ports"},
+							LabelValues: []string{notReadyAddresses,ports},
+							Value:       1,
+						})
+					}
+					notReadyAddresses = ""
+					ports = ""
+				}
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

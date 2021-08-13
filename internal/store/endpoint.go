@@ -144,7 +144,7 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 					for _, address := range s.Addresses {
 						addresses += address.IP + "|"
 					}
-					// Trim last "," character from addresses
+					// Trim last "|" character from addresses
 					if len(addresses)>0 {
 						addresses = addresses[:len(addresses)-1]
 					}
@@ -152,7 +152,7 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 					for _, port := range s.Ports {
 						ports += strconv.FormatInt(int64(port.Port), 10) + "|"
 					}
-					// Trim last "," character from ports
+					// Trim last "|" character from ports
 					if len(ports)>0 {
 						ports = ports[:len(ports)-1]
 					}
@@ -186,7 +186,7 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 					for _, notReadyAddress := range s.NotReadyAddresses {
 						notReadyAddresses += notReadyAddress.IP + "|"
 					}
-					// Trim last "," character from notReadyAddresses
+					// Trim last "|" character from notReadyAddresses
 					if len(notReadyAddresses)>0 {
 						notReadyAddresses = notReadyAddresses[:len(notReadyAddresses)-1]
 					}
@@ -194,7 +194,7 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 					for _, port := range s.Ports {
 						ports += strconv.FormatInt(int64(port.Port),10) + "|"
 					}
-					// Trim last "," character from ports
+					// Trim last "|" character from ports
 					if len(ports)>0 {
 						ports = ports[:len(ports)-1]
 					}

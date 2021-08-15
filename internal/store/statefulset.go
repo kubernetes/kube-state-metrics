@@ -75,6 +75,21 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			"kube_statefulset_status_replicas_available",
+			"The number of available replicas per StatefulSet.",
+			metric.Gauge,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(s.Status.AvailableReplicas),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			"kube_statefulset_status_replicas_current",
 			"The number of current replicas per StatefulSet.",
 			metric.Gauge,

@@ -3,7 +3,7 @@ timeout: 1200s
 options:
   substitution_option: ALLOW_LOOSE
 steps:
-  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20190906-745fed4'
+  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20210722-085d930'
     entrypoint: make
     env:
     - TAG=$_PULL_BASE_REF

@@ -66,12 +66,12 @@ All additional compatibility is only best effort, or happens to still/already be
 
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |  **Kubernetes 1.21** |
+| kube-state-metrics | **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |  **Kubernetes 1.21** | **Kubernetes 1.22**  |
 |--------------------|---------------------|----------------------|----------------------|----------------------|----------------------|
 | **v1.9.8**         |         -           |          -           |          -           |          -           |          -           |
-| **v2.0.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          -/✓         |
-| **v2.1.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
-| **master**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
+| **v2.0.0**         |         -/✓         |          ✓           |          ✓           |          -/✓         |          -/✓         |
+| **v2.1.1**         |         -/✓         |          ✓           |          ✓           |          ✓           |          -/✓         |
+| **master**         |         -/✓         |          ✓           |          ✓           |          ✓           |          ✓           |
 
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
@@ -87,7 +87,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.1.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.1.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

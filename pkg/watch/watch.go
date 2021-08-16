@@ -59,16 +59,16 @@ type InstrumentedListerWatcher struct {
 	lw                cache.ListerWatcher
 	metrics           *ListWatchMetrics
 	resource          string
-	useApiServerCache bool
+	useAPIServerCache bool
 }
 
 // NewInstrumentedListerWatcher returns a new InstrumentedListerWatcher.
-func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useApiServerCache bool) cache.ListerWatcher {
+func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool) cache.ListerWatcher {
 	return &InstrumentedListerWatcher{
 		lw:                lw,
 		metrics:           metrics,
 		resource:          resource,
-		useApiServerCache: useApiServerCache,
+		useAPIServerCache: useAPIServerCache,
 	}
 }
 
@@ -76,7 +76,7 @@ func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetr
 // / counters based on the outcome of the List operation it instruments.
 func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtime.Object, err error) {
 
-	if i.useApiServerCache {
+	if i.useAPIServerCache {
 		options.ResourceVersion = "0"
 	}
 
@@ -94,7 +94,7 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtim
 // counters based on the outcome of the Watch operation it instruments.
 func (i *InstrumentedListerWatcher) Watch(options metav1.ListOptions) (res watch.Interface, err error) {
 
-	if i.useApiServerCache {
+	if i.useAPIServerCache {
 		options.ResourceVersion = "0"
 	}
 

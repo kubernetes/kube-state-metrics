@@ -140,7 +140,7 @@ func main() {
 
 	storeBuilder.WithAllowDenyList(allowDenyList)
 
-	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc(), opts.UseApiServerCache)
+	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc(), opts.UseAPIServerCache)
 
 	proc.StartReaper()
 

@@ -54,6 +54,7 @@ Usage of ./kube-state-metrics:
       --telemetry-port int               Port to expose kube-state-metrics self metrics on. (default 8081)
       --tls-config string                Path to the TLS configuration file
       --total-shards int                 The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
+      --use-api-server-cache             Set resourceVersion=0 for ListWatch
   -v, --v Level                          number for the log level verbosity
       --version                          kube-state-metrics build version information
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging

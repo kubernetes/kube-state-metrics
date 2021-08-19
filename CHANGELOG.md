@@ -1,3 +1,15 @@
+## v2.2.0 / 2021-08-24
+
+* [FEATURE] Add --use-apiserver-cache flag to set resourceVersion=0 for ListWatch requests #1548
+* [FEATURE] Introduce metrics for Kubernetes object annotations #1468
+* [FEATURE] Introduce start time metric for containers in terminated state #1519
+* [FEATURE] Introduce metrics for cronjob job history limits #1535
+* [FEATURE] Add system_uuid dimension to kube_node_info metric #1535
+* [FEATURE] Add available replica metric for statefulsets #1532
+* [FEATURE] Add ready replica metric for deployments #1534
+* [CHANGE]  Update go clients for Kubernetes to support 1.22 #1545
+* [CHANGE]  Use new promlint package and update prometheus cli to 2.28.1 #1531
+
 ## v2.1.1 / 2021-07-28
 
 * [CHANGE] go.mod: Update and minimize dependencies #1529

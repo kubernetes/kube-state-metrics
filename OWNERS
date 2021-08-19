@@ -2,10 +2,8 @@
 component: "Monitoring"
 
 reviewers:
-  - paulfantom
   - simonpasquier
   - dgrisonnet
-  - kakkoyun
   - slashpai
   - prashbnair
   - arajkumar
@@ -17,10 +15,8 @@ reviewers:
   - jan--f
 
 approvers:
-  - paulfantom
   - simonpasquier
   - dgrisonnet
-  - kakkoyun
   - slashpai
   - prashbnair
   - arajkumar
@@ -35,3 +31,5 @@ approvers:
 emeritus_approvers:
   - brancz
   - s-urbaniak
+  - kakkoyun
+  - paulfantom

@@ -50,6 +50,8 @@ type Options struct {
 
 	EnableGZIPEncoding bool
 
+	UseAPIServerCache bool
+
 	flags *pflag.FlagSet
 }
 
@@ -80,6 +82,7 @@ func (o *Options) AddFlags() {
 		o.flags.PrintDefaults()
 	}
 
+	o.flags.BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
 	o.flags.StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	o.flags.StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	o.flags.StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")

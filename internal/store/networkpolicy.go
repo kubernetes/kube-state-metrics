@@ -31,10 +31,14 @@ import (
 )
 
 var (
+	descNetworkPolicyAnnotationsName     = "kube_networkpolicy_annotations"
+	descNetworkPolicyAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descNetworkPolicyLabelsName          = "kube_networkpolicy_labels"
+	descNetworkPolicyLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
 )
 
-func networkPolicyMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_networkpolicy_created",
@@ -54,12 +58,30 @@ func networkPolicyMetricFamilies(allowLabelsList []string) []generator.FamilyGen
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_networkpolicy_labels",
-			"Kubernetes labels converted to Prometheus labels",
+			descNetworkPolicyAnnotationsName,
+			descNetworkPolicyAnnotationsHelp,
 			metric.Gauge,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descNetworkPolicyLabelsName,
+			descNetworkPolicyLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

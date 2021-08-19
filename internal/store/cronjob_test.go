@@ -281,8 +281,8 @@ func TestCronJobStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

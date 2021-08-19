@@ -36,12 +36,14 @@ var (
 	descPersistentVolumeClaimRefHelp          = "Information about the Persitant Volume Claim Reference."
 	descPersistentVolumeClaimRefDefaultLabels = []string{"persistentvolume"}
 
+	descPersistentVolumeAnnotationsName     = "kube_persistentvolume_annotations"
+	descPersistentVolumeAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descPersistentVolumeLabelsName          = "kube_persistentvolume_labels"
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
 )
 
-func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			descPersistentVolumeClaimRefName,
@@ -74,12 +76,30 @@ func persistentVolumeMetricFamilies(allowLabelsList []string) []generator.Family
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			descPersistentVolumeAnnotationsName,
+			descPersistentVolumeAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			descPersistentVolumeLabelsName,
 			descPersistentVolumeLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

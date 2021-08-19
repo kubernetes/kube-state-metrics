@@ -33,15 +33,18 @@ import (
 )
 
 var (
+	descNodeAnnotationsName     = "kube_node_annotations"
+	descNodeAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descNodeLabelsName          = "kube_node_labels"
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNodeLabelsDefaultLabels = []string{"node"}
 )
 
-func nodeMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createNodeCreatedFamilyGenerator(),
 		createNodeInfoFamilyGenerator(),
+		createNodeAnnotationsGenerator(allowAnnotationsList),
 		createNodeLabelsGenerator(allowLabelsList),
 		createNodeRoleFamilyGenerator(),
 		createNodeSpecTaintFamilyGenerator(),
@@ -125,6 +128,27 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
+func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		descNodeAnnotationsName,
+		descNodeAnnotationsHelp,
+		metric.Gauge,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
+						Value:       1,
+					},
+				},
+			}
+		}),
+	)
+}
+
 func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGenerator(
 		descNodeLabelsName,
@@ -132,7 +156,7 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 		metric.Gauge,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
-			labelKeys, labelValues := createLabelKeysValues(n.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{

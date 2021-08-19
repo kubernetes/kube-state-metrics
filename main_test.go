@@ -75,6 +75,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	}
 	builder.WithAllowDenyList(l)
 
+	builder.WithAllowAnnotations(map[string][]string{})
 	builder.WithAllowLabels(map[string][]string{})
 
 	// This test is not suitable to be compared in terms of time, as it includes
@@ -165,7 +166,8 @@ func TestFullScrapeCycle(t *testing.T) {
 
 	body, _ := io.ReadAll(resp.Body)
 
-	expected := `# HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
+	expected := `# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
+# HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
 # HELP kube_pod_container_info Information about a container in a pod.
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
 # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
@@ -215,6 +217,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
+# TYPE kube_pod_annotations gauge
 # TYPE kube_pod_completion_time gauge
 # TYPE kube_pod_container_info gauge
 # TYPE kube_pod_container_resource_limits gauge
@@ -265,6 +268,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
+kube_pod_annotations{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2

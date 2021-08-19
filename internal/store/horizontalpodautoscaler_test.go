@@ -309,8 +309,8 @@ func TestHPAStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(hpaMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(hpaMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(hpaMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(hpaMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

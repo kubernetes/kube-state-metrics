@@ -50,6 +50,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 - [Usage](#usage)
   - [Kubernetes Deployment](#kubernetes-deployment)
   - [Limited privileges environment](#limited-privileges-environment)
+  - [Helm Chart](#helm-chart)
   - [Development](#development)
   - [Developer Contributions](#developer-contributions)
 
@@ -65,12 +66,12 @@ All additional compatibility is only best effort, or happens to still/already be
 
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
 
-| kube-state-metrics | **Kubernetes 1.16** |  **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |
-|--------------------|---------------------|---------------------|----------------------|----------------------|-----------------------|
-| **v1.8.0**         |         -           |          -           |          -           |          -           |          -           |
-| **v1.9.8**         |         ✓           |          -           |          -           |          -           |          -           |
-| **v2.0.0**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
-| **master**         |         -           |          -/✓         |         -/✓          |          ✓           |          ✓           |
+| kube-state-metrics | **Kubernetes 1.17** |  **Kubernetes 1.18** |  **Kubernetes 1.19** |  **Kubernetes 1.20** |  **Kubernetes 1.21** |
+|--------------------|---------------------|----------------------|----------------------|----------------------|----------------------|
+| **v1.9.8**         |         -           |          -           |          -           |          -           |          -           |
+| **v2.0.0**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          -/✓         |
+| **v2.1.1**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
+| **master**         |         -/✓         |          -/✓         |          ✓           |          ✓           |          ✓           |
 - `✓` Fully supported version range.
 - `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
 
@@ -85,7 +86,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.1.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 
@@ -119,9 +120,10 @@ that ensures that there are no possible conflicts.
 
 #### Enabling VerticalPodAutoscalers
 
-Please note that the collector for `verticalpodautoscalers` are disabled dy default.
-This is because Vertical Pod Autoscalers are managed as custom resources. If you want to enable this collector,
-please ensure that you have the `v1beta2` CRDs installed beforehand. They can be found [here](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/deploy/vpa-beta2-crd.yaml).
+Please note that the collector for `verticalpodautoscalers` is **disabled** by default; Vertical Pod Autoscaler metrics will not be collected until the collector is enabled. This is because Vertical Pod Autoscalers are managed as custom resources.
+
+If you want to enable this collector,
+the [instructions](./docs/verticalpodautoscaler-metrics.md#Configuration) are located in the [Vertical Pod Autoscaler Metrics](./docs/verticalpodautoscaler-metrics.md) documentation.
 
 ### Kube-state-metrics self metrics
 
@@ -147,6 +149,18 @@ http_request_duration_seconds_bucket{handler="metrics",method="get",le="+Inf"} 3
 http_request_duration_seconds_sum{handler="metrics",method="get"} 0.021113919999999998
 http_request_duration_seconds_count{handler="metrics",method="get"} 30
 ```
+
+kube-state-metrics also exposes build and configuration metrics:
+```
+kube_state_metrics_build_info{branch="master",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
+kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
+kube_state_metrics_total_shards 1
+```
+
+`kube_state_metrics_build_info` is used to expose version and other build information. For more usage about the info pattern,
+please check the blog post [here](https://www.robustperception.io/exposing-the-software-version-to-prometheus).
+Sharding metrics expose `--shard` and `--total-shards` flags and can be used to validate
+run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/prometheus-alerting-rules).
 
 ### Scaling kube-state-metrics
 
@@ -194,7 +208,7 @@ kube-state-metrics is focused on generating completely new metrics from
 Kubernetes' object state (e.g. metrics based on deployments, replica sets,
 etc.). It holds an entire snapshot of Kubernetes state in memory and
 continuously generates new metrics based off of it. And just like the
-metrics-server it too is not responsibile for exporting its metrics anywhere.
+metrics-server it too is not responsible for exporting its metrics anywhere.
 
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
@@ -238,6 +252,12 @@ make container
 
 Simply build and run kube-state-metrics inside a Kubernetes pod which has a
 service account token that has read-only access to the Kubernetes cluster.
+
+### For users of prometheus-operator/kube-prometheus stack
+
+The ([`kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus/)) stack installs kube-state-metrics as one of its [components](https://github.com/prometheus-operator/kube-prometheus#kube-prometheus); you do not need to install kube-state-metrics if you're using the kube-prometheus stack.
+
+If you want to revise the default configuration for kube-prometheus, for example to enable non-default metrics, have a look at [Customizing Kube-Prometheus](https://github.com/prometheus-operator/kube-prometheus#customizing-kube-prometheus).
 
 #### Kubernetes Deployment
 
@@ -300,6 +320,11 @@ spec:
 ```
 
 For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
+
+
+#### Helm Chart
+
+The official Helm chart is maintained in [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics).
 
 #### Development
 

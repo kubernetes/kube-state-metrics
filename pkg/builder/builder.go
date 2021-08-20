@@ -19,10 +19,11 @@ package builder
 import (
 	"context"
 
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+
 	"github.com/prometheus/client_golang/prometheus"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 
 	internalstore "k8s.io/kube-state-metrics/v2/internal/store"
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
@@ -44,7 +45,7 @@ func NewBuilder() *Builder {
 }
 
 // WithMetrics sets the metrics property of a Builder.
-func (b *Builder) WithMetrics(r *prometheus.Registry) {
+func (b *Builder) WithMetrics(r prometheus.Registerer) {
 	b.internal.WithMetrics(r)
 }
 
@@ -84,17 +85,22 @@ func (b *Builder) WithAllowDenyList(l ksmtypes.AllowDenyLister) {
 	b.internal.WithAllowDenyList(l)
 }
 
-// WithGenerateStoreFunc configures a custom generate store function
-func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
-	b.internal.WithGenerateStoreFunc(f)
+// WithAllowLabels configures which labels can be returned for metrics
+func (b *Builder) WithAllowLabels(l map[string][]string) {
+	b.internal.WithAllowLabels(l)
 }
 
-// DefaultGenerateStoreFunc returns default buildStore function
-func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
-	return b.internal.DefaultGenerateStoreFunc()
+// WithGenerateStoresFunc configures a custom generate store function
+func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
+	b.internal.WithGenerateStoresFunc(f)
+}
+
+// DefaultGenerateStoresFunc returns default buildStore function
+func (b *Builder) DefaultGenerateStoresFunc() ksmtypes.BuildStoresFunc {
+	return b.internal.DefaultGenerateStoresFunc()
 }
 
 // Build initializes and registers all enabled stores.
-func (b *Builder) Build() []cache.Store {
+func (b *Builder) Build() []metricsstore.MetricsWriter {
 	return b.internal.Build()
 }

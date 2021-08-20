@@ -1,0 +1,88 @@
+rule_files:
+  - ../../examples/prometheus-alerting-rules/alerts.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # Test long-lasting invalid configuration should trigger alert
+  - interval: 1m
+    input_series:
+      # T=0: 3 shards with correct configuration
+      # T=9m: shard #0 was incorrectly redeployed with --total-shards=1
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-0-0"}'
+        values: '3x9 1x21'
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-1-0"}'
+        values: '3x30'
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-2-0"}'
+        values: '3x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KubeStateMetricsShardingMismatch
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "kube-state-metrics sharding is misconfigured."
+              description: "kube-state-metrics pods are running with different --total-shards configuration, some Kubernetes objects may be exposed multiple times or not exposed at all."
+
+  # Test deployment from one shard to multiple shards should not trigger alert
+  - interval: 1m
+    input_series:
+      # T=0: 1 shard with correct configuration
+      # T=9m: two more shards were deployed, all shards were correctly configured
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-0-0"}'
+        values: '1x9 3x21'
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-1-0"}'
+        values: '_x9 3x21'
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-2-0"}'
+        values: '_x9 3x21'
+      - series: 'kube_state_metrics_shard_ordinal{job="kube-state-metrics",pod="kube-state-metrics-shard-0-0",shard_ordinal="0"}'
+        values: '0x30'
+      - series: 'kube_state_metrics_shard_ordinal{job="kube-state-metrics",pod="kube-state-metrics-shard-1-0",shard_ordinal="1"}'
+        values: '_x9 1x21'
+      - series: 'kube_state_metrics_shard_ordinal{job="kube-state-metrics",pod="kube-state-metrics-shard-2-0",shard_ordinal="2"}'
+        values: '_x9 2x21'
+    alert_rule_test: []
+
+  # Test misconfigured single shard deployment
+  - interval: 1m
+    input_series:
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-0-0"}'
+        values: '3x30'
+      - series: 'kube_state_metrics_shard_ordinal{job="kube-state-metrics",pod="kube-state-metrics-shard-0-0",shard_ordinal="0"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KubeStateMetricsShardsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "kube-state-metrics shards are missing."
+              description: "kube-state-metrics shards are missing, some Kubernetes objects are not being exposed."
+
+  # Test misconfigured single shard deployment
+  - interval: 1m
+    input_series:
+      - series: 'kube_state_metrics_total_shards{job="kube-state-metrics",pod="kube-state-metrics-shard-0-0"}'
+        values: '3x30'
+      - series: 'kube_state_metrics_shard_ordinal{job="kube-state-metrics",pod="kube-state-metrics-shard-0-0",shard_ordinal="0"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KubeStateMetricsShardsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "kube-state-metrics shards are missing."
+              description: "kube-state-metrics shards are missing, some Kubernetes objects are not being exposed."
+    promql_expr_test:
+      # Test that missing shards are #2 (0b100) and #1 (0b010)
+      - expr: |
+          2^max(kube_state_metrics_total_shards{job="kube-state-metrics"}) - 1
+            -
+          sum( 2 ^ max by (shard_ordinal) (kube_state_metrics_shard_ordinal{job="kube-state-metrics"}) )
+        eval_time: 25m
+        exp_samples:
+          - value: 0b110

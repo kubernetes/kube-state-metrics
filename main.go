@@ -29,8 +29,11 @@ import (
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/version"
+	"github.com/prometheus/exporter-toolkit/web"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -42,7 +45,6 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
-	"k8s.io/kube-state-metrics/v2/pkg/version"
 )
 
 const (
@@ -57,9 +59,17 @@ func (pl promLogger) Println(v ...interface{}) {
 	klog.Error(v...)
 }
 
+// promLogger implements the Logger interface
+func (pl promLogger) Log(v ...interface{}) error {
+	klog.Info(v...)
+	return nil
+}
+
 func main() {
 	opts := options.NewOptions()
 	opts.AddFlags()
+
+	promLogger := promLogger{}
 
 	ctx := context.Background()
 
@@ -69,7 +79,7 @@ func main() {
 	}
 
 	if opts.Version {
-		fmt.Printf("%#v\n", version.GetVersion())
+		fmt.Printf("%s\n", version.Print("kube-state-metrics"))
 		os.Exit(0)
 	}
 
@@ -80,6 +90,7 @@ func main() {
 	storeBuilder := store.NewBuilder()
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
+	ksmMetricsRegistry.MustRegister(version.NewCollector("kube_state_metrics"))
 	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:        "http_request_duration_seconds",
@@ -129,7 +140,7 @@ func main() {
 
 	storeBuilder.WithAllowDenyList(allowDenyList)
 
-	storeBuilder.WithGenerateStoreFunc(storeBuilder.DefaultGenerateStoreFunc())
+	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc())
 
 	proc.StartReaper()
 
@@ -143,8 +154,8 @@ func main() {
 	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
 
 	ksmMetricsRegistry.MustRegister(
-		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
-		prometheus.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		collectors.NewGoCollector(),
 	)
 
 	var g run.Group
@@ -165,26 +176,21 @@ func main() {
 		})
 	}
 
+	tlsConfig := opts.TLSConfig
+
 	telemetryMux := buildTelemetryServer(ksmMetricsRegistry)
-	telemetryServer := http.Server{Handler: telemetryMux}
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
-	telemetryLn, err := net.Listen("tcp", telemetryListenAddress)
-	if err != nil {
-		klog.Fatalf("Failed to create Telemetry Listener: %v", err)
-	}
+	telemetryServer := http.Server{Handler: telemetryMux, Addr: telemetryListenAddress}
+
 	metricsMux := buildMetricsServer(m, durationVec)
-	metricsServer := http.Server{Handler: metricsMux}
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
-	metricsServerLn, err := net.Listen("tcp", metricsServerListenAddress)
-	if err != nil {
-		klog.Fatalf("Failed to create MetricsServer Listener: %v", err)
-	}
+	metricsServer := http.Server{Handler: metricsMux, Addr: metricsServerListenAddress}
 
 	// Run Telemetry server
 	{
 		g.Add(func() error {
 			klog.Infof("Starting kube-state-metrics self metrics server: %s", telemetryListenAddress)
-			return telemetryServer.Serve(telemetryLn)
+			return web.ListenAndServe(&telemetryServer, tlsConfig, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -195,7 +201,7 @@ func main() {
 	{
 		g.Add(func() error {
 			klog.Infof("Starting metrics server: %s", metricsServerListenAddress)
-			return metricsServer.Serve(metricsServerLn)
+			return web.ListenAndServe(&metricsServer, tlsConfig, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -215,7 +221,7 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 		return nil, nil, err
 	}
 
-	config.UserAgent = version.GetVersion().String()
+	config.UserAgent = version.Version
 	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 	config.ContentType = "application/vnd.kubernetes.protobuf"
 

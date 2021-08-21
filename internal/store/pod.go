@@ -37,7 +37,7 @@ var (
 	podStatusReasons           = []string{"NodeLost", "Evicted", "UnexpectedAdmissionError"}
 )
 
-func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createPodCompletionTimeFamilyGenerator(),
 		createPodContainerInfoFamilyGenerator(),
@@ -74,6 +74,7 @@ func podMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
 		createPodInitContainerStatusTerminatedReasonFamilyGenerator(),
 		createPodInitContainerStatusWaitingFamilyGenerator(),
 		createPodInitContainerStatusWaitingReasonFamilyGenerator(),
+		createPodAnnotationsGenerator(allowAnnotationsList),
 		createPodLabelsGenerator(allowLabelsList),
 		createPodOverheadCPUCoresFamilyGenerator(),
 		createPodOverheadMemoryBytesFamilyGenerator(),
@@ -1131,6 +1132,26 @@ func createPodInitContainerStatusWaitingReasonFamilyGenerator() generator.Family
 	)
 }
 
+func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_annotations",
+		"Kubernetes annotations converted to Prometheus labels.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotations)
+			m := metric.Metric{
+				LabelKeys:   annotationKeys,
+				LabelValues: annotationValues,
+				Value:       1,
+			}
+			return &metric.Family{
+				Metrics: []*metric.Metric{&m},
+			}
+		}),
+	)
+}
+
 func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_labels",
@@ -1138,7 +1159,7 @@ func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerato
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 			m := metric.Metric{
 				LabelKeys:   labelKeys,
 				LabelValues: labelValues,

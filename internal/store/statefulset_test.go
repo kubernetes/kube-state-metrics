@@ -254,8 +254,8 @@ func TestStatefulSetStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

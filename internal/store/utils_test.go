@@ -246,7 +246,7 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("kubelabels input=%v , expected prometheus keys=%v, expected prometheus values=%v", tc.kubeLabels, tc.expectKeys, tc.expectValues), func(t *testing.T) {
-			labelKeys, labelValues := kubeLabelsToPrometheusLabels(tc.kubeLabels)
+			labelKeys, labelValues := kubeMapToPrometheusLabels("label", tc.kubeLabels)
 			if len(labelKeys) != len(tc.expectKeys) {
 				t.Errorf("Got Prometheus label keys with len %d but expected %d", len(labelKeys), len(tc.expectKeys))
 			}

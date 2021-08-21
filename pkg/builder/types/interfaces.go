@@ -41,7 +41,7 @@ type BuilderInterface interface {
 	WithVPAClient(c vpaclientset.Interface)
 	WithAllowDenyList(l AllowDenyLister)
 	WithAllowLabels(l map[string][]string)
-	WithGenerateStoresFunc(f BuildStoresFunc)
+	WithGenerateStoresFunc(f BuildStoresFunc, useAPIServerCache bool)
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	Build() []metricsstore.MetricsWriter
 }
@@ -50,6 +50,7 @@ type BuilderInterface interface {
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
+	useAPIServerCache bool,
 ) []*metricsstore.MetricsStore
 
 // AllowDenyLister interface for AllowDeny lister that can allow or exclude metrics by there names

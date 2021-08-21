@@ -2,6 +2,7 @@
 
 | Metric name| Metric type | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------- |
+| kube_daemonset_annotations | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; <br> `annotation_DAEMONSET_ANNOTATION`=&lt;DAEMONSET_ANNOTATION&gt; | EXPERIMENTAL |
 | kube_daemonset_created | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; | STABLE |
 | kube_daemonset_status_current_number_scheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; | STABLE |
 | kube_daemonset_status_desired_number_scheduled | Gauge | `daemonset`=&lt;daemonset-name&gt; <br> `namespace`=&lt;daemonset-namespace&gt; | STABLE |

@@ -32,10 +32,10 @@ func TestEndpointStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_endpoint_annotations gauge
-		# HELP kube_endpoint_address_available_count Number of addresses available in endpoint.
-		# TYPE kube_endpoint_address_available_count gauge
-		# HELP kube_endpoint_address_not_ready_count Number of addresses not ready in endpoint
-		# TYPE kube_endpoint_address_not_ready_count gauge
+		# HELP kube_endpoint_address_available_total Number of addresses available in endpoint.
+		# TYPE kube_endpoint_address_available_total counter
+		# HELP kube_endpoint_address_not_ready_total Number of addresses not ready in endpoint
+		# TYPE kube_endpoint_address_not_ready_total counter
 		# HELP kube_endpoint_address_available Addresses available in endpoint
 		# TYPE kube_endpoint_address_available gauge
 		# HELP kube_endpoint_address_not_ready Addresses not ready in endpoint
@@ -91,8 +91,8 @@ func TestEndpointStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_endpoint_annotations{endpoint="test-endpoint",namespace="default"} 1
-				kube_endpoint_address_available_count{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready_count{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_available_total{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_not_ready_total{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="127.0.0.1|10.0.0.1",ports="8080|8081"} 1 
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="172.22.23.202",ports="8443|9090"} 1
 				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default",addresses="192.168.1.1",ports="1234|5678"} 1
@@ -116,10 +116,10 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_endpoint_address_available_count Number of addresses available in endpoint.
-		# TYPE kube_endpoint_address_available_count gauge
-		# HELP kube_endpoint_address_not_ready_count Number of addresses not ready in endpoint
-		# TYPE kube_endpoint_address_not_ready_count gauge
+		# HELP kube_endpoint_address_available_total Number of addresses available in endpoint.
+		# TYPE kube_endpoint_address_available_total counter
+		# HELP kube_endpoint_address_not_ready_total Number of addresses not ready in endpoint
+		# TYPE kube_endpoint_address_not_ready_total counter
 		# HELP kube_endpoint_address_available Addresses available in endpoint
 		# TYPE kube_endpoint_address_available gauge
 		# HELP kube_endpoint_address_not_ready Addresses not ready in endpoint
@@ -179,8 +179,8 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_endpoint_address_available_count{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready_count{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_available_total{endpoint="test-endpoint",namespace="default"} 6
+				kube_endpoint_address_not_ready_total{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_annotations{endpoint="test-endpoint",annotation_app="foobar",namespace="default"} 1
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="127.0.0.1|10.0.0.1",ports="8080|8081"} 1 
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default",addresses="172.22.23.202",ports="8443|9090"} 1

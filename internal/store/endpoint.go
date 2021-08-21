@@ -113,9 +113,9 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_endpoint_address_available_count",
+			"kube_endpoint_address_available_total",
 			"Number of addresses available in endpoint.",
-			metric.Gauge,
+			metric.Counter,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var available int
@@ -133,9 +133,9 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_endpoint_address_not_ready_count",
+			"kube_endpoint_address_not_ready_total",
 			"Number of addresses not ready in endpoint",
-			metric.Gauge,
+			metric.Counter,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var notReady int

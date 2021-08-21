@@ -165,7 +165,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 						addresses += address.IP + "|"
 					}
 					// Trim last "|" character from addresses
-					if len(addresses)>0 {
+					if len(addresses) > 0 {
 						addresses = addresses[:len(addresses)-1]
 					}
 
@@ -173,15 +173,15 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 						ports += strconv.FormatInt(int64(port.Port), 10) + "|"
 					}
 					// Trim last "|" character from ports
-					if len(ports)>0 {
+					if len(ports) > 0 {
 						ports = ports[:len(ports)-1]
 					}
 
 					// not add to ms list if addresses not belong to available
 					if addresses != "" {
 						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"addresses","ports"},
-							LabelValues: []string{addresses,ports},
+							LabelKeys:   []string{"addresses", "ports"},
+							LabelValues: []string{addresses, ports},
 							Value:       1,
 						})
 					}
@@ -207,23 +207,23 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 						notReadyAddresses += notReadyAddress.IP + "|"
 					}
 					// Trim last "|" character from notReadyAddresses
-					if len(notReadyAddresses)>0 {
+					if len(notReadyAddresses) > 0 {
 						notReadyAddresses = notReadyAddresses[:len(notReadyAddresses)-1]
 					}
 
 					for _, port := range s.Ports {
-						ports += strconv.FormatInt(int64(port.Port),10) + "|"
+						ports += strconv.FormatInt(int64(port.Port), 10) + "|"
 					}
 					// Trim last "|" character from ports
-					if len(ports)>0 {
+					if len(ports) > 0 {
 						ports = ports[:len(ports)-1]
 					}
 
 					// not add to ms list if addresses not belong to not ready
 					if notReadyAddresses != "" {
 						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"addresses","ports"},
-							LabelValues: []string{notReadyAddresses,ports},
+							LabelKeys:   []string{"addresses", "ports"},
+							LabelValues: []string{notReadyAddresses, ports},
 							Value:       1,
 						})
 					}

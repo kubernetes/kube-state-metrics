@@ -215,7 +215,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 
-				maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
+				maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
 				if err != nil {
 					panic(err)
 				}
@@ -239,7 +239,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 
-				maxSurge, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
+				maxSurge, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
 				if err != nil {
 					panic(err)
 				}

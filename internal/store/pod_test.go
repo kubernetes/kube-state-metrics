@@ -1320,7 +1320,15 @@ func TestPodStore(t *testing.T) {
 			},
 			Want: `
 		# HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
+        # HELP kube_pod_container_resource_limits_cpu_cores The number of CPU cores requested limit by a container.
+        # HELP kube_pod_container_resource_limits_ephemeral_storage_bytes Bytes of ephemeral-storage requested limit by a container.
+        # HELP kube_pod_container_resource_limits_memory_bytes Bytes of memory requested limit by a container.
+        # HELP kube_pod_container_resource_limits_storage_bytes Bytes of storage requested limit by a container.
         # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
+        # HELP kube_pod_container_resource_requests_cpu_cores The number of CPU cores requested by a container.
+        # HELP kube_pod_container_resource_requests_ephemeral_storage_bytes Bytes of ephemeral-storage requested by a container.
+        # HELP kube_pod_container_resource_requests_memory_bytes Bytes of memory requested by a container.
+        # HELP kube_pod_container_resource_requests_storage_bytes Bytes of storage requested by a container.
         # HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
         # HELP kube_pod_init_container_resource_limits_cpu_cores The number of CPU cores requested limit by an init container.
         # HELP kube_pod_init_container_resource_limits_ephemeral_storage_bytes Bytes of ephemeral-storage requested limit by an init container.
@@ -1333,7 +1341,15 @@ func TestPodStore(t *testing.T) {
         # HELP kube_pod_init_container_resource_requests_storage_bytes Bytes of storage requested by an init container.
         # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
         # TYPE kube_pod_container_resource_limits gauge
+        # TYPE kube_pod_container_resource_limits_cpu_cores gauge
+        # TYPE kube_pod_container_resource_limits_ephemeral_storage_bytes gauge
+        # TYPE kube_pod_container_resource_limits_memory_bytes gauge
+        # TYPE kube_pod_container_resource_limits_storage_bytes gauge
         # TYPE kube_pod_container_resource_requests gauge
+        # TYPE kube_pod_container_resource_requests_cpu_cores gauge
+        # TYPE kube_pod_container_resource_requests_ephemeral_storage_bytes gauge
+        # TYPE kube_pod_container_resource_requests_memory_bytes gauge
+        # TYPE kube_pod_container_resource_requests_storage_bytes gauge
         # TYPE kube_pod_init_container_resource_limits gauge
         # TYPE kube_pod_init_container_resource_limits_cpu_cores gauge
         # TYPE kube_pod_init_container_resource_limits_ephemeral_storage_bytes gauge
@@ -1345,30 +1361,42 @@ func TestPodStore(t *testing.T) {
         # TYPE kube_pod_init_container_resource_requests_memory_bytes gauge
         # TYPE kube_pod_init_container_resource_requests_storage_bytes gauge
         # TYPE kube_pod_init_container_status_last_terminated_reason gauge
-        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core",uid="uid1"} 0.2
-        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="ephemeral_storage",unit="byte",uid="uid1"} 3e+08
-        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte",uid="uid1"} 1e+08
-        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="nvidia_com_gpu",unit="integer",uid="uid1"} 1
-        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="storage",unit="byte",uid="uid1"} 4e+08
-        kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core",uid="uid1"} 0.3
-        kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte",uid="uid1"} 2e+08
-        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core",uid="uid1"} 0.2
-        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="ephemeral_storage",unit="byte",uid="uid1"} 3e+08
-        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte",uid="uid1"} 1e+08
-        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="nvidia_com_gpu",unit="integer",uid="uid1"} 1
-        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="storage",unit="byte",uid="uid1"} 4e+08
-        kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core",uid="uid1"} 0.3
-        kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte",uid="uid1"} 2e+08
+        kube_pod_container_resource_limits_cpu_cores{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 0.2
+        kube_pod_container_resource_limits_cpu_cores{container="pod1_con2",namespace="ns1",pod="pod1",uid="uid1"} 0.3
+        kube_pod_container_resource_limits_ephemeral_storage_bytes{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 3e+08
+        kube_pod_container_resource_limits_memory_bytes{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 1e+08
+        kube_pod_container_resource_limits_memory_bytes{container="pod1_con2",namespace="ns1",pod="pod1",uid="uid1"} 2e+08
+        kube_pod_container_resource_limits_storage_bytes{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 4e+08
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="cpu",uid="uid1",unit="core"} 0.2
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="ephemeral_storage",uid="uid1",unit="byte"} 3e+08
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="memory",uid="uid1",unit="byte"} 1e+08
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="nvidia_com_gpu",uid="uid1",unit="integer"} 1
+        kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="storage",uid="uid1",unit="byte"} 4e+08
+        kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="cpu",uid="uid1",unit="core"} 0.3
+        kube_pod_container_resource_limits{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="memory",uid="uid1",unit="byte"} 2e+08
+        kube_pod_container_resource_requests_cpu_cores{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 0.2
+        kube_pod_container_resource_requests_cpu_cores{container="pod1_con2",namespace="ns1",pod="pod1",uid="uid1"} 0.3
+        kube_pod_container_resource_requests_ephemeral_storage_bytes{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 3e+08
+        kube_pod_container_resource_requests_memory_bytes{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 1e+08
+        kube_pod_container_resource_requests_memory_bytes{container="pod1_con2",namespace="ns1",pod="pod1",uid="uid1"} 2e+08
+        kube_pod_container_resource_requests_storage_bytes{container="pod1_con1",namespace="ns1",pod="pod1",uid="uid1"} 4e+08
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="cpu",uid="uid1",unit="core"} 0.2
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="ephemeral_storage",uid="uid1",unit="byte"} 3e+08
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="memory",uid="uid1",unit="byte"} 1e+08
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="nvidia_com_gpu",uid="uid1",unit="integer"} 1
+        kube_pod_container_resource_requests{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="storage",uid="uid1",unit="byte"} 4e+08
+        kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="cpu",uid="uid1",unit="core"} 0.3
+        kube_pod_container_resource_requests{container="pod1_con2",namespace="ns1",node="",pod="pod1",resource="memory",uid="uid1",unit="byte"} 2e+08
         kube_pod_init_container_resource_limits_cpu_cores{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 0.2
         kube_pod_init_container_resource_limits_ephemeral_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 3e+08
         kube_pod_init_container_resource_limits_memory_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 1e+08
         kube_pod_init_container_resource_limits_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 4e+08
-        kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",pod="pod1",resource="nvidia_com_gpu",unit="integer",uid="uid1"} 1
+        kube_pod_init_container_resource_limits{container="pod1_initcon1",namespace="ns1",pod="pod1",resource="nvidia_com_gpu",uid="uid1",unit="integer"} 1
         kube_pod_init_container_resource_requests_cpu_cores{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 0.2
         kube_pod_init_container_resource_requests_ephemeral_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 3e+08
         kube_pod_init_container_resource_requests_memory_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 1e+08
         kube_pod_init_container_resource_requests_storage_bytes{container="pod1_initcon1",namespace="ns1",pod="pod1",uid="uid1"} 4e+08
-        kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",pod="pod1",resource="nvidia_com_gpu",unit="integer",uid="uid1"} 1
+        kube_pod_init_container_resource_requests{container="pod1_initcon1",namespace="ns1",pod="pod1",resource="nvidia_com_gpu",uid="uid1",unit="integer"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_container_resource_requests",
@@ -1379,7 +1407,6 @@ func TestPodStore(t *testing.T) {
 			},
 		},
 		{
-
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
@@ -1392,12 +1419,16 @@ func TestPodStore(t *testing.T) {
 							Name: "pod2_con1",
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("400m"),
-									v1.ResourceMemory: resource.MustParse("300M"),
+									v1.ResourceCPU:              resource.MustParse("100m"),
+									v1.ResourceMemory:           resource.MustParse("200M"),
+									v1.ResourceStorage:          resource.MustParse("300M"),
+									v1.ResourceEphemeralStorage: resource.MustParse("400M"),
 								},
 								Limits: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("400m"),
-									v1.ResourceMemory: resource.MustParse("300M"),
+									v1.ResourceCPU:              resource.MustParse("100m"),
+									v1.ResourceMemory:           resource.MustParse("200M"),
+									v1.ResourceStorage:          resource.MustParse("300M"),
+									v1.ResourceEphemeralStorage: resource.MustParse("400M"),
 								},
 							},
 						},
@@ -1405,12 +1436,16 @@ func TestPodStore(t *testing.T) {
 							Name: "pod2_con2",
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("500m"),
-									v1.ResourceMemory: resource.MustParse("400M"),
+									v1.ResourceCPU:              resource.MustParse("500m"),
+									v1.ResourceMemory:           resource.MustParse("600M"),
+									v1.ResourceStorage:          resource.MustParse("700M"),
+									v1.ResourceEphemeralStorage: resource.MustParse("800M"),
 								},
 								Limits: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceCPU:    resource.MustParse("500m"),
-									v1.ResourceMemory: resource.MustParse("400M"),
+									v1.ResourceCPU:              resource.MustParse("500m"),
+									v1.ResourceMemory:           resource.MustParse("600M"),
+									v1.ResourceStorage:          resource.MustParse("700M"),
+									v1.ResourceEphemeralStorage: resource.MustParse("800M"),
 								},
 							},
 						},
@@ -1437,14 +1472,54 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
+		# HELP kube_pod_container_resource_limits_cpu_cores The number of CPU cores requested limit by a container.
+		# HELP kube_pod_container_resource_requests_cpu_cores The number of CPU cores requested by a container.
+		# HELP kube_pod_container_resource_limits_memory_bytes Bytes of memory requested limit by a container.
+		# HELP kube_pod_container_resource_requests_memory_bytes Bytes of memory requested by a container.
+		# HELP kube_pod_container_resource_limits_storage_bytes Bytes of storage requested limit by a container.
+		# HELP kube_pod_container_resource_requests_storage_bytes Bytes of storage requested by a container.
+		# HELP kube_pod_container_resource_limits_ephemeral_storage_bytes Bytes of ephemeral-storage requested limit by a container.
+		# HELP kube_pod_container_resource_requests_ephemeral_storage_bytes Bytes of ephemeral-storage requested by a container.
 		# HELP kube_pod_init_container_resource_limits_cpu_cores The number of CPU cores requested limit by an init container.
         # HELP kube_pod_init_container_resource_limits_memory_bytes Bytes of memory requested limit by an init container.
+        # TYPE kube_pod_container_resource_limits_cpu_cores gauge
+        # TYPE kube_pod_container_resource_requests_cpu_cores gauge
+		# TYPE kube_pod_container_resource_limits_memory_bytes gauge
+        # TYPE kube_pod_container_resource_requests_memory_bytes gauge
+        # TYPE kube_pod_container_resource_limits_storage_bytes gauge
+        # TYPE kube_pod_container_resource_requests_storage_bytes gauge
+        # TYPE kube_pod_container_resource_limits_ephemeral_storage_bytes gauge
+        # TYPE kube_pod_container_resource_requests_ephemeral_storage_bytes gauge
         # TYPE kube_pod_init_container_resource_limits_cpu_cores gauge
         # TYPE kube_pod_init_container_resource_limits_memory_bytes gauge
+		kube_pod_container_resource_limits_cpu_cores{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 0.1
+		kube_pod_container_resource_limits_cpu_cores{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 0.5
+		kube_pod_container_resource_requests_cpu_cores{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 0.1
+		kube_pod_container_resource_requests_cpu_cores{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 0.5
+		kube_pod_container_resource_limits_memory_bytes{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 2e+08
+		kube_pod_container_resource_limits_memory_bytes{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 6e+08
+		kube_pod_container_resource_requests_memory_bytes{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 2e+08
+		kube_pod_container_resource_requests_memory_bytes{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 6e+08
+		kube_pod_container_resource_limits_storage_bytes{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 3e+08
+		kube_pod_container_resource_limits_storage_bytes{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 7e+08
+		kube_pod_container_resource_requests_storage_bytes{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 3e+08
+		kube_pod_container_resource_requests_storage_bytes{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 7e+08
+		kube_pod_container_resource_limits_ephemeral_storage_bytes{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 4e+08
+		kube_pod_container_resource_limits_ephemeral_storage_bytes{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 8e+08
+		kube_pod_container_resource_requests_ephemeral_storage_bytes{container="pod2_con1",namespace="ns2",pod="pod2",uid="uid2"} 4e+08
+		kube_pod_container_resource_requests_ephemeral_storage_bytes{container="pod2_con2",namespace="ns2",pod="pod2",uid="uid2"} 8e+08
         kube_pod_init_container_resource_limits_cpu_cores{container="pod2_initcon1",namespace="ns2",pod="pod2",uid="uid2"} 0.4
         kube_pod_init_container_resource_limits_memory_bytes{container="pod2_initcon1",namespace="ns2",pod="pod2",uid="uid2"} 3e+08
 		`,
 			MetricNames: []string{
+				"kube_pod_container_resource_limits_cpu_cores",
+				"kube_pod_container_resource_requests_cpu_cores",
+				"kube_pod_container_resource_limits_memory_bytes",
+				"kube_pod_container_resource_requests_memory_bytes",
+				"kube_pod_container_resource_limits_storage_bytes",
+				"kube_pod_container_resource_requests_storage_bytes",
+				"kube_pod_container_resource_limits_ephemeral_storage_bytes",
+				"kube_pod_container_resource_requests_ephemeral_storage_bytes",
 				"kube_pod_init_container_resource_limits_cpu_cores",
 				"kube_pod_init_container_resource_limits_memory_bytes",
 			},
@@ -1692,7 +1767,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 51
+	expectedFamilies := 59
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

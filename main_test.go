@@ -170,7 +170,15 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
 # HELP kube_pod_container_info Information about a container in a pod.
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
+# HELP kube_pod_container_resource_limits_cpu_cores The number of CPU cores requested limit by a container.
+# HELP kube_pod_container_resource_limits_ephemeral_storage_bytes Bytes of ephemeral-storage requested limit by a container.
+# HELP kube_pod_container_resource_limits_memory_bytes Bytes of memory requested limit by a container.
+# HELP kube_pod_container_resource_limits_storage_bytes Bytes of storage requested limit by a container.
 # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
+# HELP kube_pod_container_resource_requests_cpu_cores The number of CPU cores requested by a container.
+# HELP kube_pod_container_resource_requests_ephemeral_storage_bytes Bytes of ephemeral-storage requested by a container.
+# HELP kube_pod_container_resource_requests_memory_bytes Bytes of memory requested by a container.
+# HELP kube_pod_container_resource_requests_storage_bytes Bytes of storage requested by a container.
 # HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 # HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
@@ -205,9 +213,9 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
 # HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
-# HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
 # HELP kube_pod_owner Information about the Pod's owner.
 # HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
+# HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
@@ -221,7 +229,15 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_completion_time gauge
 # TYPE kube_pod_container_info gauge
 # TYPE kube_pod_container_resource_limits gauge
+# TYPE kube_pod_container_resource_limits_cpu_cores gauge
+# TYPE kube_pod_container_resource_limits_ephemeral_storage_bytes gauge
+# TYPE kube_pod_container_resource_limits_memory_bytes gauge
+# TYPE kube_pod_container_resource_limits_storage_bytes gauge
 # TYPE kube_pod_container_resource_requests gauge
+# TYPE kube_pod_container_resource_requests_cpu_cores gauge
+# TYPE kube_pod_container_resource_requests_ephemeral_storage_bytes gauge
+# TYPE kube_pod_container_resource_requests_memory_bytes gauge
+# TYPE kube_pod_container_resource_requests_storage_bytes gauge
 # TYPE kube_pod_container_state_started gauge
 # TYPE kube_pod_container_status_last_terminated_reason gauge
 # TYPE kube_pod_container_status_ready gauge
@@ -256,9 +272,9 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_labels gauge
 # TYPE kube_pod_overhead_cpu_cores gauge
 # TYPE kube_pod_overhead_memory_bytes gauge
-# TYPE kube_pod_runtimeclass_name_info gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
+# TYPE kube_pod_runtimeclass_name_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge
@@ -271,6 +287,12 @@ func TestFullScrapeCycle(t *testing.T) {
 kube_pod_annotations{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
+kube_pod_container_resource_limits_cpu_cores{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0.2
+kube_pod_container_resource_limits_cpu_cores{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0.3
+kube_pod_container_resource_limits_ephemeral_storage_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 3e+08
+kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 1e+08
+kube_pod_container_resource_limits_memory_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 2e+08
+kube_pod_container_resource_limits_storage_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 4e+08
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="ephemeral_storage",unit="byte"} 3e+08
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="memory",unit="byte"} 1e+08
@@ -278,6 +300,12 @@ kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",co
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
+kube_pod_container_resource_requests_cpu_cores{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0.2
+kube_pod_container_resource_requests_cpu_cores{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0.3
+kube_pod_container_resource_requests_ephemeral_storage_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 3e+08
+kube_pod_container_resource_requests_memory_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 1e+08
+kube_pod_container_resource_requests_memory_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 2e+08
+kube_pod_container_resource_requests_storage_bytes{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 4e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="ephemeral_storage",unit="byte"} 3e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="memory",unit="byte"} 1e+08

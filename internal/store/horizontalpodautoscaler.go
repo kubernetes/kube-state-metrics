@@ -19,7 +19,7 @@ package store
 import (
 	"context"
 
-	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -116,35 +116,34 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 
 					switch m.Type {
 					case autoscaling.ObjectMetricSourceType:
-						metricName = m.Object.MetricName
+						metricName = m.Object.Metric.Name
 
-						v[value], ok[value] = m.Object.TargetValue.AsInt64()
-						if m.Object.AverageValue != nil {
-							v[average], ok[average] = m.Object.AverageValue.AsInt64()
+						v[value], ok[value] = m.Object.Target.Value.AsInt64()
+						if m.Object.Target.AverageValue != nil {
+							v[average], ok[average] = m.Object.Target.AverageValue.AsInt64()
 						}
 					case autoscaling.PodsMetricSourceType:
-						metricName = m.Pods.MetricName
+						metricName = m.Pods.Metric.Name
 
-						v[average], ok[average] = m.Pods.TargetAverageValue.AsInt64()
+						v[average], ok[average] = m.Pods.Target.AverageValue.AsInt64()
 					case autoscaling.ResourceMetricSourceType:
 						metricName = string(m.Resource.Name)
 
-						if ok[utilization] = (m.Resource.TargetAverageUtilization != nil); ok[utilization] {
-							v[utilization] = int64(*m.Resource.TargetAverageUtilization)
+						if ok[utilization] = (m.Resource.Target.AverageUtilization != nil); ok[utilization] {
+							v[utilization] = int64(*m.Resource.Target.AverageUtilization)
 						}
 
-						if m.Resource.TargetAverageValue != nil {
-							v[average], ok[average] = m.Resource.TargetAverageValue.AsInt64()
+						if m.Resource.Target.AverageValue != nil {
+							v[average], ok[average] = m.Resource.Target.AverageValue.AsInt64()
 						}
 					case autoscaling.ExternalMetricSourceType:
-						metricName = m.External.MetricName
+						metricName = m.External.Metric.Name
 
-						// The TargetValue and TargetAverageValue are mutually exclusive
-						if m.External.TargetValue != nil {
-							v[value], ok[value] = m.External.TargetValue.AsInt64()
+						if m.External.Target.Value != nil {
+							v[value], ok[value] = m.External.Target.Value.AsInt64()
 						}
-						if m.External.TargetAverageValue != nil {
-							v[average], ok[average] = m.External.TargetAverageValue.AsInt64()
+						if m.External.Target.AverageValue != nil {
+							v[average], ok[average] = m.External.Target.AverageValue.AsInt64()
 						}
 					default:
 						// Skip unsupported metric type
@@ -275,10 +274,10 @@ func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) fu
 func createHPAListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).List(context.TODO(), opts)
+			return kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Watch(context.TODO(), opts)
+			return kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

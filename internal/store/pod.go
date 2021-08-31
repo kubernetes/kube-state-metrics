@@ -90,6 +90,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
+                createPodPreparationPeriodFamilyGenerator(), 
 	}
 }
 
@@ -1559,6 +1560,43 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 						Value:       1,
 					})
 				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodPreparationPeriodFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_status_preparation_period",
+		"Describes the preparation period for the pod",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			var PodScheduledTime float64
+			var PodReadyTime float64
+			for _, c := range p.Status.Conditions {
+				if c.Type == v1.PodScheduled && c.Status == v1.ConditionTrue {
+					PodScheduledTime = float64(c.LastTransitionTime.Unix())
+				}
+				if c.Type == v1.PodReady && c.Status == v1.ConditionTrue {
+					PodReadyTime = float64(c.LastTransitionTime.Unix())
+
+				}
+
+			}
+
+			if PodReadyTime > PodScheduledTime {
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{},
+					LabelValues: []string{},
+					Value:       PodReadyTime - PodScheduledTime,
+				})
 			}
 
 			return &metric.Family{

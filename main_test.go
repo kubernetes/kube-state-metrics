@@ -271,7 +271,6 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
-
 kube_pod_annotations{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1

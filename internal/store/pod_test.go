@@ -1262,7 +1262,6 @@ func TestPodStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_pod_status_unschedulable"},
 		},
-
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{

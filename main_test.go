@@ -213,10 +213,12 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_status_phase The pods current phase.
 # HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
+# HELP kube_pod_status_ready_time Describes the ready time for the pod.
 # HELP kube_pod_status_reason The pod status reasons
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
+
 # TYPE kube_pod_annotations gauge
 # TYPE kube_pod_completion_time gauge
 # TYPE kube_pod_container_info gauge
@@ -264,10 +266,12 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_start_time gauge
 # TYPE kube_pod_status_phase gauge
 # TYPE kube_pod_status_ready gauge
+# TYPE kube_pod_status_ready_time gauge
 # TYPE kube_pod_status_reason gauge
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
+
 kube_pod_annotations{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container2",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="container3",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1

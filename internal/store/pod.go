@@ -1572,7 +1572,7 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 func createPodReadyTimeFamilyGeneratorFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_status_ready_time",
-		"Describes the ready time for the pod",
+		"Describes the ready time for the pod.",
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {

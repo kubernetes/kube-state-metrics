@@ -82,4 +82,3 @@ groups:
     annotations:
       summary: Pod {{labels.namespace}}/{{labels.pod}} block in Terminating state.
 ```
-

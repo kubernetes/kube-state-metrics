@@ -218,7 +218,6 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
-
 # TYPE kube_pod_annotations gauge
 # TYPE kube_pod_completion_time gauge
 # TYPE kube_pod_container_info gauge

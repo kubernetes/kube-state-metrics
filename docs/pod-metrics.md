@@ -53,7 +53,7 @@
 | kube_pod_status_reason | Gauge | The pod status reasons | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `reason`=&lt;NodeLost\|Evicted\|UnexpectedAdmissionError&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
 | kube_pod_status_scheduled_time | Gauge | Unix timestamp when pod moved into scheduled status | seconds |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
 | kube_pod_status_unschedulable | Gauge | Describes the unschedulable status for the pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | STABLE |
-| kube_pod_status_ready_time | Gauge | Describes the ready time for the pod | |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
+| kube_pod_status_ready_time | Gauge | Describes the ready time for the pod |seconds |`pod`=&lt;pod-name&gt; <br> `namespace`=&lt;pod-namespace&gt; <br> `uid`=&lt;pod-uid&gt; | EXPERIMENTAL |
 ## Useful metrics queries
 
 ### How to retrieve non-standard Pod state

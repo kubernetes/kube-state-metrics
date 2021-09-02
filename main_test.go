@@ -213,6 +213,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
 # HELP kube_pod_status_phase The pods current phase.
 # HELP kube_pod_status_ready Describes whether the pod is ready to serve requests.
+# HELP kube_pod_status_ready_time Describes the ready time for the pod.
 # HELP kube_pod_status_reason The pod status reasons
 # HELP kube_pod_status_scheduled Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
@@ -264,6 +265,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_start_time gauge
 # TYPE kube_pod_status_phase gauge
 # TYPE kube_pod_status_ready gauge
+# TYPE kube_pod_status_ready_time gauge
 # TYPE kube_pod_status_reason gauge
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge

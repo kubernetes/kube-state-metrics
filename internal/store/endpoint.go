@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -147,6 +148,27 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 							Value: float64(notReady),
 						},
 					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_endpoint_ports",
+			"Information about the Endpoint ports.",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, s := range e.Subsets {
+					for _, port := range s.Ports {
+						ms = append(ms, &metric.Metric{
+							LabelValues: []string{port.Name, string(port.Protocol), strconv.FormatInt(int64(port.Port), 10)},
+							LabelKeys:   []string{"port_name", "port_protocol", "port_number"},
+							Value:       1,
+						})
+					}
+				}
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

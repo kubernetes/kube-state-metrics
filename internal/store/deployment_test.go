@@ -97,7 +97,6 @@ func TestDeploymentStore(t *testing.T) {
 					UnavailableReplicas: 5,
 					UpdatedReplicas:     2,
 					ObservedGeneration:  111,
-					ReadyReplicas:       8,
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionTrue},
 						{Type: v1.DeploymentProgressing, Status: corev1.ConditionTrue},
@@ -123,7 +122,6 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
         kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
         kube_deployment_status_observed_generation{deployment="depl1",namespace="ns1"} 111
-        kube_deployment_status_replicas_ready{deployment="depl1",namespace="ns1"} 8
         kube_deployment_status_replicas_available{deployment="depl1",namespace="ns1"} 10
         kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
         kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
@@ -154,7 +152,6 @@ func TestDeploymentStore(t *testing.T) {
 					UnavailableReplicas: 0,
 					UpdatedReplicas:     1,
 					ObservedGeneration:  1111,
-					ReadyReplicas:       3,
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse},
 						{Type: v1.DeploymentProgressing, Status: corev1.ConditionFalse},
@@ -184,7 +181,6 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_replicas_available{deployment="depl2",namespace="ns2"} 5
         kube_deployment_status_replicas_unavailable{deployment="depl2",namespace="ns2"} 0
         kube_deployment_status_replicas_updated{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_status_replicas_ready{deployment="depl2",namespace="ns2"} 3
         kube_deployment_status_replicas{deployment="depl2",namespace="ns2"} 10
         kube_deployment_status_replicas_ready{deployment="depl2",namespace="ns2"} 5
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="true"} 0

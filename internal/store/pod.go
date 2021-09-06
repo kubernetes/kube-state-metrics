@@ -99,7 +99,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 func createPodPrivilegedFamilyGenerator() generator.FamilyGenerator  {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_container_privileged",
-		"Tells whether the container of the pod is in privilege mode.",
+		"Describes whether the containers are in privileged mode.",
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
@@ -128,7 +128,7 @@ func createPodPrivilegedFamilyGenerator() generator.FamilyGenerator  {
 func createPodLivenessProbeFamilyGenerator() generator.FamilyGenerator  {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_container_liveness_probe",
-		"Tells whether the container of the pod has liveness probe.",
+		"Describes whether the containers liveness check succeeded.",
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
@@ -157,7 +157,7 @@ func createPodLivenessProbeFamilyGenerator() generator.FamilyGenerator  {
 func createPodReadinessProbeFamilyGenerator() generator.FamilyGenerator  {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_container_readiness_probe",
-		"Tells whether the container of the pod has readiness probe.",
+		"Describes whether the containers readiness check succeeded.",
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {

@@ -96,7 +96,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 	}
 }
 
-func createPodPrivilegedFamilyGenerator() generator.FamilyGenerator  {
+func createPodPrivilegedFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_container_privileged",
 		"Describes whether the containers are in privileged mode.",
@@ -125,7 +125,7 @@ func createPodPrivilegedFamilyGenerator() generator.FamilyGenerator  {
 	)
 }
 
-func createPodLivenessProbeFamilyGenerator() generator.FamilyGenerator  {
+func createPodLivenessProbeFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_container_liveness_probe",
 		"Describes whether the containers liveness check succeeded.",
@@ -154,7 +154,7 @@ func createPodLivenessProbeFamilyGenerator() generator.FamilyGenerator  {
 	)
 }
 
-func createPodReadinessProbeFamilyGenerator() generator.FamilyGenerator  {
+func createPodReadinessProbeFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_container_readiness_probe",
 		"Describes whether the containers readiness check succeeded.",

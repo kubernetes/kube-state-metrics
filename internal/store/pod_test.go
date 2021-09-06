@@ -1629,49 +1629,49 @@ func TestPodStore(t *testing.T) {
 							Name: "pod1_con1",
 							ReadinessProbe: &v1.Probe{
 								InitialDelaySeconds: 5,
-								FailureThreshold: 3,
-								PeriodSeconds: 5,
-								SuccessThreshold: 2,
-								TimeoutSeconds: 1,
-								},
+								FailureThreshold:    3,
+								PeriodSeconds:       5,
+								SuccessThreshold:    2,
+								TimeoutSeconds:      1,
+							},
 						},
 						{
 							Name: "pod1_con2",
 							LivenessProbe: &v1.Probe{
 								InitialDelaySeconds: 5,
-								FailureThreshold: 3,
-								PeriodSeconds: 5,
-								SuccessThreshold: 1,
-								TimeoutSeconds: 1,
+								FailureThreshold:    3,
+								PeriodSeconds:       5,
+								SuccessThreshold:    1,
+								TimeoutSeconds:      1,
 							},
 						},
 						{
 							Name: "pod1_con3",
 							ReadinessProbe: &v1.Probe{
 								InitialDelaySeconds: 5,
-								FailureThreshold: 3,
-								PeriodSeconds: 5,
-								SuccessThreshold: 2,
-								TimeoutSeconds: 1,
+								FailureThreshold:    3,
+								PeriodSeconds:       5,
+								SuccessThreshold:    2,
+								TimeoutSeconds:      1,
 							},
 							LivenessProbe: &v1.Probe{
 								InitialDelaySeconds: 5,
-								FailureThreshold: 3,
-								PeriodSeconds: 5,
-								SuccessThreshold: 1,
-								TimeoutSeconds: 1,
+								FailureThreshold:    3,
+								PeriodSeconds:       5,
+								SuccessThreshold:    1,
+								TimeoutSeconds:      1,
 							},
 							SecurityContext: &v1.SecurityContext{
-								Privileged:  &test,
+								Privileged: &test,
 							},
 						},
 					},
 				},
 			},
 			Want: `
-		# HELP kube_pod_container_privileged Tells whether the container of the pod is in privilege mode.
-        # HELP kube_pod_container_liveness_probe Tells whether the container of the pod has liveness probe.
-        # HELP kube_pod_container_readiness_probe Tells whether the container of the pod has readiness probe.
+		# HELP kube_pod_container_privileged Describes whether the containers are in privileged mode.
+        # HELP kube_pod_container_liveness_probe Describes whether the containers liveness check succeeded.
+        # HELP kube_pod_container_readiness_probe Describes whether the containers readiness check succeeded.
         # TYPE kube_pod_container_privileged gauge
         # TYPE kube_pod_container_liveness_probe gauge
         # TYPE kube_pod_container_readiness_probe gauge
@@ -1767,7 +1767,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 51
+	expectedFamilies := 54
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

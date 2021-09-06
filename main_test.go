@@ -218,9 +218,9 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
 # TYPE kube_pod_annotations gauge
-# HELP kube_pod_container_privileged Tells whether the container of the pod is in privilege mode.
-# HELP kube_pod_container_liveness_probe Tells whether the container of the pod has liveness probe.
-# HELP kube_pod_container_readiness_probe Tells whether the container of the pod has readiness probe.
+# HELP kube_pod_container_privileged Describes whether the containers are in privileged mode.
+# HELP kube_pod_container_liveness_probe Describes whether the containers liveness check succeeded.
+# HELP kube_pod_container_readiness_probe Describes whether the containers readiness check succeeded.
 # TYPE kube_pod_completion_time gauge
 # TYPE kube_pod_container_info gauge
 # TYPE kube_pod_container_resource_limits gauge
@@ -661,17 +661,17 @@ func pod(client *fake.Clientset, index int) error {
 					},
 					ReadinessProbe: &v1.Probe{
 						InitialDelaySeconds: 5,
-						FailureThreshold: 3,
-						PeriodSeconds: 5,
-						SuccessThreshold: 2,
-						TimeoutSeconds: 1,
+						FailureThreshold:    3,
+						PeriodSeconds:       5,
+						SuccessThreshold:    2,
+						TimeoutSeconds:      1,
 					},
 					LivenessProbe: &v1.Probe{
 						InitialDelaySeconds: 5,
-						FailureThreshold: 3,
-						PeriodSeconds: 5,
-						SuccessThreshold: 1,
-						TimeoutSeconds: 1,
+						FailureThreshold:    3,
+						PeriodSeconds:       5,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      1,
 					},
 				},
 			},

@@ -1,12 +1,15 @@
 reviewers:
   - brancz
-  - tariq1890
+  - dgrisonnet
+  - fpetkovski
   - LiliC
   - mrueg
+  - tariq1890
 approvers:
   - brancz
-  - tariq1890
   - LiliC
+  - mrueg
+  - tariq1890
 emeritus-approvers:
   - andyxning
   - zouyee

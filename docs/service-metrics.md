@@ -2,6 +2,7 @@
 
 | Metric name| Metric type | Description | Unit (where applicable) | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------------------- | ----------- | ------ |
+| kube_service_annotations | Gauge | Kubernetes annotations converted to Prometheus labels | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `annotation_SERVICE_ANNOTATION`=&lt;SERVICE_ANNOTATION&gt;  | EXPERIMENTAL |
 | kube_service_info | Gauge | Information about service | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `cluster_ip`=&lt;service cluster ip&gt; <br> `external_name`=&lt;service external name&gt; <br> `load_balancer_ip`=&lt;service load balancer ip&gt; | STABLE |
 | kube_service_labels | Gauge | Kubernetes labels converted to Prometheus labels | |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; <br> `label_SERVICE_LABEL`=&lt;SERVICE_LABEL&gt;  | STABLE |
 | kube_service_created | Gauge | Unix creation timestamp | seconds |`service`=&lt;service-name&gt; <br> `namespace`=&lt;service-namespace&gt; | STABLE |

@@ -368,6 +368,56 @@ func TestPodStore(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "container1",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
+									Reason: "Completed",
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
+				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
+				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
+				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
+				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_state_started gauge
+				# TYPE kube_pod_container_status_terminated gauge
+				# TYPE kube_pod_container_status_terminated_reason gauge
+				# TYPE kube_pod_container_status_waiting gauge
+				# TYPE kube_pod_container_status_waiting_reason gauge
+				kube_pod_container_state_started{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 1.501777018e+09
+				kube_pod_container_status_running{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 0
+				kube_pod_container_status_terminated_reason{container="container1",namespace="ns1",pod="pod1",reason="Completed",uid="uid1"} 1
+				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 1
+				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 0
+			`,
+			MetricNames: []string{
+				"kube_pod_container_status_running",
+				"kube_pod_container_state_started",
+				"kube_pod_container_status_waiting",
+				"kube_pod_container_status_terminated",
+				"kube_pod_container_status_terminated_reason",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
 					Namespace: "ns2",
 					UID:       "uid2",
@@ -378,6 +428,9 @@ func TestPodStore(t *testing.T) {
 							Name: "container2",
 							State: v1.ContainerState{
 								Terminated: &v1.ContainerStateTerminated{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
 									Reason: "OOMKilled",
 								},
 							},
@@ -395,17 +448,20 @@ func TestPodStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
+				# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
 				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
 				# TYPE kube_pod_container_status_running gauge
+				# TYPE kube_pod_container_state_started gauge
 				# TYPE kube_pod_container_status_terminated gauge
 				# TYPE kube_pod_container_status_terminated_reason gauge
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_status_running{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 0
 				kube_pod_container_status_running{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 0
+				kube_pod_container_state_started{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 1.501777018e+09
 				kube_pod_container_status_terminated_reason{container="container2",namespace="ns2",pod="pod2",reason="OOMKilled",uid="uid2"} 1
 				kube_pod_container_status_terminated{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 1
 				kube_pod_container_status_terminated{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 0
@@ -415,6 +471,7 @@ func TestPodStore(t *testing.T) {
 `,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
+				"kube_pod_container_state_started",
 				"kube_pod_container_status_waiting",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
@@ -1543,6 +1600,28 @@ func TestPodStore(t *testing.T) {
 					Name:      "pod1",
 					Namespace: "ns1",
 					UID:       "uid1",
+					Annotations: map[string]string{
+						"app": "example",
+					},
+				},
+				Spec: v1.PodSpec{},
+			},
+			AllowAnnotationsList: []string{options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_pod_annotations gauge
+				kube_pod_annotations{annotation_app="example",namespace="ns1",pod="pod1",uid="uid1"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_annotations",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
@@ -1615,8 +1694,8 @@ func TestPodStore(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(c.AllowLabelsList))
-		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(c.AllowLabelsList))
+		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -1626,7 +1705,7 @@ func TestPodStore(t *testing.T) {
 func BenchmarkPodStore(b *testing.B) {
 	b.ReportAllocs()
 
-	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil))
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil))
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1688,7 +1767,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 50
+	expectedFamilies := 51
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

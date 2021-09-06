@@ -36,9 +36,11 @@ func TestReplicaSetStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_replicaset_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_replicaset_annotations gauge
 		# HELP kube_replicaset_created Unix creation timestamp
 		# TYPE kube_replicaset_created gauge
-	  # HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
+		# HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
 		# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_replicas gauge
@@ -85,6 +87,7 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_replicaset_annotations{replicaset="rs1",namespace="ns1"} 1
 				kube_replicaset_labels{replicaset="rs1",namespace="ns1"} 1
 				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
@@ -118,6 +121,7 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_replicaset_annotations{replicaset="rs2",namespace="ns2"} 1
 				kube_replicaset_labels{replicaset="rs2",namespace="ns2"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
@@ -130,8 +134,8 @@ func TestReplicaSetStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(replicaSetMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(replicaSetMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(replicaSetMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(replicaSetMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

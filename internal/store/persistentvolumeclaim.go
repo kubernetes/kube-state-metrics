@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descPersistentVolumeClaimAnnotationsName     = "kube_persistentvolumeclaim_annotations"
+	descPersistentVolumeClaimAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descPersistentVolumeClaimLabelsName          = "kube_persistentvolumeclaim_labels"
 	descPersistentVolumeClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
 )
 
-func persistentVolumeClaimMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			descPersistentVolumeClaimLabelsName,
@@ -44,12 +46,30 @@ func persistentVolumeClaimMetricFamilies(allowLabelsList []string) []generator.F
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(p.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
 							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descPersistentVolumeClaimAnnotationsName,
+			descPersistentVolumeClaimAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
 							Value:       1,
 						},
 					},

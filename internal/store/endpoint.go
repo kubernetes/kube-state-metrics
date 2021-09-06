@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descEndpointAnnotationsName     = "kube_endpoint_annotations"
+	descEndpointAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descEndpointLabelsName          = "kube_endpoint_labels"
 	descEndpointLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 )
 
-func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_endpoint_info",
@@ -74,12 +76,30 @@ func endpointMetricFamilies(allowLabelsList []string) []generator.FamilyGenerato
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			descEndpointAnnotationsName,
+			descEndpointAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", e.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			descEndpointLabelsName,
 			descEndpointLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(e.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", e.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

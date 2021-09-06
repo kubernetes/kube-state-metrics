@@ -32,12 +32,14 @@ import (
 )
 
 var (
+	descDeploymentAnnotationsName     = "kube_deployment_annotations"
+	descDeploymentAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descDeploymentLabelsName          = "kube_deployment_labels"
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 )
 
-func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_deployment_created",
@@ -213,7 +215,7 @@ func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 					return &metric.Family{}
 				}
 
-				maxUnavailable, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
+				maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
 				if err != nil {
 					panic(err)
 				}
@@ -237,7 +239,7 @@ func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 					return &metric.Family{}
 				}
 
-				maxSurge, err := intstr.GetValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
+				maxSurge, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
 				if err != nil {
 					panic(err)
 				}
@@ -267,12 +269,30 @@ func deploymentMetricFamilies(allowLabelsList []string) []generator.FamilyGenera
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			descDeploymentAnnotationsName,
+			descDeploymentAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			descDeploymentLabelsName,
 			descDeploymentLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(d.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

@@ -56,23 +56,30 @@ func NewListWatchMetrics(r prometheus.Registerer) *ListWatchMetrics {
 // InstrumentedListerWatcher provides the kube_state_metrics_watch_total metric
 // with a cache.ListerWatcher obj and the related resource.
 type InstrumentedListerWatcher struct {
-	lw       cache.ListerWatcher
-	metrics  *ListWatchMetrics
-	resource string
+	lw                cache.ListerWatcher
+	metrics           *ListWatchMetrics
+	resource          string
+	useAPIServerCache bool
 }
 
 // NewInstrumentedListerWatcher returns a new InstrumentedListerWatcher.
-func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string) cache.ListerWatcher {
+func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool) cache.ListerWatcher {
 	return &InstrumentedListerWatcher{
-		lw:       lw,
-		metrics:  metrics,
-		resource: resource,
+		lw:                lw,
+		metrics:           metrics,
+		resource:          resource,
+		useAPIServerCache: useAPIServerCache,
 	}
 }
 
 // List is a wrapper func around the cache.ListerWatcher.List func. It increases the success/error
 // / counters based on the outcome of the List operation it instruments.
 func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtime.Object, err error) {
+
+	if i.useAPIServerCache {
+		options.ResourceVersion = "0"
+	}
+
 	res, err = i.lw.List(options)
 	if err != nil {
 		i.metrics.ListTotal.WithLabelValues("error", i.resource).Inc()
@@ -86,6 +93,11 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtim
 // Watch is a wrapper func around the cache.ListerWatcher.Watch func. It increases the success/error
 // counters based on the outcome of the Watch operation it instruments.
 func (i *InstrumentedListerWatcher) Watch(options metav1.ListOptions) (res watch.Interface, err error) {
+
+	if i.useAPIServerCache {
+		options.ResourceVersion = "0"
+	}
+
 	res, err = i.lw.Watch(options)
 	if err != nil {
 		i.metrics.WatchTotal.WithLabelValues("error", i.resource).Inc()

@@ -4,7 +4,7 @@ FROM registry.ci.openshift.org/open-cluster-management/builder:go1.17-linux AS b
 
 WORKDIR /workspace
 COPY . .
-ENV GOFLAGS="-mod=vendor"
+ENV GOFLAGS="-mod=mod"
 RUN go build --installsuffix cgo
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest

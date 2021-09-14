@@ -172,6 +172,12 @@ kube_pod_created{namespace="default",pod="pod0"} 1.5e+09
 # HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
 # TYPE kube_pod_restart_policy gauge
 kube_pod_restart_policy{namespace="default",pod="pod0",type="Always"} 1
+# HELP kube_pod_security_policy Describes the pod security policy in use by this pod.
+# TYPE kube_pod_security_policy gauge
+kube_pod_security_policy{namespace="default",pod="pod0",pod_security_policy=""} 1
+# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
+# TYPE kube_pod_chaoskube_enabled gauge
+kube_pod_chaoskube_enabled{namespace="default",pod="pod0",pod_chaoskube_enabled="false"} 0
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # TYPE kube_pod_status_scheduled_time gauge
 # HELP kube_pod_status_phase The pods current phase.

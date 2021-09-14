@@ -229,6 +229,28 @@ var (
 			}),
 		},
 		{
+			Name: "kube_pod_chaoskube_enabled",
+			Type: metric.Gauge,
+			Help: "Describes whether the pod can be killed by chaoskube",
+			GenerateFunc: wrapPodFunc(func(p *v1.Pod) *metric.Family {
+				var chaoskubeEnabled string
+				if p.Annotations["chaos.alpha.kubernetes.io/enabled"] == "true" {
+					chaoskubeEnabled = "true"
+				} else {
+					chaoskubeEnabled = "false"
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"pod_chaoskube_enabled"},
+							LabelValues: []string{chaoskubeEnabled},
+							Value:       boolFloat64(chaoskubeEnabled == "true"),
+						},
+					},
+				}
+			}),
+		},
+		{
 			Name: "kube_pod_status_scheduled_time",
 			Type: metric.Gauge,
 			Help: "Unix timestamp when pod moved into scheduled status",

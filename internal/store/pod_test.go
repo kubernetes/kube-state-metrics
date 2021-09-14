@@ -1504,6 +1504,63 @@ kube_pod_container_status_last_terminated_reason{container="container7",namespac
 				"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					Annotations: map[string]string{
+						"chaos.alpha.kubernetes.io/enabled": "true",
+					},
+				},
+				Spec: v1.PodSpec{},
+			},
+			Want: `
+				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
+				# TYPE kube_pod_chaoskube_enabled gauge
+				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="true"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_chaoskube_enabled",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					Annotations: map[string]string{
+						"chaos.alpha.kubernetes.io/enabled": "false",
+					},
+				},
+				Spec: v1.PodSpec{},
+			},
+			Want: `
+				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
+				# TYPE kube_pod_chaoskube_enabled gauge
+				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="false"} 0
+		`,
+			MetricNames: []string{
+				"kube_pod_chaoskube_enabled",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+				},
+				Spec: v1.PodSpec{},
+			},
+			Want: `
+				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
+				# TYPE kube_pod_chaoskube_enabled gauge
+				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="false"} 0
+		`,
+			MetricNames: []string{
+				"kube_pod_chaoskube_enabled",
+			},
+		},
 	}
 
 	for i, c := range cases {

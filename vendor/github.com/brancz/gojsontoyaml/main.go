@@ -6,12 +6,16 @@ import (
 	"log"
 	"os"
 
+	goyaml "gopkg.in/yaml.v2"
 	"github.com/ghodss/yaml"
 )
 
 func main() {
 	yamltojson := flag.Bool("yamltojson", false, "Convert yaml to json instead of the default json to yaml.")
 	flag.Parse()
+
+	// Don't wrap long lines
+	goyaml.FutureLineWrap()
 
 	inBytes, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {

@@ -35,6 +35,7 @@ type Options struct {
 	Host            string
 	TelemetryPort   int
 	TelemetryHost   string
+	TLSConfig       string
 	Resources       ResourceSet
 	Namespaces      NamespaceList
 	Shard           int32
@@ -79,11 +80,12 @@ func (o *Options) AddFlags() {
 
 	o.flags.StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	o.flags.StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
+	o.flags.StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.flags.BoolVarP(&o.Help, "help", "h", false, "Print Help text")
 	o.flags.IntVar(&o.Port, "port", 8080, `Port to expose metrics on.`)
-	o.flags.StringVar(&o.Host, "host", "0.0.0.0", `Host to expose metrics on.`)
+	o.flags.StringVar(&o.Host, "host", "::", `Host to expose metrics on.`)
 	o.flags.IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
-	o.flags.StringVar(&o.TelemetryHost, "telemetry-host", "0.0.0.0", `Host to expose kube-state-metrics self metrics on.`)
+	o.flags.StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
 	o.flags.Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
 	o.flags.Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")

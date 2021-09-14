@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -146,7 +145,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 	documentedMetrics := map[string][]string{}
 
 	docPath := "../../docs/"
-	docFiles, err := ioutil.ReadDir(docPath)
+	docFiles, err := os.ReadDir(docPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read documentation directory")
 	}

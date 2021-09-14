@@ -30,7 +30,7 @@ Usage of ./kube-state-metrics:
       --apiserver string                 The URL of the apiserver to use as a master
       --enable-gzip-encoding             Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.
   -h, --help                             Print Help text
-      --host string                      Host to expose metrics on. (default "0.0.0.0")
+      --host string                      Host to expose metrics on. (default "::")
       --kubeconfig string                Absolute path to the kubeconfig file
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
@@ -50,8 +50,9 @@ Usage of ./kube-state-metrics:
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-      --telemetry-host string            Host to expose kube-state-metrics self metrics on. (default "0.0.0.0")
+      --telemetry-host string            Host to expose kube-state-metrics self metrics on. (default "::")
       --telemetry-port int               Port to expose kube-state-metrics self metrics on. (default 8081)
+      --tls-config string                Path to the TLS configuration file
       --total-shards int                 The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
   -v, --v Level                          number for the log level verbosity
       --version                          kube-state-metrics build version information

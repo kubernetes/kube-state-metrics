@@ -7,7 +7,6 @@ Any contribution to improving this documentation or adding sample usages will be
 ## Table of Contents
 
 - [Metrics Stages](#metrics-stages)
-- [Metrics Deprecation](#metrics-deprecation)
 - [Exposed Metrics](#exposed-metrics)
 - [Join Metrics](#join-metrics)
 - [CLI arguments](#cli-arguments)

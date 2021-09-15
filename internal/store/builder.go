@@ -29,7 +29,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	certv1 "k8s.io/api/certificates/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
@@ -242,7 +241,7 @@ func (b *Builder) buildConfigMapStores() []*metricsstore.MetricsStore {
 }
 
 func (b *Builder) buildCronJobStores() []*metricsstore.MetricsStore {
-	return b.buildStoresFunc(cronJobMetricFamilies(b.allowAnnotationsList["cronjobs"], b.allowLabelsList["cronjobs"]), &batchv1beta1.CronJob{}, createCronJobListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(cronJobMetricFamilies(b.allowAnnotationsList["cronjobs"], b.allowLabelsList["cronjobs"]), &batchv1.CronJob{}, createCronJobListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildDaemonSetStores() []*metricsstore.MetricsStore {

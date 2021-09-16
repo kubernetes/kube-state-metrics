@@ -4,6 +4,7 @@ require (
 	github.com/brancz/gojsontoyaml v0.1.0
 	github.com/campoy/embedmd v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
+	github.com/google/go-cmp v0.5.5
 	github.com/google/go-jsonnet v0.17.0
 	github.com/jsonnet-bundler/jsonnet-bundler v0.4.1-0.20200708074244-ada055a225fa
 	github.com/oklog/run v1.1.0
@@ -44,7 +45,6 @@ require (
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/imdario/mergo v0.3.5 // indirect

@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -68,8 +69,8 @@ func compareOutput(expected, actual string) error {
 		}
 	}
 
-	if entities[0] != entities[1] {
-		return errors.Errorf("\nEXPECTED:\n--------------\n%v\nACTUAL:\n--------------\n%v", entities[0], entities[1])
+	if diff := cmp.Diff(entities[0], entities[1]); diff != "" {
+		return errors.Errorf("(-want, +got):\n%s", diff)
 	}
 
 	return nil

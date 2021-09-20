@@ -103,6 +103,9 @@ func TestCronJobStore(t *testing.T) {
 
 	cases := []generateMetricsTestCase{
 		{
+			AllowAnnotationsList: []string{
+				"app.k8s.io/owner",
+			},
 			Obj: &batchv1beta1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "ActiveRunningCronJob1",
@@ -111,6 +114,10 @@ func TestCronJobStore(t *testing.T) {
 					ResourceVersion: "11111",
 					Labels: map[string]string{
 						"app": "example-active-running-1",
+					},
+					Annotations: map[string]string{
+						"app":              "mysql-server",
+						"app.k8s.io/owner": "@foo",
 					},
 				},
 				Status: batchv1beta1.CronJobStatus{
@@ -129,6 +136,7 @@ func TestCronJobStore(t *testing.T) {
 			Want: `
 				# HELP kube_cronjob_created Unix creation timestamp
 				# HELP kube_cronjob_info Info about cronjob.
+				# HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_cronjob_next_schedule_time Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 				# HELP kube_cronjob_spec_failed_job_history_limit Failed job history limit tells the controller how many failed jobs should be preserved.
@@ -140,6 +148,7 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
+				# TYPE kube_cronjob_annotations gauge
 				# TYPE kube_cronjob_labels gauge
 				# TYPE kube_cronjob_next_schedule_time gauge
 				# TYPE kube_cronjob_spec_failed_job_history_limit gauge
@@ -150,6 +159,7 @@ func TestCronJobStore(t *testing.T) {
                 # TYPE kube_cronjob_metadata_resource_version gauge
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
+				kube_cronjob_annotations{annotation_app_k8s_io_owner="@foo",cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_failed_job_history_limit{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300
@@ -160,7 +170,20 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_status_last_schedule_time{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1.520742896e+09
 ` + fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveRunningCronJob1\",namespace=\"ns1\"} %ve+09\n",
 				float64(ActiveRunningCronJob1NextScheduleTime.Unix())/math.Pow10(9)),
-			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time", "kube_cronjob_spec_successful_job_history_limit", "kube_cronjob_spec_failed_job_history_limit"},
+			MetricNames: []string{
+				"kube_cronjob_next_schedule_time",
+				"kube_cronjob_spec_starting_deadline_seconds",
+				"kube_cronjob_status_active",
+				"kube_cronjob_metadata_resource_version",
+				"kube_cronjob_spec_suspend",
+				"kube_cronjob_info",
+				"kube_cronjob_created",
+				"kube_cronjob_annotations",
+				"kube_cronjob_labels",
+				"kube_cronjob_status_last_schedule_time",
+				"kube_cronjob_spec_successful_job_history_limit",
+				"kube_cronjob_spec_failed_job_history_limit",
+			},
 		},
 		{
 			Obj: &batchv1beta1.CronJob{
@@ -281,8 +304,8 @@ func TestCronJobStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

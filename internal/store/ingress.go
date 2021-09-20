@@ -61,7 +61,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			metric.Gauge,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowLabelsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

@@ -29,12 +29,19 @@ import (
 func TestDaemonSetStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
+			AllowAnnotationsList: []string{
+				"app.k8s.io/owner",
+			},
 			Obj: &v1.DaemonSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ds1",
 					Namespace: "ns1",
 					Labels: map[string]string{
 						"app": "example1",
+					},
+					Annotations: map[string]string{
+						"app":              "mysql-server",
+						"app.k8s.io/owner": "@foo",
 					},
 					Generation: 21,
 				},
@@ -47,6 +54,7 @@ func TestDaemonSetStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_daemonset_annotations Kubernetes annotations converted to Prometheus labels.
 				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
 				# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
@@ -57,6 +65,7 @@ func TestDaemonSetStore(t *testing.T) {
 				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
 				# HELP kube_daemonset_status_observed_generation The most recent generation observed by the daemon set controller.
 				# HELP kube_daemonset_status_updated_number_scheduled The total number of nodes that are running updated daemon pod
+				# TYPE kube_daemonset_annotations gauge
 				# TYPE kube_daemonset_labels gauge
 				# TYPE kube_daemonset_metadata_generation gauge
 				# TYPE kube_daemonset_status_current_number_scheduled gauge
@@ -76,9 +85,11 @@ func TestDaemonSetStore(t *testing.T) {
 				kube_daemonset_status_number_unavailable{daemonset="ds1",namespace="ns1"} 0
 				kube_daemonset_status_observed_generation{daemonset="ds1",namespace="ns1"} 2
 				kube_daemonset_status_updated_number_scheduled{daemonset="ds1",namespace="ns1"} 0
+				kube_daemonset_annotations{annotation_app_k8s_io_owner="@foo",daemonset="ds1",namespace="ns1"} 1
 				kube_daemonset_labels{daemonset="ds1",namespace="ns1"} 1
 `,
 			MetricNames: []string{
+				"kube_daemonset_annotations",
 				"kube_daemonset_labels",
 				"kube_daemonset_metadata_generation",
 				"kube_daemonset_status_current_number_scheduled",
@@ -222,8 +233,8 @@ func TestDaemonSetStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(daemonSetMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(daemonSetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

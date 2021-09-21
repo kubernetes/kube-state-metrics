@@ -32,8 +32,46 @@ import (
 
 var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
+)
 
-	configMapMetricFamilies = []generator.FamilyGenerator{
+func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_configmap_annotations",
+			"Kubernetes annotations converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", c.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_configmap_labels",
+			"Kubernetes labels converted to Prometheus labels.",
+			metric.Gauge,
+			"",
+			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", c.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			"kube_configmap_info",
 			"Information about configmap.",
@@ -82,7 +120,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func createConfigMapListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{

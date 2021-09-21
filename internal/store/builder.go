@@ -238,7 +238,7 @@ func availableResources() []string {
 }
 
 func (b *Builder) buildConfigMapStores() []*metricsstore.MetricsStore {
-	return b.buildStoresFunc(configMapMetricFamilies, &v1.ConfigMap{}, createConfigMapListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(configMapMetricFamilies(b.allowAnnotationsList["configmaps"], b.allowLabelsList["configmaps"]), &v1.ConfigMap{}, createConfigMapListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildCronJobStores() []*metricsstore.MetricsStore {

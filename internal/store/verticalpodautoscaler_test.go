@@ -131,6 +131,46 @@ func TestVPAStore(t *testing.T) {
 				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget",
 			},
 		},
+		{
+			Obj: &autoscaling.VerticalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Generation: 2,
+					Name:       "vpa-without-target-ref",
+					Namespace:  "ns2",
+					Labels: map[string]string{
+						"app": "foobar",
+					},
+				},
+				Spec: autoscaling.VerticalPodAutoscalerSpec{
+					UpdatePolicy: &autoscaling.PodUpdatePolicy{
+						UpdateMode: &updateMode,
+					},
+					ResourcePolicy: &autoscaling.PodResourcePolicy{
+						ContainerPolicies: []autoscaling.ContainerResourcePolicy{
+							{
+								ContainerName: "*",
+								MinAllowed:    v1Resource("1", "4Gi"),
+								MaxAllowed:    v1Resource("4", "8Gi"),
+							},
+						},
+					},
+				},
+				Status: autoscaling.VerticalPodAutoscalerStatus{
+					Recommendation: &autoscaling.RecommendedPodResources{
+						ContainerRecommendations: []autoscaling.RecommendedContainerResources{
+							{
+								ContainerName:  "container1",
+								LowerBound:     v1Resource("1", "4Gi"),
+								UpperBound:     v1Resource("4", "8Gi"),
+								Target:         v1Resource("3", "7Gi"),
+								UncappedTarget: v1Resource("6", "10Gi"),
+							},
+						},
+					},
+				},
+			},
+			Want: metadata,
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(vpaMetricFamilies(nil, nil))

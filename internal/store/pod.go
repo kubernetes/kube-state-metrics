@@ -135,12 +135,13 @@ func createPodContainerInfoFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
-			labelKeys := []string{"container", "image", "image_id", "container_id"}
+			labelKeys := []string{"container", "image_spec", "image", "image_id", "container_id"}
 
 			for i, cs := range p.Status.ContainerStatuses {
+				specImage := p.Spec.Containers[i].Image
 				ms[i] = &metric.Metric{
 					LabelKeys:   labelKeys,
-					LabelValues: []string{cs.Name, cs.Image, cs.ImageID, cs.ContainerID},
+					LabelValues: []string{cs.Name, specImage, cs.Image, cs.ImageID, cs.ContainerID},
 					Value:       1,
 				}
 			}
@@ -591,12 +592,13 @@ func createPodInitContainerInfoFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
-			labelKeys := []string{"container", "image", "image_id", "container_id"}
+			labelKeys := []string{"container", "image_spec", "image", "image_id", "container_id"}
 
 			for i, cs := range p.Status.InitContainerStatuses {
+				specImage := p.Spec.InitContainers[i].Image
 				ms[i] = &metric.Metric{
 					LabelKeys:   labelKeys,
-					LabelValues: []string{cs.Name, cs.Image, cs.ImageID, cs.ContainerID},
+					LabelValues: []string{cs.Name, specImage, cs.Image, cs.ImageID, cs.ContainerID},
 					Value:       1,
 				}
 			}

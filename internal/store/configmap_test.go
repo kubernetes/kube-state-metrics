@@ -31,21 +31,46 @@ func TestConfigMapStore(t *testing.T) {
 
 	cases := []generateMetricsTestCase{
 		{
+			AllowAnnotationsList: []string{
+				"app.k8s.io/owner",
+			},
+			AllowLabelsList: []string{
+				"app",
+			},
 			Obj: &v1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "configmap1",
 					Namespace:       "ns1",
 					ResourceVersion: "BBBBB",
+					Annotations: map[string]string{
+						"app":              "mysql-server",
+						"app.k8s.io/owner": "@foo",
+					},
+					Labels: map[string]string{
+						"excluded": "me",
+						"app":      "mysql-server",
+					},
 				},
 			},
 			Want: `
+				# HELP kube_configmap_annotations Kubernetes annotations converted to Prometheus labels.
+				# HELP kube_configmap_labels Kubernetes labels converted to Prometheus labels.
 				# HELP kube_configmap_info Information about configmap.
 				# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
+				# TYPE kube_configmap_annotations gauge
+				# TYPE kube_configmap_labels gauge
 				# TYPE kube_configmap_info gauge
 				# TYPE kube_configmap_metadata_resource_version gauge
+				kube_configmap_annotations{annotation_app_k8s_io_owner="@foo",configmap="configmap1",namespace="ns1"} 1
+				kube_configmap_labels{configmap="configmap1",label_app="mysql-server",namespace="ns1"} 1
 				kube_configmap_info{configmap="configmap1",namespace="ns1"} 1
 `,
-			MetricNames: []string{"kube_configmap_info", "kube_configmap_metadata_resource_version"},
+			MetricNames: []string{
+				"kube_configmap_annotations",
+				"kube_configmap_labels",
+				"kube_configmap_info",
+				"kube_configmap_metadata_resource_version",
+			},
 		},
 		{
 			Obj: &v1.ConfigMap{
@@ -71,8 +96,8 @@ func TestConfigMapStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(configMapMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(configMapMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(configMapMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(configMapMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

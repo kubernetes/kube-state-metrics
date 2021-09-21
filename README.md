@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/kubernetes/kube-state-metrics/workflows/continuous-integration/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![GoDoc](https://godoc.org/github.com/kubernetes/kube-state-metrics?status.svg)](https://godoc.org/github.com/kubernetes/kube-state-metrics)
 
-kube-state-metrics is a simple service that listens to the Kubernetes API
+kube-state-metrics (KSM) is a simple service that listens to the Kubernetes API
 server and generates metrics about the state of the objects. (See examples in
 the Metrics section below.) It is not focused on the health of the individual
 Kubernetes components, but rather on the health of the various objects inside,
@@ -43,7 +43,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 - [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
 - [Scaling kube-state-metrics](#scaling-kube-state-metrics)
   - [Resource recommendation](#resource-recommendation)
-  - [Horizontal scaling (sharding)](#horizontal-scaling-sharding)
+  - [Horizontal sharding](#horizontal-sharding)
     - [Automated sharding](#automated-sharding)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
@@ -215,24 +215,26 @@ metrics-server it too is not responsible for exporting its metrics anywhere.
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
 
-### Horizontal scaling (sharding)
+### Horizontal sharding
 
-In order to scale kube-state-metrics horizontally, some automated sharding capabilities have been implemented. It is configured with the following flags:
+In order to shard kube-state-metrics horizontally, some automated sharding capabilities have been implemented. It is configured with the following flags:
 
 * `--shard` (zero indexed)
 * `--total-shards`
 
-Sharding is done by taking an md5 sum of the Kubernetes Object's UID and performing a modulo operation on it, with the total number of shards. The configured shard decides whether the object is handled by the respective instance of kube-state-metrics or not. Note that this means all instances of kube-state-metrics even if sharded will have the network traffic and the resource consumption for unmarshaling objects for all objects, not just the ones it is responsible for. To optimize this further, the Kubernetes API would need to support sharded list/watch capabilities. Overall memory consumption should be 1/n th of each shard compared to an unsharded setup. Typically, kube-state-metrics needs to be memory and latency optimized in order for it to return its metrics rather quickly to Prometheus.
+Sharding is done by taking an md5 sum of the Kubernetes Object's UID and performing a modulo operation on it with the total number of shards. Each shard decides whether the object is handled by the respective instance of kube-state-metrics or not. Note that this means all instances of kube-state-metrics, even if sharded, will have the network traffic and the resource consumption for unmarshaling objects for all objects, not just the ones they are responsible for. To optimize this further, the Kubernetes API would need to support sharded list/watch capabilities. In the optimal case, memory consumption for each shard will be 1/n compared to an unsharded setup. Typically, kube-state-metrics needs to be memory and latency optimized in order for it to return its metrics rather quickly to Prometheus. One way to reduce the latency between kube-state-metrics and the kube-apiserver is to run KSM with the `--use-apiserver-cache` flag. In addition to reducing the latency, this option will also lead to a reduction in the load on etcd.
 
-Sharding should be used carefully, and additional monitoring should be set up in order to ensure that sharding is set up and functioning as expected (eg. instances for each shard out of the total shards are configured).
+Sharding should be used carefully and additional monitoring should be set up in order to ensure that sharding is set up and functioning as expected (eg. instances for each shard out of the total shards are configured).
 
-##### Automated sharding
+#### Automated sharding
 
-There is also an experimental feature, that allows kube-state-metrics to auto discover its nominal position if it is deployed in a StatefulSet, in order to automatically configure sharding. This is an experimental feature and may be broken or removed without notice.
+Automatic sharding allows each shard to discover its nominal position when deployed in a StatefulSet which is useful for automatically configuring sharding. This is an experimental feature and may be broken or removed without notice.
 
-To enable automated sharding kube-state-metrics must be run by a `StatefulSet` and the pod names and namespace must be handed to the kube-state-metrics process via the `--pod` and `--pod-namespace` flags.
+To enable automated sharding, kube-state-metrics must be run by a `StatefulSet` and the pod name and namespace must be handed to the kube-state-metrics process via the `--pod` and `--pod-namespace` flags. Example manifests demonstrating the autosharding functionality can be found in [`/examples/autosharding`](./examples/autosharding).
 
-There are example manifests demonstrating the autosharding functionality in [`/examples/autosharding`](./examples/autosharding).
+This way of deploying shards is useful when you want to manage KSM shards through a single Kubernetes resource (a single `StatefulSet` in this case) instead of having one `Deployment` per shard. The advantage can be especially significant when deploying a high number of shards.
+
+The downside of using an auto-sharded setup comes from the rollout strategy supported by `StatefulSet`s. When managed by a `StatefulSet`, pods are replaced one at a time with each pod first getting terminated and then recreated. Besides such rollouts being slower, they will also lead to short downtime for each shard. If a Prometheus scrape happens during a rollout, it can miss some of the metrics exported by kube-state-metrics.
 
 ### Setup
 
@@ -255,7 +257,7 @@ make container
 Simply build and run kube-state-metrics inside a Kubernetes pod which has a
 service account token that has read-only access to the Kubernetes cluster.
 
-### For users of prometheus-operator/kube-prometheus stack
+#### For users of prometheus-operator/kube-prometheus stack
 
 The ([`kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus/)) stack installs kube-state-metrics as one of its [components](https://github.com/prometheus-operator/kube-prometheus#kube-prometheus); you do not need to install kube-state-metrics if you're using the kube-prometheus stack.
 

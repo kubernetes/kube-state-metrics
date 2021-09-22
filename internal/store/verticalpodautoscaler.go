@@ -19,7 +19,7 @@ package store
 import (
 	"context"
 
-	k8sautoscaling "k8s.io/api/autoscaling/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -284,7 +284,7 @@ func wrapVPAFunc(f func(*autoscaling.VerticalPodAutoscaler) *metric.Family) func
 		// * to alert about VPA objects without target refs
 		// * to count the right amount of VPA objects in a cluster
 		if targetRef == nil {
-			targetRef = &k8sautoscaling.CrossVersionObjectReference{}
+			targetRef = &autoscalingv1.CrossVersionObjectReference{}
 		}
 
 		for _, m := range metricFamily.Metrics {

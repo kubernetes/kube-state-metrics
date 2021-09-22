@@ -19,7 +19,7 @@ package store
 import (
 	"testing"
 
-	k8sautoscaling "k8s.io/api/autoscaling/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +69,7 @@ func TestVPAStore(t *testing.T) {
 					},
 				},
 				Spec: autoscaling.VerticalPodAutoscalerSpec{
-					TargetRef: &k8sautoscaling.CrossVersionObjectReference{
+					TargetRef: &autoscalingv1.CrossVersionObjectReference{
 						APIVersion: "apps/v1",
 						Kind:       "Deployment",
 						Name:       "deployment1",

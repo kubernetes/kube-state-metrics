@@ -169,7 +169,35 @@ func TestVPAStore(t *testing.T) {
 					},
 				},
 			},
-			Want: metadata,
+			Want: metadata + `
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns2",resource="cpu",target_api_version="",target_kind="",target_name="",unit="core",verticalpodautoscaler="vpa-without-target-ref"} 4
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{container="*",namespace="ns2",resource="memory",target_api_version="",target_kind="",target_name="",unit="byte",verticalpodautoscaler="vpa-without-target-ref"} 8.589934592e+09
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns2",resource="cpu",target_api_version="",target_kind="",target_name="",unit="core",verticalpodautoscaler="vpa-without-target-ref"} 1
+				kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{container="*",namespace="ns2",resource="memory",target_api_version="",target_kind="",target_name="",unit="byte",verticalpodautoscaler="vpa-without-target-ref"} 4.294967296e+09
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="container1",namespace="ns2",resource="cpu",target_api_version="",target_kind="",target_name="",unit="core",verticalpodautoscaler="vpa-without-target-ref"} 1
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="container1",namespace="ns2",resource="memory",target_api_version="",target_kind="",target_name="",unit="byte",verticalpodautoscaler="vpa-without-target-ref"} 4.294967296e+09
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{container="container1",namespace="ns2",resource="cpu",target_api_version="",target_kind="",target_name="",unit="core",verticalpodautoscaler="vpa-without-target-ref"} 3
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{container="container1",namespace="ns2",resource="memory",target_api_version="",target_kind="",target_name="",unit="byte",verticalpodautoscaler="vpa-without-target-ref"} 7.516192768e+09
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns2",resource="cpu",target_api_version="",target_kind="",target_name="",unit="core",verticalpodautoscaler="vpa-without-target-ref"} 6
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget{container="container1",namespace="ns2",resource="memory",target_api_version="",target_kind="",target_name="",unit="byte",verticalpodautoscaler="vpa-without-target-ref"} 1.073741824e+10
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns2",resource="cpu",target_api_version="",target_kind="",target_name="",unit="core",verticalpodautoscaler="vpa-without-target-ref"} 4
+				kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{container="container1",namespace="ns2",resource="memory",target_api_version="",target_kind="",target_name="",unit="byte",verticalpodautoscaler="vpa-without-target-ref"} 8.589934592e+09				
+				kube_verticalpodautoscaler_labels{namespace="ns2",target_api_version="",target_kind="",target_name="",verticalpodautoscaler="vpa-without-target-ref"} 1
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns2",target_api_version="",target_kind="",target_name="",update_mode="Auto",verticalpodautoscaler="vpa-without-target-ref"} 0
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns2",target_api_version="",target_kind="",target_name="",update_mode="Initial",verticalpodautoscaler="vpa-without-target-ref"} 0
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns2",target_api_version="",target_kind="",target_name="",update_mode="Off",verticalpodautoscaler="vpa-without-target-ref"} 0
+				kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace="ns2",target_api_version="",target_kind="",target_name="",update_mode="Recreate",verticalpodautoscaler="vpa-without-target-ref"} 1
+			`,
+			MetricNames: []string{
+				"kube_verticalpodautoscaler_labels",
+				"kube_verticalpodautoscaler_spec_updatepolicy_updatemode",
+				"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed",
+				"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed",
+				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound",
+				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound",
+				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target",
+				"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget",
+			},
 		},
 	}
 	for i, c := range cases {

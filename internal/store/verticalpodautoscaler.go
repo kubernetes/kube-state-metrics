@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 
+	k8sautoscaling "k8s.io/api/autoscaling/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -274,15 +275,17 @@ func vpaResourcesToMetrics(containerName string, resources v1.ResourceList) []*m
 func wrapVPAFunc(f func(*autoscaling.VerticalPodAutoscaler) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		vpa := obj.(*autoscaling.VerticalPodAutoscaler)
+
+		metricFamily := f(vpa)
 		targetRef := vpa.Spec.TargetRef
 
 		// targetRef was not a mandatory field, which can lead to a nil pointer exception here.
-		// Since it is pointless to have a VPA object without target ref, skip exporting metrics.
+		// However, we still want to expose metrics to be able:
+		// * to alert about VPA objects without target refs
+		// * to count the right amount of VPA objects in a cluster
 		if targetRef == nil {
-			return &metric.Family{}
+			targetRef = &k8sautoscaling.CrossVersionObjectReference{}
 		}
-
-		metricFamily := f(vpa)
 
 		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descVerticalPodAutoscalerLabelsDefaultLabels, m.LabelKeys...)

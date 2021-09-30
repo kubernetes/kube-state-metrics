@@ -94,6 +94,18 @@ func TestNamespaceListGetAllowedNamespaces(t *testing.T) {
 		Wanted              NamespaceList
 	}{
 		{
+			Desc:                "empty Namespaces",
+			Namespaces:          NamespaceList{},
+			NamespaceDeniedList: NamespaceList{"default", "kube-system"},
+			Wanted:              NamespaceList{""},
+		},
+		{
+			Desc:                "all Namespaces",
+			Namespaces:          DefaultNamespaces,
+			NamespaceDeniedList: NamespaceList{"default", "kube-system"},
+			Wanted:              NamespaceList{""},
+		},
+		{
 			Desc:                "empty namespaceDenylist",
 			Namespaces:          NamespaceList{"default", "kube-system"},
 			NamespaceDeniedList: NamespaceList{},

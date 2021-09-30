@@ -125,6 +125,32 @@ func (n *NamespaceList) Set(value string) error {
 	return nil
 }
 
+// GetAllowedNamespaces are the namespaces that are in opts.Namespaces but not in opts.NamespacesDenylist
+func (n *NamespaceList) GetAllowedNamespaces(namespacesDenylist NamespaceList) NamespaceList {
+	allNamespaces := *n
+	if len(allNamespaces) == 0 {
+		allNamespaces = DefaultNamespaces
+	}
+
+	if len(namespacesDenylist) == 0 {
+		return allNamespaces
+	}
+
+	deniedNamespaces := map[string]bool{}
+	for _, ns := range namespacesDenylist {
+		deniedNamespaces[ns] = true
+	}
+
+	var allowedNamespaces NamespaceList
+	for _, ns := range allNamespaces {
+		if !deniedNamespaces[ns] {
+			allowedNamespaces = append(allowedNamespaces, ns)
+		}
+	}
+
+	return allowedNamespaces
+}
+
 // Type returns a descriptive string about the NamespaceList type.
 func (n *NamespaceList) Type() string {
 	return "string"

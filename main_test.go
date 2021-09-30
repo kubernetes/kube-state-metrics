@@ -185,15 +185,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_info Information about pod.
 # HELP kube_pod_init_container_info Information about an init container in a pod.
 # HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
-# HELP kube_pod_init_container_resource_limits_cpu_cores The number of CPU cores requested limit by an init container.
-# HELP kube_pod_init_container_resource_limits_ephemeral_storage_bytes Bytes of ephemeral-storage requested limit by an init container.
-# HELP kube_pod_init_container_resource_limits_memory_bytes Bytes of memory requested limit by an init container.
-# HELP kube_pod_init_container_resource_limits_storage_bytes Bytes of storage requested limit by an init container.
 # HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
-# HELP kube_pod_init_container_resource_requests_cpu_cores The number of CPU cores requested by an init container.
-# HELP kube_pod_init_container_resource_requests_ephemeral_storage_bytes Bytes of ephemeral-storage requested by an init container.
-# HELP kube_pod_init_container_resource_requests_memory_bytes Bytes of memory requested by an init container.
-# HELP kube_pod_init_container_resource_requests_storage_bytes Bytes of storage requested by an init container.
 # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
 # HELP kube_pod_init_container_status_ready Describes whether the init containers readiness check succeeded.
 # HELP kube_pod_init_container_status_restarts_total The number of restarts for the init container.
@@ -236,15 +228,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_info gauge
 # TYPE kube_pod_init_container_info gauge
 # TYPE kube_pod_init_container_resource_limits gauge
-# TYPE kube_pod_init_container_resource_limits_cpu_cores gauge
-# TYPE kube_pod_init_container_resource_limits_ephemeral_storage_bytes gauge
-# TYPE kube_pod_init_container_resource_limits_memory_bytes gauge
-# TYPE kube_pod_init_container_resource_limits_storage_bytes gauge
 # TYPE kube_pod_init_container_resource_requests gauge
-# TYPE kube_pod_init_container_resource_requests_cpu_cores gauge
-# TYPE kube_pod_init_container_resource_requests_ephemeral_storage_bytes gauge
-# TYPE kube_pod_init_container_resource_requests_memory_bytes gauge
-# TYPE kube_pod_init_container_resource_requests_storage_bytes gauge
 # TYPE kube_pod_init_container_status_last_terminated_reason gauge
 # TYPE kube_pod_init_container_status_ready gauge
 # TYPE kube_pod_init_container_status_restarts_total counter

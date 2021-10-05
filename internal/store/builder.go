@@ -356,19 +356,19 @@ func (b *Builder) buildLeasesStores() []*metricsstore.MetricsStore {
 func (b *Builder) buildStores(
 	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
+	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool,
 ) []*metricsstore.MetricsStore {
 	metricFamilies = generator.FilterMetricFamilies(b.allowDenyList, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
 
-	if isAllNamespaces(b.namespaces) {
+	if b.namespaces.IsAllNamespaces() {
 		store := metricsstore.NewMetricsStore(
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll)
+		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, "")
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		return []*metricsstore.MetricsStore{store}
 	}
@@ -379,7 +379,7 @@ func (b *Builder) buildStores(
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		listWatcher := listWatchFunc(b.kubeClient, ns)
+		listWatcher := listWatchFunc(b.kubeClient, ns, "")
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		stores = append(stores, store)
 	}
@@ -398,10 +398,4 @@ func (b *Builder) startReflector(
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache)
 	reflector := cache.NewReflector(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, 0)
 	go reflector.Run(b.ctx.Done())
-}
-
-// isAllNamespaces checks if the given slice of namespaces
-// contains only v1.NamespaceAll.
-func isAllNamespaces(namespaces []string) bool {
-	return len(namespaces) == 1 && namespaces[0] == v1.NamespaceAll
 }

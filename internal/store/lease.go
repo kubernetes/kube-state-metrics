@@ -105,7 +105,7 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(interface{
 	}
 }
 
-func createLeaseListWatch(kubeClient clientset.Interface, _ string) cache.ListerWatcher {
+func createLeaseListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CoordinationV1().Leases("kube-node-lease").List(context.TODO(), opts)

@@ -141,7 +141,7 @@ func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(
 	}
 }
 
-func createCSRListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createCSRListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(), opts)

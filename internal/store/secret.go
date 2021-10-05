@@ -159,12 +159,14 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric
 	}
 }
 
-func createSecretListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createSecretListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Secrets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Secrets(ns).Watch(context.TODO(), opts)
 		},
 	}

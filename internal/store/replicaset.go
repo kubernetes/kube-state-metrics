@@ -253,12 +253,14 @@ func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(interface{})
 	}
 }
 
-func createReplicaSetListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createReplicaSetListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.AppsV1().ReplicaSets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.AppsV1().ReplicaSets(ns).Watch(context.TODO(), opts)
 		},
 	}

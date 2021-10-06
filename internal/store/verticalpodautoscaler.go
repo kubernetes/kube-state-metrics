@@ -34,20 +34,40 @@ import (
 )
 
 var (
+	descVerticalPodAutoscalerAnnotationsName     = "kube_verticalpodautoscaler_annotations"
+	descVerticalPodAutoscalerAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descVerticalPodAutoscalerLabelsName          = "kube_verticalpodautoscaler_labels"
 	descVerticalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descVerticalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "verticalpodautoscaler", "target_api_version", "target_kind", "target_name"}
 )
 
-func vpaMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			descVerticalPodAutoscalerAnnotationsName,
+			descVerticalPodAutoscalerAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			descVerticalPodAutoscalerLabelsName,
 			descVerticalPodAutoscalerLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(a.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

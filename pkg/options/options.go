@@ -28,26 +28,29 @@ import (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	Apiserver       string
-	Kubeconfig      string
-	Help            bool
-	Port            int
-	Host            string
-	TelemetryPort   int
-	TelemetryHost   string
-	TLSConfig       string
-	Resources       ResourceSet
-	Namespaces      NamespaceList
-	Shard           int32
-	TotalShards     int
-	Pod             string
-	Namespace       string
-	MetricDenylist  MetricSet
-	MetricAllowlist MetricSet
-	Version         bool
-	LabelsAllowList LabelsAllowList
+	Apiserver            string
+	Kubeconfig           string
+	Help                 bool
+	Port                 int
+	Host                 string
+	TelemetryPort        int
+	TelemetryHost        string
+	TLSConfig            string
+	Resources            ResourceSet
+	Namespaces           NamespaceList
+	Shard                int32
+	TotalShards          int
+	Pod                  string
+	Namespace            string
+	MetricDenylist       MetricSet
+	MetricAllowlist      MetricSet
+	Version              bool
+	AnnotationsAllowList LabelsAllowList
+	LabelsAllowList      LabelsAllowList
 
 	EnableGZIPEncoding bool
+
+	UseAPIServerCache bool
 
 	flags *pflag.FlagSet
 }
@@ -55,10 +58,11 @@ type Options struct {
 // NewOptions returns a new instance of `Options`.
 func NewOptions() *Options {
 	return &Options{
-		Resources:       ResourceSet{},
-		MetricAllowlist: MetricSet{},
-		MetricDenylist:  MetricSet{},
-		LabelsAllowList: LabelsAllowList{},
+		Resources:            ResourceSet{},
+		MetricAllowlist:      MetricSet{},
+		MetricDenylist:       MetricSet{},
+		AnnotationsAllowList: LabelsAllowList{},
+		LabelsAllowList:      LabelsAllowList{},
 	}
 }
 
@@ -78,6 +82,7 @@ func (o *Options) AddFlags() {
 		o.flags.PrintDefaults()
 	}
 
+	o.flags.BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
 	o.flags.StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
 	o.flags.StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	o.flags.StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
@@ -90,6 +95,7 @@ func (o *Options) AddFlags() {
 	o.flags.Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.flags.Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional annotations provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
 	o.flags.Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]').")
 	o.flags.Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
 	o.flags.IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")

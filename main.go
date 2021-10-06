@@ -140,7 +140,7 @@ func main() {
 
 	storeBuilder.WithAllowDenyList(allowDenyList)
 
-	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc())
+	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc(), opts.UseAPIServerCache)
 
 	proc.StartReaper()
 
@@ -151,6 +151,7 @@ func main() {
 	storeBuilder.WithKubeClient(kubeClient)
 	storeBuilder.WithVPAClient(vpaClient)
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
+	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
 	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
 
 	ksmMetricsRegistry.MustRegister(

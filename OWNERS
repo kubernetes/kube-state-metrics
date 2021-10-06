@@ -2,12 +2,18 @@
 component: "Monitoring"
 
 reviewers:
-  - brancz
+  - simonpasquier
   - dgrisonnet
+  - slashpai
+  - prashbnair
+  - arajkumar
+  - sthaha
+  - PhilipGough
+  - bison
   - fpetkovski
-  - LiliC
-  - mrueg
-  - tariq1890
+  - raptorsun
+  - jan--f
+
 approvers:
   - simonpasquier
   - dgrisonnet
@@ -24,9 +30,6 @@ approvers:
 
 emeritus_approvers:
   - brancz
-  - LiliC
-  - mrueg
-  - tariq1890
-emeritus-approvers:
-  - andyxning
-  - zouyee
+  - s-urbaniak
+  - kakkoyun
+  - paulfantom

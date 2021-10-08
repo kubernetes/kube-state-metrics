@@ -293,12 +293,14 @@ func wrapCronJobFunc(f func(*batchv1beta1.CronJob) *metric.Family) func(interfac
 	}
 }
 
-func createCronJobListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createCronJobListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.BatchV1beta1().CronJobs(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.BatchV1beta1().CronJobs(ns).Watch(context.TODO(), opts)
 		},
 	}

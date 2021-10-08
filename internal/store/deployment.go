@@ -322,12 +322,14 @@ func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(interface{})
 	}
 }
 
-func createDeploymentListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createDeploymentListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.AppsV1().Deployments(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.AppsV1().Deployments(ns).Watch(context.TODO(), opts)
 		},
 	}

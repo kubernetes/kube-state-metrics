@@ -102,12 +102,14 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interf
 	}
 }
 
-func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().ResourceQuotas(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(context.TODO(), opts)
 		},
 	}

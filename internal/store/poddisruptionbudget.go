@@ -146,12 +146,14 @@ func wrapPodDisruptionBudgetFunc(f func(*v1beta1.PodDisruptionBudget) *metric.Fa
 	}
 }
 
-func createPodDisruptionBudgetListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createPodDisruptionBudgetListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.PolicyV1beta1().PodDisruptionBudgets(ns).Watch(context.TODO(), opts)
 		},
 	}

@@ -49,7 +49,7 @@ type BuilderInterface interface {
 // BuildStoresFunc function signature that is used to return a list of metricsstore.MetricsStore
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
+	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool,
 ) []*metricsstore.MetricsStore
 

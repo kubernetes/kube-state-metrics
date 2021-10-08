@@ -296,13 +296,15 @@ func wrapVPAFunc(f func(*autoscaling.VerticalPodAutoscaler) *metric.Family) func
 	}
 }
 
-func createVPAListWatchFunc(vpaClient vpaclientset.Interface) func(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
-	return func(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createVPAListWatchFunc(vpaClient vpaclientset.Interface) func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	return func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 		return &cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+				opts.FieldSelector = fieldSelector
 				return vpaClient.AutoscalingV1beta2().VerticalPodAutoscalers(ns).List(context.TODO(), opts)
 			},
 			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+				opts.FieldSelector = fieldSelector
 				return vpaClient.AutoscalingV1beta2().VerticalPodAutoscalers(ns).Watch(context.TODO(), opts)
 			},
 		}

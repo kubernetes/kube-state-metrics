@@ -480,10 +480,76 @@ func TestPersistentVolumeStore(t *testing.T) {
 				`,
 			MetricNames: []string{"kube_persistentvolume_capacity_bytes"},
 		},
+		{
+			AllowAnnotationsList: []string{
+				"app.k8s.io/owner",
+			},
+			AllowLabelsList: []string{
+				"app",
+			},
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-allowlisted-labels-annotations",
+					Annotations: map[string]string{
+						"app.k8s.io/owner": "mysql-server",
+						"foo":              "bar",
+					},
+					Labels: map[string]string{
+						"app":   "mysql-server",
+						"hello": "world",
+					},
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumePending,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_annotations Kubernetes annotations converted to Prometheus labels.
+					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# TYPE kube_persistentvolume_annotations gauge
+					# TYPE kube_persistentvolume_labels gauge
+					kube_persistentvolume_annotations{annotation_app_k8s_io_owner="mysql-server",persistentvolume="test-allowlisted-labels-annotations"} 1
+					kube_persistentvolume_labels{label_app="mysql-server",persistentvolume="test-allowlisted-labels-annotations"} 1
+`,
+			MetricNames: []string{
+				"kube_persistentvolume_annotations",
+				"kube_persistentvolume_labels",
+			},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-defaul-labels-annotations",
+					Annotations: map[string]string{
+						"app.k8s.io/owner": "mysql-server",
+						"foo":              "bar",
+					},
+					Labels: map[string]string{
+						"app":   "mysql-server",
+						"hello": "world",
+					},
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumePending,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_annotations Kubernetes annotations converted to Prometheus labels.
+					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# TYPE kube_persistentvolume_annotations gauge
+					# TYPE kube_persistentvolume_labels gauge
+					kube_persistentvolume_annotations{persistentvolume="test-defaul-labels-annotations"} 1
+					kube_persistentvolume_labels{persistentvolume="test-defaul-labels-annotations"} 1
+`,
+			MetricNames: []string{
+				"kube_persistentvolume_annotations",
+				"kube_persistentvolume_labels",
+			},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

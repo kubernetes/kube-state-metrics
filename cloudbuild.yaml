@@ -6,7 +6,7 @@ steps:
   - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20210722-085d930'
     entrypoint: make
     env:
-    - TAG=$_PULL_BASE_REF
-    - GIT_COMMIT=$_PULL_BASE_SHA
+    - TAG=$PULL_BASE_REF
+    - GIT_COMMIT=$PULL_BASE_SHA
     args:
     - push

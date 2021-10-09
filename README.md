@@ -265,8 +265,19 @@ If you want to revise the default configuration for kube-prometheus, for example
 
 #### Kubernetes Deployment
 
-To deploy this project, you can simply run `kubectl apply -f examples/standard` and a
+To deploy this project, you can simply run `kubectl apply -k examples/standard` and a
 Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information).
+
+For kustomize users, you can also use remote resource in your `kustomization.yaml` for better management:
+```
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kube-system
+
+resources:
+- https://github.com/kubernetes/kube-state-metrics.git/examples/standard?ref=v2.2.1
+```
 
 To have Prometheus discover kube-state-metrics instances it is advised to create a specific Prometheus scrape config for kube-state-metrics that picks up both metrics endpoints. Annotation based discovery is discouraged as only one of the endpoints would be able to be selected, plus kube-state-metrics in most cases has special authentication and authorization requirements as it essentially grants read access through the metrics endpoint to most information available to it.
 
@@ -276,7 +287,7 @@ To have Prometheus discover kube-state-metrics instances it is advised to create
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info --format='value(config.account)')
 ```
 
-Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
+Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -k examples/standard`, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
 

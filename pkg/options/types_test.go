@@ -86,55 +86,71 @@ func TestNamespaceListSet(t *testing.T) {
 	}
 }
 
-func TestNamespaceListGetAllowedNamespaces(t *testing.T) {
+func TestNamespaceList_GetNamespaces(t *testing.T) {
 	tests := []struct {
-		Desc                string
-		Namespaces          NamespaceList
-		NamespaceDeniedList NamespaceList
-		Wanted              NamespaceList
+		Desc       string
+		Namespaces NamespaceList
+		Wanted     NamespaceList
 	}{
 		{
-			Desc:                "empty Namespaces",
-			Namespaces:          NamespaceList{},
-			NamespaceDeniedList: NamespaceList{"default", "kube-system"},
-			Wanted:              NamespaceList{""},
+			Desc:       "empty DeniedNamespaces",
+			Namespaces: NamespaceList{},
+			Wanted:     NamespaceList{""},
 		},
 		{
-			Desc:                "all Namespaces",
-			Namespaces:          DefaultNamespaces,
-			NamespaceDeniedList: NamespaceList{"default", "kube-system"},
-			Wanted:              NamespaceList{""},
+			Desc:       "all DeniedNamespaces",
+			Namespaces: DefaultNamespaces,
+			Wanted:     NamespaceList{""},
 		},
 		{
-			Desc:                "empty namespaceDenylist",
-			Namespaces:          NamespaceList{"default", "kube-system"},
-			NamespaceDeniedList: NamespaceList{},
-			Wanted:              NamespaceList{"default", "kube-system"},
-		},
-		{
-			Desc:                "namespaceList and namespaceDenyList has no intersection",
-			Namespaces:          NamespaceList{"default", "kube-system"},
-			NamespaceDeniedList: NamespaceList{"some-system"},
-			Wanted: NamespaceList([]string{
-				"default",
-				"kube-system",
-			}),
-		},
-		{
-			Desc:                "namespaceList and namespaceDenyList has intersection",
-			Namespaces:          NamespaceList{"default", "kube-system"},
-			NamespaceDeniedList: NamespaceList{"kube-system"},
-			Wanted: NamespaceList([]string{
-				"default",
-			}),
+			Desc:       "general namespaceDenylist",
+			Namespaces: NamespaceList{"default", "kube-system"},
+			Wanted:     NamespaceList{"default", "kube-system"},
 		},
 	}
 
 	for _, test := range tests {
 		ns := &test.Namespaces
-		allowedNamespaces := ns.GetAllowedNamespaces(test.NamespaceDeniedList)
+		allowedNamespaces := ns.GetNamespaces(test.Namespaces)
 		if !reflect.DeepEqual(allowedNamespaces, test.Wanted) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, allowedNamespaces)
+		}
+	}
+}
+
+func TestNamespaceList_ExcludeNamespacesFieldSelector(t *testing.T) {
+	tests := []struct {
+		Desc             string
+		Namespaces       NamespaceList
+		DeniedNamespaces NamespaceList
+		Wanted           string
+	}{
+		{
+			Desc:             "empty DeniedNamespaces",
+			Namespaces:       NamespaceList{"default", "kube-system"},
+			DeniedNamespaces: NamespaceList{},
+			Wanted:           "",
+		},
+		{
+			Desc:             "all DeniedNamespaces",
+			Namespaces:       DefaultNamespaces,
+			DeniedNamespaces: NamespaceList{"some-system"},
+			Wanted:           "metadata.namespace!=some-system",
+		},
+		{
+			Desc:             "general case",
+			Namespaces:       DefaultNamespaces,
+			DeniedNamespaces: NamespaceList{"case1-system", "case2-system"},
+			Wanted:           "metadata.namespace!=case1-system,metadata.namespace!=case2-system",
+		},
+	}
+
+	for _, test := range tests {
+		ns := test.Namespaces
+		deniedNS := test.DeniedNamespaces
+		actual := ns.GetExcludeNSFieldSelector(deniedNS)
+		if !reflect.DeepEqual(actual, test.Wanted) {
+			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, actual)
 		}
 	}
 }

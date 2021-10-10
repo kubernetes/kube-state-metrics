@@ -18,8 +18,11 @@ package options
 
 import (
 	"errors"
+	"k8s.io/apimachinery/pkg/fields"
 	"sort"
 	"strings"
+
+	"k8s.io/klog/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -125,30 +128,35 @@ func (n *NamespaceList) Set(value string) error {
 	return nil
 }
 
-// GetAllowedNamespaces are the namespaces that are in opts.Namespaces but not in opts.NamespacesDenylist
-func (n *NamespaceList) GetAllowedNamespaces(namespacesDenylist NamespaceList) NamespaceList {
-	allNamespaces := *n
-	if len(allNamespaces) == 0 {
-		allNamespaces = DefaultNamespaces
-	}
-
-	if len(namespacesDenylist) == 0 {
-		return allNamespaces
-	}
-
-	deniedNamespaces := map[string]bool{}
-	for _, ns := range namespacesDenylist {
-		deniedNamespaces[ns] = true
-	}
-
-	var allowedNamespaces NamespaceList
-	for _, ns := range allNamespaces {
-		if !deniedNamespaces[ns] {
-			allowedNamespaces = append(allowedNamespaces, ns)
+// GetNamespaces is a helper function to get namespaces from opts.DeniedNamespaces
+func (n *NamespaceList) GetNamespaces(namespaces NamespaceList) NamespaceList {
+	ns := namespaces
+	if len(namespaces) == 0 {
+		klog.Info("Using all namespace")
+		ns = DefaultNamespaces
+	} else {
+		if namespaces.IsAllNamespaces() {
+			klog.Info("Using all namespace")
+		} else {
+			klog.Infof("Using %s namespaces", ns)
 		}
 	}
+	return ns
+}
 
-	return allowedNamespaces
+// GetExcludeNSFieldSelector will return excluded namespace field selector
+// if nsDenylist = {case1,case2}, the result will be "metadata.namespace!=case1,metadata.namespace!=case2".
+func (n *NamespaceList) GetExcludeNSFieldSelector(nsDenylist []string) string {
+	if len(nsDenylist) == 0 {
+		return ""
+	}
+
+	namespaceExcludeSelectors := make([]fields.Selector, len(nsDenylist))
+	for i, ns := range nsDenylist {
+		selector := fields.OneTermNotEqualSelector("metadata.namespace", ns)
+		namespaceExcludeSelectors[i] = selector
+	}
+	return fields.AndSelectors(namespaceExcludeSelectors...).String()
 }
 
 // Type returns a descriptive string about the NamespaceList type.

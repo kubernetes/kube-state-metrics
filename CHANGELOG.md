@@ -1,3 +1,7 @@
+## v2.2.3 / 2021-10-13
+
+* [BUGFIX] Fix the image build job. Reverts #1602 
+
 ## v2.2.2 / 2021-10-13
 * [BUGFIX]  Downgrade latest allowed go version to 1.16.9 #1601 @mrueg
 * [BUGFIX]  Fix CI variable names used for building KSM images @mrueg

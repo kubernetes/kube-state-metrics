@@ -44,13 +44,14 @@ type BuilderInterface interface {
 	WithGenerateStoresFunc(f BuildStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	Build() []metricsstore.MetricsWriter
+	BuildStores() [][]cache.Store
 }
 
-// BuildStoresFunc function signature that is used to return a list of metricsstore.MetricsStore
+// BuildStoresFunc function signature that is used to return a list of cache.Store
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
-) []*metricsstore.MetricsStore
+) []cache.Store
 
 // AllowDenyLister interface for AllowDeny lister that can allow or exclude metrics by there names
 type AllowDenyLister interface {

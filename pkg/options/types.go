@@ -18,9 +18,10 @@ package options
 
 import (
 	"errors"
-	"k8s.io/apimachinery/pkg/fields"
 	"sort"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/fields"
 
 	"k8s.io/klog/v2"
 

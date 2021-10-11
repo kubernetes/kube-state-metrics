@@ -115,7 +115,7 @@ func main() {
 	}
 
 	namespaces := opts.Namespaces.GetNamespaces(opts.Namespaces)
-	//TODO(mallow111): use real namespace filter by calling GetExcludeNSFieldSelector(opts.NamespacesDenylist)
+	// TODO(mallow111): use real namespace filter by calling GetExcludeNSFieldSelector(opts.NamespacesDenylist)
 	storeBuilder.WithNamespaces(namespaces, "")
 
 	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)

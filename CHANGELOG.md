@@ -1,3 +1,7 @@
+## v2.2.2 / 2021-10-13
+* [BUGFIX]  Downgrade latest allowed go version to 1.16.9 #1601 @mrueg
+* [BUGFIX]  Fix CI variable names used for building KSM images @mrueg
+
 ## v2.2.1 / 2021-09-24
 
 * [FEATURE] Add the kube_persistentvolumeclaim_annotations metric which exposes annotations on PVCs #1566 @arajkumar

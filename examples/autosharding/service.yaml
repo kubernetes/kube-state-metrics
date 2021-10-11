@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/version: 2.2.1
+    app.kubernetes.io/version: 2.2.2
   name: kube-state-metrics
   namespace: kube-system
 spec:

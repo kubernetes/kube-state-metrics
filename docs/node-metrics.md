@@ -2,7 +2,8 @@
 
 | Metric name| Metric type | Description | Unit (where applicable) | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------------------- | ----------- | ------ |
-| kube_node_info | Gauge |  Information about a cluster node| |`node`=&lt;node-address&gt; <br> `kernel_version`=&lt;kernel-version&gt; <br> `os_image`=&lt;os-image-name&gt; <br> `container_runtime_version`=&lt;container-runtime-and-version-combination&gt; <br> `kubelet_version`=&lt;kubelet-version&gt; <br> `kubeproxy_version`=&lt;kubeproxy-version&gt; <br> `pod_cidr`=&lt;pod-cidr&gt; <br> `provider_id`=&lt;provider-id&gt; <br> `internal_ip`=&lt;internal-ip&gt; | STABLE |
+| kube_node_annotations | Gauge | Kubernetes annotations converted to Prometheus labels | | `node`=&lt;node-address&gt; <br> `annotation_NODE_ANNOTATION`=&lt;NODE_ANNOTATION&gt;  | EXPERIMENTAL |
+| kube_node_info | Gauge |  Information about a cluster node| |`node`=&lt;node-address&gt; <br> `kernel_version`=&lt;kernel-version&gt; <br> `os_image`=&lt;os-image-name&gt; <br> `container_runtime_version`=&lt;container-runtime-and-version-combination&gt; <br> `kubelet_version`=&lt;kubelet-version&gt; <br> `kubeproxy_version`=&lt;kubeproxy-version&gt; <br> `pod_cidr`=&lt;pod-cidr&gt; <br> `provider_id`=&lt;provider-id&gt; <br> `system_uuid`=&lt;system-uuid&gt; <br> `internal_ip`=&lt;internal-ip&gt; | STABLE |
 | kube_node_labels | Gauge | Kubernetes labels converted to Prometheus labels | | `node`=&lt;node-address&gt; <br> `label_NODE_LABEL`=&lt;NODE_LABEL&gt;  | STABLE |
 | kube_node_role | Gauge | The role of a cluster node | | `node`=&lt;node-address&gt; <br> `role`=&lt;NODE_ROLE&gt; | EXPERIMENTAL |
 | kube_node_spec_unschedulable | Gauge | Whether a node can schedule new pods | | `node`=&lt;node-address&gt;| STABLE |

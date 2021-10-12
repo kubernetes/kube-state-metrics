@@ -31,20 +31,40 @@ import (
 )
 
 var (
+	descCSRAnnotationsName     = "kube_certificatesigningrequest_annotations"
+	descCSRAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCSRLabelsName          = "kube_certificatesigningrequest_labels"
 	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest"}
+	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest", "signer_name"}
 )
 
-func csrMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			descCSRAnnotationsName,
+			descCSRAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			descCSRLabelsName,
 			descCSRLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(j.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -114,7 +134,7 @@ func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(
 
 		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(descCSRLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{csr.Name}, m.LabelValues...)
+			m.LabelValues = append([]string{csr.Name, csr.Spec.SignerName}, m.LabelValues...)
 		}
 
 		return metricFamily

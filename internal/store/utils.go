@@ -73,8 +73,8 @@ func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
 	return ms
 }
 
-func kubeLabelsToPrometheusLabels(labels map[string]string) ([]string, []string) {
-	return mapToPrometheusLabels(labels, "label")
+func kubeMapToPrometheusLabels(prefix string, input map[string]string) ([]string, []string) {
+	return mapToPrometheusLabels(input, prefix)
 }
 
 func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, []string) {
@@ -172,22 +172,23 @@ func isPrefixedNativeResource(name v1.ResourceName) bool {
 	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
 }
 
-// createLabelKeysValues takes in passed kubernetes labels and allowed list in kubernetes label format
-// it returns only those allowed labels that exist in the list converting them to Prometheus labels.
-func createLabelKeysValues(allKubeLabels map[string]string, allowList []string) ([]string, []string) {
-	allowedKubeLabels := make(map[string]string)
+// createPrometheusLabelKeysValues takes in passed kubernetes annotations/labels
+// and associated allowed list in kubernetes label format.
+// It returns only those allowed annotations/labels that exist in the list and converts them to Prometheus labels.
+func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]string, allowList []string) ([]string, []string) {
+	allowedKubeData := make(map[string]string)
 
 	if len(allowList) > 0 {
 		if allowList[0] == options.LabelWildcard {
-			return kubeLabelsToPrometheusLabels(allKubeLabels)
+			return kubeMapToPrometheusLabels(prefix, allKubeData)
 		}
 
 		for _, l := range allowList {
-			v, found := allKubeLabels[l]
+			v, found := allKubeData[l]
 			if found {
-				allowedKubeLabels[l] = v
+				allowedKubeData[l] = v
 			}
 		}
 	}
-	return kubeLabelsToPrometheusLabels(allowedKubeLabels)
+	return kubeMapToPrometheusLabels(prefix, allowedKubeData)
 }

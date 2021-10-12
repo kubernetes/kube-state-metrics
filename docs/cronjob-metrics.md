@@ -2,6 +2,7 @@
 
 | Metric name| Metric type | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------- |
+| kube_cronjob_annotations | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; <br> `annotation_CRONJOB_ANNOTATION`=&lt;CRONJOB_ANNOTATION&gt;  | EXPERIMENTAL
 | kube_cronjob_info | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; <br> `schedule`=&lt;schedule&gt; <br> `concurrency_policy`=&lt;concurrency-policy&gt; | STABLE
 | kube_cronjob_labels | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; <br> `label_CRONJOB_LABEL`=&lt;CRONJOB_LABEL&gt;  | STABLE
 | kube_cronjob_created  | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | STABLE
@@ -11,3 +12,5 @@
 | kube_cronjob_spec_suspend | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | STABLE
 | kube_cronjob_spec_starting_deadline_seconds | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | STABLE
 | kube_cronjob_metadata_resource_version| Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | STABLE
+| kube_cronjob_spec_successful_job_history_limit | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | EXPERIMENTAL
+| kube_cronjob_spec_failed_job_history_limit | Gauge | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt; | EXPERIMENTAL

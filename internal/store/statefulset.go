@@ -31,12 +31,14 @@ import (
 )
 
 var (
+	descStatefulSetAnnotationsName     = "kube_statefulset_annotations"
+	descStatefulSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descStatefulSetLabelsName          = "kube_statefulset_labels"
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
 )
 
-func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_statefulset_created",
@@ -67,6 +69,21 @@ func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGener
 					Metrics: []*metric.Metric{
 						{
 							Value: float64(s.Status.Replicas),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_statefulset_status_replicas_available",
+			"The number of available replicas per StatefulSet.",
+			metric.Gauge,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(s.Status.AvailableReplicas),
 						},
 					},
 				}
@@ -167,12 +184,30 @@ func statefulSetMetricFamilies(allowLabelsList []string) []generator.FamilyGener
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			descStatefulSetAnnotationsName,
+			descStatefulSetAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			descStatefulSetLabelsName,
 			descStatefulSetLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

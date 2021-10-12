@@ -482,8 +482,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies(nil))
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

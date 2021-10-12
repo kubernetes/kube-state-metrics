@@ -32,12 +32,14 @@ import (
 )
 
 var (
+	descIngressAnnotationsName     = "kube_ingress_annotations"
+	descIngressAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descIngressLabelsName          = "kube_ingress_labels"
 	descIngressLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
 )
 
-func ingressMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator {
+func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_ingress_info",
@@ -54,12 +56,30 @@ func ingressMetricFamilies(allowLabelsList []string) []generator.FamilyGenerator
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			descIngressAnnotationsName,
+			descIngressAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					}}
+
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			descIngressLabelsName,
 			descIngressLabelsHelp,
 			metric.Gauge,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
-				labelKeys, labelValues := createLabelKeysValues(i.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", i.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

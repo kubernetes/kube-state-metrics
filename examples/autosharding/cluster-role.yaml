@@ -23,6 +23,7 @@ rules:
   - namespaces
   - endpoints
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -33,6 +34,7 @@ rules:
   - deployments
   - replicasets
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -41,6 +43,7 @@ rules:
   - cronjobs
   - jobs
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -48,6 +51,7 @@ rules:
   resources:
   - horizontalpodautoscalers
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -67,6 +71,7 @@ rules:
   resources:
   - poddisruptionbudgets
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -74,6 +79,7 @@ rules:
   resources:
   - certificatesigningrequests
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -82,6 +88,7 @@ rules:
   - storageclasses
   - volumeattachments
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -90,6 +97,7 @@ rules:
   - mutatingwebhookconfigurations
   - validatingwebhookconfigurations
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -98,6 +106,7 @@ rules:
   - networkpolicies
   - ingresses
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -105,5 +114,6 @@ rules:
   resources:
   - leases
   verbs:
+  - get
   - list
   - watch

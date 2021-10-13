@@ -58,7 +58,7 @@
           'namespaces',
           'endpoints',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['apps'],
@@ -68,7 +68,7 @@
           'deployments',
           'replicasets',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['batch'],
@@ -76,14 +76,14 @@
           'cronjobs',
           'jobs',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['autoscaling'],
         resources: [
           'horizontalpodautoscalers',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['authentication.k8s.io'],
@@ -104,14 +104,14 @@
         resources: [
           'poddisruptionbudgets',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['certificates.k8s.io'],
         resources: [
           'certificatesigningrequests',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['storage.k8s.io'],
@@ -119,7 +119,7 @@
           'storageclasses',
           'volumeattachments',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['admissionregistration.k8s.io'],
@@ -127,7 +127,7 @@
           'mutatingwebhookconfigurations',
           'validatingwebhookconfigurations',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['networking.k8s.io'],
@@ -135,14 +135,14 @@
           'networkpolicies',
           'ingresses',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
       {
         apiGroups: ['coordination.k8s.io'],
         resources: [
           'leases',
         ],
-        verbs: ['list', 'watch'],
+        verbs: ['get', 'list', 'watch'],
       },
     ];
 

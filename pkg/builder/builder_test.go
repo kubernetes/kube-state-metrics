@@ -68,12 +68,12 @@ func customStore(metricFamilies []generator.FamilyGenerator,
 	useAPIServerCache bool,
 ) []cache.Store {
 	stores := make([]cache.Store, 0, 2)
-	stores = append(stores, newDummyStor(dummyMetricList0))
-	stores = append(stores, newDummyStor(dummyMetricList1))
+	stores = append(stores, newDummyStore(dummyMetricList0))
+	stores = append(stores, newDummyStore(dummyMetricList1))
 	return stores
 }
 
-func newDummyStor(metrics []string) *dummyStore {
+func newDummyStore(metrics []string) *dummyStore {
 	return &dummyStore{
 		metrics: metrics,
 	}

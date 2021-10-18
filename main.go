@@ -114,7 +114,7 @@ func main() {
 		klog.Fatalf("Failed to set up resources: %v", err)
 	}
 
-	namespaces := opts.Namespaces.GetNamespaces(opts.Namespaces)
+	namespaces := opts.Namespaces.GetNamespaces()
 	// TODO(mallow111): use real namespace filter by calling GetExcludeNSFieldSelector(opts.NamespacesDenylist)
 	storeBuilder.WithNamespaces(namespaces, "")
 

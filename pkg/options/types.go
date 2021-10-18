@@ -129,14 +129,14 @@ func (n *NamespaceList) Set(value string) error {
 	return nil
 }
 
-// GetNamespaces is a helper function to get namespaces from opts.DeniedNamespaces
-func (n *NamespaceList) GetNamespaces(namespaces NamespaceList) NamespaceList {
-	ns := namespaces
-	if len(namespaces) == 0 {
+// GetNamespaces is a helper function to get namespaces from opts.Namespaces
+func (n *NamespaceList) GetNamespaces() NamespaceList {
+	ns := *n
+	if len(*n) == 0 {
 		klog.Info("Using all namespace")
 		ns = DefaultNamespaces
 	} else {
-		if namespaces.IsAllNamespaces() {
+		if n.IsAllNamespaces() {
 			klog.Info("Using all namespace")
 		} else {
 			klog.Infof("Using %s namespaces", ns)

@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -254,24 +253,29 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 	}
 
 	resources := map[string]struct{}{}
-	files, err := ioutil.ReadDir("../../internal/store/")
+	files, err := os.ReadDir("../../internal/store/")
 	if err != nil {
 		t.Fatalf("failed to read dir to get all resouces name: %v", err)
 	}
 
-	re := regexp.MustCompile(`^([a-z]*).go$`)
+	re := regexp.MustCompile(`^([a-z]+).go$`)
 	for _, file := range files {
 		params := re.FindStringSubmatch(file.Name())
 		if len(params) != 2 {
 			continue
 		}
-		if params[1] == "builder" || params[1] == "utils" || params[1] == "testutils" || params[1] == "verticalpodautoscaler" {
+		if params[1] == "builder" || params[1] == "utils" || params[1] == "testutils" {
+			// Non resource file
+			continue
+		}
+		if params[1] == "verticalpodautoscaler" {
+			// Resource disabled by default
 			continue
 		}
 		resources[params[1]] = struct{}{}
 	}
 
-	re = regexp.MustCompile(`^kube_([a-z]*)_`)
+	re = regexp.MustCompile(`^kube_([a-z]+)_`)
 	scanner := bufio.NewScanner(buf)
 	for scanner.Scan() {
 		params := re.FindStringSubmatch(scanner.Text())

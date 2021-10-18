@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2021 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,8 +29,10 @@ import (
 )
 
 var (
-	dummyMetricList0 = []string{"metric0.1", "metric0.2"}
-	dummyMetricList1 = []string{"metric1.1", "metric1.2"}
+	fakeMetricLists = [][]string{
+		{"metric0.1", "metric0.2"},
+		{"metric1.1", "metric1.2"},
+	}
 )
 
 // BuilderInterface and Builder are public, and designed to allow
@@ -41,80 +43,82 @@ func TestBuilderWithCustomStore(t *testing.T) {
 	b.WithAllowDenyList(&allowdenylist.AllowDenyList{})
 	b.WithEnabledResources([]string{"pods"})
 	b.WithGenerateStoresFunc(customStore)
-	stores := b.BuildStores()
 
-	store0, ok := stores[0][0].(*dummyStore)
-	if !ok {
-		t.Fatal("Couldn't cast custom metrics store")
+	var fStores []*fakeStore
+	for _, stores := range b.BuildStores() {
+		for _, store := range stores {
+			fStores = append(fStores, store.(*fakeStore))
+		}
 	}
 
-	if !reflect.DeepEqual(store0.metrics, dummyMetricList0) {
-		t.Fatalf("Unexpected store values: want %v found %v", dummyMetricList0, store0.metrics)
-	}
-
-	store1, ok := stores[0][1].(*dummyStore)
-	if !ok {
-		t.Fatal("Couldn't cast custom metrics store")
-	}
-
-	if !reflect.DeepEqual(store1.metrics, dummyMetricList1) {
-		t.Fatalf("Unexpected store values: want %v found %v", dummyMetricList1, store1.metrics)
+	for i, fStore := range fStores {
+		metrics := fStore.List()
+		for j, m := range metrics {
+			if !reflect.DeepEqual(m, fakeMetricLists[i][j]) {
+				t.Fatalf("Unexpected store values: want %v found %v", fakeMetricLists[i], metrics)
+			}
+		}
 	}
 }
 
 func customStore(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	listWatchFunc func(kubeClient clientset.Interface, ns string) cache.ListerWatcher,
 	useAPIServerCache bool,
 ) []cache.Store {
 	stores := make([]cache.Store, 0, 2)
-	stores = append(stores, newDummyStore(dummyMetricList0))
-	stores = append(stores, newDummyStore(dummyMetricList1))
+	stores = append(stores, newFakeStore(fakeMetricLists[0]))
+	stores = append(stores, newFakeStore(fakeMetricLists[1]))
 	return stores
 }
 
-func newDummyStore(metrics []string) *dummyStore {
-	return &dummyStore{
+func newFakeStore(metrics []string) *fakeStore {
+	return &fakeStore{
 		metrics: metrics,
 	}
 }
 
-type dummyStore struct {
+type fakeStore struct {
 	metrics []string
 }
 
-func (s *dummyStore) Add(obj interface{}) error {
+func (s *fakeStore) Add(obj interface{}) error {
 	return nil
 }
 
-func (s *dummyStore) Update(obj interface{}) error {
+func (s *fakeStore) Update(obj interface{}) error {
 	return nil
 }
 
-func (s *dummyStore) Delete(obj interface{}) error {
+func (s *fakeStore) Delete(obj interface{}) error {
 	return nil
 }
 
-func (s *dummyStore) List() []interface{} {
+func (s *fakeStore) List() []interface{} {
+	metrics := make([]interface{}, len(s.metrics))
+	for i, m := range s.metrics {
+		metrics[i] = m
+	}
+
+	return metrics
+}
+
+func (s *fakeStore) ListKeys() []string {
 	return nil
 }
 
-func (s *dummyStore) ListKeys() []string {
-	return nil
-}
-
-func (s *dummyStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
+func (s *fakeStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
-func (s *dummyStore) GetByKey(key string) (item interface{}, exists bool, err error) {
+func (s *fakeStore) GetByKey(key string) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
-func (s *dummyStore) Replace(list []interface{}, _ string) error {
+func (s *fakeStore) Replace(list []interface{}, _ string) error {
 	return nil
 }
 
-func (s *dummyStore) Resync() error {
+func (s *fakeStore) Resync() error {
 	return nil
 }

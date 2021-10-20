@@ -19,14 +19,14 @@ package builder
 import (
 	"context"
 
-	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
-
 	"github.com/prometheus/client_golang/prometheus"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 
 	internalstore "k8s.io/kube-state-metrics/v2/internal/store"
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -101,6 +101,13 @@ func (b *Builder) DefaultGenerateStoresFunc() ksmtypes.BuildStoresFunc {
 }
 
 // Build initializes and registers all enabled stores.
+// Returns metric writers.
 func (b *Builder) Build() []metricsstore.MetricsWriter {
 	return b.internal.Build()
+}
+
+// BuildStores initializes and registers all enabled stores.
+// Returns metric stores.
+func (b *Builder) BuildStores() [][]cache.Store {
+	return b.internal.BuildStores()
 }

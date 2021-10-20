@@ -114,17 +114,9 @@ func main() {
 		klog.Fatalf("Failed to set up resources: %v", err)
 	}
 
-	if len(opts.Namespaces) == 0 {
-		klog.Info("Using all namespace")
-		storeBuilder.WithNamespaces(options.DefaultNamespaces)
-	} else {
-		if opts.Namespaces.IsAllNamespaces() {
-			klog.Info("Using all namespace")
-		} else {
-			klog.Infof("Using %s namespaces", opts.Namespaces)
-		}
-		storeBuilder.WithNamespaces(opts.Namespaces)
-	}
+	namespaces := opts.Namespaces.GetNamespaces()
+	nsFieldSelector := namespaces.GetExcludeNSFieldSelector(opts.NamespacesDenylist)
+	storeBuilder.WithNamespaces(namespaces, nsFieldSelector)
 
 	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
 	if err != nil {

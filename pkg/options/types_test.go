@@ -86,6 +86,75 @@ func TestNamespaceListSet(t *testing.T) {
 	}
 }
 
+func TestNamespaceList_GetNamespaces(t *testing.T) {
+	tests := []struct {
+		Desc       string
+		Namespaces NamespaceList
+		Wanted     NamespaceList
+	}{
+		{
+			Desc:       "empty DeniedNamespaces",
+			Namespaces: NamespaceList{},
+			Wanted:     NamespaceList{""},
+		},
+		{
+			Desc:       "all DeniedNamespaces",
+			Namespaces: DefaultNamespaces,
+			Wanted:     NamespaceList{""},
+		},
+		{
+			Desc:       "general namespaceDenylist",
+			Namespaces: NamespaceList{"default", "kube-system"},
+			Wanted:     NamespaceList{"default", "kube-system"},
+		},
+	}
+
+	for _, test := range tests {
+		ns := &test.Namespaces
+		allowedNamespaces := ns.GetNamespaces()
+		if !reflect.DeepEqual(allowedNamespaces, test.Wanted) {
+			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, allowedNamespaces)
+		}
+	}
+}
+
+func TestNamespaceList_ExcludeNamespacesFieldSelector(t *testing.T) {
+	tests := []struct {
+		Desc             string
+		Namespaces       NamespaceList
+		DeniedNamespaces NamespaceList
+		Wanted           string
+	}{
+		{
+			Desc:             "empty DeniedNamespaces",
+			Namespaces:       NamespaceList{"default", "kube-system"},
+			DeniedNamespaces: NamespaceList{},
+			Wanted:           "",
+		},
+		{
+			Desc:             "all DeniedNamespaces",
+			Namespaces:       DefaultNamespaces,
+			DeniedNamespaces: NamespaceList{"some-system"},
+			Wanted:           "metadata.namespace!=some-system",
+		},
+		{
+			Desc:             "general case",
+			Namespaces:       DefaultNamespaces,
+			DeniedNamespaces: NamespaceList{"case1-system", "case2-system"},
+			Wanted:           "metadata.namespace!=case1-system,metadata.namespace!=case2-system",
+		},
+	}
+
+	for _, test := range tests {
+		ns := test.Namespaces
+		deniedNS := test.DeniedNamespaces
+		actual := ns.GetExcludeNSFieldSelector(deniedNS)
+		if !reflect.DeepEqual(actual, test.Wanted) {
+			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, actual)
+		}
+	}
+}
+
 func TestMetricSetSet(t *testing.T) {
 	tests := []struct {
 		Desc   string

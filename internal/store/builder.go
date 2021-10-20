@@ -60,6 +60,7 @@ type Builder struct {
 	kubeClient           clientset.Interface
 	vpaClient            vpaclientset.Interface
 	namespaces           options.NamespaceList
+	namespaceFilter      string
 	ctx                  context.Context
 	enabledResources     []string
 	allowDenyList        ksmtypes.AllowDenyLister
@@ -103,8 +104,9 @@ func (b *Builder) WithEnabledResources(r []string) error {
 }
 
 // WithNamespaces sets the namespaces property of a Builder.
-func (b *Builder) WithNamespaces(n options.NamespaceList) {
+func (b *Builder) WithNamespaces(n options.NamespaceList, nsFilter string) {
 	b.namespaces = n
+	b.namespaceFilter = nsFilter
 }
 
 // WithSharding sets the shard and totalShards property of a Builder.
@@ -393,7 +395,7 @@ func (b *Builder) buildStores(
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, "")
+		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.namespaceFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		return []cache.Store{store}
 	}
@@ -404,7 +406,7 @@ func (b *Builder) buildStores(
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		listWatcher := listWatchFunc(b.kubeClient, ns, "")
+		listWatcher := listWatchFunc(b.kubeClient, ns, b.namespaceFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		stores = append(stores, store)
 	}

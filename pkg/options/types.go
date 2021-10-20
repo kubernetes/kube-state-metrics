@@ -21,6 +21,10 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/fields"
+
+	"k8s.io/klog/v2"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -123,6 +127,37 @@ func (n *NamespaceList) Set(value string) error {
 		}
 	}
 	return nil
+}
+
+// GetNamespaces is a helper function to get namespaces from opts.Namespaces
+func (n *NamespaceList) GetNamespaces() NamespaceList {
+	ns := *n
+	if len(*n) == 0 {
+		klog.Info("Using all namespace")
+		ns = DefaultNamespaces
+	} else {
+		if n.IsAllNamespaces() {
+			klog.Info("Using all namespace")
+		} else {
+			klog.Infof("Using %s namespaces", ns)
+		}
+	}
+	return ns
+}
+
+// GetExcludeNSFieldSelector will return excluded namespace field selector
+// if nsDenylist = {case1,case2}, the result will be "metadata.namespace!=case1,metadata.namespace!=case2".
+func (n *NamespaceList) GetExcludeNSFieldSelector(nsDenylist []string) string {
+	if len(nsDenylist) == 0 {
+		return ""
+	}
+
+	namespaceExcludeSelectors := make([]fields.Selector, len(nsDenylist))
+	for i, ns := range nsDenylist {
+		selector := fields.OneTermNotEqualSelector("metadata.namespace", ns)
+		namespaceExcludeSelectors[i] = selector
+	}
+	return fields.AndSelectors(namespaceExcludeSelectors...).String()
 }
 
 // Type returns a descriptive string about the NamespaceList type.

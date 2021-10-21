@@ -1,3 +1,19 @@
+## v2.2.3 / 2021-10-13
+
+* [BUGFIX] Fix the image build job. Reverts #1602 
+
+## v2.2.2 / 2021-10-13
+* [BUGFIX]  Downgrade latest allowed go version to 1.16.9 #1601 @mrueg
+* [BUGFIX]  Fix CI variable names used for building KSM images @mrueg
+
+## v2.2.1 / 2021-09-24
+
+* [FEATURE] Add the kube_persistentvolumeclaim_annotations metric which exposes annotations on PVCs #1566 @arajkumar
+* [BUGFIX]  Revert the accidentally removed kube_persistentvolumeclaim_labels metric #1566 @arajkumar
+* [BUGFIX]  Filter annotations in metrics based on `--metric-annotations-allowlist` instead of `--metric-labels-allowlist` for
+CronJob, Daemonset, HPA and Ingress resources #1580 @midnw
+* [BUGFIX]  Avoid panicking when VPA objects have no targetRef #1584 @nabokihms
+
 ## v2.2.0 / 2021-08-24
 
 * [FEATURE] Add --use-apiserver-cache flag to set resourceVersion=0 for ListWatch requests #1548

@@ -47,19 +47,40 @@ func TestIngressStore(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
+			AllowAnnotationsList: []string{
+				"app.k8s.io/owner",
+			},
 			Obj: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "ingress1",
 					Namespace:       "ns1",
 					ResourceVersion: "000000",
+					Annotations: map[string]string{
+						"app":              "mysql-server",
+						"app.k8s.io/owner": "@foo",
+					},
 				},
 			},
-			Want: metadata + `
+			Want: `
+				# HELP kube_ingress_info Information about ingress.
+				# HELP kube_ingress_annotations Kubernetes annotations converted to Prometheus labels.
+				# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
+				# TYPE kube_ingress_info gauge
+				# TYPE kube_ingress_annotations gauge
+				# TYPE kube_ingress_labels gauge
+				# TYPE kube_ingress_metadata_resource_version gauge
 				kube_ingress_info{namespace="ns1",ingress="ingress1"} 1
 				kube_ingress_metadata_resource_version{namespace="ns1",ingress="ingress1"} 0
+				kube_ingress_annotations{annotation_app_k8s_io_owner="@foo",namespace="ns1",ingress="ingress1"} 1
 				kube_ingress_labels{namespace="ns1",ingress="ingress1"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{
+				"kube_ingress_info",
+				"kube_ingress_metadata_resource_version",
+				"kube_ingress_annotations",
+				"kube_ingress_labels",
+			},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -169,8 +190,8 @@ func TestIngressStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(ingressMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

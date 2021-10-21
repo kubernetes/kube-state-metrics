@@ -200,7 +200,7 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			metric.Gauge,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowLabelsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

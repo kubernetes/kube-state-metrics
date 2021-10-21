@@ -49,7 +49,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			metric.Gauge,
 			"",
 			wrapCronJobFunc(func(j *batchv1beta1.CronJob) *metric.Family {
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("label", j.Annotations, allowLabelsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

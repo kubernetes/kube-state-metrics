@@ -31,9 +31,15 @@ import (
 )
 
 var (
+	descPodDisruptionBudgetAnnotationsName     = "kube_poddisruptionbudget_annotations"
+	descPodDisruptionBudgetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descPodDisruptionBudgetLabelsName          = "kube_poddisruptionbudget_labels"
+	descPodDisruptionBudgetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPodDisruptionBudgetLabelsDefaultLabels = []string{"namespace", "poddisruptionbudget"}
+)
 
-	podDisruptionBudgetMetricFamilies = []generator.FamilyGenerator{
+func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
 			"kube_poddisruptionbudget_created",
 			"Unix creation timestamp",
@@ -128,8 +134,44 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			descPodDisruptionBudgetAnnotationsName,
+			descPersistentVolumeAnnotationsHelp,
+			metric.Gauge,
+			"",
+			wrapPodDisruptionBudgetFunc(func(n *v1beta1.PodDisruptionBudget) *metric.Family {
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			descPodDisruptionBudgetLabelsName,
+			descPodDisruptionBudgetLabelsHelp,
+			metric.Gauge,
+			"",
+			wrapPodDisruptionBudgetFunc(func(n *v1beta1.PodDisruptionBudget) *metric.Family {
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
-)
+}
 
 func wrapPodDisruptionBudgetFunc(f func(*v1beta1.PodDisruptionBudget) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

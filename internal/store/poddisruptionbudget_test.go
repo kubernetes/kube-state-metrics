@@ -22,7 +22,6 @@ import (
 
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
@@ -42,9 +41,19 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	# TYPE kube_poddisruptionbudget_status_expected_pods gauge
 	# HELP kube_poddisruptionbudget_status_observed_generation Most recent generation observed when updating this PDB status
 	# TYPE kube_poddisruptionbudget_status_observed_generation gauge
+    # HELP kube_poddisruptionbudget_annotations Kubernetes annotations converted to Prometheus labels.
+    # TYPE kube_poddisruptionbudget_annotations gauge
+    # HELP kube_poddisruptionbudget_labels Kubernetes labels converted to Prometheus labels.
+    # TYPE kube_poddisruptionbudget_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
+			AllowAnnotationsList: []string{
+				"app.k8s.io/owner",
+			},
+			AllowLabelsList: []string{
+				"app",
+			},
 			Obj: &v1beta1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "pdb1",
@@ -67,14 +76,28 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 			kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns1",poddisruptionbudget="pdb1"} 2
 			kube_poddisruptionbudget_status_expected_pods{namespace="ns1",poddisruptionbudget="pdb1"} 15
 			kube_poddisruptionbudget_status_observed_generation{namespace="ns1",poddisruptionbudget="pdb1"} 111
+			kube_poddisruptionbudget_annotations{namespace="ns1",poddisruptionbudget="pdb1"} 1
+			kube_poddisruptionbudget_labels{namespace="ns1",poddisruptionbudget="pdb1"} 1
 			`,
 		},
 		{
+			AllowAnnotationsList: []string{
+				"app.k8s.io/owner",
+			},
+			AllowLabelsList: []string{
+				"app",
+			},
 			Obj: &v1beta1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "pdb2",
 					Namespace:  "ns2",
 					Generation: 14,
+					Annotations: map[string]string{
+						"app.k8s.io/owner": "@foo",
+					},
+					Labels: map[string]string{
+						"app": "test",
+					},
 				},
 				Status: v1beta1.PodDisruptionBudgetStatus{
 					CurrentHealthy:     8,
@@ -90,12 +113,14 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 				kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns2",poddisruptionbudget="pdb2"} 0
 				kube_poddisruptionbudget_status_expected_pods{namespace="ns2",poddisruptionbudget="pdb2"} 10
 				kube_poddisruptionbudget_status_observed_generation{namespace="ns2",poddisruptionbudget="pdb2"} 1111
+                kube_poddisruptionbudget_annotations{annotation_app_k8s_io_owner="@foo",namespace="ns2",poddisruptionbudget="pdb2"} 1
+                kube_poddisruptionbudget_labels{label_app="test",namespace="ns2",poddisruptionbudget="pdb2"} 1
 			`,
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podDisruptionBudgetMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(podDisruptionBudgetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(podDisruptionBudgetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(podDisruptionBudgetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

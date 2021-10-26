@@ -325,7 +325,7 @@ func (b *Builder) buildPersistentVolumeStores() []cache.Store {
 }
 
 func (b *Builder) buildPodDisruptionBudgetStores() []cache.Store {
-	return b.buildStoresFunc(podDisruptionBudgetMetricFamilies, &policy.PodDisruptionBudget{}, createPodDisruptionBudgetListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(podDisruptionBudgetMetricFamilies(b.allowAnnotationsList["poddisruptionbudget"], b.allowLabelsList["poddisruptionbudget"]), &policy.PodDisruptionBudget{}, createPodDisruptionBudgetListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildReplicaSetStores() []cache.Store {

@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
@@ -241,4 +242,60 @@ func prettyPrintCounter(name string, metric *dto.Metric) string {
 		labelStrings = append(labelStrings, fmt.Sprintf(`%s="%s"`, l.GetName(), l.GetValue()))
 	}
 	return fmt.Sprintf("%s{%s} %d", name, strings.Join(labelStrings, ","), int(metric.GetCounter().GetValue()))
+}
+
+func TestDefaultCollectorMetricsAvailable(t *testing.T) {
+	buf := &bytes.Buffer{}
+
+	err := framework.KsmClient.Metrics(buf)
+	if err != nil {
+		t.Fatalf("failed to get metrics from kube-state-metrics: %v", err)
+	}
+
+	resources := map[string]struct{}{}
+	files, err := os.ReadDir("../../internal/store/")
+	if err != nil {
+		t.Fatalf("failed to read dir to get all resouces name: %v", err)
+	}
+
+	re := regexp.MustCompile(`^([a-z]+).go$`)
+	for _, file := range files {
+		params := re.FindStringSubmatch(file.Name())
+		if len(params) != 2 {
+			continue
+		}
+		if params[1] == "builder" || params[1] == "utils" || params[1] == "testutils" {
+			// Non resource file
+			continue
+		}
+		if params[1] == "verticalpodautoscaler" {
+			// Resource disabled by default
+			continue
+		}
+		resources[params[1]] = struct{}{}
+	}
+
+	re = regexp.MustCompile(`^kube_([a-z]+)_`)
+	scanner := bufio.NewScanner(buf)
+	for scanner.Scan() {
+		params := re.FindStringSubmatch(scanner.Text())
+		if len(params) != 2 {
+			continue
+		}
+		delete(resources, params[1])
+	}
+
+	err = scanner.Err()
+	if err != nil {
+		t.Fatalf("failed to scan metrics: %v", err)
+	}
+
+	if len(resources) != 0 {
+		s := []string{}
+		for k := range resources {
+			s = append(s, k)
+		}
+		sort.Strings(s)
+		t.Fatalf("failed to find metrics of resources: %s", strings.Join(s, ", "))
+	}
 }

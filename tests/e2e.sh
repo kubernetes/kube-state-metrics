@@ -36,8 +36,6 @@ SUDO=${SUDO:-}
 OS=$(uname -s | awk '{print tolower($0)}')
 OS=${OS:-linux}
 
-EXCLUDED_RESOURCE_REGEX="verticalpodautoscaler"
-
 function finish() {
     echo "calling cleanup function"
     # kill kubectl proxy in background
@@ -164,13 +162,6 @@ mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
 # TODO: re-implement the following test cases in Go with the goal of removing this file.
 echo "access kube-state-metrics metrics endpoint"
 curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/metrics
-
-resources=$(find internal/store/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "builder.go" -not -name "testutils.go" -not -name "utils.go" -print0 | xargs -0 -n1 basename | awk -F. '{print $1}'| grep -v "$EXCLUDED_RESOURCE_REGEX")
-echo "available resources: $resources"
-for resource in ${resources}; do
-    echo "checking that kube_${resource}* metrics exists"
-    grep "^kube_${resource}_" ${KUBE_STATE_METRICS_LOG_DIR}/metrics
-done
 
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
 if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then

@@ -1,3 +1,7 @@
+## v2.2.4 / 2021-11-08
+
+* [BUGFIX] Fix BuilderInterface and BuildStoresFunc to allow using KSM as a library #1618 @ahmed-mez
+
 ## v2.2.3 / 2021-10-13
 
 * [BUGFIX] Fix the image build job. Reverts #1602 

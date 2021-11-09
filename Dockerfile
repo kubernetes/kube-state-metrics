@@ -1,17 +1,19 @@
 ARG GOVERSION=1.17
 ARG GOARCH
 FROM golang:${GOVERSION} as builder
+USER 65534
 ARG GOARCH
 ENV GOARCH=${GOARCH}
+ENV GOCACHE=/tmp/.cache
 WORKDIR /go/src/k8s.io/kube-state-metrics/
-COPY . /go/src/k8s.io/kube-state-metrics/
+COPY --chown=65534:65534 . /go/src/k8s.io/kube-state-metrics/
 
 RUN make build-local
 
 FROM gcr.io/distroless/static:latest-${GOARCH}
-COPY --from=builder /go/src/k8s.io/kube-state-metrics/kube-state-metrics /
+USER 65534
 
-USER nobody
+COPY --from=builder --chown=65534:65534 /go/src/k8s.io/kube-state-metrics/output/kube-state-metrics /
 
 ENTRYPOINT ["/kube-state-metrics", "--port=8080", "--telemetry-port=8081"]
 

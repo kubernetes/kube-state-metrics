@@ -63,7 +63,7 @@ build-local:
 build: kube-state-metrics
 
 kube-state-metrics:
-	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
+	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} make build-local
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)

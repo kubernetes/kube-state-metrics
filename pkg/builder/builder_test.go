@@ -40,7 +40,8 @@ var (
 // This test case ensures we don't break compatibility for external consumers.
 func TestBuilderWithCustomStore(t *testing.T) {
 	b := builder.NewBuilder()
-	b.WithAllowDenyList(&allowdenylist.AllowDenyList{})
+	// TODO: replace with a generic family generator filter which composes both the AllowDenyList and OptInList
+	b.WithFamilyGeneratorFilter(&allowdenylist.AllowDenyList{})
 	b.WithEnabledResources([]string{"pods"})
 	b.WithGenerateStoresFunc(customStore)
 

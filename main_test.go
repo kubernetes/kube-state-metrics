@@ -69,11 +69,12 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithNamespaces(options.DefaultNamespaces, "")
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc(), false)
 
+	// TODO: replace with a generic family generator filter which composes both the AllowDenyList and OptInList
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
 		b.Fatal(err)
 	}
-	builder.WithAllowDenyList(l)
+	builder.WithFamilyGeneratorFilter(l)
 
 	builder.WithAllowAnnotations(map[string][]string{})
 	builder.WithAllowLabels(map[string][]string{})
@@ -139,7 +140,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	builder.WithAllowDenyList(l)
+	builder.WithFamilyGeneratorFilter(l)
 	builder.WithAllowLabels(map[string][]string{
 		"kube_pod_labels": {
 			"namespace",
@@ -400,7 +401,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	unshardedBuilder.WithEnabledResources(options.DefaultResources.AsSlice())
 	unshardedBuilder.WithKubeClient(kubeClient)
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces, "")
-	unshardedBuilder.WithAllowDenyList(l)
+	unshardedBuilder.WithFamilyGeneratorFilter(l)
 	unshardedBuilder.WithAllowLabels(map[string][]string{})
 	unshardedBuilder.WithGenerateStoresFunc(unshardedBuilder.DefaultGenerateStoresFunc(), false)
 
@@ -413,7 +414,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder1.WithEnabledResources(options.DefaultResources.AsSlice())
 	shardedBuilder1.WithKubeClient(kubeClient)
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces, "")
-	shardedBuilder1.WithAllowDenyList(l)
+	shardedBuilder1.WithFamilyGeneratorFilter(l)
 	shardedBuilder1.WithAllowLabels(map[string][]string{})
 	shardedBuilder1.WithGenerateStoresFunc(shardedBuilder1.DefaultGenerateStoresFunc(), false)
 
@@ -426,7 +427,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder2.WithEnabledResources(options.DefaultResources.AsSlice())
 	shardedBuilder2.WithKubeClient(kubeClient)
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces, "")
-	shardedBuilder2.WithAllowDenyList(l)
+	shardedBuilder2.WithFamilyGeneratorFilter(l)
 	shardedBuilder2.WithAllowLabels(map[string][]string{})
 	shardedBuilder2.WithGenerateStoresFunc(shardedBuilder2.DefaultGenerateStoresFunc(), false)
 

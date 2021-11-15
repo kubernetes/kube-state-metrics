@@ -130,7 +130,7 @@ func main() {
 
 	klog.Infof("metric allow-denylisting: %v", allowDenyList.Status())
 
-	storeBuilder.WithAllowDenyList(allowDenyList)
+	storeBuilder.WithFamilyGeneratorFilter(allowDenyList)
 
 	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc(), opts.UseAPIServerCache)
 

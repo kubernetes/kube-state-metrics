@@ -17,9 +17,10 @@ limitations under the License.
 package allowdenylist
 
 import (
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"regexp"
 	"strings"
+
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	"github.com/pkg/errors"
 )

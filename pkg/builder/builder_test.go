@@ -23,7 +23,6 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/builder"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -40,8 +39,7 @@ var (
 // This test case ensures we don't break compatibility for external consumers.
 func TestBuilderWithCustomStore(t *testing.T) {
 	b := builder.NewBuilder()
-	// TODO: replace with a generic family generator filter which composes both the AllowDenyList and OptInList
-	b.WithFamilyGeneratorFilter(&allowdenylist.AllowDenyList{})
+	b.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter())
 	b.WithEnabledResources([]string{"pods"})
 	b.WithGenerateStoresFunc(customStore)
 

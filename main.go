@@ -26,6 +26,8 @@ import (
 	"strconv"
 	"time"
 
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -130,7 +132,9 @@ func main() {
 
 	klog.Infof("metric allow-denylisting: %v", allowDenyList.Status())
 
-	storeBuilder.WithFamilyGeneratorFilter(allowDenyList)
+	storeBuilder.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter(
+		allowDenyList,
+	))
 
 	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc(), opts.UseAPIServerCache)
 

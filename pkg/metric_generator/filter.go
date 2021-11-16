@@ -25,6 +25,22 @@ type FamilyGeneratorFilter interface {
 	Test(generator FamilyGenerator) bool
 }
 
+// CompositeFamilyGeneratorFilter is composite for combining multiple filters
+type CompositeFamilyGeneratorFilter struct {
+	filters []FamilyGeneratorFilter
+}
+
+// Test tests the generator by passing it through the filters contained within the composite
+// and return false if the generator does not match all the filters
+func (composite CompositeFamilyGeneratorFilter) Test(generator FamilyGenerator) bool {
+	for _, filter := range composite.filters {
+		if !filter.Test(generator) {
+			return false
+		}
+	}
+	return true
+}
+
 // FilterFamilyGenerators filters a given slice of family generators based upon a given filter
 // and returns a slice containing the family generators which passed the filter criteria
 func FilterFamilyGenerators(filter FamilyGeneratorFilter, families []FamilyGenerator) []FamilyGenerator {
@@ -37,4 +53,9 @@ func FilterFamilyGenerators(filter FamilyGeneratorFilter, families []FamilyGener
 	}
 
 	return filtered
+}
+
+// NewCompositeFamilyGeneratorFilter combines multiple family generators filters into one composite filter
+func NewCompositeFamilyGeneratorFilter(filters ...FamilyGeneratorFilter) CompositeFamilyGeneratorFilter {
+	return CompositeFamilyGeneratorFilter{filters}
 }

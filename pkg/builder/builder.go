@@ -18,6 +18,7 @@ package builder
 
 import (
 	"context"
+
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	"github.com/prometheus/client_golang/prometheus"

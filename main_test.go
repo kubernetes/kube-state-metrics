@@ -28,6 +28,8 @@ import (
 	"testing"
 	"time"
 
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+
 	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -69,12 +71,14 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithNamespaces(options.DefaultNamespaces, "")
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc(), false)
 
-	// TODO: replace with a generic family generator filter which composes both the AllowDenyList and OptInList
-	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
+	allowDenyListFilter, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
 		b.Fatal(err)
 	}
-	builder.WithFamilyGeneratorFilter(l)
+
+	builder.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter(
+		allowDenyListFilter,
+	))
 
 	builder.WithAllowAnnotations(map[string][]string{})
 	builder.WithAllowLabels(map[string][]string{})

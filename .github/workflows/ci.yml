@@ -18,6 +18,7 @@ env:
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
   GO_VERSION: "^1.17"
+  GOLANGCI_LINT_VERSION: "v1.43.0"
 
 jobs:
   ci-go-lint:
@@ -40,7 +41,7 @@ jobs:
 
     - name: Lint
       run: |
-        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.40.0
+        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
         make lint
 
   ci-validate-manifests:

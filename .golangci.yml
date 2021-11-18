@@ -1,20 +1,21 @@
 run:
-  deadline: 2m
+  deadline: 5m
 
 linters:
   disable-all: true
   enable:
+    - gocritic
+    - gocyclo
     - gofmt
     - goimports
-    - golint
-    - staticcheck
-    - gocyclo
+    - gosimple
+    - govet
     - ineffassign
     - misspell
-    - gocritic
-    - govet
-    - unconvert
     - promlinter
+    - revive
+    - staticcheck
+    - unconvert
 
 linters-settings:
   goimports:

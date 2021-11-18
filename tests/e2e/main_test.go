@@ -121,7 +121,7 @@ func TestDocumentation(t *testing.T) {
 				for _, labelPattern := range acceptedLabelNames {
 					re, err := regexp.Compile(labelPattern)
 					if err != nil {
-						t.Errorf("Cannot compile pattern %s: %w", labelPattern, err)
+						t.Errorf("Cannot compile pattern %s: %v", labelPattern, err)
 						continue
 					}
 					if re.MatchString(labelName) {

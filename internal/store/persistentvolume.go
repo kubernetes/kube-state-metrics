@@ -33,7 +33,7 @@ import (
 
 var (
 	descPersistentVolumeClaimRefName          = "kube_persistentvolume_claim_ref"
-	descPersistentVolumeClaimRefHelp          = "Information about the Persitant Volume Claim Reference."
+	descPersistentVolumeClaimRefHelp          = "Information about the Persistent Volume Claim Reference."
 	descPersistentVolumeClaimRefDefaultLabels = []string{"persistentvolume"}
 
 	descPersistentVolumeAnnotationsName     = "kube_persistentvolume_annotations"

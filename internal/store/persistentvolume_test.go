@@ -441,7 +441,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_claim_ref Information about the Persitant Volume Claim Reference.
+					# HELP kube_persistentvolume_claim_ref Information about the Persistent Volume Claim Reference.
 					# TYPE kube_persistentvolume_claim_ref gauge
 					kube_persistentvolume_claim_ref{claim_namespace="default",name="pv-claim",persistentvolume="test-claimed-pv"} 1
 				`,
@@ -457,7 +457,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_claim_ref Information about the Persitant Volume Claim Reference.
+					# HELP kube_persistentvolume_claim_ref Information about the Persistent Volume Claim Reference.
 					# TYPE kube_persistentvolume_claim_ref gauge
 				`,
 			MetricNames: []string{"kube_persistentvolume_claim_ref"},

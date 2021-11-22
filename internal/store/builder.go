@@ -57,21 +57,21 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
-	kubeClient           clientset.Interface
-	vpaClient            vpaclientset.Interface
-	namespaces           options.NamespaceList
-	namespaceFilter      string
-	ctx                  context.Context
-	enabledResources     []string
-	allowDenyList        ksmtypes.AllowDenyLister
-	listWatchMetrics     *watch.ListWatchMetrics
-	shardingMetrics      *sharding.Metrics
-	shard                int32
-	totalShards          int
-	buildStoresFunc      ksmtypes.BuildStoresFunc
-	allowAnnotationsList map[string][]string
-	allowLabelsList      map[string][]string
-	useAPIServerCache    bool
+	kubeClient            clientset.Interface
+	vpaClient             vpaclientset.Interface
+	namespaces            options.NamespaceList
+	namespaceFilter       string
+	ctx                   context.Context
+	enabledResources      []string
+	familyGeneratorFilter generator.FamilyGeneratorFilter
+	listWatchMetrics      *watch.ListWatchMetrics
+	shardingMetrics       *sharding.Metrics
+	shard                 int32
+	totalShards           int
+	buildStoresFunc       ksmtypes.BuildStoresFunc
+	allowAnnotationsList  map[string][]string
+	allowLabelsList       map[string][]string
+	useAPIServerCache     bool
 }
 
 // NewBuilder returns a new builder.
@@ -134,10 +134,10 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 	b.vpaClient = c
 }
 
-// WithAllowDenyList configures the allow or denylisted metric to be exposed
-// by the store build by the Builder.
-func (b *Builder) WithAllowDenyList(l ksmtypes.AllowDenyLister) {
-	b.allowDenyList = l
+// WithFamilyGeneratorFilter configures the family generator filter which decides which
+// metrics are to be exposed by the store build by the Builder.
+func (b *Builder) WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter) {
+	b.familyGeneratorFilter = l
 }
 
 // WithGenerateStoresFunc configures a custom generate store function
@@ -169,8 +169,8 @@ func (b *Builder) WithAllowLabels(labels map[string][]string) {
 // It returns metrics writers which can be used to write out
 // metrics from the stores.
 func (b *Builder) Build() []metricsstore.MetricsWriter {
-	if b.allowDenyList == nil {
-		panic("allowDenyList should not be nil")
+	if b.familyGeneratorFilter == nil {
+		panic("familyGeneratorFilter should not be nil")
 	}
 
 	var metricsWriters []metricsstore.MetricsWriter
@@ -198,8 +198,8 @@ func (b *Builder) Build() []metricsstore.MetricsWriter {
 // It returns metric stores which can be used to consume
 // the generated metrics from the stores.
 func (b *Builder) BuildStores() [][]cache.Store {
-	if b.allowDenyList == nil {
-		panic("allowDenyList should not be nil")
+	if b.familyGeneratorFilter == nil {
+		panic("familyGeneratorFilter should not be nil")
 	}
 
 	var allStores [][]cache.Store
@@ -386,7 +386,7 @@ func (b *Builder) buildStores(
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool,
 ) []cache.Store {
-	metricFamilies = generator.FilterMetricFamilies(b.allowDenyList, metricFamilies)
+	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
 

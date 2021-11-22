@@ -19,6 +19,8 @@ package builder
 import (
 	"context"
 
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+
 	"github.com/prometheus/client_golang/prometheus"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
@@ -79,10 +81,10 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 	b.internal.WithVPAClient(c)
 }
 
-// WithAllowDenyList configures the allow or denylisted metric to be exposed
-// by the store build by the Builder.
-func (b *Builder) WithAllowDenyList(l ksmtypes.AllowDenyLister) {
-	b.internal.WithAllowDenyList(l)
+// WithFamilyGeneratorFilter configures the family generator filter which decides which
+// metrics are to be exposed by the store build by the Builder.
+func (b *Builder) WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter) {
+	b.internal.WithFamilyGeneratorFilter(l)
 }
 
 // WithAllowLabels configures which labels can be returned for metrics

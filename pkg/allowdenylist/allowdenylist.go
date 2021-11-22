@@ -20,6 +20,8 @@ import (
 	"regexp"
 	"strings"
 
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+
 	"github.com/pkg/errors"
 )
 
@@ -132,6 +134,11 @@ func (l *AllowDenyList) Status() string {
 	}
 
 	return "Excluding the following lists that were on denylist: " + strings.Join(items, ", ")
+}
+
+// Test returns if the given family generator passes (is included in) the AllowDenyList
+func (l *AllowDenyList) Test(generator generator.FamilyGenerator) bool {
+	return l.IsIncluded(generator.Name)
 }
 
 func copyList(l map[string]struct{}) map[string]struct{} {

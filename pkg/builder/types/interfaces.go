@@ -39,7 +39,7 @@ type BuilderInterface interface {
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
 	WithVPAClient(c vpaclientset.Interface)
-	WithAllowDenyList(l AllowDenyLister)
+	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)
 	WithAllowLabels(l map[string][]string)
 	WithGenerateStoresFunc(f BuildStoresFunc, useAPIServerCache bool)
 	DefaultGenerateStoresFunc() BuildStoresFunc

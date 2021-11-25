@@ -26,8 +26,6 @@ import (
 	"strconv"
 	"time"
 
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -44,7 +42,9 @@ import (
 
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
+	"k8s.io/kube-state-metrics/v2/pkg/optin"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
 )
@@ -132,8 +132,18 @@ func main() {
 
 	klog.Infof("metric allow-denylisting: %v", allowDenyList.Status())
 
+	optInMetricFamilyFilter, err := optin.NewMetricFamilyFilter(opts.MetricOptInList)
+	if err != nil {
+		klog.Fatalf("error initializing the opt-in metric list : %v", err)
+	}
+
+	if optInMetricFamilyFilter.Count() > 0 {
+		klog.Infof("metrics which were opted into: %v", optInMetricFamilyFilter.Status())
+	}
+
 	storeBuilder.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter(
 		allowDenyList,
+		optInMetricFamilyFilter,
 	))
 
 	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc(), opts.UseAPIServerCache)

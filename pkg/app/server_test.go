@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package app
 
 import (
 	"bytes"
@@ -28,17 +28,24 @@ import (
 	"testing"
 	"time"
 
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
+	samplev1alpha1 "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
+	samplefake "k8s.io/sample-controller/pkg/generated/clientset/versioned/fake"
 
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -69,7 +76,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithSharding(0, 1)
 	builder.WithContext(ctx)
 	builder.WithNamespaces(options.DefaultNamespaces, "")
-	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc(), false)
+	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
 
 	allowDenyListFilter, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -138,7 +145,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	builder.WithEnabledResources(options.DefaultResources.AsSlice())
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces, "")
-	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc(), false)
+	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
 
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -407,7 +414,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces, "")
 	unshardedBuilder.WithFamilyGeneratorFilter(l)
 	unshardedBuilder.WithAllowLabels(map[string][]string{})
-	unshardedBuilder.WithGenerateStoresFunc(unshardedBuilder.DefaultGenerateStoresFunc(), false)
+	unshardedBuilder.WithGenerateStoresFunc(unshardedBuilder.DefaultGenerateStoresFunc())
 
 	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
 	unshardedHandler.ConfigureSharding(ctx, 0, 1)
@@ -420,7 +427,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces, "")
 	shardedBuilder1.WithFamilyGeneratorFilter(l)
 	shardedBuilder1.WithAllowLabels(map[string][]string{})
-	shardedBuilder1.WithGenerateStoresFunc(shardedBuilder1.DefaultGenerateStoresFunc(), false)
+	shardedBuilder1.WithGenerateStoresFunc(shardedBuilder1.DefaultGenerateStoresFunc())
 
 	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
 	shardedHandler1.ConfigureSharding(ctx, 0, 2)
@@ -433,7 +440,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces, "")
 	shardedBuilder2.WithFamilyGeneratorFilter(l)
 	shardedBuilder2.WithAllowLabels(map[string][]string{})
-	shardedBuilder2.WithGenerateStoresFunc(shardedBuilder2.DefaultGenerateStoresFunc(), false)
+	shardedBuilder2.WithGenerateStoresFunc(shardedBuilder2.DefaultGenerateStoresFunc())
 
 	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
 	shardedHandler2.ConfigureSharding(ctx, 1, 2)
@@ -537,6 +544,121 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		got := strings.TrimSpace(got1Filtered[i])
 		if expected != got {
 			t.Fatalf("\n\nexpected:\n\n%q\n\nbut got:\n\n%q\n\n", expected, got)
+		}
+	}
+}
+
+// TestCustomResourceExtension is a simple smoke test covering the custom resource metrics collection.
+// We use custom resource object samplev1alpha1.Foo in kubernetes/sample-controller as an example.
+func TestCustomResourceExtension(t *testing.T) {
+	kubeClient := fake.NewSimpleClientset()
+	factories := []customresource.RegistryFactory{new(fooFactory)}
+	resources := options.DefaultResources.AsSlice()
+	customResourceClients := make(map[string]interface{}, len(factories))
+	// enable custom resource
+	for _, f := range factories {
+		resources = append(resources, f.Name())
+		customResourceClient, err := f.CreateClient(nil)
+		if err != nil {
+			t.Fatalf("Failed to create customResourceClient for foo: %v", err)
+		}
+		customResourceClients[f.Name()] = customResourceClient
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reg := prometheus.NewRegistry()
+	builder := store.NewBuilder()
+	builder.WithCustomResourceStoreFactories(factories...)
+	builder.WithMetrics(reg)
+	builder.WithEnabledResources(resources)
+	builder.WithKubeClient(kubeClient)
+	builder.WithCustomResourceClients(customResourceClients)
+	builder.WithNamespaces(options.DefaultNamespaces, "")
+	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
+	builder.WithGenerateCustomResourceStoresFunc(builder.DefaultGenerateCustomResourceStoresFunc())
+
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	builder.WithFamilyGeneratorFilter(l)
+	builder.WithAllowLabels(map[string][]string{
+		"kube_foo_labels": {
+			"namespace",
+			"foo",
+			"uid",
+		},
+	})
+
+	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler.ConfigureSharding(ctx, 0, 1)
+
+	// Wait for caches to fill
+	time.Sleep(time.Second)
+
+	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+
+	expected := `# HELP kube_foo_spec_replicas Number of desired replicas for a foo.
+# HELP kube_foo_status_replicas_available The number of available replicas per foo.
+# TYPE kube_foo_spec_replicas gauge
+# TYPE kube_foo_status_replicas_available gauge
+kube_foo_spec_replicas{namespace="default",foo="foo0"} 0
+kube_foo_spec_replicas{namespace="default",foo="foo1"} 1
+kube_foo_spec_replicas{namespace="default",foo="foo2"} 2
+kube_foo_spec_replicas{namespace="default",foo="foo3"} 3
+kube_foo_spec_replicas{namespace="default",foo="foo4"} 4
+kube_foo_spec_replicas{namespace="default",foo="foo5"} 5
+kube_foo_spec_replicas{namespace="default",foo="foo6"} 6
+kube_foo_spec_replicas{namespace="default",foo="foo7"} 7
+kube_foo_spec_replicas{namespace="default",foo="foo8"} 8
+kube_foo_spec_replicas{namespace="default",foo="foo9"} 9
+kube_foo_status_replicas_available{namespace="default",foo="foo0"} 0
+kube_foo_status_replicas_available{namespace="default",foo="foo1"} 1
+kube_foo_status_replicas_available{namespace="default",foo="foo2"} 2
+kube_foo_status_replicas_available{namespace="default",foo="foo3"} 3
+kube_foo_status_replicas_available{namespace="default",foo="foo5"} 5
+kube_foo_status_replicas_available{namespace="default",foo="foo6"} 6
+kube_foo_status_replicas_available{namespace="default",foo="foo7"} 7
+kube_foo_status_replicas_available{namespace="default",foo="foo8"} 8
+kube_foo_status_replicas_available{namespace="default",foo="foo4"} 4
+kube_foo_status_replicas_available{namespace="default",foo="foo9"} 9
+`
+
+	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
+	sort.Strings(expectedSplit)
+
+	gotSplit := strings.Split(strings.TrimSpace(string(body)), "\n")
+
+	gotFiltered := []string{}
+	for _, l := range gotSplit {
+		if strings.Contains(l, "kube_foo_") {
+			gotFiltered = append(gotFiltered, l)
+		}
+	}
+
+	sort.Strings(gotFiltered)
+
+	if len(expectedSplit) != len(gotFiltered) {
+		fmt.Println(len(expectedSplit))
+		fmt.Println(len(gotFiltered))
+		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected, strings.Join(gotFiltered, "\n"))
+	}
+
+	for i := 0; i < len(expectedSplit); i++ {
+		if expectedSplit[i] != gotFiltered[i] {
+			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
 	}
 }
@@ -672,4 +794,117 @@ func pod(client *fake.Clientset, index int) error {
 
 	_, err := client.CoreV1().Pods(metav1.NamespaceDefault).Create(context.TODO(), &pod, metav1.CreateOptions{})
 	return err
+}
+
+func foo(client *samplefake.Clientset, index int) error {
+	i := strconv.Itoa(index)
+	desiredReplicas := int32(index)
+
+	foo := samplev1alpha1.Foo{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "foo" + i,
+			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+			UID:               types.UID("abc-" + i),
+		},
+		Spec: samplev1alpha1.FooSpec{
+			DeploymentName: "foo" + i,
+			Replicas:       &desiredReplicas,
+		},
+		Status: samplev1alpha1.FooStatus{
+			AvailableReplicas: desiredReplicas,
+		},
+	}
+
+	_, err := client.SamplecontrollerV1alpha1().Foos(metav1.NamespaceDefault).Create(context.TODO(), &foo, metav1.CreateOptions{})
+	return err
+}
+
+var (
+	descFooLabelsDefaultLabels = []string{"namespace", "foo"}
+)
+
+type fooFactory struct{}
+
+func (f *fooFactory) Name() string {
+	return "foos"
+}
+
+// CreateClient use fake client set to establish 10 foos.
+func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
+	fooClient := samplefake.NewSimpleClientset()
+	for i := 0; i < 10; i++ {
+		err := foo(fooClient, i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert sample pod %v", err)
+		}
+	}
+	return fooClient, nil
+}
+
+func (f *fooFactory) MetricFamilyGenerators(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_foo_spec_replicas",
+			"Number of desired replicas for a foo.",
+			metric.Gauge,
+			"",
+			wrapFooFunc(func(f *samplev1alpha1.Foo) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(*f.Spec.Replicas),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
+			"kube_foo_status_replicas_available",
+			"The number of available replicas per foo.",
+			metric.Gauge,
+			"",
+			wrapFooFunc(func(f *samplev1alpha1.Foo) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(f.Status.AvailableReplicas),
+						},
+					},
+				}
+			}),
+		),
+	}
+}
+
+func wrapFooFunc(f func(*samplev1alpha1.Foo) *metric.Family) func(interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
+		foo := obj.(*samplev1alpha1.Foo)
+
+		metricFamily := f(foo)
+
+		for _, m := range metricFamily.Metrics {
+			m.LabelKeys = append(descFooLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{foo.Namespace, foo.Name}, m.LabelValues...)
+		}
+
+		return metricFamily
+	}
+}
+
+func (f *fooFactory) ExpectedType() interface{} {
+	return &samplev1alpha1.Foo{}
+}
+
+func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher {
+	client := customResourceClient.(*samplefake.Clientset)
+	return &cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
+			return client.SamplecontrollerV1alpha1().Foos(ns).List(context.Background(), opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
+			return client.SamplecontrollerV1alpha1().Foos(ns).Watch(context.Background(), opts)
+		},
+	}
 }

@@ -57,6 +57,29 @@ var (
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGenerator(
+			"kube_horizontalpodautoscaler_info",
+			"Information about this autoscaler.",
+			metric.Gauge,
+			"",
+			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				labelKeys := []string{"scaletargetref_kind", "scaletargetref_name"}
+				labelValues := []string{a.Spec.ScaleTargetRef.Kind, a.Spec.ScaleTargetRef.Name}
+				if a.Spec.ScaleTargetRef.APIVersion != "" {
+					labelKeys = append([]string{"scaletargetref_api_version"}, labelKeys...)
+					labelValues = append([]string{a.Spec.ScaleTargetRef.APIVersion}, labelValues...)
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			"kube_horizontalpodautoscaler_metadata_generation",
 			"The generation observed by the HorizontalPodAutoscaler controller.",
 			metric.Gauge,

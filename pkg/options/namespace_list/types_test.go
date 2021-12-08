@@ -19,10 +19,12 @@ package namespacelist
 import (
 	"reflect"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestString(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		input    NamespaceList
 		expected string
 	}{
@@ -34,7 +36,7 @@ func TestString(t *testing.T) {
 		{NamespaceList{
 			"*": {
 				"environment": "production",
-				"region": "eu-west-2",
+				"region":      "eu-west-2",
 			},
 		}, "*=[environment=production,region=eu-west-2]"},
 	}
@@ -42,37 +44,85 @@ func TestString(t *testing.T) {
 	for _, test := range tests {
 		actual := test.input.String()
 		if actual != test.expected {
-			t.Errorf("expected: %v, got: %v", test.expected, actual)
+			t.Errorf("expectedList: %v, got: %v", test.expected, actual)
 		}
 	}
 }
 
 func TestSet(t *testing.T) {
-	tests := []struct{
-		input    string
-		expected NamespaceList
+	tests := []struct {
+		desc          string
+		value         string
+		expectedList  NamespaceList
+		expectedError error
 	}{
-		{"project-1,project-2,project-3", NamespaceList{
-			"project-1": {},
-			"project-2": {},
-			"project-3": {},
-		}},
-		{"*=[environment=production,region=eu-west-2]", NamespaceList{
-			"*": {
-				"environment": "production",
-				"region": "eu-west-2",
+		{
+			"namespace list with 3 namespaces and no labels",
+			"project-1,project-2,project-3",
+			NamespaceList{
+				"project-1": {},
+				"project-2": {},
+				"project-3": {},
 			},
-		}},
+			nil},
+		{
+			"namespace list with a wildcard namespace and 2 labels",
+			"*=[environment=production,region=eu-west-2]",
+			NamespaceList{
+				"*": {
+					"environment": "production",
+					"region":      "eu-west-2",
+				},
+			},
+			nil},
+		{
+			"unexpected eof syntax error",
+			"foo-bar=",
+			nil,
+			UnexpectedSyntaxError{"EOF", 8},
+		},
+		{
+			"unexpected eof syntax error",
+			"foo-bar=[",
+			nil,
+			UnexpectedSyntaxError{"EOF", 9},
+		},
+		{
+			"unexpected eof syntax error",
+			"foo-bar=[a=b,c=d",
+			nil,
+			UnexpectedSyntaxError{"EOF", 16},
+		},
+		{
+			"namespace with 2 labels, one with and one without a value",
+			"foo-bar=[foo=,bar=test]", NamespaceList{
+				"foo-bar": {
+					"foo": "",
+					"bar": "test",
+				},
+			},
+			nil,
+		},
 	}
 
 	for _, test := range tests {
 		actual := NamespaceList{}
-		err := actual.Set(test.input)
-		if err != nil {
-			t.Errorf("an unexpected error happened: %v", err)
+		err := actual.Set(test.value)
+
+		if test.expectedError != nil {
+			if errors.Is(err, test.expectedError) {
+				continue
+			}
+			t.Errorf("%v: expected: \"%v\", got: \"%v\"", test.desc, test.expectedError, err)
+			continue
 		}
-		if !reflect.DeepEqual(actual, test.expected) {
-			t.Errorf("expected: %v, got: %v", test.expected, actual)
+		if err != nil {
+			t.Errorf("%v: there was an unexpected expectedError: %v", test.desc, err)
+			continue
+		}
+
+		if !reflect.DeepEqual(actual, test.expectedList) {
+			t.Errorf("%v: expected: %v, got: %v", test.desc, test.expectedList, actual)
 		}
 	}
 }

@@ -46,7 +46,12 @@ func (n *NamespaceList) String() string {
 
 // Set converts a comma-separated string of namespaces and labels into a map.
 func (n *NamespaceList) Set(value string) error {
-	// TODO: implement the receiver function
+	parser := NewParser(value)
+	newNamespaceList, err := parser.Parse()
+	if err != nil {
+		return err
+	}
+	*n = newNamespaceList
 	return nil
 }
 

@@ -2,6 +2,7 @@
 
 | Metric name                       | Metric type | Labels/tags                                                   | Status |
 | --------------------------------  | ----------- | ------------------------------------------------------------- | ------ |
+| kube_horizontalpodautoscaler_info                     | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; <br> `scaletargetref_api_version`=&lt;hpa-target-api-version&gt; <br> `scaletargetref_kind`=&lt;hpa-target-kind&gt; <br> `scaletargetref_name`=&lt;hpa-target-name&gt; | EXPERIMENTAL |
 | kube_horizontalpodautoscaler_annotations              | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | EXPERIMENTAL |
 | kube_horizontalpodautoscaler_labels                   | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | STABLE |
 | kube_horizontalpodautoscaler_metadata_generation      | Gauge       | `horizontalpodautoscaler`=&lt;hpa-name&gt; <br> `namespace`=&lt;hpa-namespace&gt; | STABLE |

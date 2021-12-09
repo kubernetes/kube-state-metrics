@@ -35,6 +35,7 @@ func TestHPAStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_horizontalpodautoscaler_info Information about this autoscaler.
 		# HELP kube_horizontalpodautoscaler_annotations Kubernetes annotations converted to Prometheus labels.
 		# HELP kube_horizontalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
 		# HELP kube_horizontalpodautoscaler_metadata_generation The generation observed by the HorizontalPodAutoscaler controller.
@@ -44,6 +45,7 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_horizontalpodautoscaler_status_condition The condition of this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_current_replicas Current number of replicas of pods managed by this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
+		# TYPE kube_horizontalpodautoscaler_info gauge
 		# TYPE kube_horizontalpodautoscaler_annotations gauge
 		# TYPE kube_horizontalpodautoscaler_labels gauge
 		# TYPE kube_horizontalpodautoscaler_metadata_generation gauge
@@ -183,6 +185,7 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_horizontalpodautoscaler_info{horizontalpodautoscaler="hpa1",namespace="ns1",scaletargetref_api_version="apps/v1",scaletargetref_kind="Deployment",scaletargetref_name="deployment1"} 1
 				kube_horizontalpodautoscaler_annotations{horizontalpodautoscaler="hpa1",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa1",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
@@ -203,6 +206,7 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 			`,
 			MetricNames: []string{
+				"kube_horizontalpodautoscaler_info",
 				"kube_horizontalpodautoscaler_metadata_generation",
 				"kube_horizontalpodautoscaler_spec_max_replicas",
 				"kube_horizontalpodautoscaler_spec_min_replicas",
@@ -278,9 +282,8 @@ func TestHPAStore(t *testing.T) {
 						},
 					},
 					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
-						APIVersion: "apps/v1",
-						Kind:       "Deployment",
-						Name:       "deployment1",
+						Kind: "Deployment",
+						Name: "deployment1",
 					},
 				},
 				Status: autoscaling.HorizontalPodAutoscalerStatus{
@@ -341,6 +344,7 @@ func TestHPAStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
+				kube_horizontalpodautoscaler_info{horizontalpodautoscaler="hpa2",namespace="ns1",scaletargetref_kind="Deployment",scaletargetref_name="deployment1"} 1
 				kube_horizontalpodautoscaler_annotations{annotation_app_k8s_io_owner="@foo",horizontalpodautoscaler="hpa2",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa2",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
@@ -357,6 +361,7 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 			`,
 			MetricNames: []string{
+				"kube_horizontalpodautoscaler_info",
 				"kube_horizontalpodautoscaler_metadata_generation",
 				"kube_horizontalpodautoscaler_spec_max_replicas",
 				"kube_horizontalpodautoscaler_spec_min_replicas",

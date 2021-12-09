@@ -1,3 +1,15 @@
+## v2.3.0 / 2021-12-09
+
+* [FEATURE]     Add a `--namespace-denylist` command line flag to exclude metrics from certain namespaces #1596 #1595 @mallow111
+* [FEATURE]     Add `kube_*_labels` and `kube_*_annotations` metrics for Pod Disruption Budgets #1623 @arajkumar
+* [FEATURE]     Add a Kustomization file for deploying KSM in authosharding mode #1603 @karancode
+* [FEATURE]     Expose a metric for the number of ports in endpoint objects #1571 @bavarianbidi
+* [FEATURE]     Add a command line flag for opt-in metrics #1643 @Serializator
+* [FEATURE]     Add `kube_horizontalpodautoscaler_info` metric #1648 @Serializator
+* [ENHANCEMENT] Update Go to 1.17.4 #1649 @fpetkovski
+* [ENHANCEMENT] Update Kubernetes to 1.23 #1649 @fpetkovski
+* [BUGFIX]      Report the correct architecture for arm64 images #1629 @Serializator
+
 ## v2.2.4 / 2021-11-08
 
 * [BUGFIX] Fix BuilderInterface and BuildStoresFunc to allow using KSM as a library #1618 @ahmed-mez

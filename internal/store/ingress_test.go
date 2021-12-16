@@ -28,6 +28,7 @@ import (
 func TestIngressStore(t *testing.T) {
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
+	testIngressClass := "test"
 
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
@@ -70,7 +71,7 @@ func TestIngressStore(t *testing.T) {
 				# TYPE kube_ingress_annotations gauge
 				# TYPE kube_ingress_labels gauge
 				# TYPE kube_ingress_metadata_resource_version gauge
-				kube_ingress_info{namespace="ns1",ingress="ingress1"} 1
+				kube_ingress_info{namespace="ns1",ingress="ingress1",ingressclass="_default"} 1
 				kube_ingress_metadata_resource_version{namespace="ns1",ingress="ingress1"} 0
 				kube_ingress_annotations{annotation_app_k8s_io_owner="@foo",namespace="ns1",ingress="ingress1"} 1
 				kube_ingress_labels{namespace="ns1",ingress="ingress1"} 1
@@ -92,7 +93,7 @@ func TestIngressStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_ingress_info{namespace="ns2",ingress="ingress2"} 1
+				kube_ingress_info{namespace="ns2",ingress="ingress2",ingressclass="_default"} 1
 				kube_ingress_created{namespace="ns2",ingress="ingress2"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns2",ingress="ingress2"} 123456
 				kube_ingress_labels{namespace="ns2",ingress="ingress2"} 1
@@ -110,7 +111,7 @@ func TestIngressStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_ingress_info{namespace="ns3",ingress="ingress3"} 1
+				kube_ingress_info{namespace="ns3",ingress="ingress3",ingressclass="_default"} 1
 				kube_ingress_created{namespace="ns3",ingress="ingress3"} 1.501569018e+09
 				kube_ingress_labels{namespace="ns3",ingress="ingress3"} 1
 `,
@@ -154,7 +155,7 @@ func TestIngressStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_ingress_info{namespace="ns4",ingress="ingress4"} 1
+				kube_ingress_info{namespace="ns4",ingress="ingress4",ingressclass="_default"} 1
 				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
 				kube_ingress_labels{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
@@ -180,12 +181,52 @@ func TestIngressStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_ingress_info{namespace="ns5",ingress="ingress5"} 1
+				kube_ingress_info{namespace="ns5",ingress="ingress5",ingressclass="_default"} 1
 				kube_ingress_created{namespace="ns5",ingress="ingress5"} 1.501569018e+09
 				kube_ingress_labels{namespace="ns5",ingress="ingress5"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost1",secret="somesecret"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost2",secret="somesecret"} 1
 `,
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+		},
+		{
+			Obj: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress6",
+					Namespace:         "ns6",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "123456",
+				},
+				Spec: networkingv1.IngressSpec{
+					IngressClassName: &testIngressClass,
+				},
+			},
+			Want: metadata + `
+				kube_ingress_info{namespace="ns6",ingress="ingress6",ingressclass="test"} 1
+				kube_ingress_created{namespace="ns6",ingress="ingress6"} 1.501569018e+09
+				kube_ingress_metadata_resource_version{namespace="ns6",ingress="ingress6"} 123456
+				kube_ingress_labels{namespace="ns6",ingress="ingress6"} 1
+				`,
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+		},
+		{
+			Obj: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress7",
+					Namespace:         "ns7",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "123456",
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "test",
+					},
+				},
+			},
+			Want: metadata + `
+				kube_ingress_info{namespace="ns7",ingress="ingress7",ingressclass="test"} 1
+				kube_ingress_created{namespace="ns7",ingress="ingress7"} 1.501569018e+09
+				kube_ingress_metadata_resource_version{namespace="ns7",ingress="ingress7"} 123456
+				kube_ingress_labels{namespace="ns7",ingress="ingress7"} 1
+				`,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},
 	}

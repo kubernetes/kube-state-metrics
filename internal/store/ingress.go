@@ -46,11 +46,21 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"Information about ingress.",
 			metric.Gauge,
 			"",
-			wrapIngressFunc(func(s *networkingv1.Ingress) *metric.Family {
+			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				ingressClassName := "_default"
+				if i.Spec.IngressClassName != nil {
+					ingressClassName = *i.Spec.IngressClassName
+				}
+				if className, ok := i.Annotations["kubernetes.io/ingress.class"]; ok {
+					ingressClassName = className
+				}
+
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: 1,
+							LabelKeys:   []string{"ingressclass"},
+							LabelValues: []string{ingressClassName},
+							Value:       1,
 						},
 					}}
 			}),

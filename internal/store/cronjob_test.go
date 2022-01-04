@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -106,7 +106,7 @@ func TestCronJobStore(t *testing.T) {
 			AllowAnnotationsList: []string{
 				"app.k8s.io/owner",
 			},
-			Obj: &batchv1beta1.CronJob{
+			Obj: &batchv1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "ActiveRunningCronJob1",
 					Namespace:       "ns1",
@@ -120,11 +120,11 @@ func TestCronJobStore(t *testing.T) {
 						"app.k8s.io/owner": "@foo",
 					},
 				},
-				Status: batchv1beta1.CronJobStatus{
+				Status: batchv1.CronJobStatus{
 					Active:           []v1.ObjectReference{{Name: "FakeJob1"}, {Name: "FakeJob2"}},
 					LastScheduleTime: &metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 				},
-				Spec: batchv1beta1.CronJobSpec{
+				Spec: batchv1.CronJobSpec{
 					StartingDeadlineSeconds:    &StartingDeadlineSeconds300,
 					ConcurrencyPolicy:          "Forbid",
 					Suspend:                    &SuspendFalse,
@@ -186,7 +186,7 @@ func TestCronJobStore(t *testing.T) {
 			},
 		},
 		{
-			Obj: &batchv1beta1.CronJob{
+			Obj: &batchv1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "SuspendedCronJob1",
 					Namespace:       "ns1",
@@ -196,11 +196,11 @@ func TestCronJobStore(t *testing.T) {
 						"app": "example-suspended-1",
 					},
 				},
-				Status: batchv1beta1.CronJobStatus{
+				Status: batchv1.CronJobStatus{
 					Active:           []v1.ObjectReference{},
 					LastScheduleTime: &metav1.Time{Time: SuspendedCronJob1LastScheduleTime},
 				},
-				Spec: batchv1beta1.CronJobSpec{
+				Spec: batchv1.CronJobSpec{
 					StartingDeadlineSeconds:    &StartingDeadlineSeconds300,
 					ConcurrencyPolicy:          "Forbid",
 					Suspend:                    &SuspendTrue,
@@ -243,7 +243,7 @@ func TestCronJobStore(t *testing.T) {
 			MetricNames: []string{"kube_cronjob_spec_starting_deadline_seconds", "kube_cronjob_status_active", "kube_cronjob_metadata_resource_version", "kube_cronjob_spec_suspend", "kube_cronjob_info", "kube_cronjob_created", "kube_cronjob_labels", "kube_cronjob_status_last_schedule_time", "kube_cronjob_spec_successful_job_history_limit", "kube_cronjob_spec_failed_job_history_limit"},
 		},
 		{
-			Obj: &batchv1beta1.CronJob{
+			Obj: &batchv1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "ActiveCronJob1NoLastScheduled",
 					CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
@@ -254,11 +254,11 @@ func TestCronJobStore(t *testing.T) {
 						"app": "example-active-no-last-scheduled-1",
 					},
 				},
-				Status: batchv1beta1.CronJobStatus{
+				Status: batchv1.CronJobStatus{
 					Active:           []v1.ObjectReference{},
 					LastScheduleTime: nil,
 				},
-				Spec: batchv1beta1.CronJobSpec{
+				Spec: batchv1.CronJobSpec{
 					StartingDeadlineSeconds:    &StartingDeadlineSeconds300,
 					ConcurrencyPolicy:          "Forbid",
 					Suspend:                    &SuspendFalse,

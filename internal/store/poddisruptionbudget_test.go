@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -51,14 +51,14 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	`
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &v1beta1.PodDisruptionBudget{
+			Obj: &policyv1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "pdb1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 					Namespace:         "ns1",
 					Generation:        21,
 				},
-				Status: v1beta1.PodDisruptionBudgetStatus{
+				Status: policyv1.PodDisruptionBudgetStatus{
 					CurrentHealthy:     12,
 					DesiredHealthy:     10,
 					DisruptionsAllowed: 2,
@@ -78,13 +78,13 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 			`,
 		},
 		{
-			Obj: &v1beta1.PodDisruptionBudget{
+			Obj: &policyv1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "pdb2",
 					Namespace:  "ns2",
 					Generation: 14,
 				},
-				Status: v1beta1.PodDisruptionBudgetStatus{
+				Status: policyv1.PodDisruptionBudgetStatus{
 					CurrentHealthy:     8,
 					DesiredHealthy:     9,
 					DisruptionsAllowed: 0,
@@ -109,7 +109,7 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 			AllowLabelsList: []string{
 				"app",
 			},
-			Obj: &v1beta1.PodDisruptionBudget{
+			Obj: &policyv1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pdb_with_allowed_labels_and_annotations",
 					Namespace: "ns",

@@ -28,6 +28,7 @@ import (
 
 	internalstore "k8s.io/kube-state-metrics/v2/internal/store"
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -81,10 +82,25 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 	b.internal.WithVPAClient(c)
 }
 
+// WithCustomResourceClients sets the customResourceClients property of a Builder.
+func (b *Builder) WithCustomResourceClients(cs map[string]interface{}) {
+	b.internal.WithCustomResourceClients(cs)
+}
+
+// WithUsingAPIServerCache configures whether using APIServer cache or not.
+func (b *Builder) WithUsingAPIServerCache(u bool) {
+	b.internal.WithUsingAPIServerCache(u)
+}
+
 // WithFamilyGeneratorFilter configures the family generator filter which decides which
 // metrics are to be exposed by the store build by the Builder.
 func (b *Builder) WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter) {
 	b.internal.WithFamilyGeneratorFilter(l)
+}
+
+// WithAllowAnnotations configures which annotations can be returned for metrics
+func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
+	b.internal.WithAllowAnnotations(annotations)
 }
 
 // WithAllowLabels configures which labels can be returned for metrics
@@ -94,12 +110,27 @@ func (b *Builder) WithAllowLabels(l map[string][]string) {
 
 // WithGenerateStoresFunc configures a custom generate store function
 func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
-	b.internal.WithGenerateStoresFunc(f, false)
+	b.internal.WithGenerateStoresFunc(f)
+}
+
+// WithGenerateCustomResourceStoresFunc configures a custom generate custom resource store function
+func (b *Builder) WithGenerateCustomResourceStoresFunc(f ksmtypes.BuildCustomResourceStoresFunc) {
+	b.internal.WithGenerateCustomResourceStoresFunc(f)
 }
 
 // DefaultGenerateStoresFunc returns default buildStore function
 func (b *Builder) DefaultGenerateStoresFunc() ksmtypes.BuildStoresFunc {
 	return b.internal.DefaultGenerateStoresFunc()
+}
+
+// DefaultGenerateCustomResourceStoresFunc returns default buildStores function
+func (b *Builder) DefaultGenerateCustomResourceStoresFunc() ksmtypes.BuildCustomResourceStoresFunc {
+	return b.internal.DefaultGenerateCustomResourceStoresFunc()
+}
+
+// WithCustomResourceStoreFactories returns configures a custom resource stores factory
+func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory) {
+	b.internal.WithCustomResourceStoreFactories(fs...)
 }
 
 // Build initializes and registers all enabled stores.

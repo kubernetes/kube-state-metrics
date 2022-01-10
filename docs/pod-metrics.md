@@ -72,5 +72,5 @@ groups:
     labels:
       severity: page
     annotations:
-      summary: Pod {{labels.namespace}}/{{labels.pod}} block in Terminating state.
+      summary: Pod {{$labels.namespace}}/{{$labels.pod}} block in Terminating state.
 ```

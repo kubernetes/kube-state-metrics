@@ -76,7 +76,34 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithCustomResourceStoreFactories(factories...)
 
-	ksmMetricsRegistry := prometheus.NewRegistry()
+	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
+	if err != nil {
+		return err
+	}
+
+	err = allowDenyList.Parse()
+	if err != nil {
+		return fmt.Errorf("error initializing the allowdeny list: %v", err)
+	}
+
+	klog.Infof("Metric allow-denylisting: %v", allowDenyList.Status())
+
+	optInMetricFamilyFilter, err := optin.NewMetricFamilyFilter(opts.MetricOptInList)
+	if err != nil {
+		return fmt.Errorf("error initializing the opt-in metric list: %v", err)
+	}
+
+	if optInMetricFamilyFilter.Count() > 0 {
+		klog.Infof("Metrics which were opted into: %v", optInMetricFamilyFilter.Status())
+	}
+
+	metricsFilter := generator.NewCompositeFamilyGeneratorFilter(
+		allowDenyList,
+		optInMetricFamilyFilter,
+	)
+	storeBuilder.WithFamilyGeneratorFilter(metricsFilter)
+
+	ksmMetricsRegistry := NewFilteredGatherer(prometheus.NewRegistry(), metricsFilter)
 	ksmMetricsRegistry.MustRegister(version.NewCollector("kube_state_metrics"))
 	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -86,6 +113,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 			ConstLabels: prometheus.Labels{"handler": "metrics"},
 		}, []string{"method"},
 	)
+
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
 	var resources []string
@@ -108,32 +136,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	namespaces := opts.Namespaces.GetNamespaces()
 	nsFieldSelector := namespaces.GetExcludeNSFieldSelector(opts.NamespacesDenylist)
 	storeBuilder.WithNamespaces(namespaces, nsFieldSelector)
-
-	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
-	if err != nil {
-		return err
-	}
-
-	err = allowDenyList.Parse()
-	if err != nil {
-		return fmt.Errorf("error initializing the allowdeny list: %v", err)
-	}
-
-	klog.Infof("Metric allow-denylisting: %v", allowDenyList.Status())
-
-	optInMetricFamilyFilter, err := optin.NewMetricFamilyFilter(opts.MetricOptInList)
-	if err != nil {
-		return fmt.Errorf("error initializing the opt-in metric list: %v", err)
-	}
-
-	if optInMetricFamilyFilter.Count() > 0 {
-		klog.Infof("Metrics which were opted into: %v", optInMetricFamilyFilter.Status())
-	}
-
-	storeBuilder.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter(
-		allowDenyList,
-		optInMetricFamilyFilter,
-	))
 
 	storeBuilder.WithUsingAPIServerCache(opts.UseAPIServerCache)
 	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc())

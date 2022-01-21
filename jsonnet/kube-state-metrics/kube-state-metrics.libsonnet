@@ -192,6 +192,7 @@
           spec: {
             containers: [c],
             serviceAccountName: ksm.serviceAccount.metadata.name,
+            automountServiceAccountToken: true,
             nodeSelector: { 'kubernetes.io/os': 'linux' },
           },
         },
@@ -207,6 +208,7 @@
         namespace: ksm.namespace,
         labels: ksm.commonLabels + ksm.extraRecommendedLabels,
       },
+      automountServiceAccountToken: false,
     },
 
   service:
@@ -302,6 +304,7 @@
             spec: {
               containers: [c],
               serviceAccountName: ksm.serviceAccount.metadata.name,
+              automountServiceAccountToken: true,
               nodeSelector: { 'kubernetes.io/os': 'linux' },
             },
           },

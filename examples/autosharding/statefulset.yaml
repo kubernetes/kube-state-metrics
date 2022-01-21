@@ -20,6 +20,7 @@ spec:
         app.kubernetes.io/name: kube-state-metrics
         app.kubernetes.io/version: 2.3.0
     spec:
+      automountServiceAccountToken: true
       containers:
       - args:
         - --pod=$(POD_NAME)

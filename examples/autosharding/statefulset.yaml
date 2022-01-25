@@ -54,6 +54,7 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 5
         securityContext:
+          allowPrivilegeEscalation: false
           runAsUser: 65534
       nodeSelector:
         kubernetes.io/os: linux

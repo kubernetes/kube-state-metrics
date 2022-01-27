@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/pkg/errors"
 )
 
@@ -29,15 +31,15 @@ func TestString(t *testing.T) {
 		expected string
 	}{
 		{NamespaceList{
-			"project-1": {},
-			"project-2": {},
-			"project-3": {},
+			"project-1": labels.Everything(),
+			"project-2": labels.Everything(),
+			"project-3": labels.Everything(),
 		}, "project-1,project-2,project-3"},
 		{NamespaceList{
-			"*": {
+			"*": labels.SelectorFromSet(labels.Set{
 				"environment": "production",
 				"region":      "eu-west-2",
-			},
+			}),
 		}, "*=[environment=production,region=eu-west-2]"},
 	}
 
@@ -60,19 +62,19 @@ func TestSet(t *testing.T) {
 			"namespace list with 3 namespaces and no labels",
 			"project-1,project-2,project-3",
 			NamespaceList{
-				"project-1": {},
-				"project-2": {},
-				"project-3": {},
+				"project-1": labels.Everything(),
+				"project-2": labels.Everything(),
+				"project-3": labels.Everything(),
 			},
 			nil},
 		{
 			"namespace list with a wildcard namespace and 2 labels",
 			"*=[environment=production,region=eu-west-2]",
 			NamespaceList{
-				"*": {
+				"*": labels.SelectorFromSet(labels.Set{
 					"environment": "production",
 					"region":      "eu-west-2",
-				},
+				}),
 			},
 			nil},
 		{
@@ -96,10 +98,10 @@ func TestSet(t *testing.T) {
 		{
 			"namespace with 2 labels, one with and one without a value",
 			"foo-bar=[foo=,bar=test]", NamespaceList{
-				"foo-bar": {
+				"foo-bar": labels.SelectorFromSet(labels.Set{
 					"foo": "",
 					"bar": "test",
-				},
+				}),
 			},
 			nil,
 		},

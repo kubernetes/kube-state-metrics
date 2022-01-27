@@ -20,24 +20,21 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // NamespaceList represents a list of namespaces by name and labels.
-type NamespaceList map[string]map[string]string
+type NamespaceList map[string]labels.Selector
 
 // String returns the map of namespaces and labels as a string
 func (n *NamespaceList) String() string {
 	namespaces := make([]string, 0, len(*n))
-	for namespace, labels := range *n {
-		if len(labels) == 0 {
+	for namespace, selector := range *n {
+		if selector.Empty() {
 			namespaces = append(namespaces, namespace)
 		} else {
-			concatenatedLabelValues := make([]string, 0, len(labels))
-			for label, value := range labels {
-				concatenatedLabelValues = append(concatenatedLabelValues, fmt.Sprintf("%v=%v", label, value))
-			}
-			sort.Strings(concatenatedLabelValues)
-			namespaces = append(namespaces, fmt.Sprintf("%v=[%v]", namespace, strings.Join(concatenatedLabelValues, ",")))
+			namespaces = append(namespaces, fmt.Sprintf("%v=[%v]", namespace, selector))
 		}
 	}
 	sort.Strings(namespaces)

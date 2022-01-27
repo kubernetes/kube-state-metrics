@@ -163,7 +163,11 @@
         { name: 'http-metrics', containerPort: 8080 },
         { name: 'telemetry', containerPort: 8081 },
       ],
-      securityContext: { runAsUser: 65534, allowPrivilegeEscalation: false },
+      securityContext: { 
+        runAsUser: 65534, 
+        allowPrivilegeEscalation: false,        
+        readOnlyRootFilesystem: true,
+      },
       livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 8080,
         path: '/healthz',

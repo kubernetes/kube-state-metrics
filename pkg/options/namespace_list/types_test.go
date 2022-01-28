@@ -105,6 +105,15 @@ func TestSet(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"namespace selector with spaces in between",
+			"project-1, project-2, project-3", NamespaceList{
+				"project-1": labels.Everything(),
+				"project-2": labels.Everything(),
+				"project-3": labels.Everything(),
+			},
+			nil,
+		},
 	}
 
 	for _, test := range tests {

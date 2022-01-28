@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -56,6 +57,11 @@ func (parser *Parser) Parse() (map[string]labels.Selector, error) {
 				selectors[namespace.String()] = labels.Everything()
 			}
 			close()
+			return nil
+		}
+
+		if unicode.IsSpace(r) {
+			// ignore whitespace
 			return nil
 		}
 

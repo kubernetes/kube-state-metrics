@@ -167,6 +167,7 @@
         runAsUser: 65534, 
         allowPrivilegeEscalation: false,        
         readOnlyRootFilesystem: true,
+        capabilities: { drop: ['ALL'] },
       },
       livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 8080,

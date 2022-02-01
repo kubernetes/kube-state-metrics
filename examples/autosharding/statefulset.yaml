@@ -55,6 +55,9 @@ spec:
           timeoutSeconds: 5
         securityContext:
           allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
           readOnlyRootFilesystem: true
           runAsUser: 65534
       nodeSelector:

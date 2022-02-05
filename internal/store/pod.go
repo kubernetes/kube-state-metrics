@@ -994,6 +994,7 @@ func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerato
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			allowLabelsList := filterOutFromSlice(allowLabelsList, allowMetricLabelsList["pods"])
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 			m := metric.Metric{
 				LabelKeys:   labelKeys,
@@ -1430,7 +1431,11 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Famil
 		metricFamily := f(pod)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
+			mertricLabelKeys, metricLabelValues := createPrometheusLabelKeysValues("label", pod.Labels, allowMetricLabelsList["pods"])
+			m.LabelKeys, m.LabelValues = mergeKeyValues(
+				descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)},
+				mertricLabelKeys, metricLabelValues,
+				m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

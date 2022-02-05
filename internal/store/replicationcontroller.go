@@ -209,8 +209,14 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Fam
 		metricFamily := f(replicationController)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descReplicationControllerLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{replicationController.Namespace, replicationController.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descReplicationControllerLabelsDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descReplicationControllerLabelsDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descReplicationControllerLabelsDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, replicationController.Namespace, replicationController.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

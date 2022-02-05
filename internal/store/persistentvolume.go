@@ -266,8 +266,14 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(
 		metricFamily := f(persistentVolume)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descPersistentVolumeLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{persistentVolume.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descPersistentVolumeLabelsDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descPersistentVolumeLabelsDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descPersistentVolumeLabelsDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, persistentVolume.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

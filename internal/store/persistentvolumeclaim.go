@@ -210,8 +210,14 @@ func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Fam
 		metricFamily := f(persistentVolumeClaim)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descPersistentVolumeClaimLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{persistentVolumeClaim.Namespace, persistentVolumeClaim.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descPersistentVolumeClaimLabelsDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descPersistentVolumeClaimLabelsDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descPersistentVolumeClaimLabelsDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, persistentVolumeClaim.Namespace, persistentVolumeClaim.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

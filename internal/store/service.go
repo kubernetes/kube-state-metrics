@@ -180,8 +180,14 @@ func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.F
 		metricFamily := f(svc)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descServiceLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{svc.Namespace, svc.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descServiceLabelsDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descServiceLabelsDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descServiceLabelsDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, svc.Namespace, svc.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

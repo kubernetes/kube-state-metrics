@@ -262,8 +262,14 @@ func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(interface{
 		metricFamily := f(statefulSet)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descStatefulSetLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{statefulSet.Namespace, statefulSet.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descStatefulSetLabelsDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descStatefulSetLabelsDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descStatefulSetLabelsDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, statefulSet.Namespace, statefulSet.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

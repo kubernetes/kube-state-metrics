@@ -285,8 +285,14 @@ func wrapCronJobFunc(f func(*batchv1.CronJob) *metric.Family) func(interface{}) 
 		metricFamily := f(cronJob)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descCronJobLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{cronJob.Namespace, cronJob.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descCronJobLabelsDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descCronJobLabelsDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descCronJobLabelsDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, cronJob.Namespace, cronJob.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

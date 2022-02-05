@@ -245,8 +245,14 @@ func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(interface{})
 		metricFamily := f(replicaSet)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descReplicaSetLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{replicaSet.Namespace, replicaSet.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descReplicaSetLabelsDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descReplicaSetLabelsDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descReplicaSetLabelsDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, replicaSet.Namespace, replicaSet.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

@@ -99,8 +99,14 @@ func wrapValidatingWebhookConfigurationFunc(f func(*admissionregistrationv1.Vali
 		metricFamily := f(mutatingWebhookConfiguration)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descValidatingWebhookConfigurationDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{mutatingWebhookConfiguration.Namespace, mutatingWebhookConfiguration.Name}, m.LabelValues...)
+			commonLabelKeys := make([]string, 0, len(descValidatingWebhookConfigurationDefaultLabels)+len(m.LabelKeys))
+			commonLabelValues := make([]string, 0, len(descValidatingWebhookConfigurationDefaultLabels)+len(m.LabelValues))
+
+			commonLabelKeys = append(commonLabelKeys, descValidatingWebhookConfigurationDefaultLabels...)
+			commonLabelValues = append(commonLabelValues, mutatingWebhookConfiguration.Namespace, mutatingWebhookConfiguration.Name)
+
+			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
+			m.LabelValues = append(commonLabelValues, m.LabelValues...)
 		}
 
 		return metricFamily

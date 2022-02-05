@@ -151,6 +151,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
 	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
+	storeBuilder.WithAllowMetricLabels(opts.MetricLabelsAllowList)
 
 	ksmMetricsRegistry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),

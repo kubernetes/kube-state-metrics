@@ -53,6 +53,7 @@ import (
 // Make sure the internal Builder implements the public BuilderInterface.
 // New Builder methods should be added to the public BuilderInterface.
 var _ ksmtypes.BuilderInterface = &Builder{}
+var allowMetricLabelsList = map[string][]string{}
 
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
@@ -73,6 +74,7 @@ type Builder struct {
 	buildCustomResourceStoresFunc ksmtypes.BuildCustomResourceStoresFunc
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
+	allowMetricLabelsList         map[string][]string
 	useAPIServerCache             bool
 }
 
@@ -202,6 +204,13 @@ func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
 func (b *Builder) WithAllowLabels(labels map[string][]string) {
 	if len(labels) > 0 {
 		b.allowLabelsList = labels
+	}
+}
+
+// WithAllowMetricLabels configures which labels can be returned for each metric
+func (b *Builder) WithAllowMetricLabels(labels map[string][]string) {
+	if len(labels) > 0 {
+		allowMetricLabelsList = labels
 	}
 }
 

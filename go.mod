@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.7.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/tools v0.1.8
+	golang.org/x/perf v0.0.0-20211012211434-03971e389cd3
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.9.2

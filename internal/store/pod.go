@@ -1360,7 +1360,7 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createPodNodeSelectorFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewOptInFamilyGenerator(
 		"kube_pod_nodeselector",
 		"Describes the Pod nodeSelectors.",
 		metric.Gauge,

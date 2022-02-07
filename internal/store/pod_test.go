@@ -1829,12 +1829,12 @@ func TestPodStore(t *testing.T) {
 			},
 			AllowLabelsList: []string{options.LabelWildcard},
 			Want: `
-				# HELP kube_pod_nodeselector Describes the Pod nodeSelectors.
-				# TYPE kube_pod_nodeselector gauge
-				kube_pod_nodeselector{nodeselector_a="b",namespace="ns1",pod="pod1",uid="uid1"} 1
+				# HELP kube_pod_nodeselectors Describes the Pod nodeSelectors.
+				# TYPE kube_pod_nodeselectors gauge
+				kube_pod_nodeselectors{nodeselector_a="b",namespace="ns1",pod="pod1",uid="uid1"} 1
 		`,
 			MetricNames: []string{
-				"kube_pod_nodeselector",
+				"kube_pod_nodeselectors",
 			},
 		},
 		{
@@ -1853,9 +1853,9 @@ func TestPodStore(t *testing.T) {
 			},
 			AllowLabelsList: []string{options.LabelWildcard},
 			Want: `
-				# HELP kube_pod_nodeselector Describes the Pod nodeSelectors.
-				# TYPE kube_pod_nodeselector gauge
-				kube_pod_nodeselector{nodeselector_kubernetes_io_os="linux",nodeselector_cloud_google_com_gke_accelerator="nvidia-tesla-t4",namespace="ns1",pod="pod2",uid="uid6"} 1
+				# HELP kube_pod_nodeselectors Describes the Pod nodeSelectors.
+				# TYPE kube_pod_nodeselectors gauge
+				kube_pod_nodeselectors{nodeselector_kubernetes_io_os="linux",nodeselector_cloud_google_com_gke_accelerator="nvidia-tesla-t4",namespace="ns1",pod="pod2",uid="uid6"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_nodeselector",

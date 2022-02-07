@@ -82,7 +82,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
-		createPodNodeSelectorFamilyGenerator(),
+		createPodNodeSelectorsFamilyGenerator(),
 	}
 }
 
@@ -1359,9 +1359,9 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-func createPodNodeSelectorFamilyGenerator() generator.FamilyGenerator {
+func createPodNodeSelectorsFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewOptInFamilyGenerator(
-		"kube_pod_nodeselector",
+		"kube_pod_nodeselectors",
 		"Describes the Pod nodeSelectors.",
 		metric.Gauge,
 		"",

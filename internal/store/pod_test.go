@@ -1823,8 +1823,6 @@ func TestPodStore(t *testing.T) {
 				},
 				Spec: v1.PodSpec{
 					NodeSelector: map[string]string{
-						// "kubernetes.io/os":                 "linux",
-						// "cloud.google.com/gke-accelerator": "nvidia-tesla-t4",
 						"a": "b",
 					},
 				},

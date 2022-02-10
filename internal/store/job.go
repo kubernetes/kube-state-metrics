@@ -387,14 +387,7 @@ func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.
 		metricFamily := f(job)
 
 		for _, m := range metricFamily.Metrics {
-			commonLabelKeys := make([]string, 0, len(descJobLabelsDefaultLabels)+len(m.LabelKeys))
-			commonLabelValues := make([]string, 0, len(descJobLabelsDefaultLabels)+len(m.LabelValues))
-
-			commonLabelKeys = append(commonLabelKeys, descJobLabelsDefaultLabels...)
-			commonLabelValues = append(commonLabelValues, job.Namespace, job.Name)
-
-			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
-			m.LabelValues = append(commonLabelValues, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descJobLabelsDefaultLabels, []string{job.Namespace, job.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

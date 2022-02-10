@@ -119,14 +119,7 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(interface{})
 		metricFamily := f(limitRange)
 
 		for _, m := range metricFamily.Metrics {
-			commonLabelKeys := make([]string, 0, len(descLimitRangeLabelsDefaultLabels)+len(m.LabelKeys))
-			commonLabelValues := make([]string, 0, len(descLimitRangeLabelsDefaultLabels)+len(m.LabelValues))
-
-			commonLabelKeys = append(commonLabelKeys, descLimitRangeLabelsDefaultLabels...)
-			commonLabelValues = append(commonLabelValues, limitRange.Namespace, limitRange.Name)
-
-			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
-			m.LabelValues = append(commonLabelValues, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descLimitRangeLabelsDefaultLabels, []string{limitRange.Namespace, limitRange.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

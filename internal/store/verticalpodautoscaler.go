@@ -288,14 +288,7 @@ func wrapVPAFunc(f func(*autoscaling.VerticalPodAutoscaler) *metric.Family) func
 		}
 
 		for _, m := range metricFamily.Metrics {
-			commonLabelKeys := make([]string, 0, len(descVerticalPodAutoscalerLabelsDefaultLabels)+len(m.LabelKeys))
-			commonLabelValues := make([]string, 0, len(descVerticalPodAutoscalerLabelsDefaultLabels)+len(m.LabelValues))
-
-			commonLabelKeys = append(commonLabelKeys, descVerticalPodAutoscalerLabelsDefaultLabels...)
-			commonLabelValues = append(commonLabelValues, vpa.Namespace, vpa.Name, targetRef.APIVersion, targetRef.Kind, targetRef.Name)
-
-			m.LabelKeys = append(commonLabelKeys, m.LabelKeys...)
-			m.LabelValues = append(commonLabelValues, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descVerticalPodAutoscalerLabelsDefaultLabels, []string{vpa.Namespace, vpa.Name, targetRef.APIVersion, targetRef.Kind, targetRef.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

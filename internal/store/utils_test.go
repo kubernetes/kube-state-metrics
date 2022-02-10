@@ -276,8 +276,8 @@ func TestMergeKeyValues(t *testing.T) {
 		{
 			name: "singlePair",
 			keyValuePairSlices: [][]string{
-				[]string{"keyA", "keyB", "keyC"},
-				[]string{"valueA", "valueB", "valueC"},
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
 			},
 			expectKeys:   []string{"keyA", "keyB", "keyC"},
 			expectValues: []string{"valueA", "valueB", "valueC"},
@@ -285,10 +285,10 @@ func TestMergeKeyValues(t *testing.T) {
 		{
 			name: "evenPair",
 			keyValuePairSlices: [][]string{
-				[]string{"keyA", "keyB", "keyC"},
-				[]string{"valueA", "valueB", "valueC"},
-				[]string{"keyX", "keyY", "keyZ"},
-				[]string{"valueX", "valueY", "valueZ"},
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+				{"keyX", "keyY", "keyZ"},
+				{"valueX", "valueY", "valueZ"},
 			},
 			expectKeys:   []string{"keyA", "keyB", "keyC", "keyX", "keyY", "keyZ"},
 			expectValues: []string{"valueA", "valueB", "valueC", "valueX", "valueY", "valueZ"},
@@ -296,12 +296,12 @@ func TestMergeKeyValues(t *testing.T) {
 		{
 			name: "oddPair",
 			keyValuePairSlices: [][]string{
-				[]string{"keyA", "keyB", "keyC"},
-				[]string{"valueA", "valueB", "valueC"},
-				[]string{"keyX", "keyY", "keyZ"},
-				[]string{"valueX", "valueY", "valueZ"},
-				[]string{"keyM", "keyN", "keyP"},
-				[]string{"valueM", "valueN", "valueP"},
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+				{"keyX", "keyY", "keyZ"},
+				{"valueX", "valueY", "valueZ"},
+				{"keyM", "keyN", "keyP"},
+				{"valueM", "valueN", "valueP"},
 			},
 			expectKeys:   []string{"keyA", "keyB", "keyC", "keyX", "keyY", "keyZ", "keyM", "keyN", "keyP"},
 			expectValues: []string{"valueA", "valueB", "valueC", "valueX", "valueY", "valueZ", "valueM", "valueN", "valueP"},

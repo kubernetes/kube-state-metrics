@@ -194,8 +194,8 @@ func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]strin
 }
 
 // mergeKeyValues merges label keys and values slice pairs into a single slice pair.
-// Arguments are passed as equal-length pair of slices. where first slice is keys and second is values.
-// e.g mergeKeyValues(keys1, values1, keys2, values2) => (keys1+keys2, values1+values2)
+// Arguments are passed as equal-length pairs of slices, where the first slice contains keys and second contains values.
+// Example: mergeKeyValues(keys1, values1, keys2, values2) => (keys1+keys2, values1+values2)
 func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
 
 	capacity := 0

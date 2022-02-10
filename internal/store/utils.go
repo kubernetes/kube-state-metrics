@@ -203,6 +203,7 @@ func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
 		capacity += len(keyValues[i])
 	}
 
+	// Allocate one contiguous block, then split it up to keys and values zero'd slices.
 	keysValues := make([]string, 0, capacity*2)
 	keys = (keysValues[0:capacity:capacity])[:0]
 	values = (keysValues[capacity : capacity*2])[:0]

@@ -1365,8 +1365,7 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Famil
 		metricFamily := f(pod)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descPodLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

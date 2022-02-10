@@ -258,8 +258,7 @@ func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(interface{}) *
 		metricFamily := f(daemonSet)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descDaemonSetLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{daemonSet.Namespace, daemonSet.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descDaemonSetLabelsDefaultLabels, []string{daemonSet.Namespace, daemonSet.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

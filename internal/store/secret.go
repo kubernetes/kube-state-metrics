@@ -151,8 +151,7 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric
 		metricFamily := f(secret)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descSecretLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{secret.Namespace, secret.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descSecretLabelsDefaultLabels, []string{secret.Namespace, secret.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

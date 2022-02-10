@@ -446,8 +446,7 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 		metricFamily := f(node)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descNodeLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{node.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descNodeLabelsDefaultLabels, []string{node.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

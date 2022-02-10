@@ -94,8 +94,7 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interf
 		metricFamily := f(resourceQuota)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descResourceQuotaLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descResourceQuotaLabelsDefaultLabels, []string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

@@ -182,8 +182,7 @@ func wrapEndpointFunc(f func(*v1.Endpoints) *metric.Family) func(interface{}) *m
 		metricFamily := f(endpoint)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descEndpointLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{endpoint.Namespace, endpoint.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descEndpointLabelsDefaultLabels, []string{endpoint.Namespace, endpoint.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

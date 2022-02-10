@@ -180,8 +180,7 @@ func wrapPodDisruptionBudgetFunc(f func(*policyv1.PodDisruptionBudget) *metric.F
 		metricFamily := f(podDisruptionBudget)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descPodDisruptionBudgetLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{podDisruptionBudget.Namespace, podDisruptionBudget.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodDisruptionBudgetLabelsDefaultLabels, []string{podDisruptionBudget.Namespace, podDisruptionBudget.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

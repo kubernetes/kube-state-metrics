@@ -314,8 +314,7 @@ func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(interface{})
 		metricFamily := f(deployment)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descDeploymentLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{deployment.Namespace, deployment.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descDeploymentLabelsDefaultLabels, []string{deployment.Namespace, deployment.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

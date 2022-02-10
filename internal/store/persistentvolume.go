@@ -266,8 +266,7 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(
 		metricFamily := f(persistentVolume)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descPersistentVolumeLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{persistentVolume.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPersistentVolumeLabelsDefaultLabels, []string{persistentVolume.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

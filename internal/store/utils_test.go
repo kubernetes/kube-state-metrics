@@ -18,6 +18,7 @@ package store
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -263,4 +264,58 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 		})
 	}
 
+}
+
+func TestMergeKeyValues(t *testing.T) {
+	testCases := []struct {
+		name               string
+		keyValuePairSlices [][]string
+		expectKeys         []string
+		expectValues       []string
+	}{
+		{
+			name: "singlePair",
+			keyValuePairSlices: [][]string{
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+			},
+			expectKeys:   []string{"keyA", "keyB", "keyC"},
+			expectValues: []string{"valueA", "valueB", "valueC"},
+		},
+		{
+			name: "evenPair",
+			keyValuePairSlices: [][]string{
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+				{"keyX", "keyY", "keyZ"},
+				{"valueX", "valueY", "valueZ"},
+			},
+			expectKeys:   []string{"keyA", "keyB", "keyC", "keyX", "keyY", "keyZ"},
+			expectValues: []string{"valueA", "valueB", "valueC", "valueX", "valueY", "valueZ"},
+		},
+		{
+			name: "oddPair",
+			keyValuePairSlices: [][]string{
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+				{"keyX", "keyY", "keyZ"},
+				{"valueX", "valueY", "valueZ"},
+				{"keyM", "keyN", "keyP"},
+				{"valueM", "valueN", "valueP"},
+			},
+			expectKeys:   []string{"keyA", "keyB", "keyC", "keyX", "keyY", "keyZ", "keyM", "keyN", "keyP"},
+			expectValues: []string{"valueA", "valueB", "valueC", "valueX", "valueY", "valueZ", "valueM", "valueN", "valueP"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotKeys, gotValues := mergeKeyValues(tc.keyValuePairSlices...)
+			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+				t.Errorf("mergeKeyValues() got = %v, want %v", gotKeys, tc.expectKeys)
+			}
+			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+				t.Errorf("mergeKeyValues() got1 = %v, want %v", gotValues, tc.expectValues)
+			}
+		})
+	}
 }

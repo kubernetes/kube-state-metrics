@@ -127,8 +127,7 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(i
 		metricFamily := f(storageClass)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descStorageClassLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{storageClass.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descStorageClassLabelsDefaultLabels, []string{storageClass.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

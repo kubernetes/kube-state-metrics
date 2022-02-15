@@ -1,3 +1,10 @@
+## v2.4.0 / 2022-02-10
+* [FEATURE]     Add `ingressclass` label to `kube_ingress_info` metric #1652 @adammw
+* [FEATURE]     Extend KSM library to support custom resource metrics #1644 @Garrybest
+* [ENHANCEMENT] Use apiVersion `v1` for `PodDisruptionBudget` and `CronJob` resources #1491 @bison
+* [ENHANCEMENT] Optimize slice allocations #1676 @sherifabdlnaby
+* [BUGFIX]      Use plural form of resource name in `allowlist` for PodDisruptionBudget #1653 @arajkumar
+
 ## v2.3.0 / 2021-12-09
 
 * [FEATURE]     Add a `--namespace-denylist` command line flag to exclude metrics from certain namespaces #1596 #1595 @mallow111

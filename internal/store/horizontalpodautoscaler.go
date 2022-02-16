@@ -135,39 +135,40 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					var metricName string
 
 					var v [metricTargetTypeCount]float64
+					var ok [metricTargetTypeCount]bool
 
 					switch m.Type {
 					case autoscaling.ObjectMetricSourceType:
 						metricName = m.Object.Metric.Name
 
 						if m.Object.Target.Value != nil {
-							v[value] = float64(m.Object.Target.Value.MilliValue()) / 1000
+							v[value], ok[value] = float64(m.Object.Target.Value.MilliValue())/1000, true
 						}
 						if m.Object.Target.AverageValue != nil {
-							v[average] = float64(m.Object.Target.AverageValue.MilliValue()) / 1000
+							v[average], ok[average] = float64(m.Object.Target.AverageValue.MilliValue())/1000, true
 						}
 					case autoscaling.PodsMetricSourceType:
 						metricName = m.Pods.Metric.Name
 
-						v[average] = float64(m.Pods.Target.AverageValue.MilliValue()) / 1000
+						v[average], ok[average] = float64(m.Pods.Target.AverageValue.MilliValue())/1000, true
 					case autoscaling.ResourceMetricSourceType:
 						metricName = string(m.Resource.Name)
 
 						if m.Resource.Target.AverageUtilization != nil {
-							v[utilization] = float64(*m.Resource.Target.AverageUtilization)
+							v[utilization], ok[utilization] = float64(*m.Resource.Target.AverageUtilization), true
 						}
 
 						if m.Resource.Target.AverageValue != nil {
-							v[average] = float64(m.Resource.Target.AverageValue.MilliValue()) / 1000
+							v[average], ok[average] = float64(m.Resource.Target.AverageValue.MilliValue())/1000, true
 						}
 					case autoscaling.ExternalMetricSourceType:
 						metricName = m.External.Metric.Name
 
 						if m.External.Target.Value != nil {
-							v[value] = float64(m.External.Target.Value.MilliValue()) / 1000
+							v[value], ok[value] = float64(m.External.Target.Value.MilliValue())/1000, true
 						}
 						if m.External.Target.AverageValue != nil {
-							v[average] = float64(m.External.Target.AverageValue.MilliValue()) / 1000
+							v[average], ok[average] = float64(m.External.Target.AverageValue.MilliValue())/1000, true
 						}
 					default:
 						// Skip unsupported metric type
@@ -175,11 +176,13 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					}
 
 					for i := range v {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   targetMetricLabels,
-							LabelValues: []string{metricName, metricTargetType(i).String()},
-							Value:       v[i],
-						})
+						if ok[i] {
+							ms = append(ms, &metric.Metric{
+								LabelKeys:   targetMetricLabels,
+								LabelValues: []string{metricName, metricTargetType(i).String()},
+								Value:       v[i],
+							})
+						}
 					}
 				}
 				return &metric.Family{Metrics: ms}

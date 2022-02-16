@@ -175,7 +175,7 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						continue
 					}
 
-					for i := range v {
+					for i := range ok {
 						if ok[i] {
 							ms = append(ms, &metric.Metric{
 								LabelKeys:   targetMetricLabels,

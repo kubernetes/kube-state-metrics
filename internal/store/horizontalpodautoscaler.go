@@ -36,8 +36,6 @@ const (
 	value metricTargetType = iota
 	utilization
 	average
-
-	metricTargetTypeCount // Used as a length argument to arrays
 )
 
 func (m metricTargetType) String() string {
@@ -134,53 +132,53 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				for _, m := range a.Spec.Metrics {
 					var metricName string
 
-					var v [metricTargetTypeCount]int64
-					var ok [metricTargetTypeCount]bool
+					// The variable maps the type of metric to the corresponding value
+					metricMap := make(map[metricTargetType]float64)
 
 					switch m.Type {
 					case autoscaling.ObjectMetricSourceType:
 						metricName = m.Object.Metric.Name
 
-						v[value], ok[value] = m.Object.Target.Value.AsInt64()
+						if m.Object.Target.Value != nil {
+							metricMap[value] = float64(m.Object.Target.Value.MilliValue()) / 1000
+						}
 						if m.Object.Target.AverageValue != nil {
-							v[average], ok[average] = m.Object.Target.AverageValue.AsInt64()
+							metricMap[average] = float64(m.Object.Target.AverageValue.MilliValue()) / 1000
 						}
 					case autoscaling.PodsMetricSourceType:
 						metricName = m.Pods.Metric.Name
 
-						v[average], ok[average] = m.Pods.Target.AverageValue.AsInt64()
+						metricMap[average] = float64(m.Pods.Target.AverageValue.MilliValue()) / 1000
 					case autoscaling.ResourceMetricSourceType:
 						metricName = string(m.Resource.Name)
 
-						if ok[utilization] = (m.Resource.Target.AverageUtilization != nil); ok[utilization] {
-							v[utilization] = int64(*m.Resource.Target.AverageUtilization)
+						if m.Resource.Target.AverageUtilization != nil {
+							metricMap[utilization] = float64(*m.Resource.Target.AverageUtilization)
 						}
 
 						if m.Resource.Target.AverageValue != nil {
-							v[average], ok[average] = m.Resource.Target.AverageValue.AsInt64()
+							metricMap[average] = float64(m.Resource.Target.AverageValue.MilliValue()) / 1000
 						}
 					case autoscaling.ExternalMetricSourceType:
 						metricName = m.External.Metric.Name
 
 						if m.External.Target.Value != nil {
-							v[value], ok[value] = m.External.Target.Value.AsInt64()
+							metricMap[value] = float64(m.External.Target.Value.MilliValue()) / 1000
 						}
 						if m.External.Target.AverageValue != nil {
-							v[average], ok[average] = m.External.Target.AverageValue.AsInt64()
+							metricMap[average] = float64(m.External.Target.AverageValue.MilliValue()) / 1000
 						}
 					default:
 						// Skip unsupported metric type
 						continue
 					}
 
-					for i := range ok {
-						if ok[i] {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   targetMetricLabels,
-								LabelValues: []string{metricName, metricTargetType(i).String()},
-								Value:       float64(v[i]),
-							})
-						}
+					for metricTypeIndex, metricValue := range metricMap {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   targetMetricLabels,
+							LabelValues: []string{metricName, metricTypeIndex.String()},
+							Value:       metricValue,
+						})
 					}
 				}
 				return &metric.Family{Metrics: ms}

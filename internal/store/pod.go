@@ -994,6 +994,7 @@ func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerato
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			// Filter out labels that will be added anyway by allowMetricLabelsList.
 			allowLabelsList := filterOutFromSlice(allowLabelsList, allowMetricLabelsList["pods"])
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 			m := metric.Metric{

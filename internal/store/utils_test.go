@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 func TestIsHugePageSizeFromResourceName(t *testing.T) {
@@ -264,6 +265,66 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 		})
 	}
 
+}
+
+func TestKubeLabelsToPrometheusLabelsDisableLabelRewriting(t *testing.T) {
+	options.SetDisableLabelRewriting(true)
+	testCases := []struct {
+		kubeLabels   map[string]string
+		expectKeys   []string
+		expectValues []string
+	}{
+		{
+			kubeLabels: map[string]string{
+				"camelCase": "camel_case",
+			},
+			expectKeys:   []string{"label_camelCase"},
+			expectValues: []string{"camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"snake_camelCase": "snake_and_camel_case",
+			},
+			expectKeys:   []string{"label_snake_camelCase"},
+			expectValues: []string{"snake_and_camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"conflicting_camelCase":  "camelCase",
+				"conflicting_camel_case": "snake_case",
+			},
+			expectKeys: []string{
+				"label_conflicting_camelCase",
+				"label_conflicting_camel_case",
+			},
+			expectValues: []string{
+				"camelCase",
+				"snake_case",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("kubelabels input=%v , expected prometheus keys=%v, expected prometheus values=%v", tc.kubeLabels, tc.expectKeys, tc.expectValues), func(t *testing.T) {
+			labelKeys, labelValues := kubeMapToPrometheusLabels("label", tc.kubeLabels)
+			if len(labelKeys) != len(tc.expectKeys) {
+				t.Errorf("Got Prometheus label keys with len %d but expected %d", len(labelKeys), len(tc.expectKeys))
+			}
+
+			if len(labelValues) != len(tc.expectValues) {
+				t.Errorf("Got Prometheus label values with len %d but expected %d", len(labelValues), len(tc.expectValues))
+			}
+
+			for i := range tc.expectKeys {
+				if !(tc.expectKeys[i] == labelKeys[i] && tc.expectValues[i] == labelValues[i]) {
+					t.Errorf("Got Prometheus label %q: %q but expected %q: %q", labelKeys[i], labelValues[i], tc.expectKeys[i], tc.expectValues[i])
+				}
+			}
+		})
+	}
+	t.Cleanup(func() {
+		options.SetDisableLabelRewriting(false)
+	})
 }
 
 func TestMergeKeyValues(t *testing.T) {

@@ -28,27 +28,28 @@ import (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	Apiserver            string
-	Kubeconfig           string
-	Help                 bool
-	Port                 int
-	Host                 string
-	TelemetryPort        int
-	TelemetryHost        string
-	TLSConfig            string
-	Resources            ResourceSet
-	Namespaces           NamespaceList
-	NamespacesDenylist   NamespaceList
-	Shard                int32
-	TotalShards          int
-	Pod                  string
-	Namespace            string
-	MetricDenylist       MetricSet
-	MetricAllowlist      MetricSet
-	MetricOptInList      MetricSet
-	Version              bool
-	AnnotationsAllowList LabelsAllowList
-	LabelsAllowList      LabelsAllowList
+	Apiserver             string
+	Kubeconfig            string
+	Help                  bool
+	Port                  int
+	Host                  string
+	TelemetryPort         int
+	TelemetryHost         string
+	TLSConfig             string
+	Resources             ResourceSet
+	Namespaces            NamespaceList
+	NamespacesDenylist    NamespaceList
+	Shard                 int32
+	TotalShards           int
+	Pod                   string
+	Namespace             string
+	MetricDenylist        MetricSet
+	MetricAllowlist       MetricSet
+	MetricOptInList       MetricSet
+	Version               bool
+	AnnotationsAllowList  LabelsAllowList
+	LabelsAllowList       LabelsAllowList
+	DisableLabelRewriting bool
 
 	EnableGZIPEncoding bool
 
@@ -104,6 +105,7 @@ func (o *Options) AddFlags() {
 	o.flags.Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]').")
 	o.flags.Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
 	o.flags.IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
+	o.flags.BoolVarP(&o.DisableLabelRewriting, "disable-label-rewriting", "", false, "If true, disable transforming label keys to snake case.")
 
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
 

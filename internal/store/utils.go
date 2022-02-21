@@ -123,6 +123,9 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 }
 
 func labelName(prefix, labelName string) string {
+	if options.GetDisableLabelRewriting() {
+		return prefix + "_" + sanitizeLabelName(labelName)
+	}
 	return prefix + "_" + lintLabelName(sanitizeLabelName(labelName))
 }
 

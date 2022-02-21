@@ -71,6 +71,7 @@ func (pl promLogger) Log(v ...interface{}) error {
 // Any out-of-tree custom resource metrics could be registered by newing a registry factory
 // which implements customresource.RegistryFactory and pass all factories into this function.
 func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories ...customresource.RegistryFactory) error {
+	options.SetDisableLabelRewriting(opts.DisableLabelRewriting)
 	promLogger := promLogger{}
 
 	storeBuilder := store.NewBuilder()

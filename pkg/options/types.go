@@ -256,3 +256,16 @@ func (l *LabelsAllowList) String() string {
 func (l *LabelsAllowList) Type() string {
 	return "string"
 }
+
+// disableLabelRewriting is used in the branch to transform label keys to snake case.
+var disableLabelRewriting = false
+
+// SetDisableLabelRewriting sets the boolean to disableLabelRewriting
+func SetDisableLabelRewriting(s bool) {
+	disableLabelRewriting = s
+}
+
+// GetDisableLabelRewriting gets values from disableLabelRewriting
+func GetDisableLabelRewriting() bool {
+	return disableLabelRewriting
+}

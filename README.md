@@ -71,7 +71,7 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 | **v2.1.1**         |          ✓           |           ✓           |          ✓          |         -/✓         |         -/✓         |
 | **v2.2.4**         |          ✓           |           ✓           |          ✓          |          ✓          |          ✓          |
 | **v2.3.0**         |          ✓           |           ✓           |          ✓          |          ✓          |          ✓          |
-| **v2.4.0**         |         -/✓          |          -/✓          |          ✓          |          ✓          |          ✓          |
+| **v2.4.1**         |         -/✓          |          -/✓          |          ✓          |          ✓          |          ✓          |
 | **master**         |         -/✓          |          -/✓          |          ✓          |          ✓          |          ✓          |
 
 - `✓` Fully supported version range.
@@ -88,7 +88,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.4.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.4.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

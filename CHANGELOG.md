@@ -1,4 +1,4 @@
-## v2.4.0 / 2022-02-10
+## v2.4.1 / 2022-02-10
 * [FEATURE]     Add `ingressclass` label to `kube_ingress_info` metric #1652 @adammw
 * [FEATURE]     Extend KSM library to support custom resource metrics #1644 @Garrybest
 * [ENHANCEMENT] Use apiVersion `v1` for `PodDisruptionBudget` and `CronJob` resources #1491 @bison

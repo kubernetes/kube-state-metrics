@@ -82,6 +82,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
+		createPodNodeSelectorsFamilyGenerator(),
 	}
 }
 
@@ -1353,6 +1354,26 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 
 			return &metric.Family{
 				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodNodeSelectorsFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewOptInFamilyGenerator(
+		"kube_pod_nodeselectors",
+		"Describes the Pod nodeSelectors.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			labelKeys, labelValues := kubeMapToPrometheusLabels("nodeselector", p.Spec.NodeSelector)
+			m := metric.Metric{
+				LabelKeys:   labelKeys,
+				LabelValues: labelValues,
+				Value:       1,
+			}
+			return &metric.Family{
+				Metrics: []*metric.Metric{&m},
 			}
 		}),
 	)

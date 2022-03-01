@@ -21,6 +21,10 @@ Stages about metrics are grouped into three categories：
 | STABLE       | Metrics which should have very few backwards-incompatible changes outside of major version updates.                        |
 | DEPRECATED   | Metrics which will be removed once the deprecation timeline is met.                                                        |
 
+## Opt-in Metrics
+
+As of v2.3.0, kube-state-metrics supports additional opt-in metrics via the CLI flag `-metric-opt-in-list`. See the metric documentation to identify which metrics need to be specified.
+
 ## Exposed Metrics
 
 Per group of metrics there is one file for each metrics. See each file for specific documentation about the exposed metrics:

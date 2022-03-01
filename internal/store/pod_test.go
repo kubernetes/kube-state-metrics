@@ -1820,6 +1820,53 @@ func TestPodStore(t *testing.T) {
 					Name:      "pod1",
 					Namespace: "ns1",
 					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					NodeSelector: map[string]string{
+						"a": "b",
+					},
+				},
+			},
+			AllowLabelsList: []string{options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_nodeselectors Describes the Pod nodeSelectors.
+				# TYPE kube_pod_nodeselectors gauge
+				kube_pod_nodeselectors{nodeselector_a="b",namespace="ns1",pod="pod1",uid="uid1"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_nodeselectors",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns1",
+					UID:       "uid6",
+				},
+				Spec: v1.PodSpec{
+					NodeSelector: map[string]string{
+						"kubernetes.io/os":                 "linux",
+						"cloud.google.com/gke-accelerator": "nvidia-tesla-t4",
+					},
+				},
+			},
+			AllowLabelsList: []string{options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_nodeselectors Describes the Pod nodeSelectors.
+				# TYPE kube_pod_nodeselectors gauge
+				kube_pod_nodeselectors{nodeselector_kubernetes_io_os="linux",nodeselector_cloud_google_com_gke_accelerator="nvidia-tesla-t4",namespace="ns1",pod="pod2",uid="uid6"} 1
+		`,
+			MetricNames: []string{
+				"kube_pod_nodeselector",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
 					Annotations: map[string]string{
 						"app": "example",
 					},
@@ -1925,7 +1972,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 43
+	expectedFamilies := 44
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

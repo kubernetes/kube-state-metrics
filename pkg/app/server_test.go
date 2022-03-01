@@ -207,6 +207,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_init_container_status_waiting Describes whether the init container is currently in waiting state.
 # HELP kube_pod_init_container_status_waiting_reason Describes the reason the init container is currently in waiting state.
 # HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
+# HELP kube_pod_nodeselectors Describes the Pod nodeSelectors.
 # HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
 # HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
 # HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
@@ -250,6 +251,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_init_container_status_waiting gauge
 # TYPE kube_pod_init_container_status_waiting_reason gauge
 # TYPE kube_pod_labels gauge
+# TYPE kube_pod_nodeselectors gauge
 # TYPE kube_pod_overhead_cpu_cores gauge
 # TYPE kube_pod_overhead_memory_bytes gauge
 # TYPE kube_pod_runtimeclass_name_info gauge
@@ -296,6 +298,7 @@ kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",con
 kube_pod_created{namespace="default",pod="pod0",uid="abc-0"} 1.5e+09
 kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_ip="1.2.3.4",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class="",host_network="false"} 1
 kube_pod_labels{namespace="default",pod="pod0",uid="abc-0"} 1
+kube_pod_nodeselectors{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Failed"} 0

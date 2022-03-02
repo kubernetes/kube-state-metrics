@@ -93,11 +93,6 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtim
 // Watch is a wrapper func around the cache.ListerWatcher.Watch func. It increases the success/error
 // counters based on the outcome of the Watch operation it instruments.
 func (i *InstrumentedListerWatcher) Watch(options metav1.ListOptions) (res watch.Interface, err error) {
-
-	if i.useAPIServerCache {
-		options.ResourceVersion = "0"
-	}
-
 	res, err = i.lw.Watch(options)
 	if err != nil {
 		i.metrics.WatchTotal.WithLabelValues("error", i.resource).Inc()

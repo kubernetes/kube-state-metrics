@@ -1,4 +1,4 @@
-## v2.4.1 / 2022-02-10
+## v2.4.2 / 2022-02-10
 * [BUGFIX]  Publish images with with the correct tag 
 
 ## v2.4.1 / 2022-02-10

@@ -175,6 +175,14 @@ func TestMetricSetSet(t *testing.T) {
 				"kube_daemonset_labels": {},
 			}),
 		},
+		{
+			Desc:  "newlines are ignored",
+			Value: "\n^kube_.+_annotations$,\n   ^kube_secret_labels$\n",
+			Wanted: MetricSet{
+				"^kube_secret_labels$":  struct{}{},
+				"^kube_.+_annotations$": struct{}{},
+			},
+		},
 	}
 
 	for _, test := range tests {

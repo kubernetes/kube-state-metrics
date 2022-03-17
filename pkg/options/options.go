@@ -17,7 +17,6 @@ limitations under the License.
 package options
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -73,7 +72,7 @@ func NewOptions() *Options {
 func (o *Options) AddFlags() {
 	o.flags = pflag.NewFlagSet("", pflag.ExitOnError)
 	// add klog flags
-	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klogFlags := pflag.NewFlagSet("klog", pflag.ExitOnError)
 	klog.InitFlags(klogFlags)
 	o.flags.AddGoFlagSet(klogFlags)
 	o.flags.Lookup("logtostderr").Value.Set("true")

@@ -15,13 +15,13 @@ require (
 	github.com/prometheus/exporter-toolkit v0.7.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/perf v0.0.0-20211012211434-03971e389cd3
-	k8s.io/api v0.23.3
-	k8s.io/apimachinery v0.23.3
+	golang.org/x/perf v0.0.0-20220317191433-96728ec1d780
+	k8s.io/api v0.23.5
+	k8s.io/apimachinery v0.23.5
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.10.0
-	k8s.io/client-go v0.23.3
-	k8s.io/klog/v2 v2.40.1
-	k8s.io/sample-controller v0.23.3
+	k8s.io/client-go v0.23.5
+	k8s.io/klog/v2 v2.60.0
+	k8s.io/sample-controller v0.23.4
 )
 
 require (
@@ -73,7 +73,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
-	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
+	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect

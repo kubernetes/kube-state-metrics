@@ -1,17 +1,14 @@
 reviewers:
-  - brancz
   - dgrisonnet
   - fpetkovski
-  - LiliC
   - mrueg
-  - tariq1890
 approvers:
-  - brancz
   - dgrisonnet
   - fpetkovski
-  - LiliC
   - mrueg
-  - tariq1890
 emeritus_approvers:
+  - LiliC
   - andyxning
+  - brancz
+  - tariq1890
   - zouyee

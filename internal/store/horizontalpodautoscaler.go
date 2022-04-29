@@ -185,7 +185,7 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			}),
 		),
 		*generator.NewFamilyGenerator(
-			"kube_horizontalpodautoscaler_status_current_target_metric",
+			"kube_horizontalpodautoscaler_status_current_metric",
 			"The metric current status used by this autoscaler when calculating the desired replica count.",
 			metric.Gauge,
 			"",

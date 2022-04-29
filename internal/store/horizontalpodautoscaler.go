@@ -183,14 +183,14 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 				return &metric.Family{Metrics: ms}
 			}),
-		),,
+		),
 		*generator.NewFamilyGenerator(
 			"kube_horizontalpodautoscaler_status_current_target_metric",
 			"The metric current status used by this autoscaler when calculating the desired replica count.",
 			metric.Gauge,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, 0, len(a.Status.Metrics))
+				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
 				for _, m := range a.Status.CurrentMetrics {
 					var metricName string
 

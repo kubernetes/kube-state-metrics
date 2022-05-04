@@ -17,7 +17,7 @@ env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
-  GO_VERSION: "^1.17"
+  GO_VERSION: "^1.18"
   GOLANGCI_LINT_VERSION: "v1.45.2"
 
 jobs:

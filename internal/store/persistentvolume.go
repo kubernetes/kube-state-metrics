@@ -164,7 +164,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
-				var gcePDDiskName, ebsVolumeID, azureDiskName, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, iscsiInitiatorName, nfsServer, nfsPath string
+				var gcePDDiskName, ebsVolumeID, azureDiskName, fcWWIDs, fcLun, fcTargetWWNs, iscsiTargetPortal, iscsiIQN, iscsiLun, iscsiInitiatorName, nfsServer, nfsPath, csiDriver, csiVolumeHandle string
 
 				switch {
 				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
@@ -199,6 +199,9 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				case p.Spec.PersistentVolumeSource.NFS != nil:
 					nfsServer = p.Spec.PersistentVolumeSource.NFS.Server
 					nfsPath = p.Spec.PersistentVolumeSource.NFS.Path
+				case p.Spec.PersistentVolumeSource.CSI != nil:
+					csiDriver = p.Spec.PersistentVolumeSource.CSI.Driver
+					csiVolumeHandle = p.Spec.PersistentVolumeSource.CSI.VolumeHandle
 				}
 
 				return &metric.Family{
@@ -218,6 +221,8 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 								"iscsi_initiator_name",
 								"nfs_server",
 								"nfs_path",
+								"csi_driver",
+								"csi_volume_handle",
 							},
 							LabelValues: []string{
 								p.Spec.StorageClassName,
@@ -233,6 +238,8 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 								iscsiInitiatorName,
 								nfsServer,
 								nfsPath,
+								csiDriver,
+								csiVolumeHandle,
 							},
 							Value: 1,
 						},

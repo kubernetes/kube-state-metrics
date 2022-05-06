@@ -32,6 +32,8 @@ type shardedListWatch struct {
 	lw       cache.ListerWatcher
 }
 
+// NewShardedListWatch returns a new shardedListWatch via the cache.ListerWatcher interface.
+// In the case of no sharding needed, it returns the provided cache.ListerWatcher
 func NewShardedListWatch(shard int32, totalShards int, lw cache.ListerWatcher) cache.ListerWatcher {
 	// This is an "optimization" as this configuration means no sharding is to
 	// be performed.
@@ -51,6 +53,10 @@ func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, err
 	if err != nil {
 		return nil, err
 	}
+	metaObj, err := meta.ListAccessor(list)
+	if err != nil {
+		return nil, err
+	}
 	res := &metav1.List{
 		Items: []runtime.RawExtension{},
 	}
@@ -63,6 +69,7 @@ func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, err
 			res.Items = append(res.Items, runtime.RawExtension{Object: item})
 		}
 	}
+	res.ListMeta.ResourceVersion = metaObj.GetResourceVersion()
 
 	return res, nil
 }

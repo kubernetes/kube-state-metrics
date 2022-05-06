@@ -1,18 +1,7 @@
 {
+  "version": 1,
   "dependencies": [
     {
-      "name": "ksonnet",
-      "source": {
-        "git": {
-          "remote": "https://github.com/ksonnet/ksonnet-lib",
-          "subdir": ""
-        }
-      },
-      "version": "0d2f82676817bbf9e4acf6495b2090205f323b9f",
-      "sum": "h28BXZ7+vczxYJ2sCt8JuR9+yznRtU/iA6DCpQUrtEg="
-    },
-    {
-      "name": "kube-state-metrics",
       "source": {
         "local": {
           "directory": "../jsonnet/kube-state-metrics"
@@ -21,7 +10,6 @@
       "version": ""
     },
     {
-      "name": "kube-state-metrics-mixin",
       "source": {
         "local": {
           "directory": "../jsonnet/kube-state-metrics-mixin"
@@ -29,5 +17,6 @@
       },
       "version": ""
     }
-  ]
+  ],
+  "legacyImports": false
 }

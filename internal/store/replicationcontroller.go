@@ -17,6 +17,9 @@ limitations under the License.
 package store
 
 import (
+	"context"
+	"strconv"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,18 +27,20 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
-	replicationControllerMetricFamilies = []metric.FamilyGenerator{
-		{
-			Name: "kube_replicationcontroller_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+	replicationControllerMetricFamilies = []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -48,12 +53,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_replicationcontroller_status_replicas",
-			Type: metric.Gauge,
-			Help: "The number of replicas per ReplicationController.",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_status_replicas",
+			"The number of replicas per ReplicationController.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -62,12 +68,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicationcontroller_status_fully_labeled_replicas",
-			Type: metric.Gauge,
-			Help: "The number of fully labeled replicas per ReplicationController.",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_status_fully_labeled_replicas",
+			"The number of fully labeled replicas per ReplicationController.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -76,12 +83,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicationcontroller_status_ready_replicas",
-			Type: metric.Gauge,
-			Help: "The number of ready replicas per ReplicationController.",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_status_ready_replicas",
+			"The number of ready replicas per ReplicationController.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -90,12 +98,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicationcontroller_status_available_replicas",
-			Type: metric.Gauge,
-			Help: "The number of available replicas per ReplicationController.",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_status_available_replicas",
+			"The number of available replicas per ReplicationController.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -104,12 +113,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicationcontroller_status_observed_generation",
-			Type: metric.Gauge,
-			Help: "The generation observed by the ReplicationController controller.",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_status_observed_generation",
+			"The generation observed by the ReplicationController controller.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -118,12 +128,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_replicationcontroller_spec_replicas",
-			Type: metric.Gauge,
-			Help: "Number of desired pods for a ReplicationController.",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_spec_replicas",
+			"Number of desired pods for a ReplicationController.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if r.Spec.Replicas != nil {
@@ -136,12 +147,13 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_replicationcontroller_metadata_generation",
-			Type: metric.Gauge,
-			Help: "Sequence number representing a specific generation of the desired state.",
-			GenerateFunc: wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_metadata_generation",
+			"Sequence number representing a specific generation of the desired state.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -150,7 +162,43 @@ var (
 					},
 				}
 			}),
-		},
+		),
+		*generator.NewFamilyGenerator(
+			"kube_replicationcontroller_owner",
+			"Information about the ReplicationController's owner.",
+			metric.Gauge,
+			"",
+			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
+				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+				ms := []*metric.Metric{}
+
+				owners := r.GetOwnerReferences()
+				if len(owners) == 0 {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{"<none>", "<none>", "<none>"},
+						Value:       1,
+					})
+				} else {
+					for _, owner := range owners {
+						ownerIsController := "false"
+						if owner.Controller != nil {
+							ownerIsController = strconv.FormatBool(*owner.Controller)
+						}
+
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, ownerIsController},
+							Value:       1,
+						})
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 )
 
@@ -161,21 +209,22 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Fam
 		metricFamily := f(replicationController)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descReplicationControllerLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{replicationController.Namespace, replicationController.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descReplicationControllerLabelsDefaultLabels, []string{replicationController.Namespace, replicationController.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily
 	}
 }
 
-func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().ReplicationControllers(ns).List(opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoreV1().ReplicationControllers(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().ReplicationControllers(ns).Watch(opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoreV1().ReplicationControllers(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

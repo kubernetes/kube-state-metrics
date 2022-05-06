@@ -17,6 +17,11 @@ env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
+<<<<<<< HEAD
+=======
+  GO_VERSION: "^1.18"
+  GOLANGCI_LINT_VERSION: "v1.45.2"
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
 
 jobs:
   ci-go-lint:
@@ -26,7 +31,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
+<<<<<<< HEAD
         go-version: ^1.15
+=======
+        go-version: ${{ env.GO_VERSION }}
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
       id: go
 
     - name: Check out code into the Go module directory
@@ -39,7 +48,11 @@ jobs:
 
     - name: Lint
       run: |
+<<<<<<< HEAD
         curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
+=======
+        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
         make lint
 
   ci-validate-manifests:
@@ -49,7 +62,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
+<<<<<<< HEAD
         go-version: ^1.15
+=======
+        go-version: ${{ env.GO_VERSION }}
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
       id: go
 
     - name: Check out code into the Go module directory
@@ -71,7 +88,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
+<<<<<<< HEAD
         go-version: ^1.15
+=======
+        go-version: ${{ env.GO_VERSION }}
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
       id: go
 
     - name: Check out code into the Go module directory
@@ -82,7 +103,11 @@ jobs:
         go get -v -t -d ./...
         make install-tools
 
+<<<<<<< HEAD
     - name: Validate vendor is in sync with go modules
+=======
+    - name: Validate go modules
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
       run: |
         make validate-modules
 
@@ -93,7 +118,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
+<<<<<<< HEAD
         go-version: ^1.15
+=======
+        go-version: ${{ env.GO_VERSION }}
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
       id: go
 
     - name: Check out code into the Go module directory
@@ -115,7 +144,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
+<<<<<<< HEAD
         go-version: ^1.15
+=======
+        go-version: ${{ env.GO_VERSION }}
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
       id: go
 
     - name: Check out code into the Go module directory
@@ -130,6 +163,24 @@ jobs:
       run: |
         make test-unit
 
+<<<<<<< HEAD
+=======
+  ci-rule-tests:
+    name: ci-rule-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Setup promtool
+        run: |
+          make install-promtool
+
+      - name: Rule tests
+        run: |
+          PROMTOOL_CLI=./promtool make test-rules
+
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
   ci-benchmark-tests:
     name: ci-benchmark-tests
     runs-on: ubuntu-latest
@@ -137,7 +188,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.15
+        go-version: ${{ env.GO_VERSION }}
       id: go
 
     - name: Check out code into the Go module directory
@@ -159,7 +210,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.15
+        go-version: ${{ env.GO_VERSION }}
       id: go
 
     - name: Check out code into the Go module directory
@@ -181,7 +232,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
+<<<<<<< HEAD
         go-version: ^1.15
+=======
+        go-version: ${{ env.GO_VERSION }}
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3
       id: go
 
     - name: Check out code into the Go module directory
@@ -194,4 +249,8 @@ jobs:
 
     - name: End-to-end tests
       run: |
+<<<<<<< HEAD
         REGISTRY="quay.io/coreos" make e2e
+=======
+        make e2e
+>>>>>>> 3e12ba0470aa821d259e498e48f71763b3315ce3

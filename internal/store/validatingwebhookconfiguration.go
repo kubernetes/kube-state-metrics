@@ -17,6 +17,8 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,19 +26,20 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
-	descValidatingWebhookConfigurationHelp          = "Kubernetes labels converted to Prometheus labels."
 	descValidatingWebhookConfigurationDefaultLabels = []string{"namespace", "validatingwebhookconfiguration"}
 
-	validatingWebhookConfigurationMetricFamilies = []metric.FamilyGenerator{
-		{
-			Name: "kube_validatingwebhookconfiguration_info",
-			Type: metric.Gauge,
-			Help: "Information about the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+	validatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_info",
+			"Information about the ValidatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -45,12 +48,13 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_validatingwebhookconfiguration_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_created",
+			"Unix creation timestamp.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !vwc.CreationTimestamp.IsZero() {
@@ -62,27 +66,28 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_validatingwebhookconfiguration_metadata_resource_version",
-			Type: metric.Gauge,
-			Help: "Resource version representing a specific version of the ValidatingWebhookConfiguration.",
-			GenerateFunc: wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+		),
+		*generator.NewFamilyGenerator(
+			"kube_validatingwebhookconfiguration_metadata_resource_version",
+			"Resource version representing a specific version of the ValidatingWebhookConfiguration.",
+			metric.Gauge,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(vwc.ObjectMeta.ResourceVersion),
 				}
 			}),
-		},
+		),
 	}
 )
 
-func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Watch(opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Watch(context.TODO(), opts)
 		},
 	}
 }
@@ -94,8 +99,7 @@ func wrapValidatingWebhookConfigurationFunc(f func(*admissionregistrationv1.Vali
 		metricFamily := f(mutatingWebhookConfiguration)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descValidatingWebhookConfigurationDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{mutatingWebhookConfiguration.Namespace, mutatingWebhookConfiguration.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingWebhookConfigurationDefaultLabels, []string{mutatingWebhookConfiguration.Namespace, mutatingWebhookConfiguration.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

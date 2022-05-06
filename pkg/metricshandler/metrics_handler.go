@@ -31,11 +31,11 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/internal/store"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
-	"k8s.io/kube-state-metrics/pkg/options"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
@@ -43,20 +43,20 @@ import (
 type MetricsHandler struct {
 	opts               *options.Options
 	kubeClient         kubernetes.Interface
-	storeBuilder       *store.Builder
+	storeBuilder       ksmtypes.BuilderInterface
 	enableGZIPEncoding bool
 
 	cancel func()
 
-	// mtx protects stores, curShard, and curTotalShards
+	// mtx protects metricsWriters, curShard, and curTotalShards
 	mtx            *sync.RWMutex
-	stores         []*metricsstore.MetricsStore
+	metricsWriters []metricsstore.MetricsWriter
 	curShard       int32
 	curTotalShards int
 }
 
 // New creates and returns a new MetricsHandler with the given options.
-func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder *store.Builder, enableGZIPEncoding bool) *MetricsHandler {
+func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
 	return &MetricsHandler{
 		opts:               opts,
 		kubeClient:         kubeClient,
@@ -81,7 +81,7 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	ctx, m.cancel = context.WithCancel(ctx)
 	m.storeBuilder.WithSharding(shard, totalShards)
 	m.storeBuilder.WithContext(ctx)
-	m.stores = m.storeBuilder.Build()
+	m.metricsWriters = m.storeBuilder.Build()
 	m.curShard = shard
 	m.curTotalShards = totalShards
 }
@@ -174,8 +174,8 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// ServeHTTP implements the http.Handler interface. It writes the metrics in
-// its stores to the response body.
+// ServeHTTP implements the http.Handler interface. It writes all generated
+// metrics to the response body.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
@@ -198,8 +198,8 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for _, s := range m.stores {
-		s.WriteAll(writer)
+	for _, w := range m.metricsWriters {
+		w.WriteAll(writer)
 	}
 
 	// In case we gzipped the response, we have to close the writer.
@@ -234,7 +234,7 @@ func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 }
 
 func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {
-	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(podName, metav1.GetOptions{})
+	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieve pod %s for sharding", podName)
 	}
@@ -245,7 +245,7 @@ func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName s
 			continue
 		}
 
-		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(o.Name, metav1.GetOptions{})
+		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(context.TODO(), o.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.Wrapf(err, "retrieve shard's StatefulSet: %s/%s", namespaceName, o.Name)
 		}

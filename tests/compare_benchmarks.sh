@@ -38,4 +38,4 @@ echo ""
 echo "### Result"
 echo "old=${REF_TO_COMPARE} new=${REF_CURRENT}"
 
-benchcmp "$RESULT_TO_COMPARE" "$RESULT_CURRENT"
+benchstat "$RESULT_TO_COMPARE" "$RESULT_CURRENT"

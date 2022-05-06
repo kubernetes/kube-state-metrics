@@ -15,9 +15,8 @@ Maintaining the release branches for older minor releases happens on a best effo
 ## Prepare your release
 
 * Bump the version in the `VERSION` file in the root of the repository.
-* Run `make examples`, which will re-generate all example manifests to use the the new version.
+* Run `make examples`, which will re-generate all example manifests to use the new version.
 * Make a PR to update:
-  * kube-state-metrics image tag for both `quay.io` and `staging-k8s.gcr.io`.
   * [Compatibility matrix](README.md#compatibility-matrix)
   * Changelog entry
     * Only include user relevant changes
@@ -30,10 +29,13 @@ Maintaining the release branches for older minor releases happens on a best effo
     ```
     * All lines should be full sentences
   * kube-state-metrics image tag used in Kubernetes deployment yaml config.
-* Cut the new release branch, i.e., `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on
-* Cut the new release tag, i.e., `v1.2.0-rc.0`
-* Ping Googlers(@loburm/@piosz) to build and push newest image to `k8s.gcr.io` (or to `staging-k8s.gcr.io` in case of release candidates)
-* Build and push newest image to `quay.io`(@brancz)
+* Cut the new release branch, e.g. `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on
+* Cut the new release tag, e.g. `v1.2.0-rc.0`
+* Create a new **pre-release** on github
+* New images are automatically built and pushed to `gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics`
+* Promote image by sending a PR to [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io) repository. Follow the [example PR](https://github.com/kubernetes/k8s.io/pull/1260). Use [cip-mm](https://github.com/kubernetes-sigs/promo-tools/tree/main/cmd/cip-mm) to update the manifest files in this repository, e.g. `cip-mm --base_dir=k8s.gcr.io --staging_repo=gcr.io/k8s-staging-kube-state-metrics --filter_tag='v2.0.0-rc.1'`
+* Create a PR to merge the changes of this release back into the master branch.
+* Once the PR to promote the image is merged, mark the pre-release as a regular release.
 
 ## Stable release
 

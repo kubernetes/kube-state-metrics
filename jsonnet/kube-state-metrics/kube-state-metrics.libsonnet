@@ -155,30 +155,30 @@
       },
       rules: rules,
     },
-  deployment:
-    local c = {
-      name: 'kube-state-metrics',
-      image: ksm.image,
-      ports: [
-        { name: 'http-metrics', containerPort: 8080 },
-        { name: 'telemetry', containerPort: 8081 },
-      ],
-      securityContext: { 
-        runAsUser: 65534, 
-        allowPrivilegeEscalation: false,        
-        readOnlyRootFilesystem: true,
-        capabilities: { drop: ['ALL'] },
-      },
-      livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
-        port: 8080,
-        path: '/healthz',
-      } },
-      readinessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
-        port: 8081,
-        path: '/',
-      } },
-    };
 
+  container:: {
+    name: 'kube-state-metrics',
+    image: ksm.image,
+    ports: [
+      { name: 'http-metrics', containerPort: 8080 },
+      { name: 'telemetry', containerPort: 8081 },
+    ],
+    securityContext: {
+      runAsUser: 65534,
+      allowPrivilegeEscalation: false,
+      readOnlyRootFilesystem: true,
+      capabilities: { drop: ['ALL'] },
+    },
+    livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
+      port: 8080,
+      path: '/healthz',
+    } },
+    readinessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
+      port: 8081,
+      path: '/',
+    } },
+  },
+  deployment:
     {
       apiVersion: 'apps/v1',
       kind: 'Deployment',
@@ -195,7 +195,7 @@
             labels: ksm.commonLabels + ksm.extraRecommendedLabels,
           },
           spec: {
-            containers: [c],
+            containers: [ksm.container],
             serviceAccountName: ksm.serviceAccount.metadata.name,
             automountServiceAccountToken: true,
             nodeSelector: { 'kubernetes.io/os': 'linux' },
@@ -277,19 +277,18 @@
         }],
       },
 
+    // extending the default container from above
+    statefulContainer:: ksm.container {
+      args: [
+        '--pod=$(POD_NAME)',
+        '--pod-namespace=$(POD_NAMESPACE)',
+      ],
+      env: [
+        { name: 'POD_NAME', valueFrom: { fieldRef: { fieldPath: 'metadata.name' } } },
+        { name: 'POD_NAMESPACE', valueFrom: { fieldRef: { fieldPath: 'metadata.namespace' } } },
+      ],
+    },
     statefulset:
-      // extending the default container from above
-      local c = ksm.deployment.spec.template.spec.containers[0] {
-        args: [
-          '--pod=$(POD_NAME)',
-          '--pod-namespace=$(POD_NAMESPACE)',
-        ],
-        env: [
-          { name: 'POD_NAME', valueFrom: { fieldRef: { fieldPath: 'metadata.name' } } },
-          { name: 'POD_NAMESPACE', valueFrom: { fieldRef: { fieldPath: 'metadata.namespace' } } },
-        ],
-      };
-
       {
         apiVersion: 'apps/v1',
         kind: 'StatefulSet',
@@ -307,7 +306,7 @@
               labels: ksm.commonLabels + ksm.extraRecommendedLabels,
             },
             spec: {
-              containers: [c],
+              containers: [ksm.autosharding.statefulContainer],
               serviceAccountName: ksm.serviceAccount.metadata.name,
               automountServiceAccountToken: true,
               nodeSelector: { 'kubernetes.io/os': 'linux' },

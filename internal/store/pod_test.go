@@ -610,7 +610,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_waiting_reason{container="container3",namespace="ns2",pod="pod2",reason="ContainerCreating",uid="uid2"} 1
 				kube_pod_container_status_waiting{container="container2",namespace="ns2",pod="pod2",uid="uid2"} 0
 				kube_pod_container_status_waiting{container="container3",namespace="ns2",pod="pod2",uid="uid2"} 1
-			`,
+`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
 				"kube_pod_container_state_started",
@@ -664,7 +664,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_terminated{container="container4",namespace="ns3",pod="pod3",uid="uid3"} 0
 				kube_pod_container_status_waiting_reason{container="container4",namespace="ns3",pod="pod3",reason="CrashLoopBackOff",uid="uid3"} 1
 				kube_pod_container_status_waiting{container="container4",namespace="ns3",pod="pod3",uid="uid3"} 1
-			`,
+`,
 			MetricNames: []string{
 				"kube_pod_container_status_running",
 				"kube_pod_container_status_terminated",
@@ -1286,7 +1286,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
-			`,
+`,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
 		{
@@ -1310,7 +1310,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 1
-			`,
+`,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
 		{
@@ -1334,7 +1334,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
-			`,
+`,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
 		{
@@ -1358,7 +1358,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 1
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
-			`,
+`,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
 		{
@@ -1382,7 +1382,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
-			`,
+`,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
 		{
@@ -1783,8 +1783,6 @@ func TestPodStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
-					Annotations: map[string]string{
-						"chaos.alpha.kubernetes.io/enabled": "true",
 					UID:       "uid1",
 					Labels: map[string]string{
 						"app": "example",
@@ -1815,13 +1813,6 @@ func TestPodStore(t *testing.T) {
 				},
 				Spec: v1.PodSpec{},
 			},
-			Want: `
-				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
-				# TYPE kube_pod_chaoskube_enabled gauge
-				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="true"} 1
-		`,
-			MetricNames: []string{
-				"kube_pod_chaoskube_enabled",
 			AllowLabelsList: []string{"wildcard-not-first", options.LabelWildcard},
 			Want: `
 				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
@@ -1837,8 +1828,6 @@ func TestPodStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
-					Annotations: map[string]string{
-						"chaos.alpha.kubernetes.io/enabled": "false",
 					UID:       "uid1",
 					Labels: map[string]string{
 						"app": "example",
@@ -1846,13 +1835,6 @@ func TestPodStore(t *testing.T) {
 				},
 				Spec: v1.PodSpec{},
 			},
-			Want: `
-				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
-				# TYPE kube_pod_chaoskube_enabled gauge
-				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="false"} 0
-		`,
-			MetricNames: []string{
-				"kube_pod_chaoskube_enabled",
 			AllowLabelsList: []string{options.LabelWildcard},
 			Want: `
 				# HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
@@ -1924,16 +1906,75 @@ func TestPodStore(t *testing.T) {
 			},
 			AllowAnnotationsList: []string{options.LabelWildcard},
 			Want: `
-				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
-				# TYPE kube_pod_chaoskube_enabled gauge
-				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="false"} 0
 				# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
 				# TYPE kube_pod_annotations gauge
 				kube_pod_annotations{annotation_app="example",namespace="ns1",pod="pod1",uid="uid1"} 1
 		`,
 			MetricNames: []string{
-				"kube_pod_chaoskube_enabled",
 				"kube_pod_annotations",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+					Annotations: map[string]string{
+						"chaos.alpha.kubernetes.io/enabled": "true",
+					},
+				},
+				Spec: v1.PodSpec{},
+			},
+			AllowAnnotationsList: []string{options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
+				# TYPE kube_pod_chaoskube_enabled gauge
+				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="true",uid="uid1"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_chaoskube_enabled",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+					Annotations: map[string]string{
+						"chaos.alpha.kubernetes.io/enabled": "false",
+					},
+				},
+				Spec: v1.PodSpec{},
+			},
+			AllowAnnotationsList: []string{options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
+				# TYPE kube_pod_chaoskube_enabled gauge
+				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="false",uid="uid1"} 0
+			`,
+			MetricNames: []string{
+				"kube_pod_chaoskube_enabled",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{},
+			},
+			AllowAnnotationsList: []string{options.LabelWildcard},
+			Want: `
+				# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
+				# TYPE kube_pod_chaoskube_enabled gauge
+				kube_pod_chaoskube_enabled{namespace="ns1",pod="pod1",pod_chaoskube_enabled="false",uid="uid1"} 0
+			`,
+			MetricNames: []string{
+				"kube_pod_chaoskube_enabled",
 			},
 		},
 	}

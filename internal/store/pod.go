@@ -42,7 +42,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodCompletionTimeFamilyGenerator(),
 		createPodContainerInfoFamilyGenerator(),
 		createPodSecurityPolicyInfoFamilyGenerator(),
-		createPodChaoesKubeEnabledInfoFamilyGenerator(),
+		createPodChaosKubeEnabledInfoFamilyGenerator(),
 		createPodContainerResourceLimitsFamilyGenerator(),
 		createPodContainerResourceRequestsFamilyGenerator(),
 		createPodContainerStateStartedFamilyGenerator(),
@@ -171,7 +171,7 @@ func createPodSecurityPolicyInfoFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-func createPodChaoesKubeEnabledInfoFamilyGenerator() generator.FamilyGenerator {
+func createPodChaosKubeEnabledInfoFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGenerator(
 		"kube_pod_chaoskube_enabled",
 		"Describes whether the pod can be killed by chaoskube",

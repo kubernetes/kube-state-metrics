@@ -191,6 +191,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 
 	expected := `# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
+# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
 # HELP kube_pod_completion_time Completion time in unix timestamp for a pod.
 # HELP kube_pod_container_info Information about a container in a pod.
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
@@ -221,19 +222,10 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_labels Kubernetes labels converted to Prometheus labels.
 # HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
 # HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
-# HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
 # HELP kube_pod_owner Information about the Pod's owner.
 # HELP kube_pod_restart_policy Describes the restart policy in use by this pod.
-# TYPE kube_pod_restart_policy gauge
-kube_pod_restart_policy{namespace="default",pod="pod0",type="Always"} 1
+# HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
 # HELP kube_pod_security_policy Describes the pod security policy in use by this pod.
-# TYPE kube_pod_security_policy gauge
-kube_pod_security_policy{namespace="default",pod="pod0",pod_security_policy=""} 1
-# HELP kube_pod_chaoskube_enabled Describes whether the pod can be killed by chaoskube
-# TYPE kube_pod_chaoskube_enabled gauge
-kube_pod_chaoskube_enabled{namespace="default",pod="pod0",pod_chaoskube_enabled="false"} 0
-# HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
-# TYPE kube_pod_status_scheduled_time gauge
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly Describes whether a persistentvolumeclaim is mounted read only.
 # HELP kube_pod_start_time Start time in unix timestamp for a pod.
@@ -244,6 +236,7 @@ kube_pod_chaoskube_enabled{namespace="default",pod="pod0",pod_chaoskube_enabled=
 # HELP kube_pod_status_scheduled_time Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable Describes the unschedulable status for the pod.
 # TYPE kube_pod_annotations gauge
+# TYPE kube_pod_chaoskube_enabled gauge
 # TYPE kube_pod_completion_time gauge
 # TYPE kube_pod_container_info gauge
 # TYPE kube_pod_container_resource_limits gauge
@@ -274,9 +267,10 @@ kube_pod_chaoskube_enabled{namespace="default",pod="pod0",pod_chaoskube_enabled=
 # TYPE kube_pod_labels gauge
 # TYPE kube_pod_overhead_cpu_cores gauge
 # TYPE kube_pod_overhead_memory_bytes gauge
-# TYPE kube_pod_runtimeclass_name_info gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
+# TYPE kube_pod_runtimeclass_name_info gauge
+# TYPE kube_pod_security_policy gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge
@@ -287,6 +281,7 @@ kube_pod_chaoskube_enabled{namespace="default",pod="pod0",pod_chaoskube_enabled=
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
 kube_pod_annotations{namespace="default",pod="pod0",uid="abc-0"} 1
+kube_pod_chaoskube_enabled{namespace="default",pod="pod0",uid="abc-0",pod_chaoskube_enabled="false"} 0
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",image_spec="k8s.gcr.io/hyperkube2_spec",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",image_spec="k8s.gcr.io/hyperkube3_spec",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
@@ -320,6 +315,7 @@ kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_i
 kube_pod_labels{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
+kube_pod_security_policy{namespace="default",pod="pod0",uid="abc-0",pod_security_policy=""} 1
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Failed"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Pending"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Running"} 1

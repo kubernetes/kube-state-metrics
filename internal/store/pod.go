@@ -127,19 +127,19 @@ func createPodContainerInfoFamilyGenerator() generator.FamilyGenerator {
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
+			ms := []*metric.Metric{}
 			labelKeys := []string{"container", "image_spec", "image", "image_id", "container_id"}
 
-			for i, c := range p.Spec.Containers {
+			for _, c := range p.Spec.Containers {
 				for _, cs := range p.Status.ContainerStatuses {
 					if cs.Name != c.Name {
 						continue
 					}
-					ms[i] = &metric.Metric{
+					ms = append(ms, &metric.Metric{
 						LabelKeys:   labelKeys,
 						LabelValues: []string{cs.Name, c.Image, cs.Image, cs.ImageID, cs.ContainerID},
 						Value:       1,
-					}
+					})
 				}
 			}
 			return &metric.Family{

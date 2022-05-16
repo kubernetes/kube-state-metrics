@@ -57,9 +57,9 @@ So to mimic the [logic](https://github.com/kubernetes/kubernetes/blob/v1.17.3/pk
 
 For example:
 
-* To get the list of pods that are in the `Unknown` state, you can run the following PromQL query: `sum(kube_pod_status_phase{phase="Unknown"}) by (namespace, pod) or (count(kube_pod_deletion_timestamp) by (namespace, pod) * sum(kube_pod_status_reason{reason="NodeLost"}) by(namespace, pod))`
+* To get the list of pods that are in the `Unknown` state, you can run the following PromQL query: `kube_pod_status_phase{phase="Unknown"} or count(kube_pod_deletion_timestamp) by (namespace, podname) * sum(kube_pod_status_reason{reason="NodeLost"}) by(namespace, podname)`
 
-* For Pods in `Terminating` state: `count(kube_pod_deletion_timestamp) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod)`
+* For Pods in `Terminating` state: `count(kube_pod_deletion_timestamp) by (namespace, podname) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, podname)`
 
 Here is an example of a Prometheus rule that can be used to alert on a Pod that has been in the `Terminated` state for more than `5m`.
 

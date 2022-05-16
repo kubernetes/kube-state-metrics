@@ -68,7 +68,7 @@ groups:
 - name: Pod state
   rules:
   - alert: PodsBlockInTerminatingState
-    expr: count(kube_pod_deletion_timestamp) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod) > 0
+    expr: count(kube_pod_deletion_timestamp) by (namespace, podname) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, podname) > 0
     for: 5m
     labels:
       severity: page

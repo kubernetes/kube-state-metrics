@@ -155,6 +155,27 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			"kube_cronjob_status_last_successful_time",
+			"LastSuccessfulTime keeps information of when was the last time the job was completed successfully.",
+			metric.Gauge,
+			"",
+			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if j.Status.LastSuccessfulTime != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(j.Status.LastSuccessfulTime.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			"kube_cronjob_spec_suspend",
 			"Suspend flag tells the controller to suspend subsequent executions.",
 			metric.Gauge,

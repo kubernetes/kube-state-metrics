@@ -205,7 +205,7 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			"Unix creation timestamp",
 			metric.Gauge,
 			"",
-			wrapPersistentVolumeFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !p.CreationTimestamp.IsZero() {

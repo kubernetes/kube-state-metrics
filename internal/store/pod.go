@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"k8s.io/utils/net"
 	"strconv"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
@@ -55,6 +56,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodCreatedFamilyGenerator(),
 		createPodDeletionTimestampFamilyGenerator(),
 		createPodInfoFamilyGenerator(),
+		createPodIPFamilyGenerator(),
 		createPodInitContainerInfoFamilyGenerator(),
 		createPodInitContainerResourceLimitsFamilyGenerator(),
 		createPodInitContainerResourceRequestsFamilyGenerator(),
@@ -578,6 +580,37 @@ func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 			}
 		}),
 	)
+}
+
+func createPodIPFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_ips",
+		"Pod IP addresses",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := make([]*metric.Metric, len(p.Status.PodIPs))
+			labelKeys := []string{"ip", "ip_family"}
+
+			for i, ip := range p.Status.PodIPs {
+				netIP := net.ParseIPSloppy(ip.IP)
+				var ipFamily net.IPFamily
+				if net.IsIPv4(netIP) {
+					ipFamily = net.IPv4
+				} else {
+					ipFamily = net.IPv6
+				}
+				ms[i] = &metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: []string{ip.IP, string(ipFamily)},
+					Value:       1,
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}))
 }
 
 func createPodInitContainerInfoFamilyGenerator() generator.FamilyGenerator {

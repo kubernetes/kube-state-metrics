@@ -25,27 +25,28 @@ the raw metrics.
 
 ## Table of Contents
 
-- [Versioning](#versioning)
-  - [Kubernetes Version](#kubernetes-version)
-  - [Compatibility matrix](#compatibility-matrix)
-  - [Resource group version compatibility](#resource-group-version-compatibility)
-  - [Container Image](#container-image)
-- [Metrics Documentation](#metrics-documentation)
-- [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
-- [Resource recommendation](#resource-recommendation)
-- [A note on costing](#a-note-on-costing)
-- [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
-- [Scaling kube-state-metrics](#scaling-kube-state-metrics)
-  - [Resource recommendation](#resource-recommendation)
-  - [Horizontal scaling (sharding)](#horizontal-scaling-sharding)
-    - [Automated sharding](#automated-sharding)
-- [Setup](#setup)
-  - [Building the Docker container](#building-the-docker-container)
-- [Usage](#usage)
-  - [Kubernetes Deployment](#kubernetes-deployment)
-  - [Limited privileges environment](#limited-privileges-environment)
-  - [Development](#development)
-  - [Developer Contributions](#developer-contributions)
+- [Overview](#overview)
+  - [Table of Contents](#table-of-contents)
+    - [Versioning](#versioning)
+      - [Kubernetes Version](#kubernetes-version)
+      - [Compatibility matrix](#compatibility-matrix)
+      - [Resource group version compatibility](#resource-group-version-compatibility)
+      - [Container Image](#container-image)
+    - [Metrics Documentation](#metrics-documentation)
+    - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
+    - [Scaling kube-state-metrics](#scaling-kube-state-metrics)
+      - [Resource recommendation](#resource-recommendation)
+    - [A note on costing](#a-note-on-costing)
+    - [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
+      - [Horizontal scaling (sharding)](#horizontal-scaling-sharding)
+        - [Automated sharding](#automated-sharding)
+    - [Setup](#setup)
+      - [Building the Docker container](#building-the-docker-container)
+    - [Usage](#usage)
+      - [Kubernetes Deployment](#kubernetes-deployment)
+      - [Limited privileges environment](#limited-privileges-environment)
+      - [Development](#development)
+      - [Developer Contributions](#developer-contributions)
 
 ### Versioning
 
@@ -294,3 +295,5 @@ To run the e2e tests locally see the documentation in [tests/README.md](./tests/
 #### Developer Contributions
 
 When developing, there are certain code patterns to follow to better your contributing experience and likelihood of e2e and other ci tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).
+
+Rebuild Image: Tue May 17 15:05:40 EDT 2022

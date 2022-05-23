@@ -263,6 +263,27 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_persistentvolume_created",
+			"Unix creation timestamp.",
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !p.CreationTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(p.CreationTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

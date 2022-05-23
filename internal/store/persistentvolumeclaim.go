@@ -200,6 +200,27 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
+		*generator.NewFamilyGenerator(
+			"kube_persistentvolumeclaim_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !p.CreationTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(p.CreationTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

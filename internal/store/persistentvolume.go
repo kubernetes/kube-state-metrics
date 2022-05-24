@@ -265,7 +265,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 		),
 		*generator.NewFamilyGenerator(
 			"kube_persistentvolume_created",
-			"Unix creation timestamp.",
+			"Unix creation timestamp",
 			metric.Gauge,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {

@@ -586,7 +586,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				# HELP kube_persistentvolume_created Unix creation timestamp
 				# TYPE kube_persistentvolume_created gauge
 				kube_persistentvolume_created{namespace="default",persistentvolume="test-pv-created"} 1.5e+09
-			`,
+`,
 			MetricNames: []string{"kube_persistentvolume_created"},
 		},
 	}

@@ -18,8 +18,9 @@ package store
 
 import (
 	"context"
-	"k8s.io/utils/net"
 	"strconv"
+
+	"k8s.io/utils/net"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"

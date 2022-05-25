@@ -991,10 +991,10 @@ func TestPodStore(t *testing.T) {
 					PodIP:  "1.2.3.4",
 					PodIPs: []v1.PodIP{
 						{
-							"1.2.3.4",
+							IP: "1.2.3.4",
 						},
 						{
-							"fc00:1234:5678:90ab:cdef:cafe:f00d:d00d",
+							IP: "fc00:1234:5678:90ab:cdef:cafe:f00d:d00d",
 						},
 					},
 					StartTime: &metav1StartTime,

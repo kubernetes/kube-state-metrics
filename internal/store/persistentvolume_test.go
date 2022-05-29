@@ -576,7 +576,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "test-pv-created",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
 				},
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
@@ -585,7 +584,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 				# HELP kube_persistentvolume_created Unix creation timestamp
 				# TYPE kube_persistentvolume_created gauge
-				kube_persistentvolume_created{namespace="default",persistentvolume="test-pv-created"} 1.5e+09
+				kube_persistentvolume_created{persistentvolume="test-pv-created"} 1.5e+09
 `,
 			MetricNames: []string{"kube_persistentvolume_created"},
 		},

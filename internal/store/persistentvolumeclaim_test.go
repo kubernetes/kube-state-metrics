@@ -256,7 +256,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
-				kube_persistentvolumeclaim_created{namespace="","persistentvolumeclaim="mongo-data"} 1.5e+09
+				kube_persistentvolumeclaim_created{namespace="",persistentvolumeclaim="mongo-data"} 1.5e+09
 				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="<none>",volumename=""} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Lost"} 1
@@ -274,7 +274,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="FileSystemResizePending"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="Resizing"} 0
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created"},
+			MetricNames: []string{"kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition"},
 		},
 	}
 	for i, c := range cases {

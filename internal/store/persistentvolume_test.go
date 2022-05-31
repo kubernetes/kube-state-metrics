@@ -18,6 +18,7 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -569,6 +570,23 @@ func TestPersistentVolumeStore(t *testing.T) {
 				"kube_persistentvolume_annotations",
 				"kube_persistentvolume_labels",
 			},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-pv-created",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumePending,
+				},
+			},
+			Want: `
+				# HELP kube_persistentvolume_created Unix creation timestamp
+				# TYPE kube_persistentvolume_created gauge
+				kube_persistentvolume_created{persistentvolume="test-pv-created"} 1.5e+09
+`,
+			MetricNames: []string{"kube_persistentvolume_created"},
 		},
 	}
 	for i, c := range cases {

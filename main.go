@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/common/version"
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
+
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 

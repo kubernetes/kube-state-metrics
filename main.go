@@ -52,7 +52,7 @@ func main() {
 	}
 
 	var factories []customresource.RegistryFactory
-	if config, set := resolveCustomResourceConfig(); set {
+	if config, set := resolveCustomResourceConfig(opts); set {
 		crf, err := customresourcestate.FromConfig(config)
 		if err != nil {
 			klog.Fatal(err)
@@ -66,16 +66,16 @@ func main() {
 	}
 }
 
-func resolveCustomResourceConfig() (customresourcestate.ConfigDecoder, bool) {
-	if s, set := os.LookupEnv("KSM_CUSTOM_RESOURCE_METRICS"); set {
-		return yaml.NewDecoder(strings.NewReader(s)), true
-	}
-	if file, set := os.LookupEnv("KSM_CUSTOM_RESOURCE_METRICS_FILE"); set {
+func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, bool) {
+	if file := opts.CustomResourceConfigFile; file != "" {
 		f, err := os.Open(file)
 		if err != nil {
 			klog.Fatal(err)
 		}
 		return yaml.NewDecoder(f), true
+	}
+	if s, set := os.LookupEnv("KSM_CUSTOM_RESOURCE_METRICS"); set {
+		return yaml.NewDecoder(strings.NewReader(s)), true
 	}
 	return nil, false
 }

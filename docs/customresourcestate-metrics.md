@@ -5,7 +5,11 @@ registry and running your own build of KSM.
 
 ## Configuration
 
-The `KSM_CUSTOM_RESOURCE_METRICS` environment variable can be used to configure the metrics for custom resources:
+A configuration file is required to describe your custom resources and the fields to turn into metrics.
+
+The contents of this file can be set as an environment variable, `KSM_CUSTOM_RESOURCE_METRICS`, or the 
+flag `--custom-resource-state-config=/path/to/config.yaml` can be used to specify a file on the filesystem. 
+The command flag takes precedence over the environment variable. e.g.,
 
 ```yaml
 apiVersion: apps/v1

@@ -153,7 +153,7 @@ kube_myteam_io_v1_Foo_active_count{active="3",custom_metric="yes",foo="bar",name
 ### Naming
 
 The default metric names are prefixed to avoid collisions with other metrics.
-By default a namespace of `kube` and a subsystem based on your custom resource's GVK is used.
+By default a namespace of `kube` and a subsystem based on your custom resource's group+version+kind is used.
 You can override these with the namespace and subsystem fields.
 
 ```yaml

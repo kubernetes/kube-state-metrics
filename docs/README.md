@@ -80,7 +80,7 @@ sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod,
 
 ## Metrics from Custom Resources
 
-See [Custom Resource State Metrics](customresourcestate-metrics.md) for more information.
+See [Custom Resource State Metrics](customresourcestate-metrics.md) for experimental support for custom resources.
 
 ## CLI Arguments
 

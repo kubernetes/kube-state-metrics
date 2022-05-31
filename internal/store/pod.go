@@ -596,10 +596,13 @@ func createPodIPFamilyGenerator() generator.FamilyGenerator {
 			for i, ip := range p.Status.PodIPs {
 				netIP := net.ParseIPSloppy(ip.IP)
 				var ipFamily net.IPFamily
-				if net.IsIPv4(netIP) {
+				switch {
+				case net.IsIPv4(netIP):
 					ipFamily = net.IPv4
-				} else {
+				case net.IsIPv6(netIP):
 					ipFamily = net.IPv6
+				default:
+					continue // nil from ParseIPSloppy indicates failure to parse, so we don't include that in our metrics series
 				}
 				ms[i] = &metric.Metric{
 					LabelKeys:   labelKeys,

@@ -5,11 +5,14 @@ registry and running your own build of KSM.
 
 ## Configuration
 
-A configuration file is required to describe your custom resources and the fields to turn into metrics.
+A YAML configuration file described below is required to define your custom resources and the fields to turn into metrics.
 
-The contents of this file can be set as an environment variable, `KSM_CUSTOM_RESOURCE_METRICS`, or the 
-flag `--custom-resource-state-config=/path/to/config.yaml` can be used to specify a file on the filesystem. 
-The command flag takes precedence over the environment variable. e.g.,
+Two flags can be used:
+
+ * `--custom-resource-state.config "inline yaml (see example)"` or
+ * `--custom-resource-state-config /path/to/config.yaml`
+
+If both flags are provided, the inline configuration will take precedence.
 
 ```yaml
 apiVersion: apps/v1
@@ -22,9 +25,11 @@ spec:
     spec:
       containers:
       - name: kube-state-metrics
-        env:
-          - name: KSM_CUSTOM_RESOURCE_METRICS
-            value: |
+        args:
+          - --custom-resource-state.config
+          # in YAML files, | allows a multi-line string to be passed as a flag value
+          # see https://yaml-multiline.info
+          -  |
               spec:
                 resources:
                   - groupVersionKind:
@@ -78,6 +83,8 @@ status:
 ```
 
 #### Single Values
+
+The config:
 
 ```yaml
 kind: CustomResourceStateMetrics
@@ -153,7 +160,7 @@ kube_myteam_io_v1_Foo_active_count{active="3",custom_metric="yes",foo="bar",name
 ### Naming
 
 The default metric names are prefixed to avoid collisions with other metrics.
-By default a namespace of `kube` and a subsystem based on your custom resource's group+version+kind is used.
+By default, a namespace of `kube` and a subsystem based on your custom resource's group+version+kind is used.
 You can override these with the namespace and subsystem fields.
 
 ```yaml

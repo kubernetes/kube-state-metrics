@@ -67,15 +67,15 @@ func main() {
 }
 
 func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, bool) {
+	if s := opts.CustomResourceConfig; s != "" {
+		return yaml.NewDecoder(strings.NewReader(s)), true
+	}
 	if file := opts.CustomResourceConfigFile; file != "" {
 		f, err := os.Open(file)
 		if err != nil {
 			klog.Fatal(err)
 		}
 		return yaml.NewDecoder(f), true
-	}
-	if s, set := os.LookupEnv("KSM_CUSTOM_RESOURCE_METRICS"); set {
-		return yaml.NewDecoder(strings.NewReader(s)), true
 	}
 	return nil, false
 }

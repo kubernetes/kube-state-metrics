@@ -10,7 +10,7 @@ A YAML configuration file described below is required to define your custom reso
 Two flags can be used:
 
  * `--custom-resource-state.config "inline yaml (see example)"` or
- * `--custom-resource-state-config /path/to/config.yaml`
+ * `--custom-resource-state.config-file /path/to/config.yaml`
 
 If both flags are provided, the inline configuration will take precedence.
 

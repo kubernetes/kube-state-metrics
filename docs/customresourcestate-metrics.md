@@ -9,8 +9,8 @@ A YAML configuration file described below is required to define your custom reso
 
 Two flags can be used:
 
- * `--custom-resource-state.config "inline yaml (see example)"` or
- * `--custom-resource-state.config-file /path/to/config.yaml`
+ * `--custom-resource-state-config "inline yaml (see example)"` or
+ * `--custom-resource-state-config-file /path/to/config.yaml`
 
 If both flags are provided, the inline configuration will take precedence.
 
@@ -26,7 +26,7 @@ spec:
       containers:
       - name: kube-state-metrics
         args:
-          - --custom-resource-state.config
+          - --custom-resource-state-config
           # in YAML files, | allows a multi-line string to be passed as a flag value
           # see https://yaml-multiline.info
           -  |

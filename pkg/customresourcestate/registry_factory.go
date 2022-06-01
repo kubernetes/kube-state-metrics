@@ -19,6 +19,7 @@ package customresourcestate
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -222,7 +223,37 @@ func (e compiledEach) Values(obj map[string]interface{}) (result []eachValue, er
 		addPathLabels(v, e.LabelFromPath, value.Labels)
 		result = append(result, *value)
 	}
+	// return results in a consistent order (simplifies testing)
+	sort.Slice(result, func(i, j int) bool {
+		return less(result[i].Labels, result[j].Labels)
+	})
 	return result, errors
+}
+
+// less compares two maps of labels by keys and values
+func less(a, b map[string]string) bool {
+	var aKeys, bKeys sort.StringSlice
+	for k := range a {
+		aKeys = append(aKeys, k)
+	}
+	for k := range b {
+		bKeys = append(bKeys, k)
+	}
+	aKeys.Sort()
+	bKeys.Sort()
+	for i := 0; i < int(math.Min(float64(len(aKeys)), float64(len(bKeys)))); i++ {
+		if aKeys[i] != bKeys[i] {
+			return aKeys[i] < bKeys[i]
+		}
+
+		va := a[aKeys[i]]
+		vb := b[bKeys[i]]
+		if va == vb {
+			continue
+		}
+		return va < vb
+	}
+	return len(aKeys) < len(bKeys)
 }
 
 func (e compiledEach) value(it interface{}) (*eachValue, error) {

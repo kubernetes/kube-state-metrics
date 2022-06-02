@@ -20,9 +20,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/prometheus/common/version"
+	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
+
+	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 
 	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -46,8 +51,31 @@ func main() {
 		os.Exit(0)
 	}
 
+	var factories []customresource.RegistryFactory
+	if config, set := resolveCustomResourceConfig(opts); set {
+		crf, err := customresourcestate.FromConfig(config)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		factories = append(factories, crf...)
+	}
+
 	ctx := context.Background()
-	if err := app.RunKubeStateMetrics(ctx, opts); err != nil {
+	if err := app.RunKubeStateMetrics(ctx, opts, factories...); err != nil {
 		klog.Fatalf("Failed to run kube-state-metrics: %v", err)
 	}
+}
+
+func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, bool) {
+	if s := opts.CustomResourceConfig; s != "" {
+		return yaml.NewDecoder(strings.NewReader(s)), true
+	}
+	if file := opts.CustomResourceConfigFile; file != "" {
+		f, err := os.Open(file)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		return yaml.NewDecoder(f), true
+	}
+	return nil, false
 }

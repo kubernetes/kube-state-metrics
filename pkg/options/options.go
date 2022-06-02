@@ -54,6 +54,9 @@ type Options struct {
 
 	UseAPIServerCache bool
 
+	CustomResourceConfig     string
+	CustomResourceConfigFile string
+
 	flags *pflag.FlagSet
 }
 
@@ -111,6 +114,9 @@ func (o *Options) AddFlags() {
 	o.flags.StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
 	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
 	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
+
+	o.flags.StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
+	o.flags.StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
 }
 
 // Parse parses the flag definitions from the argument list.

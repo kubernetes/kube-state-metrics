@@ -78,6 +78,10 @@ sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod,
   * on (namespace, pod) group_left() (sum(kube_pod_status_phase{phase="Running"}) by (pod, namespace) == 1)
 ```
 
+## Metrics from Custom Resources
+
+See [Custom Resource State Metrics](customresourcestate-metrics.md) for experimental support for custom resources.
+
 ## CLI Arguments
 
 Additionally, options for `kube-state-metrics` can be passed when executing as a CLI, or in a kubernetes / openshift environment. More information can be found here: [CLI Arguments](cli-arguments.md)

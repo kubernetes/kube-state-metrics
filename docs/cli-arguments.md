@@ -28,7 +28,7 @@ Usage of ./kube-state-metrics:
       --add_dir_header                             If true, adds the file directory to the header of the log messages
       --alsologtostderr                            log to standard error as well as files
       --apiserver string                           The URL of the apiserver to use as a master
-      --custom-resource-state-config string        Inline Custom Resource State Metrics config YAML
+      --custom-resource-state-config string        Inline Custom Resource State Metrics config YAML (experimental)
       --custom-resource-state-config-file string   Path to a Custom Resource State Metrics config file (experimental)
       --enable-gzip-encoding                       Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.
   -h, --help                                       Print Help text

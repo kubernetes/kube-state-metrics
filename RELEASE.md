@@ -33,7 +33,7 @@ Maintaining the release branches for older minor releases happens on a best effo
 * Cut the new release tag, e.g. `v1.2.0-rc.0`
 * Create a new **pre-release** on github
 * New images are automatically built and pushed to `gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics`
-* Promote image by sending a PR to [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io) repository. Follow the [example PR](https://github.com/kubernetes/k8s.io/pull/1260). Use [cip-mm](https://github.com/kubernetes-sigs/promo-tools/tree/main/cmd/cip-mm) to update the manifest files in this repository, e.g. `cip-mm --base_dir=k8s.gcr.io --staging_repo=gcr.io/k8s-staging-kube-state-metrics --filter_tag='v2.0.0-rc.1'`
+* Promote image by sending a PR to [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io) repository. Follow the [example PR](https://github.com/kubernetes/k8s.io/pull/3798). Use [kpromo pr](https://github.com/kubernetes-sigs/promo-tools/blob/main/docs/promotion-pull-requests.md) to update the manifest files in this repository, e.g. `kpromo pr --fork=$YOURNAME -i --project=kube-state-metrics -t=v2.5.0`
 * Create a PR to merge the changes of this release back into the master branch.
 * Once the PR to promote the image is merged, mark the pre-release as a regular release.
 

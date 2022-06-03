@@ -1,3 +1,19 @@
+## v2.5.0 / 2022-06-03
+
+* [FEATURE]     Add experimental Custom-Resource State Metrics #1710 @iamnoah
+* [FEATURE]     Add kube_pod_ips metric #1740 @bjschafer
+* [FEATURE]     Add kube_pod_nodeselector metric #1675 @geojaz
+* [FEATURE]     Add CSIPersistentVolumeSource to persistent volume metric #1727 @luke-sprig
+* [FEATURE]     Add kube_cronjob_status_last_successful_time metric #1732 @splitice
+* [FEATURE]     Add kube_persistentvolumeclaim_created metric #1741 @aidan-ogorman-dev
+* [ENHANCEMENT] Build with Go 1.18 #1726, #1745 @mrueg
+* [ENHANCEMENT] Bump kubernetes 1.24 and other go dependencies #1726, #1743 @mrueg
+* [ENHANCEMENT] Update x/crypto to mitigate CVE-2022-27191 #1721 @pgvishnuram
+* [BUGFIX]      Assert that newlines in comma separated arguments are ignored #1706 @sthaha
+* [BUGFIX]      Fix potential panic in pod store #1723 @mfojtik
+* [BUGFIX]      Fix potential panic in internal store #1731 @jan--f
+* [BUGFIX]      Properly initialize KSM Server test #1699 @fpetkovski
+
 ## v2.4.2 / 2022-02-10
 * [BUGFIX]  Publish images with with the correct tag 
 

@@ -26,8 +26,8 @@ esac
 NODE_IMAGE_NAME="docker.io/kindest/node"
 KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.24.0"}
 KUBE_STATE_METRICS_LOG_DIR=./log
-KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics"
-KUBE_STATE_METRICS_IMAGE_NAME="k8s.gcr.io/kube-state-metrics/kube-state-metrics-${ARCH}"
+KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics"
+KUBE_STATE_METRICS_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics-${ARCH}"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
 KIND_VERSION=v0.14.0
@@ -97,7 +97,7 @@ set -e
 kubectl version
 
 # query kube-state-metrics image tag
-REGISTRY="k8s.gcr.io/kube-state-metrics" make container
+REGISTRY="registry.k8s.io/kube-state-metrics" make container
 docker images -a
 KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep "${KUBE_STATE_METRICS_IMAGE_NAME}" |grep -v 'latest'|awk '{print $2}'|sort -u)
 echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"

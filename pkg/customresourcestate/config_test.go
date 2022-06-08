@@ -35,21 +35,21 @@ func Test_Metrics_deserialization(t *testing.T) {
 	assert.Equal(t, "active_count", m.Spec.Resources[0].Metrics[0].Name)
 
 	t.Run("can create resource factory", func(t *testing.T) {
-		rf, err := NewFieldMetrics(m.Spec.Resources[0])
+		rf, err := NewCustomResourceMetrics(m.Spec.Resources[0])
 		assert.NoError(t, err)
 
 		t.Run("labels are merged", func(t *testing.T) {
 			assert.Equal(t, map[string]string{
 				"name": mustCompilePath(t, "metadata", "name").String(),
-			}, toPaths(rf.(*fieldMetrics).Families[1].LabelFromPath))
+			}, toPaths(rf.(*customResourceMetrics).Families[1].LabelFromPath))
 		})
 
 		t.Run("errorLogV", func(t *testing.T) {
-			assert.Equal(t, klog.Level(5), rf.(*fieldMetrics).Families[1].ErrorLogV)
+			assert.Equal(t, klog.Level(5), rf.(*customResourceMetrics).Families[1].ErrorLogV)
 		})
 
 		t.Run("resource name", func(t *testing.T) {
-			assert.Equal(t, rf.(*fieldMetrics).ResourceName, "foos")
+			assert.Equal(t, rf.(*customResourceMetrics).ResourceName, "foos")
 		})
 	})
 }

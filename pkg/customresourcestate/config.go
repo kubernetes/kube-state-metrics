@@ -21,27 +21,75 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/flect"
-
 	"k8s.io/klog/v2"
+
+	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 )
+
+// Metrics is the top level configuration object.
+type Metrics struct {
+	Spec MetricsSpec `yaml:"spec" json:"spec"`
+}
+
+// MetricsSpec is the configuration describing the custom resource state metrics to generate.
+type MetricsSpec struct {
+	// Resources is the list of custom resources to be monitored. A resource with the same GroupVersionKind may appear
+	// multiple times (e.g., to customize the namespace or subsystem,) but will incur additional overhead.
+	Resources []Resource `yaml:"resources" json:"resources"`
+}
+
+// Resource configures a custom resource for metric generation.
+type Resource struct {
+	// MetricNamePrefix defines a prefix for all metrics of the resource.
+	// Falls back to the GroupVersionKind string prefixed with "kube_", with invalid characters replaced by _ if nil.
+	// If set to "", no prefix will be added.
+	// Example: If GroupVersionKind is "my-team.io/v1/MyResource", MetricNamePrefix will be "kube_my_team_io_v1_MyResource".
+	MetricNamePrefix *string `yaml:"metricNamePrefix" json:"metricNamePrefix"`
+
+	// GroupVersionKind of the custom resource to be monitored.
+	GroupVersionKind GroupVersionKind `yaml:"groupVersionKind" json:"groupVersionKind"`
+
+	// Labels are added to all metrics. If the same key is used in a metric, the value from the metric will overwrite the value here.
+	Labels `yaml:",inline" json:",inline"`
+
+	// Metrics are the custom resource fields to be collected.
+	Metrics []Generator `yaml:"metrics" json:"metrics"`
+	// ErrorLogV defines the verbosity threshold for errors logged for this resource.
+	ErrorLogV klog.Level `yaml:"errorLogV" json:"errorLogV"`
+
+	// ResourcePlural sets the plural name of the resource. Defaults to the plural version of the Kind according to flect.Pluralize.
+	ResourcePlural string `yaml:"resourcePlural" json:"resourcePlural"`
+}
+
+// GetMetricNamePrefix returns the prefix to use for metrics.
+func (r Resource) GetMetricNamePrefix() string {
+	if r.MetricNamePrefix == nil {
+		return strings.NewReplacer(
+			"/", "_",
+			".", "_",
+			"-", "_",
+		).Replace(fmt.Sprintf("kube_%s_%s_%s", r.GroupVersionKind.Group, r.GroupVersionKind.Version, r.GroupVersionKind.Kind))
+	}
+	if *r.MetricNamePrefix == "" {
+		return ""
+	}
+	return *r.MetricNamePrefix
+}
+
+// GetResourceName returns the lowercase, plural form of the resource Kind. This is ResourcePlural if it is set.
+func (r Resource) GetResourceName() string {
+	if r.ResourcePlural != "" {
+		return r.ResourcePlural
+	}
+	// kubebuilder default:
+	return strings.ToLower(flect.Pluralize(r.GroupVersionKind.Kind))
+}
 
 // GroupVersionKind is the Kubernetes group, version, and kind of a resource.
 type GroupVersionKind struct {
 	Group   string `yaml:"group" json:"group"`
 	Version string `yaml:"version" json:"version"`
 	Kind    string `yaml:"kind" json:"kind"`
-}
-
-// MetricPer targets a Path that may be a single value, array, or object. Arrays and objects will generate a metric per element.
-type MetricPer struct {
-	// Path is the path to the value to generate metric(s) for.
-	Path []string `yaml:"path" json:"path"`
-	// ValueFrom is the path to a numeric field under Path that will be the metric value.
-	ValueFrom []string `yaml:"valueFrom" json:"valueFrom"`
-	// LabelFromKey adds a label with the given name if Path is an object. The label value will be the object key.
-	LabelFromKey string `yaml:"labelFromKey" json:"labelFromKey"`
-	// LabelsFromPath adds additional labels where the value of the label is taken from a field under Path.
-	LabelsFromPath map[string][]string `yaml:"labelsFromPath" json:"labelsFromPath"`
 }
 
 // Labels is common configuration of labels to add to metrics.
@@ -82,82 +130,49 @@ type Generator struct {
 	// Help text for the metric.
 	Help string `yaml:"help" json:"help"`
 	// Each targets a value or values from the resource.
-	Each MetricPer `yaml:"each" json:"each"`
+	Each Metric `yaml:"each" json:"each"`
 
 	// Labels are added to all metrics. Labels from Each will overwrite these if using the same key.
-	Labels `yaml:",inline"` // json will inline because it is already tagged
+	Labels `yaml:",inline" json:",inline"` // json will inline because it is already tagged
 	// ErrorLogV defines the verbosity threshold for errors logged for this metric. Must be non-zero to override the resource setting.
 	ErrorLogV klog.Level `yaml:"errorLogV" json:"errorLogV"`
 }
 
-// Resource configures a custom resource for metric generation.
-type Resource struct {
-	// Namespace is an optional prefix for all metrics. Defaults to "kube" if not set. If set to "_", no namespace will be added.
-	// The combination of Namespace and Subsystem will be prefixed to all metrics generated for this resource.
-	// e.g., if Namespace is "kube" and Subsystem is "myteam_io_v1_MyResource", all metrics will be prefixed with "kube_myteam_io_v1_MyResource_".
-	Namespace string `yaml:"namespace" json:"namespace"`
-	// Subsystem defaults to the GroupVersionKind string, with invalid character replaced with _. If set to "_", no subsystem will be added.
-	// e.g., if GroupVersionKind is "myteam.io/v1/MyResource", Subsystem will be "myteam_io_v1_MyResource".
-	Subsystem string `yaml:"subsystem" json:"subsystem"`
+// Metric defines a metric to expose.
+// +union
+type Metric struct {
+	// Type defines the type of the metric.
+	// +unionDiscriminator
+	Type MetricType `yaml:"type" json:"type"`
 
-	// GroupVersionKind of the custom resource to be monitored.
-	GroupVersionKind GroupVersionKind `yaml:"groupVersionKind" json:"groupVersionKind"`
-
-	// Labels are added to all metrics. If the same key is used in a metric, the value from the metric will overwrite the value here.
-	Labels `yaml:",inline"`
-
-	// Metrics are the custom resource fields to be collected.
-	Metrics []Generator `yaml:"metrics" json:"metrics"`
-	// ErrorLogV defines the verbosity threshold for errors logged for this resource.
-	ErrorLogV klog.Level `yaml:"errorLogV" json:"errorLogV"`
-
-	// ResourcePlural sets the plural name of the resource. Defaults to the plural version of the Kind according to flect.Pluralize.
-	ResourcePlural string `yaml:"resourcePlural" json:"resourcePlural"`
+	// Gauge defines a gauge metric.
+	// +optional
+	Gauge *MetricGauge `yaml:"gauge" json:"gauge"`
+	// StateSet defines a state set metric.
+	// +optional
+	StateSet *MetricStateSet `yaml:"stateSet" json:"stateSet"`
+	// Info defines an info metric.
+	// +optional
+	Info *MetricInfo `yaml:"info" json:"info"`
 }
 
-// GetNamespace returns the namespace prefix to use for metrics.
-func (r Resource) GetNamespace() string {
-	if r.Namespace == "" {
-		return "kube"
-	}
-	if r.Namespace == "_" {
-		return ""
-	}
-	return r.Namespace
+// ConfigDecoder is for use with FromConfig.
+type ConfigDecoder interface {
+	Decode(v interface{}) (err error)
 }
 
-// GetSubsystem returns the subsystem prefix to use for metrics (will be joined between namespace and the metric name).
-func (r Resource) GetSubsystem() string {
-	if r.Subsystem == "" {
-		return strings.NewReplacer(
-			"/", "_",
-			".", "_",
-			"-", "_",
-		).Replace(fmt.Sprintf("%s_%s_%s", r.GroupVersionKind.Group, r.GroupVersionKind.Version, r.GroupVersionKind.Kind))
+// FromConfig decodes a configuration source into a slice of customresource.RegistryFactory that are ready to use.
+func FromConfig(decoder ConfigDecoder) (factories []customresource.RegistryFactory, err error) {
+	var crconfig Metrics
+	if err := decoder.Decode(&crconfig); err != nil {
+		return nil, fmt.Errorf("failed to parse Custom Resource State metrics: %w", err)
 	}
-	if r.Subsystem == "_" {
-		return ""
+	for _, resource := range crconfig.Spec.Resources {
+		factory, err := NewCustomResourceMetrics(resource)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
+		}
+		factories = append(factories, factory)
 	}
-	return r.Subsystem
-}
-
-// GetResourceName returns the lowercase, plural form of the resource Kind. This is ResourcePlural if it is set.
-func (r Resource) GetResourceName() string {
-	if r.ResourcePlural != "" {
-		return r.ResourcePlural
-	}
-	// kubebuilder default:
-	return strings.ToLower(flect.Pluralize(r.GroupVersionKind.Kind))
-}
-
-// Metrics is the top level configuration object.
-type Metrics struct {
-	Spec MetricsSpec `yaml:"spec" json:"spec"`
-}
-
-// MetricsSpec is the configuration describing the custom resource state metrics to generate.
-type MetricsSpec struct {
-	// Resources is the list of custom resources to be monitored. A resource with the same GroupVersionKind may appear
-	// multiple times (e.g., to customize the namespace or subsystem,) but will incur additional overhead.
-	Resources []Resource `yaml:"resources" json:"resources"`
+	return factories, nil
 }

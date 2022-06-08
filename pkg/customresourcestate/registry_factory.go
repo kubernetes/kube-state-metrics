@@ -17,7 +17,7 @@ limitations under the License.
 package customresourcestate
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -25,44 +25,12 @@ import (
 	"strings"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
-
-type fieldMetrics struct {
-	Namespace        string
-	Subsystem        string
-	GroupVersionKind schema.GroupVersionKind
-	ResourceName     string
-	Families         []compiledFamily
-}
-
-// NewFieldMetrics creates a customresource.RegistryFactory from a configuration object.
-func NewFieldMetrics(resource Resource) (customresource.RegistryFactory, error) {
-	compiled, err := compile(resource)
-	if err != nil {
-		return nil, err
-	}
-	gvk := schema.GroupVersionKind(resource.GroupVersionKind)
-	return &fieldMetrics{
-		Namespace:        resource.GetNamespace(),
-		Subsystem:        resource.GetSubsystem(),
-		GroupVersionKind: gvk,
-		Families:         compiled,
-		ResourceName:     resource.GetResourceName(),
-	}, nil
-}
 
 func compile(resource Resource) ([]compiledFamily, error) {
 	var families []compiledFamily
@@ -76,20 +44,29 @@ func compile(resource Resource) ([]compiledFamily, error) {
 	return families, nil
 }
 
+func compileCommon(c MetricMeta) (*compiledCommon, error) {
+	eachPath, err := compilePath(c.Path)
+	if err != nil {
+		return nil, fmt.Errorf("path: %w", err)
+	}
+	eachLabelsFromPath, err := compilePaths(c.LabelsFromPath)
+	if err != nil {
+		return nil, fmt.Errorf("labelsFromPath: %w", err)
+	}
+	return &compiledCommon{
+		path:          eachPath,
+		labelFromPath: eachLabelsFromPath,
+	}, nil
+}
+
 func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 	labels := resource.Labels.Merge(f.Labels)
-	eachPath, err := compilePath(f.Each.Path)
+
+	metric, err := newCompiledMetric(f.Each)
 	if err != nil {
-		return nil, fmt.Errorf("each.path: %w", err)
+		return nil, fmt.Errorf("compiling metric: %w", err)
 	}
-	valuePath, err := compilePath(f.Each.ValueFrom)
-	if err != nil {
-		return nil, fmt.Errorf("each.valueFrom: %w", err)
-	}
-	eachLabelsFromPath, err := compilePaths(f.Each.LabelsFromPath)
-	if err != nil {
-		return nil, fmt.Errorf("each.labelsFromPath: %w", err)
-	}
+
 	labelsFromPath, err := compilePaths(labels.LabelsFromPath)
 	if err != nil {
 		return nil, fmt.Errorf("labelsFromPath: %w", err)
@@ -100,15 +77,10 @@ func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 		errorLogV = resource.ErrorLogV
 	}
 	return &compiledFamily{
-		Name:      fullName(resource, f),
-		ErrorLogV: errorLogV,
-		Help:      f.Help,
-		Each: compiledEach{
-			Path:          eachPath,
-			ValueFrom:     valuePath,
-			LabelFromKey:  f.Each.LabelFromKey,
-			LabelFromPath: eachLabelsFromPath,
-		},
+		Name:          fullName(resource, f),
+		ErrorLogV:     errorLogV,
+		Help:          f.Help,
+		Each:          metric,
 		Labels:        labels.CommonLabels,
 		LabelFromPath: labelsFromPath,
 	}, nil
@@ -116,11 +88,8 @@ func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 
 func fullName(resource Resource, f Generator) string {
 	var parts []string
-	if resource.GetNamespace() != "" {
-		parts = append(parts, resource.GetNamespace())
-	}
-	if resource.GetSubsystem() != "" {
-		parts = append(parts, resource.GetSubsystem())
+	if resource.GetMetricNamePrefix() != "" {
+		parts = append(parts, resource.GetMetricNamePrefix())
 	}
 	parts = append(parts, f.Name)
 	return strings.Join(parts, "_")
@@ -137,48 +106,18 @@ func compilePaths(paths map[string][]string) (result map[string]valuePath, err e
 	return result, nil
 }
 
-func (s fieldMetrics) Name() string {
-	return s.ResourceName
+type compiledEach compiledMetric
+
+type compiledCommon struct {
+	labelFromPath map[string]valuePath
+	path          valuePath
 }
 
-func (s fieldMetrics) CreateClient(cfg *rest.Config) (interface{}, error) {
-	c, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return c.Resource(schema.GroupVersionResource{
-		Group:    s.GroupVersionKind.Group,
-		Version:  s.GroupVersionKind.Version,
-		Resource: s.ResourceName,
-	}), nil
+func (c compiledCommon) Path() valuePath {
+	return c.path
 }
-
-func (s fieldMetrics) ExpectedType() interface{} {
-	u := unstructured.Unstructured{}
-	u.SetGroupVersionKind(s.GroupVersionKind)
-	return &u
-}
-
-func (s fieldMetrics) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher {
-	api := customResourceClient.(dynamic.NamespaceableResourceInterface).Namespace(ns)
-	ctx := context.Background()
-	return &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.FieldSelector = fieldSelector
-			return api.List(ctx, options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.FieldSelector = fieldSelector
-			return api.Watch(ctx, options)
-		},
-	}
-}
-
-type compiledEach struct {
-	Path          valuePath
-	ValueFrom     valuePath
-	LabelFromKey  string
-	LabelFromPath map[string]valuePath
+func (c compiledCommon) LabelFromPath() map[string]valuePath {
+	return c.labelFromPath
 }
 
 type eachValue struct {
@@ -186,49 +125,196 @@ type eachValue struct {
 	Value  float64
 }
 
-func (e compiledEach) Values(obj map[string]interface{}) (result []eachValue, errors []error) {
-	v := e.Path.Get(obj)
-	onError := func(err error) {
-		errors = append(errors, fmt.Errorf("%s: %v", e.Path, err))
+type compiledMetric interface {
+	Values(v interface{}) (result []eachValue, err []error)
+	Path() valuePath
+	LabelFromPath() map[string]valuePath
+}
+
+// newCompiledMetric returns a compiledMetric depending given the metric type.
+func newCompiledMetric(m Metric) (compiledMetric, error) {
+	switch m.Type {
+	case MetricTypeGauge:
+		if m.Gauge == nil {
+			return nil, errors.New("expected each.gauge to not be nil")
+		}
+		cc, err := compileCommon(m.Gauge.MetricMeta)
+		if err != nil {
+			return nil, fmt.Errorf("each.gauge: %w", err)
+		}
+		valueFromPath, err := compilePath(m.Gauge.ValueFrom)
+		if err != nil {
+			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
+		}
+		return &compiledGauge{
+			compiledCommon: *cc,
+			ValueFrom:      valueFromPath,
+			NilIsZero:      m.Gauge.NilIsZero,
+		}, nil
+	case MetricTypeInfo:
+		if m.Info == nil {
+			return nil, errors.New("expected each.info to not be nil")
+		}
+		cc, err := compileCommon(m.Info.MetricMeta)
+		if err != nil {
+			return nil, fmt.Errorf("each.info: %w", err)
+		}
+		return &compiledInfo{
+			compiledCommon: *cc,
+		}, nil
+	case MetricTypeStateSet:
+		if m.StateSet == nil {
+			return nil, errors.New("expected each.stateSet to not be nil")
+		}
+		cc, err := compileCommon(m.StateSet.MetricMeta)
+		if err != nil {
+			return nil, fmt.Errorf("each.stateSet: %w", err)
+		}
+		valueFromPath, err := compilePath(m.StateSet.ValueFrom)
+		if err != nil {
+			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
+		}
+		return &compiledStateSet{
+			compiledCommon: *cc,
+			List:           m.StateSet.List,
+			LabelName:      m.StateSet.LabelName,
+			ValueFrom:      valueFromPath,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown metric type %s", m.Type)
 	}
+}
+
+type compiledGauge struct {
+	compiledCommon
+	ValueFrom    valuePath
+	LabelFromKey string
+	NilIsZero    bool
+}
+
+func newCompiledGauge(m *MetricGauge) (*compiledGauge, error) {
+	cc, err := compileCommon(m.MetricMeta)
+	if err != nil {
+		return nil, fmt.Errorf("compile common: %w", err)
+	}
+	valueFromPath, err := compilePath(m.ValueFrom)
+	if err != nil {
+		return nil, fmt.Errorf("compile path ValueFrom: %w", err)
+	}
+	return &compiledGauge{
+		compiledCommon: *cc,
+		ValueFrom:      valueFromPath,
+	}, nil
+}
+
+func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
+	onError := func(err error) {
+		errs = append(errs, fmt.Errorf("%s: %v", c.Path(), err))
+	}
+
 	switch iter := v.(type) {
 	case map[string]interface{}:
 		for key, it := range iter {
-			ev, err := e.value(it)
+			ev, err := c.value(it)
 			if err != nil {
 				onError(fmt.Errorf("[%s]: %w", key, err))
 				continue
 			}
-			if key != "" && e.LabelFromKey != "" {
-				ev.Labels[e.LabelFromKey] = key
+			if key != "" && c.LabelFromKey != "" {
+				ev.Labels[c.LabelFromKey] = key
 			}
-			addPathLabels(it, e.LabelFromPath, ev.Labels)
+			addPathLabels(it, c.LabelFromPath(), ev.Labels)
 			result = append(result, *ev)
 		}
 	case []interface{}:
 		for i, it := range iter {
-			value, err := e.value(it)
+			value, err := c.value(it)
 			if err != nil {
 				onError(fmt.Errorf("[%d]: %w", i, err))
 				continue
 			}
-			addPathLabels(it, e.LabelFromPath, value.Labels)
+			addPathLabels(it, c.LabelFromPath(), value.Labels)
 			result = append(result, *value)
 		}
 	default:
-		value, err := e.value(v)
+		value, err := c.value(v)
 		if err != nil {
 			onError(err)
 			break
 		}
-		addPathLabels(v, e.LabelFromPath, value.Labels)
+		addPathLabels(v, c.LabelFromPath(), value.Labels)
 		result = append(result, *value)
 	}
-	// return results in a consistent order (simplifies testing)
-	sort.Slice(result, func(i, j int) bool {
-		return less(result[i].Labels, result[j].Labels)
-	})
-	return result, errors
+	return
+}
+
+type compiledInfo struct {
+	compiledCommon
+}
+
+func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) {
+	if vs, isArray := v.([]interface{}); isArray {
+		for _, obj := range vs {
+			ev, err := c.values(obj)
+			if len(err) > 0 {
+				errs = append(errs, err...)
+				continue
+			}
+			result = append(result, ev...)
+		}
+		return
+	}
+
+	return c.values(v)
+}
+
+func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
+	value := eachValue{Value: 1, Labels: map[string]string{}}
+	addPathLabels(v, c.labelFromPath, value.Labels)
+	result = append(result, value)
+	return
+}
+
+type compiledStateSet struct {
+	compiledCommon
+	ValueFrom valuePath
+	List      []string
+	LabelName string
+}
+
+func (c *compiledStateSet) Values(v interface{}) (result []eachValue, errs []error) {
+	if vs, isArray := v.([]interface{}); isArray {
+		for _, obj := range vs {
+			ev, err := c.values(obj)
+			if len(err) > 0 {
+				errs = append(errs, err...)
+				continue
+			}
+			result = append(result, ev...)
+		}
+		return
+	}
+
+	return c.values(v)
+}
+
+func (c *compiledStateSet) values(v interface{}) (result []eachValue, errs []error) {
+	comparable := c.ValueFrom.Get(v)
+	value, ok := comparable.(string)
+	if !ok {
+		return []eachValue{}, []error{fmt.Errorf("%s: expected value for path to be string, got %T", c.path, comparable)}
+	}
+
+	for _, entry := range c.List {
+		ev := eachValue{Value: 0, Labels: map[string]string{}}
+		if value == entry {
+			ev.Value = 1
+		}
+		ev.Labels[c.LabelName] = entry
+		addPathLabels(v, c.labelFromPath, ev.Labels)
+		result = append(result, ev)
+	}
+	return
 }
 
 // less compares two maps of labels by keys and values
@@ -257,11 +343,11 @@ func less(a, b map[string]string) bool {
 	return len(aKeys) < len(bKeys)
 }
 
-func (e compiledEach) value(it interface{}) (*eachValue, error) {
+func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 	labels := make(map[string]string)
-	value, err := getNum(e.ValueFrom.Get(it))
+	value, err := getNum(c.ValueFrom.Get(it), c.NilIsZero)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", e.ValueFrom, err)
+		return nil, fmt.Errorf("%s: %w", c.ValueFrom, err)
 	}
 	return &eachValue{
 		Labels: labels,
@@ -333,7 +419,12 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 		if strings.HasPrefix(k, "*") {
 			continue
 		}
-		result[k] = fmt.Sprintf("%v", v.Get(obj))
+		value := v.Get(obj)
+		// skip label if value is nil
+		if value == nil {
+			continue
+		}
+		result[k] = fmt.Sprintf("%v", value)
 	}
 }
 
@@ -377,7 +468,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 				return nil, fmt.Errorf("invalid list lookup: %s", part)
 			}
 			key, val := eq[0], eq[1]
-			num, notNum := getNum(val)
+			num, notNum := getNum(val, false)
 			boolVal, notBool := strconv.ParseBool(val)
 			out = append(out, pathOp{
 				part: part,
@@ -395,7 +486,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 								}
 
 								if notNum == nil {
-									if i, err := getNum(candidate); err == nil && num == i {
+									if i, err := getNum(candidate, false); err == nil && num == i {
 										return m
 									}
 								}
@@ -439,15 +530,6 @@ func compilePath(path []string) (out valuePath, _ error) {
 	return out, nil
 }
 
-func (s fieldMetrics) MetricFamilyGenerators(_, _ []string) (result []generator.FamilyGenerator) {
-	klog.InfoS("Custom resource state added metrics", "familyNames", s.names())
-	for _, f := range s.Families {
-		result = append(result, famGen(f))
-	}
-
-	return result
-}
-
 func famGen(f compiledFamily) generator.FamilyGenerator {
 	errLog := klog.V(f.ErrorLogV)
 	return generator.FamilyGenerator{
@@ -460,12 +542,13 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 	}
 }
 
+// generate generates the metrics for a custom resource.
 func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbose) *metric.Family {
 	klog.V(10).InfoS("Checked", "compiledFamilyName", f.Name, "unstructuredName", u.GetName())
 	var metrics []*metric.Metric
 	baseLabels := f.BaseLabels(u.Object)
-	values, errors := f.Each.Values(u.Object)
 
+	values, errors := scrapeValuesFor(f.Each, u.Object)
 	for _, err := range errors {
 		errLog.ErrorS(err, f.Name)
 	}
@@ -481,16 +564,25 @@ func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbos
 	}
 }
 
-func (s fieldMetrics) names() (names []string) {
-	for _, family := range s.Families {
-		names = append(names, family.Name)
-	}
-	return names
+func scrapeValuesFor(e compiledEach, obj map[string]interface{}) ([]eachValue, []error) {
+	v := e.Path().Get(obj)
+	result, errs := e.Values(v)
+
+	// return results in a consistent order (simplifies testing)
+	sort.Slice(result, func(i, j int) bool {
+		return less(result[i].Labels, result[j].Labels)
+	})
+	return result, errs
 }
 
-func getNum(value interface{}) (float64, error) {
+// getNum converts the value to a float64 which is the value type for any metric.
+func getNum(value interface{}, nilIsZero bool) (float64, error) {
 	var v float64
+	// same as bool==false but for bool pointers
 	if value == nil {
+		if nilIsZero {
+			return 0, nil
+		}
 		return 0, fmt.Errorf("expected number but found nil value")
 	}
 	switch vv := value.(type) {
@@ -526,27 +618,4 @@ func getNum(value interface{}) (float64, error) {
 		return 0, fmt.Errorf("expected number but was %v", value)
 	}
 	return v, nil
-}
-
-var _ customresource.RegistryFactory = &fieldMetrics{}
-
-// ConfigDecoder is for use with FromConfig.
-type ConfigDecoder interface {
-	Decode(v interface{}) (err error)
-}
-
-// FromConfig decodes a configuration source into a slice of customresource.RegistryFactory that are ready to use.
-func FromConfig(decoder ConfigDecoder) (factories []customresource.RegistryFactory, err error) {
-	var crconfig Metrics
-	if err := decoder.Decode(&crconfig); err != nil {
-		return nil, fmt.Errorf("failed to parse Custom Resource State metrics: %w", err)
-	}
-	for _, resource := range crconfig.Spec.Resources {
-		factory, err := NewFieldMetrics(resource)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
-		}
-		factories = append(factories, factory)
-	}
-	return factories, nil
 }

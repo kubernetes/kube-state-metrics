@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/utils/pointer"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -34,6 +35,7 @@ func init() {
 	bytes, err := json.Marshal(Obj{
 		"spec": Obj{
 			"replicas": 1,
+			"version":  "v0.0.0",
 			"order": Array{
 				Obj{
 					"id":    1,
@@ -50,6 +52,7 @@ func init() {
 				"type-a": 1,
 				"type-b": 3,
 			},
+			"phase": "foo",
 			"sub": Obj{
 				"type-a": Obj{
 					"active": 1,
@@ -134,100 +137,92 @@ func Test_addPathLabels(t *testing.T) {
 	}
 }
 
-func Test_compiledEach_Values(t *testing.T) {
+func Test_values(t *testing.T) {
 	type tc struct {
 		name       string
 		each       compiledEach
 		wantResult []eachValue
 		wantErrors []error
 	}
-	val := func(value float64, labels ...string) eachValue {
-		t.Helper()
-		if len(labels)%2 != 0 {
-			t.Fatalf("labels must be even: %v", labels)
-		}
-		m := make(map[string]string)
-		for i := 0; i < len(labels); i += 2 {
-			m[labels[i]] = labels[i+1]
-		}
-		return eachValue{
-			Value:  value,
-			Labels: m,
-		}
-	}
 
 	tests := []tc{
-		{name: "single", each: compiledEach{
-			Path: mustCompilePath(t, "spec", "replicas"),
-		}, wantResult: []eachValue{val(1)}},
-		{name: "obj", each: compiledEach{
-			Path:         mustCompilePath(t, "status", "active"),
+		{name: "single", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec", "replicas"),
+			},
+		}, wantResult: []eachValue{newEachValue(t, 1)}},
+		{name: "obj", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "active"),
+			},
 			LabelFromKey: "type",
 		}, wantResult: []eachValue{
-			val(1, "type", "type-a"),
-			val(3, "type", "type-b"),
+			newEachValue(t, 1, "type", "type-a"),
+			newEachValue(t, 3, "type", "type-b"),
 		}},
-		{name: "deep obj", each: compiledEach{
-			Path:         mustCompilePath(t, "status", "sub"),
+		{name: "deep obj", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "sub"),
+				labelFromPath: map[string]valuePath{
+					"active": mustCompilePath(t, "active"),
+				},
+			},
 			LabelFromKey: "type",
 			ValueFrom:    mustCompilePath(t, "ready"),
-			LabelFromPath: map[string]valuePath{
-				"active": mustCompilePath(t, "active"),
-			},
 		}, wantResult: []eachValue{
-			val(2, "type", "type-a", "active", "1"),
-			val(4, "type", "type-b", "active", "3"),
+			newEachValue(t, 2, "type", "type-a", "active", "1"),
+			newEachValue(t, 4, "type", "type-b", "active", "3"),
 		}},
-		{name: "array", each: compiledEach{
-			Path:      mustCompilePath(t, "status", "conditions"),
+		{name: "array", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "conditions"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
 			ValueFrom: mustCompilePath(t, "value"),
-			LabelFromPath: map[string]valuePath{
-				"name": mustCompilePath(t, "name"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 45, "name", "a"),
+			newEachValue(t, 66, "name", "b"),
+		}},
+		{name: "timestamp", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "metadata", "creationTimestamp"),
 			},
 		}, wantResult: []eachValue{
-			val(45, "name", "a"),
-			val(66, "name", "b"),
+			newEachValue(t, 1656374400),
+		}},
+		{name: "boolean_string", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec", "paused"),
+			},
+			NilIsZero: true,
+		}, wantResult: []eachValue{
+			newEachValue(t, 0),
+		}},
+		{name: "info", each: &compiledInfo{
+			compiledCommon{
+				labelFromPath: map[string]valuePath{
+					"version": mustCompilePath(t, "spec", "version"),
+				},
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "version", "v0.0.0"),
+		}},
+		{name: "stateset", each: &compiledStateSet{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "phase"),
+			},
+			LabelName: "phase",
+			List:      []string{"foo", "bar"},
+		}, wantResult: []eachValue{
+			newEachValue(t, 0, "phase", "bar"),
+			newEachValue(t, 1, "phase", "foo"),
 		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResult, gotErrors := tt.each.Values(cr)
-			assert.Equal(t, tt.wantResult, gotResult)
-			assert.Equal(t, tt.wantErrors, gotErrors)
-		})
-	}
-}
-
-func Test_compiledEach_Timestamp(t *testing.T) {
-	type tc struct {
-		name       string
-		each       compiledEach
-		wantResult []eachValue
-		wantErrors []error
-	}
-	val := func(value float64, labels ...string) eachValue {
-		t.Helper()
-		if len(labels)%2 != 0 {
-			t.Fatalf("labels must be even: %v", labels)
-		}
-		m := make(map[string]string)
-		for i := 0; i < len(labels); i += 2 {
-			m[labels[i]] = labels[i+1]
-		}
-		return eachValue{
-			Value:  value,
-			Labels: m,
-		}
-	}
-
-	tests := []tc{
-		{name: "single_timestamp", each: compiledEach{
-			Path: mustCompilePath(t, "metadata", "creationTimestamp"),
-		}, wantResult: []eachValue{val(1656374400)}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotResult, gotErrors := tt.each.Values(cr)
+			gotResult, gotErrors := scrapeValuesFor(tt.each, cr)
 			assert.Equal(t, tt.wantResult, gotResult)
 			assert.Equal(t, tt.wantErrors, gotErrors)
 		})
@@ -321,42 +316,26 @@ func Test_fullName(t *testing.T) {
 		{
 			name: "defaults",
 			args: args{
-				resource: r("", ""),
+				resource: r(nil),
 				f:        count,
 			},
 			want: "kube_apps_v1_Deployment_count",
 		},
 		{
-			name: "_",
+			name: "no prefix",
 			args: args{
-				resource: r("_", "_"),
+				resource: r(pointer.String("")),
 				f:        count,
 			},
 			want: "count",
 		},
 		{
-			name: "_namespace",
-			args: args{
-				resource: r("_", ""),
-				f:        count,
-			},
-			want: "apps_v1_Deployment_count",
-		},
-		{
-			name: "_subsystem",
-			args: args{
-				resource: r("", "_"),
-				f:        count,
-			},
-			want: "kube_count",
-		},
-		{
 			name: "custom",
 			args: args{
-				resource: r("foo", "bar_baz"),
+				resource: r(pointer.String("bar_baz")),
 				f:        count,
 			},
-			want: "foo_bar_baz_count",
+			want: "bar_baz_count",
 		},
 	}
 	for _, tt := range tests {
@@ -368,8 +347,8 @@ func Test_fullName(t *testing.T) {
 	}
 }
 
-func r(namespace, subsystem string) Resource {
-	return Resource{Namespace: namespace, Subsystem: subsystem, GroupVersionKind: gkv("apps", "v1", "Deployment")}
+func r(metricNamePrefix *string) Resource {
+	return Resource{MetricNamePrefix: metricNamePrefix, GroupVersionKind: gkv("apps", "v1", "Deployment")}
 }
 
 func gkv(group, version, kind string) GroupVersionKind {
@@ -407,6 +386,21 @@ func Test_valuePath_Get(t *testing.T) {
 			p := mustCompilePath(t, tt.p...)
 			assert.Equal(t, tt.want, p.Get(cr))
 		})
+	}
+}
+
+func newEachValue(t *testing.T, value float64, labels ...string) eachValue {
+	t.Helper()
+	if len(labels)%2 != 0 {
+		t.Fatalf("labels must be even: %v", labels)
+	}
+	m := make(map[string]string)
+	for i := 0; i < len(labels); i += 2 {
+		m[labels[i]] = labels[i+1]
+	}
+	return eachValue{
+		Value:  value,
+		Labels: m,
 	}
 }
 

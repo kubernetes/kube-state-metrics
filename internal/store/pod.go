@@ -321,9 +321,12 @@ func createPodContainerStatusLastTerminatedReasonFamilyGenerator() generator.Fam
 			for _, cs := range p.Status.ContainerStatuses {
 				if cs.LastTerminationState.Terminated != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
-						Value:       1,
+						LabelKeys: []string{"container", "reason", "exitcode"},
+						LabelValues: []string{
+							cs.Name,
+							cs.LastTerminationState.Terminated.Reason,
+							strconv.Itoa(int(cs.LastTerminationState.Terminated.ExitCode))},
+						Value: 1,
 					})
 				}
 			}

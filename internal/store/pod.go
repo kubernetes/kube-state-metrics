@@ -1410,7 +1410,7 @@ func createPodNodeSelectorsFamilyGenerator() generator.FamilyGenerator {
 		metric.Gauge,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			labelKeys, labelValues := kubeMapToPrometheusLabels("nodeselector", p.Spec.NodeSelector)
+			labelKeys, labelValues := kubeMapToPrometheusLabels("nodeselectors", p.Spec.NodeSelector)
 			m := metric.Metric{
 				LabelKeys:   labelKeys,
 				LabelValues: labelValues,

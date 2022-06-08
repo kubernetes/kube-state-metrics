@@ -297,7 +297,7 @@ kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
-kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",reason="OOMKilled"} 1
+kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",reason="OOMKilled",exitcode="137"} 1
 kube_pod_container_status_ready{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0
 kube_pod_container_status_ready{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
 kube_pod_container_status_restarts_total{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0
@@ -794,7 +794,8 @@ func pod(client *fake.Clientset, index int) error {
 					},
 					LastTerminationState: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
-							Reason: "OOMKilled",
+							Reason:   "OOMKilled",
+							ExitCode: 137,
 						},
 					},
 				},

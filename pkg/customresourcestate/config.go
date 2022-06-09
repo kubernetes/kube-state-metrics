@@ -132,6 +132,7 @@ func (r Resource) GetSubsystem() string {
 		return strings.NewReplacer(
 			"/", "_",
 			".", "_",
+			"-", "_",
 		).Replace(fmt.Sprintf("%s_%s_%s", r.GroupVersionKind.Group, r.GroupVersionKind.Version, r.GroupVersionKind.Kind))
 	}
 	if r.Subsystem == "_" {

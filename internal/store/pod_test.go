@@ -649,12 +649,14 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_last_terminated_exitcode gauge
 				# TYPE kube_pod_container_status_last_terminated_reason gauge
 				# TYPE kube_pod_container_status_running gauge
 				# TYPE kube_pod_container_status_terminated gauge
@@ -679,6 +681,10 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_container_status_last_terminated_reason",
 				"kube_pod_container_status_last_terminated_reason",
 				"kube_pod_container_status_last_terminated_reason",
+				"kube_pod_container_status_last_terminated_exitcode",
+				"kube_pod_container_status_last_terminated_exitcode",
+				"kube_pod_container_status_last_terminated_exitcode",
+				"kube_pod_container_status_last_terminated_exitcode",
 			},
 		},
 		{
@@ -720,6 +726,7 @@ func TestPodStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
+				# HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 				# HELP kube_pod_container_status_terminated Describes whether the container is currently in terminated state.
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
@@ -727,6 +734,7 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
 				# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
 				# TYPE kube_pod_container_status_last_terminated_reason gauge
+				# TYPE kube_pod_container_status_last_terminated_exitcode gauge
 				# TYPE kube_pod_container_status_running gauge
 				# TYPE kube_pod_container_status_terminated gauge
 				# TYPE kube_pod_container_status_terminated_reason gauge
@@ -737,10 +745,12 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_state_started{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 1.501777018e+09
 				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 0
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6",exitcode="137"} 1
+				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6"} 1
+				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6"} 137
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_last_terminated_reason",
+				"kube_pod_container_status_last_terminated_exitcode",
 				"kube_pod_container_status_running",
 				"kube_pod_container_state_started",
 				"kube_pod_container_status_terminated",
@@ -785,6 +795,7 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
+				# HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 				# HELP kube_pod_container_status_running Describes whether the container is currently in running state.
 				# HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
@@ -792,6 +803,7 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
 				# HELP kube_pod_container_status_waiting Describes whether the container is currently in waiting state.
 				# HELP kube_pod_container_status_waiting_reason Describes the reason the container is currently in waiting state.
+				# TYPE kube_pod_container_status_last_terminated_exitcode gauge
 				# TYPE kube_pod_container_status_last_terminated_reason gauge
 				# TYPE kube_pod_container_status_running gauge
 				# TYPE kube_pod_container_state_started gauge
@@ -800,7 +812,8 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_state_started{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1.501777018e+09
-				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7",exitcode="143"} 1
+				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 143
+				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 1
 				kube_pod_container_status_running{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1
 				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
@@ -812,6 +825,7 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_container_status_waiting",
 				"kube_pod_container_status_last_terminated_reason",
+				"kube_pod_container_status_last_terminated_exitcode",
 			},
 		},
 		{

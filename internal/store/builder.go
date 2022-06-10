@@ -34,6 +34,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
@@ -261,6 +262,7 @@ func (b *Builder) BuildStores() [][]cache.Store {
 
 var availableStores = map[string]func(f *Builder) []cache.Store{
 	"certificatesigningrequests":      func(b *Builder) []cache.Store { return b.buildCsrStores() },
+	"clusterroles":                    func(b *Builder) []cache.Store { return b.buildClusterRoleStores() },
 	"configmaps":                      func(b *Builder) []cache.Store { return b.buildConfigMapStores() },
 	"cronjobs":                        func(b *Builder) []cache.Store { return b.buildCronJobStores() },
 	"daemonsets":                      func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
@@ -282,6 +284,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"replicasets":                     func(b *Builder) []cache.Store { return b.buildReplicaSetStores() },
 	"replicationcontrollers":          func(b *Builder) []cache.Store { return b.buildReplicationControllerStores() },
 	"resourcequotas":                  func(b *Builder) []cache.Store { return b.buildResourceQuotaStores() },
+	"roles":                           func(b *Builder) []cache.Store { return b.buildRoleStores() },
 	"secrets":                         func(b *Builder) []cache.Store { return b.buildSecretStores() },
 	"serviceaccounts":                 func(b *Builder) []cache.Store { return b.buildServiceAccountStores() },
 	"services":                        func(b *Builder) []cache.Store { return b.buildServiceStores() },
@@ -423,6 +426,14 @@ func (b *Builder) buildVPAStores() []cache.Store {
 
 func (b *Builder) buildLeasesStores() []cache.Store {
 	return b.buildStoresFunc(leaseMetricFamilies, &coordinationv1.Lease{}, createLeaseListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildClusterRoleStores() []cache.Store {
+	return b.buildStoresFunc(clusterRoleMetricFamilies(b.allowAnnotationsList["clusterroles"], b.allowLabelsList["clusterroles"]), &rbacv1.ClusterRole{}, createClusterRoleListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildRoleStores() []cache.Store {
+	return b.buildStoresFunc(roleMetricFamilies(b.allowAnnotationsList["roles"], b.allowLabelsList["roles"]), &rbacv1.Role{}, createRoleListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildStores(

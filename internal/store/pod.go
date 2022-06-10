@@ -47,6 +47,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodContainerResourceRequestsFamilyGenerator(),
 		createPodContainerStateStartedFamilyGenerator(),
 		createPodContainerStatusLastTerminatedReasonFamilyGenerator(),
+		createPodContainerStatusLastTerminatedExitCodeFamilyGenerator(),
 		createPodContainerStatusReadyFamilyGenerator(),
 		createPodContainerStatusRestartsTotalFamilyGenerator(),
 		createPodContainerStatusRunningFamilyGenerator(),
@@ -321,12 +322,34 @@ func createPodContainerStatusLastTerminatedReasonFamilyGenerator() generator.Fam
 			for _, cs := range p.Status.ContainerStatuses {
 				if cs.LastTerminationState.Terminated != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys: []string{"container", "reason", "exitcode"},
-						LabelValues: []string{
-							cs.Name,
-							cs.LastTerminationState.Terminated.Reason,
-							strconv.Itoa(int(cs.LastTerminationState.Terminated.ExitCode))},
-						Value: 1,
+						LabelKeys:   []string{"container", "reason"},
+						LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
+						Value:       1,
+					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodContainerStatusLastTerminatedExitCodeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_container_status_last_terminated_exitcode",
+		"Describes the exit code for the last container in terminated state.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
+			for _, cs := range p.Status.ContainerStatuses {
+				if cs.LastTerminationState.Terminated != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"container", "reason"},
+						LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
+						Value:       float64(cs.LastTerminationState.Terminated.ExitCode),
 					})
 				}
 			}

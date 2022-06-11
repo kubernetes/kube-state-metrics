@@ -2,8 +2,8 @@
 
 | Metric name| Metric type | Labels/tags | Status |
 | ---------- | ----------- | ----------- | ----------- |
-| kube_clusterole_annotations | Gauge | `clusterole`=&lt;clusterole-name&gt; | EXPERIMENTAL
-| kube_clusterole_labels | Gauge | `clusterole`=&lt;clusterole-name&gt; | EXPERIMENTAL
-| kube_clusterole_info | Gauge | `clusterole`=&lt;clusterole-name&gt; | EXPERIMENTAL |
-| kube_clusterole_created  | Gauge | `clusterole`=&lt;clusterole-name&gt; | EXPERIMENTAL |
-| kube_clusterole_metadata_resource_version | Gauge | `clusterole`=&lt;clusterole-name&gt; | EXPERIMENTAL |
+| kube_clusterrole_annotations | Gauge | `clusterrole`=&lt;clusterrole-name&gt; | EXPERIMENTAL
+| kube_clusterrole_labels | Gauge | `clusterrole`=&lt;clusterrole-name&gt; | EXPERIMENTAL
+| kube_clusterrole_info | Gauge | `clusterrole`=&lt;clusterrole-name&gt; | EXPERIMENTAL |
+| kube_clusterrole_created  | Gauge | `clusterrole`=&lt;clusterrole-name&gt; | EXPERIMENTAL |
+| kube_clusterrole_metadata_resource_version | Gauge | `clusterrole`=&lt;clusterrole-name&gt; | EXPERIMENTAL |

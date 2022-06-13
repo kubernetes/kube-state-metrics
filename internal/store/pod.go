@@ -347,8 +347,8 @@ func createPodContainerStatusLastTerminatedExitCodeFamilyGenerator() generator.F
 			for _, cs := range p.Status.ContainerStatuses {
 				if cs.LastTerminationState.Terminated != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"container", "reason"},
-						LabelValues: []string{cs.Name, cs.LastTerminationState.Terminated.Reason},
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
 						Value:       float64(cs.LastTerminationState.Terminated.ExitCode),
 					})
 				}

@@ -746,7 +746,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_terminated{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6"} 1
-				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6"} 137
+				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 137
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_last_terminated_reason",
@@ -812,7 +812,7 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				kube_pod_container_state_started{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1.501777018e+09
-				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 143
+				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 143
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 1
 				kube_pod_container_status_running{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1
 				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0

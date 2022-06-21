@@ -152,6 +152,34 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			"kube_endpoint_address",
+			"Information about Endpoint available and non available addresses.",
+			metric.Gauge,
+			"",
+			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, s := range e.Subsets {
+					for _, available := range s.Addresses {
+						ms = append(ms, &metric.Metric{
+							LabelValues: []string{available.IP},
+							LabelKeys:   []string{"available_ip"},
+							Value:       1,
+						})
+					}
+					for _, notReadyAddresses := range s.NotReadyAddresses {
+						ms = append(ms, &metric.Metric{
+							LabelValues: []string{notReadyAddresses.IP},
+							LabelKeys:   []string{"unavailable_ip"},
+							Value:       1,
+						})
+					}
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			"kube_endpoint_ports",
 			"Information about the Endpoint ports.",
 			metric.Gauge,

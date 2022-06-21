@@ -9,3 +9,4 @@
 | kube_endpoint_labels | Gauge | `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt; <br> `label_ENDPOINT_LABEL`=&lt;ENDPOINT_LABEL&gt;  | STABLE |
 | kube_endpoint_created | Gauge | `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt; | STABLE |
 | kube_endpoint_ports | Gauge | `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt; <br> `port_name`=&lt;endpoint-port-name&gt; <br> `port_protocol`=&lt;endpoint-port-protocol&gt; <br> `port_number`=&lt;endpoint-port-number&gt; | EXPERIMENTAL |
+| kube_endpoint_address | Gauge | `endpoint`=&lt;endpoint-name&gt; <br> `namespace`=&lt;endpoint-namespace&gt; <br> `available_ip`=&lt;endpoint-available-ip&gt; <br> `unavailable_ip`=&lt;endpoint-unavailable_ip&gt; | EXPERIMENTAL |

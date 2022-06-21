@@ -44,6 +44,8 @@ func TestEndpointStore(t *testing.T) {
 		# TYPE kube_endpoint_labels gauge
 		# HELP kube_endpoint_ports Information about the Endpoint ports.
 		# TYPE kube_endpoint_ports gauge
+		# HELP kube_endpoint_address Information about Endpoint available and non available addresses.
+		# TYPE kube_endpoint_address gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -60,6 +62,9 @@ func TestEndpointStore(t *testing.T) {
 					{
 						Addresses: []v1.EndpointAddress{
 							{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
+						},
+						NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "10.0.0.10"},
 						},
 						Ports: []v1.EndpointPort{
 							{Port: 8080, Name: "http", Protocol: v1.ProtocolTCP}, {Port: 8081, Name: "app", Protocol: v1.ProtocolTCP},
@@ -86,7 +91,7 @@ func TestEndpointStore(t *testing.T) {
 			Want: metadata + `
 				kube_endpoint_annotations{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 4
+				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="test-endpoint",namespace="default"} 1
@@ -96,6 +101,12 @@ func TestEndpointStore(t *testing.T) {
 				kube_endpoint_ports{endpoint="test-endpoint",namespace="default",port_name="prometheus",port_protocol="TCP",port_number="9090"} 1
 				kube_endpoint_ports{endpoint="test-endpoint",namespace="default",port_name="syslog",port_protocol="UDP",port_number="1234"} 1
 				kube_endpoint_ports{endpoint="test-endpoint",namespace="default",port_name="syslog-tcp",port_protocol="TCP",port_number="5678"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",available_ip="127.0.0.1"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",available_ip="10.0.0.1"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",available_ip="172.22.23.202"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",unavailable_ip="192.168.1.3"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",unavailable_ip="192.168.2.2"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",unavailable_ip="10.0.0.10"} 1
 			`,
 		},
 		{
@@ -113,6 +124,9 @@ func TestEndpointStore(t *testing.T) {
 						Addresses: []v1.EndpointAddress{
 							{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
 						},
+						NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "10.0.0.10"},
+						},
 						Ports: []v1.EndpointPort{
 							{Port: 8080, Protocol: v1.ProtocolTCP},
 						},
@@ -122,11 +136,14 @@ func TestEndpointStore(t *testing.T) {
 			Want: metadata + `
 				kube_endpoint_annotations{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_address_available{endpoint="single-port-endpoint",namespace="default"} 2
-				kube_endpoint_address_not_ready{endpoint="single-port-endpoint",namespace="default"} 0
+				kube_endpoint_address_not_ready{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_created{endpoint="single-port-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_ports{endpoint="single-port-endpoint",namespace="default",port_name="",port_number="8080",port_protocol="TCP"} 1
+				kube_endpoint_address{endpoint="single-port-endpoint",namespace="default",available_ip="127.0.0.1"} 1
+				kube_endpoint_address{endpoint="single-port-endpoint",namespace="default",available_ip="10.0.0.1"} 1
+				kube_endpoint_address{endpoint="single-port-endpoint",namespace="default",unavailable_ip="10.0.0.10"} 1
 			`,
 		},
 	}
@@ -157,6 +174,8 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		# TYPE kube_endpoint_labels gauge
 		# HELP kube_endpoint_ports Information about the Endpoint ports.
 		# TYPE kube_endpoint_ports gauge
+		# HELP kube_endpoint_address Information about Endpoint available and non available addresses.
+		# TYPE kube_endpoint_address gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -176,6 +195,9 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 					{
 						Addresses: []v1.EndpointAddress{
 							{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
+						},
+						NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "10.0.0.10"},
 						},
 						Ports: []v1.EndpointPort{
 							{Port: 8080, Name: "http", Protocol: v1.ProtocolTCP}, {Port: 8081, Name: "app", Protocol: v1.ProtocolTCP},
@@ -201,7 +223,7 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 4
+				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_annotations{endpoint="test-endpoint",annotation_app="foobar",namespace="default"} 1
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
@@ -212,6 +234,12 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 				kube_endpoint_ports{endpoint="test-endpoint",namespace="default",port_name="prometheus",port_protocol="TCP",port_number="9090"} 1
 				kube_endpoint_ports{endpoint="test-endpoint",namespace="default",port_name="syslog",port_protocol="UDP",port_number="1234"} 1
 				kube_endpoint_ports{endpoint="test-endpoint",namespace="default",port_name="syslog-tcp",port_protocol="TCP",port_number="5678"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",available_ip="127.0.0.1"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",available_ip="10.0.0.1"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",available_ip="172.22.23.202"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",unavailable_ip="192.168.1.3"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",unavailable_ip="192.168.2.2"} 1
+				kube_endpoint_address{endpoint="test-endpoint",namespace="default",unavailable_ip="10.0.0.10"} 1
 			`,
 		},
 		{
@@ -232,6 +260,9 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 						Addresses: []v1.EndpointAddress{
 							{IP: "127.0.0.1"}, {IP: "10.0.0.1"},
 						},
+						NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "10.0.0.10"},
+						},
 						Ports: []v1.EndpointPort{
 							{Port: 8080, Protocol: v1.ProtocolTCP},
 						},
@@ -241,11 +272,14 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 			Want: metadata + `
 				kube_endpoint_annotations{endpoint="single-port-endpoint",annotation_app="single-foobar",namespace="default"} 1
 				kube_endpoint_address_available{endpoint="single-port-endpoint",namespace="default"} 2
-				kube_endpoint_address_not_ready{endpoint="single-port-endpoint",namespace="default"} 0
+				kube_endpoint_address_not_ready{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_created{endpoint="single-port-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="single-port-endpoint",label_app="single-foobar",namespace="default"} 1
 				kube_endpoint_ports{endpoint="single-port-endpoint",namespace="default",port_name="",port_number="8080",port_protocol="TCP"} 1
+				kube_endpoint_address{endpoint="single-port-endpoint",namespace="default",available_ip="127.0.0.1"} 1
+				kube_endpoint_address{endpoint="single-port-endpoint",namespace="default",available_ip="10.0.0.1"} 1
+				kube_endpoint_address{endpoint="single-port-endpoint",namespace="default",unavailable_ip="10.0.0.10"} 1
 			`,
 		},
 	}

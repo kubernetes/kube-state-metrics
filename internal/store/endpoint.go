@@ -161,15 +161,15 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				for _, s := range e.Subsets {
 					for _, available := range s.Addresses {
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{available.IP},
-							LabelKeys:   []string{"available_ip"},
+							LabelValues: []string{available.IP, "true"},
+							LabelKeys:   []string{"ip", "ready"},
 							Value:       1,
 						})
 					}
 					for _, notReadyAddresses := range s.NotReadyAddresses {
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{notReadyAddresses.IP},
-							LabelKeys:   []string{"unavailable_ip"},
+							LabelValues: []string{notReadyAddresses.IP, "false"},
+							LabelKeys:   []string{"ip", "ready"},
 							Value:       1,
 						})
 					}

@@ -198,9 +198,9 @@ The [metrics-server](https://github.com/kubernetes-incubator/metrics-server)
 is a project that has been inspired by
 [Heapster](https://github.com/kubernetes-retired/heapster) and is implemented
 to serve the goals of core metrics pipelines in [Kubernetes monitoring
-architecture](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/instrumentation/monitoring_architecture.md).
+architecture](https://github.com/kubernetes/design-proposals-archive/blob/main/instrumentation/monitoring_architecture.md).
 It is a cluster level component which periodically scrapes metrics from all
-Kubernetes nodes served by Kubelet through Summary API. The metrics are
+Kubernetes nodes served by Kubelet through Metrics API. The metrics are
 aggregated, stored in memory and served in [Metrics API
 format](https://git.k8s.io/metrics/pkg/apis/metrics/v1alpha1/types.go). The
 metrics-server stores the latest values only and is not responsible for

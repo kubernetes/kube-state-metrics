@@ -23,7 +23,7 @@ Stages about metrics are grouped into three categories：
 
 ## Opt-in Metrics
 
-As of v2.3.0, kube-state-metrics supports additional opt-in metrics via the CLI flag `-metric-opt-in-list`. See the metric documentation to identify which metrics need to be specified.
+As of v2.3.0, kube-state-metrics supports additional opt-in metrics via the CLI flag `--metric-opt-in-list`. See the metric documentation to identify which metrics need to be specified.
 
 ## Exposed Metrics
 

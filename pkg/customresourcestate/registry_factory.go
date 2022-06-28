@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -499,6 +500,9 @@ func getNum(value interface{}) (float64, error) {
 		}
 		return 0, nil
 	case string:
+		if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {
+			return float64(t.Unix()), nil
+		}
 		return strconv.ParseFloat(value.(string), 64)
 	case byte:
 		v = float64(vv)

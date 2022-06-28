@@ -81,6 +81,7 @@ func init() {
 				"qux": "quxx",
 				"bar": "baz",
 			},
+			"creationTimestamp": "2022-06-28T00:00:00Z",
 		},
 	})
 	if err != nil {
@@ -187,6 +188,42 @@ func Test_compiledEach_Values(t *testing.T) {
 			val(45, "name", "a"),
 			val(66, "name", "b"),
 		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotResult, gotErrors := tt.each.Values(cr)
+			assert.Equal(t, tt.wantResult, gotResult)
+			assert.Equal(t, tt.wantErrors, gotErrors)
+		})
+	}
+}
+
+func Test_compiledEach_Timestamp(t *testing.T) {
+	type tc struct {
+		name       string
+		each       compiledEach
+		wantResult []eachValue
+		wantErrors []error
+	}
+	val := func(value float64, labels ...string) eachValue {
+		t.Helper()
+		if len(labels)%2 != 0 {
+			t.Fatalf("labels must be even: %v", labels)
+		}
+		m := make(map[string]string)
+		for i := 0; i < len(labels); i += 2 {
+			m[labels[i]] = labels[i+1]
+		}
+		return eachValue{
+			Value:  value,
+			Labels: m,
+		}
+	}
+
+	tests := []tc{
+		{name: "single_timestamp", each: compiledEach{
+			Path: mustCompilePath(t, "metadata", "creationTimestamp"),
+		}, wantResult: []eachValue{val(1656374400)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

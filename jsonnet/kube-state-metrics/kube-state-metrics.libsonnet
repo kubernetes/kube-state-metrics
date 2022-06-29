@@ -50,6 +50,7 @@
           'nodes',
           'pods',
           'services',
+          'serviceaccounts',
           'resourcequotas',
           'replicationcontrollers',
           'limitranges',

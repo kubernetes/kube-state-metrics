@@ -1926,6 +1926,47 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_annotations",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					Tolerations: []v1.Toleration{
+						{
+							Key:      "key1",
+							Operator: v1.TolerationOpEqual,
+							Value:    "value1",
+							Effect:   v1.TaintEffectNoSchedule,
+						},
+						{
+							Key:      "key2",
+							Operator: v1.TolerationOpExists,
+						},
+						{
+							Key:      "key3",
+							Operator: v1.TolerationOpEqual,
+							Value:    "value3",
+						},
+						{
+							// an empty toleration to ensure that an empty toleration does not result in a metric
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_tolerations Information about the pod tolerations
+				# TYPE kube_pod_tolerations gauge
+				kube_pod_tolerations{namespace="ns1",pod="pod1",uid="uid1",key="key1",operator="Equal",value="value1",effect="NoSchedule"} 1
+				kube_pod_tolerations{namespace="ns1",pod="pod1",uid="uid1",key="key2",operator="Exists"} 1
+				kube_pod_tolerations{namespace="ns1",pod="pod1",uid="uid1",key="key3",operator="Equal",value="value3"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_tolerations",
+			},
+		},
 	}
 
 	for i, c := range cases {
@@ -2018,7 +2059,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 45
+	expectedFamilies := 46
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

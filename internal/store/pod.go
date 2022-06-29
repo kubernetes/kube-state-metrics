@@ -85,6 +85,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
+		createPodTolerationsFamilyGenerator(),
 		createPodNodeSelectorsFamilyGenerator(),
 	}
 }
@@ -1394,6 +1395,62 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 						Value:       1,
 					})
 				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_tolerations",
+		"Information about the pod tolerations",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			var ms []*metric.Metric
+
+			for _, t := range p.Spec.Tolerations {
+				var labelKeys []string
+				var labelValues []string
+
+				if t.Key != "" {
+					labelKeys = append(labelKeys, "key")
+					labelValues = append(labelValues, t.Key)
+				}
+
+				if t.Operator != "" {
+					labelKeys = append(labelKeys, "operator")
+					labelValues = append(labelValues, string(t.Operator))
+				}
+
+				if t.Value != "" {
+					labelKeys = append(labelKeys, "value")
+					labelValues = append(labelValues, t.Value)
+				}
+
+				if t.Effect != "" {
+					labelKeys = append(labelKeys, "effect")
+					labelValues = append(labelValues, string(t.Effect))
+				}
+
+				if t.TolerationSeconds != nil {
+					labelKeys = append(labelKeys, "toleration_seconds")
+					labelValues = append(labelValues, strconv.FormatInt(*t.TolerationSeconds, 10))
+				}
+
+				if len(labelKeys) == 0 {
+					continue
+				}
+
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: labelValues,
+					Value:       1,
+				})
 			}
 
 			return &metric.Family{

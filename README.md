@@ -54,6 +54,8 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Development](#development)
   - [Developer Contributions](#developer-contributions)
 
+### Versioning
+
 #### Kubernetes Version
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with

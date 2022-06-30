@@ -283,6 +283,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"replicationcontrollers":          func(b *Builder) []cache.Store { return b.buildReplicationControllerStores() },
 	"resourcequotas":                  func(b *Builder) []cache.Store { return b.buildResourceQuotaStores() },
 	"secrets":                         func(b *Builder) []cache.Store { return b.buildSecretStores() },
+	"serviceaccounts":                 func(b *Builder) []cache.Store { return b.buildServiceAccountStores() },
 	"services":                        func(b *Builder) []cache.Store { return b.buildServiceStores() },
 	"statefulsets":                    func(b *Builder) []cache.Store { return b.buildStatefulSetStores() },
 	"storageclasses":                  func(b *Builder) []cache.Store { return b.buildStorageClassStores() },
@@ -382,6 +383,10 @@ func (b *Builder) buildResourceQuotaStores() []cache.Store {
 
 func (b *Builder) buildSecretStores() []cache.Store {
 	return b.buildStoresFunc(secretMetricFamilies(b.allowAnnotationsList["secrets"], b.allowLabelsList["secrets"]), &v1.Secret{}, createSecretListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildServiceAccountStores() []cache.Store {
+	return b.buildStoresFunc(serviceAccountMetricFamilies(b.allowAnnotationsList["serviceaccounts"], b.allowLabelsList["serviceaccounts"]), &v1.ServiceAccount{}, createServiceAccountListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildServiceStores() []cache.Store {

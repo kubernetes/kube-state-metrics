@@ -49,6 +49,7 @@ var (
 		"replicationcontrollers":          struct{}{},
 		"resourcequotas":                  struct{}{},
 		"secrets":                         struct{}{},
+		"serviceaccounts":                 struct{}{},
 		"services":                        struct{}{},
 		"statefulsets":                    struct{}{},
 		"storageclasses":                  struct{}{},

@@ -14,7 +14,7 @@ Two flags can be used:
 
 If both flags are provided, the inline configuration will take precedence.
 
-Apart from specifying one of `--custom-resource-state-config-*` flags, you also need to add a custom resource *Kind* in plural form to the list of existing resources in `--resources` flag. If you don't specify `--resources`, then `--custom-resource-state-config-*` and all available default kubernetes objects will be taken into accout by kube-state-metrics.
+In addition to specifying one of `--custom-resource-state-config*` flags, you should also add the custom resource *Kind*s in plural form to the list of exposed resources in the `--resources` flag. If you don't specify `--resources`, then all known custom resources configured in `--custom-resource-state-config-*` and all available default kubernetes objects will be taken into account by kube-state-metrics.
 
 ```yaml
 apiVersion: apps/v1

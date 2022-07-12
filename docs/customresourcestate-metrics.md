@@ -14,6 +14,8 @@ Two flags can be used:
 
 If both flags are provided, the inline configuration will take precedence.
 
+In addition to specifying one of `--custom-resource-state-config*` flags, you should also add the custom resource *Kind*s in plural form to the list of exposed resources in the `--resources` flag. If you don't specify `--resources`, then all known custom resources configured in `--custom-resource-state-config-*` and all available default kubernetes objects will be taken into account by kube-state-metrics.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -40,6 +42,7 @@ spec:
                       - name: active_count
                         help: "Count of active Foo"
                         ...
+          - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
 ```
 
 ### Examples

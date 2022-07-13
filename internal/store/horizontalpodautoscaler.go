@@ -185,6 +185,68 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			}),
 		),
 		*generator.NewFamilyGenerator(
+			"kube_horizontalpodautoscaler_status_current_metric",
+			"The current value of the metric defined in the spec.",
+			metric.Gauge,
+			"",
+			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+				for _, m := range a.Status.CurrentMetrics {
+					var metricName string
+
+					// The variable maps the type of metric to the corresponding value
+					metricMap := make(map[metricTargetType]float64)
+
+					switch m.Type {
+					case autoscaling.ObjectMetricSourceType:
+						metricName = m.Object.Metric.Name
+
+						if m.Object.Current.Value != nil {
+							metricMap[value] = float64(m.Object.Current.Value.MilliValue()) / 1000
+						}
+						if m.Object.Current.AverageValue != nil {
+							metricMap[average] = float64(m.Object.Current.AverageValue.MilliValue()) / 1000
+						}
+					case autoscaling.PodsMetricSourceType:
+						metricName = m.Pods.Metric.Name
+
+						metricMap[average] = float64(m.Pods.Current.AverageValue.MilliValue()) / 1000
+					case autoscaling.ResourceMetricSourceType:
+						metricName = string(m.Resource.Name)
+
+						if m.Resource.Current.AverageUtilization != nil {
+							metricMap[utilization] = float64(*m.Resource.Current.AverageUtilization)
+						}
+
+						if m.Resource.Current.AverageValue != nil {
+							metricMap[average] = float64(m.Resource.Current.AverageValue.MilliValue()) / 1000
+						}
+					case autoscaling.ExternalMetricSourceType:
+						metricName = m.External.Metric.Name
+
+						if m.External.Current.Value != nil {
+							metricMap[value] = float64(m.External.Current.Value.MilliValue()) / 1000
+						}
+						if m.External.Current.AverageValue != nil {
+							metricMap[average] = float64(m.External.Current.AverageValue.MilliValue()) / 1000
+						}
+					default:
+						// Skip unsupported metric type
+						continue
+					}
+
+					for metricTypeIndex, metricValue := range metricMap {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   targetMetricLabels,
+							LabelValues: []string{metricName, metricTypeIndex.String()},
+							Value:       metricValue,
+						})
+					}
+				}
+				return &metric.Family{Metrics: ms}
+			}),
+		),
+		*generator.NewFamilyGenerator(
 			"kube_horizontalpodautoscaler_status_current_replicas",
 			"Current number of replicas of pods managed by this autoscaler.",
 			metric.Gauge,

@@ -76,4 +76,4 @@ replace (
 	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20200609090129-a6600f564e3c
 )
 
-go 1.17
+go 1.18

@@ -126,8 +126,8 @@ spec:
       labelsFromPath:
         name: [metadata, name]
       metrics:
-        - name: "ready_count"
-          help: "Number Foo Bars ready"
+        - name: "active_count"
+          help: "Number Foo Bars active"
           each:
             # targeting an object or array will produce a metric for each element
             # labelsFromPath and value are relative to this path

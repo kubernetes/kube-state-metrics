@@ -149,7 +149,9 @@
         apiGroups: ['rbac.authorization.k8s.io'],
         resources: [
           'clusterroles',
+          'clusterrolebindings',
           'roles',
+          'rolesbindings',
         ],
         verbs: ['list', 'watch'],
       },

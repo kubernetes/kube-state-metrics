@@ -439,7 +439,7 @@ func (b *Builder) buildRoleStores() []cache.Store {
 }
 
 func (b *Builder) buildClusterRoleBindingStores() []cache.Store {
-	return b.buildStoresFunc(clusterRoleBindingMetricFamilies(b.allowAnnotationsList["clusterrolebindings"], b.allowLabelsList["clusterrolebindings"]), &rbacv1.RoleBinding{}, createClusterRoleBindingListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(clusterRoleBindingMetricFamilies(b.allowAnnotationsList["clusterrolebindings"], b.allowLabelsList["clusterrolebindings"]), &rbacv1.ClusterRoleBinding{}, createClusterRoleBindingListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildRoleBindingStores() []cache.Store {

@@ -114,7 +114,7 @@ rules:
   - clusterroles
   - clusterrolebindings
   - roles
-  - rolesbindings
+  - rolebindings
   verbs:
   - list
   - watch

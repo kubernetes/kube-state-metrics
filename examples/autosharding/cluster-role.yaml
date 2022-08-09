@@ -111,10 +111,10 @@ rules:
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
-  - clusterroles
   - clusterrolebindings
-  - roles
+  - clusterroles
   - rolebindings
+  - roles
   verbs:
   - list
   - watch

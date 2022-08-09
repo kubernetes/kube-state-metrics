@@ -42,6 +42,7 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_horizontalpodautoscaler_spec_max_replicas Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
 		# HELP kube_horizontalpodautoscaler_spec_min_replicas Lower limit for the number of pods that can be set by the autoscaler, default 1.
 		# HELP kube_horizontalpodautoscaler_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
+		# HELP kube_horizontalpodautoscaler_status_target_metric The current metric status used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_condition The condition of this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_current_replicas Current number of replicas of pods managed by this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_desired_replicas Desired number of replicas of pods managed by this autoscaler.
@@ -52,6 +53,7 @@ func TestHPAStore(t *testing.T) {
 		# TYPE kube_horizontalpodautoscaler_spec_max_replicas gauge
 		# TYPE kube_horizontalpodautoscaler_spec_min_replicas gauge
 		# TYPE kube_horizontalpodautoscaler_spec_target_metric gauge
+		# TYPE kube_horizontalpodautoscaler_status_target_metric gauge
 		# TYPE kube_horizontalpodautoscaler_status_condition gauge
 		# TYPE kube_horizontalpodautoscaler_status_current_replicas gauge
 		# TYPE kube_horizontalpodautoscaler_status_desired_replicas gauge
@@ -179,7 +181,7 @@ func TestHPAStore(t *testing.T) {
 								Name: "cpu",
 								Current: autoscaling.MetricValueStatus{
 									AverageValue:       resourcePtr(resource.MustParse("7m")),
-									AverageUtilization: new(int32),
+									AverageUtilization: int32ptr(80),
 								},
 							},
 						},
@@ -189,7 +191,7 @@ func TestHPAStore(t *testing.T) {
 								Name: "memory",
 								Current: autoscaling.MetricValueStatus{
 									AverageValue:       resourcePtr(resource.MustParse("26335914666m")),
-									AverageUtilization: new(int32),
+									AverageUtilization: int32ptr(80),
 								},
 							},
 						},
@@ -213,6 +215,10 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="sqs_jobs",metric_target_type="value",namespace="ns1"} 30
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="transactions_processed",metric_target_type="average",namespace="ns1"} 33
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.007
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 2.6335914666e+07
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="false"} 0
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="true"} 1
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="unknown"} 0
@@ -225,6 +231,7 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_spec_max_replicas",
 				"kube_horizontalpodautoscaler_spec_min_replicas",
 				"kube_horizontalpodautoscaler_spec_target_metric",
+				"kube_horizontalpodautoscaler_status_target_metric",
 				"kube_horizontalpodautoscaler_status_current_replicas",
 				"kube_horizontalpodautoscaler_status_desired_replicas",
 				"kube_horizontalpodautoscaler_status_condition",
@@ -368,6 +375,13 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 75
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 100
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 100
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="average",namespace="ns1"} 8.47775744e+08
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 28
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.062
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 6
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 0
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="average",namespace="ns1"} 2.9
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 0
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="false"} 0
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="true"} 1
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="unknown"} 0
@@ -380,6 +394,7 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_spec_max_replicas",
 				"kube_horizontalpodautoscaler_spec_min_replicas",
 				"kube_horizontalpodautoscaler_spec_target_metric",
+				"kube_horizontalpodautoscaler_status_target_metric",
 				"kube_horizontalpodautoscaler_status_current_replicas",
 				"kube_horizontalpodautoscaler_status_desired_replicas",
 				"kube_horizontalpodautoscaler_status_condition",

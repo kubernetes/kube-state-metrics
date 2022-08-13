@@ -440,7 +440,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 }
 
 func (s fieldMetrics) MetricFamilyGenerators(_, _ []string) (result []generator.FamilyGenerator) {
-	klog.Infof("custom resource state adding metrics: %v", s.names())
+	klog.InfoS("Custom resource state added metrics", "familyNames", s.names())
 	for _, f := range s.Families {
 		result = append(result, famGen(f))
 	}
@@ -461,7 +461,7 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 }
 
 func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbose) *metric.Family {
-	klog.V(10).Infof("%s: checking %s", f.Name, u.GetName())
+	klog.V(10).InfoS("Checked", "compiledFamilyName", f.Name, "unstructuredName", u.GetName())
 	var metrics []*metric.Metric
 	baseLabels := f.BaseLabels(u.Object)
 	values, errors := f.Each.Values(u.Object)
@@ -474,7 +474,7 @@ func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbos
 		v.DefaultLabels(baseLabels)
 		metrics = append(metrics, v.ToMetric())
 	}
-	klog.V(10).Infof("%s: produced %d metrics for %s", f.Name, len(metrics), u.GetName())
+	klog.V(10).InfoS("Produced metrics for", "compiledFamilyName", f.Name, "metricsLength", len(metrics), "unstructuredName", u.GetName())
 
 	return &metric.Family{
 		Metrics: metrics,

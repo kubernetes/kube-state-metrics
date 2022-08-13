@@ -133,13 +133,13 @@ func (n *NamespaceList) Set(value string) error {
 func (n *NamespaceList) GetNamespaces() NamespaceList {
 	ns := *n
 	if len(*n) == 0 {
-		klog.Info("Using all namespace")
+		klog.InfoS("Using all namespace")
 		ns = DefaultNamespaces
 	} else {
 		if n.IsAllNamespaces() {
-			klog.Info("Using all namespace")
+			klog.InfoS("Using all namespace")
 		} else {
-			klog.Infof("Using %s namespaces", ns)
+			klog.InfoS("Using namespaces", "namespaces", ns)
 		}
 	}
 	return ns

@@ -178,7 +178,7 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 	for i := range fs {
 		f := fs[i]
 		if _, ok := availableStores[f.Name()]; ok {
-			klog.Warningf("The internal resource store named %s already exists and is overridden by a custom resource store with the same name, please make sure it meets your expectation", f.Name())
+			klog.InfoS("The internal resource store already exists and is overridden by a custom resource store with the same name, please make sure it meets your expectation", "registryName", f.Name())
 		}
 		availableStores[f.Name()] = func(b *Builder) []cache.Store {
 			return b.buildCustomResourceStoresFunc(
@@ -230,7 +230,7 @@ func (b *Builder) Build() []metricsstore.MetricsWriter {
 		}
 	}
 
-	klog.Infof("Active resources: %s", strings.Join(activeStoreNames, ","))
+	klog.InfoS("Active resources", "activeStoreNames", strings.Join(activeStoreNames, ","))
 
 	return metricsWriters
 }
@@ -255,7 +255,7 @@ func (b *Builder) BuildStores() [][]cache.Store {
 		}
 	}
 
-	klog.Infof("Active resources: %s", strings.Join(activeStoreNames, ","))
+	klog.InfoS("Active resources", "activeStoreNames", strings.Join(activeStoreNames, ","))
 
 	return allStores
 }
@@ -483,7 +483,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 
 	customResourceClient, ok := b.customResourceClients[resourceName]
 	if !ok {
-		klog.Warningf("Custom resource client %s does not exist", resourceName)
+		klog.InfoS("Custom resource client does not exist", "resourceName", resourceName)
 		return []cache.Store{}
 	}
 

@@ -90,14 +90,14 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 
 	var resources []string
 	if len(opts.Resources) == 0 {
-		klog.Info("Using default resources")
+		klog.InfoS("Used default resources")
 		resources = options.DefaultResources.AsSlice()
 		// enable custom resource
 		for _, factory := range factories {
 			resources = append(resources, factory.Name())
 		}
 	} else {
-		klog.Infof("Using resources %s", opts.Resources.String())
+		klog.InfoS("Used resources", "resources", opts.Resources.String())
 		resources = opts.Resources.AsSlice()
 	}
 
@@ -119,7 +119,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 		return fmt.Errorf("error initializing the allowdeny list: %v", err)
 	}
 
-	klog.Infof("Metric allow-denylisting: %v", allowDenyList.Status())
+	klog.InfoS("Metric allow-denylisting", "allowDenyStatus", allowDenyList.Status())
 
 	optInMetricFamilyFilter, err := optin.NewMetricFamilyFilter(opts.MetricOptInList)
 	if err != nil {
@@ -127,7 +127,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	}
 
 	if optInMetricFamilyFilter.Count() > 0 {
-		klog.Infof("Metrics which were opted into: %v", optInMetricFamilyFilter.Status())
+		klog.InfoS("Metrics which were opted into", "optInMetricsFamilyStatus", optInMetricFamilyFilter.Status())
 	}
 
 	storeBuilder.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter(
@@ -188,7 +188,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	// Run Telemetry server
 	{
 		g.Add(func() error {
-			klog.Infof("Starting kube-state-metrics self metrics server: %s", telemetryListenAddress)
+			klog.InfoS("Started kube-state-metrics self metrics server", "telemetryAddress", telemetryListenAddress)
 			return web.ListenAndServe(&telemetryServer, tlsConfig, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -199,7 +199,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	// Run Metrics server
 	{
 		g.Add(func() error {
-			klog.Infof("Starting metrics server: %s", metricsServerListenAddress)
+			klog.InfoS("Started metrics server", "metricsServerAddress", metricsServerListenAddress)
 			return web.ListenAndServe(&metricsServer, tlsConfig, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -211,7 +211,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	if err := g.Run(); err != nil {
 		return fmt.Errorf("run server group error: %v", err)
 	}
-	klog.Info("Exiting")
+	klog.InfoS("Exited")
 	return nil
 }
 
@@ -247,14 +247,13 @@ func createKubeClient(apiserver string, kubeconfig string, factories ...customre
 	// Informers don't seem to do a good job logging error messages when it
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
-	klog.Infof("Testing communication with server")
+	klog.InfoS("Tested communication with server")
 	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "error while trying to communicate with apiserver")
 	}
-	klog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
-		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)
-	klog.Infof("Communication with server successful")
+	klog.InfoS("Run with Kubernetes cluster version", "major", v.Major, "minor", v.Minor, "gitVersion", v.GitVersion, "gitTreeState", v.GitTreeState, "gitCommit", v.GitCommit, "platform", v.Platform)
+	klog.InfoS("Communication with server successful")
 
 	return kubeClient, vpaClient, customResourceClients, nil
 }

@@ -38,7 +38,8 @@ func main() {
 	opts.AddFlags()
 
 	if err := opts.Parse(); err != nil {
-		klog.Fatalf("Parsing flag definitions error: %v", err)
+		klog.ErrorS(err, "Parsing flag definitions error")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	if opts.Version {
@@ -55,14 +56,16 @@ func main() {
 	if config, set := resolveCustomResourceConfig(opts); set {
 		crf, err := customresourcestate.FromConfig(config)
 		if err != nil {
-			klog.Fatal(err)
+			klog.ErrorS(err, "Parsing from Custom Resource State Metrics file failed")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		factories = append(factories, crf...)
 	}
 
 	ctx := context.Background()
 	if err := app.RunKubeStateMetrics(ctx, opts, factories...); err != nil {
-		klog.Fatalf("Failed to run kube-state-metrics: %v", err)
+		klog.ErrorS(err, "Failed to run kube-state-metrics")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 }
 
@@ -73,7 +76,8 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 	if file := opts.CustomResourceConfigFile; file != "" {
 		f, err := os.Open(file)
 		if err != nil {
-			klog.Fatal(err)
+			klog.ErrorS(err, "Custom Resource State Metrics file could not be opened")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		return yaml.NewDecoder(f), true
 	}

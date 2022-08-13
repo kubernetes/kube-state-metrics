@@ -99,7 +99,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 		return ctx.Err()
 	}
 
-	klog.InfoS("Autosharding enabled with pod pod_namespace", "pod", m.opts.Pod, "namespace", m.opts.Namespace)
+	klog.InfoS("Autosharding enabled with pod", "pod", klog.KRef(m.opts.Namespace, m.opts.Pod))
 	klog.InfoS("Auto detecting sharding settings")
 	ss, err := detectStatefulSet(m.kubeClient, m.opts.Pod, m.opts.Namespace)
 	if err != nil {

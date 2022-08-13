@@ -137,7 +137,7 @@ func (n *NamespaceList) GetNamespaces() NamespaceList {
 		ns = DefaultNamespaces
 	} else {
 		if n.IsAllNamespaces() {
-			klog.InfoS("Using all namespace")
+			klog.InfoS("Using all namespaces")
 		} else {
 			klog.InfoS("Using namespaces", "nameSpaces", ns)
 		}

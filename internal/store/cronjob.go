@@ -18,9 +18,10 @@ package store
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -329,7 +330,7 @@ func createCronJobListWatch(kubeClient clientset.Interface, ns string, fieldSele
 func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
-		return time.Time{}, errors.Wrapf(err, "Failed to parse cron job schedule '%s'", schedule)
+		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %w", schedule, err)
 	}
 	if !lastScheduleTime.IsZero() {
 		return sched.Next(lastScheduleTime.Time), nil

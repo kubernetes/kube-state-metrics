@@ -9,7 +9,6 @@ require (
 	github.com/google/go-jsonnet v0.18.0
 	github.com/jsonnet-bundler/jsonnet-bundler v0.4.1-0.20200708074244-ada055a225fa
 	github.com/oklog/run v1.1.0
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.34.0
@@ -73,6 +72,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.17.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect

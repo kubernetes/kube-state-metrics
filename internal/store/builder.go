@@ -18,12 +18,12 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -93,7 +93,7 @@ func (b *Builder) WithMetrics(r prometheus.Registerer) {
 func (b *Builder) WithEnabledResources(r []string) error {
 	for _, col := range r {
 		if !resourceExists(col) {
-			return errors.Errorf("resource %s does not exist. Available resources: %s", col, strings.Join(availableResources(), ","))
+			return fmt.Errorf("resource %s does not exist. Available resources: %s", col, strings.Join(availableResources(), ","))
 		}
 	}
 

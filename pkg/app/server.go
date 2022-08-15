@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/oklog/run"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -250,7 +249,7 @@ func createKubeClient(apiserver string, kubeconfig string, factories ...customre
 	klog.Infof("Testing communication with server")
 	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "error while trying to communicate with apiserver")
+		return nil, nil, nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
 	}
 	klog.Infof("Running with Kubernetes cluster version: v%s.%s. git version: %s. git tree state: %s. commit: %s. platform: %s",
 		v.Major, v.Minor, v.GitVersion, v.GitTreeState, v.GitCommit, v.Platform)

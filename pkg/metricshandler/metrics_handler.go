@@ -77,7 +77,7 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 		m.cancel()
 	}
 	if totalShards != 1 {
-		klog.Infof("configuring sharding of this instance to be shard index %d (zero-indexed) out of %d total shards", shard, totalShards)
+		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
 	}
 	ctx, m.cancel = context.WithCancel(ctx)
 	m.storeBuilder.WithSharding(shard, totalShards)
@@ -94,14 +94,14 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	autoSharding := len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
 
 	if !autoSharding {
-		klog.Info("Autosharding disabled")
+		klog.InfoS("Autosharding disabled")
 		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
 		<-ctx.Done()
 		return ctx.Err()
 	}
 
-	klog.Infof("Autosharding enabled with pod=%v pod_namespace=%v", m.opts.Pod, m.opts.Namespace)
-	klog.Infof("Auto detecting sharding settings.")
+	klog.InfoS("Autosharding enabled with pod", "pod", klog.KRef(m.opts.Namespace, m.opts.Pod))
+	klog.InfoS("Auto detecting sharding settings")
 	ss, err := detectStatefulSet(m.kubeClient, m.opts.Pod, m.opts.Namespace)
 	if err != nil {
 		return fmt.Errorf("detect StatefulSet: %w", err)
@@ -125,7 +125,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 			shard, totalShards, err := shardingSettingsFromStatefulSet(ss, m.opts.Pod)
 			if err != nil {
-				klog.Errorf("detect sharding settings from StatefulSet: %v", err)
+				klog.ErrorS(err, "Detected sharding settings from StatefulSet")
 				return
 			}
 
@@ -152,7 +152,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 			shard, totalShards, err := shardingSettingsFromStatefulSet(cur, m.opts.Pod)
 			if err != nil {
-				klog.Errorf("detect sharding settings from StatefulSet: %v", err)
+				klog.ErrorS(err, "Detected sharding settings from StatefulSet")
 				return
 			}
 

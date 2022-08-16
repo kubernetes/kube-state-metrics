@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -54,7 +53,7 @@ func (testCase *generateMetricsTestCase) run() error {
 	out := headers + "\n" + metrics
 
 	if err := compareOutput(testCase.Want, out); err != nil {
-		return errors.Wrap(err, "expected wanted output to equal output")
+		return fmt.Errorf("expected wanted output to equal output: %w", err)
 	}
 
 	return nil
@@ -70,7 +69,7 @@ func compareOutput(expected, actual string) error {
 	}
 
 	if diff := cmp.Diff(entities[0], entities[1]); diff != "" {
-		return errors.Errorf("(-want, +got):\n%s", diff)
+		return fmt.Errorf("(-want, +got):\n%s", diff)
 	}
 
 	return nil

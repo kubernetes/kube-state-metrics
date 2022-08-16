@@ -17,12 +17,11 @@ limitations under the License.
 package allowdenylist
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
-	"github.com/pkg/errors"
 )
 
 // AllowDenyList encapsulates the logic needed to filter based on a string.

@@ -18,6 +18,7 @@ package framework
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,7 +26,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pkg/errors"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 )
@@ -165,7 +165,7 @@ func (f *Framework) ParseMetrics(metrics func(io.Writer) error) (map[string]*dto
 	buf := &bytes.Buffer{}
 	err := metrics(buf)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get metrics")
+		return nil, fmt.Errorf("Failed to get metrics: %w", err)
 	}
 
 	parser := &expfmt.TextParser{}

@@ -29,7 +29,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/testutil/promlint"
 	dto "github.com/prometheus/client_model/go"
 
@@ -148,7 +147,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 	docPath := "../../docs/"
 	docFiles, err := os.ReadDir(docPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read documentation directory")
+		return nil, fmt.Errorf("failed to read documentation directory: %w", err)
 	}
 
 	// Match file names such as daemonset-metrics.md
@@ -168,7 +167,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 		filePath := path.Join(docPath, file.Name())
 		f, err := os.Open(filePath)
 		if err != nil {
-			return nil, errors.Wrapf(err, "cannot read file %s", filePath)
+			return nil, fmt.Errorf("cannot read file %s: %w", filePath, err)
 		}
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
@@ -183,7 +182,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 			labelPatterns := make([]string, len(labels))
 			for i, l := range labels {
 				if len(l) <= 1 {
-					return nil, errors.Errorf("Label documentation %s did not match regex", labelsDoc)
+					return nil, fmt.Errorf("Label documentation %s did not match regex", labelsDoc)
 				}
 				labelPatterns[i] = patternRe.ReplaceAllString(l[1], "_.*")
 			}

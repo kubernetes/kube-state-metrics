@@ -264,6 +264,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"certificatesigningrequests":      func(b *Builder) []cache.Store { return b.buildCsrStores() },
 	"clusterroles":                    func(b *Builder) []cache.Store { return b.buildClusterRoleStores() },
 	"configmaps":                      func(b *Builder) []cache.Store { return b.buildConfigMapStores() },
+	"clusterrolebindings":             func(b *Builder) []cache.Store { return b.buildClusterRoleBindingStores() },
 	"cronjobs":                        func(b *Builder) []cache.Store { return b.buildCronJobStores() },
 	"daemonsets":                      func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
 	"deployments":                     func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
@@ -285,6 +286,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"replicationcontrollers":          func(b *Builder) []cache.Store { return b.buildReplicationControllerStores() },
 	"resourcequotas":                  func(b *Builder) []cache.Store { return b.buildResourceQuotaStores() },
 	"roles":                           func(b *Builder) []cache.Store { return b.buildRoleStores() },
+	"rolebindings":                    func(b *Builder) []cache.Store { return b.buildRoleBindingStores() },
 	"secrets":                         func(b *Builder) []cache.Store { return b.buildSecretStores() },
 	"serviceaccounts":                 func(b *Builder) []cache.Store { return b.buildServiceAccountStores() },
 	"services":                        func(b *Builder) []cache.Store { return b.buildServiceStores() },
@@ -434,6 +436,14 @@ func (b *Builder) buildClusterRoleStores() []cache.Store {
 
 func (b *Builder) buildRoleStores() []cache.Store {
 	return b.buildStoresFunc(roleMetricFamilies(b.allowAnnotationsList["roles"], b.allowLabelsList["roles"]), &rbacv1.Role{}, createRoleListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildClusterRoleBindingStores() []cache.Store {
+	return b.buildStoresFunc(clusterRoleBindingMetricFamilies(b.allowAnnotationsList["clusterrolebindings"], b.allowLabelsList["clusterrolebindings"]), &rbacv1.ClusterRoleBinding{}, createClusterRoleBindingListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildRoleBindingStores() []cache.Store {
+	return b.buildStoresFunc(roleBindingMetricFamilies(b.allowAnnotationsList["rolebindings"], b.allowLabelsList["rolebindings"]), &rbacv1.RoleBinding{}, createRoleBindingListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildStores(

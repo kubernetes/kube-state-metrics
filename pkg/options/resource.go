@@ -27,6 +27,7 @@ var (
 	// DefaultResources represents the default set of resources in kube-state-metrics.
 	DefaultResources = ResourceSet{
 		"certificatesigningrequests":      struct{}{},
+		"clusterrolebindings":             struct{}{},
 		"clusterroles":                    struct{}{},
 		"configmaps":                      struct{}{},
 		"cronjobs":                        struct{}{},
@@ -49,6 +50,7 @@ var (
 		"replicasets":                     struct{}{},
 		"replicationcontrollers":          struct{}{},
 		"resourcequotas":                  struct{}{},
+		"rolebindings":                    struct{}{},
 		"roles":                           struct{}{},
 		"secrets":                         struct{}{},
 		"serviceaccounts":                 struct{}{},

@@ -31,6 +31,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 
 - [CertificateSigningRequest Metrics](certificatesigningrequest-metrics.md)
 - [ClusterRole Metrics](clusterrole-metrics.md)
+- [ClusterRoleBinding Metrics](clusterrolebinding-metrics.md)
 - [ConfigMap Metrics](configmap-metrics.md)
 - [CronJob Metrics](cronjob-metrics.md)
 - [DaemonSet Metrics](daemonset-metrics.md)
@@ -53,6 +54,7 @@ Per group of metrics there is one file for each metrics. See each file for speci
 - [ReplicationController Metrics](replicationcontroller-metrics.md)
 - [ResourceQuota Metrics](resourcequota-metrics.md)
 - [Role Metrics](role-metrics.md)
+- [RoleBinding Metrics](rolebinding-metrics.md)
 - [Secret Metrics](secret-metrics.md)
 - [Service Metrics](service-metrics.md)
 - [ServiceAccount Metrics](serviceaccount-metrics.md)

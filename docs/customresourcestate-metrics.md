@@ -41,6 +41,7 @@ spec:
                     metrics:
                       - name: active_count
                         help: "Count of active Foo"
+                        type: Gauge
                         ...
           - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
 ```
@@ -60,6 +61,7 @@ metadata:
         foo: bar
     name: foo
 spec:
+    version: v1.2.3
     order:
         - id: 1
           value: true
@@ -67,6 +69,7 @@ spec:
           value: false
     replicas: 1
 status:
+    phase: Pending
     active:
         type-a: 1
         type-b: 3
@@ -101,7 +104,9 @@ spec:
         - name: "uptime"
           help: "Foo uptime"
           each:
-            path: [status, uptime]
+            type: Gauge
+            gauge:
+              path: [status, uptime]
 ```
 
 Produces the metric:
@@ -129,17 +134,19 @@ spec:
         - name: "ready_count"
           help: "Number Foo Bars ready"
           each:
-            # targeting an object or array will produce a metric for each element
-            # labelsFromPath and value are relative to this path
-            path: [status, sub]
-            
-            # if path targets an object, the object key will be used as label value
-            labelFromKey: type
-            # label values can be resolved specific to this path 
-            labelsFromPath:
-              active: [active]
-            # The actual field to use as metric value. Should be a number.
-            value: [ready]
+            type: Gauge
+            gauge:
+              # targeting an object or array will produce a metric for each element
+              # labelsFromPath and value are relative to this path
+              path: [status, sub]
+
+              # if path targets an object, the object key will be used as label value
+              labelFromKey: type
+              # label values can be resolved specific to this path 
+              labelsFromPath:
+                active: [active]
+              # The actual field to use as metric value. Should be a number.
+              value: [ready]
           commonLabels:
             custom_metric: "yes"
           labelsFromPath:
@@ -160,19 +167,117 @@ kube_myteam_io_v1_Foo_active_count{active="1",custom_metric="yes",foo="bar",name
 kube_myteam_io_v1_Foo_active_count{active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 3
 ```
 
+### Metric types
+
+The configuration supports three kind of metrics from the [OpenMetrics specification](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md).
+
+The metric type is specified by the `type` field and its specific configuration at the types specific struct.
+
+#### Gauge
+
+> Gauges are current measurements, such as bytes of memory currently used or the number of items in a queue. For gauges the absolute value is what is of interest to a user. [[0]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#gauge)
+
+Example:
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      metrics:
+        - name: "uptime"
+          help: "Foo uptime"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, uptime]
+```
+
+Produces the metric:
+
+```prometheus
+kube_myteam_io_v1_Foo_uptime 43.21
+```
+
+#### StateSet
+
+> StateSets represent a series of related boolean values, also called a bitset. If ENUMs need to be encoded this MAY be done via StateSet. [[1]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#stateset)
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      metrics:
+        - name: "status_phase"
+          help: "Foo status_phase"
+          each:
+            type: StateSet
+            stateSet:
+              labelName: phase
+              path: [status, phase]
+              list: [Pending, Bar, Baz]
+```
+
+Metrics of type `SateSet` will generate a metric for each value defined in `list` for each resource.
+The value will be 1, if the value matches the one in list.
+
+Produces the metric:
+
+```prometheus
+kube_myteam_io_v1_Foo_status_phase{phase="Pending"} 1
+kube_myteam_io_v1_Foo_status_phase{phase="Bar"} 0
+kube_myteam_io_v1_Foo_status_phase{phase="Baz"} 0
+```
+
+#### Info
+
+> Info metrics are used to expose textual information which SHOULD NOT change during process lifetime. Common examples are an application's version, revision control commit, and the version of a compiler. [[2]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#info)
+
+Metrics of type `Info` will always have a value of 1.
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      metrics:
+        - name: "version"
+          help: "Foo version"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                version: [spec, version]
+```
+
+Produces the metric:
+
+```prometheus
+kube_myteam_io_v1_Foo_version{version="v1.2.3"} 1
+```
+
 ### Naming
 
 The default metric names are prefixed to avoid collisions with other metrics.
-By default, a namespace of `kube` and a subsystem based on your custom resource's group+version+kind is used.
-You can override these with the namespace and subsystem fields.
+By default, a metric prefix of `kube_` concatenated with your custom resource's group+version+kind is used.
+You can override this behavior with the `metricNamePrefix` field.
 
 ```yaml
 kind: CustomResourceStateMetrics
 spec:
   resources:
     - groupVersionKind: ...
-      namespace: myteam
-      subsystem: foos
+      metricNamePrefix: myteam_foos
       metrics:
         - name: uptime
           ...
@@ -183,7 +288,18 @@ Produces:
 myteam_foos_uptime 43.21
 ```
 
-To omit namespace and/or subsystem altogether, set them to `_`.
+To omit namespace and/or subsystem altogether, set them to the empty string:
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind: ...
+      metricNamePrefix: ""
+      metrics:
+        - name: uptime
+          ...
+```
 
 ### Logging
 

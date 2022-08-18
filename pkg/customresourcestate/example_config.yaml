@@ -26,11 +26,13 @@ spec:
         - name: "active_count"
           help: "Number Foo Bars active"
           each:
-            path: [status, active]
-            labelFromKey: type
-            labelsFromPath:
-              bar: [bar]
-            value: [count]
+            type: Gauge
+            gauge:
+              path: [status, active]
+              labelFromKey: type
+              labelsFromPath:
+                bar: [bar]
+              value: [count]
           commonLabels:
             custom_metric: "yes"
 
@@ -40,6 +42,23 @@ spec:
 
         - name: "other_count"
           each:
-            path: [status, other]
+            type: Gauge
+            gauge:
+              path: [status, other]
           errorLogV: 5
 
+        - name: "info"
+          each:
+            type: Info
+            info:
+              path: [spec, version]
+          errorLogV: 5
+
+        - name: "phase"
+          each:
+            type: StateSet
+            stateSet:
+              path: [status, phase]
+              labelName: phase
+              list: [Active, Running, Terminating]
+          errorLogV: 5

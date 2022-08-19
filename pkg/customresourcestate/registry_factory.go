@@ -269,6 +269,9 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 }
 
 func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
+	if v == nil {
+		return
+	}
 	value := eachValue{Value: 1, Labels: map[string]string{}}
 	addPathLabels(v, c.labelFromPath, value.Labels)
 	result = append(result, value)

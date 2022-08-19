@@ -209,6 +209,11 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "version", "v0.0.0"),
 		}},
+		{name: "info nil path", each: &compiledInfo{
+			compiledCommon{
+				path: mustCompilePath(t, "does", "not", "exist"),
+			},
+		}, wantResult: nil},
 		{name: "stateset", each: &compiledStateSet{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "phase"),

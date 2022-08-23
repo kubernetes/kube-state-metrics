@@ -202,10 +202,10 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				case p.Spec.PersistentVolumeSource.CSI != nil:
 					csiDriver = p.Spec.PersistentVolumeSource.CSI.Driver
 					csiVolumeHandle = p.Spec.PersistentVolumeSource.CSI.VolumeHandle
-				case p.Spec.Local != nil:
-					localPath = p.Spec.Local.Path
-					if p.Spec.Local.FSType != nil {
-						localFS = *p.Spec.Local.FSType
+				case p.Spec.PersistentVolumeSource.Local != nil:
+					localPath = p.Spec.PersistentVolumeSource.Local.Path
+					if p.Spec.PersistentVolumeSource.Local.FSType != nil {
+						localFS = *p.Spec.PersistentVolumeSource.Local.FSType
 					}
 				}
 

@@ -27,11 +27,12 @@ As of v2.3.0, kube-state-metrics supports additional opt-in metrics via the CLI 
 
 ## Exposed Metrics
 
-Per group of metrics there is one file for each metrics. See each file for specific documentation about the exposed metrics:
+Per group of metrics there is one file for each metrics.
+See each file for specific documentation about the exposed metrics:
+
+### Default Resources
 
 - [CertificateSigningRequest Metrics](certificatesigningrequest-metrics.md)
-- [ClusterRole Metrics](clusterrole-metrics.md)
-- [ClusterRoleBinding Metrics](clusterrolebinding-metrics.md)
 - [ConfigMap Metrics](configmap-metrics.md)
 - [CronJob Metrics](cronjob-metrics.md)
 - [DaemonSet Metrics](daemonset-metrics.md)
@@ -53,16 +54,21 @@ Per group of metrics there is one file for each metrics. See each file for speci
 - [ReplicaSet Metrics](replicaset-metrics.md)
 - [ReplicationController Metrics](replicationcontroller-metrics.md)
 - [ResourceQuota Metrics](resourcequota-metrics.md)
-- [Role Metrics](role-metrics.md)
-- [RoleBinding Metrics](rolebinding-metrics.md)
 - [Secret Metrics](secret-metrics.md)
 - [Service Metrics](service-metrics.md)
-- [ServiceAccount Metrics](serviceaccount-metrics.md)
 - [StatefulSet Metrics](statefulset-metrics.md)
 - [StorageClass Metrics](storageclass-metrics.md)
 - [ValidatingWebhookConfiguration Metrics](validatingwebhookconfiguration-metrics.md)
-- [VerticalPodAutoscaler Metrics](verticalpodautoscaler-metrics.md)
 - [VolumeAttachment Metrics](volumeattachment-metrics.md)
+
+### Optional Resources
+
+- [ClusterRole Metrics](clusterrole-metrics.md)
+- [ClusterRoleBinding Metrics](clusterrolebinding-metrics.md)
+- [Role Metrics](role-metrics.md)
+- [RoleBinding Metrics](rolebinding-metrics.md)
+- [ServiceAccount Metrics](serviceaccount-metrics.md)
+- [VerticalPodAutoscaler Metrics](verticalpodautoscaler-metrics.md)
 
 ## Join Metrics
 

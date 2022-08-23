@@ -56,6 +56,7 @@ type Options struct {
 
 	CustomResourceConfig     string
 	CustomResourceConfigFile string
+	CustomResourcesOnly      bool
 
 	flags *pflag.FlagSet
 }
@@ -120,6 +121,7 @@ func (o *Options) AddFlags() {
 
 	o.flags.StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
 	o.flags.StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
+	o.flags.BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
 }
 
 // Parse parses the flag definitions from the argument list.

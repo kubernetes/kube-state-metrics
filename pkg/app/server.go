@@ -88,14 +88,21 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
 	var resources []string
-	if len(opts.Resources) == 0 {
+	switch {
+	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:
 		klog.InfoS("Used default resources")
 		resources = options.DefaultResources.AsSlice()
 		// enable custom resource
 		for _, factory := range factories {
 			resources = append(resources, factory.Name())
 		}
-	} else {
+	case opts.CustomResourcesOnly:
+		// enable custom resource only
+		for _, factory := range factories {
+			resources = append(resources, factory.Name())
+		}
+		klog.InfoS("Used CRD resources only", "resources", resources)
+	default:
 		klog.InfoS("Used resources", "resources", opts.Resources.String())
 		resources = opts.Resources.AsSlice()
 	}

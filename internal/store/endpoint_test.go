@@ -32,9 +32,9 @@ func TestEndpointStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_endpoint_annotations gauge
-		# HELP kube_endpoint_address_available Number of addresses available in endpoint.
+		# HELP kube_endpoint_address_available (Deprecated since v2.6.0) Number of addresses available in endpoint.
 		# TYPE kube_endpoint_address_available gauge
-		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
+		# HELP kube_endpoint_address_not_ready (Deprecated since v2.6.0) Number of addresses not ready in endpoint
 		# TYPE kube_endpoint_address_not_ready gauge
 		# HELP kube_endpoint_created Unix creation timestamp
 		# TYPE kube_endpoint_created gauge
@@ -160,9 +160,9 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_endpoint_address_available Number of addresses available in endpoint.
+		# HELP kube_endpoint_address_available (Deprecated since v2.6.0) Number of addresses available in endpoint.
 		# TYPE kube_endpoint_address_available gauge
-		# HELP kube_endpoint_address_not_ready Number of addresses not ready in endpoint
+		# HELP kube_endpoint_address_not_ready (Deprecated since v2.6.0) Number of addresses not ready in endpoint
 		# TYPE kube_endpoint_address_not_ready gauge
 		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_endpoint_annotations gauge

@@ -116,7 +116,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_address_available",
 			"Number of addresses available in endpoint.",
 			metric.Gauge,
-			"",
+			"v2.6.0",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var available int
 				for _, s := range e.Subsets {
@@ -136,7 +136,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_address_not_ready",
 			"Number of addresses not ready in endpoint",
 			metric.Gauge,
-			"",
+			"v2.6.0",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var notReady int
 				for _, s := range e.Subsets {

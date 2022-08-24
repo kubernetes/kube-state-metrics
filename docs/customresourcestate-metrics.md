@@ -9,12 +9,14 @@ A YAML configuration file described below is required to define your custom reso
 
 Two flags can be used:
 
- * `--custom-resource-state-config "inline yaml (see example)"` or
- * `--custom-resource-state-config-file /path/to/config.yaml`
+* `--custom-resource-state-config "inline yaml (see example)"` or
+* `--custom-resource-state-config-file /path/to/config.yaml`
 
 If both flags are provided, the inline configuration will take precedence.
+When multiple entries for the same resource exist, kube-state-metrics will exit with an error.
+This includes configuration which refers to a different API version.
 
-In addition to specifying one of `--custom-resource-state-config*` flags, you should also add the custom resource *Kind*s in plural form to the list of exposed resources in the `--resources` flag. If you don't specify `--resources`, then all known custom resources configured in `--custom-resource-state-config-*` and all available default kubernetes objects will be taken into account by kube-state-metrics.
+In addition to specifying one of `--custom-resource-state-config*` flags, you should also add the custom resource *Kind*s in plural form to the list of exposed resources in the `--resources` flag. If you don't specify `--resources`, then all known custom resources configured in `--custom-resource-state-config*` and all available default kubernetes objects will be taken into account by kube-state-metrics.
 
 ```yaml
 apiVersion: apps/v1

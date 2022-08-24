@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -171,7 +172,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -190,7 +191,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -213,7 +214,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="name",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="name",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -236,7 +237,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="aws://eu-west-1c/vol-012d34d567890123b",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="aws://eu-west-1c/vol-012d34d567890123b",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -259,7 +260,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="azure_disk_1",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="azure_disk_1",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -283,7 +284,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="123",fc_target_wwns="0123456789abcdef,abcdef0123456789",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="123",fc_target_wwns="0123456789abcdef,abcdef0123456789",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -306,7 +307,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="0123456789abcdef,abcdef0123456789",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="0123456789abcdef,abcdef0123456789",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -331,7 +332,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -357,7 +358,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="iqn.my.test.initiator:112233",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="iqn.my.test.initiator:112233",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -381,7 +382,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="/myPath",nfs_server="1.2.3.4",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="/myPath",nfs_server="1.2.3.4",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -405,7 +406,101 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_info Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
-					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",nfs_path="",nfs_server="",csi_driver="test-driver",csi_volume_handle="test-volume-handle",persistentvolume="test-pv-available",storageclass=""} 1
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="test-driver",csi_volume_handle="test-volume-handle",persistentvolume="test-pv-available",storageclass=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_info"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						Local: &v1.LocalVolumeSource{
+							FSType: pointer.String("ext4"),
+							Path:   "/mnt/data",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="/mnt/data",local_fs="ext4",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_info"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						Local: &v1.LocalVolumeSource{
+							Path: "/mnt/data",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="/mnt/data",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_info"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						HostPath: &v1.HostPathVolumeSource{
+							Path: "/mnt/data",
+							Type: hostPathTypePointer(v1.HostPathDirectory),
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="/mnt/data",host_path_type="Directory",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_info"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						HostPath: &v1.HostPathVolumeSource{
+							Path: "/mnt/data",
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeAvailable,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# TYPE kube_persistentvolume_info gauge
+					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="/mnt/data",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_info"},
 		},
@@ -596,4 +691,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
+}
+
+func hostPathTypePointer(p v1.HostPathType) *v1.HostPathType {
+	return &p
 }

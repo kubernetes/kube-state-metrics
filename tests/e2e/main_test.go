@@ -252,6 +252,20 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 	}
 
 	resources := map[string]struct{}{}
+	nonDefaultResources := map[string]bool{
+		"clusterrole":           true,
+		"clusterrolebinding":    true,
+		"role":                  true,
+		"rolebinding":           true,
+		"serviceaccount":        true,
+		"verticalpodautoscaler": true,
+	}
+	nonResources := map[string]bool{
+		"builder":   true,
+		"utils":     true,
+		"testutils": true,
+	}
+
 	files, err := os.ReadDir("../../internal/store/")
 	if err != nil {
 		t.Fatalf("failed to read dir to get all resouces name: %v", err)
@@ -263,11 +277,11 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 		if len(params) != 2 {
 			continue
 		}
-		if params[1] == "builder" || params[1] == "utils" || params[1] == "testutils" {
+		if nonResources[params[1]] {
 			// Non resource file
 			continue
 		}
-		if params[1] == "verticalpodautoscaler" {
+		if nonDefaultResources[params[1]] {
 			// Resource disabled by default
 			continue
 		}

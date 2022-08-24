@@ -162,8 +162,10 @@ type ConfigDecoder interface {
 }
 
 // FromConfig decodes a configuration source into a slice of customresource.RegistryFactory that are ready to use.
-func FromConfig(decoder ConfigDecoder) (factories []customresource.RegistryFactory, err error) {
+func FromConfig(decoder ConfigDecoder) ([]customresource.RegistryFactory, error) {
 	var crconfig Metrics
+	var factories []customresource.RegistryFactory
+	factoriesIndex := map[string]bool{}
 	if err := decoder.Decode(&crconfig); err != nil {
 		return nil, fmt.Errorf("failed to parse Custom Resource State metrics: %w", err)
 	}
@@ -172,6 +174,10 @@ func FromConfig(decoder ConfigDecoder) (factories []customresource.RegistryFacto
 		if err != nil {
 			return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
 		}
+		if _, ok := factoriesIndex[factory.Name()]; ok {
+			return nil, fmt.Errorf("found multiple custom resource configurations for the same resource %s", factory.Name())
+		}
+		factoriesIndex[factory.Name()] = true
 		factories = append(factories, factory)
 	}
 	return factories, nil

@@ -1,3 +1,20 @@
+## v2.6.0 / 2022-08-26
+* [FEATURE]     Add local storage labels to kube_persistentvolume_info #1814 @nabokihms
+* [FEATURE]     Add support for StateSet and Info metrics for Custom-Resource State #1777 @chrischdi
+* [FEATURE]     Add support for Rolebinding resource metrics #1799 @kaitoii11
+* [FEATURE]     Add new kube_horizontalpodautoscaler_status_target_metric #1725 @tanguyfalconnet
+* [FEATURE]     Add support for Role and Clusterrole resource metrics #1759 @kaitoii11
+* [FEATURE]     Add support for the ServiceAccount resource metrics #1773 @Serializator
+* [FEATURE]     Add metric for pod tolerations #1769 @Serializator
+* [FEATURE]     Add new kube_endpoint_address metric #1761 @bavarianbidi
+* [FEATURE]     Support reading the timestamp fields of custom resources #1766 @dontan001
+* [ENHANCEMENT] Migrate to structured logging #1807 @dmpe
+* [ENHANCEMENT] Switch registry vanity domain from k8s.gcr.io to registry.k8s.io #1750 @mrueg
+* [ENHANCEMENT] Graduate new endpoint metrics to stable #1812 @bavarianbidi
+* [BUGFIX]      Fix label name for kube_pod_nodeselector #1756 @yosshi825
+* [BUGFIX]      Fix Custom-Resource State Metrics not to contain underscores #1754 @chrischdi
+* [BUGFIX]      Fix kube_node_status_allocatable unit doc #1760 @jumbosushi
+
 ## v2.5.0 / 2022-06-03
 
 * [FEATURE]     Add experimental Custom-Resource State Metrics #1710 @iamnoah

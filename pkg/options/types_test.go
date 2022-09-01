@@ -279,6 +279,15 @@ func TestLabelsAllowListSet(t *testing.T) {
 					"bar",
 					"*"}}),
 		},
+		{
+			Desc:  "with key as wildcard",
+			Value: "*=[*]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"*": {
+					"*",
+				},
+			}),
+		},
 	}
 
 	for _, test := range tests {

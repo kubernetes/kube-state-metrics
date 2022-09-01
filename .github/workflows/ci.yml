@@ -13,6 +13,9 @@ on:
     - master
     - release*
 
+permissions:
+  contents: read
+
 env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes

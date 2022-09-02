@@ -114,6 +114,9 @@ clean:
 	git clean -Xfd .
 
 e2e:
+	@if [ -n "${CHECK_METRICS}" ]; then \
+		$(MAKE) install-promtool; \
+	fi
 	./tests/e2e.sh
 
 generate: build-local

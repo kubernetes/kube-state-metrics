@@ -38,7 +38,8 @@ _testmain.go
 *.iml
 .idea/
 
-# Generated CLI help file
+# Generated artefacts
+promtool
 help.txt
 
 # jsonnet dependency management

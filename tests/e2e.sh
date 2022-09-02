@@ -162,6 +162,10 @@ mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
 # TODO: re-implement the following test cases in Go with the goal of removing this file.
 echo "access kube-state-metrics metrics endpoint"
 curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/metrics
+if [[ -n "${CHECK_METRICS}" ]]; then
+ echo "validating metrics in ${KUBE_STATE_METRICS_LOG_DIR}/metrics"
+ ./promtool check metrics --extended <${KUBE_STATE_METRICS_LOG_DIR}/metrics
+fi
 
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
 if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then

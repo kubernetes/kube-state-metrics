@@ -214,4 +214,4 @@ jobs:
 
     - name: End-to-end tests
       run: |
-        make e2e
+        CHECK_METRICS=true make e2e

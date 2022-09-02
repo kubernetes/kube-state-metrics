@@ -149,7 +149,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	storeBuilder.WithCustomResourceClients(customResourceClients)
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
-	storeBuilder.WithAllowLabels(opts.LabelsAllowList)
+	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
+		return fmt.Errorf("failed to set up labels allowlist: %v", err)
+	}
 
 	ksmMetricsRegistry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),

@@ -196,6 +196,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container.
 # HELP kube_pod_container_resource_requests The number of requested request resource by a container.
 # HELP kube_pod_container_state_started Start time in unix timestamp for a pod container.
+# HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 # HELP kube_pod_container_status_ready Describes whether the containers readiness check succeeded.
 # HELP kube_pod_container_status_restarts_total The number of container restarts per container.
@@ -241,6 +242,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_container_resource_limits gauge
 # TYPE kube_pod_container_resource_requests gauge
 # TYPE kube_pod_container_state_started gauge
+# TYPE kube_pod_container_status_last_terminated_exitcode gauge
 # TYPE kube_pod_container_status_last_terminated_reason gauge
 # TYPE kube_pod_container_status_ready gauge
 # TYPE kube_pod_container_status_restarts_total counter
@@ -297,6 +299,7 @@ kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="storage",unit="byte"} 4e+08
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",node="node1",resource="cpu",unit="core"} 0.3
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
+kube_pod_container_status_last_terminated_exitcode{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 137
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",reason="OOMKilled"} 1
 kube_pod_container_status_ready{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0
 kube_pod_container_status_ready{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
@@ -794,7 +797,8 @@ func pod(client *fake.Clientset, index int) error {
 					},
 					LastTerminationState: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
-							Reason: "OOMKilled",
+							Reason:   "OOMKilled",
+							ExitCode: 137,
 						},
 					},
 				},

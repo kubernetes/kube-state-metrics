@@ -131,46 +131,39 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
 				for _, m := range a.Spec.Metrics {
 					var metricName string
-
+					var metricTarget autoscaling.MetricTarget
 					// The variable maps the type of metric to the corresponding value
 					metricMap := make(map[metricTargetType]float64)
 
 					switch m.Type {
 					case autoscaling.ObjectMetricSourceType:
 						metricName = m.Object.Metric.Name
-
-						if m.Object.Target.Value != nil {
-							metricMap[value] = float64(m.Object.Target.Value.MilliValue()) / 1000
-						}
-						if m.Object.Target.AverageValue != nil {
-							metricMap[average] = float64(m.Object.Target.AverageValue.MilliValue()) / 1000
-						}
+						metricTarget = m.Object.Target
 					case autoscaling.PodsMetricSourceType:
 						metricName = m.Pods.Metric.Name
-
-						metricMap[average] = float64(m.Pods.Target.AverageValue.MilliValue()) / 1000
+						metricTarget = m.Pods.Target
 					case autoscaling.ResourceMetricSourceType:
 						metricName = string(m.Resource.Name)
-
-						if m.Resource.Target.AverageUtilization != nil {
-							metricMap[utilization] = float64(*m.Resource.Target.AverageUtilization)
-						}
-
-						if m.Resource.Target.AverageValue != nil {
-							metricMap[average] = float64(m.Resource.Target.AverageValue.MilliValue()) / 1000
-						}
+						metricTarget = m.Resource.Target
+					case autoscaling.ContainerResourceMetricSourceType:
+						metricName = string(m.ContainerResource.Name)
+						metricTarget = m.ContainerResource.Target
 					case autoscaling.ExternalMetricSourceType:
 						metricName = m.External.Metric.Name
-
-						if m.External.Target.Value != nil {
-							metricMap[value] = float64(m.External.Target.Value.MilliValue()) / 1000
-						}
-						if m.External.Target.AverageValue != nil {
-							metricMap[average] = float64(m.External.Target.AverageValue.MilliValue()) / 1000
-						}
+						metricTarget = m.External.Target
 					default:
 						// Skip unsupported metric type
 						continue
+					}
+
+					if metricTarget.Value != nil {
+						metricMap[value] = float64(metricTarget.Value.MilliValue()) / 1000
+					}
+					if metricTarget.AverageValue != nil {
+						metricMap[average] = float64(metricTarget.AverageValue.MilliValue()) / 1000
+					}
+					if metricTarget.AverageUtilization != nil {
+						metricMap[utilization] = float64(*metricTarget.AverageUtilization)
 					}
 
 					for metricTypeIndex, metricValue := range metricMap {
@@ -193,46 +186,39 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
 				for _, m := range a.Status.CurrentMetrics {
 					var metricName string
-
+					var currentMetric autoscaling.MetricValueStatus
 					// The variable maps the type of metric to the corresponding value
 					metricMap := make(map[metricTargetType]float64)
 
 					switch m.Type {
 					case autoscaling.ObjectMetricSourceType:
 						metricName = m.Object.Metric.Name
-
-						if m.Object.Current.Value != nil {
-							metricMap[value] = float64(m.Object.Current.Value.MilliValue()) / 1000
-						}
-						if m.Object.Current.AverageValue != nil {
-							metricMap[average] = float64(m.Object.Current.AverageValue.MilliValue()) / 1000
-						}
+						currentMetric = m.Object.Current
 					case autoscaling.PodsMetricSourceType:
 						metricName = m.Pods.Metric.Name
-
-						metricMap[average] = float64(m.Pods.Current.AverageValue.MilliValue()) / 1000
+						currentMetric = m.Pods.Current
 					case autoscaling.ResourceMetricSourceType:
 						metricName = string(m.Resource.Name)
-
-						if m.Resource.Current.AverageUtilization != nil {
-							metricMap[utilization] = float64(*m.Resource.Current.AverageUtilization)
-						}
-
-						if m.Resource.Current.AverageValue != nil {
-							metricMap[average] = float64(m.Resource.Current.AverageValue.MilliValue()) / 1000
-						}
+						currentMetric = m.Resource.Current
+					case autoscaling.ContainerResourceMetricSourceType:
+						metricName = string(m.ContainerResource.Name)
+						currentMetric = m.ContainerResource.Current
 					case autoscaling.ExternalMetricSourceType:
 						metricName = m.External.Metric.Name
-
-						if m.External.Current.Value != nil {
-							metricMap[value] = float64(m.External.Current.Value.MilliValue()) / 1000
-						}
-						if m.External.Current.AverageValue != nil {
-							metricMap[average] = float64(m.External.Current.AverageValue.MilliValue()) / 1000
-						}
+						currentMetric = m.External.Current
 					default:
 						// Skip unsupported metric type
 						continue
+					}
+
+					if currentMetric.Value != nil {
+						metricMap[value] = float64(currentMetric.Value.MilliValue()) / 1000
+					}
+					if currentMetric.AverageValue != nil {
+						metricMap[average] = float64(currentMetric.AverageValue.MilliValue()) / 1000
+					}
+					if currentMetric.AverageUtilization != nil {
+						metricMap[utilization] = float64(*currentMetric.AverageUtilization)
 					}
 
 					for metricTypeIndex, metricValue := range metricMap {

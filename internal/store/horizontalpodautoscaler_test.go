@@ -128,6 +128,16 @@ func TestHPAStore(t *testing.T) {
 								},
 							},
 						},
+						{
+							Type: autoscaling.ContainerResourceMetricSourceType,
+							ContainerResource: &autoscaling.ContainerResourceMetricSource{
+								Name:      "cpu",
+								Container: "container1",
+								Target: autoscaling.MetricTarget{
+									AverageUtilization: int32ptr(80),
+								},
+							},
+						},
 						// No targets, this metric should be ignored
 						{
 							Type: autoscaling.ResourceMetricSourceType,
@@ -211,6 +221,7 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="value",namespace="ns1"} 10
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="connections",metric_target_type="average",namespace="ns1"} 0.7
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="connections",metric_target_type="value",namespace="ns1"} 0.5
+				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 819200
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="sqs_jobs",metric_target_type="value",namespace="ns1"} 30
@@ -339,6 +350,17 @@ func TestHPAStore(t *testing.T) {
 							},
 						},
 						{
+							Type: "ContainerResource",
+							ContainerResource: &autoscaling.ContainerResourceMetricStatus{
+								Name:      "cpu",
+								Container: "container1",
+								Current: autoscaling.MetricValueStatus{
+									AverageValue:       resourcePtr(resource.MustParse("80m")),
+									AverageUtilization: int32ptr(10),
+								},
+							},
+						},
+						{
 							Type: "External",
 							External: &autoscaling.ExternalMetricStatus{
 								Metric: autoscaling.MetricIdentifier{
@@ -379,6 +401,8 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 28
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.062
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 6
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.08
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 10
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 0
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="average",namespace="ns1"} 2.9
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 0

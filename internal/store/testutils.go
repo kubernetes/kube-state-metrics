@@ -37,9 +37,32 @@ type generateMetricsTestCase struct {
 	Want                 string
 	Headers              []string
 	Func                 func(interface{}) []metric.FamilyInterface
+	DropHelp             bool
+}
+
+type generateStableMetricsTestCase struct {
+	Name string
+	FilePath string
+	generateMetricsTestCase
 }
 
 func (testCase *generateMetricsTestCase) run() error {
+	out := testCase.generateOut()
+	testCase.Want, out = alignResult(testCase.Want, out)
+
+	if diff := cmp.Diff(testCase.Want, out); diff != "" {
+		return fmt.Errorf("expected wanted output to equal output: %w", fmt.Errorf("(-want, +got):\n%s", diff))
+	}
+	return nil
+}
+
+func (testCase *generateMetricsTestCase) runWithOutput() string {
+	out := testCase.generateOut()
+	out, _ = alignResult(out, out)
+	return out
+}
+
+func (testCase *generateMetricsTestCase) generateOut() string {
 	metricFamilies := testCase.Func(testCase.Obj)
 	metricFamilyStrings := []string{}
 	for _, f := range metricFamilies {
@@ -48,18 +71,16 @@ func (testCase *generateMetricsTestCase) run() error {
 	metric := strings.Split(strings.Join(metricFamilyStrings, ""), "\n")
 	filteredMetrics := filterMetricNames(metric, testCase.MetricNames)
 	filteredHeaders := filterMetricNames(testCase.Headers, testCase.MetricNames)
+	if testCase.DropHelp {
+		filteredHeaders = dropHELP(filteredHeaders)
+	}
 	headers := strings.Join(filteredHeaders, "\n")
 	metrics := strings.Join(filteredMetrics, "\n")
 	out := headers + "\n" + metrics
-
-	if err := compareOutput(testCase.Want, out); err != nil {
-		return fmt.Errorf("expected wanted output to equal output: %w", err)
-	}
-
-	return nil
+	return out
 }
 
-func compareOutput(expected, actual string) error {
+func alignResult(expected, actual string) (string, string) {
 	entities := []string{expected, actual}
 	// Align wanted and actual
 	for i := 0; i < len(entities); i++ {
@@ -67,12 +88,7 @@ func compareOutput(expected, actual string) error {
 			entities[i] = f(entities[i])
 		}
 	}
-
-	if diff := cmp.Diff(entities[0], entities[1]); diff != "" {
-		return fmt.Errorf("(-want, +got):\n%s", diff)
-	}
-
-	return nil
+	return entities[0], entities[1]
 }
 
 // sortLabels sorts the order of labels in each line of the given metric. The
@@ -137,6 +153,17 @@ func filterMetricNames(ms []string, names []string) []string {
 		if !drop {
 			filtered = append(filtered, m)
 		}
+	}
+	return filtered
+}
+
+func dropHELP(header []string) []string {
+	filtered := []string{}
+	for _, ms := range header {
+		m := strings.Split(ms, "\n")
+		if len(m) == 2 && m[1][:6] == "# TYPE" {
+		  filtered = append(filtered, m[1])
+	  }
 	}
 	return filtered
 }

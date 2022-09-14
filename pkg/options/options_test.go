@@ -18,58 +18,44 @@ package options
 
 import (
 	"os"
-	"sync"
 	"testing"
-
-	"github.com/spf13/pflag"
 )
 
 func TestOptionsParse(t *testing.T) {
 	tests := []struct {
-		Desc           string
-		Args           []string
-		RecoverInvoked bool
+		Desc         string
+		Args         []string
+		ExpectsError bool
 	}{
 		{
-			Desc:           "resources command line argument",
-			Args:           []string{"./kube-state-metrics", "--resources=configmaps,pods"},
-			RecoverInvoked: false,
+			Desc:         "resources command line argument",
+			Args:         []string{"./kube-state-metrics", "--resources=configmaps,pods"},
+			ExpectsError: false,
 		},
 		{
-			Desc:           "namespaces command line argument",
-			Args:           []string{"./kube-state-metrics", "--namespaces=default,kube-system"},
-			RecoverInvoked: false,
+			Desc:         "namespaces command line argument",
+			Args:         []string{"./kube-state-metrics", "--namespaces=default,kube-system"},
+			ExpectsError: false,
+		},
+		{
+			Desc:         "foo command line argument",
+			Args:         []string{"./kube-state-metrics", "--foo=bar,baz"},
+			ExpectsError: true,
 		},
 	}
 
+	opts := NewOptions()
+	opts.AddFlags(InitCommand)
+
 	for _, test := range tests {
-		var wg sync.WaitGroup
-
-		opts := NewOptions()
-		opts.AddFlags()
-
-		flags := pflag.NewFlagSet("options_test", pflag.PanicOnError)
-		flags.AddFlagSet(opts.flags)
-
-		opts.flags = flags
 
 		os.Args = test.Args
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			defer func() {
-				if err := recover(); err != nil {
-					test.RecoverInvoked = true
-				}
-			}()
-
-			opts.Parse()
-		}()
-
-		wg.Wait()
-		if test.RecoverInvoked {
-			t.Errorf("Test error for Desc: %s. Test panic", test.Desc)
+		err := opts.Parse()
+		if err != nil {
+			if !test.ExpectsError {
+				t.Errorf("Error for test with description: %s: %v", test.Desc, err.Error())
+			}
 		}
 	}
 }

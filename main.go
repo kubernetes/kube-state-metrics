@@ -18,46 +18,41 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/prometheus/common/version"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 
+	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 
-	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 func main() {
 	opts := options.NewOptions()
-	opts.AddFlags()
+	cmd := options.InitCommand
+	cmd.Run = func(cmd *cobra.Command, args []string) {
+		RunKubeStateMetricsWrapper(opts)
+	}
+	opts.AddFlags(cmd)
 
 	if err := opts.Parse(); err != nil {
-		klog.ErrorS(err, "Parsing flag definitions error")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
-
-	if opts.Version {
-		fmt.Printf("%s\n", version.Print("kube-state-metrics"))
-		os.Exit(0)
-	}
-
-	if opts.Help {
-		opts.Usage()
-		os.Exit(0)
 	}
 
 	if err := opts.Validate(); err != nil {
 		klog.ErrorS(err, "Validating options error")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
+}
 
+// RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
+func RunKubeStateMetricsWrapper(opts *options.Options) {
 	var factories []customresource.RegistryFactory
 	if config, set := resolveCustomResourceConfig(opts); set {
 		crf, err := customresourcestate.FromConfig(config)

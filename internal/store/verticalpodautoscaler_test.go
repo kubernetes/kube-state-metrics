@@ -30,14 +30,14 @@ import (
 
 func TestVPAStore(t *testing.T) {
 	const metadata = `
-		# HELP kube_verticalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
-        # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed Maximum resources the VerticalPodAutoscaler can set for containers matching the name.
-        # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed Minimum resources the VerticalPodAutoscaler can set for containers matching the name.
-        # HELP kube_verticalpodautoscaler_spec_updatepolicy_updatemode Update mode of the VerticalPodAutoscaler.
-        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum resources the container can use before the VerticalPodAutoscaler updater evicts it.
-        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target Target resources the VerticalPodAutoscaler recommends for the container.
-        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget Target resources the VerticalPodAutoscaler recommends for the container ignoring bounds.
-        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+		# HELP kube_verticalpodautoscaler_labels (Deprecated since v2.9.0) Kubernetes labels converted to Prometheus labels.
+        # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed (Deprecated since v2.9.0) Maximum resources the VerticalPodAutoscaler can set for containers matching the name.
+        # HELP kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed (Deprecated since v2.9.0) Minimum resources the VerticalPodAutoscaler can set for containers matching the name.
+        # HELP kube_verticalpodautoscaler_spec_updatepolicy_updatemode (Deprecated since v2.9.0) Update mode of the VerticalPodAutoscaler.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound (Deprecated since v2.9.0) Minimum resources the container can use before the VerticalPodAutoscaler updater evicts it.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target (Deprecated since v2.9.0) Target resources the VerticalPodAutoscaler recommends for the container.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget (Deprecated since v2.9.0) Target resources the VerticalPodAutoscaler recommends for the container ignoring bounds.
+        # HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound (Deprecated since v2.9.0) Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.
         # TYPE kube_verticalpodautoscaler_labels gauge
         # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed gauge
         # TYPE kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed gauge

@@ -52,6 +52,9 @@ type Resource struct {
 	// Labels are added to all metrics. If the same key is used in a metric, the value from the metric will overwrite the value here.
 	Labels `yaml:",inline" json:",inline"`
 
+	// Enable kube_*_labels metrics for custom resources.
+	EnableLabelsMetric bool `yaml:"enableLabelsMetric" json:"enableLabelsMetric"`
+
 	// Metrics are the custom resource fields to be collected.
 	Metrics []Generator `yaml:"metrics" json:"metrics"`
 	// ErrorLogV defines the verbosity threshold for errors logged for this resource.

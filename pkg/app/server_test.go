@@ -915,6 +915,10 @@ func (f *fooFactory) ExpectedType() interface{} {
 	return &samplev1alpha1.Foo{}
 }
 
+func (f *fooFactory) IsLabelsMetricEnabled() bool {
+	return true
+}
+
 func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher {
 	client := customResourceClient.(*samplefake.Clientset)
 	return &cache.ListWatch{

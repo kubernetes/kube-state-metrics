@@ -81,6 +81,7 @@ func compareOutput(expected, actual string) error {
 func sortLabels(s string) string {
 	sorted := []string{}
 
+	fmt.Println(s)
 	for _, line := range strings.Split(s, "\n") {
 		// skipping if its headers
 		if strings.HasPrefix(line, "# ") {

@@ -95,6 +95,15 @@ type RegistryFactory interface {
 	// }
 	ExpectedType() interface{}
 
+	// IsLabelsMetricEnabled returns true if the custom resource labels must be created as a metric
+	//
+	// Example:
+	//
+	// func (f *FooFactory) IsLabelsMetricEnabled() bool {
+	//	return false
+	// }
+	IsLabelsMetricEnabled() bool
+
 	// ListWatch constructs a cache.ListerWatcher of the custom resource object.
 	//
 	// Example:

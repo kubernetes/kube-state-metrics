@@ -181,9 +181,13 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 			klog.InfoS("The internal resource store already exists and is overridden by a custom resource store with the same name, please make sure it meets your expectation", "registryName", f.Name())
 		}
 		availableStores[f.Name()] = func(b *Builder) []cache.Store {
+			metricFamilyGenerators := f.MetricFamilyGenerators(b.allowAnnotationsList[f.Name()], b.allowLabelsList[f.Name()])
+			if f.IsLabelsMetricEnabled() {
+				metricFamilyGenerators = append(metricFamilyGenerators, customResourceMetricFamilies(f.Name(), b.allowAnnotationsList[f.Name()], b.allowLabelsList[f.Name()])...)
+			}
 			return b.buildCustomResourceStoresFunc(
 				f.Name(),
-				f.MetricFamilyGenerators(b.allowAnnotationsList[f.Name()], b.allowLabelsList[f.Name()]),
+				metricFamilyGenerators,
 				f.ExpectedType(),
 				f.ListWatch,
 				b.useAPIServerCache,

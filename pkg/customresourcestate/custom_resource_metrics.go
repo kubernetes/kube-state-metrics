@@ -36,13 +36,16 @@ import (
 // customResourceMetrics is an implementation of the customresource.RegistryFactory
 // interface which provides metrics for custom resources defined in a configuration file.
 type customResourceMetrics struct {
-	MetricNamePrefix string
-	GroupVersionKind schema.GroupVersionKind
-	ResourceName     string
-	Families         []compiledFamily
+	MetricNamePrefix   string
+	GroupVersionKind   schema.GroupVersionKind
+	ResourceName       string
+	EnableLabelsMetric bool
+	Families           []compiledFamily
 }
 
-var _ customresource.RegistryFactory = &customResourceMetrics{}
+var (
+	_ customresource.RegistryFactory = &customResourceMetrics{}
+)
 
 // NewCustomResourceMetrics creates a customresource.RegistryFactory from a configuration object.
 func NewCustomResourceMetrics(resource Resource) (customresource.RegistryFactory, error) {
@@ -52,10 +55,11 @@ func NewCustomResourceMetrics(resource Resource) (customresource.RegistryFactory
 	}
 	gvk := schema.GroupVersionKind(resource.GroupVersionKind)
 	return &customResourceMetrics{
-		MetricNamePrefix: resource.GetMetricNamePrefix(),
-		GroupVersionKind: gvk,
-		Families:         compiled,
-		ResourceName:     resource.GetResourceName(),
+		MetricNamePrefix:   resource.GetMetricNamePrefix(),
+		GroupVersionKind:   gvk,
+		Families:           compiled,
+		EnableLabelsMetric: resource.EnableLabelsMetric,
+		ResourceName:       resource.GetResourceName(),
 	}, nil
 }
 
@@ -80,8 +84,11 @@ func (s customResourceMetrics) MetricFamilyGenerators(_, _ []string) (result []g
 	for _, f := range s.Families {
 		result = append(result, famGen(f))
 	}
-
 	return result
+}
+
+func (s customResourceMetrics) IsLabelsMetricEnabled() bool {
+	return s.EnableLabelsMetric
 }
 
 func (s customResourceMetrics) ExpectedType() interface{} {

@@ -141,11 +141,13 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				for _, rule := range i.Spec.Rules {
 					if rule.HTTP != nil {
 						for _, path := range rule.HTTP.Paths {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"host", "path", "service_name", "service_port"},
-								LabelValues: []string{rule.Host, path.Path, path.Backend.Service.Name, strconv.Itoa(int(path.Backend.Service.Port.Number))},
-								Value:       1,
-							})
+							if path.Backend.Service != nil {
+								ms = append(ms, &metric.Metric{
+									LabelKeys:   []string{"host", "path", "service_name", "service_port"},
+									LabelValues: []string{rule.Host, path.Path, path.Backend.Service.Name, strconv.Itoa(int(path.Backend.Service.Port.Number))},
+									Value:       1,
+								})
+							}
 						}
 					}
 				}

@@ -169,7 +169,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
 				kube_ingress_labels{namespace="ns4",ingress="ingress4"} 1
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
-				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath2",service_name="<none>",service_port="<none>"} 1
+				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath2",service_name="",service_port=""} 1
 `,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	basemetrics "k8s.io/component-base/metrics"
 )
 
 // FamilyGenerator provides everything needed to generate a metric family with a
@@ -33,16 +34,19 @@ type FamilyGenerator struct {
 	Type              metric.Type
 	OptIn             bool
 	DeprecatedVersion string
+	StabilityLevel    basemetrics.StabilityLevel
 	GenerateFunc      func(obj interface{}) *metric.Family
 }
 
-// NewFamilyGenerator creates new FamilyGenerator instances.
-func NewFamilyGenerator(name string, help string, metricType metric.Type, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+// NewFamilyGenerator creates new FamilyGenerator instances with metric
+// stabilityLevel.
+func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
 	f := &FamilyGenerator{
 		Name:              name,
 		Type:              metricType,
 		Help:              help,
 		OptIn:             false,
+		StabilityLevel:    stabilityLevel,
 		DeprecatedVersion: deprecatedVersion,
 		GenerateFunc:      generateFunc,
 	}
@@ -50,6 +54,11 @@ func NewFamilyGenerator(name string, help string, metricType metric.Type, deprec
 		f.Help = fmt.Sprintf("(Deprecated since %s) %s", deprecatedVersion, help)
 	}
 	return f
+}
+
+// NewFamilyGenerator creates new FamilyGenerator instances.
+func NewFamilyGenerator(name string, help string, metricType metric.Type, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+	return NewFamilyGeneratorWithStability(name, help, metricType, basemetrics.ALPHA, deprecatedVersion, generateFunc)
 }
 
 // NewOptInFamilyGenerator creates new FamilyGenerator instances for opt-in metric families.
@@ -75,7 +84,13 @@ func (g *FamilyGenerator) generateHeader() string {
 	header.WriteString("# HELP ")
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
-	header.WriteString(g.Help)
+	// Will remove if-else after all metrics are attached with right
+	// StabilityLevel.
+	if g.StabilityLevel == basemetrics.STABLE {
+	  header.WriteString(fmt.Sprintf("[%v] %v", g.StabilityLevel, g.Help))
+	} else {
+		header.WriteString(g.Help)
+	}
 	header.WriteByte('\n')
 	header.WriteString("# TYPE ")
 	header.WriteString(g.Name)

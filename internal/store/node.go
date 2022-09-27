@@ -23,6 +23,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	basemetrics "k8s.io/component-base/metrics"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,10 +80,11 @@ func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_node_info",
 		"Information about a cluster node.",
 		metric.Gauge,
+		basemetrics.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			labelKeys := []string{

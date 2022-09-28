@@ -41,6 +41,7 @@ func TestLeaseStore(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Generation:        2,
 						Name:              "kube-master",
+						Namespace:         "default",
 						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 						OwnerReferences: []metav1.OwnerReference{
 							{
@@ -54,7 +55,7 @@ func TestLeaseStore(t *testing.T) {
 					},
 				},
 				Want: metadata + `
-                    kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master"} 1
+                    kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master",namespace="default"} 1
                     kube_lease_renew_time{lease="kube-master"} 1.5e+09
 			`,
 				MetricNames: []string{

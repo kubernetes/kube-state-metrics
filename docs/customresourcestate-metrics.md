@@ -48,6 +48,8 @@ spec:
           - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
 ```
 
+NOTE: The `group`, `version`, and `kind` common labels are reserved, and will be overwritten by the values from the `groupVersionKind` field.
+
 ### Examples
 
 The examples in this section will use the following custom resource:
@@ -114,7 +116,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_myteam_io_v1_Foo_uptime 43.21
+uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
 ```
 
 #### Multiple Metrics/Kitchen Sink
@@ -165,8 +167,8 @@ spec:
 Produces the following metrics:
 
 ```prometheus
-kube_myteam_io_v1_Foo_active_count{active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 1
-kube_myteam_io_v1_Foo_active_count{active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 3
+active_count{group="myteam.io", kind="Foo", version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 1
+active_count{group="myteam.io", kind="Foo", version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 3
 ```
 
 ### Metric types
@@ -201,7 +203,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_myteam_io_v1_Foo_uptime 43.21
+uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
 ```
 
 #### StateSet
@@ -227,15 +229,15 @@ spec:
               list: [Pending, Bar, Baz]
 ```
 
-Metrics of type `SateSet` will generate a metric for each value defined in `list` for each resource.
+Metrics of type `StateSet` will generate a metric for each value defined in `list` for each resource.
 The value will be 1, if the value matches the one in list.
 
 Produces the metric:
 
 ```prometheus
-kube_myteam_io_v1_Foo_status_phase{phase="Pending"} 1
-kube_myteam_io_v1_Foo_status_phase{phase="Bar"} 0
-kube_myteam_io_v1_Foo_status_phase{phase="Baz"} 0
+status_phase{group="myteam.io", kind="Foo", version="v1", phase="Pending"} 1
+status_phase{group="myteam.io", kind="Foo", version="v1", phase="Bar"} 0
+status_phase{group="myteam.io", kind="Foo", version="v1", phase="Baz"} 0
 ```
 
 #### Info
@@ -265,7 +267,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_myteam_io_v1_Foo_version{version="v1.2.3"} 1
+version{group="myteam.io", kind="Foo", version="v1", version="v1.2.3"} 1
 ```
 
 ### Naming
@@ -287,7 +289,7 @@ spec:
 
 Produces:
 ```prometheus
-myteam_foos_uptime 43.21
+myteam_foos_uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
 ```
 
 To omit namespace and/or subsystem altogether, set them to the empty string:

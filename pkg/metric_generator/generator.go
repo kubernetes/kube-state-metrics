@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 // FamilyGenerator provides everything needed to generate a metric family with a
@@ -38,7 +38,7 @@ type FamilyGenerator struct {
 	GenerateFunc      func(obj interface{}) *metric.Family
 }
 
-// NewFamilyGenerator creates new FamilyGenerator instances with metric
+// NewFamilyGeneratorWithStability creates new FamilyGenerator instances with metric
 // stabilityLevel.
 func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
 	f := &FamilyGenerator{
@@ -84,10 +84,10 @@ func (g *FamilyGenerator) generateHeader() string {
 	header.WriteString("# HELP ")
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
-	// Will remove if-else after all metrics are attached with right
+	// TODO(#1833): remove if-else after all metrics are attached with right
 	// StabilityLevel.
 	if g.StabilityLevel == basemetrics.STABLE {
-	  header.WriteString(fmt.Sprintf("[%v] %v", g.StabilityLevel, g.Help))
+		header.WriteString(fmt.Sprintf("[%v] %v", g.StabilityLevel, g.Help))
 	} else {
 		header.WriteString(g.Help)
 	}

@@ -22,6 +22,7 @@ require (
 	k8s.io/apimachinery v0.25.2
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.12.0
 	k8s.io/client-go v0.25.2
+	k8s.io/component-base v0.25.2
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/sample-controller v0.25.2
 	k8s.io/utils v0.0.0-20220922133306-665eaaec4324
@@ -40,7 +41,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/blang/semver v3.5.0+incompatible // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect

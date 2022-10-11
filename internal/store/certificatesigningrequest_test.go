@@ -28,13 +28,13 @@ import (
 
 func TestCsrStore(t *testing.T) {
 	const metadata = `
-		# HELP kube_certificatesigningrequest_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_certificatesigningrequest_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_certificatesigningrequest_labels gauge
-		# HELP kube_certificatesigningrequest_created Unix creation timestamp
+		# HELP kube_certificatesigningrequest_created [STABLE] Unix creation timestamp
 		# TYPE kube_certificatesigningrequest_created gauge
-		# HELP kube_certificatesigningrequest_condition The number of each certificatesigningrequest condition
+		# HELP kube_certificatesigningrequest_condition [STABLE] The number of each certificatesigningrequest condition
 		# TYPE kube_certificatesigningrequest_condition gauge
-		# HELP kube_certificatesigningrequest_cert_length Length of the issued cert
+		# HELP kube_certificatesigningrequest_cert_length [STABLE] Length of the issued cert
 		# TYPE kube_certificatesigningrequest_cert_length gauge
 	`
 	cases := []generateMetricsTestCase{

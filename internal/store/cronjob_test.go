@@ -135,18 +135,18 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_cronjob_created Unix creation timestamp
-				# HELP kube_cronjob_info Info about cronjob.
+				# HELP kube_cronjob_created [STABLE] Unix creation timestamp
+				# HELP kube_cronjob_info [STABLE] Info about cronjob.
 				# HELP kube_cronjob_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_cronjob_next_schedule_time Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# HELP kube_cronjob_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 				# HELP kube_cronjob_spec_failed_job_history_limit Failed job history limit tells the controller how many failed jobs should be preserved.
-				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
+				# HELP kube_cronjob_spec_starting_deadline_seconds [STABLE] Deadline in seconds for starting the job if it misses scheduled time for any reason.
         		# HELP kube_cronjob_spec_successful_job_history_limit Successful job history limit tells the controller how many completed jobs should be preserved.
-				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
-				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
-                # HELP kube_cronjob_metadata_resource_version Resource version representing a specific version of the cronjob.
-				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# HELP kube_cronjob_spec_suspend [STABLE] Suspend flag tells the controller to suspend subsequent executions.
+				# HELP kube_cronjob_status_active [STABLE] Active holds pointers to currently running jobs.
+                # HELP kube_cronjob_metadata_resource_version [STABLE] Resource version representing a specific version of the cronjob.
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_annotations gauge
@@ -212,16 +212,16 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_cronjob_created Unix creation timestamp
-				# HELP kube_cronjob_info Info about cronjob.
-				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_cronjob_created [STABLE] Unix creation timestamp
+				# HELP kube_cronjob_info [STABLE] Info about cronjob.
+				# HELP kube_cronjob_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_cronjob_spec_failed_job_history_limit Failed job history limit tells the controller how many failed jobs should be preserved.
-				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
+				# HELP kube_cronjob_spec_starting_deadline_seconds [STABLE] Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_successful_job_history_limit Successful job history limit tells the controller how many completed jobs should be preserved.
-				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
-				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
-                # HELP kube_cronjob_metadata_resource_version Resource version representing a specific version of the cronjob.
-				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# HELP kube_cronjob_spec_suspend [STABLE] Suspend flag tells the controller to suspend subsequent executions.
+				# HELP kube_cronjob_status_active [STABLE] Active holds pointers to currently running jobs.
+                # HELP kube_cronjob_metadata_resource_version [STABLE] Resource version representing a specific version of the cronjob.
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# HELP kube_cronjob_status_last_successful_time LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
@@ -272,16 +272,16 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_cronjob_created Unix creation timestamp
-				# HELP kube_cronjob_info Info about cronjob.
-				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_cronjob_created [STABLE] Unix creation timestamp
+				# HELP kube_cronjob_info [STABLE] Info about cronjob.
+				# HELP kube_cronjob_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_cronjob_spec_failed_job_history_limit Failed job history limit tells the controller how many failed jobs should be preserved.
-				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
+				# HELP kube_cronjob_spec_starting_deadline_seconds [STABLE] Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_successful_job_history_limit Successful job history limit tells the controller how many completed jobs should be preserved.
-				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
-				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
-                # HELP kube_cronjob_metadata_resource_version Resource version representing a specific version of the cronjob.
-				# HELP kube_cronjob_status_last_schedule_time LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# HELP kube_cronjob_spec_suspend [STABLE] Suspend flag tells the controller to suspend subsequent executions.
+				# HELP kube_cronjob_status_active [STABLE] Active holds pointers to currently running jobs.
+                # HELP kube_cronjob_metadata_resource_version [STABLE] Resource version representing a specific version of the cronjob.
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
 				# HELP kube_cronjob_status_last_successful_time LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
@@ -334,17 +334,17 @@ func TestCronJobStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_cronjob_created Unix creation timestamp
-				# HELP kube_cronjob_info Info about cronjob.
-				# HELP kube_cronjob_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_cronjob_next_schedule_time Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# HELP kube_cronjob_created [STABLE] Unix creation timestamp
+				# HELP kube_cronjob_info [STABLE] Info about cronjob.
+				# HELP kube_cronjob_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 				# HELP kube_cronjob_spec_failed_job_history_limit Failed job history limit tells the controller how many failed jobs should be preserved.
-				# HELP kube_cronjob_spec_starting_deadline_seconds Deadline in seconds for starting the job if it misses scheduled time for any reason.
+				# HELP kube_cronjob_spec_starting_deadline_seconds [STABLE] Deadline in seconds for starting the job if it misses scheduled time for any reason.
 				# HELP kube_cronjob_spec_successful_job_history_limit Successful job history limit tells the controller how many completed jobs should be preserved.
-				# HELP kube_cronjob_spec_suspend Suspend flag tells the controller to suspend subsequent executions.
-				# HELP kube_cronjob_status_active Active holds pointers to currently running jobs.
+				# HELP kube_cronjob_spec_suspend [STABLE] Suspend flag tells the controller to suspend subsequent executions.
+				# HELP kube_cronjob_status_active [STABLE] Active holds pointers to currently running jobs.
 				# HELP kube_cronjob_status_last_successful_time LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
-                # HELP kube_cronjob_metadata_resource_version Resource version representing a specific version of the cronjob.
+                # HELP kube_cronjob_metadata_resource_version [STABLE] Resource version representing a specific version of the cronjob.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_labels gauge

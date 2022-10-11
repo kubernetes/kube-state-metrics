@@ -50,33 +50,33 @@ func TestJobStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_job_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_job_annotations gauge
-		# HELP kube_job_created Unix creation timestamp
+		# HELP kube_job_created [STABLE] Unix creation timestamp
 		# TYPE kube_job_created gauge
-		# HELP kube_job_owner Information about the Job's owner.
+		# HELP kube_job_owner [STABLE] Information about the Job's owner.
 		# TYPE kube_job_owner gauge
-		# HELP kube_job_complete The job has completed its execution.
+		# HELP kube_job_complete [STABLE] The job has completed its execution.
 		# TYPE kube_job_complete gauge
-		# HELP kube_job_failed The job has failed its execution.
+		# HELP kube_job_failed [STABLE] The job has failed its execution.
 		# TYPE kube_job_failed gauge
-		# HELP kube_job_info Information about job.
+		# HELP kube_job_info [STABLE] Information about job.
 		# TYPE kube_job_info gauge
-		# HELP kube_job_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_job_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_job_labels gauge
-		# HELP kube_job_spec_active_deadline_seconds The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
+		# HELP kube_job_spec_active_deadline_seconds [STABLE] The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
 		# TYPE kube_job_spec_active_deadline_seconds gauge
-		# HELP kube_job_spec_completions The desired number of successfully finished pods the job should be run with.
+		# HELP kube_job_spec_completions [STABLE] The desired number of successfully finished pods the job should be run with.
 		# TYPE kube_job_spec_completions gauge
-		# HELP kube_job_spec_parallelism The maximum desired number of pods the job should run at any given time.
+		# HELP kube_job_spec_parallelism [STABLE] The maximum desired number of pods the job should run at any given time.
 		# TYPE kube_job_spec_parallelism gauge
-		# HELP kube_job_status_active The number of actively running pods.
+		# HELP kube_job_status_active [STABLE] The number of actively running pods.
 		# TYPE kube_job_status_active gauge
-		# HELP kube_job_status_completion_time CompletionTime represents time when the job was completed.
+		# HELP kube_job_status_completion_time [STABLE] CompletionTime represents time when the job was completed.
 		# TYPE kube_job_status_completion_time gauge
-		# HELP kube_job_status_failed The number of pods which reached Phase Failed and the reason for failure.
+		# HELP kube_job_status_failed [STABLE] The number of pods which reached Phase Failed and the reason for failure.
 		# TYPE kube_job_status_failed gauge
-		# HELP kube_job_status_start_time StartTime represents time when the job was acknowledged by the Job Manager.
+		# HELP kube_job_status_start_time [STABLE] StartTime represents time when the job was acknowledged by the Job Manager.
 		# TYPE kube_job_status_start_time gauge
-		# HELP kube_job_status_succeeded The number of pods which reached Phase Succeeded.
+		# HELP kube_job_status_succeeded [STABLE] The number of pods which reached Phase Succeeded.
 		# TYPE kube_job_status_succeeded gauge`
 
 	cases := []generateMetricsTestCase{

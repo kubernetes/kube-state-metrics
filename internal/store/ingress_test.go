@@ -34,12 +34,12 @@ func TestIngressStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_ingress_created Unix creation timestamp
-		# HELP kube_ingress_info Information about ingress.
-		# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_ingress_created [STABLE] Unix creation timestamp
+		# HELP kube_ingress_info [STABLE] Information about ingress.
+		# HELP kube_ingress_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
-		# HELP kube_ingress_path Ingress host, paths and backend service information.
-		# HELP kube_ingress_tls Ingress TLS host and secret information.
+		# HELP kube_ingress_path [STABLE] Ingress host, paths and backend service information.
+		# HELP kube_ingress_tls [STABLE] Ingress TLS host and secret information.
 		# TYPE kube_ingress_created gauge
 		# TYPE kube_ingress_info gauge
 		# TYPE kube_ingress_labels gauge
@@ -64,9 +64,9 @@ func TestIngressStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_ingress_info Information about ingress.
+				# HELP kube_ingress_info [STABLE] Information about ingress.
 				# HELP kube_ingress_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_ingress_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_ingress_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
 				# TYPE kube_ingress_info gauge
 				# TYPE kube_ingress_annotations gauge

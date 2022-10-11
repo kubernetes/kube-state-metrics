@@ -16,6 +16,8 @@ package store
 import (
 	"context"
 
+	basemetrics "k8s.io/component-base/metrics"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
@@ -40,10 +42,11 @@ var (
 
 func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_storageclass_info",
 			"Information about storageclass.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 
@@ -64,10 +67,11 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_storageclass_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				ms := []*metric.Metric{}
@@ -99,10 +103,11 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descStorageClassLabelsName,
 			descStorageClassLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)

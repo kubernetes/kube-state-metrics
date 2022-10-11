@@ -40,7 +40,7 @@ func TestStorageClassStore(t *testing.T) {
 				VolumeBindingMode: &volumeBindingMode,
 			},
 			Want: `
-					# HELP kube_storageclass_info Information about storageclass.
+					# HELP kube_storageclass_info [STABLE] Information about storageclass.
 					# TYPE kube_storageclass_info gauge
 					kube_storageclass_info{storageclass="test_storageclass-info",provisioner="kubernetes.io/rbd",reclaim_policy="Delete",volume_binding_mode="Immediate"} 1
 				`,
@@ -58,7 +58,7 @@ func TestStorageClassStore(t *testing.T) {
 				VolumeBindingMode: nil,
 			},
 			Want: `
-					# HELP kube_storageclass_info Information about storageclass.
+					# HELP kube_storageclass_info [STABLE] Information about storageclass.
 					# TYPE kube_storageclass_info gauge
 					kube_storageclass_info{storageclass="test_storageclass-default-info",provisioner="kubernetes.io/rbd",reclaim_policy="Delete",volume_binding_mode="Immediate"} 1
 				`,
@@ -77,7 +77,7 @@ func TestStorageClassStore(t *testing.T) {
 				VolumeBindingMode: &volumeBindingMode,
 			},
 			Want: `
-					# HELP kube_storageclass_created Unix creation timestamp
+					# HELP kube_storageclass_created [STABLE] Unix creation timestamp
 					# TYPE kube_storageclass_created gauge
 					kube_storageclass_created{storageclass="test_kube_storageclass-created"} 1.501569018e+09
 				`,
@@ -98,7 +98,7 @@ func TestStorageClassStore(t *testing.T) {
 				VolumeBindingMode: &volumeBindingMode,
 			},
 			Want: `
-					# HELP kube_storageclass_labels Kubernetes labels converted to Prometheus labels.
+					# HELP kube_storageclass_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_storageclass_labels gauge
 					kube_storageclass_labels{storageclass="test_storageclass-labels"} 1
 				`,

@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -40,10 +41,11 @@ var (
 
 func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_info",
 			"Information about service.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
@@ -54,10 +56,11 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if !s.CreationTimestamp.IsZero() {
@@ -71,10 +74,11 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{Metrics: []*metric.Metric{}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_spec_type",
 			"Type about service.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
@@ -101,10 +105,11 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descServiceLabelsName,
 			descServiceLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
@@ -116,10 +121,11 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_spec_external_ip",
 			"Service external ips. One series for each ip",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if len(s.Spec.ExternalIPs) == 0 {
@@ -143,10 +149,11 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_status_load_balancer_ingress",
 			"Service load balancer ingress status",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if len(s.Status.LoadBalancer.Ingress) == 0 {

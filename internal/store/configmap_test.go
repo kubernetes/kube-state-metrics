@@ -54,8 +54,8 @@ func TestConfigMapStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_configmap_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_configmap_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_configmap_info Information about configmap.
+				# HELP kube_configmap_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_configmap_info [STABLE] Information about configmap.
 				# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
 				# TYPE kube_configmap_annotations gauge
 				# TYPE kube_configmap_labels gauge
@@ -82,8 +82,8 @@ func TestConfigMapStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_configmap_created Unix creation timestamp
-				# HELP kube_configmap_info Information about configmap.
+				# HELP kube_configmap_created [STABLE] Unix creation timestamp
+				# HELP kube_configmap_info [STABLE] Information about configmap.
 				# HELP kube_configmap_metadata_resource_version Resource version representing a specific version of the configmap.
 				# TYPE kube_configmap_created gauge
 				# TYPE kube_configmap_info gauge

@@ -31,9 +31,9 @@ func TestResourceQuotaStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-	# HELP kube_resourcequota Information about resource quota.
+	# HELP kube_resourcequota [STABLE] Information about resource quota.
 	# TYPE kube_resourcequota gauge
-	# HELP kube_resourcequota_created Unix creation timestamp
+	# HELP kube_resourcequota_created [STABLE] Unix creation timestamp
 	# TYPE kube_resourcequota_created gauge
 	`
 	cases := []generateMetricsTestCase{

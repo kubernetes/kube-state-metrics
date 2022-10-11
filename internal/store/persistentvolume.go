@@ -20,6 +20,8 @@ import (
 	"context"
 	"strconv"
 
+	basemetrics "k8s.io/component-base/metrics"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
@@ -45,10 +47,11 @@ var (
 
 func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descPersistentVolumeClaimRefName,
 			descPersistentVolumeClaimRefHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				claimRef := p.Spec.ClaimRef
@@ -93,10 +96,11 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descPersistentVolumeLabelsName,
 			descPersistentVolumeLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
@@ -111,10 +115,11 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolume_status_phase",
 			"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				phase := p.Status.Phase
@@ -158,10 +163,11 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolume_info",
 			"Information about persistentvolume.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				var (
@@ -275,10 +281,11 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolume_capacity_bytes",
 			"Persistentvolume capacity in bytes.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				storage := p.Spec.Capacity[v1.ResourceStorage]

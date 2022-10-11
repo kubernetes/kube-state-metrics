@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -40,10 +41,11 @@ var (
 
 func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_secret_info",
 			"Information about secret.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
@@ -55,10 +57,11 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_secret_type",
 			"Type about secret.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
@@ -91,10 +94,11 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descSecretLabelsName,
 			descSecretLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
@@ -110,10 +114,11 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_secret_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				ms := []*metric.Metric{}

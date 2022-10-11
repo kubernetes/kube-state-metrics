@@ -36,15 +36,15 @@ func TestEndpointStore(t *testing.T) {
 		# TYPE kube_endpoint_address_available gauge
 		# HELP kube_endpoint_address_not_ready (Deprecated since v2.6.0) Number of addresses not ready in endpoint
 		# TYPE kube_endpoint_address_not_ready gauge
-		# HELP kube_endpoint_created Unix creation timestamp
+		# HELP kube_endpoint_created [STABLE] Unix creation timestamp
 		# TYPE kube_endpoint_created gauge
-		# HELP kube_endpoint_info Information about endpoint.
+		# HELP kube_endpoint_info [STABLE] Information about endpoint.
 		# TYPE kube_endpoint_info gauge
-		# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_endpoint_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_endpoint_labels gauge
-		# HELP kube_endpoint_ports Information about the Endpoint ports.
+		# HELP kube_endpoint_ports [STABLE] Information about the Endpoint ports.
 		# TYPE kube_endpoint_ports gauge
-		# HELP kube_endpoint_address Information about Endpoint available and non available addresses.
+		# HELP kube_endpoint_address [STABLE] Information about Endpoint available and non available addresses.
 		# TYPE kube_endpoint_address gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -166,15 +166,15 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		# TYPE kube_endpoint_address_not_ready gauge
 		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_endpoint_annotations gauge
-		# HELP kube_endpoint_created Unix creation timestamp
+		# HELP kube_endpoint_created [STABLE] Unix creation timestamp
 		# TYPE kube_endpoint_created gauge
-		# HELP kube_endpoint_info Information about endpoint.
+		# HELP kube_endpoint_info [STABLE] Information about endpoint.
 		# TYPE kube_endpoint_info gauge
-		# HELP kube_endpoint_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_endpoint_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_endpoint_labels gauge
-		# HELP kube_endpoint_ports Information about the Endpoint ports.
+		# HELP kube_endpoint_ports [STABLE] Information about the Endpoint ports.
 		# TYPE kube_endpoint_ports gauge
-		# HELP kube_endpoint_address Information about Endpoint available and non available addresses.
+		# HELP kube_endpoint_address [STABLE] Information about Endpoint available and non available addresses.
 		# TYPE kube_endpoint_address gauge
 	`
 	cases := []generateMetricsTestCase{

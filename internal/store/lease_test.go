@@ -33,7 +33,7 @@ func TestLeaseStore(t *testing.T) {
         # HELP kube_lease_renew_time Kube lease renew time.
         # TYPE kube_lease_renew_time gauge
 	`
-
+	leaseOwner := "kube-master"
 	var (
 		cases = []generateMetricsTestCase{
 			{
@@ -46,16 +46,17 @@ func TestLeaseStore(t *testing.T) {
 						OwnerReferences: []metav1.OwnerReference{
 							{
 								Kind: "Node",
-								Name: "kube-master",
+								Name: leaseOwner,
 							},
 						},
 					},
 					Spec: coordinationv1.LeaseSpec{
-						RenewTime: &metav1.MicroTime{Time: time.Unix(1500000000, 0)},
+						RenewTime:      &metav1.MicroTime{Time: time.Unix(1500000000, 0)},
+						HolderIdentity: &leaseOwner,
 					},
 				},
 				Want: metadata + `
-                    kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master",namespace="default"} 1
+                    kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master",namespace="default",lease_holder="kube-master"} 1
                     kube_lease_renew_time{lease="kube-master"} 1.5e+09
 			`,
 				MetricNames: []string{

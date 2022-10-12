@@ -42,13 +42,18 @@ var (
 			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "namespace", "lease_holder"}
 
+				var holder string
+				if l.Spec.HolderIdentity != nil {
+					holder = *l.Spec.HolderIdentity
+				}
+
 				owners := l.GetOwnerReferences()
 				if len(owners) == 0 {
 					return &metric.Family{
 						Metrics: []*metric.Metric{
 							{
 								LabelKeys:   labelKeys,
-								LabelValues: []string{"<none>", "<none>", l.Namespace, *l.Spec.HolderIdentity},
+								LabelValues: []string{"<none>", "<none>", l.Namespace, holder},
 								Value:       1,
 							},
 						},
@@ -59,7 +64,7 @@ var (
 				for i, owner := range owners {
 					ms[i] = &metric.Metric{
 						LabelKeys:   labelKeys,
-						LabelValues: []string{owner.Kind, owner.Name, l.Namespace, *l.Spec.HolderIdentity},
+						LabelValues: []string{owner.Kind, owner.Name, l.Namespace, holder},
 						Value:       1,
 					}
 				}

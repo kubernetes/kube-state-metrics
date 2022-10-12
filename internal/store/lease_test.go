@@ -64,6 +64,33 @@ func TestLeaseStore(t *testing.T) {
 					"kube_lease_renew_time",
 				},
 			},
+			{
+				Obj: &coordinationv1.Lease{
+					ObjectMeta: metav1.ObjectMeta{
+						Generation:        2,
+						Name:              "kube-master",
+						Namespace:         "default",
+						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Kind: "Node",
+								Name: leaseOwner,
+							},
+						},
+					},
+					Spec: coordinationv1.LeaseSpec{
+						RenewTime: &metav1.MicroTime{Time: time.Unix(1500000000, 0)},
+					},
+				},
+				Want: metadata + `
+                    kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master",namespace="default",lease_holder=""} 1
+                    kube_lease_renew_time{lease="kube-master"} 1.5e+09
+			`,
+				MetricNames: []string{
+					"kube_lease_owner",
+					"kube_lease_renew_time",
+				},
+			},
 		}
 	)
 	for i, c := range cases {

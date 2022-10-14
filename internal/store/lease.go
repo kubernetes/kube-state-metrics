@@ -40,7 +40,12 @@ var (
 			metric.Gauge,
 			"",
 			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
-				labelKeys := []string{"owner_kind", "owner_name"}
+				labelKeys := []string{"owner_kind", "owner_name", "namespace", "lease_holder"}
+
+				var holder string
+				if l.Spec.HolderIdentity != nil {
+					holder = *l.Spec.HolderIdentity
+				}
 
 				owners := l.GetOwnerReferences()
 				if len(owners) == 0 {
@@ -48,7 +53,7 @@ var (
 						Metrics: []*metric.Metric{
 							{
 								LabelKeys:   labelKeys,
-								LabelValues: []string{"<none>", "<none>"},
+								LabelValues: []string{"<none>", "<none>", l.Namespace, holder},
 								Value:       1,
 							},
 						},
@@ -59,7 +64,7 @@ var (
 				for i, owner := range owners {
 					ms[i] = &metric.Metric{
 						LabelKeys:   labelKeys,
-						LabelValues: []string{owner.Kind, owner.Name},
+						LabelValues: []string{owner.Kind, owner.Name, l.Namespace, holder},
 						Value:       1,
 					}
 				}
@@ -107,10 +112,10 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(interface{
 func createLeaseListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoordinationV1().Leases("kube-node-lease").List(context.TODO(), opts)
+			return kubeClient.CoordinationV1().Leases("").List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoordinationV1().Leases("kube-node-lease").Watch(context.TODO(), opts)
+			return kubeClient.CoordinationV1().Leases("").Watch(context.TODO(), opts)
 		},
 	}
 }

@@ -104,6 +104,36 @@ func (r *ResourceSet) Type() string {
 	return "string"
 }
 
+// NodenameType represents a nodeName to query from.
+type NodenameType string
+
+// GetNodenameFieldSelector returns a nodename field selector.
+func (n *NodenameType) GetNodenameFieldSelector() string {
+	if string(*n) != "" {
+		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
+	}
+	return fields.Nothing().String()
+}
+
+// MergeFieldSelector returns AND of two field selectors.
+func MergeFieldSelector(s1 string, s2 string) (string, error) {
+	selector1, err := fields.ParseSelector(s1)
+	if err != nil {
+		return fields.Nothing().String(), err
+	}
+	selector2, err := fields.ParseSelector(s2)
+	if err != nil {
+		return fields.Nothing().String(), err
+	}
+	if selector1.Empty() {
+		return selector2.String(), nil
+	}
+	if selector2.Empty() {
+		return selector1.String(), nil
+	}
+	return fields.AndSelectors(selector1, selector2).String(), nil
+}
+
 // NamespaceList represents a list of namespaces to query from.
 type NamespaceList []string
 

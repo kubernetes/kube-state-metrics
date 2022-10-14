@@ -67,19 +67,16 @@ All additional compatibility is only best effort, or happens to still/already be
 #### Compatibility matrix
 
 At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
+Generally, it is recommended to use the latest release of kube-state-metrics. If you run a very recent version of Kubernetes, you might want to use an unreleased version to have the full range of supported resources. If you run an older version of Kubernetes, you might need to run an older version in order to have full support for all resources. Be aware, that the maintainers will only support the latest release. Older versions might be supported by interested users of the community.
 
-| kube-state-metrics |  **Kubernetes 1.20** | **Kubernetes 1.21** | **Kubernetes 1.22** | **Kubernetes 1.23** | **Kubernetes 1.24** |
-|--------------------|:--------------------:|:---------------------:|:-------------------:|:-------------------:|:-------------------:|
-| **v2.3.0**         |          ✓           |           ✓           |          ✓          |          ✓          |          -          |
-| **v2.4.2**         |         -/✓          |          -/✓          |          ✓          |          ✓          |          -          |
-| **v2.5.0**         |         -/✓          |          -/✓          |          ✓          |          ✓          |          ✓          |
-| **v2.6.0**         |         -/✓          |          -/✓          |          ✓          |          ✓          |          ✓          |
-| **master**         |         -/✓          |          -/✓          |          ✓          |          ✓          |          ✓          |
+| kube-state-metrics | Kubernetes client-go Version |
+|--------------------|:----------------------------:|
+| **v2.3.0**         | v1.23                        |
+| **v2.4.2**         | v1.23                        |
+| **v2.5.0**         | v1.24                        |
+| **v2.6.0**         | v1.24                        |
+| **master**         | v1.25                        |
 
-- `✓` Fully supported version range.
-- `-` The Kubernetes cluster has features the client-go library can't use (additional API objects, deprecated APIs, etc).
-
-**Note:** The current kube-state-metrics `v2.0.0 +` releases work on Kubernetes v1.17 & v1.18 excluding Ingress or CertificateSigningRequest resource metrics. If you require those metrics on an older Kubernetes version, use kube-state-metrics `v1.9.8`.
 
 #### Resource group version compatibility
 

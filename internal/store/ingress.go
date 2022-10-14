@@ -20,6 +20,8 @@ import (
 	"context"
 	"strconv"
 
+	basemetrics "k8s.io/component-base/metrics"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
@@ -41,10 +43,11 @@ var (
 
 func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingress_info",
 			"Information about ingress.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ingressClassName := "_default"
@@ -83,10 +86,11 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descIngressLabelsName,
 			descIngressLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", i.Labels, allowLabelsList)
@@ -101,10 +105,11 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingress_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
@@ -131,10 +136,11 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingress_path",
 			"Ingress host, paths and backend service information.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
@@ -162,10 +168,11 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingress_tls",
 			"Ingress TLS host and secret information.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}

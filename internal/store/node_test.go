@@ -54,9 +54,9 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_node_info Information about a cluster node.
-				# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
+				# HELP kube_node_info [STABLE] Information about a cluster node.
+				# HELP kube_node_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_node_spec_unschedulable [STABLE] Whether a node can schedule new pods.
 				# TYPE kube_node_info gauge
 				# TYPE kube_node_labels gauge
 				# TYPE kube_node_spec_unschedulable gauge
@@ -74,7 +74,7 @@ func TestNodeStore(t *testing.T) {
 				Spec:       v1.NodeSpec{},
 			},
 			Want: `
-				# HELP kube_node_info Information about a cluster node.
+				# HELP kube_node_info [STABLE] Information about a cluster node.
 				# TYPE kube_node_info gauge
 				kube_node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="",node="",os_image="",pod_cidr="",provider_id="",internal_ip="",system_uuid=""} 1
 			`,
@@ -126,13 +126,13 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-		# HELP kube_node_created Unix creation timestamp
-		# HELP kube_node_info Information about a cluster node.
-		# HELP kube_node_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_node_created [STABLE] Unix creation timestamp
+		# HELP kube_node_info [STABLE] Information about a cluster node.
+		# HELP kube_node_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# HELP kube_node_role The role of a cluster node.
-		# HELP kube_node_spec_unschedulable Whether a node can schedule new pods.
-		# HELP kube_node_status_allocatable The allocatable for different resources of a node that are available for scheduling.
-		# HELP kube_node_status_capacity The capacity for different resources of a node.
+		# HELP kube_node_spec_unschedulable [STABLE] Whether a node can schedule new pods.
+		# HELP kube_node_status_allocatable [STABLE] The allocatable for different resources of a node that are available for scheduling.
+		# HELP kube_node_status_capacity [STABLE] The capacity for different resources of a node.
 		# TYPE kube_node_created gauge
 		# TYPE kube_node_info gauge
 		# TYPE kube_node_labels gauge
@@ -183,7 +183,7 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-		# HELP kube_node_status_condition The condition of a cluster node.
+		# HELP kube_node_status_condition [STABLE] The condition of a cluster node.
 		# TYPE kube_node_status_condition gauge
         kube_node_status_condition{condition="CustomizedType",node="127.0.0.1",status="false"} 0
         kube_node_status_condition{condition="CustomizedType",node="127.0.0.1",status="true"} 1
@@ -211,7 +211,7 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-		# HELP kube_node_status_condition The condition of a cluster node.
+		# HELP kube_node_status_condition [STABLE] The condition of a cluster node.
 		# TYPE kube_node_status_condition gauge
         kube_node_status_condition{condition="CustomizedType",node="127.0.0.2",status="false"} 0
         kube_node_status_condition{condition="CustomizedType",node="127.0.0.2",status="true"} 0
@@ -239,7 +239,7 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-		# HELP kube_node_status_condition The condition of a cluster node.
+		# HELP kube_node_status_condition [STABLE] The condition of a cluster node.
 		# TYPE kube_node_status_condition gauge
         kube_node_status_condition{condition="CustomizedType",node="127.0.0.3",status="false"} 1
         kube_node_status_condition{condition="CustomizedType",node="127.0.0.3",status="true"} 0
@@ -268,7 +268,7 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_node_spec_taint The taint of a cluster node.
+				# HELP kube_node_spec_taint [STABLE] The taint of a cluster node.
 				# TYPE kube_node_spec_taint gauge
 				kube_node_spec_taint{effect="PreferNoSchedule",key="Dedicated",node="127.0.0.1",value=""} 1
 				kube_node_spec_taint{effect="PreferNoSchedule",key="Accelerated",node="127.0.0.1",value="gpu"} 1

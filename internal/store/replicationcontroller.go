@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -35,10 +36,11 @@ var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
 	replicationControllerMetricFamilies = []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				ms := []*metric.Metric{}
@@ -54,10 +56,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_status_replicas",
 			"The number of replicas per ReplicationController.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
@@ -69,10 +72,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_status_fully_labeled_replicas",
 			"The number of fully labeled replicas per ReplicationController.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
@@ -84,10 +88,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_status_ready_replicas",
 			"The number of ready replicas per ReplicationController.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
@@ -99,10 +104,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_status_available_replicas",
 			"The number of available replicas per ReplicationController.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
@@ -114,10 +120,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_status_observed_generation",
 			"The generation observed by the ReplicationController controller.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
@@ -129,10 +136,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_spec_replicas",
 			"Number of desired pods for a ReplicationController.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				ms := []*metric.Metric{}
@@ -148,10 +156,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_metadata_generation",
 			"Sequence number representing a specific generation of the desired state.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{

@@ -55,16 +55,16 @@ func TestDaemonSetStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_daemonset_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
-				# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
-				# HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
-				# HELP kube_daemonset_status_number_available The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
-				# HELP kube_daemonset_status_number_misscheduled The number of nodes running a daemon pod but are not supposed to.
-				# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
-				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
-				# HELP kube_daemonset_status_observed_generation The most recent generation observed by the daemon set controller.
-				# HELP kube_daemonset_status_updated_number_scheduled The total number of nodes that are running updated daemon pod
+				# HELP kube_daemonset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_daemonset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
+				# HELP kube_daemonset_status_current_number_scheduled [STABLE] The number of nodes running at least one daemon pod and are supposed to.
+				# HELP kube_daemonset_status_desired_number_scheduled [STABLE] The number of nodes that should be running the daemon pod.
+				# HELP kube_daemonset_status_number_available [STABLE] The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
+				# HELP kube_daemonset_status_number_misscheduled [STABLE] The number of nodes running a daemon pod but are not supposed to.
+				# HELP kube_daemonset_status_number_ready [STABLE] The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
+				# HELP kube_daemonset_status_number_unavailable [STABLE] The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
+				# HELP kube_daemonset_status_observed_generation [STABLE] The most recent generation observed by the daemon set controller.
+				# HELP kube_daemonset_status_updated_number_scheduled [STABLE] The total number of nodes that are running updated daemon pod
 				# TYPE kube_daemonset_annotations gauge
 				# TYPE kube_daemonset_labels gauge
 				# TYPE kube_daemonset_metadata_generation gauge
@@ -121,25 +121,25 @@ func TestDaemonSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_daemonset_created Unix creation timestamp
+				# HELP kube_daemonset_created [STABLE] Unix creation timestamp
 				# TYPE kube_daemonset_created gauge
-				# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
+				# HELP kube_daemonset_status_current_number_scheduled [STABLE] The number of nodes running at least one daemon pod and are supposed to.
 				# TYPE kube_daemonset_status_current_number_scheduled gauge
-				# HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
+				# HELP kube_daemonset_status_desired_number_scheduled [STABLE] The number of nodes that should be running the daemon pod.
 				# TYPE kube_daemonset_status_desired_number_scheduled gauge
-				# HELP kube_daemonset_status_number_available The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
+				# HELP kube_daemonset_status_number_available [STABLE] The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
 				# TYPE kube_daemonset_status_number_available gauge
-				# HELP kube_daemonset_status_number_misscheduled The number of nodes running a daemon pod but are not supposed to.
+				# HELP kube_daemonset_status_number_misscheduled [STABLE] The number of nodes running a daemon pod but are not supposed to.
 				# TYPE kube_daemonset_status_number_misscheduled gauge
-				# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
+				# HELP kube_daemonset_status_number_ready [STABLE] The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
 				# TYPE kube_daemonset_status_number_ready gauge
-				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
+				# HELP kube_daemonset_status_number_unavailable [STABLE] The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
 				# TYPE kube_daemonset_status_number_unavailable gauge
-				# HELP kube_daemonset_status_updated_number_scheduled The total number of nodes that are running updated daemon pod
+				# HELP kube_daemonset_status_updated_number_scheduled [STABLE] The total number of nodes that are running updated daemon pod
 				# TYPE kube_daemonset_status_updated_number_scheduled gauge
-				# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
+				# HELP kube_daemonset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
 				# TYPE kube_daemonset_metadata_generation gauge
-				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_daemonset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_daemonset_labels gauge
 				kube_daemonset_metadata_generation{daemonset="ds2",namespace="ns2"} 14
 				kube_daemonset_status_current_number_scheduled{daemonset="ds2",namespace="ns2"} 10
@@ -187,25 +187,25 @@ func TestDaemonSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_daemonset_created Unix creation timestamp
+				# HELP kube_daemonset_created [STABLE] Unix creation timestamp
 				# TYPE kube_daemonset_created gauge
-				# HELP kube_daemonset_status_current_number_scheduled The number of nodes running at least one daemon pod and are supposed to.
+				# HELP kube_daemonset_status_current_number_scheduled [STABLE] The number of nodes running at least one daemon pod and are supposed to.
 				# TYPE kube_daemonset_status_current_number_scheduled gauge
-				# HELP kube_daemonset_status_desired_number_scheduled The number of nodes that should be running the daemon pod.
+				# HELP kube_daemonset_status_desired_number_scheduled [STABLE] The number of nodes that should be running the daemon pod.
 				# TYPE kube_daemonset_status_desired_number_scheduled gauge
-				# HELP kube_daemonset_status_number_available The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
+				# HELP kube_daemonset_status_number_available [STABLE] The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
 				# TYPE kube_daemonset_status_number_available gauge
-				# HELP kube_daemonset_status_number_misscheduled The number of nodes running a daemon pod but are not supposed to.
+				# HELP kube_daemonset_status_number_misscheduled [STABLE] The number of nodes running a daemon pod but are not supposed to.
 				# TYPE kube_daemonset_status_number_misscheduled gauge
-				# HELP kube_daemonset_status_number_ready The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
+				# HELP kube_daemonset_status_number_ready [STABLE] The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
 				# TYPE kube_daemonset_status_number_ready gauge
-				# HELP kube_daemonset_status_number_unavailable The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
+				# HELP kube_daemonset_status_number_unavailable [STABLE] The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
 				# TYPE kube_daemonset_status_number_unavailable gauge
-				# HELP kube_daemonset_status_updated_number_scheduled The total number of nodes that are running updated daemon pod
+				# HELP kube_daemonset_status_updated_number_scheduled [STABLE] The total number of nodes that are running updated daemon pod
 				# TYPE kube_daemonset_status_updated_number_scheduled gauge
-				# HELP kube_daemonset_metadata_generation Sequence number representing a specific generation of the desired state.
+				# HELP kube_daemonset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
 				# TYPE kube_daemonset_metadata_generation gauge
-				# HELP kube_daemonset_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_daemonset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_daemonset_labels gauge
 				kube_daemonset_created{daemonset="ds3",namespace="ns3"} 1.5e+09
 				kube_daemonset_metadata_generation{daemonset="ds3",namespace="ns3"} 15

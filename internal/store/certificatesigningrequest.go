@@ -19,6 +19,8 @@ package store
 import (
 	"context"
 
+	basemetrics "k8s.io/component-base/metrics"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
@@ -58,10 +60,11 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descCSRLabelsName,
 			descCSRLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
@@ -76,10 +79,11 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_certificatesigningrequest_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				ms := []*metric.Metric{}
@@ -96,10 +100,11 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_certificatesigningrequest_condition",
 			"The number of each certificatesigningrequest condition",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
@@ -107,10 +112,11 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_certificatesigningrequest_cert_length",
 			"Length of the issued cert",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{

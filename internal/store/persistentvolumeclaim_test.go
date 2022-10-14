@@ -68,12 +68,12 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_persistentvolumeclaim_created Unix creation timestamp
-				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_access_mode [STABLE] The access mode(s) specified by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
-				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
-				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
+				# HELP kube_persistentvolumeclaim_info [STABLE] Information about persistent volume claim.
+				# HELP kube_persistentvolumeclaim_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
@@ -140,12 +140,12 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_persistentvolumeclaim_created Unix creation timestamp
-				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_access_mode [STABLE] The access mode(s) specified by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
-				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
-				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
+				# HELP kube_persistentvolumeclaim_info [STABLE] Information about persistent volume claim.
+				# HELP kube_persistentvolumeclaim_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
@@ -196,11 +196,11 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_persistentvolumeclaim_created Unix creation timestamp
-				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
-				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
-				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
-				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
+				# HELP kube_persistentvolumeclaim_access_mode [STABLE] The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_info [STABLE] Information about persistent volume claim.
+				# HELP kube_persistentvolumeclaim_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
@@ -241,12 +241,12 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_persistentvolumeclaim_created Unix creation timestamp
-				# HELP kube_persistentvolumeclaim_access_mode The access mode(s) specified by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_access_mode [STABLE] The access mode(s) specified by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_persistentvolumeclaim_info Information about persistent volume claim.
-				# HELP kube_persistentvolumeclaim_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes The capacity of storage requested by the persistent volume claim.
-				# HELP kube_persistentvolumeclaim_status_phase The phase the persistent volume claim is currently in.
+				# HELP kube_persistentvolumeclaim_info [STABLE] Information about persistent volume claim.
+				# HELP kube_persistentvolumeclaim_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge

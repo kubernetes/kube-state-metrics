@@ -32,17 +32,17 @@ func TestServiceStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_service_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_service_annotations gauge
-		# HELP kube_service_info Information about service.
+		# HELP kube_service_info [STABLE] Information about service.
 		# TYPE kube_service_info gauge
-		# HELP kube_service_created Unix creation timestamp
+		# HELP kube_service_created [STABLE] Unix creation timestamp
 		# TYPE kube_service_created gauge
-		# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_service_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_service_labels gauge
-		# HELP kube_service_spec_type Type about service.
+		# HELP kube_service_spec_type [STABLE] Type about service.
 		# TYPE kube_service_spec_type gauge
-		# HELP kube_service_spec_external_ip Service external ips. One series for each ip
+		# HELP kube_service_spec_external_ip [STABLE] Service external ips. One series for each ip
 		# TYPE kube_service_spec_external_ip gauge
-		# HELP kube_service_status_load_balancer_ingress Service load balancer ingress status
+		# HELP kube_service_status_load_balancer_ingress [STABLE] Service load balancer ingress status
 		# TYPE kube_service_status_load_balancer_ingress gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -64,10 +64,10 @@ func TestServiceStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_service_annotations Kubernetes annotations converted to Prometheus labels.
-				# HELP kube_service_created Unix creation timestamp
-				# HELP kube_service_info Information about service.
-				# HELP kube_service_labels Kubernetes labels converted to Prometheus labels.
-				# HELP kube_service_spec_type Type about service.
+				# HELP kube_service_created [STABLE] Unix creation timestamp
+				# HELP kube_service_info [STABLE] Information about service.
+				# HELP kube_service_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_service_spec_type [STABLE] Type about service.
 				# TYPE kube_service_annotations gauge
 				# TYPE kube_service_created gauge
 				# TYPE kube_service_info gauge

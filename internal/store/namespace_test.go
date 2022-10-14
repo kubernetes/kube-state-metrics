@@ -32,11 +32,11 @@ func TestNamespaceStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_namespace_annotations gauge
-		# HELP kube_namespace_created Unix creation timestamp
+		# HELP kube_namespace_created [STABLE] Unix creation timestamp
 		# TYPE kube_namespace_created gauge
-		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_namespace_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_namespace_labels gauge
-		# HELP kube_namespace_status_phase kubernetes namespace status phase.
+		# HELP kube_namespace_status_phase [STABLE] kubernetes namespace status phase.
 		# TYPE kube_namespace_status_phase gauge
 		# HELP kube_namespace_status_condition The condition of a namespace.
 		# TYPE kube_namespace_status_condition gauge

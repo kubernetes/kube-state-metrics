@@ -39,11 +39,11 @@ func TestSecretStore(t *testing.T) {
 				Type: v1.SecretTypeOpaque,
 			},
 			Want: `
-				# HELP kube_secret_created Unix creation timestamp
-				# HELP kube_secret_info Information about secret.
-				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_secret_created [STABLE] Unix creation timestamp
+				# HELP kube_secret_info [STABLE] Information about secret.
+				# HELP kube_secret_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
-				# HELP kube_secret_type Type about secret.
+				# HELP kube_secret_type [STABLE] Type about secret.
 				# TYPE kube_secret_created gauge
 				# TYPE kube_secret_info gauge
 				# TYPE kube_secret_labels gauge
@@ -67,11 +67,11 @@ func TestSecretStore(t *testing.T) {
 				Type: v1.SecretTypeServiceAccountToken,
 			},
 			Want: `
-				# HELP kube_secret_created Unix creation timestamp
-				# HELP kube_secret_info Information about secret.
-				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_secret_created [STABLE] Unix creation timestamp
+				# HELP kube_secret_info [STABLE] Information about secret.
+				# HELP kube_secret_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
-				# HELP kube_secret_type Type about secret.
+				# HELP kube_secret_type [STABLE] Type about secret.
 				# TYPE kube_secret_created gauge
 				# TYPE kube_secret_info gauge
 				# TYPE kube_secret_labels gauge
@@ -96,11 +96,11 @@ func TestSecretStore(t *testing.T) {
 				Type: v1.SecretTypeDockercfg,
 			},
 			Want: `
-				# HELP kube_secret_created Unix creation timestamp
-				# HELP kube_secret_info Information about secret.
-				# HELP kube_secret_labels Kubernetes labels converted to Prometheus labels.
+				# HELP kube_secret_created [STABLE] Unix creation timestamp
+				# HELP kube_secret_info [STABLE] Information about secret.
+				# HELP kube_secret_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_secret_metadata_resource_version Resource version representing a specific version of secret.
-				# HELP kube_secret_type Type about secret.
+				# HELP kube_secret_type [STABLE] Type about secret.
 				# TYPE kube_secret_created gauge
 				# TYPE kube_secret_info gauge
 				# TYPE kube_secret_labels gauge

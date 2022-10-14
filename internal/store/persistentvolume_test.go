@@ -42,7 +42,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# HELP kube_persistentvolume_status_phase [STABLE] The phase indicates if a volume is available, bound to a claim, or released by a claim.
 					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Bound"} 0
@@ -64,7 +64,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# HELP kube_persistentvolume_status_phase [STABLE] The phase indicates if a volume is available, bound to a claim, or released by a claim.
 					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Available"} 1
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-available",phase="Bound"} 0
@@ -84,7 +84,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# HELP kube_persistentvolume_status_phase [STABLE] The phase indicates if a volume is available, bound to a claim, or released by a claim.
 					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-bound",phase="Bound"} 1
@@ -104,7 +104,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# HELP kube_persistentvolume_status_phase [STABLE] The phase indicates if a volume is available, bound to a claim, or released by a claim.
 					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-released",phase="Bound"} 0
@@ -125,7 +125,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# HELP kube_persistentvolume_status_phase [STABLE] The phase indicates if a volume is available, bound to a claim, or released by a claim.
 					# TYPE kube_persistentvolume_status_phase gauge
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-failed",phase="Bound"} 0
@@ -148,7 +148,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_status_phase The phase indicates if a volume is available, bound to a claim, or released by a claim.
+					# HELP kube_persistentvolume_status_phase [STABLE] The phase indicates if a volume is available, bound to a claim, or released by a claim.
 					# TYPE kube_persistentvolume_status_phase gauge
 				    kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Available"} 0
 					kube_persistentvolume_status_phase{persistentvolume="test-pv-pending",phase="Bound"} 0
@@ -170,7 +170,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -189,7 +189,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -212,7 +212,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="name",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -235,7 +235,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="aws://eu-west-1c/vol-012d34d567890123b",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -258,7 +258,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="azure_disk_1",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -282,7 +282,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="123",fc_target_wwns="0123456789abcdef,abcdef0123456789",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -305,7 +305,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="0123456789abcdef,abcdef0123456789",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -330,7 +330,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -356,7 +356,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="iqn.my.test.initiator:112233",iscsi_iqn="iqn.my.test.server.target00",iscsi_lun="123",iscsi_target_portal="1.2.3.4:3260",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -380,7 +380,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="/myPath",nfs_server="1.2.3.4",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -404,7 +404,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="test-driver",csi_volume_handle="test-volume-handle",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -428,7 +428,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="/mnt/data",local_fs="ext4",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -451,7 +451,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="/mnt/data",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -475,7 +475,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="/mnt/data",host_path_type="Directory",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -498,7 +498,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_info Information about persistentvolume.
+					# HELP kube_persistentvolume_info [STABLE] Information about persistentvolume.
 					# TYPE kube_persistentvolume_info gauge
 					kube_persistentvolume_info{azure_disk_name="",ebs_volume_id="",fc_lun="",fc_target_wwns="",fc_wwids="",gce_persistent_disk_name="",host_path="/mnt/data",host_path_type="",iscsi_initiator_name="",iscsi_iqn="",iscsi_lun="",iscsi_target_portal="",local_path="",local_fs="",nfs_path="",nfs_server="",csi_driver="",csi_volume_handle="",persistentvolume="test-pv-available",storageclass=""} 1
 				`,
@@ -520,7 +520,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
 					kube_persistentvolume_labels{persistentvolume="test-labeled-pv"} 1
 				`,
@@ -536,7 +536,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
 					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
@@ -561,7 +561,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_claim_ref Information about the Persistent Volume Claim Reference.
+					# HELP kube_persistentvolume_claim_ref [STABLE] Information about the Persistent Volume Claim Reference.
 					# TYPE kube_persistentvolume_claim_ref gauge
 					kube_persistentvolume_claim_ref{claim_namespace="default",name="pv-claim",persistentvolume="test-claimed-pv"} 1
 				`,
@@ -577,7 +577,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_claim_ref Information about the Persistent Volume Claim Reference.
+					# HELP kube_persistentvolume_claim_ref [STABLE] Information about the Persistent Volume Claim Reference.
 					# TYPE kube_persistentvolume_claim_ref gauge
 				`,
 			MetricNames: []string{"kube_persistentvolume_claim_ref"},
@@ -594,7 +594,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_capacity_bytes Persistentvolume capacity in bytes.
+					# HELP kube_persistentvolume_capacity_bytes [STABLE] Persistentvolume capacity in bytes.
 					# TYPE kube_persistentvolume_capacity_bytes gauge
 					kube_persistentvolume_capacity_bytes{persistentvolume="test-pv"} 5.36870912e+09
 				`,
@@ -625,7 +625,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			},
 			Want: `
 					# HELP kube_persistentvolume_annotations Kubernetes annotations converted to Prometheus labels.
-					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_annotations gauge
 					# TYPE kube_persistentvolume_labels gauge
 					kube_persistentvolume_annotations{annotation_app_k8s_io_owner="mysql-server",persistentvolume="test-allowlisted-labels-annotations"} 1
@@ -655,7 +655,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 			},
 			Want: `
 					# HELP kube_persistentvolume_annotations Kubernetes annotations converted to Prometheus labels.
-					# HELP kube_persistentvolume_labels Kubernetes labels converted to Prometheus labels.
+					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_annotations gauge
 					# TYPE kube_persistentvolume_labels gauge
 					kube_persistentvolume_annotations{persistentvolume="test-defaul-labels-annotations"} 1

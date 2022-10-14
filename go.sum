@@ -93,6 +93,7 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
+github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/boombuler/barcode v1.0.1/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
@@ -984,6 +985,8 @@ k8s.io/client-go v0.25.2/go.mod h1:i7cNU7N+yGQmJkewcRD2+Vuj4iz7b30kI8OcL3horQ4=
 k8s.io/code-generator v0.25.0/go.mod h1:B6jZgI3DvDFAualltPitbYMQ74NjaCFxum3YeKZZ+3w=
 k8s.io/code-generator v0.25.2/go.mod h1:f61OcU2VqVQcjt/6TrU0sta1TA5hHkOO6ZZPwkL9Eys=
 k8s.io/component-base v0.25.0/go.mod h1:F2Sumv9CnbBlqrpdf7rKZTmmd2meJq0HizeyY/yAFxk=
+k8s.io/component-base v0.25.2 h1:Nve/ZyHLUBHz1rqwkjXm/Re6IniNa5k7KgzxZpTfSQY=
+k8s.io/component-base v0.25.2/go.mod h1:90W21YMr+Yjg7MX+DohmZLzjsBtaxQDDwaX4YxDkl60=
 k8s.io/gengo v0.0.0-20210813121822-485abfe95c7c/go.mod h1:FiNAH4ZV3gBg2Kwh89tzAEV2be7d5xI0vBa/VySYy3E=
 k8s.io/gengo v0.0.0-20211129171323-c02415ce4185/go.mod h1:FiNAH4ZV3gBg2Kwh89tzAEV2be7d5xI0vBa/VySYy3E=
 k8s.io/klog/v2 v2.0.0/go.mod h1:PBfzABfn139FHAV07az/IF9Wp1bkk3vpT2XSJ76fSDE=

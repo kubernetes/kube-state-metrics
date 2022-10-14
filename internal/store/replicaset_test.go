@@ -38,23 +38,23 @@ func TestReplicaSetStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_replicaset_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_replicaset_annotations gauge
-		# HELP kube_replicaset_created Unix creation timestamp
+		# HELP kube_replicaset_created [STABLE] Unix creation timestamp
 		# TYPE kube_replicaset_created gauge
-		# HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
+		# HELP kube_replicaset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
-		# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
+		# HELP kube_replicaset_status_replicas [STABLE] The number of replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_replicas gauge
-		# HELP kube_replicaset_status_fully_labeled_replicas The number of fully labeled replicas per ReplicaSet.
+		# HELP kube_replicaset_status_fully_labeled_replicas [STABLE] The number of fully labeled replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_fully_labeled_replicas gauge
-		# HELP kube_replicaset_status_ready_replicas The number of ready replicas per ReplicaSet.
+		# HELP kube_replicaset_status_ready_replicas [STABLE] The number of ready replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_ready_replicas gauge
-		# HELP kube_replicaset_status_observed_generation The generation observed by the ReplicaSet controller.
+		# HELP kube_replicaset_status_observed_generation [STABLE] The generation observed by the ReplicaSet controller.
 		# TYPE kube_replicaset_status_observed_generation gauge
-		# HELP kube_replicaset_spec_replicas Number of desired pods for a ReplicaSet.
+		# HELP kube_replicaset_spec_replicas [STABLE] Number of desired pods for a ReplicaSet.
 		# TYPE kube_replicaset_spec_replicas gauge
-		# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
+		# HELP kube_replicaset_owner [STABLE] Information about the ReplicaSet's owner.
 		# TYPE kube_replicaset_owner gauge
-		# HELP kube_replicaset_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_replicaset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_replicaset_labels gauge
 	`
 	cases := []generateMetricsTestCase{

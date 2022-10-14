@@ -38,23 +38,23 @@ func TestReplicationControllerStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_replicationcontroller_created Unix creation timestamp
+		# HELP kube_replicationcontroller_created [STABLE] Unix creation timestamp
 		# TYPE kube_replicationcontroller_created gauge
-		# HELP kube_replicationcontroller_metadata_generation Sequence number representing a specific generation of the desired state.
+		# HELP kube_replicationcontroller_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicationcontroller_metadata_generation gauge
 		# HELP kube_replicationcontroller_owner Information about the ReplicationController's owner.
 		# TYPE kube_replicationcontroller_owner gauge
-		# HELP kube_replicationcontroller_status_replicas The number of replicas per ReplicationController.
+		# HELP kube_replicationcontroller_status_replicas [STABLE] The number of replicas per ReplicationController.
 		# TYPE kube_replicationcontroller_status_replicas gauge
-		# HELP kube_replicationcontroller_status_fully_labeled_replicas The number of fully labeled replicas per ReplicationController.
+		# HELP kube_replicationcontroller_status_fully_labeled_replicas [STABLE] The number of fully labeled replicas per ReplicationController.
 		# TYPE kube_replicationcontroller_status_fully_labeled_replicas gauge
-		# HELP kube_replicationcontroller_status_available_replicas The number of available replicas per ReplicationController.
+		# HELP kube_replicationcontroller_status_available_replicas [STABLE] The number of available replicas per ReplicationController.
 		# TYPE kube_replicationcontroller_status_available_replicas gauge
-		# HELP kube_replicationcontroller_status_ready_replicas The number of ready replicas per ReplicationController.
+		# HELP kube_replicationcontroller_status_ready_replicas [STABLE] The number of ready replicas per ReplicationController.
 		# TYPE kube_replicationcontroller_status_ready_replicas gauge
-		# HELP kube_replicationcontroller_status_observed_generation The generation observed by the ReplicationController controller.
+		# HELP kube_replicationcontroller_status_observed_generation [STABLE] The generation observed by the ReplicationController controller.
 		# TYPE kube_replicationcontroller_status_observed_generation gauge
-		# HELP kube_replicationcontroller_spec_replicas Number of desired pods for a ReplicationController.
+		# HELP kube_replicationcontroller_spec_replicas [STABLE] Number of desired pods for a ReplicationController.
 		# TYPE kube_replicationcontroller_spec_replicas gauge
 	`
 	cases := []generateMetricsTestCase{

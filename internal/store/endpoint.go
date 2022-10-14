@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -41,10 +42,11 @@ var (
 
 func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_info",
 			"Information about endpoint.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				return &metric.Family{
@@ -56,10 +58,11 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
@@ -94,10 +97,11 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descEndpointLabelsName,
 			descEndpointLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", e.Labels, allowLabelsList)
@@ -151,10 +155,11 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_address",
 			"Information about Endpoint available and non available addresses.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
@@ -179,10 +184,11 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_ports",
 			"Information about the Endpoint ports.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}

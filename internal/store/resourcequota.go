@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -34,10 +35,11 @@ var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
 	resourceQuotaMetricFamilies = []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourcequota_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
@@ -54,10 +56,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourcequota",
 			"Information about resource quota.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}

@@ -36,17 +36,17 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	# TYPE kube_poddisruptionbudget_labels gauge
 	`
 	const metadata = labelsAndAnnotationsMetaData + `
-	# HELP kube_poddisruptionbudget_created Unix creation timestamp
+	# HELP kube_poddisruptionbudget_created [STABLE] Unix creation timestamp
 	# TYPE kube_poddisruptionbudget_created gauge
-	# HELP kube_poddisruptionbudget_status_current_healthy Current number of healthy pods
+	# HELP kube_poddisruptionbudget_status_current_healthy [STABLE] Current number of healthy pods
 	# TYPE kube_poddisruptionbudget_status_current_healthy gauge
-	# HELP kube_poddisruptionbudget_status_desired_healthy Minimum desired number of healthy pods
+	# HELP kube_poddisruptionbudget_status_desired_healthy [STABLE] Minimum desired number of healthy pods
 	# TYPE kube_poddisruptionbudget_status_desired_healthy gauge
-	# HELP kube_poddisruptionbudget_status_pod_disruptions_allowed Number of pod disruptions that are currently allowed
+	# HELP kube_poddisruptionbudget_status_pod_disruptions_allowed [STABLE] Number of pod disruptions that are currently allowed
 	# TYPE kube_poddisruptionbudget_status_pod_disruptions_allowed gauge
-	# HELP kube_poddisruptionbudget_status_expected_pods Total number of pods counted by this disruption budget
+	# HELP kube_poddisruptionbudget_status_expected_pods [STABLE] Total number of pods counted by this disruption budget
 	# TYPE kube_poddisruptionbudget_status_expected_pods gauge
-	# HELP kube_poddisruptionbudget_status_observed_generation Most recent generation observed when updating this PDB status
+	# HELP kube_poddisruptionbudget_status_observed_generation [STABLE] Most recent generation observed when updating this PDB status
 	# TYPE kube_poddisruptionbudget_status_observed_generation gauge
 	`
 	cases := []generateMetricsTestCase{

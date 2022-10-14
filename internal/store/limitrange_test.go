@@ -33,9 +33,9 @@ func TestLimitRangeStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-	# HELP kube_limitrange_created Unix creation timestamp
+	# HELP kube_limitrange_created [STABLE] Unix creation timestamp
 	# TYPE kube_limitrange_created gauge
-	# HELP kube_limitrange Information about limit range.
+	# HELP kube_limitrange [STABLE] Information about limit range.
 	# TYPE kube_limitrange gauge
 	`
 	cases := []generateMetricsTestCase{

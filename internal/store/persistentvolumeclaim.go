@@ -19,6 +19,8 @@ package store
 import (
 	"context"
 
+	basemetrics "k8s.io/component-base/metrics"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
@@ -40,10 +42,11 @@ var (
 
 func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descPersistentVolumeClaimLabelsName,
 			descPersistentVolumeClaimLabelsHelp,
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
@@ -76,10 +79,11 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_info",
 			"Information about persistent volume claim.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				storageClassName := getPersistentVolumeClaimClass(p)
@@ -95,10 +99,11 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_status_phase",
 			"The phase the persistent volume claim is currently in.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				phase := p.Status.Phase
@@ -134,10 +139,11 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_resource_requests_storage_bytes",
 			"The capacity of storage requested by the persistent volume claim.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := []*metric.Metric{}
@@ -153,10 +159,11 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_access_mode",
 			"The access mode(s) specified by the persistent volume claim.",
 			metric.Gauge,
+			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := make([]*metric.Metric, len(p.Spec.AccessModes))

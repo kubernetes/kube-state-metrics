@@ -1,0 +1,1041 @@
+- name: kube_daemonset_metadata_generation
+  help: '[STABLE] Sequence number representing a specific generation of the desired
+    state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_horizontalpodautoscaler_status_desired_replicas
+  help: '[STABLE] Desired number of replicas of pods managed by this autoscaler.'
+  type: GAUGE
+  labels:
+  - namespace
+  - horizontalpodautoscaler
+- name: kube_statefulset_status_update_revision
+  help: '[STABLE] Indicates the version of the StatefulSet used to generate Pods in
+    the sequence [replicas-updatedReplicas,replicas)'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+  - revision
+- name: kube_deployment_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_endpoint_address
+  help: '[STABLE] Information about Endpoint available and non available addresses.'
+  type: GAUGE
+  labels:
+  - namespace
+  - endpoint
+  - ip
+  - ready
+- name: kube_pod_container_status_terminated
+  help: '[STABLE] Describes whether the container is currently in terminated state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+- name: kube_replicaset_status_fully_labeled_replicas
+  help: '[STABLE] The number of fully labeled replicas per ReplicaSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_deployment_spec_replicas
+  help: '[STABLE] Number of desired pods for a deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_cronjob_info
+  help: '[STABLE] Info about cronjob.'
+  type: GAUGE
+  labels:
+  - namespace
+  - cronjob
+  - schedule
+  - concurrency_policy
+- name: kube_pod_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+- name: kube_replicaset_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_replicaset_status_observed_generation
+  help: '[STABLE] The generation observed by the ReplicaSet controller.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_daemonset_status_observed_generation
+  help: '[STABLE] The most recent generation observed by the daemon set controller.'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_horizontalpodautoscaler_status_current_replicas
+  help: '[STABLE] Current number of replicas of pods managed by this autoscaler.'
+  type: GAUGE
+  labels:
+  - namespace
+  - horizontalpodautoscaler
+- name: kube_node_status_capacity
+  help: '[STABLE] The capacity for different resources of a node.'
+  type: GAUGE
+  labels:
+  - node
+  - resource
+  - unit
+- name: kube_pod_info
+  help: '[STABLE] Information about pod.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - host_ip
+  - pod_ip
+  - node
+  - created_by_kind
+  - created_by_name
+  - priority_class
+  - host_network
+- name: kube_secret_type
+  help: '[STABLE] Type about secret.'
+  type: GAUGE
+  labels:
+  - namespace
+  - secret
+  - type
+- name: kube_job_status_start_time
+  help: '[STABLE] StartTime represents time when the job was acknowledged by the Job
+    Manager.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_pod_container_status_waiting_reason
+  help: '[STABLE] Describes the reason the container is currently in waiting state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+  - reason
+- name: kube_statefulset_status_replicas_current
+  help: '[STABLE] The number of current replicas per StatefulSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_storageclass_info
+  help: '[STABLE] Information about storageclass.'
+  type: GAUGE
+  labels:
+  - storageclass
+  - provisioner
+  - reclaim_policy
+  - volume_binding_mode
+- name: kube_pod_container_info
+  help: '[STABLE] Information about a container in a pod.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+  - image_spec
+  - image
+  - image_id
+  - container_id
+- name: kube_limitrange_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - limitrange
+- name: kube_namespace_status_phase
+  help: '[STABLE] kubernetes namespace status phase.'
+  type: GAUGE
+  labels:
+  - namespace
+  - phase
+- name: kube_replicationcontroller_status_available_replicas
+  help: '[STABLE] The number of available replicas per ReplicationController.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_service_info
+  help: '[STABLE] Information about service.'
+  type: GAUGE
+  labels:
+  - namespace
+  - service
+  - uid
+  - cluster_ip
+  - external_name
+  - load_balancer_ip
+- name: kube_replicaset_status_replicas
+  help: '[STABLE] The number of replicas per ReplicaSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_configmap_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - configmap
+- name: kube_horizontalpodautoscaler_spec_min_replicas
+  help: '[STABLE] Lower limit for the number of pods that can be set by the autoscaler,
+    default 1.'
+  type: GAUGE
+  labels:
+  - namespace
+  - horizontalpodautoscaler
+- name: kube_ingress_path
+  help: '[STABLE] Ingress host, paths and backend service information.'
+  type: GAUGE
+  labels:
+  - namespace
+  - ingress
+  - host
+  - path
+  - service_name
+  - service_port
+- name: kube_statefulset_status_observed_generation
+  help: '[STABLE] The generation observed by the StatefulSet controller.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_configmap_info
+  help: '[STABLE] Information about configmap.'
+  type: GAUGE
+  labels:
+  - namespace
+  - configmap
+- name: kube_persistentvolume_info
+  help: '[STABLE] Information about persistentvolume.'
+  type: GAUGE
+  labels:
+  - persistentvolume
+  - storageclass
+  - gce_persistent_disk_name
+  - ebs_volume_id
+  - azure_disk_name
+  - fc_wwids
+  - fc_lun
+  - fc_target_wwns
+  - iscsi_target_portal
+  - iscsi_iqn
+  - iscsi_lun
+  - iscsi_initiator_name
+  - nfs_server
+  - nfs_path
+  - csi_driver
+  - csi_volume_handle
+  - local_path
+  - local_fs
+  - host_path
+  - host_path_type
+- name: kube_poddisruptionbudget_status_desired_healthy
+  help: '[STABLE] Minimum desired number of healthy pods'
+  type: GAUGE
+  labels:
+  - namespace
+  - poddisruptionbudget
+- name: kube_ingress_info
+  help: '[STABLE] Information about ingress.'
+  type: GAUGE
+  labels:
+  - namespace
+  - ingress
+  - ingressclass
+- name: kube_poddisruptionbudget_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - poddisruptionbudget
+- name: kube_statefulset_metadata_generation
+  help: '[STABLE] Sequence number representing a specific generation of the desired
+    state for the StatefulSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_certificatesigningrequest_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - certificatesigningrequest
+  - signer_name
+- name: kube_statefulset_status_replicas
+  help: '[STABLE] The number of replicas per StatefulSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_namespace_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+- name: kube_node_spec_unschedulable
+  help: '[STABLE] Whether a node can schedule new pods.'
+  type: GAUGE
+  labels:
+  - node
+- name: kube_service_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - service
+  - uid
+- name: kube_replicationcontroller_spec_replicas
+  help: '[STABLE] Number of desired pods for a ReplicationController.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_statefulset_status_current_revision
+  help: '[STABLE] Indicates the version of the StatefulSet used to generate Pods in
+    the sequence [0,currentReplicas).'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+  - revision
+- name: kube_deployment_spec_strategy_rollingupdate_max_unavailable
+  help: '[STABLE] Maximum number of unavailable replicas during a rolling update of
+    a deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_node_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - node
+- name: kube_replicationcontroller_status_replicas
+  help: '[STABLE] The number of replicas per ReplicationController.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_horizontalpodautoscaler_status_condition
+  help: '[STABLE] The condition of this autoscaler.'
+  type: GAUGE
+  labels:
+  - namespace
+  - horizontalpodautoscaler
+  - condition
+  - status
+- name: kube_job_spec_parallelism
+  help: '[STABLE] The maximum desired number of pods the job should run at any given
+    time.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_deployment_status_replicas_ready
+  help: '[STABLE] The number of ready replicas per deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_storageclass_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - storageclass
+- name: kube_secret_info
+  help: '[STABLE] Information about secret.'
+  type: GAUGE
+  labels:
+  - namespace
+  - secret
+- name: kube_deployment_status_replicas_updated
+  help: '[STABLE] The number of updated replicas per deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_deployment_metadata_generation
+  help: '[STABLE] Sequence number representing a specific generation of the desired
+    state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_statefulset_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_persistentvolumeclaim_resource_requests_storage_bytes
+  help: '[STABLE] The capacity of storage requested by the persistent volume claim.'
+  type: GAUGE
+  labels:
+  - namespace
+  - persistentvolumeclaim
+- name: kube_pod_container_status_running
+  help: '[STABLE] Describes whether the container is currently in running state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+- name: kube_resourcequota_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - resourcequota
+- name: kube_deployment_spec_paused
+  help: '[STABLE] Whether the deployment is paused and will not be processed by the
+    deployment controller.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_deployment_spec_strategy_rollingupdate_max_surge
+  help: '[STABLE] Maximum number of replicas that can be scheduled above the desired
+    number of replicas during a rolling update of a deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_certificatesigningrequest_cert_length
+  help: '[STABLE] Length of the issued cert'
+  type: GAUGE
+  labels:
+  - certificatesigningrequest
+  - signer_name
+- name: kube_replicationcontroller_metadata_generation
+  help: '[STABLE] Sequence number representing a specific generation of the desired
+    state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_resourcequota
+  help: '[STABLE] Information about resource quota.'
+  type: GAUGE
+  labels:
+  - namespace
+  - resourcequota
+  - resource
+  - type
+- name: kube_cronjob_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - cronjob
+- name: kube_endpoint_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - endpoint
+- name: kube_statefulset_status_replicas_ready
+  help: '[STABLE] The number of ready replicas per StatefulSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_job_status_succeeded
+  help: '[STABLE] The number of pods which reached Phase Succeeded.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_node_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - node
+- name: kube_poddisruptionbudget_status_pod_disruptions_allowed
+  help: '[STABLE] Number of pod disruptions that are currently allowed'
+  type: GAUGE
+  labels:
+  - namespace
+  - poddisruptionbudget
+- name: kube_horizontalpodautoscaler_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - horizontalpodautoscaler
+- name: kube_persistentvolumeclaim_access_mode
+  help: '[STABLE] The access mode(s) specified by the persistent volume claim.'
+  type: GAUGE
+  labels:
+  - namespace
+  - persistentvolumeclaim
+  - access_mode
+- name: kube_replicaset_metadata_generation
+  help: '[STABLE] Sequence number representing a specific generation of the desired
+    state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_configmap_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - configmap
+- name: kube_replicationcontroller_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_pod_restart_policy
+  help: '[STABLE] Describes the restart policy in use by this pod.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - type
+- name: kube_daemonset_status_current_number_scheduled
+  help: '[STABLE] The number of nodes running at least one daemon pod and are supposed
+    to.'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_job_status_failed
+  help: '[STABLE] The number of pods which reached Phase Failed and the reason for
+    failure.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_daemonset_status_number_unavailable
+  help: '[STABLE] The number of nodes that should be running the daemon pod and have
+    none of the daemon pod running and available'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_service_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - service
+  - uid
+- name: kube_job_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_job_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_poddisruptionbudget_status_observed_generation
+  help: '[STABLE] Most recent generation observed when updating this PDB status'
+  type: GAUGE
+  labels:
+  - namespace
+  - poddisruptionbudget
+- name: kube_replicaset_owner
+  help: '[STABLE] Information about the ReplicaSet''s owner.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+  - owner_kind
+  - owner_name
+  - owner_is_controller
+- name: kube_cronjob_metadata_resource_version
+  help: '[STABLE] Resource version representing a specific version of the cronjob.'
+  type: GAUGE
+  labels:
+  - namespace
+  - cronjob
+- name: kube_ingress_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - ingress
+- name: kube_pod_status_ready
+  help: '[STABLE] Describes whether the pod is ready to serve requests.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - condition
+- name: kube_statefulset_status_replicas_updated
+  help: '[STABLE] The number of updated replicas per StatefulSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_daemonset_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_persistentvolumeclaim_status_phase
+  help: '[STABLE] The phase the persistent volume claim is currently in.'
+  type: GAUGE
+  labels:
+  - namespace
+  - persistentvolumeclaim
+  - phase
+- name: kube_deployment_status_replicas
+  help: '[STABLE] The number of replicas per deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_persistentvolume_status_phase
+  help: '[STABLE] The phase indicates if a volume is available, bound to a claim,
+    or released by a claim.'
+  type: GAUGE
+  labels:
+  - persistentvolume
+  - phase
+- name: kube_cronjob_status_active
+  help: '[STABLE] Active holds pointers to currently running jobs.'
+  type: GAUGE
+  labels:
+  - namespace
+  - cronjob
+- name: kube_replicaset_status_ready_replicas
+  help: '[STABLE] The number of ready replicas per ReplicaSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_replicaset_spec_replicas
+  help: '[STABLE] Number of desired pods for a ReplicaSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_pod_owner
+  help: '[STABLE] Information about the Pod''s owner.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - owner_kind
+  - owner_name
+  - owner_is_controller
+- name: kube_secret_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - secret
+- name: kube_job_spec_completions
+  help: '[STABLE] The desired number of successfully finished pods the job should
+    be run with.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_node_info
+  help: '[STABLE] Information about a cluster node.'
+  type: GAUGE
+  labels:
+  - node
+  - kernel_version
+  - os_image
+  - container_runtime_version
+  - kubelet_version
+  - kubeproxy_version
+  - provider_id
+  - pod_cidr
+  - system_uuid
+  - internal_ip
+- name: kube_statefulset_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_certificatesigningrequest_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - certificatesigningrequest
+  - signer_name
+- name: kube_daemonset_status_number_ready
+  help: '[STABLE] The number of nodes that should be running the daemon pod and have
+    one or more of the daemon pod running and ready.'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_pod_status_phase
+  help: '[STABLE] The pods current phase.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - phase
+- name: kube_pod_container_status_ready
+  help: '[STABLE] Describes whether the containers readiness check succeeded.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+- name: kube_pod_start_time
+  help: '[STABLE] Start time in unix timestamp for a pod.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+- name: kube_limitrange
+  help: '[STABLE] Information about limit range.'
+  type: GAUGE
+  labels:
+  - namespace
+  - limitrange
+  - resource
+  - type
+  - constraint
+- name: kube_node_status_condition
+  help: '[STABLE] The condition of a cluster node.'
+  type: GAUGE
+  labels:
+  - node
+  - condition
+  - status
+- name: kube_persistentvolumeclaim_info
+  help: '[STABLE] Information about persistent volume claim.'
+  type: GAUGE
+  labels:
+  - namespace
+  - persistentvolumeclaim
+  - storageclass
+  - volumename
+- name: kube_replicationcontroller_status_fully_labeled_replicas
+  help: '[STABLE] The number of fully labeled replicas per ReplicationController.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_cronjob_spec_suspend
+  help: '[STABLE] Suspend flag tells the controller to suspend subsequent executions.'
+  type: GAUGE
+  labels:
+  - namespace
+  - cronjob
+- name: kube_daemonset_status_updated_number_scheduled
+  help: '[STABLE] The total number of nodes that are running updated daemon pod'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_deployment_status_replicas_unavailable
+  help: '[STABLE] The number of unavailable replicas per deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_pod_container_status_restarts_total
+  help: '[STABLE] The number of container restarts per container.'
+  type: COUNTER
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+- name: kube_daemonset_status_number_available
+  help: '[STABLE] The number of nodes that should be running the daemon pod and have
+    one or more of the daemon pod running and available'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_deployment_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_endpoint_ports
+  help: '[STABLE] Information about the Endpoint ports.'
+  type: GAUGE
+  labels:
+  - namespace
+  - endpoint
+  - port_name
+  - port_protocol
+  - port_number
+- name: kube_job_owner
+  help: '[STABLE] Information about the Job''s owner.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+  - owner_kind
+  - owner_name
+  - owner_is_controller
+- name: kube_node_status_allocatable
+  help: '[STABLE] The allocatable for different resources of a node that are available
+    for scheduling.'
+  type: GAUGE
+  labels:
+  - node
+  - resource
+  - unit
+- name: kube_daemonset_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_deployment_status_observed_generation
+  help: '[STABLE] The generation observed by the deployment controller.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_horizontalpodautoscaler_spec_max_replicas
+  help: '[STABLE] Upper limit for the number of pods that can be set by the autoscaler;
+    cannot be smaller than MinReplicas.'
+  type: GAUGE
+  labels:
+  - namespace
+  - horizontalpodautoscaler
+- name: kube_ingress_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - ingress
+- name: kube_replicationcontroller_status_observed_generation
+  help: '[STABLE] The generation observed by the ReplicationController controller.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_storageclass_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - storageclass
+- name: kube_cronjob_next_schedule_time
+  help: '[STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime,
+    or after the cron job''s creation time if it''s never been scheduled. Use this
+    to determine if the job is delayed.'
+  type: GAUGE
+  labels:
+  - namespace
+  - cronjob
+- name: kube_daemonset_status_desired_number_scheduled
+  help: '[STABLE] The number of nodes that should be running the daemon pod.'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_deployment_status_condition
+  help: '[STABLE] The current status conditions of a deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+  - condition
+  - status
+- name: kube_endpoint_info
+  help: '[STABLE] Information about endpoint.'
+  type: GAUGE
+  labels:
+  - namespace
+  - endpoint
+- name: kube_pod_container_status_waiting
+  help: '[STABLE] Describes whether the container is currently in waiting state.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+- name: kube_replicaset_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicaset
+- name: kube_secret_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - secret
+- name: kube_statefulset_replicas
+  help: '[STABLE] Number of desired pods for a StatefulSet.'
+  type: GAUGE
+  labels:
+  - namespace
+  - statefulset
+- name: kube_endpoint_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - endpoint
+- name: kube_job_info
+  help: '[STABLE] Information about job.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_poddisruptionbudget_status_expected_pods
+  help: '[STABLE] Total number of pods counted by this disruption budget'
+  type: GAUGE
+  labels:
+  - namespace
+  - poddisruptionbudget
+- name: kube_daemonset_status_number_misscheduled
+  help: '[STABLE] The number of nodes running a daemon pod but are not supposed to.'
+  type: GAUGE
+  labels:
+  - namespace
+  - daemonset
+- name: kube_poddisruptionbudget_status_current_healthy
+  help: '[STABLE] Current number of healthy pods'
+  type: GAUGE
+  labels:
+  - namespace
+  - poddisruptionbudget
+- name: kube_pod_status_scheduled_time
+  help: '[STABLE] Unix timestamp when pod moved into scheduled status'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+- name: kube_certificatesigningrequest_condition
+  help: '[STABLE] The number of each certificatesigningrequest condition'
+  type: GAUGE
+  labels:
+  - certificatesigningrequest
+  - signer_name
+  - condition
+- name: kube_deployment_status_replicas_available
+  help: '[STABLE] The number of available replicas per deployment.'
+  type: GAUGE
+  labels:
+  - namespace
+  - deployment
+- name: kube_namespace_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+- name: kube_pod_status_scheduled
+  help: '[STABLE] Describes the status of the scheduling process for the pod.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - condition
+- name: kube_cronjob_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - cronjob
+- name: kube_pod_container_state_started
+  help: '[STABLE] Start time in unix timestamp for a pod container.'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+  - container
+- name: kube_service_spec_type
+  help: '[STABLE] Type about service.'
+  type: GAUGE
+  labels:
+  - namespace
+  - service
+  - uid
+  - type
+- name: kube_job_status_active
+  help: '[STABLE] The number of actively running pods.'
+  type: GAUGE
+  labels:
+  - namespace
+  - job_name
+- name: kube_horizontalpodautoscaler_metadata_generation
+  help: '[STABLE] The generation observed by the HorizontalPodAutoscaler controller.'
+  type: GAUGE
+  labels:
+  - namespace
+  - horizontalpodautoscaler
+- name: kube_pod_created
+  help: '[STABLE] Unix creation timestamp'
+  type: GAUGE
+  labels:
+  - namespace
+  - pod
+  - uid
+- name: kube_replicationcontroller_status_ready_replicas
+  help: '[STABLE] The number of ready replicas per ReplicationController.'
+  type: GAUGE
+  labels:
+  - namespace
+  - replicationcontroller
+- name: kube_persistentvolumeclaim_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - namespace
+  - persistentvolumeclaim
+- name: kube_persistentvolume_labels
+  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
+  type: GAUGE
+  labels:
+  - persistentvolume
+- name: kube_persistentvolume_capacity_bytes
+  help: '[STABLE] Persistentvolume capacity in bytes.'
+  type: GAUGE
+  labels:
+  - persistentvolume
+

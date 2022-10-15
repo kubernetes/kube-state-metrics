@@ -354,7 +354,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.STABLE,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+				labelKeys := []string{"owner_kind2", "owner_name", "owner_is_controller"}
 
 				owners := j.GetOwnerReferences()
 

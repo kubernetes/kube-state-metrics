@@ -33,9 +33,9 @@ import (
 
 var (
 	descSecretAnnotationsName     = "kube_secret_annotations"
-	descSecretAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descSecretAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels." //nolint:gosec
 	descSecretLabelsName          = "kube_secret_labels"
-	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels." //nolint:gosec
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 )
 

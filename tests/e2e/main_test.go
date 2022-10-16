@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -165,7 +166,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 		}
 
 		filePath := path.Join(docPath, file.Name())
-		f, err := os.Open(filePath)
+		f, err := os.Open(filepath.Clean(filePath))
 		if err != nil {
 			return nil, fmt.Errorf("cannot read file %s: %w", filePath, err)
 		}

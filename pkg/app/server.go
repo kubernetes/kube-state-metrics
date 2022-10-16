@@ -178,11 +178,17 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 
 	telemetryMux := buildTelemetryServer(ksmMetricsRegistry)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
-	telemetryServer := http.Server{Handler: telemetryMux, Addr: telemetryListenAddress}
+	telemetryServer := http.Server{
+		Handler:           telemetryMux,
+		Addr:              telemetryListenAddress,
+		ReadHeaderTimeout: 5 * time.Second}
 
 	metricsMux := buildMetricsServer(m, durationVec)
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
-	metricsServer := http.Server{Handler: metricsMux, Addr: metricsServerListenAddress}
+	metricsServer := http.Server{
+		Handler:           metricsMux,
+		Addr:              metricsServerListenAddress,
+		ReadHeaderTimeout: 5 * time.Second}
 
 	// Run Telemetry server
 	{

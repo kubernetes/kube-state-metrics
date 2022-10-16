@@ -73,7 +73,10 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 
 	builder := store.NewBuilder()
 	builder.WithMetrics(reg)
-	builder.WithEnabledResources(options.DefaultResources.AsSlice())
+	err := builder.WithEnabledResources(options.DefaultResources.AsSlice())
+	if err != nil {
+		b.Fatal(err)
+	}
 	builder.WithKubeClient(kubeClient)
 	builder.WithSharding(0, 1)
 	builder.WithContext(ctx)
@@ -118,7 +121,10 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 
 			b.StopTimer()
 			buf := bytes.Buffer{}
-			buf.ReadFrom(resp.Body)
+			_, err := buf.ReadFrom(resp.Body)
+			if err != nil {
+				b.Fatal(err)
+			}
 			accumulatedContentLength += buf.Len()
 			b.StartTimer()
 		}
@@ -144,7 +150,10 @@ func TestFullScrapeCycle(t *testing.T) {
 	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder()
 	builder.WithMetrics(reg)
-	builder.WithEnabledResources(options.DefaultResources.AsSlice())
+	err = builder.WithEnabledResources(options.DefaultResources.AsSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
 	builder.WithKubeClient(kubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces, "")
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
@@ -428,7 +437,10 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	reg := prometheus.NewRegistry()
 	unshardedBuilder := store.NewBuilder()
 	unshardedBuilder.WithMetrics(reg)
-	unshardedBuilder.WithEnabledResources(options.DefaultResources.AsSlice())
+	err = unshardedBuilder.WithEnabledResources(options.DefaultResources.AsSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
 	unshardedBuilder.WithKubeClient(kubeClient)
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces, "")
 	unshardedBuilder.WithFamilyGeneratorFilter(l)
@@ -441,7 +453,10 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	regShard1 := prometheus.NewRegistry()
 	shardedBuilder1 := store.NewBuilder()
 	shardedBuilder1.WithMetrics(regShard1)
-	shardedBuilder1.WithEnabledResources(options.DefaultResources.AsSlice())
+	err = shardedBuilder1.WithEnabledResources(options.DefaultResources.AsSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
 	shardedBuilder1.WithKubeClient(kubeClient)
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces, "")
 	shardedBuilder1.WithFamilyGeneratorFilter(l)
@@ -454,7 +469,10 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	regShard2 := prometheus.NewRegistry()
 	shardedBuilder2 := store.NewBuilder()
 	shardedBuilder2.WithMetrics(regShard2)
-	shardedBuilder2.WithEnabledResources(options.DefaultResources.AsSlice())
+	err = shardedBuilder2.WithEnabledResources(options.DefaultResources.AsSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
 	shardedBuilder2.WithKubeClient(kubeClient)
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces, "")
 	shardedBuilder2.WithFamilyGeneratorFilter(l)
@@ -591,7 +609,11 @@ func TestCustomResourceExtension(t *testing.T) {
 	builder := store.NewBuilder()
 	builder.WithCustomResourceStoreFactories(factories...)
 	builder.WithMetrics(reg)
-	builder.WithEnabledResources(resources)
+	err := builder.WithEnabledResources(resources)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	builder.WithKubeClient(kubeClient)
 	builder.WithCustomResourceClients(customResourceClients)
 	builder.WithNamespaces(options.DefaultNamespaces, "")

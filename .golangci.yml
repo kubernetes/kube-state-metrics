@@ -8,6 +8,7 @@ linters:
     - gocyclo
     - gofmt
     - goimports
+    - gosec
     - gosimple
     - govet
     - ineffassign
@@ -28,3 +29,7 @@ issues:
     - path: _test\.go
       linters:
         - promlinter
+    # TODO(mrueg) Improve error handling
+    - text: "G104:"
+      linters:
+        - gosec

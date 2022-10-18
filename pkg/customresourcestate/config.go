@@ -64,7 +64,7 @@ type Resource struct {
 func (r Resource) GetMetricNamePrefix() string {
 	p := r.MetricNamePrefix
 	if p == nil {
-		return "kube"
+		return "kube_crd"
 	}
 	return *p
 }

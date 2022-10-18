@@ -116,7 +116,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
+kube_crd_uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
 ```
 
 #### Multiple Metrics/Kitchen Sink
@@ -167,8 +167,8 @@ spec:
 Produces the following metrics:
 
 ```prometheus
-kube_active_count{group="myteam.io", kind="Foo", version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 1
-kube_active_count{group="myteam.io", kind="Foo", version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 3
+kube_crd_active_count{group="myteam.io", kind="Foo", version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 1
+kube_crd_active_count{group="myteam.io", kind="Foo", version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 3
 ```
 
 ### Metric types
@@ -203,7 +203,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
+kube_crd_uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
 ```
 
 #### StateSet
@@ -235,9 +235,9 @@ The value will be 1, if the value matches the one in list.
 Produces the metric:
 
 ```prometheus
-kube_status_phase{group="myteam.io", kind="Foo", version="v1", phase="Pending"} 1
-kube_status_phase{group="myteam.io", kind="Foo", version="v1", phase="Bar"} 0
-kube_status_phase{group="myteam.io", kind="Foo", version="v1", phase="Baz"} 0
+kube_crd_status_phase{group="myteam.io", kind="Foo", version="v1", phase="Pending"} 1
+kube_crd_status_phase{group="myteam.io", kind="Foo", version="v1", phase="Bar"} 0
+kube_crd_status_phase{group="myteam.io", kind="Foo", version="v1", phase="Baz"} 0
 ```
 
 #### Info
@@ -267,7 +267,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_version{group="myteam.io", kind="Foo", version="v1", version="v1.2.3"} 1
+kube_crd_version{group="myteam.io", kind="Foo", version="v1", version="v1.2.3"} 1
 ```
 
 ### Naming
@@ -303,6 +303,11 @@ spec:
       metrics:
         - name: uptime
           ...
+```
+
+Produces:
+```prometheus
+uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
 ```
 
 ### Logging

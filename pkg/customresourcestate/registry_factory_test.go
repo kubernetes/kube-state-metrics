@@ -324,7 +324,7 @@ func Test_fullName(t *testing.T) {
 				resource: r(nil),
 				f:        count,
 			},
-			want: "count",
+			want: "kube_count",
 		},
 		{
 			name: "no prefix",

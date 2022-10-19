@@ -1,6 +1,0 @@
-# TYPE kube_node_info gauge
-# TYPE kube_node_status_condition gauge
-kube_node_info{container_runtime_version="",internal_ip="",kernel_version="",kubelet_version="",kubeproxy_version="",node="",os_image="",pod_cidr="",provider_id="",system_uuid=""} 1
-kube_node_status_condition{condition="NetworkUnavailable",node="",status="false"} 0
-kube_node_status_condition{condition="NetworkUnavailable",node="",status="true"} 0
-kube_node_status_condition{condition="NetworkUnavailable",node="",status="unknown"} 0

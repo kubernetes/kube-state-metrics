@@ -19,20 +19,6 @@
   - namespace
   - statefulset
   - revision
-- name: kube_deployment_labels
-  help: '[STABLE] Kubernetes labels converted to Prometheus labels.'
-  type: GAUGE
-  labels:
-  - namespace
-  - deployment
-- name: kube_endpoint_address
-  help: '[STABLE] Information about Endpoint available and non available addresses.'
-  type: GAUGE
-  labels:
-  - namespace
-  - endpoint
-  - ip
-  - ready
 - name: kube_pod_container_status_terminated
   help: '[STABLE] Describes whether the container is currently in terminated state.'
   type: GAUGE

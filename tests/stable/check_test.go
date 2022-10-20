@@ -19,6 +19,7 @@ package stable
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"testing"
 
 	"log"
@@ -165,6 +166,15 @@ func convert2Map(metrics []Metric, skipMap map[string]int) map[string]Metric {
 
 }
 
+func sortedKeys(m map[string]Metric) []string {
+	keys := []string{}
+	for name := range m {
+		keys = append(keys, name)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func compare(collectedStableMetrics []Metric, expectedStableMetrics []Metric, skipStableMetrics []string) error {
 	skipMap := map[string]int{}
 	for _, v := range skipStableMetrics {
@@ -175,7 +185,8 @@ func compare(collectedStableMetrics []Metric, expectedStableMetrics []Metric, sk
 
 	var ok bool
 
-	for name, metric := range expected {
+	for _, name := range sortedKeys(expected) {
+		metric := expected[name]
 		var expectedMetric Metric
 		if expectedMetric, ok = collected[name]; !ok {
 			return fmt.Errorf("not found stable metric %s", name)
@@ -184,7 +195,7 @@ func compare(collectedStableMetrics []Metric, expectedStableMetrics []Metric, sk
 			return fmt.Errorf("stable metric %s mismatch (-want +got):\n%s", name, diff)
 		}
 	}
-	for name := range collected {
+	for _, name := range sortedKeys(collected) {
 		if _, ok = expected[name]; !ok {
 			return fmt.Errorf("detected new stable metric %s which isn't in testdata ", name)
 		}

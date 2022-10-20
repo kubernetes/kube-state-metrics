@@ -15,7 +15,6 @@
 # limitations under the License.
 
 set -e
-set -x
 set -o pipefail
 
 case $(uname -m) in
@@ -164,7 +163,6 @@ mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
 echo "access kube-state-metrics metrics endpoint"
 curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/metrics
 
-cat ${KUBE_STATE_METRICS_LOG_DIR}/metrics
 # check stable metrics aren't changed
 go test ./tests/stable/check_test.go --collectedMetricsFile "$(realpath ${KUBE_STATE_METRICS_LOG_DIR}/metrics)"  --stableMetricsFile "$(realpath tests/stable/testdata/stablemetrics.yaml)"
 

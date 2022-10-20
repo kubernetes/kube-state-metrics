@@ -1,0 +1,23 @@
+These stable metrics aren't covered in stablemetrics.yaml, because they aren't
+exposed in KSM in the test cluster:
+- kube_cronjob_spec_starting_deadline_seconds
+- kube_cronjob_status_last_schedule_time
+- kube_ingress_tls
+- kube_job_complete
+- kube_job_failed
+- kube_job_spec_active_deadline_seconds
+- kube_job_status_completion_time
+- kube_node_spec_taint
+- kube_persistentvolume_claim_ref
+- kube_pod_completion_time
+- kube_pod_init_container_info
+- kube_pod_init_container_status_ready
+- kube_pod_init_container_status_restarts_total
+- kube_pod_init_container_status_running
+- kube_pod_init_container_status_terminated
+- kube_pod_init_container_status_waiting
+- kube_pod_spec_volumes_persistentvolumeclaims_info
+- kube_pod_spec_volumes_persistentvolumeclaims_readonly
+- kube_pod_status_unschedulable
+- kube_service_spec_external_ip
+- kube_service_status_load_balancer_ingress

@@ -14,36 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// To skip this test, put metric name into skippedStableMetrics.
 package stable
 
 import (
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
-	"log"
-	"os"
-	"strings"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	prommodel "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"gopkg.in/yaml.v3"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
+	"k8s.io/klog/v2"
 )
 
 var promText string
 var stableYaml string
 
-var skipStableMetrics = []string{}
+var skippedStableMetrics = []string{}
 
 type Metric struct {
-	Name   string `yaml:"name"`
-	Help   string `yaml:"help"`
-	Type   string
-	Labels []string
+	Name   string   `yaml:"name"`
+	Help   string   `yaml:"help"`
+	Type   string   `yaml:"type"`
+	Labels []string `yaml:"labels"`
 	// Histogram type
 	Buckets []float64 `yaml:"buckets,omitempty"`
 }
@@ -57,7 +58,9 @@ func TestMain(m *testing.M) {
 
 func TestStableMetrics(t *testing.T) {
 	mf, err := parsePromText(promText)
-	fatal(err)
+	if err != nil {
+		t.Fatalf("Can't parse collected prometheus metrics text. err = %v", err)
+	}
 	collectedStableMetrics := extractStableMetrics(mf)
 	printMetric(collectedStableMetrics)
 
@@ -66,33 +69,59 @@ func TestStableMetrics(t *testing.T) {
 		t.Fatalf("Can't read stable metrics from file. err = %v", err)
 	}
 
-	err = compare(collectedStableMetrics, *expectedStableMetrics, skipStableMetrics)
+	err = compare(collectedStableMetrics, *expectedStableMetrics, skippedStableMetrics)
 	if err != nil {
 		t.Fatalf("Stable metrics changed: err = %v", err)
 	} else {
-		fmt.Println("passed")
+		klog.Infoln("Passed")
 	}
-
 }
 
-func fatal(err error) {
-	if err != nil {
-		log.Fatalln(err)
+func compare(collectedStableMetrics []Metric, expectedStableMetrics []Metric, skippedStableMetrics []string) error {
+	skipMap := map[string]int{}
+	for _, v := range skippedStableMetrics {
+		skipMap[v] = 1
 	}
+	collected := convertToMap(collectedStableMetrics, skipMap)
+	expected := convertToMap(expectedStableMetrics, skipMap)
+
+	var ok bool
+
+	for _, name := range sortedKeys(expected) {
+		metric := expected[name]
+		var expectedMetric Metric
+		if expectedMetric, ok = collected[name]; !ok {
+			return fmt.Errorf("not found stable metric %s", name)
+		}
+		// Ingore Labels field due to ordering issue
+		if diff := cmp.Diff(metric, expectedMetric, cmpopts.IgnoreFields(Metric{}, "Help", "Labels")); diff != "" {
+			return fmt.Errorf("stable metric %s mismatch (-want +got):\n%s", name, diff)
+		}
+		// Compare Labels field after sorting
+		if diff := cmp.Diff(metric.Labels, expectedMetric.Labels, cmpopts.SortSlices(func(l1, l2 string) bool { return l1 > l2 })); diff != "" {
+			return fmt.Errorf("stable metric label %s mismatch (-want +got):\n%s", name, diff)
+		}
+	}
+	for _, name := range sortedKeys(collected) {
+		if _, ok = expected[name]; !ok {
+			return fmt.Errorf("detected new stable metric %s which isn't in testdata ", name)
+		}
+	}
+	return nil
 }
 
 func printMetric(metrics []Metric) {
 	yamlData, err := yaml.Marshal(metrics)
 	if err != nil {
-		fmt.Printf("error while Marshaling. %v", err)
+		klog.Errorf("error while Marshaling. %v", err)
 	}
-	fmt.Println("---begin YAML file---")
-	fmt.Println(string(yamlData))
-	fmt.Println("---end YAML file---")
+	klog.Infoln("---begin YAML file---")
+	klog.Infoln(string(yamlData))
+	klog.Infoln("---end YAML file---")
 }
 
 func parsePromText(path string) (map[string]*prommodel.MetricFamily, error) {
-	reader, err := os.Open(path)
+	reader, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +145,14 @@ func getBuckets(v *prommodel.MetricFamily) []float64 {
 	return buckets
 }
 
+func getLabels(m *prommodel.Metric) []string {
+	labels := []string{}
+	for _, y := range m.Label {
+		labels = append(labels, y.GetName())
+	}
+	return labels
+}
+
 func extractStableMetrics(mf map[string]*prommodel.MetricFamily) []Metric {
 	metrics := []Metric{}
 	for _, v := range mf {
@@ -123,25 +160,19 @@ func extractStableMetrics(mf map[string]*prommodel.MetricFamily) []Metric {
 		if !strings.Contains(*(v.Help), "[STABLE]") {
 			continue
 		}
-
-		m := Metric{
+		metrics = append(metrics, Metric{
 			Name:    *(v.Name),
 			Help:    *(v.Help),
 			Type:    (v.Type).String(),
 			Buckets: getBuckets(v),
-		}
-		labels := []string{}
-		for _, y := range v.Metric[0].Label {
-			labels = append(labels, y.GetName())
-		}
-		m.Labels = labels
-		metrics = append(metrics, m)
+			Labels:  getLabels(v.Metric[0]),
+		})
 	}
 	return metrics
 }
 
 func readYaml(filename string) (*[]Metric, error) {
-	buf, err := os.ReadFile(filename)
+	buf, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		return nil, err
 	}
@@ -153,17 +184,16 @@ func readYaml(filename string) (*[]Metric, error) {
 	return c, err
 }
 
-func convert2Map(metrics []Metric, skipMap map[string]int) map[string]Metric {
+func convertToMap(metrics []Metric, skipMap map[string]int) map[string]Metric {
 	name2Metric := map[string]Metric{}
 	for _, v := range metrics {
 		if _, ok := skipMap[v.Name]; ok {
-			fmt.Printf("skip, metric %s is in skip list\n", v.Name)
+			klog.Infof("skip, metric %s is in skip list\n", v.Name)
 			continue
 		}
 		name2Metric[v.Name] = v
 	}
 	return name2Metric
-
 }
 
 func sortedKeys(m map[string]Metric) []string {
@@ -173,35 +203,4 @@ func sortedKeys(m map[string]Metric) []string {
 	}
 	sort.Strings(keys)
 	return keys
-}
-
-func compare(collectedStableMetrics []Metric, expectedStableMetrics []Metric, skipStableMetrics []string) error {
-	skipMap := map[string]int{}
-	for _, v := range skipStableMetrics {
-		skipMap[v] = 1
-	}
-	collected := convert2Map(collectedStableMetrics, skipMap)
-	expected := convert2Map(expectedStableMetrics, skipMap)
-
-	var ok bool
-
-	for _, name := range sortedKeys(expected) {
-		metric := expected[name]
-		var expectedMetric Metric
-		if expectedMetric, ok = collected[name]; !ok {
-			return fmt.Errorf("not found stable metric %s", name)
-		}
-		if diff := cmp.Diff(metric, expectedMetric, cmpopts.IgnoreFields(Metric{}, "Help", "Labels")); diff != "" {
-			return fmt.Errorf("stable metric %s mismatch (-want +got):\n%s", name, diff)
-		}
-		if diff := cmp.Diff(metric.Labels, expectedMetric.Labels, cmpopts.SortSlices(func(l1, l2 string) bool { return l1 > l2 })); diff != "" {
-			return fmt.Errorf("stable metric label %s mismatch (-want +got):\n%s", name, diff)
-		}
-	}
-	for _, name := range sortedKeys(collected) {
-		if _, ok = expected[name]; !ok {
-			return fmt.Errorf("detected new stable metric %s which isn't in testdata ", name)
-		}
-	}
-	return nil
 }

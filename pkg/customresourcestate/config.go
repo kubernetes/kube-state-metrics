@@ -41,9 +41,8 @@ type MetricsSpec struct {
 // Resource configures a custom resource for metric generation.
 type Resource struct {
 	// MetricNamePrefix defines a prefix for all metrics of the resource.
-	// Falls back to the GroupVersionKind string prefixed with "kube_", with invalid characters replaced by _ if nil.
 	// If set to "", no prefix will be added.
-	// Example: If GroupVersionKind is "my-team.io/v1/MyResource", MetricNamePrefix will be "kube_my_team_io_v1_MyResource".
+	// Example: If set to "foo", MetricNamePrefix will be "foo_<metric>".
 	MetricNamePrefix *string `yaml:"metricNamePrefix" json:"metricNamePrefix"`
 
 	// GroupVersionKind of the custom resource to be monitored.
@@ -63,17 +62,11 @@ type Resource struct {
 
 // GetMetricNamePrefix returns the prefix to use for metrics.
 func (r Resource) GetMetricNamePrefix() string {
-	if r.MetricNamePrefix == nil {
-		return strings.NewReplacer(
-			"/", "_",
-			".", "_",
-			"-", "_",
-		).Replace(fmt.Sprintf("kube_%s_%s_%s", r.GroupVersionKind.Group, r.GroupVersionKind.Version, r.GroupVersionKind.Kind))
+	p := r.MetricNamePrefix
+	if p == nil {
+		return "kube_crd"
 	}
-	if *r.MetricNamePrefix == "" {
-		return ""
-	}
-	return *r.MetricNamePrefix
+	return *p
 }
 
 // GetResourceName returns the lowercase, plural form of the resource Kind. This is ResourcePlural if it is set.

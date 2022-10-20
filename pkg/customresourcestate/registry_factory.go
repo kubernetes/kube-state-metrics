@@ -34,6 +34,13 @@ import (
 
 func compile(resource Resource) ([]compiledFamily, error) {
 	var families []compiledFamily
+	// Explicitly add GVK labels to all CR metrics.
+	if resource.CommonLabels == nil {
+		resource.CommonLabels = map[string]string{}
+	}
+	resource.CommonLabels["group"] = resource.GroupVersionKind.Group
+	resource.CommonLabels["version"] = resource.GroupVersionKind.Version
+	resource.CommonLabels["kind"] = resource.GroupVersionKind.Kind
 	for _, f := range resource.Metrics {
 		family, err := compileFamily(f, resource)
 		if err != nil {

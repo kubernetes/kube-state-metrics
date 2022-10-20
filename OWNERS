@@ -1,10 +1,12 @@
 reviewers:
   - dgrisonnet
   - fpetkovski
+  - logicalhan
   - mrueg
 approvers:
   - dgrisonnet
   - fpetkovski
+  - logicalhan
   - mrueg
 emeritus_approvers:
   - LiliC

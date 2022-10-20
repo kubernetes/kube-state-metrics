@@ -191,8 +191,11 @@ func compare(collectedStableMetrics []Metric, expectedStableMetrics []Metric, sk
 		if expectedMetric, ok = collected[name]; !ok {
 			return fmt.Errorf("not found stable metric %s", name)
 		}
-		if diff := cmp.Diff(metric, expectedMetric, cmpopts.IgnoreFields(Metric{}, "Help")); diff != "" {
+		if diff := cmp.Diff(metric, expectedMetric, cmpopts.IgnoreFields(Metric{}, "Help", "Labels")); diff != "" {
 			return fmt.Errorf("stable metric %s mismatch (-want +got):\n%s", name, diff)
+		}
+		if diff := cmp.Diff(metric.Labels, expectedMetric.Labels, cmpopts.SortSlices(func(l1, l2 string) bool { return l1 > l2 })); diff != "" {
+			return fmt.Errorf("stable metric label %s mismatch (-want +got):\n%s", name, diff)
 		}
 	}
 	for _, name := range sortedKeys(collected) {

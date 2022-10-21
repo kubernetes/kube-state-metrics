@@ -40,9 +40,12 @@ var (
 func TestBuilderWithCustomStore(t *testing.T) {
 	b := builder.NewBuilder()
 	b.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter())
-	b.WithEnabledResources([]string{"pods"})
-	b.WithGenerateStoresFunc(customStore)
+	err := b.WithEnabledResources([]string{"pods"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	b.WithGenerateStoresFunc(customStore)
 	var fStores []*fakeStore
 	for _, stores := range b.BuildStores() {
 		for _, store := range stores {

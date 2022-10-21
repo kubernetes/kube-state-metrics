@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/prometheus/common/version"
@@ -74,7 +75,7 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 		return yaml.NewDecoder(strings.NewReader(s)), true
 	}
 	if file := opts.CustomResourceConfigFile; file != "" {
-		f, err := os.Open(file)
+		f, err := os.Open(filepath.Clean(file))
 		if err != nil {
 			klog.ErrorS(err, "Custom Resource State Metrics file could not be opened")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)

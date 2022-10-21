@@ -79,7 +79,10 @@ func (o *Options) AddFlags() {
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
 	o.flags.AddGoFlagSet(klogFlags)
-	o.flags.Lookup("logtostderr").Value.Set("true")
+	err := o.flags.Lookup("logtostderr").Value.Set("true")
+	if err != nil {
+		klog.Error(err)
+	}
 	o.flags.Lookup("logtostderr").DefValue = "true"
 	o.flags.Lookup("logtostderr").NoOptDefVal = "true"
 

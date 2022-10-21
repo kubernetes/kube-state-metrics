@@ -200,10 +200,16 @@ func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
 }
 
 // WithAllowLabels configures which labels can be returned for metrics
-func (b *Builder) WithAllowLabels(labels map[string][]string) {
+func (b *Builder) WithAllowLabels(labels map[string][]string) error {
 	if len(labels) > 0 {
+		for label := range labels {
+			if !resourceExists(label) {
+				return fmt.Errorf("resource %s does not exist. Available resources: %s", label, strings.Join(availableResources(), ","))
+			}
+		}
 		b.allowLabelsList = labels
 	}
+	return nil
 }
 
 // Build initializes and registers all enabled stores.

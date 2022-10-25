@@ -34,6 +34,19 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
+func validate(opts *options.Options) error {
+	shardableResource := "pods"
+	if opts.Nodename == "" {
+		return nil
+	}
+	for _, x := range opts.Resources.AsSlice() {
+		if x != shardableResource {
+			return fmt.Errorf("Resource %s can't be sharding by field selector nodeName", x)
+		}
+	}
+	return nil
+}
+
 func main() {
 	opts := options.NewOptions()
 	opts.AddFlags()
@@ -51,6 +64,11 @@ func main() {
 	if opts.Help {
 		opts.Usage()
 		os.Exit(0)
+	}
+
+	if err := validate(opts); err != nil {
+		klog.ErrorS(err, "Validating options error")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	var factories []customresource.RegistryFactory

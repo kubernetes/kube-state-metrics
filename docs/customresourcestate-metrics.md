@@ -151,7 +151,7 @@ spec:
               labelsFromPath:
                 active: [active]
               # The actual field to use as metric value. Should be a number.
-              value: [ready]
+              valueFrom: [ready]
           commonLabels:
             custom_metric: "yes"
           labelsFromPath:
@@ -168,8 +168,8 @@ spec:
 Produces the following metrics:
 
 ```prometheus
-kube_crd_active_count{group="myteam.io", kind="Foo", version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 1
-kube_crd_active_count{group="myteam.io", kind="Foo", version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 3
+kube_crd_active_count{group="myteam.io", kind="Foo", version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 2
+kube_crd_active_count{group="myteam.io", kind="Foo", version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 4
 ```
 
 ### Metric types

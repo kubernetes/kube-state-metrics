@@ -36,7 +36,7 @@ import (
 
 func validate(opts *options.Options) error {
 	shardableResource := "pods"
-	if opts.Nodename == "" {
+	if opts.NodeName == "" {
 		return nil
 	}
 	for _, x := range opts.Resources.AsSlice() {

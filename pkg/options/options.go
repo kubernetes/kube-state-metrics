@@ -39,7 +39,7 @@ type Options struct {
 	Resources            ResourceSet
 	Namespaces           NamespaceList
 	NamespacesDenylist   NamespaceList
-	Nodename             NodenameType
+	NodeName             NodeNameType
 	Shard                int32
 	TotalShards          int
 	Pod                  string
@@ -104,7 +104,7 @@ func (o *Options) AddFlags() {
 	o.flags.Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
 	o.flags.Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
-	o.flags.StringVar((*string)(&o.Nodename), "nodename", "", "Set spec.nodeName=nodeName when watching resources. Only available for resources which support nodeName filter.")
+	o.flags.StringVar((*string)(&o.NodeName), "nodename", "", "Set spec.nodeName=nodename when watching resources. Only available for resources which support nodeName filter.")
 	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")

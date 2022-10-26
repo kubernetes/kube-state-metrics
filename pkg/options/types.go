@@ -115,15 +115,20 @@ func (n *NodeNameType) GetNodeNameFieldSelector() string {
 	return fields.Nothing().String()
 }
 
+// EmptyFieldSelector returns an empty field selector.
+func EmptyFieldSelector() string {
+	return fields.Nothing().String()
+}
+
 // MergeFieldSelector returns AND of two field selectors.
 func MergeFieldSelector(s1 string, s2 string) (string, error) {
 	selector1, err := fields.ParseSelector(s1)
 	if err != nil {
-		return fields.Nothing().String(), err
+		return EmptyFieldSelector(), err
 	}
 	selector2, err := fields.ParseSelector(s2)
 	if err != nil {
-		return fields.Nothing().String(), err
+		return EmptyFieldSelector(), err
 	}
 	if selector1.Empty() {
 		return selector2.String(), nil

@@ -62,8 +62,7 @@ type Builder struct {
 	customResourceClients         map[string]interface{}
 	vpaClient                     vpaclientset.Interface
 	namespaces                    options.NamespaceList
-	namespaceFilter               string
-	nodeNameFilter                string
+	fieldSelectorFilter           string
 	ctx                           context.Context
 	enabledResources              []string
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
@@ -107,20 +106,27 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	return nil
 }
 
+// WithFieldSelectorFilter sets the fieldSelector property of a Builder.
+func (b *Builder) WithFieldSelectorFilter(fieldSelectorFilter string) {
+	b.fieldSelectorFilter = fieldSelectorFilter
+}
+
 // WithNamespaces sets the namespaces property of a Builder.
-func (b *Builder) WithNamespaces(n options.NamespaceList, nsFilter string) {
+func (b *Builder) WithNamespaces(n options.NamespaceList) {
 	b.namespaces = n
-	b.namespaceFilter = nsFilter
 }
 
-// WithNodeName sets the nodename property of a Builder.
-func (b *Builder) WithNodeName(nodeNameFilter string) {
-	b.nodeNameFilter = nodeNameFilter
-}
-
-// MergeFieldSelector merges two fieldSelectors using AND operator.
-func (b *Builder) MergeFieldSelector(s1 string, s2 string) (string, error) {
-	return options.MergeFieldSelector(s1, s2)
+// MergeFieldSelector merges multiple fieldSelectors using AND operator.
+func (b *Builder) MergeFieldSelector(selectors []string) (string, error) {
+	var err error
+	merged := options.EmptyFieldSelector()
+	for _, s := range selectors {
+		merged, err = options.MergeFieldSelector(merged, s)
+		if err != nil {
+			return "", err
+		}
+	}
+	return merged, nil
 }
 
 // WithSharding sets the shard and totalShards property of a Builder.
@@ -478,12 +484,10 @@ func (b *Builder) buildStores(
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		merged, err := b.MergeFieldSelector(b.namespaceFilter, b.nodeNameFilter)
-		if err != nil {
-			panic(fmt.Sprintf("Failed to merge fieldSelector %s and %s", b.namespaceFilter, b.nodeNameFilter))
+		if b.fieldSelectorFilter != "" {
+			klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
 		}
-		klog.Infof("FieldSelector is used ", merged)
-		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, merged)
+		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		return []cache.Store{store}
 	}
@@ -494,12 +498,10 @@ func (b *Builder) buildStores(
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		merged, err := b.MergeFieldSelector(b.namespaceFilter, b.nodeNameFilter)
-		if err != nil {
-			panic(fmt.Sprintf("Failed to merge fieldSelector %s and %s", b.namespaceFilter, b.nodeNameFilter))
+		if b.fieldSelectorFilter != "" {
+			klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
 		}
-		klog.Infof("FieldSelector is used ", merged)
-		listWatcher := listWatchFunc(b.kubeClient, ns, merged)
+		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		stores = append(stores, store)
 	}
@@ -529,12 +531,10 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		merged, err := b.MergeFieldSelector(b.namespaceFilter, b.nodeNameFilter)
-		if err != nil {
-			panic(fmt.Sprintf("Failed to merge fieldSelector %s and %s", b.namespaceFilter, b.nodeNameFilter))
+		if b.fieldSelectorFilter != "" {
+			klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
 		}
-		klog.Infof("FieldSelector is used ", merged)
-		listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, merged)
+		listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		return []cache.Store{store}
 	}
@@ -545,12 +545,8 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		merged, err := b.MergeFieldSelector(b.namespaceFilter, b.nodeNameFilter)
-		if err != nil {
-			panic(fmt.Sprintf("Failed to merge fieldSelector %s and %s", b.namespaceFilter, b.nodeNameFilter))
-		}
-		klog.Infof("FieldSelector is used ", merged)
-		listWatcher := listWatchFunc(customResourceClient, ns, merged)
+		klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
+		listWatcher := listWatchFunc(customResourceClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		stores = append(stores, store)
 	}

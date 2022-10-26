@@ -106,8 +106,13 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 
 	namespaces := opts.Namespaces.GetNamespaces()
 	nsFieldSelector := namespaces.GetExcludeNSFieldSelector(opts.NamespacesDenylist)
-	storeBuilder.WithNamespaces(namespaces, nsFieldSelector)
-	storeBuilder.WithNodeName(opts.NodeName.GetNodeNameFieldSelector())
+	nodeNameFieldSelector := opts.NodeName.GetNodeNameFieldSelector()
+	merged, err := storeBuilder.MergeFieldSelector([]string{nsFieldSelector, nodeNameFieldSelector})
+	if err != nil {
+		return err
+	}
+	storeBuilder.WithNamespaces(namespaces)
+	storeBuilder.WithFieldSelectorFilter(merged)
 
 	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
 	if err != nil {

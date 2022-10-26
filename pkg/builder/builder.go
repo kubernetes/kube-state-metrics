@@ -58,8 +58,8 @@ func (b *Builder) WithEnabledResources(c []string) error {
 }
 
 // WithNamespaces sets the namespaces property of a Builder.
-func (b *Builder) WithNamespaces(n options.NamespaceList, nsFilter string) {
-	b.internal.WithNamespaces(n, nsFilter)
+func (b *Builder) WithNamespaces(n options.NamespaceList) {
+	b.internal.WithNamespaces(n)
 }
 
 // WithSharding sets the shard and totalShards property of a Builder.

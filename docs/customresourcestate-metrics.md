@@ -150,7 +150,7 @@ spec:
               # label values can be resolved specific to this path 
               labelsFromPath:
                 active: [active]
-              # The actual field to use as metric value. Should be a number.
+              # The actual field to use as metric value. Should be a number, boolean or RFC3339 timestamp string.
               valueFrom: [ready]
           commonLabels:
             custom_metric: "yes"

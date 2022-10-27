@@ -182,7 +182,7 @@ func TestNodeNameFieldSelector(t *testing.T) {
 	}
 }
 
-func TestMergeFieldSelector(t *testing.T) {
+func TestMergeFieldSelectors(t *testing.T) {
 	tests := []struct {
 		Desc             string
 		Namespaces       NamespaceList
@@ -239,7 +239,7 @@ func TestMergeFieldSelector(t *testing.T) {
 		deniedNS := test.DeniedNamespaces
 		selector1 := ns.GetExcludeNSFieldSelector(deniedNS)
 		selector2 := test.NodeName.GetNodeNameFieldSelector()
-		actual, err := MergeFieldSelector(selector1, selector2)
+		actual, err := MergeFieldSelectors([]string{selector1, selector2})
 		if err != nil {
 			t.Errorf("Test error for Desc: %s. Can't merge field selector %v.", test.Desc, err)
 		}

@@ -120,8 +120,21 @@ func EmptyFieldSelector() string {
 	return fields.Nothing().String()
 }
 
-// MergeFieldSelector returns AND of two field selectors.
-func MergeFieldSelector(s1 string, s2 string) (string, error) {
+// MergeFieldSelectors returns AND of a list of field selectors.
+func MergeFieldSelectors(selectors []string) (string, error) {
+	var err error
+	merged := EmptyFieldSelector()
+	for _, s := range selectors {
+		merged, err = MergeTwoFieldSelectors(merged, s)
+		if err != nil {
+			return "", err
+		}
+	}
+	return merged, nil
+}
+
+// MergeTwoFieldSelectors returns AND of two field selectors.
+func MergeTwoFieldSelectors(s1 string, s2 string) (string, error) {
 	selector1, err := fields.ParseSelector(s1)
 	if err != nil {
 		return EmptyFieldSelector(), err

@@ -58,10 +58,11 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
-	kubeClient                    clientset.Interface
-	customResourceClients         map[string]interface{}
-	vpaClient                     vpaclientset.Interface
-	namespaces                    options.NamespaceList
+	kubeClient            clientset.Interface
+	customResourceClients map[string]interface{}
+	vpaClient             vpaclientset.Interface
+	namespaces            options.NamespaceList
+	// namespaceFilter is inside fieldSelectorFilter
 	fieldSelectorFilter           string
 	ctx                           context.Context
 	enabledResources              []string
@@ -116,17 +117,9 @@ func (b *Builder) WithNamespaces(n options.NamespaceList) {
 	b.namespaces = n
 }
 
-// MergeFieldSelector merges multiple fieldSelectors using AND operator.
-func (b *Builder) MergeFieldSelector(selectors []string) (string, error) {
-	var err error
-	merged := options.EmptyFieldSelector()
-	for _, s := range selectors {
-		merged, err = options.MergeFieldSelector(merged, s)
-		if err != nil {
-			return "", err
-		}
-	}
-	return merged, nil
+// MergeFieldSelectors merges multiple fieldSelectors using AND operator.
+func (b *Builder) MergeFieldSelectors(selectors []string) (string, error) {
+	return options.MergeFieldSelectors(selectors)
 }
 
 // WithSharding sets the shard and totalShards property of a Builder.
@@ -485,7 +478,7 @@ func (b *Builder) buildStores(
 			composedMetricGenFuncs,
 		)
 		if b.fieldSelectorFilter != "" {
-			klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
+			klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
@@ -499,7 +492,7 @@ func (b *Builder) buildStores(
 			composedMetricGenFuncs,
 		)
 		if b.fieldSelectorFilter != "" {
-			klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
+			klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
@@ -532,7 +525,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			composedMetricGenFuncs,
 		)
 		if b.fieldSelectorFilter != "" {
-			klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
+			klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
@@ -545,7 +538,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		klog.Infof("FieldSelector is used ", b.fieldSelectorFilter)
+		klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
 		listWatcher := listWatchFunc(customResourceClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		stores = append(stores, store)

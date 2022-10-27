@@ -104,7 +104,7 @@ func (o *Options) AddFlags() {
 	o.flags.Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
 	o.flags.Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
-	o.flags.StringVar((*string)(&o.NodeName), "nodename", "", "Set spec.nodeName=nodename when watching resources. Only available for resources which support nodeName filter.")
+	o.flags.StringVar((*string)(&o.NodeName), "nodename", "", "Name of the node that contains the kube-state-metrics pod, only available for resources (pod metrics) that support spec.nodeName fieldSelector. Each kube-state-metrics pod will only exposes metrics related to this node.")
 	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
@@ -133,4 +133,18 @@ func (o *Options) Parse() error {
 // Usage is the function called when an error occurs while parsing flags.
 func (o *Options) Usage() {
 	o.flags.Usage()
+}
+
+// Validate validates arguments
+func (o *Options) Validate() error {
+	shardableResource := "pods"
+	if o.NodeName == "" {
+		return nil
+	}
+	for _, x := range o.Resources.AsSlice() {
+		if x != shardableResource {
+			return fmt.Errorf("Resource %s can't be sharding by field selector spec.nodeName", x)
+		}
+	}
+	return nil
 }

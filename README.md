@@ -45,6 +45,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Resource recommendation](#resource-recommendation)
   - [Horizontal sharding](#horizontal-sharding)
     - [Automated sharding](#automated-sharding)
+  - [Daemonset sharding for pod metrics](#daemonset-sharding-pod-metrics)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)
@@ -234,6 +235,31 @@ To enable automated sharding, kube-state-metrics must be run by a `StatefulSet` 
 This way of deploying shards is useful when you want to manage KSM shards through a single Kubernetes resource (a single `StatefulSet` in this case) instead of having one `Deployment` per shard. The advantage can be especially significant when deploying a high number of shards.
 
 The downside of using an auto-sharded setup comes from the rollout strategy supported by `StatefulSet`s. When managed by a `StatefulSet`, pods are replaced one at a time with each pod first getting terminated and then recreated. Besides such rollouts being slower, they will also lead to short downtime for each shard. If a Prometheus scrape happens during a rollout, it can miss some of the metrics exported by kube-state-metrics.
+
+### Daemonset sharding for pod metrics
+
+For pod metrics, they can be sharded per node with the following flag:
+* `--nodename`
+
+Each kube-state-metrics pod uses FieldSelector (spec.nodeName) to watch/list pod metrics only on the same node.
+
+A daemonset kube-state-metrics example:
+```
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-state-metrics
+spec:
+  template:
+    spec:
+      containers:
+      - name: kube-state-metrics
+        args:
+        - --resources=pods
+        - --nodename=$(NODE_NAME)
+```
+
+For other metrics, they can sharded via [Horizontal sharding](#horizontal-sharding).
 
 ### Setup
 

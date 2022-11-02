@@ -247,19 +247,24 @@ A daemonset kube-state-metrics example:
 ```
 apiVersion: apps/v1
 kind: DaemonSet
-metadata:
-  name: kube-state-metrics
 spec:
   template:
     spec:
       containers:
-      - name: kube-state-metrics
+      - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:IMAGE_TAG
+        name: kube-state-metrics
         args:
-        - --resources=pods
+        - --resource=pods
         - --nodename=$(NODE_NAME)
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
 ```
 
-For other metrics, they can sharded via [Horizontal sharding](#horizontal-sharding).
+Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 
 ### Setup
 

@@ -112,7 +112,7 @@ func (n *NodeNameType) GetNodeNameFieldSelector() string {
 	if string(*n) != "" {
 		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
 	}
-	return fields.Nothing().String()
+	return EmptyFieldSelector()
 }
 
 // EmptyFieldSelector returns an empty field selector.

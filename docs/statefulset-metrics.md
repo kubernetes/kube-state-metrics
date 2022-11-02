@@ -11,6 +11,7 @@
 | kube_statefulset_status_observed_generation | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  | STABLE |
 | kube_statefulset_replicas | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  | STABLE |
 | kube_statefulset_metadata_generation | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  | STABLE |
+| kube_statefulset_persistentvolumeclaim_retention_policy | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt; <br> `when_deleted`=&lt;statefulset-when-deleted-pvc-policy&gt; <br> `when_scaled`=&lt;statefulset-when-scaled-pvc-policy&gt; | ALPHA |
 | kube_statefulset_created | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;  | STABLE |
 | kube_statefulset_labels | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt; <br> `label_STATEFULSET_LABEL`=&lt;STATEFULSET_LABEL&gt; | STABLE |
 | kube_statefulset_status_current_revision | Gauge | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt; <br> `revision`=&lt;statefulset-current-revision&gt; | STABLE |

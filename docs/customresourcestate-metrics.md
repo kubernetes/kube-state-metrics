@@ -146,6 +146,7 @@ spec:
               path: [status, sub]
 
               # if path targets an object, the object key will be used as label value
+              # This is not supported for StateSet type as all values will be truthy, which is redundant.
               labelFromKey: type
               # label values can be resolved specific to this path 
               labelsFromPath:

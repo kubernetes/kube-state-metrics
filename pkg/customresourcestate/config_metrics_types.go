@@ -51,6 +51,8 @@ type MetricGauge struct {
 // Ref: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#info
 type MetricInfo struct {
 	MetricMeta `yaml:",inline" json:",inline"`
+	// LabelFromKey adds a label with the given name if Path is an object. The label value will be the object key.
+	LabelFromKey string `yaml:"labelFromKey" json:"labelFromKey"`
 }
 
 // MetricStateSet is a metric which represent a series of related boolean values, also called a bitset.

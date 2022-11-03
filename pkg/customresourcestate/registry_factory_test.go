@@ -155,7 +155,7 @@ func Test_values(t *testing.T) {
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "active"),
 			},
-			LabelFromKey: "type",
+			labelFromKey: "type",
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "type", "type-a"),
 			newEachValue(t, 3, "type", "type-b"),
@@ -167,7 +167,7 @@ func Test_values(t *testing.T) {
 					"active": mustCompilePath(t, "active"),
 				},
 			},
-			LabelFromKey: "type",
+			labelFromKey: "type",
 			ValueFrom:    mustCompilePath(t, "ready"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 2, "type", "type-a", "active", "1"),
@@ -201,7 +201,7 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 0),
 		}},
 		{name: "info", each: &compiledInfo{
-			compiledCommon{
+			compiledCommon: compiledCommon{
 				labelFromPath: map[string]valuePath{
 					"version": mustCompilePath(t, "spec", "version"),
 				},
@@ -210,10 +210,19 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 1, "version", "v0.0.0"),
 		}},
 		{name: "info nil path", each: &compiledInfo{
-			compiledCommon{
+			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "does", "not", "exist"),
 			},
 		}, wantResult: nil},
+		{name: "info label from key", each: &compiledInfo{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "active"),
+			},
+			labelFromKey: "type",
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "type", "type-a"),
+			newEachValue(t, 3, "type", "type-b"),
+		}},
 		{name: "stateset", each: &compiledStateSet{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "phase"),

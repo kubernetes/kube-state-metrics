@@ -1,6 +1,7 @@
 reviewers:
   - dgrisonnet
   - fpetkovski
+  - logicalhan
   - mrueg
 approvers:
   - dgrisonnet

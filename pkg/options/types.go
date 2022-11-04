@@ -104,11 +104,11 @@ func (r *ResourceSet) Type() string {
 	return "string"
 }
 
-// NodeNameType represents a nodeName to query from.
-type NodeNameType string
+// NodeType represents a nodeName to query from.
+type NodeType string
 
-// GetNodeNameFieldSelector returns a nodename field selector.
-func (n *NodeNameType) GetNodeNameFieldSelector() string {
+// GetNodeFieldSelector returns a nodename field selector.
+func (n *NodeType) GetNodeFieldSelector() string {
 	if string(*n) != "" {
 		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
 	}

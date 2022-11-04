@@ -39,7 +39,7 @@ type Options struct {
 	Resources            ResourceSet
 	Namespaces           NamespaceList
 	NamespacesDenylist   NamespaceList
-	NodeName             NodeNameType
+	Node                 NodeType
 	Shard                int32
 	TotalShards          int
 	Pod                  string
@@ -104,7 +104,6 @@ func (o *Options) AddFlags() {
 	o.flags.Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
 	o.flags.Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.flags.Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
-	o.flags.StringVar((*string)(&o.NodeName), "nodename", "", "Name of the node that contains the kube-state-metrics pod, only available for resources (pod metrics) that support spec.nodeName fieldSelector. Each kube-state-metrics pod will only exposes metrics related to this node.")
 	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.flags.Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
@@ -112,6 +111,8 @@ func (o *Options) AddFlags() {
 	o.flags.Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]').")
 	o.flags.Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
 	o.flags.IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
+
+	o.flags.StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
 
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
 
@@ -138,12 +139,12 @@ func (o *Options) Usage() {
 // Validate validates arguments
 func (o *Options) Validate() error {
 	shardableResource := "pods"
-	if o.NodeName == "" {
+	if o.Node == "" {
 		return nil
 	}
 	for _, x := range o.Resources.AsSlice() {
 		if x != shardableResource {
-			return fmt.Errorf("Resource %s can't be sharding by field selector spec.nodeName", x)
+			return fmt.Errorf("Resource %s can't be sharded by field selector spec.nodeName", x)
 		}
 	}
 	return nil

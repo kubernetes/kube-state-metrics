@@ -155,27 +155,27 @@ func TestNamespaceList_ExcludeNamespacesFieldSelector(t *testing.T) {
 	}
 }
 
-func TestNodeNameFieldSelector(t *testing.T) {
+func TestNodeFieldSelector(t *testing.T) {
 	tests := []struct {
-		Desc     string
-		NodeName NodeNameType
-		Wanted   string
+		Desc   string
+		Node   NodeType
+		Wanted string
 	}{
 		{
-			Desc:     "empty node name",
-			NodeName: "",
-			Wanted:   "",
+			Desc:   "empty node name",
+			Node:   "",
+			Wanted: "",
 		},
 		{
-			Desc:     "with node name",
-			NodeName: "k8s-node-1",
-			Wanted:   "spec.nodeName=k8s-node-1",
+			Desc:   "with node name",
+			Node:   "k8s-node-1",
+			Wanted: "spec.nodeName=k8s-node-1",
 		},
 	}
 
 	for _, test := range tests {
-		node := test.NodeName
-		actual := node.GetNodeNameFieldSelector()
+		node := test.Node
+		actual := node.GetNodeFieldSelector()
 		if !reflect.DeepEqual(actual, test.Wanted) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, actual)
 		}
@@ -187,49 +187,49 @@ func TestMergeFieldSelectors(t *testing.T) {
 		Desc             string
 		Namespaces       NamespaceList
 		DeniedNamespaces NamespaceList
-		NodeName         NodeNameType
+		Node             NodeType
 		Wanted           string
 	}{
 		{
 			Desc:             "empty DeniedNamespaces",
 			Namespaces:       NamespaceList{"default", "kube-system"},
 			DeniedNamespaces: NamespaceList{},
-			NodeName:         "",
+			Node:             "",
 			Wanted:           "",
 		},
 		{
 			Desc:             "all DeniedNamespaces",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"some-system"},
-			NodeName:         "",
+			Node:             "",
 			Wanted:           "metadata.namespace!=some-system",
 		},
 		{
 			Desc:             "general case",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"case1-system", "case2-system"},
-			NodeName:         "",
+			Node:             "",
 			Wanted:           "metadata.namespace!=case1-system,metadata.namespace!=case2-system",
 		},
 		{
 			Desc:             "empty DeniedNamespaces",
 			Namespaces:       NamespaceList{"default", "kube-system"},
 			DeniedNamespaces: NamespaceList{},
-			NodeName:         "k8s-node-1",
+			Node:             "k8s-node-1",
 			Wanted:           "spec.nodeName=k8s-node-1",
 		},
 		{
 			Desc:             "all DeniedNamespaces",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"some-system"},
-			NodeName:         "k8s-node-1",
+			Node:             "k8s-node-1",
 			Wanted:           "metadata.namespace!=some-system,spec.nodeName=k8s-node-1",
 		},
 		{
 			Desc:             "general case",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"case1-system", "case2-system"},
-			NodeName:         "k8s-node-1",
+			Node:             "k8s-node-1",
 			Wanted:           "metadata.namespace!=case1-system,metadata.namespace!=case2-system,spec.nodeName=k8s-node-1",
 		},
 	}
@@ -238,7 +238,7 @@ func TestMergeFieldSelectors(t *testing.T) {
 		ns := test.Namespaces
 		deniedNS := test.DeniedNamespaces
 		selector1 := ns.GetExcludeNSFieldSelector(deniedNS)
-		selector2 := test.NodeName.GetNodeNameFieldSelector()
+		selector2 := test.Node.GetNodeFieldSelector()
 		actual, err := MergeFieldSelectors([]string{selector1, selector2})
 		if err != nil {
 			t.Errorf("Test error for Desc: %s. Can't merge field selector %v.", test.Desc, err)

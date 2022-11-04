@@ -239,7 +239,7 @@ The downside of using an auto-sharded setup comes from the rollout strategy supp
 ### Daemonset sharding for pod metrics
 
 For pod metrics, they can be sharded per node with the following flag:
-* `--nodename`
+* `--node`
 
 Each kube-state-metrics pod uses FieldSelector (spec.nodeName) to watch/list pod metrics only on the same node.
 
@@ -255,7 +255,7 @@ spec:
         name: kube-state-metrics
         args:
         - --resource=pods
-        - --nodename=$(NODE_NAME)
+        - --node=$(NODE_NAME)
         env:
         - name: NODE_NAME
           valueFrom:

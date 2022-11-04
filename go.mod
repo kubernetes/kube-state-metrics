@@ -4,28 +4,28 @@ require (
 	github.com/brancz/gojsontoyaml v0.1.0
 	github.com/campoy/embedmd v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
-	github.com/gobuffalo/flect v0.2.5
-	github.com/google/go-cmp v0.5.8
-	github.com/google/go-jsonnet v0.18.0
+	github.com/gobuffalo/flect v0.3.0
+	github.com/google/go-cmp v0.5.9
+	github.com/google/go-jsonnet v0.19.1
 	github.com/jsonnet-bundler/jsonnet-bundler v0.5.1
 	github.com/oklog/run v1.1.0
-	github.com/prometheus/client_golang v1.13.0
-	github.com/prometheus/client_model v0.2.0
+	github.com/prometheus/client_golang v1.13.1
+	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/exporter-toolkit v0.7.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.0
-	golang.org/x/perf v0.0.0-20220722155240-3d85ee92886d
+	github.com/stretchr/testify v1.8.1
+	golang.org/x/perf v0.0.0-20220920022801-e8d778a60d07
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.25.2
-	k8s.io/apimachinery v0.25.2
+	k8s.io/api v0.25.3
+	k8s.io/apimachinery v0.25.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.12.0
-	k8s.io/client-go v0.25.2
-	k8s.io/component-base v0.25.2
+	k8s.io/client-go v0.25.3
+	k8s.io/component-base v0.25.3
 	k8s.io/klog/v2 v2.80.1
-	k8s.io/sample-controller v0.25.2
-	k8s.io/utils v0.0.0-20220922133306-665eaaec4324
+	k8s.io/sample-controller v0.25.3
+	k8s.io/utils v0.0.0-20221101230645-61b03e2f6476
 )
 
 require (
@@ -59,6 +59,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
+	github.com/google/safehtml v0.0.2 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -74,10 +75,10 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a // indirect
+	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
+	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
@@ -92,4 +93,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-go 1.17
+go 1.18

@@ -21,6 +21,7 @@ env:
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
   GO_VERSION: "^1.19"
+  GOLANG_VERSION: "1.19"
   GOLANGCI_LINT_VERSION: "v1.48.0"
 
 jobs:
@@ -215,3 +216,20 @@ jobs:
     - name: End-to-end tests
       run: |
         make e2e
+
+  ci-security-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout code
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Setup environment
+        run: |
+          go get -v -t -d ./...
+          make install-tools
+      - name: Run security checks
+        run: |
+          govulncheck -v ./...

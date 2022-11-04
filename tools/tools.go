@@ -25,4 +25,5 @@ import (
 	_ "github.com/google/go-jsonnet/cmd/jsonnet"
 	_ "github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb"
 	_ "golang.org/x/perf/cmd/benchstat"
+	_ "golang.org/x/vuln/cmd/govulncheck@latest"
 )

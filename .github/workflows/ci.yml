@@ -215,3 +215,19 @@ jobs:
     - name: End-to-end tests
       run: |
         make e2e
+
+  ci-security-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout code
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install govulncheck binary
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run security checks
+        run: |
+          govulncheck -v ./...

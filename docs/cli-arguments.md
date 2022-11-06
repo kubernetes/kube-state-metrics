@@ -39,6 +39,7 @@ Flags:
       --add_dir_header                             If true, adds the file directory to the header of the log messages
       --alsologtostderr                            log to standard error as well as files (no effect when -logtostderr=true)
       --apiserver string                           The URL of the apiserver to use as a master
+      --config string                              Path to the kube-state-metrics options config file
       --custom-resource-state-config string        Inline Custom Resource State Metrics config YAML (experimental)
       --custom-resource-state-config-file string   Path to a Custom Resource State Metrics config file (experimental)
       --custom-resource-state-only                 Only provide Custom Resource State metrics (experimental)

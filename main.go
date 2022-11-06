@@ -18,18 +18,21 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
-
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -63,11 +66,37 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		factories = append(factories, crf...)
 	}
 
-	ctx := context.Background()
-	if err := app.RunKubeStateMetrics(ctx, opts, factories...); err != nil {
-		klog.ErrorS(err, "Failed to run kube-state-metrics")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	KSMRunOrDie := func(ctx context.Context) {
+		if err := app.RunKubeStateMetricsWrapper(ctx, opts, factories...); err != nil {
+			klog.ErrorS(err, "Failed to run kube-state-metrics")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	if file := options.GetOptsConfigFile(*opts); file != "" {
+		viper.SetConfigType("yaml")
+		viper.SetConfigFile(file)
+		if err := viper.ReadInConfig(); err != nil {
+			if errors.Is(err, viper.ConfigFileNotFoundError{}) {
+				klog.ErrorS(err, "Options configuration file not found", "file", file)
+			} else {
+				klog.ErrorS(err, "Error reading options configuration file", "file", file)
+			}
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
+		viper.OnConfigChange(func(e fsnotify.Event) {
+			klog.Infof("Changes detected: %s\n", e.Name)
+			cancel()
+			// Wait for the ports to be released.
+			<-time.After(3 * time.Second)
+			ctx, cancel = context.WithCancel(context.Background())
+			go KSMRunOrDie(ctx)
+		})
+		viper.WatchConfig()
+	}
+	klog.Infoln("Starting kube-state-metrics")
+	KSMRunOrDie(ctx)
+	select {}
 }
 
 func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, bool) {

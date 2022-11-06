@@ -29,40 +29,42 @@ import (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	Apiserver            string
-	Kubeconfig           string
-	Help                 bool
-	Port                 int
-	Host                 string
-	TelemetryPort        int
-	TelemetryHost        string
-	TLSConfig            string
-	Resources            ResourceSet
-	Namespaces           NamespaceList
-	NamespacesDenylist   NamespaceList
-	Node                 NodeType
-	Shard                int32
-	TotalShards          int
-	Pod                  string
-	Namespace            string
-	MetricDenylist       MetricSet `yaml:"metric_denylist"`
-	MetricAllowlist      MetricSet `yaml:"metric_allowlist"`
-	MetricOptInList      MetricSet
-	Version              bool
-	AnnotationsAllowList LabelsAllowList
-	LabelsAllowList      LabelsAllowList
-
-	EnableGZIPEncoding bool
-
-	UseAPIServerCache bool
-
-	CustomResourceConfig     string
-	CustomResourceConfigFile string
-	CustomResourcesOnly      bool
+	AnnotationsAllowList     LabelsAllowList `yaml:"annotations_allow_list"`
+	Apiserver                string          `yaml:"apiserver"`
+	CustomResourceConfig     string          `yaml:"custom_resource_config"`
+	CustomResourceConfigFile string          `yaml:"custom_resource_config_file"`
+	CustomResourcesOnly      bool            `yaml:"custom_resources_only"`
+	EnableGZIPEncoding       bool            `yaml:"enable_gzip_encoding"`
+	Help                     bool            `yaml:"help"`
+	Host                     string          `yaml:"host"`
+	Kubeconfig               string          `yaml:"kubeconfig"`
+	LabelsAllowList          LabelsAllowList `yaml:"labels_allow_list"`
+	MetricAllowlist          MetricSet       `yaml:"metric_allowlist"`
+	MetricDenylist           MetricSet       `yaml:"metric_denylist"`
+	MetricOptInList          MetricSet       `yaml:"metric_opt_in_list"`
+	Namespace                string          `yaml:"namespace"`
+	Namespaces               NamespaceList   `yaml:"namespaces"`
+	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
+	Node                     NodeType        `yaml:"node"`
+	Pod                      string          `yaml:"pod"`
+	Port                     int             `yaml:"port"`
+	Resources                ResourceSet     `yaml:"resources"`
+	Shard                    int32           `yaml:"shard"`
+	TLSConfig                string          `yaml:"tls_config"`
+	TelemetryHost            string          `yaml:"telemetry_host"`
+	TelemetryPort            int             `yaml:"telemetry_port"`
+	TotalShards              int             `yaml:"total_shards"`
+	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
+	Version                  bool            `yaml:"version"`
 
 	optsConfigFile string
 
 	cmd *cobra.Command
+}
+
+// GetOptsConfigFile is the getter for --options-config-file value.
+func GetOptsConfigFile(opt Options) string {
+	return opt.optsConfigFile
 }
 
 // NewOptions returns a new instance of `Options`.
@@ -135,7 +137,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
 	o.cmd.Flags().StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.cmd.Flags().StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
-	o.cmd.Flags().StringVar(&o.optsConfigFile, "options-config-file", "", "Path to the kube-state-metrics options config file")
+	o.cmd.Flags().StringVar(&o.optsConfigFile, "config", "", "Path to the kube-state-metrics options config file")
 	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
 	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional annotations provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
 	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")

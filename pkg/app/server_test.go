@@ -80,7 +80,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithKubeClient(kubeClient)
 	builder.WithSharding(0, 1)
 	builder.WithContext(ctx)
-	builder.WithNamespaces(options.DefaultNamespaces, "")
+	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
 
 	allowDenyListFilter, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
@@ -155,7 +155,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	builder.WithKubeClient(kubeClient)
-	builder.WithNamespaces(options.DefaultNamespaces, "")
+	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
 
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
@@ -442,7 +442,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	unshardedBuilder.WithKubeClient(kubeClient)
-	unshardedBuilder.WithNamespaces(options.DefaultNamespaces, "")
+	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
 	unshardedBuilder.WithFamilyGeneratorFilter(l)
 	unshardedBuilder.WithAllowLabels(map[string][]string{})
 	unshardedBuilder.WithGenerateStoresFunc(unshardedBuilder.DefaultGenerateStoresFunc())
@@ -458,7 +458,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	shardedBuilder1.WithKubeClient(kubeClient)
-	shardedBuilder1.WithNamespaces(options.DefaultNamespaces, "")
+	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder1.WithFamilyGeneratorFilter(l)
 	shardedBuilder1.WithAllowLabels(map[string][]string{})
 	shardedBuilder1.WithGenerateStoresFunc(shardedBuilder1.DefaultGenerateStoresFunc())
@@ -474,7 +474,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	shardedBuilder2.WithKubeClient(kubeClient)
-	shardedBuilder2.WithNamespaces(options.DefaultNamespaces, "")
+	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder2.WithFamilyGeneratorFilter(l)
 	shardedBuilder2.WithAllowLabels(map[string][]string{})
 	shardedBuilder2.WithGenerateStoresFunc(shardedBuilder2.DefaultGenerateStoresFunc())
@@ -616,7 +616,7 @@ func TestCustomResourceExtension(t *testing.T) {
 
 	builder.WithKubeClient(kubeClient)
 	builder.WithCustomResourceClients(customResourceClients)
-	builder.WithNamespaces(options.DefaultNamespaces, "")
+	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
 	builder.WithGenerateCustomResourceStoresFunc(builder.DefaultGenerateCustomResourceStoresFunc())
 

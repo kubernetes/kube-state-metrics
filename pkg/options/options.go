@@ -39,6 +39,7 @@ type Options struct {
 	Resources            ResourceSet
 	Namespaces           NamespaceList
 	NamespacesDenylist   NamespaceList
+	Node                 NodeType
 	Shard                int32
 	TotalShards          int
 	Pod                  string
@@ -111,6 +112,8 @@ func (o *Options) AddFlags() {
 	o.flags.Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
 	o.flags.IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
 
+	o.flags.StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
+
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
 
 	o.flags.StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
@@ -131,4 +134,18 @@ func (o *Options) Parse() error {
 // Usage is the function called when an error occurs while parsing flags.
 func (o *Options) Usage() {
 	o.flags.Usage()
+}
+
+// Validate validates arguments
+func (o *Options) Validate() error {
+	shardableResource := "pods"
+	if o.Node == "" {
+		return nil
+	}
+	for _, x := range o.Resources.AsSlice() {
+		if x != shardableResource {
+			return fmt.Errorf("Resource %s can't be sharded by field selector spec.nodeName", x)
+		}
+	}
+	return nil
 }

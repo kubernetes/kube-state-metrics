@@ -53,6 +53,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	if err := opts.Validate(); err != nil {
+		klog.ErrorS(err, "Validating options error")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
 	var factories []customresource.RegistryFactory
 	if config, set := resolveCustomResourceConfig(opts); set {
 		crf, err := customresourcestate.FromConfig(config)

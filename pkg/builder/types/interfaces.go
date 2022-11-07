@@ -35,7 +35,8 @@ import (
 type BuilderInterface interface {
 	WithMetrics(r prometheus.Registerer)
 	WithEnabledResources(c []string) error
-	WithNamespaces(n options.NamespaceList, nsFilter string)
+	WithNamespaces(n options.NamespaceList)
+	WithFieldSelectorFilter(fieldSelectors string)
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)

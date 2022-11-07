@@ -104,6 +104,54 @@ func (r *ResourceSet) Type() string {
 	return "string"
 }
 
+// NodeType represents a nodeName to query from.
+type NodeType string
+
+// GetNodeFieldSelector returns a nodename field selector.
+func (n *NodeType) GetNodeFieldSelector() string {
+	if string(*n) != "" {
+		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
+	}
+	return EmptyFieldSelector()
+}
+
+// EmptyFieldSelector returns an empty field selector.
+func EmptyFieldSelector() string {
+	return fields.Nothing().String()
+}
+
+// MergeFieldSelectors returns AND of a list of field selectors.
+func MergeFieldSelectors(selectors []string) (string, error) {
+	var err error
+	merged := EmptyFieldSelector()
+	for _, s := range selectors {
+		merged, err = MergeTwoFieldSelectors(merged, s)
+		if err != nil {
+			return "", err
+		}
+	}
+	return merged, nil
+}
+
+// MergeTwoFieldSelectors returns AND of two field selectors.
+func MergeTwoFieldSelectors(s1 string, s2 string) (string, error) {
+	selector1, err := fields.ParseSelector(s1)
+	if err != nil {
+		return EmptyFieldSelector(), err
+	}
+	selector2, err := fields.ParseSelector(s2)
+	if err != nil {
+		return EmptyFieldSelector(), err
+	}
+	if selector1.Empty() {
+		return selector2.String(), nil
+	}
+	if selector2.Empty() {
+		return selector1.String(), nil
+	}
+	return fields.AndSelectors(selector1, selector2).String(), nil
+}
+
 // NamespaceList represents a list of namespaces to query from.
 type NamespaceList []string
 

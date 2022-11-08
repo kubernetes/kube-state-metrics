@@ -193,6 +193,32 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_statefulset_persistentvolumeclaim_retention_policy",
+			"Count of retention policy for StatefulSet template PVCs",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				deletedPolicyLabel := ""
+				scaledPolicyLabel := ""
+				if policy := s.Spec.PersistentVolumeClaimRetentionPolicy; policy != nil {
+					deletedPolicyLabel = string(policy.WhenDeleted)
+					scaledPolicyLabel = string(policy.WhenScaled)
+				}
+				ms := []*metric.Metric{}
+				if deletedPolicyLabel != "" || scaledPolicyLabel != "" {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"when_deleted", "when_scaled"},
+						LabelValues: []string{deletedPolicyLabel, scaledPolicyLabel},
+						Value:       1,
+					})
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 		*generator.NewFamilyGenerator(
 			descStatefulSetAnnotationsName,
 			descStatefulSetAnnotationsHelp,
@@ -268,6 +294,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 		),
 	}
 }
+
 func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		statefulSet := obj.(*v1.StatefulSet)

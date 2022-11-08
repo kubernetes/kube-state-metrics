@@ -30,6 +30,7 @@ Usage of ./kube-state-metrics:
       --apiserver string                           The URL of the apiserver to use as a master
       --custom-resource-state-config string        Inline Custom Resource State Metrics config YAML (experimental)
       --custom-resource-state-config-file string   Path to a Custom Resource State Metrics config file (experimental)
+      --custom-resource-state-only                 Only provide Custom Resource State metrics (experimental)
       --enable-gzip-encoding                       Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.
   -h, --help                                       Print Help text
       --host string                                Host to expose metrics on. (default "::")

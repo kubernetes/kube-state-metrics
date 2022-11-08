@@ -262,33 +262,33 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 			}
 			result = append(result, ev...)
 		}
-	default:
+	case map[string]interface{}:
 		value, err := c.values(v)
 		if err != nil {
 			onError(err...)
 			break
 		}
 		// labelFromKey logic
-		if vv, ok := v.(map[string]interface{}); ok {
-			for key, val := range vv {
-				if key != "" && c.labelFromKey != "" {
-					n, err := toFloat64(val, false)
-					if err != nil {
-						onError(err)
-						continue
-					}
-					result = append(result, eachValue{
-						Labels: map[string]string{
-							c.labelFromKey: key,
-						},
-						Value: n,
-					})
+		for key, val := range iter {
+			if key != "" && c.labelFromKey != "" {
+				n, err := toFloat64(val, false)
+				if err != nil {
+					onError(err)
+					continue
 				}
+				result = append(result, eachValue{
+					Labels: map[string]string{
+						c.labelFromKey: key,
+					},
+					Value: n,
+				})
 			}
 		}
 		if len(result) == 0 {
 			result = value
 		}
+	default:
+		result, errs = c.values(v)
 	}
 
 	return

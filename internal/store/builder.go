@@ -213,11 +213,19 @@ func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
 func (b *Builder) WithAllowLabels(labels map[string][]string) error {
 	if len(labels) > 0 {
 		for label := range labels {
-			if !resourceExists(label) {
+			if !resourceExists(label) && label != "*" {
 				return fmt.Errorf("resource %s does not exist. Available resources: %s", label, strings.Join(availableResources(), ","))
 			}
 		}
 		b.allowLabelsList = labels
+		// "*" takes precedence over other specifications
+		if allowedLabels, ok := labels["*"]; ok {
+			m := make(map[string][]string)
+			for _, resource := range b.enabledResources {
+				m[resource] = allowedLabels
+			}
+			b.allowLabelsList = m
+		}
 	}
 	return nil
 }

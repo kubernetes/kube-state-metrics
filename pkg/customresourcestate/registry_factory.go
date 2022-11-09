@@ -269,18 +269,13 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 			break
 		}
 		// labelFromKey logic
-		for key, val := range iter {
+		for key := range iter {
 			if key != "" && c.labelFromKey != "" {
-				n, err := toFloat64(val, false)
-				if err != nil {
-					onError(err)
-					continue
-				}
 				result = append(result, eachValue{
 					Labels: map[string]string{
 						c.labelFromKey: key,
 					},
-					Value: n,
+					Value: 1,
 				})
 			}
 		}

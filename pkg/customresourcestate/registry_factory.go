@@ -268,6 +268,12 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 			onError(err...)
 			break
 		}
+		for _, ev := range value {
+			if _, ok := ev.Labels[c.labelFromKey]; ok {
+				onError(fmt.Errorf("labelFromKey (%s) generated labels conflict with labelsFromPath, consider renaming it", c.labelFromKey))
+				continue
+			}
+		}
 		// labelFromKey logic
 		for key := range iter {
 			if key != "" && c.labelFromKey != "" {

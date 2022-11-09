@@ -221,7 +221,7 @@ func Test_values(t *testing.T) {
 			labelFromKey: "type",
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "type", "type-a"),
-			newEachValue(t, 3, "type", "type-b"),
+			newEachValue(t, 1, "type", "type-b"),
 		}},
 		{name: "stateset", each: &compiledStateSet{
 			compiledCommon: compiledCommon{

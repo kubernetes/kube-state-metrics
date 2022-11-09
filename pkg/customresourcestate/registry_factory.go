@@ -214,6 +214,10 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				onError(fmt.Errorf("[%s]: %w", key, err))
 				continue
 			}
+			if _, ok := ev.Labels[c.labelFromKey]; ok {
+				onError(fmt.Errorf("labelFromKey (%s) generated labels conflict with labelsFromPath, consider renaming it", c.labelFromKey))
+				continue
+			}
 			if key != "" && c.labelFromKey != "" {
 				ev.Labels[c.labelFromKey] = key
 			}
@@ -285,9 +289,7 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 				})
 			}
 		}
-		if len(result) == 0 {
-			result = value
-		}
+		result = append(result, value...)
 	default:
 		result, errs = c.values(v)
 	}
@@ -301,7 +303,9 @@ func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
 	}
 	value := eachValue{Value: 1, Labels: map[string]string{}}
 	addPathLabels(v, c.labelFromPath, value.Labels)
-	result = append(result, value)
+	if len(value.Labels) != 0 {
+		result = append(result, value)
+	}
 	return
 }
 

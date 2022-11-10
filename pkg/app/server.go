@@ -195,21 +195,30 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
 	telemetryServer := http.Server{
 		Handler:           telemetryMux,
-		Addr:              telemetryListenAddress,
 		ReadHeaderTimeout: 5 * time.Second}
+	telemetryFlags := web.FlagConfig{
+		WebListenAddresses: &[]string{telemetryListenAddress},
+		WebSystemdSocket:   new(bool),
+		WebConfigFile:      &tlsConfig,
+	}
 
 	metricsMux := buildMetricsServer(m, durationVec)
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	metricsServer := http.Server{
 		Handler:           metricsMux,
-		Addr:              metricsServerListenAddress,
 		ReadHeaderTimeout: 5 * time.Second}
+
+	metricsFlags := web.FlagConfig{
+		WebListenAddresses: &[]string{metricsServerListenAddress},
+		WebSystemdSocket:   new(bool),
+		WebConfigFile:      &tlsConfig,
+	}
 
 	// Run Telemetry server
 	{
 		g.Add(func() error {
 			klog.InfoS("Started kube-state-metrics self metrics server", "telemetryAddress", telemetryListenAddress)
-			return web.ListenAndServe(&telemetryServer, tlsConfig, promLogger)
+			return web.ListenAndServe(&telemetryServer, &telemetryFlags, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -220,7 +229,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	{
 		g.Add(func() error {
 			klog.InfoS("Started metrics server", "metricsServerAddress", metricsServerListenAddress)
-			return web.ListenAndServe(&metricsServer, tlsConfig, promLogger)
+			return web.ListenAndServe(&metricsServer, &metricsFlags, promLogger)
 		}, func(error) {
 			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()

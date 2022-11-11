@@ -20,10 +20,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/prometheus/common/version"
+	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
-
-	"github.com/spf13/pflag"
 )
 
 // Options are the configurable parameters for kube-state-metrics.
@@ -59,7 +60,7 @@ type Options struct {
 	CustomResourceConfigFile string
 	CustomResourcesOnly      bool
 
-	flags *pflag.FlagSet
+	cmd *cobra.Command
 }
 
 // NewOptions returns a new instance of `Options`.
@@ -75,67 +76,83 @@ func NewOptions() *Options {
 }
 
 // AddFlags populated the Options struct from the command line arguments passed.
-func (o *Options) AddFlags() {
-	o.flags = pflag.NewFlagSet("", pflag.ExitOnError)
-	// add klog flags
+func (o *Options) AddFlags(cmd *cobra.Command) {
+	o.cmd = cmd
+
+	completionCommand.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if shellPath, ok := os.LookupEnv("SHELL"); ok {
+			shell := shellPath[strings.LastIndex(shellPath, "/")+1:]
+			fmt.Println(FetchLoadInstructions(shell))
+		} else {
+			fmt.Println("SHELL environment variable not set, falling back to bash")
+			fmt.Println(FetchLoadInstructions("bash"))
+		}
+		klog.FlushAndExit(klog.ExitFlushTimeout, 0)
+	})
+
+	versionCommand := &cobra.Command{
+		Use:   "version",
+		Short: "Print version information.",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("%s\n", version.Print("kube-state-metrics"))
+			klog.FlushAndExit(klog.ExitFlushTimeout, 0)
+		},
+	}
+
+	cmd.AddCommand(completionCommand, versionCommand)
+
+	o.cmd.Flags().Usage = func() {
+		_, _ = fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		o.cmd.Flags().PrintDefaults()
+	}
+
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
-	o.flags.AddGoFlagSet(klogFlags)
-	err := o.flags.Lookup("logtostderr").Value.Set("true")
-	if err != nil {
-		klog.Error(err)
-	}
-	o.flags.Lookup("logtostderr").DefValue = "true"
-	o.flags.Lookup("logtostderr").NoOptDefVal = "true"
-
-	o.flags.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		o.flags.PrintDefaults()
-	}
-
-	o.flags.BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
-	o.flags.StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
-	o.flags.StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
-	o.flags.StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
-	o.flags.BoolVarP(&o.Help, "help", "h", false, "Print Help text")
-	o.flags.IntVar(&o.Port, "port", 8080, `Port to expose metrics on.`)
-	o.flags.StringVar(&o.Host, "host", "::", `Host to expose metrics on.`)
-	o.flags.IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
-	o.flags.StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
-	o.flags.Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
-	o.flags.Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
-	o.flags.Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
-	o.flags.Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
-	o.flags.Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
-	o.flags.Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
-	o.flags.Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional annotations provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
-	o.flags.Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
-	o.flags.Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
-	o.flags.IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
-
-	o.flags.StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
+	o.cmd.Flags().AddGoFlagSet(klogFlags)
+	_ = o.cmd.Flags().Lookup("logtostderr").Value.Set("true")
+	o.cmd.Flags().Lookup("logtostderr").DefValue = "true"
+	o.cmd.Flags().Lookup("logtostderr").NoOptDefVal = "true"
 
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
 
-	o.flags.StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
-	o.flags.StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
-	o.flags.BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
-	o.flags.BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
-
-	o.flags.StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
-	o.flags.StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
-	o.flags.BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
+	o.cmd.Flags().BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
+	o.cmd.Flags().BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
+	o.cmd.Flags().BoolVarP(&o.Help, "help", "h", false, "Print Help text")
+	o.cmd.Flags().BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
+	o.cmd.Flags().BoolVarP(&o.Version, "version", "", false, "kube-state-metrics build version information")
+	o.cmd.Flags().Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
+	o.cmd.Flags().IntVar(&o.Port, "port", 8080, `Port to expose metrics on.`)
+	o.cmd.Flags().IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
+	o.cmd.Flags().IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
+	o.cmd.Flags().StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
+	o.cmd.Flags().StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
+	o.cmd.Flags().StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
+	o.cmd.Flags().StringVar(&o.Host, "host", "::", `Host to expose metrics on.`)
+	o.cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
+	o.cmd.Flags().StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
+	o.cmd.Flags().StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
+	o.cmd.Flags().StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
+	o.cmd.Flags().StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
+	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
+	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional annotations provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
+	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
+	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.cmd.Flags().Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
+	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
+	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
+	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
 }
 
 // Parse parses the flag definitions from the argument list.
 func (o *Options) Parse() error {
-	err := o.flags.Parse(os.Args)
+	err := o.cmd.Execute()
 	return err
 }
 
 // Usage is the function called when an error occurs while parsing flags.
 func (o *Options) Usage() {
-	o.flags.Usage()
+	_ = o.cmd.Flags().FlagUsages()
 }
 
 // Validate validates arguments
@@ -146,7 +163,7 @@ func (o *Options) Validate() error {
 	}
 	for _, x := range o.Resources.AsSlice() {
 		if x != shardableResource {
-			return fmt.Errorf("Resource %s can't be sharded by field selector spec.nodeName", x)
+			return fmt.Errorf("resource %s can't be sharded by field selector spec.nodeName", x)
 		}
 	}
 	return nil

@@ -24,7 +24,18 @@ spec:
 [embedmd]:# (../help.txt)
 ```txt
 $ kube-state-metrics -h
-Usage of ./kube-state-metrics:
+kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects.
+
+Usage:
+  kube-state-metrics [flags]
+  kube-state-metrics [command]
+
+Available Commands:
+  completion  Generate completion script for kube-state-metrics.
+  help        Help about any command
+  version     Print version information.
+
+Flags:
       --add_dir_header                             If true, adds the file directory to the header of the log messages
       --alsologtostderr                            log to standard error as well as files (no effect when -logtostderr=true)
       --apiserver string                           The URL of the apiserver to use as a master
@@ -65,4 +76,6 @@ Usage of ./kube-state-metrics:
   -v, --v Level                                    number for the log level verbosity
       --version                                    kube-state-metrics build version information
       --vmodule moduleSpec                         comma-separated list of pattern=N settings for file-filtered logging
+
+Use "kube-state-metrics [command] --help" for more information about a command.
 ```

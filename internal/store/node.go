@@ -44,9 +44,10 @@ var (
 
 func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		createNodeCreatedFamilyGenerator(),
-		createNodeInfoFamilyGenerator(),
 		createNodeAnnotationsGenerator(allowAnnotationsList),
+		createNodeCreatedFamilyGenerator(),
+		createNodeDeletionTimestampFamilyGenerator(),
+		createNodeInfoFamilyGenerator(),
 		createNodeLabelsGenerator(allowLabelsList),
 		createNodeRoleFamilyGenerator(),
 		createNodeSpecTaintFamilyGenerator(),
@@ -55,6 +56,29 @@ func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 		createNodeStatusCapacityFamilyGenerator(),
 		createNodeStatusConditionFamilyGenerator(),
 	}
+}
+
+func createNodeDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_node_deletion_timestamp",
+		"Unix deletion timestamp",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			var ms []*metric.Metric
+
+			if n.DeletionTimestamp != nil && !n.DeletionTimestamp.IsZero() {
+				ms = append(ms, &metric.Metric{
+					Value: float64(n.DeletionTimestamp.Unix()),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
 }
 
 func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {

@@ -48,7 +48,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			descVerticalPodAutoscalerAnnotationsName,
 			descVerticalPodAutoscalerAnnotationsHelp,
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
 				return &metric.Family{
@@ -66,7 +66,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			descVerticalPodAutoscalerLabelsName,
 			descVerticalPodAutoscalerLabelsHelp,
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
 				return &metric.Family{
@@ -84,7 +84,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			"kube_verticalpodautoscaler_spec_updatepolicy_updatemode",
 			"Update mode of the VerticalPodAutoscaler.",
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -122,7 +122,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed",
 			"Minimum resources the VerticalPodAutoscaler can set for containers matching the name.",
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 				if a.Spec.ResourcePolicy == nil || a.Spec.ResourcePolicy.ContainerPolicies == nil {
@@ -144,7 +144,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed",
 			"Maximum resources the VerticalPodAutoscaler can set for containers matching the name.",
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 				if a.Spec.ResourcePolicy == nil || a.Spec.ResourcePolicy.ContainerPolicies == nil {
@@ -165,7 +165,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound",
 			"Minimum resources the container can use before the VerticalPodAutoscaler updater evicts it.",
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 				if a.Status.Recommendation == nil || a.Status.Recommendation.ContainerRecommendations == nil {
@@ -186,7 +186,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound",
 			"Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.",
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 				if a.Status.Recommendation == nil || a.Status.Recommendation.ContainerRecommendations == nil {
@@ -207,7 +207,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target",
 			"Target resources the VerticalPodAutoscaler recommends for the container.",
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 				if a.Status.Recommendation == nil || a.Status.Recommendation.ContainerRecommendations == nil {
@@ -227,7 +227,7 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget",
 			"Target resources the VerticalPodAutoscaler recommends for the container ignoring bounds.",
 			metric.Gauge,
-			"",
+			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
 				if a.Status.Recommendation == nil || a.Status.Recommendation.ContainerRecommendations == nil {

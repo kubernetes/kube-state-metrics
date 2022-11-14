@@ -95,7 +95,7 @@ type RegistryFactory interface {
 	// }
 	ExpectedType() interface{}
 
-	// IsLabelsMetricEnabled returns true if the custom resource labels must be created as a metric
+	// IsLabelsMetricEnabled returns true if the custom resource labels should be exposed as a metric.
 	//
 	// Example:
 	//

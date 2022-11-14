@@ -157,6 +157,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			compiledCommon: *cc,
 			ValueFrom:      valueFromPath,
 			NilIsZero:      m.Gauge.NilIsZero,
+			labelFromKey:   m.Gauge.LabelFromKey,
 		}, nil
 	case MetricTypeInfo:
 		if m.Info == nil {
@@ -168,6 +169,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		}
 		return &compiledInfo{
 			compiledCommon: *cc,
+			labelFromKey:   m.Info.LabelFromKey,
 		}, nil
 	case MetricTypeStateSet:
 		if m.StateSet == nil {
@@ -195,23 +197,8 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 type compiledGauge struct {
 	compiledCommon
 	ValueFrom    valuePath
-	LabelFromKey string
 	NilIsZero    bool
-}
-
-func newCompiledGauge(m *MetricGauge) (*compiledGauge, error) {
-	cc, err := compileCommon(m.MetricMeta)
-	if err != nil {
-		return nil, fmt.Errorf("compile common: %w", err)
-	}
-	valueFromPath, err := compilePath(m.ValueFrom)
-	if err != nil {
-		return nil, fmt.Errorf("compile path ValueFrom: %w", err)
-	}
-	return &compiledGauge{
-		compiledCommon: *cc,
-		ValueFrom:      valueFromPath,
-	}, nil
+	labelFromKey string
 }
 
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
@@ -227,8 +214,12 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				onError(fmt.Errorf("[%s]: %w", key, err))
 				continue
 			}
-			if key != "" && c.LabelFromKey != "" {
-				ev.Labels[c.LabelFromKey] = key
+			if _, ok := ev.Labels[c.labelFromKey]; ok {
+				onError(fmt.Errorf("labelFromKey (%s) generated labels conflict with labelsFromPath, consider renaming it", c.labelFromKey))
+				continue
+			}
+			if key != "" && c.labelFromKey != "" {
+				ev.Labels[c.labelFromKey] = key
 			}
 			addPathLabels(it, c.LabelFromPath(), ev.Labels)
 			result = append(result, *ev)
@@ -257,22 +248,53 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 
 type compiledInfo struct {
 	compiledCommon
+	labelFromKey string
 }
 
 func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) {
-	if vs, isArray := v.([]interface{}); isArray {
-		for _, obj := range vs {
+	onError := func(err ...error) {
+		errs = append(errs, fmt.Errorf("%s: %v", c.Path(), err))
+	}
+
+	switch iter := v.(type) {
+	case []interface{}:
+		for _, obj := range iter {
 			ev, err := c.values(obj)
 			if len(err) > 0 {
-				errs = append(errs, err...)
+				onError(err...)
 				continue
 			}
 			result = append(result, ev...)
 		}
-		return
+	case map[string]interface{}:
+		value, err := c.values(v)
+		if err != nil {
+			onError(err...)
+			break
+		}
+		for _, ev := range value {
+			if _, ok := ev.Labels[c.labelFromKey]; ok {
+				onError(fmt.Errorf("labelFromKey (%s) generated labels conflict with labelsFromPath, consider renaming it", c.labelFromKey))
+				continue
+			}
+		}
+		// labelFromKey logic
+		for key := range iter {
+			if key != "" && c.labelFromKey != "" {
+				result = append(result, eachValue{
+					Labels: map[string]string{
+						c.labelFromKey: key,
+					},
+					Value: 1,
+				})
+			}
+		}
+		result = append(result, value...)
+	default:
+		result, errs = c.values(v)
 	}
 
-	return c.values(v)
+	return
 }
 
 func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
@@ -281,7 +303,9 @@ func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
 	}
 	value := eachValue{Value: 1, Labels: map[string]string{}}
 	addPathLabels(v, c.labelFromPath, value.Labels)
-	result = append(result, value)
+	if len(value.Labels) != 0 {
+		result = append(result, value)
+	}
 	return
 }
 
@@ -355,7 +379,7 @@ func less(a, b map[string]string) bool {
 
 func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 	labels := make(map[string]string)
-	value, err := getNum(c.ValueFrom.Get(it), c.NilIsZero)
+	value, err := toFloat64(c.ValueFrom.Get(it), c.NilIsZero)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", c.ValueFrom, err)
 	}
@@ -478,7 +502,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 				return nil, fmt.Errorf("invalid list lookup: %s", part)
 			}
 			key, val := eq[0], eq[1]
-			num, notNum := getNum(val, false)
+			num, notNum := toFloat64(val, false)
 			boolVal, notBool := strconv.ParseBool(val)
 			out = append(out, pathOp{
 				part: part,
@@ -496,7 +520,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 								}
 
 								if notNum == nil {
-									if i, err := getNum(candidate, false); err == nil && num == i {
+									if i, err := toFloat64(candidate, false); err == nil && num == i {
 										return m
 									}
 								}
@@ -522,13 +546,14 @@ func compilePath(path []string) (out valuePath, _ error) {
 					} else if s, ok := m.([]interface{}); ok {
 						i, err := strconv.Atoi(part)
 						if err != nil {
-							return nil
+							return fmt.Errorf("invalid list index: %s", part)
 						}
 						if i < 0 {
+							// negative index
 							i += len(s)
 						}
 						if !(0 <= i && i < len(s)) {
-							return nil
+							return fmt.Errorf("list index out of range: %s", part)
 						}
 						return s[i]
 					}
@@ -544,6 +569,7 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 	errLog := klog.V(f.ErrorLogV)
 	return generator.FamilyGenerator{
 		Name: f.Name,
+		// TODO(@rexagod): This should be dynamic.
 		Type: metric.Gauge,
 		Help: f.Help,
 		GenerateFunc: func(obj interface{}) *metric.Family {
@@ -585,8 +611,8 @@ func scrapeValuesFor(e compiledEach, obj map[string]interface{}) ([]eachValue, [
 	return result, errs
 }
 
-// getNum converts the value to a float64 which is the value type for any metric.
-func getNum(value interface{}, nilIsZero bool) (float64, error) {
+// toFloat64 converts the value to a float64 which is the value type for any metric.
+func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 	var v float64
 	// same as bool==false but for bool pointers
 	if value == nil {

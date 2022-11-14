@@ -1,3 +1,36 @@
+## v2.7.0 / 2022-11-25
+
+Note: Experimental VerticalPodAutoscaler metrics are considered deprecated in this release and will be removed in v2.9.0.
+Please use CustomResourceStateMetrics to gather metrics from VPA resources. See: #1718
+
+Note: Experimental CustomResourceState changed their naming convention for better usability.
+The name of the CRD used to be interpolated into the name of the metric which made it impossible to aggregate a CRD across different versions.
+This was changed to have the GVK information represented as labels:
+kube_myteam_io_v1_Foo_uptime -> kube_crd_uptime{group="myteam.io", kind="Foo", version="v1"}
+See: #1847
+
+* [CHANGE]      Deprecate VerticalPodAutoscaler metrics #1835 @rexagod
+* [CHANGE]      Recommend kube-scheduler metrics for container resource limits and requests #1849 @rexagod
+* [FEATURE]     Add experimental kube_pod_container_status_last_terminated_exitcode metric #1752 @ssabo
+* [FEATURE]     Introduce custom-resources-only flag #1813 @bavarianbidi
+* [FEATURE]     Allow allowlist filtering by wildcard key #1823 @rexagod
+* [FEATURE]     Add ContainerResourceSourceType to hpa spec and target metrics #1831 @whitebear009
+* [FEATURE]     Represent group, version and kind of a resource as labels #1850 @rexagod
+* [FEATURE]     Sharding metrics per node via fieldSelector #1864 @CatherineF-dev
+* [FEATURE]     Add experimental StatefulSet retention policy metrics #1876 @mattcary
+* [FEATURE]     Allow labelFromKey field for all applicable metric types #1880 @rexagod
+* [FEATURE]     Introduce Viper, allow hot-reload on config change #1827 @rexagod
+* [FEATURE]     Introduce Cobra, allow configuration via environment variables #1834 @rexagod
+* [FEATURE]     Add experimental kube_node_deletion_timestamp metric #1890 @rexagod
+* [FEATURE]     Support autoscaling/v2 resources for HorizontalPodAutoscaler #1906 @JoaoBraveCoding
+* [FEATURE]     Add IngressClass metrics #1905 @kaitoii11
+* [ENHANCEMENT] Import Kubernetes metrics stability framework #1844 @CatherineF-dev
+* [ENHANCEMENT] Promote kube_pod_container_status_waiting_reason and kube_deployment_status_replicas_ready to stable #1821 @CatherineF-dev
+* [ENHANCEMENT] Build with Kubernetes 1.25 and go 1.19 #1819 @mrueg
+* [BUGFIX]      Handle singular labels in allowlist #1826 @rexagod
+* [BUGFIX]      Do not expose ingress path metric when service is nil #1841 @evir35
+* [BUGFIX]      Allow lease metrics to be exported across all namespaces #1845 @lantingchiang
+
 ## v2.6.0 / 2022-08-26
 * [FEATURE]     Add local storage labels to kube_persistentvolume_info #1814 @nabokihms
 * [FEATURE]     Add support for StateSet and Info metrics for Custom-Resource State #1777 @chrischdi

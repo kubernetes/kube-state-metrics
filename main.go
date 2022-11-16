@@ -17,22 +17,10 @@ limitations under the License.
 package main
 
 import (
-	"context"
-	"errors"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/v2/pkg/app"
-	"k8s.io/kube-state-metrics/v2/pkg/customresource"
-	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
+	"k8s.io/kube-state-metrics/v2/internal"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -40,7 +28,7 @@ func main() {
 	opts := options.NewOptions()
 	cmd := options.InitCommand
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		RunKubeStateMetricsWrapper(opts)
+		internal.RunKubeStateMetricsWrapper(opts)
 	}
 	opts.AddFlags(cmd)
 
@@ -52,64 +40,4 @@ func main() {
 		klog.ErrorS(err, "Validating options error")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
-}
-
-// RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
-func RunKubeStateMetricsWrapper(opts *options.Options) {
-	var factories []customresource.RegistryFactory
-	if config, set := resolveCustomResourceConfig(opts); set {
-		crf, err := customresourcestate.FromConfig(config)
-		if err != nil {
-			klog.ErrorS(err, "Parsing from Custom Resource State Metrics file failed")
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-		factories = append(factories, crf...)
-	}
-
-	KSMRunOrDie := func(ctx context.Context) {
-		if err := app.RunKubeStateMetricsWrapper(ctx, opts, factories...); err != nil {
-			klog.ErrorS(err, "Failed to run kube-state-metrics")
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	if file := options.GetOptsConfigFile(*opts); file != "" {
-		viper.SetConfigType("yaml")
-		viper.SetConfigFile(file)
-		if err := viper.ReadInConfig(); err != nil {
-			if errors.Is(err, viper.ConfigFileNotFoundError{}) {
-				klog.ErrorS(err, "Options configuration file not found", "file", file)
-			} else {
-				klog.ErrorS(err, "Error reading options configuration file", "file", file)
-			}
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-		viper.OnConfigChange(func(e fsnotify.Event) {
-			klog.Infof("Changes detected: %s\n", e.Name)
-			cancel()
-			// Wait for the ports to be released.
-			<-time.After(3 * time.Second)
-			ctx, cancel = context.WithCancel(context.Background())
-			go KSMRunOrDie(ctx)
-		})
-		viper.WatchConfig()
-	}
-	klog.Infoln("Starting kube-state-metrics")
-	KSMRunOrDie(ctx)
-	select {}
-}
-
-func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, bool) {
-	if s := opts.CustomResourceConfig; s != "" {
-		return yaml.NewDecoder(strings.NewReader(s)), true
-	}
-	if file := opts.CustomResourceConfigFile; file != "" {
-		f, err := os.Open(filepath.Clean(file))
-		if err != nil {
-			klog.ErrorS(err, "Custom Resource State Metrics file could not be opened")
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-		return yaml.NewDecoder(f), true
-	}
-	return nil, false
 }

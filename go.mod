@@ -4,7 +4,7 @@ require (
 	github.com/brancz/gojsontoyaml v0.1.0
 	github.com/campoy/embedmd v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
-	github.com/fsnotify/fsnotify v1.5.4
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gobuffalo/flect v0.3.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.19.1
@@ -16,7 +16,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.8.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.6.1
-	github.com/spf13/viper v1.13.0
+	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/perf v0.0.0-20220920022801-e8d778a60d07
 	gopkg.in/yaml.v3 v3.0.1
@@ -31,7 +31,8 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.7.0 // indirect
+	cloud.google.com/go/compute v1.12.1 // indirect
+	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.27 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.20 // indirect
@@ -84,19 +85,19 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/spf13/afero v1.8.2 // indirect
+	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a // indirect
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
-	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
+	golang.org/x/net v0.0.0-20221014081412-f15817d10f9b // indirect
+	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
+	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect

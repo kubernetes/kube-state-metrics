@@ -22,8 +22,12 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus"
@@ -66,6 +70,16 @@ func (pl promLogger) Log(v ...interface{}) error {
 	return nil
 }
 
+// RunKubeStateMetricsWrapper runs KSM with context cancellation.
+func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options, factories ...customresource.RegistryFactory) error {
+	err := RunKubeStateMetrics(ctx, opts, factories...)
+	if ctx.Err() == context.Canceled {
+		klog.Infoln("Restarting: kube-state-metrics, metrics will be reset")
+		return nil
+	}
+	return err
+}
+
 // RunKubeStateMetrics will build and run the kube-state-metrics.
 // Any out-of-tree custom resource metrics could be registered by newing a registry factory
 // which implements customresource.RegistryFactory and pass all factories into this function.
@@ -87,6 +101,24 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 	)
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
+	got := options.GetOptsConfigFile(*opts)
+	if got != "" {
+		optsConfigFile, err := os.ReadFile(filepath.Clean(got))
+		if err != nil {
+			return fmt.Errorf("failed to read opts config file: %v", err)
+		}
+		// NOTE: Config value will override default values of intersecting options.
+		err = yaml.Unmarshal(optsConfigFile, opts)
+		if err != nil {
+			// DO NOT end the process.
+			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
+			klog.Warningf("failed to unmarshal opts config file: %v", err)
+			// Wait for the next reload.
+			klog.Infof("misconfigured config detected, KSM will automatically reload on next write to the config")
+			klog.Infof("waiting for config to be fixed")
+			<-ctx.Done()
+		}
+	}
 	var resources []string
 	switch {
 	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:

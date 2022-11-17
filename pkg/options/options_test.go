@@ -48,14 +48,18 @@ func TestOptionsParse(t *testing.T) {
 	opts.AddFlags(InitCommand)
 
 	for _, test := range tests {
+		t.Run(test.Desc, func(t *testing.T) {
+			os.Args = test.Args
 
-		os.Args = test.Args
+			err := opts.Parse()
 
-		err := opts.Parse()
-		if err != nil {
-			if !test.ExpectsError {
+			if !test.ExpectsError && err != nil {
 				t.Errorf("Error for test with description: %s: %v", test.Desc, err.Error())
 			}
-		}
+
+			if test.ExpectsError && err == nil {
+				t.Errorf("Expected error for test with description: %s", test.Desc)
+			}
+		})
 	}
 }

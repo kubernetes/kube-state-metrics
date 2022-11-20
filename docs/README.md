@@ -65,6 +65,7 @@ See each file for specific documentation about the exposed metrics:
 
 - [ClusterRole Metrics](clusterrole-metrics.md)
 - [ClusterRoleBinding Metrics](clusterrolebinding-metrics.md)
+- [IngressClass Metrics](ingressclass-metrics.md)
 - [Role Metrics](role-metrics.md)
 - [RoleBinding Metrics](rolebinding-metrics.md)
 - [ServiceAccount Metrics](serviceaccount-metrics.md)

@@ -134,6 +134,7 @@
         apiGroups: ['networking.k8s.io'],
         resources: [
           'networkpolicies',
+          'ingressclasses',
           'ingresses',
         ],
         verbs: ['list', 'watch'],

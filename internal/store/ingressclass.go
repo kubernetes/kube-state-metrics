@@ -16,6 +16,7 @@ package store
 import (
 	"context"
 
+	basemetrics "k8s.io/component-base/metrics"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
@@ -37,10 +38,11 @@ var (
 
 func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingressclass_info",
 			"Information about ingressclass.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 
@@ -52,10 +54,11 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingressclass_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 				ms := []*metric.Metric{}
@@ -69,10 +72,11 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descIngressClassAnnotationsName,
 			descIngressClassAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
@@ -87,10 +91,11 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descIngressClassLabelsName,
 			descIngressClassLabelsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)

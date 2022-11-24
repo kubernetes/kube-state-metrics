@@ -295,6 +295,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"endpoints":                       func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
 	"horizontalpodautoscalers":        func(b *Builder) []cache.Store { return b.buildHPAStores() },
 	"ingresses":                       func(b *Builder) []cache.Store { return b.buildIngressStores() },
+	"ingressclasses":                  func(b *Builder) []cache.Store { return b.buildIngressClassStores() },
 	"jobs":                            func(b *Builder) []cache.Store { return b.buildJobStores() },
 	"leases":                          func(b *Builder) []cache.Store { return b.buildLeasesStores() },
 	"limitranges":                     func(b *Builder) []cache.Store { return b.buildLimitRangeStores() },
@@ -468,6 +469,10 @@ func (b *Builder) buildClusterRoleBindingStores() []cache.Store {
 
 func (b *Builder) buildRoleBindingStores() []cache.Store {
 	return b.buildStoresFunc(roleBindingMetricFamilies(b.allowAnnotationsList["rolebindings"], b.allowLabelsList["rolebindings"]), &rbacv1.RoleBinding{}, createRoleBindingListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildIngressClassStores() []cache.Store {
+	return b.buildStoresFunc(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildStores(

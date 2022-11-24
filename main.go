@@ -17,19 +17,10 @@ limitations under the License.
 package main
 
 import (
-	"context"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/v2/pkg/app"
-	"k8s.io/kube-state-metrics/v2/pkg/customresource"
-	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
-
+	"k8s.io/kube-state-metrics/v2/internal"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -37,7 +28,7 @@ func main() {
 	opts := options.NewOptions()
 	cmd := options.InitCommand
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		RunKubeStateMetricsWrapper(opts)
+		internal.RunKubeStateMetricsWrapper(opts)
 	}
 	opts.AddFlags(cmd)
 
@@ -49,38 +40,4 @@ func main() {
 		klog.ErrorS(err, "Validating options error")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
-}
-
-// RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
-func RunKubeStateMetricsWrapper(opts *options.Options) {
-	var factories []customresource.RegistryFactory
-	if config, set := resolveCustomResourceConfig(opts); set {
-		crf, err := customresourcestate.FromConfig(config)
-		if err != nil {
-			klog.ErrorS(err, "Parsing from Custom Resource State Metrics file failed")
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-		factories = append(factories, crf...)
-	}
-
-	ctx := context.Background()
-	if err := app.RunKubeStateMetrics(ctx, opts, factories...); err != nil {
-		klog.ErrorS(err, "Failed to run kube-state-metrics")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
-}
-
-func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, bool) {
-	if s := opts.CustomResourceConfig; s != "" {
-		return yaml.NewDecoder(strings.NewReader(s)), true
-	}
-	if file := opts.CustomResourceConfigFile; file != "" {
-		f, err := os.Open(filepath.Clean(file))
-		if err != nil {
-			klog.ErrorS(err, "Custom Resource State Metrics file could not be opened")
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-		return yaml.NewDecoder(f), true
-	}
-	return nil, false
 }

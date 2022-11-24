@@ -472,7 +472,7 @@ func (b *Builder) buildRoleBindingStores() []cache.Store {
 }
 
 func (b *Builder) buildIngressClassStores() []cache.Store {
-	return b.buildStoresFunc(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclass"], b.allowLabelsList["ingressclass"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildStores(

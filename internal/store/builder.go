@@ -352,7 +352,7 @@ func (b *Builder) buildDeploymentStores() []cache.Store {
 }
 
 func (b *Builder) buildEndpointsStores() []cache.Store {
-	return b.buildStoresFunc(endpointMetricFamilies(b.allowAnnotationsList["endpoints"], b.allowLabelsList["endpoints"]), &v1.Endpoints{}, createEndpointsListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(endpointMetricFamilies(b.allowAnnotationsList["endpoints"], b.allowLabelsList["endpoints"]), &v1.Endpoints{}, createEndpointListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildHPAStores() []cache.Store {

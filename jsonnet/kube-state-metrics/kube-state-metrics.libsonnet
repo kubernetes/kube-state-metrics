@@ -115,6 +115,13 @@
         verbs: ['list', 'watch'],
       },
       {
+        apiGroups: ['discovery.k8s.io'],
+        resources: [
+          'endpointslices',
+        ],
+        verbs: ['list', 'watch'],
+      },
+      {
         apiGroups: ['storage.k8s.io'],
         resources: [
           'storageclasses',

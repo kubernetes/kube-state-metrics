@@ -12,7 +12,7 @@ Any contribution to improving this documentation will be appreciated.
 The following steps are needed to introduce a new resource and its respective resource metrics.
 
 - Reference your new resource(s) to the [docs/README.md](https://github.com/kubernetes/kube-state-metrics/blob/master/docs/README.md#exposed-metrics).
-- Reference your new resource(s) in the [docs/cli-arguments.md](https://github.com/kubernetes/kube-state-metrics/blob/master/docs/cli-arguments.md#available-options) as part of the `--resources` flag.
+- Reference your new resource(s) in the [docs/developer/cli-arguments.md](https://github.com/kubernetes/kube-state-metrics/blob/master/docs/developer/cli-arguments.md#available-options) as part of the `--resources` flag.
 - Create a new `<name-of-resource>.md` in the [docs](https://github.com/kubernetes/kube-state-metrics/tree/master/docs) directory to provide documentation on the resource(s) and metrics you implemented. Follow the formatting of all other resources.
 - Add the resource(s) you are representing to the [jsonnet/kube-state-metrics/kube-state-metrics.libsonnet](https://github.com/kubernetes/kube-state-metrics/blob/master/jsonnet/kube-state-metrics/kube-state-metrics.libsonnet) under the appropriate `apiGroup` using the `verbs`: `list` and `watch`.
 - Run `make examples/standard`, this should re-generate [examples/standard/cluster-role.yaml](https://github.com/kubernetes/kube-state-metrics/blob/master/examples/standard/cluster-role.yaml) with the resource(s) added to [jsonnet/kube-state-metrics/kube-state-metrics.libsonnet](https://github.com/kubernetes/kube-state-metrics/blob/master/jsonnet/kube-state-metrics/kube-state-metrics.libsonnet).

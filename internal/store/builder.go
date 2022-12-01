@@ -32,6 +32,7 @@ import (
 	certv1 "k8s.io/api/certificates/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -293,6 +294,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"daemonsets":                      func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
 	"deployments":                     func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
 	"endpoints":                       func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
+	"endpointslices":                  func(b *Builder) []cache.Store { return b.buildEndpointSlicesStores() },
 	"horizontalpodautoscalers":        func(b *Builder) []cache.Store { return b.buildHPAStores() },
 	"ingresses":                       func(b *Builder) []cache.Store { return b.buildIngressStores() },
 	"ingressclasses":                  func(b *Builder) []cache.Store { return b.buildIngressClassStores() },
@@ -353,6 +355,10 @@ func (b *Builder) buildDeploymentStores() []cache.Store {
 
 func (b *Builder) buildEndpointsStores() []cache.Store {
 	return b.buildStoresFunc(endpointMetricFamilies(b.allowAnnotationsList["endpoints"], b.allowLabelsList["endpoints"]), &v1.Endpoints{}, createEndpointsListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildEndpointSlicesStores() []cache.Store {
+	return b.buildStoresFunc(endpointSliceMetricFamilies(b.allowAnnotationsList["endpointslices"], b.allowLabelsList["endpointslices"]), &discoveryv1.EndpointSlice{}, createEndpointSliceListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildHPAStores() []cache.Store {

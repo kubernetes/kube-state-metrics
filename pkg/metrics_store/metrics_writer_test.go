@@ -83,7 +83,7 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 		}
 	}
 
-	multiNsWriter := metricsstore.NewMultiStoreMetricsWriter([]*metricsstore.MetricsStore{store})
+	multiNsWriter := metricsstore.NewMetricsWriter(store)
 	w := strings.Builder{}
 	multiNsWriter.WriteAll(&w)
 	result := w.String()
@@ -192,7 +192,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 		}
 	}
 
-	multiNsWriter := metricsstore.NewMultiStoreMetricsWriter([]*metricsstore.MetricsStore{s1, s2})
+	multiNsWriter := metricsstore.NewMetricsWriter(s1, s2)
 	w := strings.Builder{}
 	multiNsWriter.WriteAll(&w)
 	result := w.String()

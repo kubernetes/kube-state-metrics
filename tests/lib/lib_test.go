@@ -55,7 +55,8 @@ func TestAsLibrary(t *testing.T) {
 	time.Sleep(time.Second)
 
 	w := strings.Builder{}
-	c.WriteAll(&w)
+	mw := metricsstore.NewMetricsWriter(c)
+	mw.WriteAll(&w)
 	m := w.String()
 
 	if !strings.Contains(m, service.ObjectMeta.Name) {

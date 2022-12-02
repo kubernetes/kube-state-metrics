@@ -51,7 +51,7 @@ type MetricsHandler struct {
 
 	// mtx protects metricsWriters, curShard, and curTotalShards
 	mtx            *sync.RWMutex
-	metricsWriters []metricsstore.MetricsWriter
+	metricsWriters metricsstore.MetricsWriterList
 	curShard       int32
 	curTotalShards int
 }

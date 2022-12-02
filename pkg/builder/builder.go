@@ -19,8 +19,6 @@ package builder
 import (
 	"context"
 
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	"github.com/prometheus/client_golang/prometheus"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
@@ -29,6 +27,7 @@ import (
 	internalstore "k8s.io/kube-state-metrics/v2/internal/store"
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -135,7 +134,7 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 
 // Build initializes and registers all enabled stores.
 // Returns metric writers.
-func (b *Builder) Build() []metricsstore.MetricsWriter {
+func (b *Builder) Build() metricsstore.MetricsWriterList {
 	return b.internal.Build()
 }
 

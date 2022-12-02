@@ -81,7 +81,8 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	}
 
 	w := strings.Builder{}
-	ms.WriteAll(&w)
+	mw := NewMetricsWriter(ms)
+	mw.WriteAll(&w)
 	m := w.String()
 
 	for _, id := range serviceIDS {

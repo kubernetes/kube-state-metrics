@@ -270,6 +270,6 @@ func getPersistentVolumeClaimClass(claim *v1.PersistentVolumeClaim) string {
 		return *claim.Spec.StorageClassName
 	}
 
-	// Special non-empty string to indicate absence of storage class.
-	return "<none>"
+	// An empty string indicate absence of storage class.
+	return ""
 }

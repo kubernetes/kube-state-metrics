@@ -154,7 +154,7 @@ func TestJobStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_job_annotations{job_name="SuccessfulJob1",namespace="ns1"} 1
-				kube_job_owner{job_name="SuccessfulJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job_name="SuccessfulJob1",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob1",namespace="ns1"} 1
 				kube_job_complete{condition="unknown",job_name="SuccessfulJob1",namespace="ns1"} 0
@@ -198,7 +198,7 @@ func TestJobStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_job_annotations{job_name="FailedJob1",namespace="ns1"} 1
-				kube_job_owner{job_name="FailedJob1",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job_name="FailedJob1",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
 				kube_job_failed{condition="false",job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_failed{condition="true",job_name="FailedJob1",namespace="ns1"} 1
 				kube_job_failed{condition="unknown",job_name="FailedJob1",namespace="ns1"} 0
@@ -243,7 +243,7 @@ func TestJobStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_job_owner{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>"} 1
+				kube_job_owner{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
 				kube_job_complete{condition="false",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_complete{condition="true",job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 

@@ -364,7 +364,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						Metrics: []*metric.Metric{
 							{
 								LabelKeys:   labelKeys,
-								LabelValues: []string{"<none>", "<none>", "<none>"},
+								LabelValues: []string{"", "", ""},
 								Value:       1,
 							},
 						},

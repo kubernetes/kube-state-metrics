@@ -185,7 +185,7 @@ var (
 				if len(owners) == 0 {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   labelKeys,
-						LabelValues: []string{"<none>", "<none>", "<none>"},
+						LabelValues: []string{"", "", ""},
 						Value:       1,
 					})
 				} else {

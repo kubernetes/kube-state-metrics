@@ -322,9 +322,9 @@ kube_pod_container_status_waiting_reason{namespace="default",pod="pod0",uid="abc
 kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 1
 kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
 kube_pod_created{namespace="default",pod="pod0",uid="abc-0"} 1.5e+09
-kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_ip="1.2.3.4",node="node1",created_by_kind="<none>",created_by_name="<none>",priority_class="",host_network="false"} 1
+kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_ip="1.2.3.4",node="node1",created_by_kind="",created_by_name="",priority_class="",host_network="false"} 1
 kube_pod_labels{namespace="default",pod="pod0",uid="abc-0"} 1
-kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="<none>",owner_name="<none>",owner_is_controller="<none>"} 1
+kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="",owner_name="",owner_is_controller=""} 1
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Failed"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Pending"} 0

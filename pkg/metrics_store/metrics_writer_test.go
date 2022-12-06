@@ -85,7 +85,10 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 
 	multiNsWriter := metricsstore.NewMetricsWriter(store)
 	w := strings.Builder{}
-	multiNsWriter.WriteAll(&w)
+	err := multiNsWriter.WriteAll(&w)
+	if err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
 	result := w.String()
 
 	resultLines := strings.Split(strings.TrimRight(result, "\n"), "\n")
@@ -194,7 +197,10 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 	multiNsWriter := metricsstore.NewMetricsWriter(s1, s2)
 	w := strings.Builder{}
-	multiNsWriter.WriteAll(&w)
+	err := multiNsWriter.WriteAll(&w)
+	if err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
 	result := w.String()
 
 	resultLines := strings.Split(strings.TrimRight(result, "\n"), "\n")

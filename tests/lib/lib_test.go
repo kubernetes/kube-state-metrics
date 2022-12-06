@@ -56,7 +56,10 @@ func TestAsLibrary(t *testing.T) {
 
 	w := strings.Builder{}
 	mw := metricsstore.NewMetricsWriter(c)
-	mw.WriteAll(&w)
+	err = mw.WriteAll(&w)
+	if err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
 	m := w.String()
 
 	if !strings.Contains(m, service.ObjectMeta.Name) {

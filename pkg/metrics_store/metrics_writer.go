@@ -16,7 +16,10 @@ limitations under the License.
 
 package metricsstore
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // MetricsWriterList represent a list of MetricsWriter
 type MetricsWriterList []*MetricsWriter
@@ -43,9 +46,9 @@ func NewMetricsWriter(stores ...*MetricsStore) *MetricsWriter {
 //
 // WriteAll writes metrics so that the ones with the same name
 // are grouped together when written out.
-func (m MetricsWriter) WriteAll(w io.Writer) {
+func (m MetricsWriter) WriteAll(w io.Writer) error {
 	if len(m.stores) == 0 {
-		return
+		return nil
 	}
 
 	for _, s := range m.stores {
@@ -56,12 +59,19 @@ func (m MetricsWriter) WriteAll(w io.Writer) {
 	}
 
 	for i, help := range m.stores[0].headers {
-		w.Write([]byte(help))
-		w.Write([]byte{'\n'})
+		_, err := w.Write([]byte(help + "\n"))
+		if err != nil {
+			return fmt.Errorf("failed to write help text: %v", err)
+		}
+
 		for _, s := range m.stores {
 			for _, metricFamilies := range s.metrics {
-				w.Write(metricFamilies[i])
+				_, err := w.Write(metricFamilies[i])
+				if err != nil {
+					return fmt.Errorf("failed to write metrics family: %v", err)
+				}
 			}
 		}
 	}
+	return nil
 }

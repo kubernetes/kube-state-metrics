@@ -82,7 +82,10 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 
 	w := strings.Builder{}
 	mw := NewMetricsWriter(ms)
-	mw.WriteAll(&w)
+	err := mw.WriteAll(&w)
+	if err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
 	m := w.String()
 
 	for _, id := range serviceIDS {

@@ -178,7 +178,7 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 						Metrics: []*metric.Metric{
 							{
 								LabelKeys:   []string{"owner_kind", "owner_name", "owner_is_controller"},
-								LabelValues: []string{"<none>", "<none>", "<none>"},
+								LabelValues: []string{"", "", ""},
 								Value:       1,
 							},
 						},

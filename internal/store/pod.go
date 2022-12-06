@@ -597,8 +597,8 @@ func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			createdBy := metav1.GetControllerOf(p)
-			createdByKind := "<none>"
-			createdByName := "<none>"
+			createdByKind := ""
+			createdByName := ""
 			if createdBy != nil {
 				if createdBy.Kind != "" {
 					createdByKind = createdBy.Kind
@@ -1118,7 +1118,7 @@ func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
-							LabelValues: []string{"<none>", "<none>", "<none>"},
+							LabelValues: []string{"", "", ""},
 							Value:       1,
 						},
 					},

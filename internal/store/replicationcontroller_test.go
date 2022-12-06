@@ -116,7 +116,7 @@ func TestReplicationControllerStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_replicationcontroller_metadata_generation{namespace="ns2",replicationcontroller="rc2"} 14
-				kube_replicationcontroller_owner{namespace="ns2",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",replicationcontroller="rc2"} 1
+				kube_replicationcontroller_owner{namespace="ns2",owner_is_controller="",owner_kind="",owner_name="",replicationcontroller="rc2"} 1
 				kube_replicationcontroller_status_replicas{namespace="ns2",replicationcontroller="rc2"} 0
 				kube_replicationcontroller_status_observed_generation{namespace="ns2",replicationcontroller="rc2"} 5
 				kube_replicationcontroller_status_fully_labeled_replicas{namespace="ns2",replicationcontroller="rc2"} 5

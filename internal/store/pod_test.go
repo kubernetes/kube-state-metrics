@@ -1032,11 +1032,11 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_owner gauge
 				# TYPE kube_pod_start_time gauge
 				kube_pod_created{namespace="ns1",pod="pod1",uid="abc-123-xxx"} 1.5e+09
-				kube_pod_info{created_by_kind="<none>",created_by_name="<none>",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical",host_network="true"} 1
+				kube_pod_info{created_by_kind="",created_by_name="",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical",host_network="true"} 1
 				kube_pod_ips{namespace="ns1",pod="pod1",uid="abc-123-xxx",ip="1.2.3.4",ip_family="4"} 1
 				kube_pod_ips{namespace="ns1",pod="pod1",uid="abc-123-xxx",ip="fc00:1234:5678:90ab:cdef:cafe:f00d:d00d",ip_family="6"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1",uid="abc-123-xxx"} 1.501569018e+09
-				kube_pod_owner{namespace="ns1",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",pod="pod1",uid="abc-123-xxx"} 1
+				kube_pod_owner{namespace="ns1",owner_is_controller="",owner_kind="",owner_name="",pod="pod1",uid="abc-123-xxx"} 1
 `,
 			MetricNames: []string{"kube_pod_created", "kube_pod_info", "kube_pod_ips", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner"},
 		},

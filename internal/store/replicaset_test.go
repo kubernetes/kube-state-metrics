@@ -129,7 +129,7 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_status_fully_labeled_replicas{namespace="ns2",replicaset="rs2"} 5
 				kube_replicaset_status_ready_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_spec_replicas{namespace="ns2",replicaset="rs2"} 0
-				kube_replicaset_owner{namespace="ns2",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",replicaset="rs2"} 1
+				kube_replicaset_owner{namespace="ns2",owner_is_controller="",owner_kind="",owner_name="",replicaset="rs2"} 1
 			`,
 		},
 	}

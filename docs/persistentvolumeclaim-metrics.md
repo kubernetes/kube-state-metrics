@@ -13,4 +13,4 @@
 
 Note:
 
-- A special `<none>` string will be used if PVC has no storage class.
+- An empty string will be used if PVC has no storage class.

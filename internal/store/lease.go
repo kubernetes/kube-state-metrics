@@ -53,7 +53,7 @@ var (
 						Metrics: []*metric.Metric{
 							{
 								LabelKeys:   labelKeys,
-								LabelValues: []string{"<none>", "<none>", l.Namespace, holder},
+								LabelValues: []string{"", "", l.Namespace, holder},
 								Value:       1,
 							},
 						},

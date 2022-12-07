@@ -51,7 +51,7 @@ type BuilderInterface interface {
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc
 	WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory)
-	Build() []metricsstore.MetricsWriter
+	Build() metricsstore.MetricsWriterList
 	BuildStores() [][]cache.Store
 }
 

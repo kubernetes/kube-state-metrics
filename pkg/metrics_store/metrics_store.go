@@ -17,7 +17,6 @@ limitations under the License.
 package metricsstore
 
 import (
-	"io"
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -143,19 +142,4 @@ func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 // Resync implements the Resync method of the store interface.
 func (s *MetricsStore) Resync() error {
 	return nil
-}
-
-// WriteAll writes all metrics of the store into the given writer, zipped with the
-// help text of each metric family.
-func (s *MetricsStore) WriteAll(w io.Writer) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	for i, help := range s.headers {
-		w.Write([]byte(help))
-		w.Write([]byte{'\n'})
-		for _, metricFamilies := range s.metrics {
-			w.Write(metricFamilies[i])
-		}
-	}
 }

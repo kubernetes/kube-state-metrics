@@ -234,12 +234,12 @@ func (b *Builder) WithAllowLabels(labels map[string][]string) error {
 // Build initializes and registers all enabled stores.
 // It returns metrics writers which can be used to write out
 // metrics from the stores.
-func (b *Builder) Build() []metricsstore.MetricsWriter {
+func (b *Builder) Build() metricsstore.MetricsWriterList {
 	if b.familyGeneratorFilter == nil {
 		panic("familyGeneratorFilter should not be nil")
 	}
 
-	var metricsWriters []metricsstore.MetricsWriter
+	var metricsWriters metricsstore.MetricsWriterList
 	var activeStoreNames []string
 
 	for _, c := range b.enabledResources {
@@ -247,11 +247,7 @@ func (b *Builder) Build() []metricsstore.MetricsWriter {
 		if ok {
 			stores := cacheStoresToMetricStores(constructor(b))
 			activeStoreNames = append(activeStoreNames, c)
-			if len(stores) == 1 {
-				metricsWriters = append(metricsWriters, stores[0])
-			} else {
-				metricsWriters = append(metricsWriters, metricsstore.NewMultiStoreMetricsWriter(stores))
-			}
+			metricsWriters = append(metricsWriters, metricsstore.NewMetricsWriter(stores...))
 		}
 	}
 

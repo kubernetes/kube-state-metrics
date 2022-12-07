@@ -51,7 +51,7 @@ type MetricsHandler struct {
 
 	// mtx protects metricsWriters, curShard, and curTotalShards
 	mtx            *sync.RWMutex
-	metricsWriters []metricsstore.MetricsWriter
+	metricsWriters metricsstore.MetricsWriterList
 	curShard       int32
 	curTotalShards int
 }
@@ -200,7 +200,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, w := range m.metricsWriters {
-		w.WriteAll(writer)
+		err := w.WriteAll(writer)
+		if err != nil {
+			klog.ErrorS(err, "Failed to write metrics")
+		}
 	}
 
 	// In case we gzipped the response, we have to close the writer.

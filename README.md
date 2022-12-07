@@ -165,6 +165,14 @@ please check the blog post [here](https://www.robustperception.io/exposing-the-s
 Sharding metrics expose `--shard` and `--total-shards` flags and can be used to validate
 run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/prometheus-alerting-rules).
 
+kube-state-metrics also exposes metrics about it config file: 
+
+```
+kube_state_metrics_config_hash{type="config", filename="config.yml"} 4.0061079457904e+13
+kube_state_metrics_config_last_reload_success_timestamp_seconds{type="config", filename="config.yml"} 1.6697483049487052e+09
+kube_state_metrics_config_last_reload_successful{type="config", filename="config.yml"} 1
+```
+
 ### Scaling kube-state-metrics
 
 #### Resource recommendation

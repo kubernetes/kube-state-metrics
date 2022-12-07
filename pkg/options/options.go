@@ -62,8 +62,8 @@ type Options struct {
 	cmd *cobra.Command
 }
 
-// GetOptsConfigFile is the getter for --options-config-file value.
-func GetOptsConfigFile(opt Options) string {
+// GetConfigFile is the getter for --config value.
+func GetConfigFile(opt Options) string {
 	return opt.Config
 }
 

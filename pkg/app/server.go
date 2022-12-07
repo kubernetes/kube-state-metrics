@@ -18,6 +18,8 @@ package app
 
 import (
 	"context"
+	"crypto/md5" //nolint:gosec
+	"encoding/binary"
 	"fmt"
 	"net"
 	"net/http"
@@ -99,16 +101,32 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 			ConstLabels: prometheus.Labels{"handler": "metrics"},
 		}, []string{"method"},
 	)
+	configHash := promauto.With(ksmMetricsRegistry).NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "kube_state_metrics_config_hash",
+			Help: "Hash of the currently loaded configuration.",
+		}, []string{"type", "filename"})
+	configSuccess := promauto.With(ksmMetricsRegistry).NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "kube_state_metrics_last_config_reload_successful",
+			Help: "Whether the last configuration reload attempt was successful.",
+		}, []string{"type", "filename"})
+	configSuccessTime := promauto.With(ksmMetricsRegistry).NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "kube_state_metrics_last_config_reload_success_timestamp_seconds",
+			Help: "Timestamp of the last successful configuration reload.",
+		}, []string{"type", "filename"})
+
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
-	got := options.GetOptsConfigFile(*opts)
+	got := options.GetConfigFile(*opts)
 	if got != "" {
-		optsConfigFile, err := os.ReadFile(filepath.Clean(got))
+		configFile, err := os.ReadFile(filepath.Clean(got))
 		if err != nil {
 			return fmt.Errorf("failed to read opts config file: %v", err)
 		}
 		// NOTE: Config value will override default values of intersecting options.
-		err = yaml.Unmarshal(optsConfigFile, opts)
+		err = yaml.Unmarshal(configFile, opts)
 		if err != nil {
 			// DO NOT end the process.
 			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
@@ -116,7 +134,13 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 			// Wait for the next reload.
 			klog.Infof("misconfigured config detected, KSM will automatically reload on next write to the config")
 			klog.Infof("waiting for config to be fixed")
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
 			<-ctx.Done()
+		} else {
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
+			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
+			hash := md5HashAsMetricValue(configFile)
+			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
 		}
 	}
 	var resources []string
@@ -370,4 +394,15 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
              </html>`))
 	})
 	return mux
+}
+
+// md5HashAsMetricValue creates an md5 hash and returns the most significant bytes that fit into a float64
+// Taken from https://github.com/prometheus/alertmanager/blob/6ef6e6868dbeb7984d2d577dd4bf75c65bf1904f/config/coordinator.go#L149
+func md5HashAsMetricValue(data []byte) float64 {
+	sum := md5.Sum(data) //nolint:gosec
+	// We only want 48 bits as a float64 only has a 53 bit mantissa.
+	smallSum := sum[0:6]
+	bytes := make([]byte, 8)
+	copy(bytes, smallSum)
+	return float64(binary.LittleEndian.Uint64(bytes))
 }

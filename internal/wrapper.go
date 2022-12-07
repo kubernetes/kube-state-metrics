@@ -54,7 +54,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	if file := options.GetOptsConfigFile(*opts); file != "" {
+	if file := options.GetConfigFile(*opts); file != "" {
 		viper.SetConfigType("yaml")
 		viper.SetConfigFile(file)
 		if err := viper.ReadInConfig(); err != nil {

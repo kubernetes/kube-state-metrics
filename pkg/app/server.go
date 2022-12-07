@@ -143,6 +143,19 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
 		}
 	}
+
+	if opts.CustomResourceConfigFile != "" {
+		crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
+		if err != nil {
+			return fmt.Errorf("failed to read custom resource config file: %v", err)
+		}
+		configSuccess.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).Set(1)
+		configSuccessTime.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).SetToCurrentTime()
+		hash := md5HashAsMetricValue(crcFile)
+		configHash.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).Set(hash)
+
+	}
+
 	var resources []string
 	switch {
 	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:

@@ -165,12 +165,15 @@ please check the blog post [here](https://www.robustperception.io/exposing-the-s
 Sharding metrics expose `--shard` and `--total-shards` flags and can be used to validate
 run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/prometheus-alerting-rules).
 
-kube-state-metrics also exposes metrics about it config file: 
+kube-state-metrics also exposes metrics about it config file and the Custom Resource State config file:
 
 ```
-kube_state_metrics_config_hash{type="config", filename="config.yml"} 4.0061079457904e+13
-kube_state_metrics_config_last_reload_success_timestamp_seconds{type="config", filename="config.yml"} 1.6697483049487052e+09
-kube_state_metrics_config_last_reload_successful{type="config", filename="config.yml"} 1
+kube_state_metrics_config_hash{filename="crs.yml",type="customresourceconfig"} 2.38272279311849e+14
+kube_state_metrics_config_hash{filename="config.yml",type="config"} 2.65285922340846e+14
+kube_state_metrics_last_config_reload_success_timestamp_seconds{filename="crs.yml",type="customresourceconfig"} 1.6704882592037103e+09
+kube_state_metrics_last_config_reload_success_timestamp_seconds{filename="config.yml",type="config"} 1.6704882592035313e+09
+kube_state_metrics_last_config_reload_successful{filename="crs.yml",type="customresourceconfig"} 1
+kube_state_metrics_last_config_reload_successful{filename="config.yml",type="config"} 1
 ```
 
 ### Scaling kube-state-metrics

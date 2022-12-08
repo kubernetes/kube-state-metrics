@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -47,6 +48,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
@@ -73,8 +75,8 @@ func (pl promLogger) Log(v ...interface{}) error {
 }
 
 // RunKubeStateMetricsWrapper runs KSM with context cancellation.
-func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options, factories ...customresource.RegistryFactory) error {
-	err := RunKubeStateMetrics(ctx, opts, factories...)
+func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) error {
+	err := RunKubeStateMetrics(ctx, opts)
 	if ctx.Err() == context.Canceled {
 		klog.Infoln("Restarting: kube-state-metrics, metrics will be reset")
 		return nil
@@ -85,11 +87,10 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options, fact
 // RunKubeStateMetrics will build and run the kube-state-metrics.
 // Any out-of-tree custom resource metrics could be registered by newing a registry factory
 // which implements customresource.RegistryFactory and pass all factories into this function.
-func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories ...customresource.RegistryFactory) error {
+func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	promLogger := promLogger{}
 
 	storeBuilder := store.NewBuilder()
-	storeBuilder.WithCustomResourceStoreFactories(factories...)
 
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.MustRegister(version.NewCollector("kube_state_metrics"))
@@ -144,6 +145,22 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 		}
 	}
 
+	// Loading custom resource state configuration from cli argument or config file
+	config, err := resolveCustomResourceConfig(opts)
+	if err != nil {
+		return err
+	}
+
+	var factories []customresource.RegistryFactory
+
+	if config != nil {
+		factories, err = customresourcestate.FromConfig(config)
+		if err != nil {
+			return fmt.Errorf("Parsing from Custom Resource State Metrics file failed: %v", err)
+		}
+	}
+	storeBuilder.WithCustomResourceStoreFactories(factories...)
+
 	if opts.CustomResourceConfigFile != "" {
 		crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
 		if err != nil {
@@ -156,24 +173,22 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, factories .
 
 	}
 
-	var resources []string
+	resources := make([]string, len(factories))
+
+	for i, factory := range factories {
+		resources[i] = factory.Name()
+	}
+
 	switch {
 	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:
+		resources = append(resources, options.DefaultResources.AsSlice()...)
 		klog.InfoS("Used default resources")
-		resources = options.DefaultResources.AsSlice()
-		// enable custom resource
-		for _, factory := range factories {
-			resources = append(resources, factory.Name())
-		}
 	case opts.CustomResourcesOnly:
 		// enable custom resource only
-		for _, factory := range factories {
-			resources = append(resources, factory.Name())
-		}
 		klog.InfoS("Used CRD resources only", "resources", resources)
 	default:
-		klog.InfoS("Used resources", "resources", opts.Resources.String())
-		resources = opts.Resources.AsSlice()
+		resources = append(resources, opts.Resources.AsSlice()...)
+		klog.InfoS("Used resources", "resources", resources)
 	}
 
 	if err := storeBuilder.WithEnabledResources(resources); err != nil {
@@ -418,4 +433,18 @@ func md5HashAsMetricValue(data []byte) float64 {
 	bytes := make([]byte, 8)
 	copy(bytes, smallSum)
 	return float64(binary.LittleEndian.Uint64(bytes))
+}
+
+func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, error) {
+	if s := opts.CustomResourceConfig; s != "" {
+		return yaml.NewDecoder(strings.NewReader(s)), nil
+	}
+	if file := opts.CustomResourceConfigFile; file != "" {
+		f, err := os.Open(filepath.Clean(file))
+		if err != nil {
+			return nil, fmt.Errorf("Custom Resource State Metrics file could not be opened: %v", err)
+		}
+		return yaml.NewDecoder(f), nil
+	}
+	return nil, nil
 }

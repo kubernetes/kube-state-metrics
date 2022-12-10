@@ -1,4 +1,4 @@
-name: cron
+name: govulncheck
 
 on:
   schedule:

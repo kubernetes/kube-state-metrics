@@ -6,9 +6,9 @@ We use [Semantic Versioning](http://semver.org/).
 
 We maintain a separate branch for each minor release, named `release-<major>.<minor>`, e.g. `release-1.1`, `release-2.0`.
 
-The usual flow is to merge new features and changes into the master branch and to merge bug fixes into the latest release branch. Bug fixes are then merged into master from the latest release branch. The master branch should always contain all commits from the latest release branch.
+The usual flow is to merge new features and changes into the main branch and to merge bug fixes into the latest release branch. Bug fixes are then merged into main from the latest release branch. The main branch should always contain all commits from the latest release branch.
 
-If a bug fix got accidentally merged into master, cherry-pick commits have to be created in the latest release branch, which then have to be merged back into master. Try to avoid that situation.
+If a bug fix got accidentally merged into main, cherry-pick commits have to be created in the latest release branch, which then have to be merged back into main. Try to avoid that situation.
 
 Maintaining the release branches for older minor releases happens on a best effort basis.
 
@@ -34,7 +34,7 @@ Maintaining the release branches for older minor releases happens on a best effo
 * Create a new **pre-release** on github
 * New images are automatically built and pushed to `gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics`
 * Promote image by sending a PR to [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io) repository. Follow the [example PR](https://github.com/kubernetes/k8s.io/pull/3798). Use [kpromo pr](https://github.com/kubernetes-sigs/promo-tools/blob/main/docs/promotion-pull-requests.md) to update the manifest files in this repository, e.g. `kpromo pr --fork=$YOURNAME -i --project=kube-state-metrics -t=v2.5.0`
-* Create a PR to merge the changes of this release back into the master branch.
+* Create a PR to merge the changes of this release back into the main branch.
 * Once the PR to promote the image is merged, mark the pre-release as a regular release.
 
 ## Stable release

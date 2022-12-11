@@ -77,7 +77,7 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 | **v2.5.0**         | v1.24                        |
 | **v2.6.0**         | v1.24                        |
 | **v2.7.0**         | v1.25                        |
-| **master**         | v1.25                        |
+| **main**           | v1.25                        |
 
 
 #### Resource group version compatibility
@@ -155,7 +155,7 @@ http_request_duration_seconds_count{handler="metrics",method="get"} 30
 
 kube-state-metrics also exposes build and configuration metrics:
 ```
-kube_state_metrics_build_info{branch="master",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
+kube_state_metrics_build_info{branch="main",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
 kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
 kube_state_metrics_total_shards 1
 ```

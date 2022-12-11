@@ -38,13 +38,19 @@ var (
 )
 
 // Type represents the type of a metric e.g. a counter. See
-// https://prometheus.io/docs/concepts/metric_types/.
+// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#metric-types.
 type Type string
 
-// Gauge defines a Prometheus gauge.
+// Gauge defines a OpenMetrics gauge.
 var Gauge Type = "gauge"
 
-// Counter defines a Prometheus counter.
+// Info defines an OpenMetrics info.
+var Info Type = "info"
+
+// StateSet defines an OpenMetrics stateset.
+var StateSet Type = "stateset"
+
+// Counter defines a OpenMetrics counter.
 var Counter Type = "counter"
 
 // Metric represents a single time series.

@@ -18,7 +18,10 @@ package store
 
 import (
 	"context"
+	"reflect"
 	"strconv"
+
+	"k8s.io/klog/v2"
 
 	basemetrics "k8s.io/component-base/metrics"
 	"k8s.io/utils/net"
@@ -166,6 +169,19 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
 
+			// Warn if no nodes are scheduled, since we are assuming that in all cases.
+			scheduleable := false
+			f := reflect.VisibleFields(reflect.TypeOf(p.Spec))
+			for _, ff := range f {
+				if ff.Name == "NodeName" {
+					scheduleable = true
+					break
+				}
+			}
+			if !scheduleable {
+				klog.Warningf("metric may update during runtime, as it is not scheduled to a node")
+			}
+
 			for _, c := range p.Spec.Containers {
 				lim := c.Resources.Limits
 
@@ -228,6 +244,19 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
+
+			// Warn if no nodes are scheduled, since we are assuming that in all cases.
+			scheduleable := false
+			f := reflect.VisibleFields(reflect.TypeOf(p.Spec))
+			for _, ff := range f {
+				if ff.Name == "NodeName" {
+					scheduleable = true
+					break
+				}
+			}
+			if !scheduleable {
+				klog.Warningf("metric may update during runtime, as it is not scheduled to a node")
+			}
 
 			for _, c := range p.Spec.Containers {
 				req := c.Resources.Requests

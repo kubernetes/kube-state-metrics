@@ -33,3 +33,6 @@ issues:
     - text: "G104:"
       linters:
         - gosec
+    - text: "package-comments:"
+      linters:
+        - revive

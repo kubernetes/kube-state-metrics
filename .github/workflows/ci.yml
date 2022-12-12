@@ -3,14 +3,14 @@ name: continuous-integration
 on:
   push:
     branches:
-    - master
+    - main
     - release*
     tags:
     - v1.*
     - v2.*
   pull_request:
     branches:
-    - master
+    - main
     - release*
 
 permissions:

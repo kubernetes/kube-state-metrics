@@ -74,12 +74,11 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.3.0**         | v1.23                        |
 | **v2.4.2**         | v1.23                        |
 | **v2.5.0**         | v1.24                        |
 | **v2.6.0**         | v1.24                        |
 | **v2.7.0**         | v1.25                        |
-| **main**           | v1.25                        |
+| **main**           | v1.26                        |
 
 
 #### Resource group version compatibility

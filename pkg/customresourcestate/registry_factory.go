@@ -118,6 +118,7 @@ type compiledEach compiledMetric
 type compiledCommon struct {
 	labelFromPath map[string]valuePath
 	path          valuePath
+	t             metric.Type
 }
 
 func (c compiledCommon) Path() valuePath {
@@ -125,6 +126,9 @@ func (c compiledCommon) Path() valuePath {
 }
 func (c compiledCommon) LabelFromPath() map[string]valuePath {
 	return c.labelFromPath
+}
+func (c compiledCommon) Type() metric.Type {
+	return c.t
 }
 
 type eachValue struct {
@@ -136,6 +140,7 @@ type compiledMetric interface {
 	Values(v interface{}) (result []eachValue, err []error)
 	Path() valuePath
 	LabelFromPath() map[string]valuePath
+	Type() metric.Type
 }
 
 // newCompiledMetric returns a compiledMetric depending given the metric type.
@@ -146,6 +151,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, errors.New("expected each.gauge to not be nil")
 		}
 		cc, err := compileCommon(m.Gauge.MetricMeta)
+		cc.t = metric.Gauge
 		if err != nil {
 			return nil, fmt.Errorf("each.gauge: %w", err)
 		}
@@ -164,6 +170,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, errors.New("expected each.info to not be nil")
 		}
 		cc, err := compileCommon(m.Info.MetricMeta)
+		cc.t = metric.Info
 		if err != nil {
 			return nil, fmt.Errorf("each.info: %w", err)
 		}
@@ -176,6 +183,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, errors.New("expected each.stateSet to not be nil")
 		}
 		cc, err := compileCommon(m.StateSet.MetricMeta)
+		cc.t = metric.StateSet
 		if err != nil {
 			return nil, fmt.Errorf("each.stateSet: %w", err)
 		}
@@ -569,8 +577,7 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 	errLog := klog.V(f.ErrorLogV)
 	return generator.FamilyGenerator{
 		Name: f.Name,
-		// TODO(@rexagod): This should be dynamic.
-		Type: metric.Gauge,
+		Type: f.Each.Type(),
 		Help: f.Help,
 		GenerateFunc: func(obj interface{}) *metric.Family {
 			return generate(obj.(*unstructured.Unstructured), f, errLog)

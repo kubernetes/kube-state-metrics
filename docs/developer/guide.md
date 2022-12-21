@@ -24,7 +24,7 @@ The following steps are needed to introduce a new resource and its respective re
 
 ### Add New Metrics
 
-- Make metrics experimental first when introducing them, [Example PR](https://github.com/kubernetes/kube-state-metrics/pull/1910).
+- Make metrics experimental first when introducing them, refer [#1910](https://github.com/kubernetes/kube-state-metrics/pull/1910) for more information.
 
 | Metric stability level |                    |
 |------------------------|--------------------|

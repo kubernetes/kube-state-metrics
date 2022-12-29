@@ -1320,10 +1320,11 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createPodStatusContainerReadyTimeFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_container_ready_time",
 		"Readiness achieved time in unix timestamp for a pod containers.",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1346,10 +1347,11 @@ func createPodStatusContainerReadyTimeFamilyGenerator() generator.FamilyGenerato
 }
 
 func createPodStatusReadyTimeFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_ready_time",
 		"Readiness achieved time in unix timestamp for a pod.",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}

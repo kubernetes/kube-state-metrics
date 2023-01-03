@@ -1306,7 +1306,7 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_pod_status_qos_class [STABLE] The pods current qosClass.
+				# HELP kube_pod_status_qos_class The pods current qosClass.
 				# TYPE kube_pod_status_qos_class gauge
 				kube_pod_status_qos_class{namespace="ns1",qos_class="BestEffort",pod="pod1",uid="uid1"} 1
 				kube_pod_status_qos_class{namespace="ns1",qos_class="Burstable",pod="pod1",uid="uid1"} 0

@@ -1323,7 +1323,7 @@ func createPodStatusQosClassFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_qos_class",
 		"The pods current qosClass.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		basemetrics.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			class := p.Status.QOSClass

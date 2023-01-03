@@ -49,7 +49,7 @@ spec:
           - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
 ```
 
-NOTE: The `group`, `version`, and `kind` common labels are reserved, and will be overwritten by the values from the `groupVersionKind` field.
+NOTE: The `customresource_group`, `customresource_version`, and `customresource_kind` common labels are reserved, and will be overwritten by the values from the `groupVersionKind` field.
 
 ### Examples
 

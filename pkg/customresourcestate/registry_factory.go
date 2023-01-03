@@ -38,9 +38,9 @@ func compile(resource Resource) ([]compiledFamily, error) {
 	if resource.CommonLabels == nil {
 		resource.CommonLabels = map[string]string{}
 	}
-	resource.CommonLabels["group"] = resource.GroupVersionKind.Group
-	resource.CommonLabels["version"] = resource.GroupVersionKind.Version
-	resource.CommonLabels["kind"] = resource.GroupVersionKind.Kind
+	resource.CommonLabels[customResourceState+"_group"] = resource.GroupVersionKind.Group
+	resource.CommonLabels[customResourceState+"_version"] = resource.GroupVersionKind.Version
+	resource.CommonLabels[customResourceState+"_kind"] = resource.GroupVersionKind.Kind
 	for _, f := range resource.Metrics {
 		family, err := compileFamily(f, resource)
 		if err != nil {

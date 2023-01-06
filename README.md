@@ -47,7 +47,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Resource recommendation](#resource-recommendation)
   - [Horizontal sharding](#horizontal-sharding)
     - [Automated sharding](#automated-sharding)
-  - [Daemonset sharding for pod metrics](#daemonset-sharding-pod-metrics)
+  - [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
 - [Setup](#setup)
   - [Building the Docker container](#building-the-docker-container)
 - [Usage](#usage)

@@ -49,6 +49,40 @@ spec:
           - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
 ```
 
+It's also possible to configure kube-state-metrics to run in a `custom-resource-mode` only. In addition to specifying one of `--custom-resource-state-config*` flags, you could set `--custom-resource-state-only` to `true`.
+With this configuration only the known custom resources configured in `--custom-resource-state-config*` will be taken into account by kube-state-metrics.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: kube-state-metrics
+        args:
+          - --custom-resource-state-config
+          # in YAML files, | allows a multi-line string to be passed as a flag value
+          # see https://yaml-multiline.info
+          -  |
+              spec:
+                resources:
+                  - groupVersionKind:
+                      group: myteam.io
+                      version: "v1"
+                      kind: Foo
+                    metrics:
+                      - name: active_count
+                        help: "Count of active Foo"
+                        each:
+                          type: Gauge
+                          ...
+          - --custom-resource-state-only=true
+```
+
 NOTE: The `customresource_group`, `customresource_version`, and `customresource_kind` common labels are reserved, and will be overwritten by the values from the `groupVersionKind` field.
 
 ### Examples
@@ -117,7 +151,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_customresource_uptime{customresource_group="myteam.io", kind="Foo", version="v1"} 43.21
+kube_customresource_uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
 
 #### Multiple Metrics/Kitchen Sink
@@ -169,8 +203,8 @@ spec:
 Produces the following metrics:
 
 ```prometheus
-kube_customresource_ready_count{customresource_group="myteam.io", kind="Foo", version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 2
-kube_customresource_ready_count{customresource_group="myteam.io", kind="Foo", version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 4
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 2
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 4
 ```
 
 ### Metric types
@@ -205,7 +239,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_customresource_uptime{customresource_group="myteam.io", kind="Foo", version="v1"} 43.21
+kube_customresource_uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
 
 #### StateSet
@@ -237,9 +271,9 @@ The value will be 1, if the value matches the one in list.
 Produces the metric:
 
 ```prometheus
-kube_customresource_status_phase{customresource_group="myteam.io", kind="Foo", version="v1", phase="Pending"} 1
-kube_customresource_status_phase{customresource_group="myteam.io", kind="Foo", version="v1", phase="Bar"} 0
-kube_customresource_status_phase{customresource_group="myteam.io", kind="Foo", version="v1", phase="Baz"} 0
+kube_customresource_status_phase{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", phase="Pending"} 1
+kube_customresource_status_phase{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", phase="Bar"} 0
+kube_customresource_status_phase{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", phase="Baz"} 0
 ```
 
 #### Info
@@ -269,7 +303,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_customresource_version{customresource_group="myteam.io", kind="Foo", version="v1", version="v1.2.3"} 1
+kube_customresource_version{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", version="v1.2.3"} 1
 ```
 
 ### Naming
@@ -291,7 +325,7 @@ spec:
 
 Produces:
 ```prometheus
-myteam_foos_uptime{customresource_group="myteam.io", kind="Foo", version="v1"} 43.21
+myteam_foos_uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
 
 To omit namespace and/or subsystem altogether, set them to the empty string:
@@ -309,7 +343,7 @@ spec:
 
 Produces:
 ```prometheus
-uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
+uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
 
 ### Logging

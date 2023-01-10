@@ -1297,6 +1297,26 @@ func TestPodStore(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Status: v1.PodStatus{
+					QOSClass: v1.PodQOSBestEffort,
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_qos_class The pods current qosClass.
+				# TYPE kube_pod_status_qos_class gauge
+				kube_pod_status_qos_class{namespace="ns1",qos_class="BestEffort",pod="pod1",uid="uid1"} 1
+				kube_pod_status_qos_class{namespace="ns1",qos_class="Burstable",pod="pod1",uid="uid1"} 0
+				kube_pod_status_qos_class{namespace="ns1",qos_class="Guaranteed",pod="pod1",uid="uid1"} 0
+`,
+			MetricNames: []string{"kube_pod_status_qos_class"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:              "pod4",
 					Namespace:         "ns4",
 					UID:               "uid4",
@@ -2079,7 +2099,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 47
+	expectedFamilies := 48
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

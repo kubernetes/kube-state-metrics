@@ -82,6 +82,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator(),
 		createPodStartTimeFamilyGenerator(),
 		createPodStatusPhaseFamilyGenerator(),
+		createPodStatusQosClassFamilyGenerator(),
 		createPodStatusReadyFamilyGenerator(),
 		createPodStatusReadyTimeFamilyGenerator(),
 		createPodStatusContainerReadyTimeFamilyGenerator(),
@@ -1363,6 +1364,48 @@ func createPodStatusReadyTimeFamilyGenerator() generator.FamilyGenerator {
 						LabelValues: []string{},
 						Value:       float64((c.LastTransitionTime).Unix()),
 					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodStatusQosClassFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_status_qos_class",
+		"The pods current qosClass.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			class := p.Status.QOSClass
+			if class == "" {
+				return &metric.Family{
+					Metrics: []*metric.Metric{},
+				}
+			}
+
+			qosClasses := []struct {
+				v bool
+				n string
+			}{
+				{class == v1.PodQOSBestEffort, string(v1.PodQOSBestEffort)},
+				{class == v1.PodQOSBurstable, string(v1.PodQOSBurstable)},
+				{class == v1.PodQOSGuaranteed, string(v1.PodQOSGuaranteed)},
+			}
+
+			ms := make([]*metric.Metric, len(qosClasses))
+
+			for i, p := range qosClasses {
+				ms[i] = &metric.Metric{
+
+					LabelKeys:   []string{"qos_class"},
+					LabelValues: []string{p.n},
+					Value:       boolFloat64(p.v),
 				}
 			}
 

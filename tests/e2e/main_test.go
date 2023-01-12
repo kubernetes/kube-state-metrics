@@ -271,7 +271,7 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 
 	files, err := os.ReadDir("../../internal/store/")
 	if err != nil {
-		t.Fatalf("failed to read dir to get all resouces name: %v", err)
+		t.Fatalf("failed to read dir to get all resources name: %v", err)
 	}
 
 	re := regexp.MustCompile(`^([a-z]+).go$`)

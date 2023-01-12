@@ -26,6 +26,10 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 )
 
+// customResourceState is used to prefix the auto-generated GVK labels as well as an appendix for the metric itself
+// if no custom metric name is defined
+const customResourceState string = "customresource"
+
 // Metrics is the top level configuration object.
 type Metrics struct {
 	Spec MetricsSpec `yaml:"spec" json:"spec"`
@@ -64,7 +68,7 @@ type Resource struct {
 func (r Resource) GetMetricNamePrefix() string {
 	p := r.MetricNamePrefix
 	if p == nil {
-		return "kube_crd"
+		return "kube_" + customResourceState
 	}
 	return *p
 }

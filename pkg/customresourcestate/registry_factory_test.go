@@ -333,7 +333,7 @@ func Test_fullName(t *testing.T) {
 				resource: r(nil),
 				f:        count,
 			},
-			want: "kube_crd_count",
+			want: "kube_customresource_count",
 		},
 		{
 			name: "no prefix",

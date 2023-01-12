@@ -30,9 +30,9 @@ spec:
             gauge:
               path: [metadata, annotations]
 # This will output the following metric:
-# HELP kube_crd_autoscaling_k8s_io_v1_VerticalPodAutoscaler_annotations Kubernetes annotations converted to Prometheus labels.
-# TYPE kube_crd_autoscaling_k8s_io_v1_VerticalPodAutoscaler_annotations gauge
-# kube_crd_autoscaling_k8s_io_v1_VerticalPodAutoscaler_annotations{namespace="default",target_api_version="autoscaling.k8s.io/v1",target_kind="Deployment",target_name="hamster",verticalpodautoscaler="hamster-vpa"} 123
+# HELP kube_customresource_autoscaling_annotations Kubernetes annotations converted to Prometheus labels.
+# TYPE kube_customresource_autoscaling_annotations gauge
+# kube_customresource_autoscaling_annotations{customresource_group="autoscaling.k8s.io", customresource_kind="VerticalPodAutoscaler", customresource_version="v1", namespace="default",target_api_version="autoscaling.k8s.io/v1",target_kind="Deployment",target_name="hamster",verticalpodautoscaler="hamster-vpa"} 123
 ```
 PS. The above configuration was tested on [this](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml) VPA configuration, with an added annotation (`foo: 123`).
 ***

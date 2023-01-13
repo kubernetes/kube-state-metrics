@@ -1,13 +1,12 @@
-# DO NOT EDIT; this file is auto-generated using https://github.com/openshift/ci-tools.
-# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
-
 approvers:
-- morvencao
-- marcolan018
-- subbarao-meduri
 - dislbenn
-options: {}
-reviewers:
+- marcolan018
+- ngraham20
+- subbarao-meduri
 - bjoydeep
+
+reviewers:
 - clyang82
+- haoqing0110
+- morvencao
 - songleo

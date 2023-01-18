@@ -19,11 +19,13 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/prometheus/common/version"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
@@ -34,6 +36,10 @@ import (
 
 // RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
 func RunKubeStateMetricsWrapper(opts *options.Options) {
+	if opts.Version {
+		fmt.Printf("%s\n", version.Print("kube-state-metrics"))
+		klog.FlushAndExit(klog.ExitFlushTimeout, 0)
+	}
 
 	KSMRunOrDie := func(ctx context.Context) {
 		if err := app.RunKubeStateMetricsWrapper(ctx, opts); err != nil {

@@ -78,6 +78,8 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStartTimeFamilyGenerator(),
 		createPodStatusPhaseFamilyGenerator(),
 		createPodStatusReadyFamilyGenerator(),
+		createPodStatusReadyTimeFamilyGenerator(),
+		createPodStatusContainerReadyTimeFamilyGenerator(),
 		createPodStatusReasonFamilyGenerator(),
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
@@ -1212,6 +1214,58 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 					LabelKeys:   []string{"phase"},
 					LabelValues: []string{p.n},
 					Value:       boolFloat64(p.v),
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodStatusContainerReadyTimeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_status_container_ready_time",
+		"Readiness achieved time in unix timestamp for a pod containers.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, c := range p.Status.Conditions {
+				if c.Type == v1.ContainersReady {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64((c.LastTransitionTime).Unix()),
+					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodStatusReadyTimeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		"kube_pod_status_ready_time",
+		"Readiness achieved time in unix timestamp for a pod.",
+		metric.Gauge,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, c := range p.Status.Conditions {
+				if c.Type == v1.PodReady {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64((c.LastTransitionTime).Unix()),
+					})
 				}
 			}
 

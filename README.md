@@ -308,7 +308,7 @@ If you want to revise the default configuration for kube-prometheus, for example
 
 #### Kubernetes Deployment
 
-To deploy this project, you can simply run `kubectl apply -k github.com/kubernetes/kube-state-metrics/examples/standard` and a Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information).
+To deploy this project, you can simply run `kubectl apply -k github.com/kubernetes/kube-state-metrics/` and a Kubernetes service and deployment will be created. (Note: Adjust the apiVersion of some resource if your kubernetes cluster's version is not 1.8+, check the yaml file for more information).
 
 To have Prometheus discover kube-state-metrics instances it is advised to create a specific Prometheus scrape config for kube-state-metrics that picks up both metrics endpoints. Annotation based discovery is discouraged as only one of the endpoints would be able to be selected, plus kube-state-metrics in most cases has special authentication and authorization requirements as it essentially grants read access through the metrics endpoint to most information available to it.
 

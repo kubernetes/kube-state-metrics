@@ -284,14 +284,14 @@ kube_customresource_uptime{customresource_group="myteam.io", customresource_kind
 ##### Type conversion and special handling
 
 Gauges produce values of type float64 but custom resources can be of all kinds of types.
-Kube-state-metrics performs implicity type conversions for a lot of type.
+Kube-state-metrics performs implicit type conversions for a lot of type.
 Supported types are:
 
 * (u)int32/64, int, float32 and byte are cast to float64
-* `nil` is generally mapped to `0.0` if NilIsZero is `true`. Otherwise it yields an error
+* `nil` is generally mapped to `0.0` if NilIsZero is `true`, otherwise it will throw an error
 * for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
 * for string the following logic applies
-  * `"true"` and `"yes"` are mapped to `1.0` and `"false"` and `"no"` are mapped to `0.0` (all case insensitive)
+  * `"true"` and `"yes"` are mapped to `1.0` and `"false"` and `"no"` are mapped to `0.0` (all case-insensitive)
   * RFC3339 times are parsed to float timestamp  
   * Quantities like "250m" or "512Gi" are parsed to float using https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
   * Percentages ending with a "%" are parsed to float
@@ -416,7 +416,7 @@ spec:
       metricNamePrefix: myteam_foos
       metrics:
         - name: uptime
-          ...
+          # ...
 ```
 
 Produces:
@@ -434,7 +434,7 @@ spec:
       metricNamePrefix: ""
       metrics:
         - name: uptime
-          ...
+          # ...
 ```
 
 Produces:
@@ -481,3 +481,41 @@ Examples:
 # if the value to be matched is a number or boolean, the value is compared as a number or boolean  
 [status, conditions, "[value=66]", name]  # status.conditions[1].name = "b"
 ```
+
+### Wildcard matching of version and kind fields
+
+The Custom Resource State (CRS hereon) configuration also allows you to monitor all versions and/or kinds that come under a group. It watches
+the installed CRDs for this purpose. Taking the aforementioned `Foo` object as reference, the configuration below allows
+you to monitor all objects under all versions *and* all kinds that come under the `myteam.io` group.
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: "myteam.io"
+        version: "*" # Set to `v1 to monitor all kinds under `myteam.io/v1`. Wildcard matches all installed versions that come under this group.
+        kind: "*" # Set to `Foo` to monitor all `Foo` objects under the `myteam.io` group (under all versions). Wildcard matches all installed kinds that come under this group (and version, if specified).
+      metrics:
+        - name: "myobject_info"
+          help: "Foo Bar Baz"
+          each:
+            type: Info
+            info:
+              path: [metadata]
+              labelsFromPath:
+                object: [name]
+                namespace: [namespace]
+```
+
+The configuration above produces these metrics.
+
+```yaml
+kube_customresource_myobject_info{customresource_group="myteam.io",customresource_kind="Foo",customresource_version="v1",namespace="ns",object="foo"} 1
+kube_customresource_myobject_info{customresource_group="myteam.io",customresource_kind="Bar",customresource_version="v1",namespace="ns",object="bar"} 1
+```
+
+#### Note
+
+- For cases where the GVKs defined in a CRD have multiple versions under a single group for the same kind, as expected, the wildcard value will resolve to *all* versions, but a query for any specific version will return all resources under all versions, in that versions' representation. This basically means that for two such versions `A` and `B`,  if a resource exists under `B`, it will reflect in the metrics generated for `A` as well, in addition to any resources of itself, and vice-versa. This logic is based on the [current `list`ing behavior](https://github.com/kubernetes/client-go/issues/1251#issuecomment-1544083071) of the client-go library.
+- The introduction of this feature further discourages (and discontinues) the use of native objects in the CRS featureset, since these do not have an explicit CRD associated with them, and conflict with internal stores defined specifically for such native resources. Please consider opening an issue or raising a PR if you'd like to expand on the current metric labelsets for them. Also, any such configuration will be ignored, and no metrics will be generated for the same.

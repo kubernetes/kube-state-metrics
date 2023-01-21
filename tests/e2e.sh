@@ -179,8 +179,6 @@ echo "make requests to kube-state-metrics"
 set +e
 
 
-
-
 kube_state_metrics_up
 set -e
 
@@ -190,8 +188,6 @@ echo "start e2e test for kube-state-metrics"
 KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
 KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
 go test -v ./tests/e2e/main_test.go --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
-go test -v ./tests/e2e/hot-reload_test.go
-
 
 # TODO: re-implement the following test cases in Go with the goal of removing this file.
 echo "access kube-state-metrics metrics endpoint"
@@ -206,6 +202,13 @@ fi
 sleep 33
 klog_err=E$(date +%m%d)
 echo "check for errors in logs"
+
+echo "running discovery tests..."
+go test -race -v ./tests/e2e/discovery_test.go
+
+echo "running hot-reload tests..."
+go test -v ./tests/e2e/hot-reload_test.go
+
 output_logs=$(kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics)
 if echo "${output_logs}" | grep "^${klog_err}"; then
     echo ""

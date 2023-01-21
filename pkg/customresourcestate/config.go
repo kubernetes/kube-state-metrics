@@ -21,9 +21,12 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/flect"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 
+	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/util"
 )
 
 // customResourceState is used to prefix the auto-generated GVK labels as well as an appendix for the metric itself
@@ -76,6 +79,7 @@ func (r Resource) GetMetricNamePrefix() string {
 // GetResourceName returns the lowercase, plural form of the resource Kind. This is ResourcePlural if it is set.
 func (r Resource) GetResourceName() string {
 	if r.ResourcePlural != "" {
+		klog.InfoS("Using custom resource plural", "resource", r.GroupVersionKind.String(), "plural", r.ResourcePlural)
 		return r.ResourcePlural
 	}
 	// kubebuilder default:
@@ -87,6 +91,10 @@ type GroupVersionKind struct {
 	Group   string `yaml:"group" json:"group"`
 	Version string `yaml:"version" json:"version"`
 	Kind    string `yaml:"kind" json:"kind"`
+}
+
+func (gvk GroupVersionKind) String() string {
+	return fmt.Sprintf("%s_%s_%s", gvk.Group, gvk.Version, gvk.Kind)
 }
 
 // Labels is common configuration of labels to add to metrics.
@@ -158,24 +166,43 @@ type ConfigDecoder interface {
 	Decode(v interface{}) (err error)
 }
 
-// FromConfig decodes a configuration source into a slice of customresource.RegistryFactory that are ready to use.
-func FromConfig(decoder ConfigDecoder) ([]customresource.RegistryFactory, error) {
-	var crconfig Metrics
-	var factories []customresource.RegistryFactory
+// FromConfig decodes a configuration source into a slice of `customresource.RegistryFactory` that are ready to use.
+func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscoverer) (func() ([]customresource.RegistryFactory, error), error) {
+	var customResourceConfig Metrics
 	factoriesIndex := map[string]bool{}
-	if err := decoder.Decode(&crconfig); err != nil {
+	if err := decoder.Decode(&customResourceConfig); err != nil {
 		return nil, fmt.Errorf("failed to parse Custom Resource State metrics: %w", err)
 	}
-	for _, resource := range crconfig.Spec.Resources {
-		factory, err := NewCustomResourceMetrics(resource)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
+	fn := func() (factories []customresource.RegistryFactory, err error) {
+		resources := customResourceConfig.Spec.Resources
+		// resolvedGVKPs will have the final list of GVKs, in addition to the resolved G** resources.
+		var resolvedGVKPs []Resource
+		for _, resource := range resources /* G** */ {
+			resolvedSet /* GVKPs */, err := discovererInstance.ResolveGVKToGVKPs(schema.GroupVersionKind(resource.GroupVersionKind))
+			if err != nil {
+				klog.ErrorS(err, "failed to resolve GVK", "gvk", resource.GroupVersionKind)
+			}
+			for _, resolved /* GVKP */ := range resolvedSet {
+				// Set their G** attributes to various resolutions of the GVK.
+				resource.GroupVersionKind = GroupVersionKind(resolved.GroupVersionKind)
+				// Set the plural name of the resource based on the extracted value from the same field in the CRD schema.
+				resource.ResourcePlural = resolved.Plural
+				resolvedGVKPs = append(resolvedGVKPs, resource)
+			}
 		}
-		if _, ok := factoriesIndex[factory.Name()]; ok {
-			return nil, fmt.Errorf("found multiple custom resource configurations for the same resource %s", factory.Name())
+		for _, resource := range resolvedGVKPs {
+			factory, err := NewCustomResourceMetrics(resource)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
+			}
+			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			if _, ok := factoriesIndex[gvrString]; ok {
+				klog.InfoS("reloaded factory", "GVR", gvrString)
+			}
+			factoriesIndex[gvrString] = true
+			factories = append(factories, factory)
 		}
-		factoriesIndex[factory.Name()] = true
-		factories = append(factories, factory)
+		return factories, nil
 	}
-	return factories, nil
+	return fn, nil
 }

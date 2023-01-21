@@ -891,7 +891,7 @@ func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
 	return fooClient, nil
 }
 
-func (f *fooFactory) MetricFamilyGenerators(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func (f *fooFactory) MetricFamilyGenerators() []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_foo_spec_replicas",

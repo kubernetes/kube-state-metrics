@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -73,6 +74,10 @@ func (g *FamilyGenerator) Generate(obj interface{}) *metric.Family {
 	family := g.GenerateFunc(obj)
 	family.Name = g.Name
 	family.Type = g.Type
+	// OpenMetrics spec requires that all Info metrics have a _info suffix.
+	if family.Type == metric.Info && !strings.HasSuffix(family.Name, "_info") {
+		klog.InfoS("Info metric %s does not have _info suffix", family.Name)
+	}
 	return family
 }
 

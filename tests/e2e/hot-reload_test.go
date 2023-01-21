@@ -97,14 +97,13 @@ func TestConfigHotReload(t *testing.T) {
 		if err != nil {
 			return false, err
 		}
+		// Indicate that the test has passed.
+		ch <- true
 		return true, nil
 	})
 	if err != nil {
 		t.Fatalf("failed to wait for port 8080 to come up after restarting the process: %v", err)
 	}
-
-	// Indicate that the test has passed.
-	ch <- true
 
 	// Wait for process to exit.
 	select {

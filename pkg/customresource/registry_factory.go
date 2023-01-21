@@ -86,7 +86,7 @@ type RegistryFactory interface {
 	//		),
 	//	}
 	// }
-	MetricFamilyGenerators(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator
+	MetricFamilyGenerators() []generator.FamilyGenerator
 
 	// ExpectedType returns a pointer to an empty custom resource object.
 	//

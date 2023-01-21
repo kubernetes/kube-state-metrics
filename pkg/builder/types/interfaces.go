@@ -45,12 +45,12 @@ type BuilderInterface interface {
 	WithAllowAnnotations(a map[string][]string)
 	WithAllowLabels(l map[string][]string) error
 	WithGenerateStoresFunc(f BuildStoresFunc)
-	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc
 	WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory)
 	Build() metricsstore.MetricsWriterList
 	BuildStores() [][]cache.Store
+	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 }
 
 // BuildStoresFunc function signature that is used to return a list of cache.Store

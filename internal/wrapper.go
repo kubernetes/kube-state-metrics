@@ -34,6 +34,7 @@ import (
 
 // RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
 func RunKubeStateMetricsWrapper(opts *options.Options) {
+
 	KSMRunOrDie := func(ctx context.Context) {
 		if err := app.RunKubeStateMetricsWrapper(ctx, opts); err != nil {
 			klog.ErrorS(err, "Failed to run kube-state-metrics")

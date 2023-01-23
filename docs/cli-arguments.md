@@ -75,7 +75,6 @@ Flags:
       --total-shards int                           The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
       --use-apiserver-cache                        Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.
   -v, --v Level                                    number for the log level verbosity
-      --version                                    kube-state-metrics build version information
       --vmodule moduleSpec                         comma-separated list of pattern=N settings for file-filtered logging
 
 Use "kube-state-metrics [command] --help" for more information about a command.

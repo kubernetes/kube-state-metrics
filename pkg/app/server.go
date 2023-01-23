@@ -26,6 +26,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -334,7 +335,7 @@ func createKubeClient(apiserver string, kubeconfig string, factories ...customre
 		return nil, nil, nil, err
 	}
 
-	config.UserAgent = version.Version
+	config.UserAgent = fmt.Sprintf("%s/%s (%s/%s) kubernetes/%s", "kube-state-metrics", version.Version, runtime.GOOS, runtime.GOARCH, version.Revision)
 	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 	config.ContentType = "application/vnd.kubernetes.protobuf"
 

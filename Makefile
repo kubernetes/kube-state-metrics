@@ -150,7 +150,7 @@ scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json
 
 install-tools:
 	@echo Installing tools from tools.go
-	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
+	grep '^\s*_' tools/tools.go | awk '{print $$2}' | xargs -tI % go install -mod=readonly -modfile=tools/go.mod %
 
 install-promtool:
 	@echo Installing promtool

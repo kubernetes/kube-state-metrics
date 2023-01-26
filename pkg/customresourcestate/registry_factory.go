@@ -635,10 +635,11 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		}
 		return 0, nil
 	case string:
-		if value.(string) == "True" || value.(string) == "true" || value.(string) == "Yes" || value.(string) == "yes" {
+		normalized := strings.ToLower(value.(string))
+		if normalized == "true" || normalized == "yes" {
 			return 1, nil
 		}
-		if value.(string) == "False" || value.(string) == "false" || value.(string) == "No" || value.(string) == "no" {
+		if normalized == "false" || normalized == "no" {
 			return 0, nil
 		}
 		if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {

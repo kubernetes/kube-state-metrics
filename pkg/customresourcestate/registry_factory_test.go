@@ -64,7 +64,7 @@ func init() {
 				},
 			},
 			"uptime": 43.21,
-			"conditions": Array{
+			"condition_values": Array{
 				Obj{
 					"name":  "a",
 					"value": 45,
@@ -72,6 +72,16 @@ func init() {
 				Obj{
 					"name":  "b",
 					"value": 66,
+				},
+			},
+			"conditions": Array{
+				Obj{
+					"type":   "Ready",
+					"status": "True",
+				},
+				Obj{
+					"type":   "Provisioned",
+					"status": "False",
 				},
 			},
 		},
@@ -175,7 +185,7 @@ func Test_values(t *testing.T) {
 		}},
 		{name: "array", each: &compiledGauge{
 			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "conditions"),
+				path: mustCompilePath(t, "status", "condition_values"),
 				labelFromPath: map[string]valuePath{
 					"name": mustCompilePath(t, "name"),
 				},
@@ -232,6 +242,25 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 0, "phase", "bar"),
 			newEachValue(t, 1, "phase", "foo"),
+		}},
+		{name: "status_conditions", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "conditions", "[type=Ready]", "status"),
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1),
+		}},
+		{name: "status_conditions_all", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "conditions"),
+				labelFromPath: map[string]valuePath{
+					"type": mustCompilePath(t, "type"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "status"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 0, "type", "Provisioned"),
+			newEachValue(t, 1, "type", "Ready"),
 		}},
 	}
 	for _, tt := range tests {
@@ -389,7 +418,7 @@ func Test_valuePath_Get(t *testing.T) {
 	}
 	tests := []testCase{
 		tt("obj", float64(1), "spec", "replicas"),
-		tt("array", float64(66), "status", "conditions", "[name=b]", "value"),
+		tt("array", float64(66), "status", "condition_values", "[name=b]", "value"),
 		tt("array index", true, "spec", "order", "0", "value"),
 		tt("string", "bar", "metadata", "labels", "foo"),
 		tt("match number", false, "spec", "order", "[id=3]", "value"),

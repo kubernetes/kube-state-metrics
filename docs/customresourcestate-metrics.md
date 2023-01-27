@@ -249,10 +249,10 @@ Kube-state-metrics performs implicity type conversions for a lot of type.
 Supported types are:
 
 * (u)int32/64, int, float32 and byte are cast to float64
-* nil is generally mapped to 0.0 if NilIsZero is true. Otherwise it yields an error
-* for bool true is mapped to 1.0 and false is mapped to 0.0
+* `nil` is generally mapped to `0.0` if NilIsZero is `true`. Otherwise it yields an error
+* for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
 * for string the following logic applies
-  * "true" and "yes" are mapped to 1.0 and "false" and "no" are mapped to 0.0 (all case insensitive)
+  * `"true"` and `"yes"` are mapped to `1.0` and `"false"` and `"no"` are mapped to `0.0` (all case insensitive)
   * RFC3339 times are parsed to float timestamp  
   * finally the string is parsed to float using https://pkg.go.dev/strconv#ParseFloat which should support all common number formats. If that fails an error is yielded
 
@@ -287,7 +287,7 @@ spec:
 
 This will work for kubernetes controller CRs which expose status conditions according to the kubernetes api (https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition):
 
-```
+```yaml
 status:
   conditions:
     - lastTransitionTime: "2019-10-22T16:29:31Z"

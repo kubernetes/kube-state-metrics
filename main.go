@@ -21,6 +21,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/internal"
+	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate/generate"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -30,6 +31,7 @@ func main() {
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		internal.RunKubeStateMetricsWrapper(opts)
 	}
+	cmd.AddCommand(generate.GenerateCommand)
 	opts.AddFlags(cmd)
 	if err := opts.Parse(); err != nil {
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)

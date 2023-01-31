@@ -1331,7 +1331,7 @@ func createPodStatusContainerReadyTimeFamilyGenerator() generator.FamilyGenerato
 			ms := []*metric.Metric{}
 
 			for _, c := range p.Status.Conditions {
-				if c.Type == v1.ContainersReady {
+				if c.Type == v1.ContainersReady && c.Status == v1.ConditionTrue {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
@@ -1358,7 +1358,7 @@ func createPodStatusReadyTimeFamilyGenerator() generator.FamilyGenerator {
 			ms := []*metric.Metric{}
 
 			for _, c := range p.Status.Conditions {
-				if c.Type == v1.PodReady {
+				if c.Type == v1.PodReady && c.Status == v1.ConditionTrue {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},

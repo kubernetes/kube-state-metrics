@@ -151,7 +151,7 @@ spec:
 Produces the metric:
 
 ```prometheus
-kube_crd_uptime{crd_group="myteam.io", crd_kind="Foo", crd_version="v1"} 43.21
+kube_crd_uptime{group="myteam.io", kind="Foo", version="v1"} 43.21
 ```
 
 #### Multiple Metrics/Kitchen Sink

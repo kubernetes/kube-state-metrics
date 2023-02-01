@@ -132,10 +132,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		if err != nil {
 			// DO NOT end the process.
 			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
-			klog.Warningf("failed to unmarshal opts config file: %v", err)
+			klog.ErrorS(err, "failed to unmarshal opts config file")
 			// Wait for the next reload.
-			klog.Infof("misconfigured config detected, KSM will automatically reload on next write to the config")
-			klog.Infof("waiting for config to be fixed")
+			klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
+			klog.InfoS("waiting for config to be fixed")
 			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
 			<-ctx.Done()
 		} else {

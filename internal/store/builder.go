@@ -493,7 +493,7 @@ func (b *Builder) buildStores(
 			composedMetricGenFuncs,
 		)
 		if b.fieldSelectorFilter != "" {
-			klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
+			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
@@ -507,7 +507,7 @@ func (b *Builder) buildStores(
 			composedMetricGenFuncs,
 		)
 		if b.fieldSelectorFilter != "" {
-			klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
+			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
@@ -540,7 +540,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			composedMetricGenFuncs,
 		)
 		if b.fieldSelectorFilter != "" {
-			klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
+			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
@@ -553,7 +553,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			familyHeaders,
 			composedMetricGenFuncs,
 		)
-		klog.Infof("FieldSelector is used %s", b.fieldSelectorFilter)
+		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		listWatcher := listWatchFunc(customResourceClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		stores = append(stores, store)

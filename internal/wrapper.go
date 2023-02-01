@@ -56,7 +56,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		cfgViper.OnConfigChange(func(e fsnotify.Event) {
-			klog.Infof("Changes detected: %s\n", e.Name)
+			klog.InfoS("Changes detected", "name", e.Name)
 			cancel()
 			// Wait for the ports to be released.
 			<-time.After(3 * time.Second)
@@ -86,7 +86,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		crcViper.OnConfigChange(func(e fsnotify.Event) {
-			klog.Infof("Changes detected: %s\n", e.Name)
+			klog.InfoS("Changes detected", "name", e.Name)
 			cancel()
 			// Wait for the ports to be released.
 			<-time.After(3 * time.Second)
@@ -95,7 +95,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		})
 		crcViper.WatchConfig()
 	}
-	klog.Infoln("Starting kube-state-metrics")
+	klog.InfoS("Starting kube-state-metrics")
 	KSMRunOrDie(ctx)
 	select {}
 }

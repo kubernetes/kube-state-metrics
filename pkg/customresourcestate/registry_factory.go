@@ -143,7 +143,7 @@ type compiledMetric interface {
 	Type() metric.Type
 }
 
-// newCompiledMetric returns a compiledMetric depending on given the metric type.
+// newCompiledMetric returns a compiledMetric depending on the given metric type.
 func newCompiledMetric(m Metric) (compiledMetric, error) {
 	switch m.Type {
 	case MetricTypeGauge:
@@ -217,6 +217,7 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 	switch iter := v.(type) {
 	case map[string]interface{}:
 		for key, it := range iter {
+			// TODO: Handle multi-length valueFrom paths (https://github.com/kubernetes/kube-state-metrics/pull/1958#discussion_r1099243161).
 			// Try to deduce `valueFrom`'s value from the current element.
 			var ev *eachValue
 			var err error
@@ -226,7 +227,7 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 			sValueFrom := c.ValueFrom.String()
 			// No comma means we're looking at a unit-length path (in an array).
 			if !strings.Contains(sValueFrom, ",") &&
-				sValueFrom[0] == '[' &&
+				sValueFrom[0] == '[' && sValueFrom[len(sValueFrom)-1] == ']' &&
 				// "[...]" and not "[]".
 				len(sValueFrom) > 2 {
 				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]

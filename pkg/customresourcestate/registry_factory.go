@@ -635,6 +635,13 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		}
 		return 0, nil
 	case string:
+		normalized := strings.ToLower(value.(string))
+		if normalized == "true" || normalized == "yes" {
+			return 1, nil
+		}
+		if normalized == "false" || normalized == "no" {
+			return 0, nil
+		}
 		if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {
 			return float64(t.Unix()), nil
 		}

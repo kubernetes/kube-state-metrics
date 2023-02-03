@@ -27,6 +27,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/prometheus/common/expfmt"
+
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -183,7 +185,9 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resHeader := w.Header()
 	var writer io.Writer = w
 
-	resHeader.Set("Content-Type", `text/plain; version=`+"0.0.4")
+	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
+
+	resHeader.Set("Content-Type", string(contentType))
 
 	if m.enableGZIPEncoding {
 		// Gzip response if requested. Taken from
@@ -204,6 +208,11 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			klog.ErrorS(err, "Failed to write metrics")
 		}
+	}
+
+	// If we send openmetrics, we need to include a EOF directive
+	if contentType == expfmt.FmtOpenMetrics {
+		w.Write([]byte("# EOF\n"))
 	}
 
 	// In case we gzipped the response, we have to close the writer.

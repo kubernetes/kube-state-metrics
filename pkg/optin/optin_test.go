@@ -19,6 +19,8 @@ package optin
 import (
 	"testing"
 
+	basemetrics "k8s.io/component-base/metrics"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -44,10 +46,11 @@ func TestFilter(t *testing.T) {
 			t.Errorf("did not expect NewMetricFamilyFilter to fail, the error is %v", err)
 		}
 
-		optInFamilyGenerator := *generator.NewFamilyGenerator(
+		optInFamilyGenerator := *generator.NewFamilyGeneratorWithStability(
 			test.MetricFamily,
 			"",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			func(_ interface{}) *metric.Family {
 				return nil

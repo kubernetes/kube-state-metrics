@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -36,10 +37,11 @@ var (
 	descVolumeAttachmentLabelsDefaultLabels = []string{"volumeattachment"}
 
 	volumeAttachmentMetricFamilies = []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descVolumeAttachmentLabelsName,
 			descVolumeAttachmentLabelsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				labelKeys, labelValues := kubeMapToPrometheusLabels("label", va.Labels)
@@ -54,10 +56,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_volumeattachment_info",
 			"Information about volumeattachment.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				return &metric.Family{
@@ -71,10 +74,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_volumeattachment_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				if !va.CreationTimestamp.IsZero() {
@@ -88,10 +92,11 @@ var (
 				return &metric.Family{Metrics: []*metric.Metric{}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_volumeattachment_spec_source_persistentvolume",
 			"PersistentVolume source reference.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				if va.Spec.Source.PersistentVolumeName != nil {
@@ -108,10 +113,11 @@ var (
 				return &metric.Family{}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_volumeattachment_status_attached",
 			"Information about volumeattachment.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				return &metric.Family{
@@ -125,10 +131,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_volumeattachment_status_attachment_metadata",
 			"volumeattachment metadata.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				labelKeys, labelValues := mapToPrometheusLabels(va.Status.AttachmentMetadata, "metadata")

@@ -55,10 +55,11 @@ var (
 
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_horizontalpodautoscaler_info",
 			"Information about this autoscaler.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				labelKeys := []string{"scaletargetref_kind", "scaletargetref_name"}
@@ -126,10 +127,11 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_horizontalpodautoscaler_spec_target_metric",
 			"The metric specifications used by this autoscaler when calculating the desired replica count.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
@@ -181,10 +183,11 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				return &metric.Family{Metrics: ms}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_horizontalpodautoscaler_status_target_metric",
 			"The current metric status used by this autoscaler when calculating the desired replica count.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
@@ -268,10 +271,11 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descHorizontalPodAutoscalerAnnotationsName,
 			descHorizontalPodAutoscalerAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)

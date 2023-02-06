@@ -37,10 +37,11 @@ var (
 
 func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_configmap_annotations",
 			"Kubernetes annotations converted to Prometheus labels.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", c.Annotations, allowAnnotationsList)
@@ -112,10 +113,11 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_configmap_metadata_resource_version",
 			"Resource version representing a specific version of the configmap.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{

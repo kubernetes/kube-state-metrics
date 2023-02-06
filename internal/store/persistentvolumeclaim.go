@@ -61,10 +61,11 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descPersistentVolumeClaimAnnotationsName,
 			descPersistentVolumeClaimAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
@@ -181,10 +182,11 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_status_condition",
 			"Information about status of different conditions of persistent volume claim.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := make([]*metric.Metric, len(p.Status.Conditions)*len(conditionStatuses))
@@ -207,10 +209,11 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := []*metric.Metric{}

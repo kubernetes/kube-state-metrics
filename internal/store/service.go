@@ -90,10 +90,11 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descServiceAnnotationsName,
 			descServiceAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)

@@ -78,10 +78,11 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descPersistentVolumeAnnotationsName,
 			descPersistentVolumeAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
@@ -298,10 +299,11 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolume_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				ms := []*metric.Metric{}

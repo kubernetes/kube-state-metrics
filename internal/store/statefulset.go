@@ -78,10 +78,11 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_statefulset_status_replicas_available",
 			"The number of available replicas per StatefulSet.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				return &metric.Family{
@@ -198,6 +199,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"Count of retention policy for StatefulSet template PVCs",
 			metric.Gauge,
 			basemetrics.ALPHA,
+
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				deletedPolicyLabel := ""
@@ -219,10 +221,11 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descStatefulSetAnnotationsName,
 			descStatefulSetAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)

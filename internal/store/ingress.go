@@ -68,10 +68,11 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					}}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descIngressAnnotationsName,
 			descIngressAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowAnnotationsList)
@@ -125,10 +126,11 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingress_metadata_resource_version",
 			"Resource version representing a specific version of ingress.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				return &metric.Family{

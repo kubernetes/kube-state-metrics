@@ -43,6 +43,8 @@ import (
 	samplev1alpha1 "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
 	samplefake "k8s.io/sample-controller/pkg/generated/clientset/versioned/fake"
 
+	basemetrics "k8s.io/component-base/metrics"
+
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
@@ -891,10 +893,11 @@ func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
 
 func (f *fooFactory) MetricFamilyGenerators(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_foo_spec_replicas",
 			"Number of desired replicas for a foo.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapFooFunc(func(f *samplev1alpha1.Foo) *metric.Family {
 				return &metric.Family{
@@ -906,10 +909,11 @@ func (f *fooFactory) MetricFamilyGenerators(allowAnnotationsList, allowLabelsLis
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_foo_status_replicas_available",
 			"The number of available replicas per foo.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapFooFunc(func(f *samplev1alpha1.Foo) *metric.Family {
 				return &metric.Family{

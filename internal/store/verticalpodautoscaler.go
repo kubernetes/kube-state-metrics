@@ -28,6 +28,7 @@ import (
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -44,10 +45,11 @@ var (
 
 func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descVerticalPodAutoscalerAnnotationsName,
 			descVerticalPodAutoscalerAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
@@ -62,10 +64,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descVerticalPodAutoscalerLabelsName,
 			descVerticalPodAutoscalerLabelsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
@@ -80,10 +83,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_verticalpodautoscaler_spec_updatepolicy_updatemode",
 			"Update mode of the VerticalPodAutoscaler.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
@@ -118,10 +122,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed",
 			"Minimum resources the VerticalPodAutoscaler can set for containers matching the name.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
@@ -140,10 +145,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed",
 			"Maximum resources the VerticalPodAutoscaler can set for containers matching the name.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
@@ -161,10 +167,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound",
 			"Minimum resources the container can use before the VerticalPodAutoscaler updater evicts it.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
@@ -182,10 +189,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound",
 			"Maximum resources the container can use before the VerticalPodAutoscaler updater evicts it.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
@@ -203,10 +211,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target",
 			"Target resources the VerticalPodAutoscaler recommends for the container.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}
@@ -223,10 +232,11 @@ func vpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget",
 			"Target resources the VerticalPodAutoscaler recommends for the container ignoring bounds.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.9.0",
 			wrapVPAFunc(func(a *autoscaling.VerticalPodAutoscaler) *metric.Family {
 				ms := []*metric.Metric{}

@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -48,10 +49,11 @@ func serviceAccountMetricFamilies(allowAnnotationsList, allowLabelsList []string
 }
 
 func createServiceAccountInfoFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_info",
 		"Information about a service account",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			var labelKeys []string
@@ -74,10 +76,11 @@ func createServiceAccountInfoFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createServiceAccountCreatedFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_created",
 		"Unix creation timestamp",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			var ms []*metric.Metric
@@ -98,10 +101,11 @@ func createServiceAccountCreatedFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createServiceAccountDeletedFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_deleted",
 		"Unix deletion timestamp",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			var ms []*metric.Metric
@@ -122,10 +126,11 @@ func createServiceAccountDeletedFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createServiceAccountSecretFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_secret",
 		"Secret being referenced by a service account",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			var ms []*metric.Metric
@@ -146,10 +151,11 @@ func createServiceAccountSecretFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createServiceAccountImagePullSecretFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_image_pull_secret",
 		"Secret being referenced by a service account for the purpose of pulling images",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			var ms []*metric.Metric
@@ -170,10 +176,11 @@ func createServiceAccountImagePullSecretFamilyGenerator() generator.FamilyGenera
 }
 
 func createServiceAccountAnnotationsGenerator(allowAnnotations []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_annotations",
 		"Kubernetes annotations converted to Prometheus labels.",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", sa.Annotations, allowAnnotations)
@@ -190,10 +197,11 @@ func createServiceAccountAnnotationsGenerator(allowAnnotations []string) generat
 }
 
 func createServiceAccountLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_labels",
 		"Kubernetes labels converted to Prometheus labels.",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", sa.Labels, allowLabelsList)

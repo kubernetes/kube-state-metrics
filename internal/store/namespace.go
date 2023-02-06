@@ -61,10 +61,11 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descNamespaceAnnotationsName,
 			descNamespaceAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
@@ -125,10 +126,11 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_namespace_status_condition",
 			"The condition of a namespace.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))

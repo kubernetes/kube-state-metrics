@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -40,10 +41,11 @@ var (
 
 func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descRoleBindingAnnotationsName,
 			descRoleBindingAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapRoleBindingFunc(func(r *rbacv1.RoleBinding) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
@@ -58,10 +60,11 @@ func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descRoleBindingLabelsName,
 			descRoleBindingLabelsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapRoleBindingFunc(func(r *rbacv1.RoleBinding) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
@@ -76,10 +79,11 @@ func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_rolebinding_info",
 			"Information about rolebinding.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapRoleBindingFunc(func(r *rbacv1.RoleBinding) *metric.Family {
 				labelKeys := []string{"roleref_kind", "roleref_name"}
@@ -93,10 +97,11 @@ func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_rolebinding_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapRoleBindingFunc(func(r *rbacv1.RoleBinding) *metric.Family {
 				ms := []*metric.Metric{}
@@ -114,10 +119,11 @@ func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_rolebinding_metadata_resource_version",
 			"Resource version representing a specific version of the rolebinding.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapRoleBindingFunc(func(r *rbacv1.RoleBinding) *metric.Family {
 				return &metric.Family{

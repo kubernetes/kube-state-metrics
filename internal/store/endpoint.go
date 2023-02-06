@@ -79,10 +79,11 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descEndpointAnnotationsName,
 			descEndpointAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", e.Annotations, allowAnnotationsList)
@@ -116,10 +117,11 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_address_available",
 			"Number of addresses available in endpoint.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.6.0",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var available int
@@ -136,10 +138,11 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_address_not_ready",
 			"Number of addresses not ready in endpoint",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"v2.6.0",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var notReady int

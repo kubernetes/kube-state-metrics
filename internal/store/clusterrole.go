@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -40,10 +41,11 @@ var (
 
 func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descClusterRoleAnnotationsName,
 			descClusterRoleAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
@@ -58,10 +60,11 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descClusterRoleLabelsName,
 			descClusterRoleLabelsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
@@ -76,10 +79,11 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_clusterrole_info",
 			"Information about cluster role.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				return &metric.Family{
@@ -91,10 +95,11 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_clusterrole_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				ms := []*metric.Metric{}
@@ -112,10 +117,11 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_clusterrole_metadata_resource_version",
 			"Resource version representing a specific version of the cluster role.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				return &metric.Family{

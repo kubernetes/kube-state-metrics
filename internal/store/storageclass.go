@@ -85,10 +85,11 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descStorageClassAnnotationsName,
 			descStorageClassAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)

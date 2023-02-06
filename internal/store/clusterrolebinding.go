@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -40,10 +41,11 @@ var (
 
 func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descClusterRoleBindingAnnotationsName,
 			descClusterRoleBindingAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleBindingFunc(func(r *rbacv1.ClusterRoleBinding) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
@@ -58,10 +60,11 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descClusterRoleBindingLabelsName,
 			descClusterRoleBindingLabelsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleBindingFunc(func(r *rbacv1.ClusterRoleBinding) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
@@ -76,10 +79,11 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_clusterrolebinding_info",
 			"Information about clusterrolebinding.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleBindingFunc(func(r *rbacv1.ClusterRoleBinding) *metric.Family {
 				labelKeys := []string{"roleref_kind", "roleref_name"}
@@ -93,10 +97,11 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_clusterrolebinding_created",
 			"Unix creation timestamp",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleBindingFunc(func(r *rbacv1.ClusterRoleBinding) *metric.Family {
 				ms := []*metric.Metric{}
@@ -114,10 +119,11 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_clusterrolebinding_metadata_resource_version",
 			"Resource version representing a specific version of the clusterrolebinding.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleBindingFunc(func(r *rbacv1.ClusterRoleBinding) *metric.Family {
 				return &metric.Family{

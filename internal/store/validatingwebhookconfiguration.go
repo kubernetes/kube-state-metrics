@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -34,10 +35,11 @@ var (
 	descValidatingWebhookConfigurationDefaultLabels = []string{"namespace", "validatingwebhookconfiguration"}
 
 	validatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_validatingwebhookconfiguration_info",
 			"Information about the ValidatingWebhookConfiguration.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
@@ -49,10 +51,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_validatingwebhookconfiguration_created",
 			"Unix creation timestamp.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
@@ -67,10 +70,11 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_validatingwebhookconfiguration_metadata_resource_version",
 			"Resource version representing a specific version of the ValidatingWebhookConfiguration.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{

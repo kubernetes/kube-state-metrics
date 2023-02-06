@@ -75,10 +75,11 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descSecretAnnotationsName,
 			descSecretAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
@@ -134,10 +135,11 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_secret_metadata_resource_version",
 			"Resource version representing a specific version of secret.",
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{

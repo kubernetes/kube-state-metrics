@@ -223,10 +223,11 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descDaemonSetAnnotationsName,
 			descDaemonSetAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)

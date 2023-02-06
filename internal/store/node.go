@@ -157,10 +157,11 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		descNodeAnnotationsName,
 		descNodeAnnotationsHelp,
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
@@ -200,10 +201,11 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 }
 
 func createNodeRoleFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGenerator(
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_node_role",
 		"The role of a cluster node.",
 		metric.Gauge,
+		basemetrics.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			const prefix = "node-role.kubernetes.io/"

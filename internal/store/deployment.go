@@ -283,10 +283,11 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 				}
 			}),
 		),
-		*generator.NewFamilyGenerator(
+		*generator.NewFamilyGeneratorWithStability(
 			descDeploymentAnnotationsName,
 			descDeploymentAnnotationsHelp,
 			metric.Gauge,
+			basemetrics.ALPHA,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)

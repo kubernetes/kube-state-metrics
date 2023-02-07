@@ -17,37 +17,25 @@ limitations under the License.
 package store
 
 import (
-	"context"
-
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 var (
-	descNetworkPolicyAnnotationsName     = "kube_networkpolicy_annotations"
-	descNetworkPolicyAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
-	descNetworkPolicyLabelsName          = "kube_networkpolicy_labels"
-	descNetworkPolicyLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
-)
 
-func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_networkpolicy_created",
-			"Unix creation timestamp of network policy",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+	networkpolicyMetricFamilies = []metric.FamilyGenerator{
+		{
+			Name: "kube_networkpolicy_created",
+			Type: metric.Gauge,
+			Help: "Unix creation timestamp of network policy",
+			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -58,34 +46,13 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					},
 				}
 			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descNetworkPolicyAnnotationsName,
-			descNetworkPolicyAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descNetworkPolicyLabelsName,
-			descNetworkPolicyLabelsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
+		},
+		{
+			Name: "kube_networkpolicy_labels",
+			Type: metric.Gauge,
+			Help: "Kubernetes labels converted to Prometheus labels",
+			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+				labelKeys, labelValues := kubeLabelsToPrometheusLabels(n.Labels)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -96,14 +63,12 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					},
 				}
 			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_networkpolicy_spec_ingress_rules",
-			"Number of ingress rules on the networkpolicy",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+		},
+		{
+			Name: "kube_networkpolicy_spec_ingress_rules",
+			Type: metric.Gauge,
+			Help: "Number of ingress rules on the networkpolicy",
+			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -114,14 +79,12 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					},
 				}
 			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_networkpolicy_spec_egress_rules",
-			"Number of egress rules on the networkpolicy",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+		},
+		{
+			Name: "kube_networkpolicy_spec_egress_rules",
+			Type: metric.Gauge,
+			Help: "Number of egress rules on the networkpolicy",
+			GenerateFunc: wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -132,9 +95,9 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					},
 				}
 			}),
-		),
+		},
 	}
-}
+)
 
 func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
@@ -143,22 +106,21 @@ func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) f
 		metricFamily := f(networkPolicy)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descNetworkPolicyLabelsDefaultLabels, []string{networkPolicy.Namespace, networkPolicy.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = append(descNetworkPolicyLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{networkPolicy.Namespace, networkPolicy.Name}, m.LabelValues...)
 		}
 
 		return metricFamily
 	}
 }
 
-func createNetworkPolicyListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createNetworkPolicyListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().NetworkPolicies(ns).List(context.TODO(), opts)
+			return kubeClient.NetworkingV1().NetworkPolicies(ns).List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().NetworkPolicies(ns).Watch(context.TODO(), opts)
+			return kubeClient.NetworkingV1().NetworkPolicies(ns).Watch(opts)
 		},
 	}
 }

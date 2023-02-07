@@ -5,10 +5,11 @@ ARG GOARCH
 ENV GOARCH=${GOARCH}
 WORKDIR /go/src/k8s.io/kube-state-metrics/
 COPY . /go/src/k8s.io/kube-state-metrics/
+RUN  go env -w GOPROXY=https://goproxy.io,direct
+RUN  go env -w GO111MODULE=on
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o kube-state-metrics   main.go
 
-RUN make build-local
-
-FROM gcr.io/distroless/static:latest-${GOARCH}
+FROM alpine
 COPY --from=builder /go/src/k8s.io/kube-state-metrics/kube-state-metrics /
 
 USER nobody

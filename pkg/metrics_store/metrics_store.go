@@ -17,13 +17,18 @@ limitations under the License.
 package metricsstore
 
 import (
+	"io"
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
-
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
+
+// FamilyByteSlicer represents a metric family that can be converted to its string
+// representation.
+type FamilyByteSlicer interface {
+	ByteSlice() []byte
+}
 
 // MetricsStore implements the k8s.io/client-go/tools/cache.Store
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
@@ -43,11 +48,11 @@ type MetricsStore struct {
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []metric.FamilyInterface
+	generateMetricsFunc func(interface{}) []FamilyByteSlicer
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(interface{}) []FamilyByteSlicer) *MetricsStore {
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,
@@ -142,4 +147,19 @@ func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 // Resync implements the Resync method of the store interface.
 func (s *MetricsStore) Resync() error {
 	return nil
+}
+
+// WriteAll writes all metrics of the store into the given writer, zipped with the
+// help text of each metric family.
+func (s *MetricsStore) WriteAll(w io.Writer) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for i, help := range s.headers {
+		w.Write([]byte(help))
+		w.Write([]byte{'\n'})
+		for _, metricFamilies := range s.metrics {
+			w.Write(metricFamilies[i])
+		}
+	}
 }

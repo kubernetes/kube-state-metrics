@@ -2,9 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/version: 2.7.0
+    app.kubernetes.io/version: v1.9.8
   name: kube-state-metrics
   namespace: kube-system
 spec:
@@ -15,13 +14,11 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: exporter
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/version: 2.7.0
+        app.kubernetes.io/version: v1.9.8
     spec:
-      automountServiceAccountToken: true
       containers:
-      - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.7.0
+      - image: quay.io/coreos/kube-state-metrics:v1.9.8
         livenessProbe:
           httpGet:
             path: /healthz
@@ -40,13 +37,6 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           timeoutSeconds: 5
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-          runAsUser: 65534
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: kube-state-metrics

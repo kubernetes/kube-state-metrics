@@ -23,18 +23,20 @@ case $(uname -m) in
 	*)		ARCH="$(uname -m)";;
 esac
 
-NODE_IMAGE_NAME="docker.io/kindest/node"
-KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.26.0"}
+KUBERNETES_VERSION=v1.18.6
 KUBE_STATE_METRICS_LOG_DIR=./log
-KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics"
-KUBE_STATE_METRICS_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics-${ARCH}"
+KUBE_STATE_METRICS_IMAGE_NAME="quay.io/coreos/kube-state-metrics-${ARCH}"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
-KIND_VERSION=v0.17.0
+KIND_VERSION=v0.8.1
 SUDO=${SUDO:-}
 
 OS=$(uname -s | awk '{print tolower($0)}')
 OS=${OS:-linux}
+
+EXCLUDED_RESOURCE_REGEX="verticalpodautoscaler"
+
+mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
 
 function finish() {
     echo "calling cleanup function"
@@ -45,7 +47,7 @@ function finish() {
 }
 
 function setup_kind() {
-    curl -sLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-${OS}-${ARCH}" \
+    curl -sLo kind https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-"${OS}"-amd64 \
         && chmod +x kind \
         && ${SUDO} mv kind /usr/local/bin/
 }
@@ -67,7 +69,7 @@ touch "${HOME}"/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
 
-kind create cluster --image="${NODE_IMAGE_NAME}:${KUBERNETES_VERSION}"
+kind create cluster --image=kindest/node:${KUBERNETES_VERSION}
 
 kind export kubeconfig
 
@@ -97,7 +99,7 @@ set -e
 kubectl version
 
 # query kube-state-metrics image tag
-REGISTRY="registry.k8s.io/kube-state-metrics" make container
+make container
 docker images -a
 KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep "${KUBE_STATE_METRICS_IMAGE_NAME}" |grep -v 'latest'|awk '{print $2}'|sort -u)
 echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"
@@ -105,7 +107,7 @@ echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"
 kind load docker-image "${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}"
 
 # update kube-state-metrics image tag in deployment.yaml
-sed -i.bak "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
+sed -i.bak "s|${KUBE_STATE_METRICS_IMAGE_NAME%-*}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
 cat ./examples/standard/deployment.yaml
 
 trap finish EXIT
@@ -153,16 +155,19 @@ set -e
 echo "kube-state-metrics is up and running"
 
 echo "start e2e test for kube-state-metrics"
-KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
-KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
-go test -v ./tests/e2e/main_test.go --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
-go test -v ./tests/e2e/hot-reload_test.go
-
-mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
+KSMURL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
+go test -v ./tests/e2e/ --ksmurl=${KSMURL}
 
 # TODO: re-implement the following test cases in Go with the goal of removing this file.
 echo "access kube-state-metrics metrics endpoint"
 curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/metrics
+
+resources=$(find internal/store/ -maxdepth 1 -name "*.go" -not -name "*_test.go" -not -name "builder.go" -not -name "testutils.go" -not -name "utils.go" -print0 | xargs -0 -n1 basename | awk -F. '{print $1}'| grep -v "$EXCLUDED_RESOURCE_REGEX")
+echo "available resources: $resources"
+for resource in ${resources}; do
+    echo "checking that kube_${resource}* metrics exists"
+    grep "^kube_${resource}_" ${KUBE_STATE_METRICS_LOG_DIR}/metrics
+done
 
 KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
 if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then

@@ -25,8 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 // Mock metricFamily instead of importing /pkg/metric to prevent cyclic
@@ -43,24 +41,17 @@ func (f *metricFamily) ByteSlice() []byte {
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDS := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj interface{}) []FamilyByteSlicer {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		metricFamily := metric.Family{
-			Name: "kube_service_info",
-			Metrics: []*metric.Metric{
-				{
-					LabelKeys:   []string{"uid"},
-					LabelValues: []string{string(o.GetUID())},
-					Value:       float64(1),
-				},
-			},
+		metricFamily := metricFamily{
+			[]byte(fmt.Sprintf("kube_service_info{uid=\"%v\"} 1", string(o.GetUID()))),
 		}
 
-		return []metric.FamilyInterface{&metricFamily}
+		return []FamilyByteSlicer{&metricFamily}
 	}
 
 	ms := NewMetricsStore([]string{"Information about service."}, genFunc)
@@ -81,11 +72,7 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	}
 
 	w := strings.Builder{}
-	mw := NewMetricsWriter(ms)
-	err := mw.WriteAll(&w)
-	if err != nil {
-		t.Fatalf("failed to write metrics: %v", err)
-	}
+	ms.WriteAll(&w)
 	m := w.String()
 
 	for _, id := range serviceIDS {

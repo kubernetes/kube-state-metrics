@@ -1,160 +1,99 @@
-FLAGS =
-TESTENVVAR =
-REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
-TAG_PREFIX = v
-VERSION = $(shell cat VERSION)
-TAG ?= $(TAG_PREFIX)$(VERSION)
-LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
-BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
-DOCKER_CLI ?= docker
-PROMTOOL_CLI ?= promtool
-PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
-ARCH ?= $(shell go env GOARCH)
-BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
-OS ?= $(shell uname -s | tr A-Z a-z)
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
-PKG = github.com/prometheus/common
-PROMETHEUS_VERSION = 2.40.6
-GO_VERSION = 1.19.4
-IMAGE = $(REGISTRY)/kube-state-metrics
-MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
-USER ?= $(shell id -u -n)
-HOST ?= $(shell hostname)
+.PHONY: build build-alpine build-mod-alpine clean test help default
 
-export DOCKER_CLI_EXPERIMENTAL=enabled
+BIN_NAME:=$(notdir $(shell pwd))
 
-validate-modules:
-	@echo "- Verifying that the dependencies have expected content..."
-	go mod verify
-	@echo "- Checking for any unused/missing packages in go.mod..."
-	go mod tidy
-	@git diff --exit-code -- go.sum go.mod
+ VERSION := v2.0.2
+# 使用分支名作为version
+# VERSION := $(shell git branch | grep \* | cut -d ' ' -f2)
+GIT_COMMIT=$(shell git rev-parse HEAD)
+GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+IMAGE_NAME := "ecf-edge/coreos/${BIN_NAME}"
+REMOTE_DOCKER_URI := harbor-dev.eecos.cn:1443/ecf-edge/coreos/${BIN_NAME}
 
-licensecheck:
-	@echo ">> checking license header"
-	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*') ; do \
-               awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
-       done); \
-       if [ -n "$${licRes}" ]; then \
-               echo "license header checking failed:"; echo "$${licRes}"; \
-               exit 1; \
-       fi
+ifndef $(GOPATH)
+    GOPATH=$(shell go env GOPATH)
+endif
 
-lint: shellcheck licensecheck
-	golangci-lint run
+ifeq ($(findstring $(GOPATH), $(pwd))), $(GOPATH))
+    # Found
+    IN_GOPATH=true
+else
+    # Not found
+    IN_GOPATH=false
+endif
 
-lint-fix:
-	golangci-lint run --fix -v
+ifeq ($(VERSION), develop)
+    ENABLE_RACE=-race
+endif
 
-doccheck: generate
-	@echo "- Checking if the generated documentation is up to date..."
-	@git diff --exit-code
-	@echo "- Checking if the documentation is in sync with the code..."
-	@grep -hoE -d skip '\| kube_[^ |]+' docs/* --exclude=README.md | sed -E 's/\| //g' | sort -u > documented_metrics
-	@find internal/store -type f -not -name '*_test.go' -exec sed -nE 's/.*"(kube_[^"]+)".*/\1/p' {} \; | sort -u > code_metrics
-	@diff -u0 code_metrics documented_metrics || (echo "ERROR: Metrics with - are present in code but missing in documentation, metrics with + are documented but not found in code."; exit 1)
-	@echo OK
-	@rm -f code_metrics documented_metrics
-	@echo "- Checking for orphan documentation files"
-	@cd docs; for doc in *.md; do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
-	@echo OK
+ifneq ($(findstring release, $(VERSION)),)
+    ENABLE_RACE=-race
+endif
 
-build-local:
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE}" -o kube-state-metrics
+default: build
 
-build: kube-state-metrics
+help:
+	@echo 'Management commands:'
+	@echo
+	@echo 'Usage:'
+	@echo '    make build           Compile the project.'
+	@echo '    make build-alpine    Compile optimized for alpine linux.'
+	@echo '    make package         Build final docker image with just the go binary inside'
+	@echo '    make tag             Tag image created by package with latest, git commit and version'
+	@echo '    make test            Run tests on a compiled project.'
+	@echo '    make push            Push tagged images to registry'
+	@echo '    make clean           Clean the directory tree.'
+	@echo '    make update-cookiecutter           Update the base config. e.g. gitlab-ci.yml, Dockerfile, Makefile...'
+	@echo
 
-kube-state-metrics:
-	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} make build-local
+build:
+	@echo "building ${BIN_NAME} ${VERSION}"
+	go build ${ENABLE_RACE} -ldflags "-X main.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X main.VersionPrerelease=DEV" -o bin/${BIN_NAME}
+build-alpine:
+	@echo "building ${BIN_NAME} ${VERSION}"
+	go build ${ENABLE_RACE} -ldflags "-X main.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X main.VersionPrerelease=VersionPrerelease=RC" -o bin/${BIN_NAME}
 
-test-unit:
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
+build-mod-alpine:
+	@echo "building ${BIN_NAME} ${VERSION}"
+	go build ${ENABLE_RACE} -mod vendor -ldflags "-X main.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X main.VersionPrerelease=VersionPrerelease=RC" -o bin/${BIN_NAME}
 
-test-rules:
-	${PROMTOOL_CLI} test rules tests/rules/alerts-test.yaml
+package:
+	@echo "building image ${BIN_NAME} ${VERSION} $(GIT_COMMIT)"
+	go mod vendor
+	# 加快编译
+	#docker build ${DOCKER_BUILD_ARGS} --build-arg APP_NAME=${BIN_NAME} --build-arg VERSION=${VERSION} --build-arg GIT_COMMIT=${GIT_COMMIT} -t ${IMAGE_NAME}:latest .
+	docker buildx build ${DOCKER_BUILD_ARGS} --platform=linux/amd64,linux/arm64 -o type=docker --build-arg APP_NAME=${BIN_NAME} --build-arg VERSION=${VERSION} --build-arg GIT_COMMIT=${GIT_COMMIT} -t ${IMAGE_NAME}:latest .
+	rm -rf vendor
 
-shellcheck:
-	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
+clean Dockerfile: clean Dockerfile
+	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	docker buildx create --use
+	docker buildx build ${DOCKER_BUILD_ARGS} --platform=linux/amd64,linux/arm64 -o type=docker --build-arg APP_NAME=${BIN_NAME} --build-arg VERSION=${VERSION} --build-arg GIT_COMMIT=${GIT_COMMIT} -t ${IMAGE_NAME}:latest .
 
-# Runs benchmark tests on the current git ref and the last release and compares
-# the two.
-test-benchmark-compare:
-	@git fetch
-	./tests/compare_benchmarks.sh main
-	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
+tag: 
+	@echo "Tagging: latest ${VERSION} $(GIT_COMMIT)"
+	docker tag $(IMAGE_NAME):latest $(REMOTE_DOCKER_URI):${VERSION}
+	docker tag $(IMAGE_NAME):latest $(REMOTE_DOCKER_URI):latest
 
-all: all-container
+push: tag
+	docker push $(REMOTE_DOCKER_URI):${VERSION}
 
-# Container build for multiple architectures as defined in ALL_ARCH
+local-run:
+	docker run --rm -p 8082:8082 -v `pwd`/config.yml:/etc/${BIN_NAME}/config.yml $(IMAGE_NAME):latest
 
-container: container-$(ARCH)
-
-container-%:
-	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
-
-sub-container-%:
-	$(MAKE) --no-print-directory ARCH=$* container
-
-all-container: $(addprefix sub-container-,$(ALL_ARCH))
-
-# Container push, push is the target to push for multiple architectures as defined in ALL_ARCH
-
-push: $(addprefix sub-push-,$(ALL_ARCH)) push-multi-arch;
-
-sub-push-%: container-% do-push-% ;
-
-do-push-%:
-	${DOCKER_CLI} push $(IMAGE)-$*:$(TAG)
-
-push-multi-arch:
-	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
-	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
 clean:
-	rm -f kube-state-metrics
-	git clean -Xfd .
+	@test ! -e bin/${BIN_NAME} || rm bin/${BIN_NAME}
+	@test ! -e /tmp/${BIN_NAME} || rm -rf /tmp/${BIN_NAME}
 
-e2e:
-	./tests/e2e.sh
+update-cookiecutter:
+	rm -rf /tmp/cookiecutter
+	mkdir -p /tmp/cookiecutter
+	cd /tmp/cookiecutter && cookiecutter https://gitlab.ctyuncdn.cn/ecf/service-template.git --no-input app_name=$(BIN_NAME)
+	cp /tmp/cookiecutter/$(BIN_NAME)/Makefile . | true
+	cp /tmp/cookiecutter/$(BIN_NAME)/Dockerfile . | true
+	cp /tmp/cookiecutter/$(BIN_NAME)/.gitlab-ci.yml . | true
+	rm -rf /tmp/cookiecutter
 
-generate: build-local
-	@echo ">> generating docs"
-	@./scripts/generate-help-text.sh
-	embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
-
-validate-manifests: examples
-	@git diff --exit-code
-
-mixin: examples/prometheus-alerting-rules/alerts.yaml
-
-examples/prometheus-alerting-rules/alerts.yaml: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/mixin.jsonnet scripts/vendor
-	mkdir -p examples/prometheus-alerting-rules
-	jsonnet -J scripts/vendor scripts/mixin.jsonnet | gojsontoyaml > examples/prometheus-alerting-rules/alerts.yaml
-
-examples: examples/standard examples/autosharding mixin
-
-examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor VERSION
-	mkdir -p examples/standard
-	jsonnet -J scripts/vendor -m examples/standard --ext-str version="$(VERSION)" scripts/standard.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
-	find examples -type f ! -name '*.yaml' -delete
-
-examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/autosharding.jsonnet scripts/vendor VERSION
-	mkdir -p examples/autosharding
-	jsonnet -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
-	find examples -type f ! -name '*.yaml' -delete
-
-scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json
-	cd scripts && jb install
-
-install-tools:
-	@echo Installing tools from tools.go
-	grep '^\s*_' tools/tools.go | awk '{print $$2}' | xargs -tI % go install -mod=readonly -modfile=tools/go.mod %
-
-install-promtool:
-	@echo Installing promtool
-	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" |\
-	tar xvz --strip-components=1 prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}/promtool
-
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate embedmd
+test:
+	go test -v `go list ./... | grep -v vendor`

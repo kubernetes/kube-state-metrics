@@ -17,31 +17,25 @@ limitations under the License.
 package store
 
 import (
-	"context"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
 
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 
-	resourceQuotaMetricFamilies = []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_resourcequota_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
+	resourceQuotaMetricFamilies = []metric.FamilyGenerator{
+		{
+			Name: "kube_resourcequota_created",
+			Type: metric.Gauge,
+			Help: "Unix creation timestamp",
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !r.CreationTimestamp.IsZero() {
@@ -55,14 +49,12 @@ var (
 					Metrics: ms,
 				}
 			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_resourcequota",
-			"Information about resource quota.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
+		},
+		{
+			Name: "kube_resourcequota",
+			Type: metric.Gauge,
+			Help: "Information about resource quota.",
+			GenerateFunc: wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
 				for res, qty := range r.Status.Hard {
@@ -86,7 +78,7 @@ var (
 					Metrics: ms,
 				}
 			}),
-		),
+		},
 	}
 )
 
@@ -97,22 +89,21 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interf
 		metricFamily := f(resourceQuota)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descResourceQuotaLabelsDefaultLabels, []string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = append(descResourceQuotaLabelsDefaultLabels, m.LabelKeys...)
+			m.LabelValues = append([]string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelValues...)
 		}
 
 		return metricFamily
 	}
 }
 
-func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ResourceQuotas(ns).List(context.TODO(), opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(opts)
 		},
 	}
 }

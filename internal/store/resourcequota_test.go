@@ -24,16 +24,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/pkg/metric"
 )
 
 func TestResourceQuotaStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-	# HELP kube_resourcequota [STABLE] Information about resource quota.
+	# HELP kube_resourcequota Information about resource quota.
 	# TYPE kube_resourcequota gauge
-	# HELP kube_resourcequota_created [STABLE] Unix creation timestamp
+	# HELP kube_resourcequota_created Unix creation timestamp
 	# TYPE kube_resourcequota_created gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -134,8 +134,8 @@ func TestResourceQuotaStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(resourceQuotaMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies)
+		c.Func = metric.ComposeMetricGenFuncs(resourceQuotaMetricFamilies)
+		c.Headers = metric.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

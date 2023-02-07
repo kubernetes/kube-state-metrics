@@ -3,25 +3,20 @@ name: continuous-integration
 on:
   push:
     branches:
-    - main
+    - master
     - release*
     tags:
     - v1.*
     - v2.*
   pull_request:
     branches:
-    - main
+    - master
     - release*
-
-permissions:
-  contents: read
 
 env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
-  GO_VERSION: "^1.19"
-  GOLANGCI_LINT_VERSION: "v1.50.1"
 
 jobs:
   ci-go-lint:
@@ -29,21 +24,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
     - name: Lint
       run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+        curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
         make lint
 
   ci-validate-manifests:
@@ -51,16 +47,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
     - name: Validate generated manifests
@@ -72,19 +69,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
-    - name: Validate go modules
+    - name: Validate vendor is in sync with go modules
       run: |
         make validate-modules
 
@@ -93,16 +91,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
     - name: Check that all metrics are documented
@@ -114,52 +113,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
     - name: Unit tests
       run: |
         make test-unit
 
-  ci-rule-tests:
-    name: ci-rule-tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
-
-      - name: Setup promtool
-        run: |
-          make install-promtool
-
-      - name: Rule tests
-        run: |
-          PROMTOOL_CLI=./promtool make test-rules
-
   ci-benchmark-tests:
     name: ci-benchmark-tests
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
     - name: Benchmark tests
@@ -171,16 +157,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
     - name: Build
@@ -192,18 +179,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ^1.15
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Setup environment
       run: |
+        go get -v -t -d ./...
         make install-tools
 
     - name: End-to-end tests
       run: |
-        make e2e
+        REGISTRY="quay.io/coreos" make e2e

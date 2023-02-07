@@ -1,4 +1,3 @@
-//go:build tools
 // +build tools
 
 /*
@@ -24,5 +23,5 @@ import (
 	_ "github.com/campoy/embedmd"
 	_ "github.com/google/go-jsonnet/cmd/jsonnet"
 	_ "github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb"
-	_ "golang.org/x/perf/cmd/benchstat"
+	_ "golang.org/x/tools/cmd/benchcmp"
 )

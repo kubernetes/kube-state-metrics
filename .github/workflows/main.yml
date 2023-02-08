@@ -2,7 +2,7 @@ name:  Build x86 and arm Image
 
 env:
   BASEIMAGE: kube-state-metrics:v2.0.0
-  VERSION: 0.8.13
+  VERSION: 0.2.3
 
 on:
   pull_request:
@@ -28,4 +28,4 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build & Push Docker image
-        run: make push-container
+        run: make package

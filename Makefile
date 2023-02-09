@@ -2,7 +2,7 @@ CGO_ENABLED:=0
 DOCKER_PLATFORMS=linux/amd64,linux/arm64
 REGISTRY?=cloudx2021
 TAG?=v0.2.2
-IMAGE:=$(REGISTRY)/node-problem-detector:$(TAG)
+IMAGE:=$(REGISTRY)/kube-state-metrics:$(TAG)
 BASEIMAGE:=k8s.gcr.io/debian-base:v2.0.0
 ifeq ($(ENABLE_JOURNALD), 1)
 	CGO_ENABLED:=1

@@ -295,6 +295,7 @@ status:
       type: Ready
 ```
 
+kube_customresource_foo_status{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", type="Ready"} 1.571761771e+09
 
 #### StateSet
 

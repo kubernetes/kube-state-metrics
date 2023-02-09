@@ -165,12 +165,7 @@ func isExtendedResourceName(name v1.ResourceName) bool {
 }
 
 func isNativeResource(name v1.ResourceName) bool {
-	return !strings.Contains(string(name), "/") ||
-		isPrefixedNativeResource(name)
-}
-
-func isPrefixedNativeResource(name v1.ResourceName) bool {
-	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
+	return !strings.Contains(string(name), "/")
 }
 
 // createPrometheusLabelKeysValues takes in passed kubernetes annotations/labels

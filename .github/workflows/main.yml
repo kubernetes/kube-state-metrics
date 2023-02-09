@@ -1,8 +1,8 @@
 name:  Build x86 and arm Image
 
 env:
-  BASEIMAGE: kube-state-metrics:v2.0.0
-  VERSION: 0.2.3
+  BASEIMAGE: kube-state-metrics:v2.0.3
+  VERSION: 2.0.3
 
 on:
   pull_request:

@@ -183,6 +183,17 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 2, "type", "type-a", "active", "1"),
 			newEachValue(t, 4, "type", "type-b", "active", "3"),
 		}},
+		{name: "path-relative valueFrom value", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "metadata"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "creationTimestamp"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 1.6563744e+09),
+		}},
 		{name: "array", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "condition_values"),

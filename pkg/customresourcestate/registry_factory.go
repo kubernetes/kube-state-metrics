@@ -143,7 +143,7 @@ type compiledMetric interface {
 	Type() metric.Type
 }
 
-// newCompiledMetric returns a compiledMetric depending given the metric type.
+// newCompiledMetric returns a compiledMetric depending on the given metric type.
 func newCompiledMetric(m Metric) (compiledMetric, error) {
 	switch m.Type {
 	case MetricTypeGauge:
@@ -217,7 +217,41 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 	switch iter := v.(type) {
 	case map[string]interface{}:
 		for key, it := range iter {
-			ev, err := c.value(it)
+			// TODO: Handle multi-length valueFrom paths (https://github.com/kubernetes/kube-state-metrics/pull/1958#discussion_r1099243161).
+			// Try to deduce `valueFrom`'s value from the current element.
+			var ev *eachValue
+			var err error
+			var didResolveValueFrom bool
+			// `valueFrom` will ultimately be rendered into a string and sent to the fallback in place, which also expects a string.
+			// So we'll do the same and operate on the string representation of `valueFrom`'s value.
+			sValueFrom := c.ValueFrom.String()
+			// No comma means we're looking at a unit-length path (in an array).
+			if !strings.Contains(sValueFrom, ",") &&
+				sValueFrom[0] == '[' && sValueFrom[len(sValueFrom)-1] == ']' &&
+				// "[...]" and not "[]".
+				len(sValueFrom) > 2 {
+				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
+				if key == extractedValueFrom {
+					gotFloat, err := toFloat64(it, c.NilIsZero)
+					if err != nil {
+						onError(fmt.Errorf("[%s]: %w", key, err))
+						continue
+					}
+					labels := make(map[string]string)
+					ev = &eachValue{
+						Labels: labels,
+						Value:  gotFloat,
+					}
+					didResolveValueFrom = true
+				}
+			}
+			// Fallback to the regular path resolution, if we didn't manage to resolve `valueFrom`'s value.
+			if !didResolveValueFrom {
+				ev, err = c.value(it)
+				if ev == nil {
+					continue
+				}
+			}
 			if err != nil {
 				onError(fmt.Errorf("[%s]: %w", key, err))
 				continue
@@ -387,7 +421,19 @@ func less(a, b map[string]string) bool {
 
 func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 	labels := make(map[string]string)
-	value, err := toFloat64(c.ValueFrom.Get(it), c.NilIsZero)
+	got := c.ValueFrom.Get(it)
+	// If `valueFrom` was not resolved, respect `NilIsZero` and return.
+	if got == nil {
+		if c.NilIsZero {
+			return &eachValue{
+				Labels: labels,
+				Value:  0,
+			}, nil
+		}
+		// Don't error if there was not a type-casting issue (`toFloat64`), but rather a failed lookup.
+		return nil, nil
+	}
+	value, err := toFloat64(got, c.NilIsZero)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", c.ValueFrom, err)
 	}
@@ -554,7 +600,10 @@ func compilePath(path []string) (out valuePath, _ error) {
 					} else if s, ok := m.([]interface{}); ok {
 						i, err := strconv.Atoi(part)
 						if err != nil {
-							return fmt.Errorf("invalid list index: %s", part)
+							// This means we are here: [ <string>, <int>, ... ] (eg., [ "foo", "0", ... ], i.e., <path>.foo[0]...
+							//                           ^
+							// Skip over.
+							return nil
 						}
 						if i < 0 {
 							// negative index

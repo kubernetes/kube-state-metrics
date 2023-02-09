@@ -11,6 +11,7 @@ endif
 
 
 package:
+	go mod tidy
 	docker buildx create --use
 	docker buildx build --push --platform $(DOCKER_PLATFORMS) -t $(IMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
 

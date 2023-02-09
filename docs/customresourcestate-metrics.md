@@ -242,6 +242,61 @@ Produces the metric:
 kube_customresource_uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
 
+##### Type conversion and special handling
+
+Gauges produce values of type float64 but custom resources can be of all kinds of types.
+Kube-state-metrics performs implicity type conversions for a lot of type.
+Supported types are:
+
+* (u)int32/64, int, float32 and byte are cast to float64
+* `nil` is generally mapped to `0.0` if NilIsZero is `true`. Otherwise it yields an error
+* for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
+* for string the following logic applies
+  * `"true"` and `"yes"` are mapped to `1.0` and `"false"` and `"no"` are mapped to `0.0` (all case insensitive)
+  * RFC3339 times are parsed to float timestamp  
+  * finally the string is parsed to float using https://pkg.go.dev/strconv#ParseFloat which should support all common number formats. If that fails an error is yielded
+
+##### Example for status conditions on Kubernetes Controllers
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+  - groupVersionKind:
+      group: myteam.io
+      kind: "Foo"
+      version: "v1"
+    labelsFromPath:
+      name:
+      - metadata
+      - name
+      namespace:
+      - metadata
+      - namespace
+    metrics:
+    - name: "foo_status"
+      help: "status condition "
+      each:
+        type: Gauge
+        gauge:
+          path: [status, conditions]
+          labelsFromPath:
+            type: ["type"]
+          valueFrom: ["status"]
+```
+
+This will work for kubernetes controller CRs which expose status conditions according to the kubernetes api (https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition):
+
+```yaml
+status:
+  conditions:
+    - lastTransitionTime: "2019-10-22T16:29:31Z"
+      status: "True"
+      type: Ready
+```
+
+kube_customresource_foo_status{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", type="Ready"} 1.0
+
 #### StateSet
 
 > StateSets represent a series of related boolean values, also called a bitset. If ENUMs need to be encoded this MAY be done via StateSet. [[1]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#stateset)

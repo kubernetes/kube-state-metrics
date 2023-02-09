@@ -22,7 +22,6 @@ RUN apt-get update --fix-missing && apt-get --yes install libsystemd-dev gcc-aar
 RUN go version
 RUN  go env -w GOPROXY=https://goproxy.io,direct
 RUN  go env -w GO111MODULE=on
-RUN godep version
 
 COPY . /go/src/k8s.io/kube-state-metrics/
 WORKDIR /go/src/k8s.io/kube-state-metrics/

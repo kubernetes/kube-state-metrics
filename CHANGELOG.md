@@ -1,3 +1,26 @@
+## v2.8.0 / 2023-02-10
+
+Note: The `--version` flag was removed as `kube-state-metrics version` also provides the same information. See #1956
+
+Note: Experimental CustomResourceState changed their labels for better usability. See #1942
+kube_crd_uptime{group="myteam.io", kind="Foo", version="v1"} -> kube_customresource_uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"}
+
+* [CHANGE]       Prefix Group, Version and Kind labels for CustomResourceState Metrics #1942 @bavarianbidi
+* [CHANGE]       Fix empty string for "owner_\*" dimensions #1923 @pawcykca
+* [CHANGE]       Remove broken --version flag, replace by version command #1956 @bjorand
+* [FEATURE]      Add metrics for EndpointSlices #1910 @mrueg
+* [FEATURE]      Add metrics for config file changes #1916 @mrueg
+* [FEATURE]      Add metrics for CustomResource State config file change #1928 @mrueg
+* [FEATURE]      Reload Kube-State-Metrics on CustomResourceState config file change #1930 @mrueg
+* [FEATURE]      Make CustomResourceState metrics type dynamic #1930 @rexagod
+* [FEATURE]      Add kube_pod_status_qos_class to pod metrics #1932 @frezes
+* [FEATURE]      Add kube_pod_status_ready_time and kube_pod_status_containers_ready_time metrics #1938 @ryanrolds
+* [FEATURE]      Enrich UserAgent with more information about kube-state-metrics #1960 @mrueg
+* [FEATURE]      Convert True/False to 1.0/0.0 values in CustomResourceState metrics #1963 @jabdoa2
+* [FEATURE]      Expose metrics in OpenMetrics format #1974 @mrueg
+* [BUGFIX]       Handle unit length `valueFrom` values #1958 @rexagod
+* [ENHANCEMENT]  Build with kubernetes 1.26 #1933 @mrueg
+
 ## v2.7.0 / 2022-11-25
 
 Note: Experimental VerticalPodAutoscaler metrics are considered deprecated in this release and will be removed in v2.9.0.

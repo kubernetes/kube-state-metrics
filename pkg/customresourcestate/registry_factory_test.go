@@ -64,7 +64,9 @@ func init() {
 					"ready":  4,
 				},
 			},
-			"uptime": 43.21,
+			"uptime":            43.21,
+			"quantity_milli":    "250m",
+			"quantity_binarySI": "5Gi",
 			"condition_values": Array{
 				Obj{
 					"name":  "a",
@@ -224,6 +226,20 @@ func Test_values(t *testing.T) {
 			},
 		}, wantResult: []eachValue{
 			newEachValue(t, 1656374400),
+		}},
+		{name: "quantity_milli", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "quantity_milli"),
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 0.25),
+		}},
+		{name: "quantity_binarySI", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "quantity_binarySI"),
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 5.36870912e+09),
 		}},
 		{name: "boolean_string", each: &compiledGauge{
 			compiledCommon: compiledCommon{

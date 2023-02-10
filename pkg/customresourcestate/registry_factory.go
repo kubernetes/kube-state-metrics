@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog/v2"
 
@@ -690,6 +691,7 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		}
 		return 0, nil
 	case string:
+		// The string contains a boolean as a string
 		normalized := strings.ToLower(value.(string))
 		if normalized == "true" || normalized == "yes" {
 			return 1, nil
@@ -697,8 +699,13 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		if normalized == "false" || normalized == "no" {
 			return 0, nil
 		}
+		// The string contains a RFC3339 timestamp
 		if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {
 			return float64(t.Unix()), nil
+		}
+		// The string contains a quantity with a suffix like "25m" (milli) or "5Gi" (binarySI)
+		if t, e := resource.ParseQuantity(value.(string)); e == nil {
+			return t.AsApproximateFloat64(), nil
 		}
 		return strconv.ParseFloat(value.(string), 64)
 	case byte:

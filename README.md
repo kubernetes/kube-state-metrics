@@ -37,7 +37,6 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
   - [Conflict resolution in label names](#conflict-resolution-in-label-names)
-  - [Enabling VerticalPodAutoscalers](#enabling-verticalpodautoscalers)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
 - [Latency](#latency)
@@ -122,13 +121,6 @@ you might want to consider addressing this issue on a different level of the sta
 e.g. by standardizing Kubernetes labels using an
 [Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 that ensures that there are no possible conflicts.
-
-#### Enabling VerticalPodAutoscalers
-
-Please note that the collector for `verticalpodautoscalers` is **disabled** by default; Vertical Pod Autoscaler metrics will not be collected until the collector is enabled. This is because Vertical Pod Autoscalers are managed as custom resources.
-
-If you want to enable this collector,
-the [instructions](./docs/verticalpodautoscaler-metrics.md#Configuration) are located in the [Vertical Pod Autoscaler Metrics](./docs/verticalpodautoscaler-metrics.md) documentation.
 
 ### Kube-state-metrics self metrics
 

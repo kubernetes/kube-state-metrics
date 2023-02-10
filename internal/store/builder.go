@@ -37,8 +37,6 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
-	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -61,7 +59,6 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 type Builder struct {
 	kubeClient            clientset.Interface
 	customResourceClients map[string]interface{}
-	vpaClient             vpaclientset.Interface
 	namespaces            options.NamespaceList
 	// namespaceFilter is inside fieldSelectorFilter
 	fieldSelectorFilter           string
@@ -141,11 +138,6 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.kubeClient = c
-}
-
-// WithVPAClient sets the vpaClient property of a Builder so that the verticalpodautoscaler collector can query VPA objects.
-func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
-	b.vpaClient = c
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
@@ -317,7 +309,6 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"storageclasses":                  func(b *Builder) []cache.Store { return b.buildStorageClassStores() },
 	"validatingwebhookconfigurations": func(b *Builder) []cache.Store { return b.buildValidatingWebhookConfigurationStores() },
 	"volumeattachments":               func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
-	"verticalpodautoscalers":          func(b *Builder) []cache.Store { return b.buildVPAStores() },
 }
 
 func resourceExists(name string) bool {
@@ -447,10 +438,6 @@ func (b *Builder) buildValidatingWebhookConfigurationStores() []cache.Store {
 
 func (b *Builder) buildVolumeAttachmentStores() []cache.Store {
 	return b.buildStoresFunc(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache)
-}
-
-func (b *Builder) buildVPAStores() []cache.Store {
-	return b.buildStoresFunc(vpaMetricFamilies(b.allowAnnotationsList["verticalpodautoscalers"], b.allowLabelsList["verticalpodautoscalers"]), &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient), b.useAPIServerCache)
 }
 
 func (b *Builder) buildLeasesStores() []cache.Store {

@@ -46,7 +46,7 @@ spec:
                         each:
                           type: Gauge
                           ...
-          - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
+          - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
 ```
 
 It's also possible to configure kube-state-metrics to run in a `custom-resource-mode` only. In addition to specifying one of `--custom-resource-state-config*` flags, you could set `--custom-resource-state-only` to `true`.
@@ -206,6 +206,45 @@ Produces the following metrics:
 kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 2
 kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 4
 ```
+
+#### VerticalPodAutoscaler
+
+In v2.9.0 the `vericalpodautoscalers` resource was removed from the list of default resources. In order to generate metrics for `verticalpodautoscalers`, you can use the following Custom Resource State config:
+
+```yaml
+# Using --resource=verticalpodautoscalers, we get the following output:
+# HELP kube_verticalpodautoscaler_annotations Kubernetes annotations converted to Prometheus labels.
+# TYPE kube_verticalpodautoscaler_annotations gauge
+# kube_verticalpodautoscaler_annotations{namespace="default",verticalpodautoscaler="hamster-vpa",target_api_version="apps/v1",target_kind="Deployment",target_name="hamster"} 1
+# A similar result can be achieved by specifying the following in --custom-resource-state-config:
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: autoscaling.k8s.io
+        kind: "VerticalPodAutoscaler"
+        version: "v1"
+      labelsFromPath:
+        verticalpodautoscaler: [metadata, name]
+        namespace: [metadata, namespace]
+        target_api_version: [apiVersion]
+        target_kind: [spec, targetRef, kind]
+        target_name: [spec, targetRef, name]
+      metrics:
+        - name: "annotations"
+          help: "Kubernetes annotations converted to Prometheus labels."
+          each:
+            type: Gauge
+            gauge:
+              path: [metadata, annotations]
+# This will output the following metric:
+# HELP kube_customresource_autoscaling_annotations Kubernetes annotations converted to Prometheus labels.
+# TYPE kube_customresource_autoscaling_annotations gauge
+# kube_customresource_autoscaling_annotations{customresource_group="autoscaling.k8s.io", customresource_kind="VerticalPodAutoscaler", customresource_version="v1", namespace="default",target_api_version="autoscaling.k8s.io/v1",target_kind="Deployment",target_name="hamster",verticalpodautoscaler="hamster-vpa"} 123
+```
+
+The above configuration was tested on [this](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml) VPA configuration, with an added annotation (`foo: 123`).
+
 
 ### Metric types
 

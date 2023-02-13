@@ -10,7 +10,7 @@ We have full documentation on how to get started contributing here:
 
 ### Semantic Commit Messages
 
-We use [semantic commit messages](https://www.conventionalcommits.org/en/v1.0.0/)  in this repository.
+We use [semantic commit messages](https://www.conventionalcommits.org/en/v1.0.0/) in this repository.
 
 They follow this format: `<type>[optional scope]: <description>`
 

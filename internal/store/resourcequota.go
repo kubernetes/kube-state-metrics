@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -39,7 +40,7 @@ var (
 			"kube_resourcequota_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
@@ -60,7 +61,7 @@ var (
 			"kube_resourcequota",
 			"Information about resource quota.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}

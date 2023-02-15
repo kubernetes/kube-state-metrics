@@ -56,7 +56,7 @@ type RegistryFactory interface {
 	//			"kube_foo_spec_replicas",
 	//			"Number of desired replicas for a foo.",
 	//			metric.Gauge,
-	//			basemetrics.ALPHA,
+	//			metricsstability.ALPHA,
 	//			"",
 	//			wrapFooFunc(func(f *samplev1alpha1.Foo) *metric.Family {
 	//				return &metric.Family{
@@ -72,7 +72,7 @@ type RegistryFactory interface {
 	//			"kube_foo_status_replicas_available",
 	//			"The number of available replicas per foo.",
 	//			metric.Gauge,
-	//			basemetrics.ALPHA,
+	//			metricsstability.ALPHA,
 	//			"",
 	//			wrapFooFunc(func(f *samplev1alpha1.Foo) *metric.Family {
 	//				return &metric.Family{

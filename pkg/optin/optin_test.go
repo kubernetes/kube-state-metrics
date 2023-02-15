@@ -19,7 +19,7 @@ package optin
 import (
 	"testing"
 
-	basemetrics "k8s.io/component-base/metrics"
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -50,7 +50,7 @@ func TestFilter(t *testing.T) {
 			test.MetricFamily,
 			"",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			func(_ interface{}) *metric.Family {
 				return nil

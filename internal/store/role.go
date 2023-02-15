@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -45,7 +46,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			descRoleAnnotationsName,
 			descRoleAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
@@ -64,7 +65,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			descRoleLabelsName,
 			descRoleLabelsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
@@ -83,7 +84,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			"kube_role_info",
 			"Information about role.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
 				return &metric.Family{
@@ -99,7 +100,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			"kube_role_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
 				ms := []*metric.Metric{}
@@ -121,7 +122,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			"kube_role_metadata_resource_version",
 			"Resource version representing a specific version of the role.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
 				return &metric.Family{

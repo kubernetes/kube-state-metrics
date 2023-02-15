@@ -26,7 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -46,7 +47,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_info",
 			"Information about endpoint.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				return &metric.Family{
@@ -62,7 +63,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
@@ -83,7 +84,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			descEndpointAnnotationsName,
 			descEndpointAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", e.Annotations, allowAnnotationsList)
@@ -102,7 +103,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			descEndpointLabelsName,
 			descEndpointLabelsHelp,
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", e.Labels, allowLabelsList)
@@ -121,7 +122,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_address_available",
 			"Number of addresses available in endpoint.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"v2.6.0",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var available int
@@ -142,7 +143,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_address_not_ready",
 			"Number of addresses not ready in endpoint",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"v2.6.0",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				var notReady int
@@ -162,7 +163,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_address",
 			"Information about Endpoint available and non available addresses.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
@@ -191,7 +192,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"kube_endpoint_ports",
 			"Information about the Endpoint ports.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}

@@ -20,7 +20,7 @@ import (
 	"context"
 	"strconv"
 
-	basemetrics "k8s.io/component-base/metrics"
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -47,7 +47,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"kube_ingress_info",
 			"Information about ingress.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ingressClassName := "_default"
@@ -72,7 +72,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			descIngressAnnotationsName,
 			descIngressAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowAnnotationsList)
@@ -91,7 +91,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			descIngressLabelsName,
 			descIngressLabelsHelp,
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", i.Labels, allowLabelsList)
@@ -110,7 +110,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"kube_ingress_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
@@ -130,7 +130,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"kube_ingress_metadata_resource_version",
 			"Resource version representing a specific version of ingress.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				return &metric.Family{
@@ -142,7 +142,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"kube_ingress_path",
 			"Ingress host, paths and backend service information.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
@@ -174,7 +174,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"kube_ingress_tls",
 			"Ingress TLS host and secret information.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}

@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -39,7 +40,7 @@ var (
 			"kube_limitrange",
 			"Information about limit range.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
@@ -95,7 +96,7 @@ var (
 			"kube_limitrange_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}

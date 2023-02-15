@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -39,7 +40,7 @@ var (
 			"kube_mutatingwebhookconfiguration_info",
 			"Information about the MutatingWebhookConfiguration.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
@@ -55,7 +56,7 @@ var (
 			"kube_mutatingwebhookconfiguration_created",
 			"Unix creation timestamp.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				ms := []*metric.Metric{}
@@ -74,7 +75,7 @@ var (
 			"kube_mutatingwebhookconfiguration_metadata_resource_version",
 			"Resource version representing a specific version of the MutatingWebhookConfiguration.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{

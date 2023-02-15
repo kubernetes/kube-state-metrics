@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	basemetrics "k8s.io/component-base/metrics"
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -63,7 +63,7 @@ func createNodeDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_deletion_timestamp",
 		"Unix deletion timestamp",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			var ms []*metric.Metric
@@ -86,7 +86,7 @@ func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_created",
 		"Unix creation timestamp",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
@@ -110,7 +110,7 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_info",
 		"Information about a cluster node.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			labelKeys := []string{
@@ -161,7 +161,7 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 		descNodeAnnotationsName,
 		descNodeAnnotationsHelp,
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
@@ -183,7 +183,7 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
@@ -205,7 +205,7 @@ func createNodeRoleFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_role",
 		"The role of a cluster node.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			const prefix = "node-role.kubernetes.io/"
@@ -231,7 +231,7 @@ func createNodeSpecTaintFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_spec_taint",
 		"The taint of a cluster node.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := make([]*metric.Metric, len(n.Spec.Taints))
@@ -259,7 +259,7 @@ func createNodeSpecUnschedulableFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_spec_unschedulable",
 		"Whether a node can schedule new pods.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			return &metric.Family{
@@ -278,7 +278,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_status_allocatable",
 		"The allocatable for different resources of a node that are available for scheduling.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
@@ -362,7 +362,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_status_capacity",
 		"The capacity for different resources of a node.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
@@ -449,7 +449,7 @@ func createNodeStatusConditionFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))

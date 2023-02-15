@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -45,7 +46,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			descPodDisruptionBudgetAnnotationsName,
 			descPodDisruptionBudgetAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
@@ -64,7 +65,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			descPodDisruptionBudgetLabelsName,
 			descPodDisruptionBudgetLabelsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
@@ -83,7 +84,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"kube_poddisruptionbudget_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				ms := []*metric.Metric{}
@@ -103,7 +104,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"kube_poddisruptionbudget_status_current_healthy",
 			"Current number of healthy pods",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -119,7 +120,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"kube_poddisruptionbudget_status_desired_healthy",
 			"Minimum desired number of healthy pods",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -135,7 +136,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"kube_poddisruptionbudget_status_pod_disruptions_allowed",
 			"Number of pod disruptions that are currently allowed",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -151,7 +152,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"kube_poddisruptionbudget_status_expected_pods",
 			"Total number of pods counted by this disruption budget",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
@@ -167,7 +168,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			"kube_poddisruptionbudget_status_observed_generation",
 			"Most recent generation observed when updating this PDB status",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{

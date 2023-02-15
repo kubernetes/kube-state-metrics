@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -45,7 +46,7 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			"kube_networkpolicy_created",
 			"Unix creation timestamp of network policy",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
@@ -63,7 +64,7 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			descNetworkPolicyAnnotationsName,
 			descNetworkPolicyAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
@@ -82,7 +83,7 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			descNetworkPolicyLabelsName,
 			descNetworkPolicyLabelsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
@@ -101,7 +102,7 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			"kube_networkpolicy_spec_ingress_rules",
 			"Number of ingress rules on the networkpolicy",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{
@@ -119,7 +120,7 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			"kube_networkpolicy_spec_egress_rules",
 			"Number of egress rules on the networkpolicy",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
 				return &metric.Family{

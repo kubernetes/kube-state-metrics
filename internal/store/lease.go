@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -39,7 +40,7 @@ var (
 			"kube_lease_owner",
 			"Information about the Lease's owner.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
 				labelKeys := []string{"owner_kind", "owner_name", "namespace", "lease_holder"}
@@ -80,7 +81,7 @@ var (
 			"kube_lease_renew_time",
 			"Kube lease renew time.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
 				ms := []*metric.Metric{}

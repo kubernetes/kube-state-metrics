@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -41,7 +42,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			"kube_configmap_annotations",
 			"Kubernetes annotations converted to Prometheus labels.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", c.Annotations, allowAnnotationsList)
@@ -60,7 +61,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			"kube_configmap_labels",
 			"Kubernetes labels converted to Prometheus labels.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", c.Labels, allowLabelsList)
@@ -79,7 +80,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			"kube_configmap_info",
 			"Information about configmap.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
@@ -95,7 +96,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			"kube_configmap_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				ms := []*metric.Metric{}
@@ -117,7 +118,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			"kube_configmap_metadata_resource_version",
 			"Resource version representing a specific version of the configmap.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{

@@ -20,9 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	basemetrics "k8s.io/component-base/metrics"
-
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 )
 
 // FamilyGenerator provides everything needed to generate a metric family with a
@@ -35,19 +34,19 @@ type FamilyGenerator struct {
 	Type              metric.Type
 	OptIn             bool
 	DeprecatedVersion string
-	StabilityLevel    basemetrics.StabilityLevel
+	Stability         metricsstability.Stability
 	GenerateFunc      func(obj interface{}) *metric.Family
 }
 
 // NewFamilyGeneratorWithStability creates new FamilyGenerator instances with metric
 // stabilityLevel.
-func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel metricsstability.Stability, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
 	f := &FamilyGenerator{
 		Name:              name,
 		Type:              metricType,
 		Help:              help,
 		OptIn:             false,
-		StabilityLevel:    stabilityLevel,
+		Stability:         stabilityLevel,
 		DeprecatedVersion: deprecatedVersion,
 		GenerateFunc:      generateFunc,
 	}
@@ -58,7 +57,7 @@ func NewFamilyGeneratorWithStability(name string, help string, metricType metric
 }
 
 // NewOptInFamilyGenerator creates new FamilyGenerator instances for opt-in metric families.
-func NewOptInFamilyGenerator(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+func NewOptInFamilyGenerator(name string, help string, metricType metric.Type, stabilityLevel metricsstability.Stability, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
 	f := NewFamilyGeneratorWithStability(name, help, metricType, stabilityLevel,
 		deprecatedVersion, generateFunc)
 	f.OptIn = true
@@ -82,9 +81,9 @@ func (g *FamilyGenerator) generateHeader() string {
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
 	// TODO(#1833): remove if-else after all metrics are attached with right
-	// StabilityLevel.
-	if g.StabilityLevel == basemetrics.STABLE {
-		header.WriteString(fmt.Sprintf("[%v] %v", g.StabilityLevel, g.Help))
+	// Stability.
+	if g.Stability == metricsstability.STABLE {
+		header.WriteString(fmt.Sprintf("[%s] %v", "STABLE", g.Help))
 	} else {
 		header.WriteString(g.Help)
 	}

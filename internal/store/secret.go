@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -45,7 +46,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			"kube_secret_info",
 			"Information about secret.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
@@ -61,7 +62,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			"kube_secret_type",
 			"Type about secret.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
@@ -79,7 +80,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			descSecretAnnotationsName,
 			descSecretAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
@@ -99,7 +100,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			descSecretLabelsName,
 			descSecretLabelsHelp,
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
@@ -119,7 +120,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			"kube_secret_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.STABLE,
+			metricsstability.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				ms := []*metric.Metric{}
@@ -139,7 +140,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			"kube_secret_metadata_resource_version",
 			"Resource version representing a specific version of secret.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{

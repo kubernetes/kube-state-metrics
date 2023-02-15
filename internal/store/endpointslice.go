@@ -17,7 +17,7 @@ import (
 	"context"
 	"strconv"
 
-	basemetrics "k8s.io/component-base/metrics"
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -44,7 +44,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			"kube_endpointslice_info",
 			"Information about endpointslice.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
 
@@ -60,7 +60,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			"kube_endpointslice_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
 				ms := []*metric.Metric{}
@@ -78,7 +78,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			"kube_endpointslice_endpoints",
 			"Endpoints attached to the endpointslice.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
 				m := []*metric.Metric{}
@@ -151,7 +151,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			"kube_endpointslice_ports",
 			"Ports attached to the endpointslice.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
 				m := []*metric.Metric{}
@@ -171,7 +171,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			descEndpointSliceAnnotationsName,
 			descEndpointSliceAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
@@ -190,7 +190,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			descEndpointSliceLabelsName,
 			descEndpointSliceLabelsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)

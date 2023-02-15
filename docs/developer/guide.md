@@ -28,6 +28,6 @@ The following steps are needed to introduce a new resource and its respective re
 
 | Metric stability level |                    |
 |------------------------|--------------------|
-| EXPERIMENTAL           | basemetrics.ALPHA  |
-| STABLE                 | basemetrics.STABLE |
+| EXPERIMENTAL           | metricsstability.ALPHA  |
+| STABLE                 | metricsstability.STABLE |
 

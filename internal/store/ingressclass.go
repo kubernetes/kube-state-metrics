@@ -16,7 +16,7 @@ package store
 import (
 	"context"
 
-	basemetrics "k8s.io/component-base/metrics"
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -43,7 +43,7 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			"kube_ingressclass_info",
 			"Information about ingressclass.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 
@@ -59,7 +59,7 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			"kube_ingressclass_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 				ms := []*metric.Metric{}
@@ -77,7 +77,7 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			descIngressClassAnnotationsName,
 			descIngressClassAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
@@ -96,7 +96,7 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			descIngressClassLabelsName,
 			descIngressClassLabelsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)

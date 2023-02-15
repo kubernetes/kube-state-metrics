@@ -20,8 +20,9 @@ import (
 	"context"
 	"strconv"
 
-	basemetrics "k8s.io/component-base/metrics"
 	"k8s.io/utils/net"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -100,7 +101,7 @@ func createPodCompletionTimeFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_completion_time",
 		"Completion time in unix timestamp for a pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -135,7 +136,7 @@ func createPodContainerInfoFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -165,7 +166,7 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 		"kube_pod_container_resource_limits",
 		"The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -229,7 +230,7 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 		"kube_pod_container_resource_requests",
 		"The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -292,7 +293,7 @@ func createPodContainerStateStartedFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_container_state_started",
 		"Start time in unix timestamp for a pod container.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -325,7 +326,7 @@ func createPodContainerStatusLastTerminatedReasonFamilyGenerator() generator.Fam
 		"kube_pod_container_status_last_terminated_reason",
 		"Describes the last reason the container was in terminated state.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
@@ -351,7 +352,7 @@ func createPodContainerStatusLastTerminatedExitCodeFamilyGenerator() generator.F
 		"kube_pod_container_status_last_terminated_exitcode",
 		"Describes the exit code for the last container in terminated state.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
@@ -377,7 +378,7 @@ func createPodContainerStatusReadyFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
@@ -400,7 +401,7 @@ func createPodContainerStatusRestartsTotalFamilyGenerator() generator.FamilyGene
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_restarts_total",
 		"The number of container restarts per container.",
-		metric.Counter, basemetrics.STABLE,
+		metric.Counter, metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
@@ -425,7 +426,7 @@ func createPodContainerStatusRunningFamilyGenerator() generator.FamilyGenerator 
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
@@ -450,7 +451,7 @@ func createPodContainerStatusTerminatedFamilyGenerator() generator.FamilyGenerat
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
@@ -475,7 +476,7 @@ func createPodContainerStatusTerminatedReasonFamilyGenerator() generator.FamilyG
 		"kube_pod_container_status_terminated_reason",
 		"Describes the reason the container is currently in terminated state.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
@@ -501,7 +502,7 @@ func createPodContainerStatusWaitingFamilyGenerator() generator.FamilyGenerator 
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
@@ -526,7 +527,7 @@ func createPodContainerStatusWaitingReasonFamilyGenerator() generator.FamilyGene
 		"kube_pod_container_status_waiting_reason",
 		"Describes the reason the container is currently in waiting state.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
@@ -552,7 +553,7 @@ func createPodCreatedFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_created",
 		"Unix creation timestamp",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -577,7 +578,7 @@ func createPodDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_deletion_timestamp",
 		"Unix deletion timestamp",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -602,7 +603,7 @@ func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_info",
 		"Information about pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			createdBy := metav1.GetControllerOf(p)
@@ -635,7 +636,7 @@ func createPodIPFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_ips",
 		"Pod IP addresses",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.PodIPs))
@@ -670,7 +671,7 @@ func createPodInitContainerInfoFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_init_container_info",
 		"Information about an init container in a pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -701,7 +702,7 @@ func createPodInitContainerResourceLimitsFamilyGenerator() generator.FamilyGener
 		"kube_pod_init_container_resource_limits",
 		"The number of requested limit resource by an init container.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -765,7 +766,7 @@ func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGen
 		"kube_pod_init_container_resource_requests",
 		"The number of requested request resource by an init container.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -828,7 +829,7 @@ func createPodInitContainerStatusLastTerminatedReasonFamilyGenerator() generator
 		"kube_pod_init_container_status_last_terminated_reason",
 		"Describes the last reason the init container was in terminated state.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
@@ -853,7 +854,7 @@ func createPodInitContainerStatusReadyFamilyGenerator() generator.FamilyGenerato
 		"kube_pod_init_container_status_ready",
 		"Describes whether the init containers readiness check succeeded.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
@@ -877,7 +878,7 @@ func createPodInitContainerStatusRestartsTotalFamilyGenerator() generator.Family
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_restarts_total",
 		"The number of restarts for the init container.",
-		metric.Counter, basemetrics.STABLE,
+		metric.Counter, metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
@@ -902,7 +903,7 @@ func createPodInitContainerStatusRunningFamilyGenerator() generator.FamilyGenera
 		"kube_pod_init_container_status_running",
 		"Describes whether the init container is currently in running state.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
@@ -927,7 +928,7 @@ func createPodInitContainerStatusTerminatedFamilyGenerator() generator.FamilyGen
 		"kube_pod_init_container_status_terminated",
 		"Describes whether the init container is currently in terminated state.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
@@ -952,7 +953,7 @@ func createPodInitContainerStatusTerminatedReasonFamilyGenerator() generator.Fam
 		"kube_pod_init_container_status_terminated_reason",
 		"Describes the reason the init container is currently in terminated state.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
@@ -978,7 +979,7 @@ func createPodInitContainerStatusWaitingFamilyGenerator() generator.FamilyGenera
 		"kube_pod_init_container_status_waiting",
 		"Describes whether the init container is currently in waiting state.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
@@ -1003,7 +1004,7 @@ func createPodInitContainerStatusWaitingReasonFamilyGenerator() generator.Family
 		"kube_pod_init_container_status_waiting_reason",
 		"Describes the reason the init container is currently in waiting state.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
@@ -1030,7 +1031,7 @@ func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGe
 		"kube_pod_annotations",
 		"Kubernetes annotations converted to Prometheus labels.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotations)
@@ -1051,7 +1052,7 @@ func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerato
 		"kube_pod_labels",
 		"Kubernetes labels converted to Prometheus labels.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
@@ -1072,7 +1073,7 @@ func createPodOverheadCPUCoresFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_overhead_cpu_cores",
 		"The pod overhead in regards to cpu cores associated with running a pod.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1098,7 +1099,7 @@ func createPodOverheadMemoryBytesFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_overhead_memory_bytes",
 		"The pod overhead in regards to memory associated with running a pod.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1125,7 +1126,7 @@ func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_owner",
 		"Information about the Pod's owner.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
@@ -1173,7 +1174,7 @@ func createPodRestartPolicyFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_restart_policy",
 		"Describes the restart policy in use by this pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			return &metric.Family{
@@ -1194,7 +1195,7 @@ func createPodRuntimeClassNameInfoFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_runtimeclass_name_info",
 		"The runtimeclass associated with the pod.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1219,7 +1220,7 @@ func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.F
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
 		"Information about persistentvolumeclaim volumes in a pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1246,7 +1247,7 @@ func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generat
 		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 		"Describes whether a persistentvolumeclaim is mounted read only.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1273,7 +1274,7 @@ func createPodStartTimeFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_start_time",
 		"Start time in unix timestamp for a pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1297,7 +1298,7 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_phase",
 		"The pods current phase.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			phase := p.Status.Phase
@@ -1341,7 +1342,7 @@ func createPodStatusContainerReadyTimeFamilyGenerator() generator.FamilyGenerato
 		"kube_pod_status_container_ready_time",
 		"Readiness achieved time in unix timestamp for a pod containers.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1368,7 +1369,7 @@ func createPodStatusReadyTimeFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_ready_time",
 		"Readiness achieved time in unix timestamp for a pod.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
@@ -1396,7 +1397,7 @@ func createPodStatusQosClassFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_qos_class",
 		"The pods current qosClass.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			class := p.Status.QOSClass
@@ -1438,7 +1439,7 @@ func createPodStatusReadyFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1467,7 +1468,7 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_reason",
 		"The pod status reasons",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1496,7 +1497,7 @@ func createPodStatusScheduledFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_scheduled",
 		"Describes the status of the scheduling process for the pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1525,7 +1526,7 @@ func createPodStatusScheduledTimeFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_scheduled_time",
 		"Unix timestamp when pod moved into scheduled status",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1552,7 +1553,7 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_status_unschedulable",
 		"Describes the unschedulable status for the pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		metricsstability.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1579,7 +1580,7 @@ func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_tolerations",
 		"Information about the pod tolerations",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			var ms []*metric.Metric
@@ -1636,7 +1637,7 @@ func createPodNodeSelectorsFamilyGenerator() generator.FamilyGenerator {
 		"kube_pod_nodeselectors",
 		"Describes the Pod nodeSelectors.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		metricsstability.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			labelKeys, labelValues := kubeMapToPrometheusLabels("nodeselector", p.Spec.NodeSelector)

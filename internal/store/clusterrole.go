@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	basemetrics "k8s.io/component-base/metrics"
+
+	metricsstability "k8s.io/kube-state-metrics/v2/pkg/stability"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -45,7 +46,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			descClusterRoleAnnotationsName,
 			descClusterRoleAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
@@ -64,7 +65,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			descClusterRoleLabelsName,
 			descClusterRoleLabelsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
@@ -83,7 +84,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_clusterrole_info",
 			"Information about cluster role.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				return &metric.Family{
@@ -99,7 +100,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_clusterrole_created",
 			"Unix creation timestamp",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				ms := []*metric.Metric{}
@@ -121,7 +122,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_clusterrole_metadata_resource_version",
 			"Resource version representing a specific version of the cluster role.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			metricsstability.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				return &metric.Family{

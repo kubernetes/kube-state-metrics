@@ -32,6 +32,10 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
+// Make sure the public Builder implements the public BuilderInterface.
+// New internal Builder methods should be added to the public BuilderInterface.
+var _ ksmtypes.BuilderInterface = &Builder{}
+
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
@@ -59,6 +63,11 @@ func (b *Builder) WithEnabledResources(c []string) error {
 // WithNamespaces sets the namespaces property of a Builder.
 func (b *Builder) WithNamespaces(n options.NamespaceList) {
 	b.internal.WithNamespaces(n)
+}
+
+// WithFieldSelectorFilter sets the fieldSelector property of a Builder.
+func (b *Builder) WithFieldSelectorFilter(fieldSelectorFilter string) {
+	b.internal.WithFieldSelectorFilter(fieldSelectorFilter)
 }
 
 // WithSharding sets the shard and totalShards property of a Builder.
@@ -103,8 +112,8 @@ func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
 }
 
 // WithAllowLabels configures which labels can be returned for metrics
-func (b *Builder) WithAllowLabels(l map[string][]string) {
-	b.internal.WithAllowLabels(l)
+func (b *Builder) WithAllowLabels(l map[string][]string) error {
+	return b.internal.WithAllowLabels(l)
 }
 
 // WithGenerateStoresFunc configures a custom generate store function

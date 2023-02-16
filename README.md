@@ -305,7 +305,7 @@ service account token that has read-only access to the Kubernetes cluster.
 
 The ([`kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus/)) stack installs kube-state-metrics as one of its [components](https://github.com/prometheus-operator/kube-prometheus#kube-prometheus); you do not need to install kube-state-metrics if you're using the kube-prometheus stack.
 
-If you want to revise the default configuration for kube-prometheus, for example to enable non-default metrics, have a look at [Customizing Kube-Prometheus](https://github.com/prometheus-operator/kube-prometheus#customizing-kube-prometheus).
+If you want to revise the default configuration for kube-prometheus, for example to enable non-default metrics, have a look at [Customizing Kube-Prometheus](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/customizing.md).
 
 #### Kubernetes Deployment
 

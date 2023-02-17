@@ -434,7 +434,7 @@ func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 		if it == nil {
 			return nil, fmt.Errorf("got nil while resolving path")
 		}
-		// Don't error if there was not a type-casting issue (`toFloat64`), but rather a failed lookup.
+		// Don't error if there was not a type-casting issue (`toFloat64`).
 		return nil, nil
 	}
 	value, err := toFloat64(got, c.NilIsZero)

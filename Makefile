@@ -16,7 +16,7 @@ OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 2.40.6
-GO_VERSION = 1.19.4
+GO_VERSION = 1.19.6
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
@@ -66,7 +66,8 @@ build-local:
 build: kube-state-metrics
 
 kube-state-metrics:
-	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} make build-local
+	# Need to update git setting to prevent failing builds due to https://github.com/docker-library/golang/issues/452
+	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} git config --global --add safe.directory "*" && make build-local
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)

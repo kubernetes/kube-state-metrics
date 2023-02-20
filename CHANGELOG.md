@@ -1,3 +1,8 @@
+## v2.8.1 / 2023-02-22
+
+* [BUGFIX]      Don't crash on non-existent paths @rexagod #1998
+* [BUGFIX]      Fix public Builder compatibility with BuilderInterface @clamoriniere #1994
+
 ## v2.8.0 / 2023-02-10
 
 Note: The `--version` flag was removed as `kube-state-metrics version` also provides the same information. See #1956

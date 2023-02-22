@@ -193,7 +193,7 @@ func Test_values(t *testing.T) {
 			},
 			ValueFrom: mustCompilePath(t, "creationTimestamp"),
 		}, wantResult: []eachValue{
-			newEachValue(t, 1.6563744e+09),
+			newEachValue(t, 1.6563744e+09, "name", "foo"),
 		}},
 		{name: "non-existent path", each: &compiledGauge{
 			compiledCommon: compiledCommon{

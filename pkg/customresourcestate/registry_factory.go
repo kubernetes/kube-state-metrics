@@ -264,6 +264,8 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				ev.Labels[c.labelFromKey] = key
 			}
 			addPathLabels(it, c.LabelFromPath(), ev.Labels)
+			// Evaluate path from parent's context as well (search w.r.t. the root element, not just specific fields).
+			addPathLabels(v, c.LabelFromPath(), ev.Labels)
 			result = append(result, *ev)
 		}
 	case []interface{}:

@@ -18,6 +18,7 @@ package customresourcestate
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -193,6 +194,17 @@ func Test_values(t *testing.T) {
 			ValueFrom: mustCompilePath(t, "creationTimestamp"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 1.6563744e+09),
+		}},
+		{name: "non-existent path", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "foo"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "creationTimestamp"),
+		}, wantResult: nil, wantErrors: []error{
+			errors.New("[foo]: got nil while resolving path"),
 		}},
 		{name: "array", each: &compiledGauge{
 			compiledCommon: compiledCommon{

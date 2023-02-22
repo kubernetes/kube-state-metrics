@@ -78,7 +78,7 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 | **v2.5.0**         | v1.24                        |
 | **v2.6.0**         | v1.24                        |
 | **v2.7.0**         | v1.25                        |
-| **v2.8.0**         | v1.26                        |
+| **v2.8.1**         | v1.26                        |
 | **main**           | v1.26                        |
 
 
@@ -91,7 +91,7 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.8.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.8.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 
 ### Metrics Documentation
 

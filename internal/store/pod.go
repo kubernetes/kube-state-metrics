@@ -177,7 +177,7 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 					switch resourceName {
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 							Value:       float64(val.MilliValue()) / 1000,
 						})
 					case v1.ResourceStorage:
@@ -186,26 +186,26 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 						fallthrough
 					case v1.ResourceMemory:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 							Value:       float64(val.Value()),
 						})
 					default:
 						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						}
 						if isAttachableVolumeResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								Value:       float64(val.Value()),
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 							})
 						}
 						if isExtendedResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								Value:       float64(val.Value()),
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 							})
 
 						}
@@ -241,7 +241,7 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 					switch resourceName {
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 							Value:       float64(val.MilliValue()) / 1000,
 						})
 					case v1.ResourceStorage:
@@ -250,25 +250,25 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 						fallthrough
 					case v1.ResourceMemory:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 							Value:       float64(val.Value()),
 						})
 					default:
 						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						}
 						if isAttachableVolumeResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						}
 						if isExtendedResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 								Value:       float64(val.Value()),
 							})
 						}
@@ -713,7 +713,7 @@ func createPodInitContainerResourceLimitsFamilyGenerator() generator.FamilyGener
 					switch resourceName {
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 							Value:       float64(val.MilliValue()) / 1000,
 						})
 					case v1.ResourceStorage:
@@ -722,26 +722,26 @@ func createPodInitContainerResourceLimitsFamilyGenerator() generator.FamilyGener
 						fallthrough
 					case v1.ResourceMemory:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 							Value:       float64(val.Value()),
 						})
 					default:
 						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						}
 						if isAttachableVolumeResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								Value:       float64(val.Value()),
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 							})
 						}
 						if isExtendedResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
 								Value:       float64(val.Value()),
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 							})
 
 						}
@@ -777,7 +777,7 @@ func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGen
 					switch resourceName {
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
 							Value:       float64(val.MilliValue()) / 1000,
 						})
 					case v1.ResourceStorage:
@@ -786,25 +786,25 @@ func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGen
 						fallthrough
 					case v1.ResourceMemory:
 						ms = append(ms, &metric.Metric{
-							LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 							Value:       float64(val.Value()),
 						})
 					default:
 						if isHugePageResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						}
 						if isAttachableVolumeResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
 								Value:       float64(val.Value()),
 							})
 						}
 						if isExtendedResourceName(resourceName) {
 							ms = append(ms, &metric.Metric{
-								LabelValues: []string{c.Name, p.Spec.NodeName, sanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+								LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
 								Value:       float64(val.Value()),
 							})
 						}

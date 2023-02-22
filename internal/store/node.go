@@ -290,7 +290,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 				case v1.ResourceCPU:
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{
-							sanitizeLabelName(string(resourceName)),
+							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitCore),
 						},
 						Value: float64(val.MilliValue()) / 1000,
@@ -302,7 +302,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 				case v1.ResourceMemory:
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{
-							sanitizeLabelName(string(resourceName)),
+							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitByte),
 						},
 						Value: float64(val.MilliValue()) / 1000,
@@ -310,7 +310,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 				case v1.ResourcePods:
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{
-							sanitizeLabelName(string(resourceName)),
+							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitInteger),
 						},
 						Value: float64(val.MilliValue()) / 1000,
@@ -319,7 +319,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 					if isHugePageResourceName(resourceName) {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{
-								sanitizeLabelName(string(resourceName)),
+								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
 							Value: float64(val.MilliValue()) / 1000,
@@ -328,7 +328,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 					if isAttachableVolumeResourceName(resourceName) {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{
-								sanitizeLabelName(string(resourceName)),
+								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
 							Value: float64(val.MilliValue()) / 1000,
@@ -337,7 +337,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 					if isExtendedResourceName(resourceName) {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{
-								sanitizeLabelName(string(resourceName)),
+								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitInteger),
 							},
 							Value: float64(val.MilliValue()) / 1000,
@@ -373,7 +373,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 				case v1.ResourceCPU:
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{
-							sanitizeLabelName(string(resourceName)),
+							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitCore),
 						},
 						Value: float64(val.MilliValue()) / 1000,
@@ -385,7 +385,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 				case v1.ResourceMemory:
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{
-							sanitizeLabelName(string(resourceName)),
+							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitByte),
 						},
 						Value: float64(val.MilliValue()) / 1000,
@@ -393,7 +393,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 				case v1.ResourcePods:
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{
-							sanitizeLabelName(string(resourceName)),
+							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitInteger),
 						},
 						Value: float64(val.MilliValue()) / 1000,
@@ -402,7 +402,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 					if isHugePageResourceName(resourceName) {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{
-								sanitizeLabelName(string(resourceName)),
+								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
 							Value: float64(val.MilliValue()) / 1000,
@@ -411,7 +411,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 					if isAttachableVolumeResourceName(resourceName) {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{
-								sanitizeLabelName(string(resourceName)),
+								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
 							Value: float64(val.MilliValue()) / 1000,
@@ -420,7 +420,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 					if isExtendedResourceName(resourceName) {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{
-								sanitizeLabelName(string(resourceName)),
+								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitInteger),
 							},
 							Value: float64(val.MilliValue()) / 1000,

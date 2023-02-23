@@ -179,6 +179,26 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_statefulset_ordinals_start",
+			"Start ordinal of the StatefulSet.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if s.Spec.Ordinals != nil {
+					ms = append(ms, &metric.Metric{
+						Value: float64(s.Spec.Ordinals.Start),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_statefulset_metadata_generation",
 			"Sequence number representing a specific generation of the desired state for the StatefulSet.",
 			metric.Gauge,

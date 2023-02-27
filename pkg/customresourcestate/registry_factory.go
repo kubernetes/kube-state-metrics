@@ -27,6 +27,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -707,6 +708,12 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		if t, e := resource.ParseQuantity(value.(string)); e == nil {
 			return t.AsApproximateFloat64(), nil
 		}
+		// The string contains a percentage with a suffix "%"
+		if e := validation.IsValidPercent(value.(string)); len(e) == 0 {
+			t, e := strconv.ParseFloat(strings.TrimRight(value.(string), "%"), 64)
+			return t / 100, e
+		}
+
 		return strconv.ParseFloat(value.(string), 64)
 	case byte:
 		v = float64(vv)

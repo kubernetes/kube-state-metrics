@@ -254,6 +254,8 @@ Supported types are:
 * for string the following logic applies
   * `"true"` and `"yes"` are mapped to `1.0` and `"false"` and `"no"` are mapped to `0.0` (all case insensitive)
   * RFC3339 times are parsed to float timestamp  
+  * Quantities like "250m" or "512Gi" are parsed to float using https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
+  * Percentages ending with a "%" are parsed to float
   * finally the string is parsed to float using https://pkg.go.dev/strconv#ParseFloat which should support all common number formats. If that fails an error is yielded
 
 ##### Example for status conditions on Kubernetes Controllers

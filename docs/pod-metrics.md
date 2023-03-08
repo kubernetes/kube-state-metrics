@@ -67,17 +67,17 @@ For example:
 
 * For Pods in `Terminating` state: `count(kube_pod_deletion_timestamp) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod)`
 
-Here is an example of a Prometheus rule that can be used to alert on a Pod that has been in the `Terminated` state for more than `5m`.
+Here is an example of a Prometheus rule that can be used to alert on a Pod that has been in the `Terminating` state for more than `5m`.
 
 ```yaml
 groups:
 - name: Pod state
   rules:
-  - alert: PodsBlockInTerminatingState
+  - alert: PodsBlockedInTerminatingState
     expr: count(kube_pod_deletion_timestamp) by (namespace, pod) * count(kube_pod_status_reason{reason="NodeLost"} == 0) by (namespace, pod) > 0
     for: 5m
     labels:
       severity: page
     annotations:
-      summary: Pod {{$labels.namespace}}/{{$labels.pod}} block in Terminating state.
+      summary: Pod {{$labels.namespace}}/{{$labels.pod}} blocked in Terminating state.
 ```

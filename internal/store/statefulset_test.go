@@ -65,6 +65,7 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
+				# HELP kube_statefulset_ordinals_start Start ordinal of the StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_observed_generation [STABLE] The generation observed by the StatefulSet controller.
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
@@ -78,6 +79,7 @@ func TestStatefulSetStore(t *testing.T) {
 				# TYPE kube_statefulset_metadata_generation gauge
 				# TYPE kube_statefulset_persistentvolumeclaim_retention_policy gauge
 				# TYPE kube_statefulset_replicas gauge
+				# TYPE kube_statefulset_ordinals_start gauge
 				# TYPE kube_statefulset_status_current_revision gauge
 				# TYPE kube_statefulset_status_observed_generation gauge
 				# TYPE kube_statefulset_status_replicas gauge
@@ -104,6 +106,7 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_labels",
 				"kube_statefulset_metadata_generation",
 				"kube_statefulset_replicas",
+				"kube_statefulset_ordinals_start",
 				"kube_statefulset_status_observed_generation",
 				"kube_statefulset_status_replicas",
 				"kube_statefulset_status_replicas_available",
@@ -325,6 +328,83 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_labels",
 				"kube_statefulset_metadata_generation",
 				"kube_statefulset_replicas",
+				"kube_statefulset_status_replicas",
+				"kube_statefulset_status_replicas_available",
+				"kube_statefulset_status_replicas_current",
+				"kube_statefulset_status_replicas_ready",
+				"kube_statefulset_status_replicas_updated",
+				"kube_statefulset_status_update_revision",
+				"kube_statefulset_status_current_revision",
+				"kube_statefulset_persistentvolumeclaim_retention_policy",
+			},
+		},
+		{
+			// Validate kube_statefulset_ordinals_start metric.
+			Obj: &v1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "statefulset5",
+					Namespace: "ns5",
+					Labels: map[string]string{
+						"app": "example5",
+					},
+					Generation: 1,
+				},
+				Spec: v1.StatefulSetSpec{
+					Replicas:    &statefulSet1Replicas,
+					ServiceName: "statefulset5service",
+					Ordinals: &v1.StatefulSetOrdinals{
+						Start: 2,
+					},
+				},
+				Status: v1.StatefulSetStatus{
+					ObservedGeneration: 0,
+					Replicas:           3,
+					UpdateRevision:     "ur5",
+					CurrentRevision:    "cr5",
+				},
+			},
+			Want: `
+				# HELP kube_statefulset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
+				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
+				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
+				# HELP kube_statefulset_ordinals_start Start ordinal of the StatefulSet.
+				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
+				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_available The number of available replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_current [STABLE] The number of current replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_ready [STABLE] The number of ready replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_updated [STABLE] The number of updated replicas per StatefulSet.
+				# HELP kube_statefulset_status_update_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
+				# TYPE kube_statefulset_labels gauge
+				# TYPE kube_statefulset_metadata_generation gauge
+				# TYPE kube_statefulset_persistentvolumeclaim_retention_policy gauge
+				# TYPE kube_statefulset_replicas gauge
+				# TYPE kube_statefulset_ordinals_start gauge
+				# TYPE kube_statefulset_status_current_revision gauge
+				# TYPE kube_statefulset_status_replicas gauge
+				# TYPE kube_statefulset_status_replicas_available gauge
+				# TYPE kube_statefulset_status_replicas_current gauge
+				# TYPE kube_statefulset_status_replicas_ready gauge
+				# TYPE kube_statefulset_status_replicas_updated gauge
+				# TYPE kube_statefulset_status_update_revision gauge
+				kube_statefulset_status_update_revision{namespace="ns5",revision="ur5",statefulset="statefulset5"} 1
+				kube_statefulset_status_replicas{namespace="ns5",statefulset="statefulset5"} 3
+				kube_statefulset_status_replicas_available{namespace="ns5",statefulset="statefulset5"} 0
+				kube_statefulset_status_replicas_current{namespace="ns5",statefulset="statefulset5"} 0
+				kube_statefulset_status_replicas_ready{namespace="ns5",statefulset="statefulset5"} 0
+				kube_statefulset_status_replicas_updated{namespace="ns5",statefulset="statefulset5"} 0
+				kube_statefulset_replicas{namespace="ns5",statefulset="statefulset5"} 3
+				kube_statefulset_ordinals_start{namespace="ns5",statefulset="statefulset5"} 2
+ 				kube_statefulset_metadata_generation{namespace="ns5",statefulset="statefulset5"} 1
+				kube_statefulset_labels{namespace="ns5",statefulset="statefulset5"} 1
+				kube_statefulset_status_current_revision{namespace="ns5",revision="cr5",statefulset="statefulset5"} 1
+ 			`,
+			MetricNames: []string{
+				"kube_statefulset_labels",
+				"kube_statefulset_metadata_generation",
+				"kube_statefulset_replicas",
+				"kube_statefulset_ordinals_start",
 				"kube_statefulset_status_replicas",
 				"kube_statefulset_status_replicas_available",
 				"kube_statefulset_status_replicas_current",

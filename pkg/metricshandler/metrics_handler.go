@@ -187,6 +187,9 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
 
+	if contentType != expfmt.FmtOpenMetrics {
+		contentType = expfmt.FmtText
+	}
 	resHeader.Set("Content-Type", string(contentType))
 
 	if m.enableGZIPEncoding {

@@ -186,6 +186,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var writer io.Writer = w
 
 	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
+	klog.InfoS("Chosen contentType", "contentType", string(contentType))
 
 	resHeader.Set("Content-Type", string(contentType))
 

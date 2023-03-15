@@ -1,6 +1,6 @@
-######
+########
 ARG GOVERSION=1.18
-ARG GOARCH=amd64
+ARG GOARCH
 FROM golang:${GOVERSION} as builder
 ARG GOARCH
 ENV GOARCH=${GOARCH}

@@ -1,3 +1,7 @@
+## v2.8.2 / 2023-03-17
+
+* [BUGFIX]      Only use OpenMetrics and Text in contentType #2024 @CatherineF-dev
+
 ## v2.8.1 / 2023-02-22
 
 * [BUGFIX]      Don't crash on non-existent paths @rexagod #1998

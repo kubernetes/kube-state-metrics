@@ -70,7 +70,6 @@ See each file for specific documentation about the exposed metrics:
 - [Role Metrics](role-metrics.md)
 - [RoleBinding Metrics](rolebinding-metrics.md)
 - [ServiceAccount Metrics](serviceaccount-metrics.md)
-- [VerticalPodAutoscaler Metrics](verticalpodautoscaler-metrics.md)
 
 ## Join Metrics
 

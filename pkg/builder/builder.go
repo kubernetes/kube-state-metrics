@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/prometheus/client_golang/prometheus"
-	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -83,11 +82,6 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.internal.WithKubeClient(c)
-}
-
-// WithVPAClient sets the vpaClient property of a Builder so that the verticalpodautoscaler collector can query VPA objects.
-func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
-	b.internal.WithVPAClient(c)
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.

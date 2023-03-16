@@ -40,7 +40,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
-	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
 	"k8s.io/client-go/tools/clientcmd"
@@ -238,12 +237,11 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	proc.StartReaper()
 
-	kubeClient, vpaClient, customResourceClients, err := createKubeClient(opts.Apiserver, opts.Kubeconfig, factories...)
+	kubeClient, customResourceClients, err := createKubeClient(opts.Apiserver, opts.Kubeconfig, factories...)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
 	storeBuilder.WithKubeClient(kubeClient)
-	storeBuilder.WithVPAClient(vpaClient)
 	storeBuilder.WithCustomResourceClients(customResourceClients)
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
@@ -329,10 +327,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	return nil
 }
 
-func createKubeClient(apiserver string, kubeconfig string, factories ...customresource.RegistryFactory) (clientset.Interface, vpaclientset.Interface, map[string]interface{}, error) {
+func createKubeClient(apiserver string, kubeconfig string, factories ...customresource.RegistryFactory) (clientset.Interface, map[string]interface{}, error) {
 	config, err := clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	config.UserAgent = fmt.Sprintf("%s/%s (%s/%s) kubernetes/%s", "kube-state-metrics", version.Version, runtime.GOOS, runtime.GOARCH, version.Revision)
@@ -341,19 +339,14 @@ func createKubeClient(apiserver string, kubeconfig string, factories ...customre
 
 	kubeClient, err := clientset.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	vpaClient, err := vpaclientset.NewForConfig(config)
-	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	customResourceClients := make(map[string]interface{}, len(factories))
 	for _, f := range factories {
 		customResourceClient, err := f.CreateClient(config)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		customResourceClients[f.Name()] = customResourceClient
 	}
@@ -364,12 +357,12 @@ func createKubeClient(apiserver string, kubeconfig string, factories ...customre
 	klog.InfoS("Tested communication with server")
 	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
+		return nil, nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
 	}
 	klog.InfoS("Run with Kubernetes cluster version", "major", v.Major, "minor", v.Minor, "gitVersion", v.GitVersion, "gitTreeState", v.GitTreeState, "gitCommit", v.GitCommit, "platform", v.Platform)
 	klog.InfoS("Communication with server successful")
 
-	return kubeClient, vpaClient, customResourceClients, nil
+	return kubeClient, customResourceClients, nil
 }
 
 func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {

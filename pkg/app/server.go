@@ -370,18 +370,24 @@ func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 
 	// Add metricsPath
 	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}}))
+
 	// Add index
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
-             <head><title>Kube-State-Metrics Metrics Server</title></head>
-             <body>
-             <h1>Kube-State-Metrics Metrics</h1>
-			 <ul>
-             <li><a href='` + metricsPath + `'>metrics</a></li>
-			 </ul>
-             </body>
-             </html>`))
-	})
+	landingConfig := web.LandingConfig{
+		Name:        "kube-state-metrics",
+		Description: "Self-metrics for kube-state-metrics",
+		Version:     version.Info(),
+		Links: []web.LandingLinks{
+			{
+				Address: metricsPath,
+				Text:    "Metrics",
+			},
+		},
+	}
+	landingPage, err := web.NewLandingPage(landingConfig)
+	if err != nil {
+		klog.ErrorS(err, "failed to create landing page")
+	}
+	mux.Handle("/", landingPage)
 	return mux
 }
 
@@ -402,19 +408,28 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(http.StatusText(http.StatusOK)))
 	})
+
 	// Add index
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
-             <head><title>Kube Metrics Server</title></head>
-             <body>
-             <h1>Kube Metrics</h1>
-			 <ul>
-             <li><a href='` + metricsPath + `'>metrics</a></li>
-             <li><a href='` + healthzPath + `'>healthz</a></li>
-			 </ul>
-             </body>
-             </html>`))
-	})
+	landingConfig := web.LandingConfig{
+		Name:        "kube-state-metrics",
+		Description: "Metrics for Kubernetes' state",
+		Version:     version.Info(),
+		Links: []web.LandingLinks{
+			{
+				Address: metricsPath,
+				Text:    "Metrics",
+			},
+			{
+				Address: healthzPath,
+				Text:    "Healthz",
+			},
+		},
+	}
+	landingPage, err := web.NewLandingPage(landingConfig)
+	if err != nil {
+		klog.ErrorS(err, "failed to create landing page")
+	}
+	mux.Handle("/", landingPage)
 	return mux
 }
 

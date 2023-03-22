@@ -323,8 +323,8 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 
 					for _, m := range metrics {
 						metric := m
-						metric.LabelKeys = []string{"condition", "status"}
-						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+						metric.LabelKeys = []string{"condition", "reason", "status"}
+						metric.LabelValues = append([]string{string(c.Type), c.Reason}, metric.LabelValues...)
 						ms = append(ms, metric)
 					}
 				}

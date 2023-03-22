@@ -230,9 +230,9 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 2.6335914666e+07
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
-				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="false"} 0
-				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="true"} 1
-				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="unknown"} 0
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",reason="reason",horizontalpodautoscaler="hpa1",namespace="ns1",status="false"} 0
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",reason="reason",horizontalpodautoscaler="hpa1",namespace="ns1",status="true"} 1
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",reason="reason",horizontalpodautoscaler="hpa1",namespace="ns1",status="unknown"} 0
 				kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 			`,
@@ -406,9 +406,9 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 0
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="average",namespace="ns1"} 2.9
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 0
-				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="false"} 0
-				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="true"} 1
-				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="unknown"} 0
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",reason="reason",horizontalpodautoscaler="hpa2",namespace="ns1",status="false"} 0
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",reason="reason",horizontalpodautoscaler="hpa2",namespace="ns1",status="true"} 1
+				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",reason="reason",horizontalpodautoscaler="hpa2",namespace="ns1",status="unknown"} 0
 				kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 			`,

@@ -216,7 +216,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// If we send openmetrics, we need to include a EOF directive
 	if contentType == expfmt.FmtOpenMetrics {
-		w.Write([]byte("# EOF\n"))
+		writer.Write([]byte("# EOF\n"))
 	}
 
 	// In case we gzipped the response, we have to close the writer.

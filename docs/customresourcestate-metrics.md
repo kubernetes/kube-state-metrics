@@ -193,6 +193,8 @@ spec:
             # whole objects may be copied into labels by prefixing with "*"
             # *anything will be copied into labels, with the highest sorted * strings first
             "*": [metadata, labels]
+            # a prefix before the asterisk will be used as a label prefix
+            "lorem_*": [metadata, annotations]
             "**": [metadata, annotations]
             
             # or specific fields may be copied. these fields will always override values from *s
@@ -203,8 +205,12 @@ spec:
 Produces the following metrics:
 
 ```prometheus
-kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 2
-kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 4
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", 
+customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a",
+lorem_bar="baz",lorem_qux="quxx",} 2
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", 
+customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b",
+lorem_bar="baz",lorem_qux="quxx",} 4
 ```
 
 #### VerticalPodAutoscaler

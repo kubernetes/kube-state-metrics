@@ -507,21 +507,24 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 	// always do that first so other labels can override
 	var stars []string
 	for k := range labels {
-		if strings.HasPrefix(k, "*") {
+		if strings.HasPrefix(k, "*") || strings.HasSuffix(k, "*") {
 			stars = append(stars, k)
 		}
 	}
 	sort.Strings(stars)
-	for _, k := range stars {
-		m := labels[k].Get(obj)
+	for _, star := range stars {
+		m := labels[star].Get(obj)
 		if kv, ok := m.(map[string]interface{}); ok {
 			for k, v := range kv {
+				if strings.HasSuffix(star, "*") {
+					k = star[:len(star)-1] + k
+				}
 				result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
 			}
 		}
 	}
 	for k, v := range labels {
-		if strings.HasPrefix(k, "*") {
+		if strings.HasPrefix(k, "*") || strings.HasSuffix(k, "*") {
 			continue
 		}
 		value := v.Get(obj)

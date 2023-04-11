@@ -185,9 +185,11 @@
       ],
       securityContext: {
         runAsUser: 65534,
+        runAsNonRoot: true,
         allowPrivilegeEscalation: false,
         readOnlyRootFilesystem: true,
         capabilities: { drop: ['ALL'] },
+        seccompProfile: { type: 'RuntimeDefault' },
       },
       livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 8080,

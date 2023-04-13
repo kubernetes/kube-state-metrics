@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -39,7 +40,7 @@ var (
 	descJobLabelsName          = "kube_job_labels"
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
-	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
+	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadlineExceeded", "Evicted"}
 )
 
 func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -429,5 +430,5 @@ func failureReason(jc *v1batch.JobCondition, reason string) bool {
 	if jc == nil {
 		return false
 	}
-	return jc.Reason == reason
+	return strings.EqualFold(jc.Reason, reason)
 }

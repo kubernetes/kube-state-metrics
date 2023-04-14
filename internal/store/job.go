@@ -19,7 +19,6 @@ package store
 import (
 	"context"
 	"strconv"
-	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -430,5 +429,5 @@ func failureReason(jc *v1batch.JobCondition, reason string) bool {
 	if jc == nil {
 		return false
 	}
-	return strings.EqualFold(jc.Reason, reason)
+	return jc.Reason == reason
 }

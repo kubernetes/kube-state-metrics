@@ -210,7 +210,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_active{job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_status_completion_time{job_name="FailedJob1",namespace="ns1"} 1.495810807e+09
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded"} 1
-				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="DeadLineExceeded"} 0
+				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="DeadlineExceeded"} 0
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="Evicted"} 0
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0

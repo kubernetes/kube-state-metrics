@@ -1,0 +1,243 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: customresourcemonitors.customresource.ksm.io
+spec:
+  group: customresource.ksm.io
+  names:
+    kind: CustomResourceMonitor
+    listKind: CustomResourceMonitorList
+    plural: customresourcemonitors
+    singular: customresourcemonitor
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CustomResourceMonitor defines monitoring for a set of custom
+          resources.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MetricsSpec is the configuration describing the custom resource
+              state metrics to generate.
+            properties:
+              resources:
+                description: Resources is the list of custom resources to be monitored.
+                  A resource with the same GroupVersionKind may appear multiple times
+                  (e.g., to customize the namespace or subsystem,) but will incur
+                  additional overhead.
+                items:
+                  description: Resource configures a custom resource for metric generation.
+                  properties:
+                    commonLabels:
+                      additionalProperties:
+                        type: string
+                      description: CommonLabels are added to all metrics.
+                      type: object
+                    errorLogV:
+                      description: ErrorLogV defines the verbosity threshold for errors
+                        logged for this resource.
+                      format: int32
+                      type: integer
+                    groupVersionKind:
+                      description: GroupVersionKind of the custom resource to be monitored.
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - version
+                      type: object
+                    labelsFromPath:
+                      additionalProperties:
+                        items:
+                          type: string
+                        type: array
+                      description: LabelsFromPath adds additional labels where the
+                        value is taken from a field in the resource.
+                      type: object
+                    metricNamePrefix:
+                      description: 'MetricNamePrefix defines a prefix for all metrics
+                        of the resource. If set to "", no prefix will be added. Example:
+                        If set to "foo", MetricNamePrefix will be "foo_<metric>".'
+                      type: string
+                    metrics:
+                      description: Metrics are the custom resource fields to be collected.
+                      items:
+                        description: Generator describes a unique metric name.
+                        properties:
+                          commonLabels:
+                            additionalProperties:
+                              type: string
+                            description: CommonLabels are added to all metrics.
+                            type: object
+                          each:
+                            description: Each targets a value or values from the resource.
+                            properties:
+                              gauge:
+                                description: Gauge defines a gauge metric.
+                                properties:
+                                  labelFromKey:
+                                    description: LabelFromKey adds a label with the
+                                      given name if Path is an object. The label value
+                                      will be the object key.
+                                    type: string
+                                  labelsFromPath:
+                                    additionalProperties:
+                                      items:
+                                        type: string
+                                      type: array
+                                    description: LabelsFromPath adds additional labels
+                                      where the value of the label is taken from a
+                                      field under Path.
+                                    type: object
+                                  nilIsZero:
+                                    description: NilIsZero indicates that if a value
+                                      is nil it will be treated as zero value.
+                                    type: boolean
+                                  path:
+                                    description: Path is the path to to generate metric(s)
+                                      for.
+                                    items:
+                                      type: string
+                                    type: array
+                                  valueFrom:
+                                    description: ValueFrom is the path to a numeric
+                                      field under Path that will be the metric value.
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              info:
+                                description: Info defines an info metric.
+                                properties:
+                                  labelFromKey:
+                                    description: LabelFromKey adds a label with the
+                                      given name if Path is an object. The label value
+                                      will be the object key.
+                                    type: string
+                                  labelsFromPath:
+                                    additionalProperties:
+                                      items:
+                                        type: string
+                                      type: array
+                                    description: LabelsFromPath adds additional labels
+                                      where the value of the label is taken from a
+                                      field under Path.
+                                    type: object
+                                  path:
+                                    description: Path is the path to to generate metric(s)
+                                      for.
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              stateSet:
+                                description: StateSet defines a state set metric.
+                                properties:
+                                  labelName:
+                                    description: LabelName is the key of the label
+                                      which is used for each entry in List to expose
+                                      the value.
+                                    type: string
+                                  labelsFromPath:
+                                    additionalProperties:
+                                      items:
+                                        type: string
+                                      type: array
+                                    description: LabelsFromPath adds additional labels
+                                      where the value of the label is taken from a
+                                      field under Path.
+                                    type: object
+                                  list:
+                                    description: List is the list of values to expose
+                                      a value for.
+                                    items:
+                                      type: string
+                                    type: array
+                                  path:
+                                    description: Path is the path to to generate metric(s)
+                                      for.
+                                    items:
+                                      type: string
+                                    type: array
+                                  valueFrom:
+                                    description: ValueFrom is the subpath to compare
+                                      the list to.
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - list
+                                type: object
+                              type:
+                                description: Type defines the type of the metric.
+                                type: string
+                            required:
+                            - type
+                            type: object
+                          errorLogV:
+                            description: ErrorLogV defines the verbosity threshold
+                              for errors logged for this metric. Must be non-zero
+                              to override the resource setting.
+                            format: int32
+                            type: integer
+                          help:
+                            description: Help text for the metric.
+                            type: string
+                          labelsFromPath:
+                            additionalProperties:
+                              items:
+                                type: string
+                              type: array
+                            description: LabelsFromPath adds additional labels where
+                              the value is taken from a field in the resource.
+                            type: object
+                          name:
+                            description: Name of the metric. Subject to prefixing
+                              based on the configuration of the Resource.
+                            type: string
+                        required:
+                        - each
+                        - help
+                        - name
+                        type: object
+                      type: array
+                    resourcePlural:
+                      description: ResourcePlural sets the plural name of the resource.
+                        Defaults to the plural version of the Kind according to flect.Pluralize.
+                      type: string
+                  required:
+                  - groupVersionKind
+                  - metrics
+                  type: object
+                type: array
+            required:
+            - resources
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true

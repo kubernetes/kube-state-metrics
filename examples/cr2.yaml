@@ -1,0 +1,19 @@
+apiVersion: customresource.ksm.io/v1alpha1
+kind: CustomResourceMonitor
+metadata:
+  name: test-cr2
+  namespace: kube-system
+  generation: 1
+spec:
+  resources:
+    - groupVersionKind:
+        group: customresource.ksm.io
+        kind: "CustomResourceMonitor"
+        version: "v1alpha1"
+      metrics:
+        - name: "uptime2"
+          help: "Bar uptime"
+          each:
+            type: Gauge
+            gauge:
+              path: [metadata, generation]

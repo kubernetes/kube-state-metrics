@@ -325,17 +325,25 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 				continue
 			}
 		}
-		// labelFromKey logic
-		for key := range iter {
+
+		// labelFromKey / labelFromPath logic
+		for key, it := range iter {
+			labels := make(map[string]string)
+
 			if key != "" && c.labelFromKey != "" {
+				labels[c.labelFromKey] = key
+			}
+
+			addPathLabels(it, c.LabelFromPath(), labels)
+
+			if len(labels) > 0 {
 				result = append(result, eachValue{
-					Labels: map[string]string{
-						c.labelFromKey: key,
-					},
-					Value: 1,
+					Labels: labels,
+					Value:  1,
 				})
 			}
 		}
+
 		result = append(result, value...)
 	default:
 		result, errs = c.values(v)

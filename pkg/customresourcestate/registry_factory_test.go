@@ -292,6 +292,17 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 1, "type", "type-a"),
 			newEachValue(t, 1, "type", "type-b"),
 		}},
+		{name: "info label from path", each: &compiledInfo{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "sub"),
+				labelFromPath: map[string]valuePath{
+					"active": mustCompilePath(t, "active"),
+				},
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "active", "1"),
+			newEachValue(t, 1, "active", "3"),
+		}},
 		{name: "stateset", each: &compiledStateSet{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "phase"),

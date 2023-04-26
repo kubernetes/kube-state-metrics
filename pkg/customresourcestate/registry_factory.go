@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/klog/v2"
 
+	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -507,7 +508,7 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 		m := labels[k].Get(obj)
 		if kv, ok := m.(map[string]interface{}); ok {
 			for k, v := range kv {
-				result[k] = fmt.Sprintf("%v", v)
+				result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
 			}
 		}
 	}
@@ -520,7 +521,7 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 		if value == nil {
 			continue
 		}
-		result[k] = fmt.Sprintf("%v", value)
+		result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", value)
 	}
 }
 

@@ -7,9 +7,9 @@
           {
             alert: 'KubeStateMetricsListErrors',
             expr: |||
-              (sum(rate(kube_state_metrics_list_total{%(kubeStateMetricsSelector)s,result="error"}[5m]))
+              (sum(rate(kube_state_metrics_list_total{%(kubeStateMetricsSelector)s,result="error"}[5m])) by (%(clusterLabel)s)
                 /
-              sum(rate(kube_state_metrics_list_total{%(kubeStateMetricsSelector)s}[5m])))
+              sum(rate(kube_state_metrics_list_total{%(kubeStateMetricsSelector)s}[5m])) by (%(clusterLabel)s))
               > 0.01
             ||| % $._config,
             'for': '15m',
@@ -24,9 +24,9 @@
           {
             alert: 'KubeStateMetricsWatchErrors',
             expr: |||
-              (sum(rate(kube_state_metrics_watch_total{%(kubeStateMetricsSelector)s,result="error"}[5m]))
+              (sum(rate(kube_state_metrics_watch_total{%(kubeStateMetricsSelector)s,result="error"}[5m])) by (%(clusterLabel)s)
                 /
-              sum(rate(kube_state_metrics_watch_total{%(kubeStateMetricsSelector)s}[5m])))
+              sum(rate(kube_state_metrics_watch_total{%(kubeStateMetricsSelector)s}[5m])) by (%(clusterLabel)s))
               > 0.01
             ||| % $._config,
             'for': '15m',
@@ -42,7 +42,7 @@
             alert: 'KubeStateMetricsShardingMismatch',
             //
             expr: |||
-              stdvar (kube_state_metrics_total_shards{%(kubeStateMetricsSelector)s}) != 0
+              stdvar (kube_state_metrics_total_shards{%(kubeStateMetricsSelector)s}) by (%(clusterLabel)s) != 0
             ||| % $._config,
             'for': '15m',
             labels: {
@@ -61,9 +61,9 @@
             // A handy side effect of this computation is the result indicates what ordinals are missing.
             // Eg. a result of "5" decimal, which translates to binary "101", means shards #0 and #2 are not available.
             expr: |||
-              2^max(kube_state_metrics_total_shards{%(kubeStateMetricsSelector)s}) - 1
+              2^max(kube_state_metrics_total_shards{%(kubeStateMetricsSelector)s}) by (%(clusterLabel)s) - 1
                 -
-              sum( 2 ^ max by (shard_ordinal) (kube_state_metrics_shard_ordinal{%(kubeStateMetricsSelector)s}) )
+              sum( 2 ^ max by (%(clusterLabel)s, shard_ordinal) (kube_state_metrics_shard_ordinal{%(kubeStateMetricsSelector)s}) ) by (%(clusterLabel)s)
               != 0
             ||| % $._config,
             'for': '15m',

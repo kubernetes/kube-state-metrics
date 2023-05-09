@@ -219,6 +219,22 @@ const LabelWildcard = "*"
 // LabelsAllowList represents a list of allowed labels for metrics.
 type LabelsAllowList map[string][]string
 
+func (l *LabelsAllowList) setPrevAndNext(i int, value string, v rune) (previous rune, next rune) {
+	const EOF = -1
+	if i+1 == len(value) {
+		next = EOF
+	} else {
+		next = []rune(value)[i+1]
+	}
+	if i-1 >= 0 {
+		previous = []rune(value)[i-1]
+	} else {
+		previous = v
+	}
+
+	return previous, next
+}
+
 // Set converts a comma-separated string of resources and their allowed Kubernetes labels and appends to the LabelsAllowList.
 // Value is in the following format:
 // resource=[k8s-label-name,another-k8s-label],another-resource[k8s-label]
@@ -236,16 +252,7 @@ func (l *LabelsAllowList) Set(value string) error {
 	firstWordPos = 0
 
 	for i, v := range value {
-		if i+1 == len(value) {
-			next = EOF
-		} else {
-			next = []rune(value)[i+1]
-		}
-		if i-1 >= 0 {
-			previous = []rune(value)[i-1]
-		} else {
-			previous = v
-		}
+		previous, next = l.setPrevAndNext(i, value, v)
 
 		switch v {
 		case '=':

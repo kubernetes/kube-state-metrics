@@ -63,85 +63,101 @@ func TestNew(t *testing.T) {
 	})
 }
 
+func addWhenAllowList(t *testing.T) {
+	allowlist, err := New(map[string]struct{}{"not-empty": {}}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal("expected New() to not fail")
+	}
+
+	allowlist.Include([]string{"item1"})
+	err = allowlist.Parse()
+	if err != nil {
+		t.Fatal("expected Parse() to not fail")
+	}
+
+	if !allowlist.IsIncluded("item1") {
+		t.Fatal("expected included item to be included")
+	}
+}
+
+func removeWhenDenyList(t *testing.T) {
+	item1 := "item1"
+	denylist, err := New(map[string]struct{}{}, map[string]struct{}{item1: {}})
+	if err != nil {
+		t.Fatal("expected New() to not fail")
+	}
+
+	denylist.Include([]string{item1})
+	err = denylist.Parse()
+	if err != nil {
+		t.Fatalf("expected Parse() to not fail, but got error : %v", err)
+	}
+
+	if !denylist.IsIncluded(item1) {
+		t.Fatal("expected included item to be included")
+	}
+}
+
+func addDuringPatternMatchWhenInAllowListMode(t *testing.T) {
+	allowlist, err := New(map[string]struct{}{"not-empty": {}}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal("expected New() to not fail")
+	}
+
+	allowlist.Include([]string{"kube_.*_info"})
+	err = allowlist.Parse()
+	if err != nil {
+		t.Fatalf("expected Parse() to not fail, but got error : %v", err)
+	}
+
+	if !allowlist.IsIncluded("kube_secret_info") {
+		t.Fatal("expected included item to be included")
+	}
+}
+
+func removeDuringPatternMatchWhenInDenyListMode(t *testing.T) {
+	item1 := "kube_pod_container_resource_requests_cpu_cores"
+	item2 := "kube_pod_container_resource_requests_memory_bytes"
+	item3 := "kube_node_status_capacity_cpu_cores"
+	item4 := "kube_node_status_capacity_memory_bytes"
+
+	denylist, err := New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal("expected New() to not fail")
+	}
+
+	denylist.Exclude([]string{"kube_node_.*_cores", "kube_pod_.*_bytes"})
+	err = denylist.Parse()
+	if err != nil {
+		t.Fatalf("expected Parse() to not fail, but got error : %v", err)
+	}
+
+	if denylist.IsExcluded(item1) {
+		t.Fatalf("expected included %s to be included", item1)
+	}
+	if denylist.IsIncluded(item2) {
+		t.Fatalf("expected included %s to be excluded", item2)
+	}
+	if denylist.IsIncluded(item3) {
+		t.Fatalf("expected included %s to be excluded", item3)
+	}
+	if denylist.IsExcluded(item4) {
+		t.Fatalf("expected included %s to be included", item4)
+	}
+}
+
 func TestInclude(t *testing.T) {
 	t.Run("adds when allowlist", func(t *testing.T) {
-		allowlist, err := New(map[string]struct{}{"not-empty": {}}, map[string]struct{}{})
-		if err != nil {
-			t.Fatal("expected New() to not fail")
-		}
-
-		allowlist.Include([]string{"item1"})
-		err = allowlist.Parse()
-		if err != nil {
-			t.Fatal("expected Parse() to not fail")
-		}
-
-		if !allowlist.IsIncluded("item1") {
-			t.Fatal("expected included item to be included")
-		}
+		addWhenAllowList(t)
 	})
 	t.Run("removes when denylist", func(t *testing.T) {
-		item1 := "item1"
-		denylist, err := New(map[string]struct{}{}, map[string]struct{}{item1: {}})
-		if err != nil {
-			t.Fatal("expected New() to not fail")
-		}
-
-		denylist.Include([]string{item1})
-		err = denylist.Parse()
-		if err != nil {
-			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
-		}
-
-		if !denylist.IsIncluded(item1) {
-			t.Fatal("expected included item to be included")
-		}
+		removeWhenDenyList(t)
 	})
 	t.Run("adds during pattern match when in allowlist mode", func(t *testing.T) {
-		allowlist, err := New(map[string]struct{}{"not-empty": {}}, map[string]struct{}{})
-		if err != nil {
-			t.Fatal("expected New() to not fail")
-		}
-
-		allowlist.Include([]string{"kube_.*_info"})
-		err = allowlist.Parse()
-		if err != nil {
-			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
-		}
-
-		if !allowlist.IsIncluded("kube_secret_info") {
-			t.Fatal("expected included item to be included")
-		}
+		addDuringPatternMatchWhenInAllowListMode(t)
 	})
 	t.Run("removes during pattern match when in denyist mode", func(t *testing.T) {
-		item1 := "kube_pod_container_resource_requests_cpu_cores"
-		item2 := "kube_pod_container_resource_requests_memory_bytes"
-		item3 := "kube_node_status_capacity_cpu_cores"
-		item4 := "kube_node_status_capacity_memory_bytes"
-
-		denylist, err := New(map[string]struct{}{}, map[string]struct{}{})
-		if err != nil {
-			t.Fatal("expected New() to not fail")
-		}
-
-		denylist.Exclude([]string{"kube_node_.*_cores", "kube_pod_.*_bytes"})
-		err = denylist.Parse()
-		if err != nil {
-			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
-		}
-
-		if denylist.IsExcluded(item1) {
-			t.Fatalf("expected included %s to be included", item1)
-		}
-		if denylist.IsIncluded(item2) {
-			t.Fatalf("expected included %s to be excluded", item2)
-		}
-		if denylist.IsIncluded(item3) {
-			t.Fatalf("expected included %s to be excluded", item3)
-		}
-		if denylist.IsExcluded(item4) {
-			t.Fatalf("expected included %s to be included", item4)
-		}
+		removeDuringPatternMatchWhenInDenyListMode(t)
 	})
 }
 

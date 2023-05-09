@@ -83,6 +83,46 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) erro
 	return err
 }
 
+func getFactories(opts *options.Options) ([]customresource.RegistryFactory, error) {
+	config, err := resolveCustomResourceConfig(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var factories []customresource.RegistryFactory
+
+	if config != nil {
+		factories, err = customresourcestate.FromConfig(config)
+		if err != nil {
+			return nil, fmt.Errorf("Parsing from Custom Resource State Metrics file failed: %v", err)
+		}
+	}
+	return factories, err
+
+}
+
+func getResources(factories []customresource.RegistryFactory, opts *options.Options) []string {
+	resources := make([]string, len(factories))
+
+	for i, factory := range factories {
+		resources[i] = factory.Name()
+	}
+
+	switch {
+	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:
+		resources = append(resources, options.DefaultResources.AsSlice()...)
+		klog.InfoS("Used default resources")
+	case opts.CustomResourcesOnly:
+		// enable custom resource only
+		klog.InfoS("Used CRD resources only", "resources", resources)
+	default:
+		resources = append(resources, opts.Resources.AsSlice()...)
+		klog.InfoS("Used resources", "resources", resources)
+	}
+
+	return resources
+}
+
 // RunKubeStateMetrics will build and run the kube-state-metrics.
 // Any out-of-tree custom resource metrics could be registered by newing a registry factory
 // which implements customresource.RegistryFactory and pass all factories into this function.
@@ -161,13 +201,12 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 
 	// Loading custom resource state configuration from cli argument or config file
-	config, err := resolveCustomResourceConfig(opts)
+	factories, err := getFactories(opts)
 	if err != nil {
 		return err
 	}
 
-	var factories []customresource.RegistryFactory
-
+	storeBuilder.WithCustomResourceStoreFactories(factories...)
 	if opts.CustomResourceConfigFile != "" {
 		crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
 		if err != nil {
@@ -180,23 +219,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	}
 
-	resources := make([]string, len(factories))
-
-	for i, factory := range factories {
-		resources[i] = factory.Name()
-	}
-
-	switch {
-	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:
-		resources = append(resources, options.DefaultResources.AsSlice()...)
-		klog.InfoS("Used default resources")
-	case opts.CustomResourcesOnly:
-		// enable custom resource only, these resources will be populated later on
-		klog.InfoS("Used CRD resources only")
-	default:
-		resources = append(resources, opts.Resources.AsSlice()...)
-		klog.InfoS("Used resources", "resources", resources)
-	}
+	resources := getResources(factories, opts)
 
 	if err := storeBuilder.WithEnabledResources(resources); err != nil {
 		return fmt.Errorf("failed to set up resources: %v", err)

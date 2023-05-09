@@ -188,7 +188,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
 
 	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022
-	if contentType != expfmt.FmtOpenMetrics {
+	if contentType != expfmt.FmtOpenMetrics_1_0_0 && contentType != expfmt.FmtOpenMetrics_0_0_1 {
 		contentType = expfmt.FmtText
 	}
 	resHeader.Set("Content-Type", string(contentType))
@@ -215,7 +215,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If we send openmetrics, we need to include a EOF directive
-	if contentType == expfmt.FmtOpenMetrics {
+	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
 		writer.Write([]byte("# EOF\n"))
 	}
 

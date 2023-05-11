@@ -649,9 +649,8 @@ func compilePath(path []string) (out valuePath, _ error) {
 			retPathOp, err := getPathOpWhenPathContainsPrefixOrSuffix(part)
 			if err != nil {
 				return nil, err
-			} else {
-				out = append(out, retPathOp)
 			}
+			out = append(out, retPathOp)
 		} else {
 			out = append(out, getPathOpWhenPathDoNotContainsPrefixOrSuffix(part))
 		}

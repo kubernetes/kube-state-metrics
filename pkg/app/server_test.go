@@ -135,6 +135,16 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	})
 }
 
+func filterList(gotSplit []string, filterStr string) []string {
+	gotFiltered := []string{}
+	for _, l := range gotSplit {
+		if strings.Contains(l, filterStr) {
+			gotFiltered = append(gotFiltered, l)
+		}
+	}
+	return gotFiltered
+}
+
 // TestFullScrapeCycle is a simple smoke test covering the entire cycle from
 // cache filling to scraping.
 func TestFullScrapeCycle(t *testing.T) {
@@ -351,12 +361,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 
 	gotSplit := strings.Split(strings.TrimSpace(string(body)), "\n")
 
-	gotFiltered := []string{}
-	for _, l := range gotSplit {
-		if strings.Contains(l, "kube_pod_") {
-			gotFiltered = append(gotFiltered, l)
-		}
-	}
+	gotFiltered := filterList(gotSplit, "kube_pod_")
 
 	sort.Strings(gotFiltered)
 
@@ -399,12 +404,7 @@ kube_state_metrics_total_shards 1
 
 	gotSplit2 := strings.Split(strings.TrimSpace(string(body2)), "\n")
 
-	gotFiltered2 := []string{}
-	for _, l := range gotSplit2 {
-		if strings.Contains(l, "_shard") {
-			gotFiltered2 = append(gotFiltered2, l)
-		}
-	}
+	gotFiltered2 := filterList(gotSplit2, "_shard")
 
 	sort.Strings(gotFiltered2)
 
@@ -871,7 +871,7 @@ func (f *fooFactory) Name() string {
 }
 
 // CreateClient use fake client set to establish 10 foos.
-func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
+func (f *fooFactory) CreateClient(_ *rest.Config) (interface{}, error) {
 	fooClient := samplefake.NewSimpleClientset()
 	for i := 0; i < 10; i++ {
 		err := foo(fooClient, i)
@@ -882,7 +882,7 @@ func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
 	return fooClient, nil
 }
 
-func (f *fooFactory) MetricFamilyGenerators() []generator.FamilyGenerator {
+func (f *fooFactory) MetricFamilyGenerators(_, _ []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_foo_spec_replicas",

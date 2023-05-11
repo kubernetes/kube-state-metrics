@@ -211,6 +211,21 @@ func createPVStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
+func updateFC(fc *v1.FCVolumeSource, fcTargetWWNs string, fcWWIDs string) {
+	for _, wwn := range fc.TargetWWNs {
+		if len(fcTargetWWNs) != 0 {
+			fcTargetWWNs += ","
+		}
+		fcTargetWWNs += wwn
+	}
+	for _, wwid := range fc.WWIDs {
+		if len(fcWWIDs) != 0 {
+			fcWWIDs += ","
+		}
+		fcWWIDs += wwid
+	}
+}
+
 func createPVInfoFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_persistentvolume_info",
@@ -242,18 +257,7 @@ func createPVInfoFamilyGenerator() generator.FamilyGenerator {
 				if p.Spec.PersistentVolumeSource.FC.Lun != nil {
 					fcLun = strconv.FormatInt(int64(*p.Spec.PersistentVolumeSource.FC.Lun), 10)
 				}
-				for _, wwn := range p.Spec.PersistentVolumeSource.FC.TargetWWNs {
-					if len(fcTargetWWNs) != 0 {
-						fcTargetWWNs += ","
-					}
-					fcTargetWWNs += wwn
-				}
-				for _, wwid := range p.Spec.PersistentVolumeSource.FC.WWIDs {
-					if len(fcWWIDs) != 0 {
-						fcWWIDs += ","
-					}
-					fcWWIDs += wwid
-				}
+				updateFC(p.Spec.PersistentVolumeSource.FC, fcTargetWWNs, fcWWIDs)
 			case p.Spec.PersistentVolumeSource.ISCSI != nil:
 				iscsiTargetPortal = p.Spec.PersistentVolumeSource.ISCSI.TargetPortal
 				iscsiIQN = p.Spec.PersistentVolumeSource.ISCSI.IQN

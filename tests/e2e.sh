@@ -51,7 +51,7 @@ function setup_kind() {
 }
 
 function setup_kubectl() {
-    curl -sLo kubectl https://dl.k8s.io/release/"$(curl -s https://dl.k8s.io/release/stable.txt)"/bin/"${OS}"/"${ARCH}"/kubectl \
+    curl -sLo kubectl https://dl.k8s.io/release/"$(curl -sL https://dl.k8s.io/release/stable.txt)"/bin/"${OS}"/"${ARCH}"/kubectl \
         && chmod +x kubectl \
         && ${SUDO} mv kubectl /usr/local/bin/
 }

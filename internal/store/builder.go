@@ -96,12 +96,12 @@ func (b *Builder) WithEnabledResources(r []string) error {
 		}
 	}
 
-	var copy []string
-	copy = append(copy, r...)
+	var copyStr []string
+	copyStr = append(copyStr, r...)
 
-	sort.Strings(copy)
+	sort.Strings(copyStr)
 
-	b.enabledResources = copy
+	b.enabledResources = copyStr
 	return nil
 }
 

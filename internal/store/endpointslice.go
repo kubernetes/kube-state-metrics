@@ -222,7 +222,7 @@ func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) fu
 	}
 }
 
-func createEndpointSliceListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createEndpointSliceListWatch(kubeClient clientset.Interface, ns string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.DiscoveryV1().EndpointSlices(ns).List(context.TODO(), opts)

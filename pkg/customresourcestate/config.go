@@ -18,9 +18,9 @@ package customresourcestate
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/gobuffalo/flect"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
@@ -78,8 +78,9 @@ func (r Resource) GetResourceName() string {
 	if r.ResourcePlural != "" {
 		return r.ResourcePlural
 	}
-	// kubebuilder default:
-	return strings.ToLower(flect.Pluralize(r.GroupVersionKind.Kind))
+	// kubernetes/apimachinery default:
+	plural, _ := meta.UnsafeGuessKindToResource(schema.GroupVersionKind(r.GroupVersionKind))
+	return plural.String()
 }
 
 // GroupVersionKind is the Kubernetes group, version, and kind of a resource.

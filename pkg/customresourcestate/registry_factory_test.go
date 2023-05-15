@@ -349,6 +349,15 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 0, "type", "Provisioned"),
 			newEachValue(t, 1, "type", "Ready"),
 		}},
+		{name: "= expression matching", each: &compiledInfo{
+			compiledCommon: compiledCommon{
+				labelFromPath: map[string]valuePath{
+					"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
+				},
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "bar", "baz"),
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

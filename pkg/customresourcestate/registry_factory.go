@@ -623,6 +623,16 @@ func compilePath(path []string) (out valuePath, _ error) {
 				part: part,
 				op: func(m interface{}) interface{} {
 					if mp, ok := m.(map[string]interface{}); ok {
+						kv := strings.Split(part, "=")
+						if len(kv) == 2 /* k=v */ {
+							key := kv[0]
+							val := kv[1]
+							if v, ok := mp[key]; ok {
+								if v == val {
+									return v
+								}
+							}
+						}
 						return mp[part]
 					} else if s, ok := m.([]interface{}); ok {
 						i, err := strconv.Atoi(part)

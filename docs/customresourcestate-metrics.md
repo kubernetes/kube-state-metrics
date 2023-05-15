@@ -531,6 +531,29 @@ Examples:
 
 # For generally matching against a field in an object schema, use the following syntax:
 [metadata, "name=foo"] # if v, ok := metadata[name]; ok && v == "foo" { return v; } else { /* ignore */ }
+
+# expand a list
+[spec, order, "*", value] # syntax
+# for the object snippet below
+...
+status:
+  namespaces:
+  - namespace: "foo"
+    status:
+      available:
+        resourceA: '10'
+        resourceB: '20'
+      pending:
+        resourceA: '0'
+        resourceB: '6'
+...
+# resolves to: [status, namespaces, <range len(namespaces)>, status] (a multi-dimensional array)
+path: [status, namespaces, "*", status]
+labelsFromPath:
+  # this can be combined with the wildcard prefixes feature introduced in #2052
+  "available_*": [available]
+# outputs:
+...{...,available_resourceA="10",available_resourceB="20",...} ...
 ```
 
 ### Wildcard matching of version and kind fields

@@ -41,10 +41,20 @@ func init() {
 				Obj{
 					"id":    1,
 					"value": true,
+					"arr": Array{
+						Obj{
+							"foo": "bar",
+						},
+					},
 				},
 				Obj{
 					"id":    3,
 					"value": false,
+					"arr": Array{
+						Obj{
+							"foo": "baz",
+						},
+					},
 				},
 			},
 		},
@@ -527,6 +537,46 @@ func Test_valuePath_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := mustCompilePath(t, tt.p...)
 			assert.Equal(t, tt.want, p.Get(cr))
+		})
+	}
+}
+
+func Test_resolveWildcard(t *testing.T) {
+	tests := []struct {
+		path valuePath
+		want []valuePath
+		name string
+	}{
+		{
+			name: "wildcard not at the boundary",
+			path: mustCompilePath(t, "spec", "order", "*", "value"),
+			want: []valuePath{
+				mustCompilePath(t, "spec", "order", "0", "value"),
+				mustCompilePath(t, "spec", "order", "1", "value"),
+			},
+		},
+		{
+			name: "wildcard at the boundary",
+			path: mustCompilePath(t, "spec", "order", "*"),
+			want: []valuePath{
+				mustCompilePath(t, "spec", "order", "0"),
+				mustCompilePath(t, "spec", "order", "1"),
+			},
+		},
+		{
+			name: "multiple wildcards",
+			path: mustCompilePath(t, "spec", "order", "*", "arr", "*", "foo"),
+			want: []valuePath{
+				mustCompilePath(t, "spec", "order", "0", "arr", "0", "foo"),
+				mustCompilePath(t, "spec", "order", "1", "arr", "0", "foo"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveWildcard(tt.path, cr)
+			reflect.DeepEqual(got, tt.want)
 		})
 	}
 }

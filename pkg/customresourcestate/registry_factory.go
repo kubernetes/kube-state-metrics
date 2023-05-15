@@ -128,12 +128,22 @@ type compiledCommon struct {
 	t             metric.Type
 }
 
+func (c *compiledCommon) SetPath(p valuePath) {
+	c.path = p
+}
+
 func (c compiledCommon) Path() valuePath {
 	return c.path
 }
+
+func (c *compiledCommon) SetLabelFromPath(parr map[string]valuePath) {
+	c.labelFromPath = parr
+}
+
 func (c compiledCommon) LabelFromPath() map[string]valuePath {
 	return c.labelFromPath
 }
+
 func (c compiledCommon) Type() metric.Type {
 	return c.t
 }
@@ -146,7 +156,9 @@ type eachValue struct {
 type compiledMetric interface {
 	Values(v interface{}) (result []eachValue, err []error)
 	Path() valuePath
+	SetPath(valuePath)
 	LabelFromPath() map[string]valuePath
+	SetLabelFromPath(map[string]valuePath)
 	Type() metric.Type
 }
 
@@ -554,11 +566,35 @@ type pathOp struct {
 type valuePath []pathOp
 
 func (p valuePath) Get(obj interface{}) interface{} {
+	handleNil := func(object interface{}, part string) interface{} {
+		switch tobj := object.(type) {
+		case map[string]interface{}:
+			return tobj[part]
+		case []interface{}:
+			if part == "*" {
+				return tobj
+			}
+			idx, err := strconv.Atoi(part)
+			if err != nil {
+				return nil
+			}
+			if idx < 0 || idx >= len(tobj) {
+				return nil
+			}
+			return tobj[idx]
+		default:
+			return nil
+		}
+	}
 	for _, op := range p {
 		if obj == nil {
 			return nil
 		}
-		obj = op.op(obj)
+		if op.op == nil {
+			obj = handleNil(obj, op.part)
+		} else {
+			obj = op.op(obj)
+		}
 	}
 	return obj
 }
@@ -674,22 +710,95 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 	}
 }
 
+func resolveWildcard(path valuePath, object map[string]interface{}) []valuePath {
+	if path == nil {
+		return nil
+	}
+	fn := func(i *int) bool {
+		for ; *i < len(path); *i++ {
+			if path[*i].part == "*" {
+				return true
+			}
+		}
+		return false
+	}
+	checkpoint := object
+	var expandedPaths []valuePath
+	var list []interface{}
+	var l int
+	for i, j := 0, 0; fn(&i); /* i is at "*" now */ {
+		for ; j < i; j++ {
+			maybeCheckpoint, ok := checkpoint[path[j].part]
+			if !ok {
+				// path[j] is not in the object, so we can't expand the wildcard
+				return []valuePath{path}
+			}
+			// store (persist) last checkpoint
+			if c, ok := maybeCheckpoint.([]interface{}); ok {
+				list = c
+				break
+			}
+			checkpoint = maybeCheckpoint.(map[string]interface{})
+		}
+		if j > i {
+			break
+		}
+		// i is at "*", j is at the last part before "*", checkpoint is at the value of the last part before "*"
+		l = len(list) // number of elements in the list
+		pathCopyStart := make(valuePath, i)
+		copy(pathCopyStart, path[:i])
+		pathCopyWildcard := make(valuePath, len(path)-i-1)
+		copy(pathCopyWildcard, path[i+1:])
+		for k := 0; k < l; k++ {
+			pathCopyStart = append(pathCopyStart, pathOp{part: strconv.Itoa(k)})
+			pathCopyStart = append(pathCopyStart, pathCopyWildcard...)
+			expandedPaths = append(expandedPaths, pathCopyStart)
+		}
+		j++ // skip "*"
+	}
+	return expandedPaths[:l]
+}
+
 // generate generates the metrics for a custom resource.
 func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbose) *metric.Family {
 	klog.V(10).InfoS("Checked", "compiledFamilyName", f.Name, "unstructuredName", u.GetName())
 	var metrics []*metric.Metric
 	baseLabels := f.BaseLabels(u.Object)
+	fn := func() {
+		values, errorSet := scrapeValuesFor(f.Each, u.Object)
+		for _, err := range errorSet {
+			errLog.ErrorS(err, f.Name)
+		}
 
-	values, errors := scrapeValuesFor(f.Each, u.Object)
-	for _, err := range errors {
-		errLog.ErrorS(err, f.Name)
+		for _, v := range values {
+			v.DefaultLabels(baseLabels)
+			metrics = append(metrics, v.ToMetric())
+		}
+		klog.V(10).InfoS("Produced metrics for", "compiledFamilyName", f.Name, "metricsLength", len(metrics), "unstructuredName", u.GetName())
+	}
+	if f.Each.Path() != nil {
+		fPaths := resolveWildcard(f.Each.Path(), u.Object)
+		for _, fPath := range fPaths {
+			f.Each.SetPath(fPath)
+			fn()
+		}
 	}
 
-	for _, v := range values {
-		v.DefaultLabels(baseLabels)
-		metrics = append(metrics, v.ToMetric())
+	if f.Each.LabelFromPath() != nil {
+		labelsFromPath := make(map[string]valuePath)
+		flfp := f.Each.LabelFromPath()
+		for k, flfpPath := range flfp {
+			fLPaths := resolveWildcard(flfpPath, u.Object)
+			for i, fPath := range fLPaths {
+				genLabel := k + strconv.Itoa(i)
+				labelsFromPath[genLabel] = fPath
+			}
+		}
+		if len(labelsFromPath) > 0 {
+			f.Each.SetLabelFromPath(labelsFromPath)
+		}
+		fn()
 	}
-	klog.V(10).InfoS("Produced metrics for", "compiledFamilyName", f.Name, "metricsLength", len(metrics), "unstructuredName", u.GetName())
 
 	return &metric.Family{
 		Metrics: metrics,

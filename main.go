@@ -31,11 +31,9 @@ func main() {
 		internal.RunKubeStateMetricsWrapper(opts)
 	}
 	opts.AddFlags(cmd)
-
 	if err := opts.Parse(); err != nil {
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
-
 	if err := opts.Validate(); err != nil {
 		klog.ErrorS(err, "Validating options error")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)

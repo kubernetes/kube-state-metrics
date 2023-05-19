@@ -58,8 +58,18 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		}(s)
 	}
 
+	// If the first store has no headers, but has metrics, we need to write out
+	// an empty header to ensure that the metrics are written out correctly.
+	if m.stores[0].headers == nil && m.stores[0].metrics != nil {
+		m.stores[0].headers = []string{""}
+	}
 	for i, help := range m.stores[0].headers {
-		_, err := w.Write([]byte(help + "\n"))
+		if help != "" && help != "\n" {
+			help += "\n"
+		}
+		// TODO: This writes out the help text for each metric family, before checking if the metrics for it exist,
+		// TODO: which is not ideal, and furthermore, diverges from the OpenMetrics standard.
+		_, err := w.Write([]byte(help))
 		if err != nil {
 			return fmt.Errorf("failed to write help text: %v", err)
 		}
@@ -74,4 +84,20 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		}
 	}
 	return nil
+}
+
+// SanitizeHeaders removes duplicate headers from the given MetricsWriterList for the same family (generated through CRS).
+// These are expected to be consecutive since G** resolution generates groups of similar metrics with same headers before moving onto the next G** spec in the CRS configuration.
+func SanitizeHeaders(writers MetricsWriterList) MetricsWriterList {
+	var lastHeader string
+	for _, writer := range writers {
+		for i, header := range writer.stores[0].headers {
+			if header == lastHeader {
+				writer.stores[0].headers[i] = ""
+			} else {
+				lastHeader = header
+			}
+		}
+	}
+	return writers
 }

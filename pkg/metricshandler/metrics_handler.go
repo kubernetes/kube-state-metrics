@@ -98,6 +98,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	if !autoSharding {
 		klog.InfoS("Autosharding disabled")
 		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
+		// Wait for context to be done, metrics will be served until then.
 		<-ctx.Done()
 		return ctx.Err()
 	}
@@ -207,6 +208,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	m.metricsWriters = metricsstore.SanitizeHeaders(m.metricsWriters)
 	for _, w := range m.metricsWriters {
 		err := w.WriteAll(writer)
 		if err != nil {
@@ -214,9 +216,12 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// If we send openmetrics, we need to include a EOF directive
+	// OpenMetrics spec requires that we end with an EOF directive.
 	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
-		writer.Write([]byte("# EOF\n"))
+		_, err := writer.Write([]byte("# EOF\n"))
+		if err != nil {
+			klog.ErrorS(err, "Failed to write EOF directive")
+		}
 	}
 
 	// In case we gzipped the response, we have to close the writer.

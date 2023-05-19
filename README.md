@@ -91,6 +91,7 @@ release.
 
 The latest container image can be found at:
 * `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.8.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.8.1)
 
 ### Metrics Documentation
 

@@ -83,11 +83,15 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
+				labelKeys := []string{"namespace"}
+
 				ms := []*metric.Metric{}
 
 				if !l.Spec.RenewTime.IsZero() {
 					ms = append(ms, &metric.Metric{
-						Value: float64(l.Spec.RenewTime.Unix()),
+						LabelKeys:   labelKeys,
+						LabelValues: []string{l.Namespace},
+						Value:       float64(l.Spec.RenewTime.Unix()),
 					})
 				}
 				return &metric.Family{

@@ -169,7 +169,7 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *
 	}
 }
 
-func createNamespaceListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createNamespaceListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CoreV1().Namespaces().List(context.TODO(), opts)

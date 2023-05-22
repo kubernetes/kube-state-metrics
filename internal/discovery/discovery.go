@@ -115,6 +115,85 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	return nil
 }
 
+func hasKindAndVersion(r *CRDiscoverer, g string, v string, k string) (resolvedGVKPs []groupVersionKindPlural, err error) {
+	var p string
+	for _, el := range r.Map[g][v] {
+		if el.Kind == k {
+			p = el.Plural
+			break
+		}
+	}
+	return []groupVersionKindPlural{
+		{
+			GroupVersionKind: schema.GroupVersionKind{
+				Group:   g,
+				Version: v,
+				Kind:    k,
+			},
+			Plural: p,
+		},
+	}, nil
+}
+
+func hasVersion(v string) bool {
+	return v != "" && v != "*"
+}
+
+func hasKind(k string) bool {
+	return k != "" && k != "*"
+}
+
+func hasVersionAndNotKind(r *CRDiscoverer, g string, v string) (resolvedGVKPs []groupVersionKindPlural) {
+	kinds := r.Map[g][v]
+	for _, el := range kinds {
+		resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+			GroupVersionKind: schema.GroupVersionKind{
+				Group:   g,
+				Version: v,
+				Kind:    el.Kind,
+			},
+			Plural: el.Plural,
+		})
+	}
+	return resolvedGVKPs
+}
+
+func hasKindAndNotVersion(r *CRDiscoverer, g string, k string) (resolvedGVKPs []groupVersionKindPlural) {
+	versions := r.Map[g]
+	for version, kinds := range versions {
+		for _, el := range kinds {
+			if el.Kind == k {
+				resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+					GroupVersionKind: schema.GroupVersionKind{
+						Group:   g,
+						Version: version,
+						Kind:    k,
+					},
+					Plural: el.Plural,
+				})
+			}
+		}
+	}
+	return resolvedGVKPs
+}
+
+func hasNoVersionAndKind(r *CRDiscoverer, g string) (resolvedGVKPs []groupVersionKindPlural) {
+	versions := r.Map[g]
+	for version, kinds := range versions {
+		for _, el := range kinds {
+			resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   g,
+					Version: version,
+					Kind:    el.Kind,
+				},
+				Plural: el.Plural,
+			})
+		}
+	}
+	return resolvedGVKPs
+}
+
 // ResolveGVKToGVKPs resolves the variable VKs to a GVK list, based on the current cache.
 func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedGVKPs []groupVersionKindPlural, err error) { // nolint:revive
 	g := gvk.Group
@@ -123,72 +202,19 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	if g == "" || g == "*" {
 		return nil, fmt.Errorf("group is required in the defined GVK %v", gvk)
 	}
-	hasVersion := v != "" && v != "*"
-	hasKind := k != "" && k != "*"
+
 	// No need to resolve, return.
-	if hasVersion && hasKind {
-		var p string
-		for _, el := range r.Map[g][v] {
-			if el.Kind == k {
-				p = el.Plural
-				break
-			}
-		}
-		return []groupVersionKindPlural{
-			{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   g,
-					Version: v,
-					Kind:    k,
-				},
-				Plural: p,
-			},
-		}, nil
+	if hasVersion(v) && hasKind(k) {
+		return hasKindAndVersion(r, g, v, k)
 	}
-	if hasVersion && !hasKind {
-		kinds := r.Map[g][v]
-		for _, el := range kinds {
-			resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   g,
-					Version: v,
-					Kind:    el.Kind,
-				},
-				Plural: el.Plural,
-			})
-		}
+	if hasVersion(v) && !hasKind(k) {
+		resolvedGVKPs = hasVersionAndNotKind(r, g, v)
 	}
-	if !hasVersion && hasKind {
-		versions := r.Map[g]
-		for version, kinds := range versions {
-			for _, el := range kinds {
-				if el.Kind == k {
-					resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-						GroupVersionKind: schema.GroupVersionKind{
-							Group:   g,
-							Version: version,
-							Kind:    k,
-						},
-						Plural: el.Plural,
-					})
-				}
-			}
-		}
+	if !hasVersion(v) && hasKind(k) {
+		resolvedGVKPs = hasKindAndNotVersion(r, g, k)
 	}
-	if !hasVersion && !hasKind {
-		versions := r.Map[g]
-		for version, kinds := range versions {
-			for _, el := range kinds {
-				resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-					GroupVersionKind: schema.GroupVersionKind{
-						Group:   g,
-						Version: version,
-						Kind:    el.Kind,
-					},
-					Plural: el.Plural,
-				})
-			}
-		}
+	if !hasVersion(v) && !hasKind(k) {
+		resolvedGVKPs = hasNoVersionAndKind(r, g)
 	}
 	return
 }

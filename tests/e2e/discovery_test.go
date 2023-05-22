@@ -35,6 +35,49 @@ import (
 // PopulateTimeout is the timeout on populating the cache for the first time.
 const PopulateTimeout = 10 * time.Second
 
+func createCRDAndCRFiles(t *testing.T, crFile *os.File, crdFile *os.File) {
+	crd := getCRD()
+	cr := getCR()
+	err := os.WriteFile(crdFile.Name(), []byte(crd), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to crd file: %v", err)
+	}
+	err = os.WriteFile(crFile.Name(), []byte(cr), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to cr file: %v", err)
+	}
+	klog.InfoS("created CR and CRD manifests")
+
+	// Apply CRD and CR to the cluster.
+	err = exec.Command("kubectl", "apply", "-f", crdFile.Name()).Run() //nolint:gosec
+	if err != nil {
+		t.Fatalf("failed to apply crd: %v", err)
+	}
+	err = exec.Command("kubectl", "apply", "-f", crFile.Name()).Run() //nolint:gosec
+	if err != nil {
+		t.Fatalf("failed to apply cr: %v", err)
+	}
+	klog.InfoS("applied CR and CRD manifests")
+}
+
+func createTestData(t *testing.T) (crConfigFile *os.File, crdFile *os.File, crFile *os.File) {
+	crConfigFile, err := os.CreateTemp("", "cr-config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	crdFile, err = os.CreateTemp("", "crd.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	crFile, err = os.CreateTemp("", "cr.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	klog.InfoS("testdata", "crConfigFile", crConfigFile.Name(), "crdFile", crdFile.Name(), "crFile", crFile.Name())
+	return crConfigFile, crdFile, crFile
+}
 func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 
 	// Initialise options.
@@ -44,20 +87,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	klog.InfoS("options", "options", opts)
 
 	// Create testdata.
-	crConfigFile, err := os.CreateTemp("", "cr-config.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	crdFile, err := os.CreateTemp("", "crd.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	crFile, err := os.CreateTemp("", "cr.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	klog.InfoS("testdata", "crConfigFile", crConfigFile.Name(), "crdFile", crdFile.Name(), "crFile", crFile.Name())
-
+	crConfigFile, crdFile, crFile := createTestData(t)
 	// Delete artefacts.
 	defer func() {
 		err := os.Remove(crConfigFile.Name())
@@ -85,7 +115,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 
 	// Write to the config file.
 	crConfig := getCRConfig()
-	err = os.WriteFile(opts.CustomResourceConfigFile, []byte(crConfig), 0600 /* rw------- */)
+	err := os.WriteFile(opts.CustomResourceConfigFile, []byte(crConfig), 0600 /* rw------- */)
 	if err != nil {
 		t.Fatalf("cannot write to config file: %v", err)
 	}
@@ -113,28 +143,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	klog.InfoS("port 8080 up")
 
 	// Create CRD and CR files.
-	crd := getCRD()
-	cr := getCR()
-	err = os.WriteFile(crdFile.Name(), []byte(crd), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to crd file: %v", err)
-	}
-	err = os.WriteFile(crFile.Name(), []byte(cr), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to cr file: %v", err)
-	}
-	klog.InfoS("created CR and CRD manifests")
-
-	// Apply CRD and CR to the cluster.
-	err = exec.Command("kubectl", "apply", "-f", crdFile.Name()).Run() //nolint:gosec
-	if err != nil {
-		t.Fatalf("failed to apply crd: %v", err)
-	}
-	err = exec.Command("kubectl", "apply", "-f", crFile.Name()).Run() //nolint:gosec
-	if err != nil {
-		t.Fatalf("failed to apply cr: %v", err)
-	}
-	klog.InfoS("applied CR and CRD manifests")
+	createCRDAndCRFiles(t, crFile, crdFile)
 
 	// Wait for the metric to be available.
 	ch := make(chan bool, 1)

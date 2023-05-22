@@ -123,6 +123,7 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	sort.Strings(sortedResources)
 
 	b.enabledResources = append(b.enabledResources, sortedResources...)
+
 	return nil
 }
 

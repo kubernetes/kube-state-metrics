@@ -231,6 +231,28 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_persistentvolumeclaim_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if p.DeletionTimestamp != nil && !p.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(p.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

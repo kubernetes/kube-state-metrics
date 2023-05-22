@@ -30,7 +30,7 @@ KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-s
 KUBE_STATE_METRICS_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics-${ARCH}"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
-KIND_VERSION=v0.17.0
+KIND_VERSION=v0.19.0
 SUDO=${SUDO:-}
 
 OS=$(uname -s | awk '{print tolower($0)}')

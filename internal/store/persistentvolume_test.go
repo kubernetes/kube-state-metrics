@@ -683,6 +683,24 @@ func TestPersistentVolumeStore(t *testing.T) {
 `,
 			MetricNames: []string{"kube_persistentvolume_created"},
 		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-pv-terminating",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeBound,
+				},
+			},
+			Want: `
+				# HELP kube_persistentvolume_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_persistentvolume_deletion_timestamp gauge
+				kube_persistentvolume_deletion_timestamp{persistentvolume="test-pv-terminating"} 1.8e+09
+`,
+			MetricNames: []string{"kube_persistentvolume_deletion_timestamp"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

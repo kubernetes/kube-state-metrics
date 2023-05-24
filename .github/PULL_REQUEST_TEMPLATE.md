@@ -5,9 +5,14 @@
 4. If the PR is unfinished, see how to mark it: https://git.k8s.io/community/contributors/guide/pull-requests.md#marking-unfinished-pull-requests
 -->
 
-**What this PR does / why we need it**:
+**What this PR does / why we need it**: <!-- A concise description of what this PR entails -->
 
-**How does this change affect the cardinality of KSM**: *(increases, decreases or does not change cardinality)*
+**How does this change affect the cardinality of KSM**: <!-- Does this PR increase, decrease or does not affect KSM's overall cardinality? -->
 
-**Which issue(s) this PR fixes** *(optional, in `fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close the issue(s) when PR gets merged)*:
-Fixes #
+**Which issue(s) this PR fixes**: <!-- Optional, should be in `Fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close the mentioned issue(s) when PR gets merged -->
+
+**Choose one below, based on the nature of this PR:**
+  - [ ] BUGFIX
+  - [ ] CHANGE
+  - [ ] ENHANCEMENT
+  - [ ] FEATURE

@@ -1,9 +1,9 @@
 # See https://cloud.google.com/cloud-build/docs/build-config
-timeout: 1800s
+timeout: 2400s
 options:
   substitution_option: ALLOW_LOOSE
 steps:
-  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20220609-2e4c91eb7e'
+  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20230522-312425ae46'
     entrypoint: make
     env:
     - TAG=$_PULL_BASE_REF

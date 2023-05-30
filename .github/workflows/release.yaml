@@ -1,0 +1,61 @@
+name: release-kube-state-metrics
+permissions:
+  contents: write
+  pull-requests: write
+on:
+  push:
+    branches: 
+      - automate-releases
+  schedule:
+    # release every two months
+    - cron: '00 00 01 */2 *'
+env:
+  # TODO: estimate these in the steps below
+  # (release-[VERSION minus the patch version])
+  RELEASE_BRANCH: "release-2.9"
+jobs:
+  release-kube-state-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout to kubernetes/kube-state-metrics
+        uses: actions/checkout@v3
+      - name: extract version information
+        # NOTE: this will be updated manually (./VERSION), 
+        # since we've seen it's better to increment this on a case-by-case basis.
+        run: |
+          KSM_CURRENT_VERSION=$(cat VERSION)
+          echo "VERSION=$KSM_CURRENT_VERSION" >> "$GITHUB_ENV"
+      - name: extract prerelease information
+        run: |
+          IS_PRERELEASE="false"
+          if [[ "$(cat VERSION)" =~ ".*-rc.*" ]]; then
+            IS_PRERELEASE="true"
+          fi
+          echo "IS_PRERELEASE=$IS_PRERELEASE" >> "$GITHUB_ENV"
+      - name: checking if internal manifests are up-to-date
+        run: | # check if app.kubernetes.io/version labels point to the next version.
+          cd examples;
+          IS_OUT_OF_SYNC=$(find . -name '*.yaml' | xargs awk '/app.kubernetes.io\/version/ {print $2}' | awk '($1 != "${{ env.VERSION }}")')
+          cd -
+          if [[ -n "$IS_OUT_OF_SYNC" ]]; then
+            echo -e "\tInternal manifests are out of sync with the current version."
+            echo -e "\tPlease update them by running \`make examples\`."
+            exit 1
+          fi
+          # TODO: modify README.md as well
+      - name: prepping release
+      # TODO: add a hook to ensure commits follow the "conventional commit" style, as stated here:
+      # https://github.com/google-github-actions/release-please-action#how-should-i-write-my-commits.
+        uses: google-github-actions/release-please-action@v3
+        with:
+          changelog-notes-type: github
+          changelog-path: CHANGELOG.md
+          command: release-pr
+          component: kube-state-metrics
+          default-branch: "${{ env.RELEASE_BRANCH }}"
+          prerelease: "${{ env.IS_PRERELEASE }}"
+          pull-request-header: "Prepping for kube-state-metrics' release v${{ env.VERSION }}! :rocket:"
+          pull-request-title-pattern: "chore: Cut v${{ env.VERSION }}"
+          release-type: go
+          version-file: VERSION
+

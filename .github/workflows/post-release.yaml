@@ -1,0 +1,21 @@
+name: post-release-procedures
+permissions: 
+   pull-requests: write 
+on: pull_request
+    # branches: 
+    #   - release-*
+    # types:
+    #   - opened
+    #   - reopened
+jobs:
+  post-release-procedures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: performing post-release procedures
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            Hey there! :wave: Please don't forget to promote images on [k8s.io](https://github.com/kubernetes/k8s.io/pull/5340)! :eyes:
+          reactions: point_up
+# TODO: after the release pr is merged into release-*, merge release-* back into main
+

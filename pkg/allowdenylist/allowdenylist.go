@@ -29,14 +29,21 @@ type AllowDenyList struct {
 	list        map[string]struct{}
 	rList       []*regexp.Regexp
 	isAllowList bool
+	ddlist      map[string]struct{}
 }
 
 // New constructs a new AllowDenyList based on a allow- and a
 // denylist. Only one of them can be not empty.
-func New(allow, deny map[string]struct{}) (*AllowDenyList, error) {
+func New(allow, deny, denydeny map[string]struct{}) (*AllowDenyList, error) {
 	if len(allow) != 0 && len(deny) != 0 {
 		return nil, errors.New(
 			"allowlist and denylist are both set, they are mutually exclusive, only one of them can be set",
+		)
+	}
+
+	if len(denydeny) != 0 && len(deny) == 0 {
+		return nil, errors.New(
+			"denydenylist is set but denylist is not set, denydenylist is only valid when denylist is set",
 		)
 	}
 
@@ -54,6 +61,7 @@ func New(allow, deny map[string]struct{}) (*AllowDenyList, error) {
 
 	return &AllowDenyList{
 		list:        list,
+		ddlist:      denydeny,
 		isAllowList: isAllowList,
 	}, nil
 }
@@ -112,6 +120,12 @@ func (l *AllowDenyList) IsIncluded(item string) bool {
 		return matched
 	}
 
+	for regex := range l.ddlist {
+		matched, _ = regexp.MatchString(regex, item)
+		if matched {
+			return true
+		}
+	}
 	return !matched
 }
 

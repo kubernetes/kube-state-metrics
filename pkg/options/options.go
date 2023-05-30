@@ -41,6 +41,7 @@ type Options struct {
 	LabelsAllowList          LabelsAllowList `yaml:"labels_allow_list"`
 	MetricAllowlist          MetricSet       `yaml:"metric_allowlist"`
 	MetricDenylist           MetricSet       `yaml:"metric_denylist"`
+	MetricDenyDenylist       MetricSet       `yaml:"metric_deny_denylist"`
 	MetricOptInList          MetricSet       `yaml:"metric_opt_in_list"`
 	Namespace                string          `yaml:"namespace"`
 	Namespaces               NamespaceList   `yaml:"namespaces"`
@@ -72,6 +73,7 @@ func NewOptions() *Options {
 		Resources:            ResourceSet{},
 		MetricAllowlist:      MetricSet{},
 		MetricDenylist:       MetricSet{},
+		MetricDenyDenylist:   MetricSet{},
 		MetricOptInList:      MetricSet{},
 		AnnotationsAllowList: LabelsAllowList{},
 		LabelsAllowList:      LabelsAllowList{},
@@ -141,6 +143,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
 	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.cmd.Flags().Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.cmd.Flags().Var(&o.MetricDenyDenylist, "metric-deny-denylist", "Comma-separated list of metrics to override the list of metrics in the deny-list. This list comprises of exact metric names and/or regex patterns.")
 	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")

@@ -212,7 +212,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	storeBuilder.WithNamespaces(namespaces)
 	storeBuilder.WithFieldSelectorFilter(merged)
 
-	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
+	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist, opts.MetricDenyDenylist)
 	if err != nil {
 		return err
 	}

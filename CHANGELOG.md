@@ -1,3 +1,35 @@
+## v2.9.2 / 2023-05-30
+
+This release does not incorporate any user-facing changes. Re-running release procedures as the process for the previous release failed. Changes are listed in v2.9.0.
+
+## v2.9.1 / 2023-05-29
+
+This release does not incorporate any user-facing changes. Re-running release procedures as the process for the previous release failed. Changes are listed in v2.9.0.
+
+## v2.9.0 / 2023-05-23
+
+The changes mentioned below are only the user-facing ones. For a list of the complete set of changes, refer the changelog associated with the release tag.
+
+### Note
+
+- The deprecated experimental VerticalPodAutoscaler metrics are no longer supported, and have been removed. We recommend to use CustomResourceState metrics to gather metrics from custom resources like the Vertical Pod Autoscaler.
+- #2004 regulated label names to adhere with [OTel-Prometheus standards](https://github.com/open-telemetry/opentelemetry-specification/blob/8946dfc6a2302f78b0224fcc3f4dfb816a7bb1f4/specification/compatibility/prometheus_and_openmetrics.md?plain=1#L224-L229), so existing label names that do not follow the same may be replaced by the ones that do. Please refer to the PR for more details.
+
+* [BUGFIX] Adhere to OTel-Prometheus standard for labels #2004 @rexagod
+* [BUGFIX] Respect relative paths for label resolutions #2007 @rexagod
+* [BUGFIX] Support LabelsFromPath functionality for Info-typed metrics #2048 @murphd40
+* [CHANGE] Remove VerticalPodAutoscaler #2017 @mrueg
+* [ENHANCEMENT] Add StatefulSet Start Ordinal metrics for KEP-3335 #1959 @pwschuurman
+* [ENHANCEMENT] Add namespace label to `kube_lease_renew_time` #2073 @A-Hilaly
+* [ENHANCEMENT] Add parameters for PodSecurity #2042 @jcpunk
+* [ENHANCEMENT] Add support for multi cluster prometheus alerts #2058 @jkroepke
+* [ENHANCEMENT] Don't crash on non-existent path values #1998 @rexagod
+* [ENHANCEMENT] Only use OpenMetrics and Text in contentType #2024 @CatherineF-dev
+* [ENHANCEMENT] Update go version to 1.20.4 #2056 @RamakrishnanArun
+* [FEATURE] Add support for variable VKs in CRS config #1851 @rexagod
+* [FEATURE] Support quantities and percentages #1989 @mrueg
+* [FEATURE] Use prometheus/exporter-toolkit landing page #2034 @mrueg
+
 ## v2.8.2 / 2023-03-17
 
 * [BUGFIX]      Only use OpenMetrics and Text in contentType #2024 @CatherineF-dev

@@ -1,3 +1,11 @@
+## v2.9.2 / 2023-05-30
+
+This release does not incorporate any user-facing changes. Re-running release procedures as the process for the previous release failed. Changes are listed in v2.9.0.
+
+## v2.9.1 / 2023-05-29
+
+This release does not incorporate any user-facing changes. Re-running release procedures as the process for the previous release failed. Changes are listed in v2.9.0.
+
 ## v2.9.0 / 2023-05-23
 
 The changes mentioned below are only the user-facing ones. For a list of the complete set of changes, refer the changelog associated with the release tag.

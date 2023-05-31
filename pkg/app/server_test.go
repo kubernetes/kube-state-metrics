@@ -135,6 +135,16 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	})
 }
 
+func filterList(gotSplit []string, filterStr string) []string {
+	gotFiltered := []string{}
+	for _, l := range gotSplit {
+		if strings.Contains(l, filterStr) {
+			gotFiltered = append(gotFiltered, l)
+		}
+	}
+	return gotFiltered
+}
+
 // TestFullScrapeCycle is a simple smoke test covering the entire cycle from
 // cache filling to scraping.
 func TestFullScrapeCycle(t *testing.T) {
@@ -351,12 +361,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 
 	gotSplit := strings.Split(strings.TrimSpace(string(body)), "\n")
 
-	gotFiltered := []string{}
-	for _, l := range gotSplit {
-		if strings.Contains(l, "kube_pod_") {
-			gotFiltered = append(gotFiltered, l)
-		}
-	}
+	gotFiltered := filterList(gotSplit, "kube_pod_")
 
 	sort.Strings(gotFiltered)
 
@@ -399,12 +404,7 @@ kube_state_metrics_total_shards 1
 
 	gotSplit2 := strings.Split(strings.TrimSpace(string(body2)), "\n")
 
-	gotFiltered2 := []string{}
-	for _, l := range gotSplit2 {
-		if strings.Contains(l, "_shard") {
-			gotFiltered2 = append(gotFiltered2, l)
-		}
-	}
+	gotFiltered2 := filterList(gotSplit2, "_shard")
 
 	sort.Strings(gotFiltered2)
 
@@ -421,6 +421,87 @@ kube_state_metrics_total_shards 1
 	}
 }
 
+func validateSamplePodInsert(kubeClient *fake.Clientset, t *testing.T) {
+	for i := 0; i < 10; i++ {
+		err := pod(kubeClient, i)
+		if err != nil {
+			t.Fatalf("failed to insert sample pod %v", err.Error())
+		}
+	}
+}
+
+func getMetrics(handler *metricshandler.MetricsHandler, t *testing.T) string {
+	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+
+	return string(body)
+}
+
+func validateNormalizedResults(unShard string, shard1 string, shard2 string, t *testing.T) {
+
+	unShardSplit := strings.Split(strings.TrimSpace(unShard), "\n")
+	sort.Strings(unShardSplit)
+
+	unShardFiltered := []string{}
+	for _, l := range unShardSplit {
+		if strings.HasPrefix(l, "kube_pod_") {
+			unShardFiltered = append(unShardFiltered, l)
+		}
+	}
+
+	shard1Split := strings.Split(strings.TrimSpace(shard1), "\n")
+	sort.Strings(shard1Split)
+
+	shard1Filtered := []string{}
+	for _, l := range shard1Split {
+		if strings.HasPrefix(l, "kube_pod_") {
+			shard1Filtered = append(shard1Filtered, l)
+		}
+	}
+
+	shard2Split := strings.Split(strings.TrimSpace(shard2), "\n")
+	sort.Strings(shard2Split)
+
+	shard2Filtered := []string{}
+	for _, l := range shard2Split {
+		if strings.HasPrefix(l, "kube_pod_") {
+			shard2Filtered = append(shard2Filtered, l)
+		}
+	}
+
+	// total metrics should be equal
+	if len(unShardFiltered) != (len(shard1Filtered) + len(shard2Filtered)) {
+		t.Fatalf("expected different output length, expected total %d got 1) %d 2) %d", len(unShardFiltered), len(shard1Filtered), len(shard2Filtered))
+	}
+	// smoke test to test that each shard actually represents a subset
+	if len(shard1Filtered) == 0 {
+		t.Fatal("shard 1 has 0 metrics when it shouldn't")
+	}
+	if len(shard2Filtered) == 0 {
+		t.Fatal("shard 2 has 0 metrics when it shouldn't")
+	}
+
+	shard1Filtered = append(shard1Filtered, shard2Filtered...)
+	sort.Strings(shard1Filtered)
+
+	for i := 0; i < len(unShardFiltered); i++ {
+		expected := strings.TrimSpace(unShardFiltered[i])
+		got := strings.TrimSpace(shard1Filtered[i])
+		if expected != got {
+			t.Fatalf("\n\nexpected:\n\n%q\n\nbut got:\n\n%q\n\n", expected, got)
+		}
+	}
+}
+
 // TestShardingEquivalenceScrapeCycle is a simple smoke test covering the entire cycle from
 // cache filling to scraping comparing a sharded with an unsharded setup.
 func TestShardingEquivalenceScrapeCycle(t *testing.T) {
@@ -428,12 +509,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 
 	kubeClient := fake.NewSimpleClientset()
 
-	for i := 0; i < 10; i++ {
-		err := pod(kubeClient, i)
-		if err != nil {
-			t.Fatalf("failed to insert sample pod %v", err.Error())
-		}
-	}
+	validateSamplePodInsert(kubeClient, t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -494,103 +570,18 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// unsharded request as the controlled environment
-	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
-
-	w := httptest.NewRecorder()
-	unshardedHandler.ServeHTTP(w, req)
-
-	resp := w.Result()
-	if resp.StatusCode != 200 {
-		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
-	}
-
-	body, _ := io.ReadAll(resp.Body)
-	expected := string(body)
+	expected := getMetrics(unshardedHandler, t)
 
 	// sharded requests
 	//
 	// request first shard
-	req = httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
-
-	w = httptest.NewRecorder()
-	shardedHandler1.ServeHTTP(w, req)
-
-	resp = w.Result()
-	if resp.StatusCode != 200 {
-		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
-	}
-
-	body, _ = io.ReadAll(resp.Body)
-	got1 := string(body)
+	got1 := getMetrics(shardedHandler1, t)
 
 	// request second shard
-	req = httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
+	got2 := getMetrics(shardedHandler2, t)
 
-	w = httptest.NewRecorder()
-	shardedHandler2.ServeHTTP(w, req)
-
-	resp = w.Result()
-	if resp.StatusCode != 200 {
-		t.Fatalf("expected 200 status code but got %v", resp.StatusCode)
-	}
-
-	body, _ = io.ReadAll(resp.Body)
-	got2 := string(body)
-
-	// normalize results:
-
-	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
-	sort.Strings(expectedSplit)
-
-	expectedFiltered := []string{}
-	for _, l := range expectedSplit {
-		if strings.HasPrefix(l, "kube_pod_") {
-			expectedFiltered = append(expectedFiltered, l)
-		}
-	}
-
-	got1Split := strings.Split(strings.TrimSpace(got1), "\n")
-	sort.Strings(got1Split)
-
-	got1Filtered := []string{}
-	for _, l := range got1Split {
-		if strings.HasPrefix(l, "kube_pod_") {
-			got1Filtered = append(got1Filtered, l)
-		}
-	}
-
-	got2Split := strings.Split(strings.TrimSpace(got2), "\n")
-	sort.Strings(got2Split)
-
-	got2Filtered := []string{}
-	for _, l := range got2Split {
-		if strings.HasPrefix(l, "kube_pod_") {
-			got2Filtered = append(got2Filtered, l)
-		}
-	}
-
-	// total metrics should be equal
-	if len(expectedFiltered) != (len(got1Filtered) + len(got2Filtered)) {
-		t.Fatalf("expected different output length, expected total %d got 1) %d 2) %d", len(expectedFiltered), len(got1Filtered), len(got2Filtered))
-	}
-	// smoke test to test that each shard actually represents a subset
-	if len(got1Filtered) == 0 {
-		t.Fatal("shard 1 has 0 metrics when it shouldn't")
-	}
-	if len(got2Filtered) == 0 {
-		t.Fatal("shard 2 has 0 metrics when it shouldn't")
-	}
-
-	got1Filtered = append(got1Filtered, got2Filtered...)
-	sort.Strings(got1Filtered)
-
-	for i := 0; i < len(expectedFiltered); i++ {
-		expected := strings.TrimSpace(expectedFiltered[i])
-		got := strings.TrimSpace(got1Filtered[i])
-		if expected != got {
-			t.Fatalf("\n\nexpected:\n\n%q\n\nbut got:\n\n%q\n\n", expected, got)
-		}
-	}
+	// Validate normalize results:
+	validateNormalizedResults(expected, got1, got2, t)
 }
 
 // TestCustomResourceExtension is a simple smoke test covering the custom resource metrics collection.
@@ -880,7 +871,7 @@ func (f *fooFactory) Name() string {
 }
 
 // CreateClient use fake client set to establish 10 foos.
-func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
+func (f *fooFactory) CreateClient(_ *rest.Config) (interface{}, error) {
 	fooClient := samplefake.NewSimpleClientset()
 	for i := 0; i < 10; i++ {
 		err := foo(fooClient, i)

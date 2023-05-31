@@ -30,6 +30,9 @@ import (
 
 var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
 
+// EOF constant. Taken from text/scanner
+const EOF = -1
+
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
 
@@ -219,13 +222,49 @@ const LabelWildcard = "*"
 // LabelsAllowList represents a list of allowed labels for metrics.
 type LabelsAllowList map[string][]string
 
+func (l *LabelsAllowList) setPrevAndNext(i int, value string, v rune) (previous rune, next rune) {
+	if i+1 == len(value) {
+		next = EOF
+	} else {
+		next = []rune(value)[i+1]
+	}
+	if i-1 >= 0 {
+		previous = []rune(value)[i-1]
+	} else {
+		previous = v
+	}
+
+	return previous, next
+}
+
+func isNextPreviousValidForAssign(next rune, previous rune) error {
+
+	if previous == ',' || next != '[' {
+		return errLabelsAllowListFormat
+	}
+	return nil
+}
+
+func isNextValidForCloseSquareBracket(next rune) error {
+	if next != EOF && next != ',' {
+		return errLabelsAllowListFormat
+	}
+	return nil
+}
+
+func isNextPreviousValidForComa(next rune, previous rune, v rune) error {
+	if previous == v || next == EOF || next == ']' {
+		return errLabelsAllowListFormat
+	}
+	return nil
+}
+
 // Set converts a comma-separated string of resources and their allowed Kubernetes labels and appends to the LabelsAllowList.
 // Value is in the following format:
 // resource=[k8s-label-name,another-k8s-label],another-resource[k8s-label]
 // Example: pods=[app.kubernetes.io/component,app],resource=[blah]
 func (l *LabelsAllowList) Set(value string) error {
-	// Taken from text/scanner EOF constant.
-	const EOF = -1
+
 	var (
 		m            = make(map[string][]string, len(*l))
 		previous     rune
@@ -236,21 +275,13 @@ func (l *LabelsAllowList) Set(value string) error {
 	firstWordPos = 0
 
 	for i, v := range value {
-		if i+1 == len(value) {
-			next = EOF
-		} else {
-			next = []rune(value)[i+1]
-		}
-		if i-1 >= 0 {
-			previous = []rune(value)[i-1]
-		} else {
-			previous = v
-		}
+		previous, next = l.setPrevAndNext(i, value, v)
 
 		switch v {
 		case '=':
-			if previous == ',' || next != '[' {
-				return errLabelsAllowListFormat
+			err := isNextPreviousValidForAssign(next, previous)
+			if err != nil {
+				return err
 			}
 			name = strings.TrimSpace(string(([]rune(value)[firstWordPos:i])))
 			m[name] = []string{}
@@ -262,8 +293,9 @@ func (l *LabelsAllowList) Set(value string) error {
 			firstWordPos = i + 1
 		case ']':
 			// if after metric group, has char not comma or end.
-			if next != EOF && next != ',' {
-				return errLabelsAllowListFormat
+			err := isNextValidForCloseSquareBracket(next)
+			if err != nil {
+				return err
 			}
 			if previous != '[' {
 				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
@@ -271,8 +303,9 @@ func (l *LabelsAllowList) Set(value string) error {
 			firstWordPos = i + 1
 		case ',':
 			// if starts or ends with comma
-			if previous == v || next == EOF || next == ']' {
-				return errLabelsAllowListFormat
+			err := isNextPreviousValidForComa(next, previous, v)
+			if err != nil {
+				return err
 			}
 			if previous != ']' {
 				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))

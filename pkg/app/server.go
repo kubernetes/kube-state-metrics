@@ -39,6 +39,7 @@ import (
 	"github.com/prometheus/exporter-toolkit/web"
 	"gopkg.in/yaml.v3"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
@@ -81,6 +82,80 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) erro
 		return nil
 	}
 	return err
+}
+
+func getResources(factories []customresource.RegistryFactory, opts *options.Options) []string {
+	resources := make([]string, len(factories))
+
+	for i, factory := range factories {
+		resources[i] = factory.Name()
+	}
+
+	switch {
+	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:
+		resources = append(resources, options.DefaultResources.AsSlice()...)
+		klog.InfoS("Used default resources")
+	case opts.CustomResourcesOnly:
+		// enable custom resource only
+		klog.InfoS("Used CRD resources only", "resources", resources)
+	default:
+		resources = append(resources, opts.Resources.AsSlice()...)
+		klog.InfoS("Used resources", "resources", resources)
+	}
+
+	return resources
+}
+
+func readConfig(ctx context.Context, opts *options.Options, configSuccess *prometheus.GaugeVec, configHash *prometheus.GaugeVec, configSuccessTime *prometheus.GaugeVec) (*rest.Config, customresourcestate.ConfigDecoder, error) {
+	got := options.GetConfigFile(*opts)
+	if got != "" {
+		configFile, err := os.ReadFile(filepath.Clean(got))
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read opts config file: %v", err)
+		}
+		// NOTE: Config value will override default values of intersecting options.
+		err = yaml.Unmarshal(configFile, opts)
+		if err != nil {
+			// DO NOT end the process.
+			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
+			klog.ErrorS(err, "failed to unmarshal opts config file")
+			// Wait for the next reload.
+			klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
+			klog.InfoS("waiting for config to be fixed")
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
+			<-ctx.Done()
+		} else {
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
+			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
+			hash := md5HashAsMetricValue(configFile)
+			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+		}
+	}
+
+	kubeConfig, err := clientcmd.BuildConfigFromFlags(opts.Apiserver, opts.Kubeconfig)
+	if err != nil {
+		return kubeConfig, nil, fmt.Errorf("failed to build config from flags: %v", err)
+	}
+
+	// Loading custom resource state configuration from cli argument or config file
+	config, err := resolveCustomResourceConfig(opts)
+	if err != nil {
+		return kubeConfig, config, err
+	}
+
+	if opts.CustomResourceConfigFile != "" {
+		crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
+		if err != nil {
+			return kubeConfig, config, fmt.Errorf("failed to read custom resource config file: %v", err)
+		}
+		configSuccess.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).Set(1)
+		configSuccessTime.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).SetToCurrentTime()
+		hash := md5HashAsMetricValue(crcFile)
+		configHash.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).Set(hash)
+
+	}
+
+	return kubeConfig, config, nil
 }
 
 // RunKubeStateMetrics will build and run the kube-state-metrics.
@@ -130,73 +205,14 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
-	got := options.GetConfigFile(*opts)
-	if got != "" {
-		configFile, err := os.ReadFile(filepath.Clean(got))
-		if err != nil {
-			return fmt.Errorf("failed to read opts config file: %v", err)
-		}
-		// NOTE: Config value will override default values of intersecting options.
-		err = yaml.Unmarshal(configFile, opts)
-		if err != nil {
-			// DO NOT end the process.
-			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
-			klog.ErrorS(err, "failed to unmarshal opts config file")
-			// Wait for the next reload.
-			klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
-			klog.InfoS("waiting for config to be fixed")
-			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
-			<-ctx.Done()
-		} else {
-			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
-			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
-			hash := md5HashAsMetricValue(configFile)
-			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
-		}
-	}
-
-	kubeConfig, err := clientcmd.BuildConfigFromFlags(opts.Apiserver, opts.Kubeconfig)
-	if err != nil {
-		return fmt.Errorf("failed to build config from flags: %v", err)
-	}
-
-	// Loading custom resource state configuration from cli argument or config file
-	config, err := resolveCustomResourceConfig(opts)
+	kubeConfig, config, err := readConfig(ctx, opts, configSuccess, configHash, configSuccessTime)
 	if err != nil {
 		return err
 	}
 
 	var factories []customresource.RegistryFactory
 
-	if opts.CustomResourceConfigFile != "" {
-		crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
-		if err != nil {
-			return fmt.Errorf("failed to read custom resource config file: %v", err)
-		}
-		configSuccess.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).Set(1)
-		configSuccessTime.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).SetToCurrentTime()
-		hash := md5HashAsMetricValue(crcFile)
-		configHash.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).Set(hash)
-
-	}
-
-	resources := make([]string, len(factories))
-
-	for i, factory := range factories {
-		resources[i] = factory.Name()
-	}
-
-	switch {
-	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:
-		resources = append(resources, options.DefaultResources.AsSlice()...)
-		klog.InfoS("Used default resources")
-	case opts.CustomResourcesOnly:
-		// enable custom resource only, these resources will be populated later on
-		klog.InfoS("Used CRD resources only")
-	default:
-		resources = append(resources, opts.Resources.AsSlice()...)
-		klog.InfoS("Used resources", "resources", resources)
-	}
+	resources := getResources(factories, opts)
 
 	if err := storeBuilder.WithEnabledResources(resources); err != nil {
 		return fmt.Errorf("failed to set up resources: %v", err)

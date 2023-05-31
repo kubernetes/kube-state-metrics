@@ -212,6 +212,63 @@ type compiledGauge struct {
 	labelFromKey string
 }
 
+func (c *compiledGauge) strValues(v interface{}, iter map[string]interface{}, onError func(err error)) (result []eachValue, errs []error) {
+	for key, it := range iter {
+
+		// TODO: Handle multi-length valueFrom paths (https://github.com/kubernetes/kube-state-metrics/pull/1958#discussion_r1099243161).
+		// Try to deduce `valueFrom`'s value from the current element.
+		var ev *eachValue
+		var err error
+		var didResolveValueFrom bool
+		// `valueFrom` will ultimately be rendered into a string and sent to the fallback in place, which also expects a string.
+		// So we'll do the same and operate on the string representation of `valueFrom`'s value.
+		sValueFrom := c.ValueFrom.String()
+		// No comma means we're looking at a unit-length path (in an array).
+		if !strings.Contains(sValueFrom, ",") &&
+			sValueFrom[0] == '[' && sValueFrom[len(sValueFrom)-1] == ']' &&
+			// "[...]" and not "[]".
+			len(sValueFrom) > 2 {
+			extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
+			if key == extractedValueFrom {
+				gotFloat, err := toFloat64(it, c.NilIsZero)
+				if err != nil {
+					onError(fmt.Errorf("[%s]: %w", key, err))
+					continue
+				}
+				labels := make(map[string]string)
+				ev = &eachValue{
+					Labels: labels,
+					Value:  gotFloat,
+				}
+				didResolveValueFrom = true
+			}
+		}
+		// Fallback to the regular path resolution, if we didn't manage to resolve `valueFrom`'s value.
+		if !didResolveValueFrom {
+			ev, err = c.value(it)
+			if ev == nil {
+				continue
+			}
+		}
+		if err != nil {
+			onError(fmt.Errorf("[%s]: %w", key, err))
+			continue
+		}
+		if _, ok := ev.Labels[c.labelFromKey]; ok {
+			onError(fmt.Errorf("labelFromKey (%s) generated labels conflict with labelsFromPath, consider renaming it", c.labelFromKey))
+			continue
+		}
+		if key != "" && c.labelFromKey != "" {
+			ev.Labels[c.labelFromKey] = key
+		}
+		addPathLabels(it, c.LabelFromPath(), ev.Labels)
+		// Evaluate path from parent's context as well (search w.r.t. the root element, not just specific fields).
+		addPathLabels(v, c.LabelFromPath(), ev.Labels)
+		result = append(result, *ev)
+	}
+	return result, errs
+}
+
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
 	onError := func(err error) {
 		errs = append(errs, fmt.Errorf("%s: %v", c.Path(), err))
@@ -219,58 +276,7 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 
 	switch iter := v.(type) {
 	case map[string]interface{}:
-		for key, it := range iter {
-			// TODO: Handle multi-length valueFrom paths (https://github.com/kubernetes/kube-state-metrics/pull/1958#discussion_r1099243161).
-			// Try to deduce `valueFrom`'s value from the current element.
-			var ev *eachValue
-			var err error
-			var didResolveValueFrom bool
-			// `valueFrom` will ultimately be rendered into a string and sent to the fallback in place, which also expects a string.
-			// So we'll do the same and operate on the string representation of `valueFrom`'s value.
-			sValueFrom := c.ValueFrom.String()
-			// No comma means we're looking at a unit-length path (in an array).
-			if !strings.Contains(sValueFrom, ",") &&
-				sValueFrom[0] == '[' && sValueFrom[len(sValueFrom)-1] == ']' &&
-				// "[...]" and not "[]".
-				len(sValueFrom) > 2 {
-				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
-				if key == extractedValueFrom {
-					gotFloat, err := toFloat64(it, c.NilIsZero)
-					if err != nil {
-						onError(fmt.Errorf("[%s]: %w", key, err))
-						continue
-					}
-					labels := make(map[string]string)
-					ev = &eachValue{
-						Labels: labels,
-						Value:  gotFloat,
-					}
-					didResolveValueFrom = true
-				}
-			}
-			// Fallback to the regular path resolution, if we didn't manage to resolve `valueFrom`'s value.
-			if !didResolveValueFrom {
-				ev, err = c.value(it)
-				if ev == nil {
-					continue
-				}
-			}
-			if err != nil {
-				onError(fmt.Errorf("[%s]: %w", key, err))
-				continue
-			}
-			if _, ok := ev.Labels[c.labelFromKey]; ok {
-				onError(fmt.Errorf("labelFromKey (%s) generated labels conflict with labelsFromPath, consider renaming it", c.labelFromKey))
-				continue
-			}
-			if key != "" && c.labelFromKey != "" {
-				ev.Labels[c.labelFromKey] = key
-			}
-			addPathLabels(it, c.LabelFromPath(), ev.Labels)
-			// Evaluate path from parent's context as well (search w.r.t. the root element, not just specific fields).
-			addPathLabels(v, c.LabelFromPath(), ev.Labels)
-			result = append(result, *ev)
-		}
+		return c.strValues(v, iter, onError)
 	case []interface{}:
 		for i, it := range iter {
 			value, err := c.value(it)
@@ -563,77 +569,90 @@ func (p valuePath) String() string {
 	return b.String()
 }
 
+func getPathOpWhenPathContainsPrefixOrSuffix(part string) (pathOp, error) {
+	// list lookup: [key=value]
+	eq := strings.SplitN(part[1:len(part)-1], "=", 2)
+	if len(eq) != 2 {
+		return pathOp{}, fmt.Errorf("invalid list lookup: %s", part)
+	}
+	key, val := eq[0], eq[1]
+	num, notNum := toFloat64(val, false)
+	boolVal, notBool := strconv.ParseBool(val)
+	out := pathOp{
+		part: part,
+		op: func(m interface{}) interface{} {
+			if s, ok := m.([]interface{}); ok {
+				for _, v := range s {
+					if m, ok := v.(map[string]interface{}); ok {
+						candidate, set := m[key]
+						if !set {
+							continue
+						}
+
+						if candidate == val {
+							return m
+						}
+
+						if notNum == nil {
+							if i, err := toFloat64(candidate, false); err == nil && num == i {
+								return m
+							}
+						}
+
+						if notBool == nil {
+							if v, ok := candidate.(bool); ok && v == boolVal {
+								return m
+							}
+						}
+
+					}
+				}
+			}
+			return nil
+		},
+	}
+	return out, nil
+}
+
+func getPathOpWhenPathDoNotContainsPrefixOrSuffix(part string) pathOp {
+	return pathOp{
+		part: part,
+		op: func(m interface{}) interface{} {
+			if mp, ok := m.(map[string]interface{}); ok {
+				return mp[part]
+			} else if s, ok := m.([]interface{}); ok {
+				i, err := strconv.Atoi(part)
+				if err != nil {
+					// This means we are here: [ <string>, <int>, ... ] (eg., [ "foo", "0", ... ], i.e., <path>.foo[0]...
+					//                           ^
+					// Skip over.
+					return nil
+				}
+				if i < 0 {
+					// negative index
+					i += len(s)
+				}
+				if !(0 <= i && i < len(s)) {
+					return fmt.Errorf("list index out of range: %s", part)
+				}
+				return s[i]
+			}
+			return nil
+		},
+	}
+}
+
 func compilePath(path []string) (out valuePath, _ error) {
 	for i := range path {
 		part := path[i]
 		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
-			// list lookup: [key=value]
-			eq := strings.SplitN(part[1:len(part)-1], "=", 2)
-			if len(eq) != 2 {
-				return nil, fmt.Errorf("invalid list lookup: %s", part)
+			retPathOp, err := getPathOpWhenPathContainsPrefixOrSuffix(part)
+			if err != nil {
+				return nil, err
 			}
-			key, val := eq[0], eq[1]
-			num, notNum := toFloat64(val, false)
-			boolVal, notBool := strconv.ParseBool(val)
-			out = append(out, pathOp{
-				part: part,
-				op: func(m interface{}) interface{} {
-					if s, ok := m.([]interface{}); ok {
-						for _, v := range s {
-							if m, ok := v.(map[string]interface{}); ok {
-								candidate, set := m[key]
-								if !set {
-									continue
-								}
-
-								if candidate == val {
-									return m
-								}
-
-								if notNum == nil {
-									if i, err := toFloat64(candidate, false); err == nil && num == i {
-										return m
-									}
-								}
-
-								if notBool == nil {
-									if v, ok := candidate.(bool); ok && v == boolVal {
-										return m
-									}
-								}
-
-							}
-						}
-					}
-					return nil
-				},
-			})
+			out = append(out, retPathOp)
 		} else {
-			out = append(out, pathOp{
-				part: part,
-				op: func(m interface{}) interface{} {
-					if mp, ok := m.(map[string]interface{}); ok {
-						return mp[part]
-					} else if s, ok := m.([]interface{}); ok {
-						i, err := strconv.Atoi(part)
-						if err != nil {
-							// This means we are here: [ <string>, <int>, ... ] (eg., [ "foo", "0", ... ], i.e., <path>.foo[0]...
-							//                           ^
-							// Skip over.
-							return nil
-						}
-						if i < 0 {
-							// negative index
-							i += len(s)
-						}
-						if !(0 <= i && i < len(s)) {
-							return fmt.Errorf("list index out of range: %s", part)
-						}
-						return s[i]
-					}
-					return nil
-				},
-			})
+			out = append(out, getPathOpWhenPathDoNotContainsPrefixOrSuffix(part))
 		}
 	}
 	return out, nil
@@ -684,6 +703,32 @@ func scrapeValuesFor(e compiledEach, obj map[string]interface{}) ([]eachValue, [
 	return result, errs
 }
 
+func strToFloat64(value interface{}) (float64, error) {
+	// The string contains a boolean as a string
+	normalized := strings.ToLower(value.(string))
+	if normalized == "true" || normalized == "yes" {
+		return 1, nil
+	}
+	if normalized == "false" || normalized == "no" {
+		return 0, nil
+	}
+	// The string contains a RFC3339 timestamp
+	if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {
+		return float64(t.Unix()), nil
+	}
+	// The string contains a quantity with a suffix like "25m" (milli) or "5Gi" (binarySI)
+	if t, e := resource.ParseQuantity(value.(string)); e == nil {
+		return t.AsApproximateFloat64(), nil
+	}
+	// The string contains a percentage with a suffix "%"
+	if e := validation.IsValidPercent(value.(string)); len(e) == 0 {
+		t, e := strconv.ParseFloat(strings.TrimRight(value.(string), "%"), 64)
+		return t / 100, e
+	}
+
+	return strconv.ParseFloat(value.(string), 64)
+}
+
 // toFloat64 converts the value to a float64 which is the value type for any metric.
 func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 	var v float64
@@ -701,29 +746,7 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		}
 		return 0, nil
 	case string:
-		// The string contains a boolean as a string
-		normalized := strings.ToLower(value.(string))
-		if normalized == "true" || normalized == "yes" {
-			return 1, nil
-		}
-		if normalized == "false" || normalized == "no" {
-			return 0, nil
-		}
-		// The string contains a RFC3339 timestamp
-		if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {
-			return float64(t.Unix()), nil
-		}
-		// The string contains a quantity with a suffix like "25m" (milli) or "5Gi" (binarySI)
-		if t, e := resource.ParseQuantity(value.(string)); e == nil {
-			return t.AsApproximateFloat64(), nil
-		}
-		// The string contains a percentage with a suffix "%"
-		if e := validation.IsValidPercent(value.(string)); len(e) == 0 {
-			t, e := strconv.ParseFloat(strings.TrimRight(value.(string), "%"), 64)
-			return t / 100, e
-		}
-
-		return strconv.ParseFloat(value.(string), 64)
+		return strToFloat64(value)
 	case byte:
 		v = float64(vv)
 	case int:

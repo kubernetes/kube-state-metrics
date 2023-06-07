@@ -44,357 +44,21 @@ var (
 
 func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			descJobAnnotationsName,
-			descJobAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descJobLabelsName,
-			descJobLabelsHelp,
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_info",
-			"Information about job.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if !j.CreationTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						Value: float64(j.CreationTimestamp.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_spec_parallelism",
-			"The maximum desired number of pods the job should run at any given time.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if j.Spec.Parallelism != nil {
-					ms = append(ms, &metric.Metric{
-						Value: float64(*j.Spec.Parallelism),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_spec_completions",
-			"The desired number of successfully finished pods the job should be run with.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if j.Spec.Completions != nil {
-					ms = append(ms, &metric.Metric{
-						Value: float64(*j.Spec.Completions),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_spec_active_deadline_seconds",
-			"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if j.Spec.ActiveDeadlineSeconds != nil {
-					ms = append(ms, &metric.Metric{
-						Value: float64(*j.Spec.ActiveDeadlineSeconds),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_status_succeeded",
-			"The number of pods which reached Phase Succeeded.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(j.Status.Succeeded),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_status_failed",
-			"The number of pods which reached Phase Failed and the reason for failure.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				var ms []*metric.Metric
-
-				if float64(j.Status.Failed) == 0 {
-					return &metric.Family{
-						Metrics: []*metric.Metric{
-							{
-								Value: float64(j.Status.Failed),
-							},
-						},
-					}
-				}
-
-				for _, c := range j.Status.Conditions {
-					condition := c
-					if condition.Type == v1batch.JobFailed {
-						reasonKnown := false
-						for _, reason := range jobFailureReasons {
-							reasonKnown = reasonKnown || failureReason(&condition, reason)
-
-							// for known reasons
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"reason"},
-								LabelValues: []string{reason},
-								Value:       boolFloat64(failureReason(&condition, reason)),
-							})
-						}
-						// for unknown reasons
-						if !reasonKnown {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"reason"},
-								LabelValues: []string{""},
-								Value:       float64(j.Status.Failed),
-							})
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_status_active",
-			"The number of actively running pods.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(j.Status.Active),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_complete",
-			"The job has completed its execution.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-				for _, c := range j.Status.Conditions {
-					if c.Type == v1batch.JobComplete {
-						metrics := addConditionMetrics(c.Status)
-						for _, m := range metrics {
-							metric := m
-							metric.LabelKeys = []string{"condition"}
-							ms = append(ms, metric)
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_failed",
-			"The job has failed its execution.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-
-				for _, c := range j.Status.Conditions {
-					if c.Type == v1batch.JobFailed {
-						metrics := addConditionMetrics(c.Status)
-						for _, m := range metrics {
-							metric := m
-							metric.LabelKeys = []string{"condition"}
-							ms = append(ms, metric)
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_status_start_time",
-			"StartTime represents time when the job was acknowledged by the Job Manager.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if j.Status.StartTime != nil {
-					ms = append(ms, &metric.Metric{
-
-						Value: float64(j.Status.StartTime.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_status_completion_time",
-			"CompletionTime represents time when the job was completed.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				ms := []*metric.Metric{}
-				if j.Status.CompletionTime != nil {
-					ms = append(ms, &metric.Metric{
-
-						Value: float64(j.Status.CompletionTime.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_job_owner",
-			"Information about the Job's owner.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
-
-				owners := j.GetOwnerReferences()
-
-				if len(owners) == 0 {
-					return &metric.Family{
-						Metrics: []*metric.Metric{
-							{
-								LabelKeys:   labelKeys,
-								LabelValues: []string{"", "", ""},
-								Value:       1,
-							},
-						},
-					}
-				}
-
-				ms := make([]*metric.Metric, len(owners))
-
-				for i, owner := range owners {
-					if owner.Controller != nil {
-						ms[i] = &metric.Metric{
-							LabelKeys:   labelKeys,
-							LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
-							Value:       1,
-						}
-					} else {
-						ms[i] = &metric.Metric{
-							LabelKeys:   labelKeys,
-							LabelValues: []string{owner.Kind, owner.Name, "false"},
-							Value:       1,
-						}
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
+		createJobAnnotations(allowAnnotationsList),
+		createJobLabels(allowLabelsList),
+		createJobInfo(),
+		createJobCreated(),
+		createJobSpecParallelism(),
+		createJobSpecCompletions(),
+		createJobSpecActiveDeadlineSeconds(),
+		createJobStatusSucceeded(),
+		createJobStatusFailed(),
+		createJobStatusActive(),
+		createJobComplete(),
+		createJobFailed(),
+		createJobStatusStartTime(),
+		createJobStatusCompletionTime(),
+		createJobOwner(),
 	}
 }
 
@@ -430,4 +94,400 @@ func failureReason(jc *v1batch.JobCondition, reason string) bool {
 		return false
 	}
 	return jc.Reason == reason
+}
+
+func createJobAnnotations(allowAnnotationsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		descJobAnnotationsName,
+		descJobAnnotationsHelp,
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
+						Value:       1,
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createJobLabels(allowLabelsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		descJobLabelsName,
+		descJobLabelsHelp,
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   labelKeys,
+						LabelValues: labelValues,
+						Value:       1,
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createJobInfo() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_info",
+		"Information about job.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: 1,
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createJobCreated() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_created",
+		"Unix creation timestamp",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+
+			if !j.CreationTimestamp.IsZero() {
+				ms = append(ms, &metric.Metric{
+					Value: float64(j.CreationTimestamp.Unix()),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobSpecParallelism() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_spec_parallelism",
+		"The maximum desired number of pods the job should run at any given time.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+
+			if j.Spec.Parallelism != nil {
+				ms = append(ms, &metric.Metric{
+					Value: float64(*j.Spec.Parallelism),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobSpecCompletions() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_spec_completions",
+		"The desired number of successfully finished pods the job should be run with.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+
+			if j.Spec.Completions != nil {
+				ms = append(ms, &metric.Metric{
+					Value: float64(*j.Spec.Completions),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobSpecActiveDeadlineSeconds() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_spec_active_deadline_seconds",
+		"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+
+			if j.Spec.ActiveDeadlineSeconds != nil {
+				ms = append(ms, &metric.Metric{
+					Value: float64(*j.Spec.ActiveDeadlineSeconds),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobStatusSucceeded() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_status_succeeded",
+		"The number of pods which reached Phase Succeeded.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(j.Status.Succeeded),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createJobStatusFailed() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_status_failed",
+		"The number of pods which reached Phase Failed and the reason for failure.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			var ms []*metric.Metric
+
+			if float64(j.Status.Failed) == 0 {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(j.Status.Failed),
+						},
+					},
+				}
+			}
+
+			for _, c := range j.Status.Conditions {
+				condition := c
+				if condition.Type == v1batch.JobFailed {
+					reasonKnown := false
+					for _, reason := range jobFailureReasons {
+						reasonKnown = reasonKnown || failureReason(&condition, reason)
+
+						// for known reasons
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"reason"},
+							LabelValues: []string{reason},
+							Value:       boolFloat64(failureReason(&condition, reason)),
+						})
+					}
+					// for unknown reasons
+					if !reasonKnown {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"reason"},
+							LabelValues: []string{""},
+							Value:       float64(j.Status.Failed),
+						})
+					}
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobStatusActive() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_status_active",
+		"The number of actively running pods.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(j.Status.Active),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createJobComplete() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_complete",
+		"The job has completed its execution.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+			for _, c := range j.Status.Conditions {
+				if c.Type == v1batch.JobComplete {
+					metrics := addConditionMetrics(c.Status)
+					for _, m := range metrics {
+						metric := m
+						metric.LabelKeys = []string{"condition"}
+						ms = append(ms, metric)
+					}
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobFailed() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_failed",
+		"The job has failed its execution.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, c := range j.Status.Conditions {
+				if c.Type == v1batch.JobFailed {
+					metrics := addConditionMetrics(c.Status)
+					for _, m := range metrics {
+						metric := m
+						metric.LabelKeys = []string{"condition"}
+						ms = append(ms, metric)
+					}
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobStatusStartTime() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_status_start_time",
+		"StartTime represents time when the job was acknowledged by the Job Manager.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+
+			if j.Status.StartTime != nil {
+				ms = append(ms, &metric.Metric{
+
+					Value: float64(j.Status.StartTime.Unix()),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobStatusCompletionTime() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_status_completion_time",
+		"CompletionTime represents time when the job was completed.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			ms := []*metric.Metric{}
+			if j.Status.CompletionTime != nil {
+				ms = append(ms, &metric.Metric{
+
+					Value: float64(j.Status.CompletionTime.Unix()),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createJobOwner() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_owner",
+		"Information about the Job's owner.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+
+			owners := j.GetOwnerReferences()
+
+			if len(owners) == 0 {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{"", "", ""},
+							Value:       1,
+						},
+					},
+				}
+			}
+
+			ms := make([]*metric.Metric, len(owners))
+
+			for i, owner := range owners {
+				if owner.Controller != nil {
+					ms[i] = &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+						Value:       1,
+					}
+				} else {
+					ms[i] = &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{owner.Kind, owner.Name, "false"},
+						Value:       1,
+					}
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
 }

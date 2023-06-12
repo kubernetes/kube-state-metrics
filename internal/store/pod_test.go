@@ -994,9 +994,10 @@ func TestPodStore(t *testing.T) {
 					UID:               "abc-123-xxx",
 				},
 				Spec: v1.PodSpec{
-					NodeName:          "node1",
-					PriorityClassName: "system-node-critical",
-					HostNetwork:       true,
+					NodeName:           "node1",
+					PriorityClassName:  "system-node-critical",
+					HostNetwork:        true,
+					ServiceAccountName: "service-account-name",
 					Containers: []v1.Container{
 						{
 							Image: "k8s.gcr.io/hyperkube2_spec",
@@ -1032,7 +1033,7 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_owner gauge
 				# TYPE kube_pod_start_time gauge
 				kube_pod_created{namespace="ns1",pod="pod1",uid="abc-123-xxx"} 1.5e+09
-				kube_pod_info{created_by_kind="",created_by_name="",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical",host_network="true"} 1
+				kube_pod_info{created_by_kind="",created_by_name="",host_ip="1.1.1.1",namespace="ns1",node="node1",pod="pod1",pod_ip="1.2.3.4",uid="abc-123-xxx",priority_class="system-node-critical",host_network="true",service_account="service-account-name"} 1
 				kube_pod_ips{namespace="ns1",pod="pod1",uid="abc-123-xxx",ip="1.2.3.4",ip_family="4"} 1
 				kube_pod_ips{namespace="ns1",pod="pod1",uid="abc-123-xxx",ip="fc00:1234:5678:90ab:cdef:cafe:f00d:d00d",ip_family="6"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1",uid="abc-123-xxx"} 1.501569018e+09
@@ -1190,7 +1191,7 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_info gauge
 				# TYPE kube_pod_owner gauge
 				# TYPE kube_pod_start_time gauge
-				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx",priority_class="",host_network="false"} 1
+				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx",priority_class="",host_network="false",service_account=""} 1
 				kube_pod_completion_time{namespace="ns2",pod="pod2",uid="abc-456-xxx"} 1.501888018e+09
 				kube_pod_owner{namespace="ns2",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="rs-name",pod="pod2",uid="abc-456-xxx"} 1
 				`,

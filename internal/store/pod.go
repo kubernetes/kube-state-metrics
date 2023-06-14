@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
+	descPodLabelsDefaultLabels = []string{"created_by_kind", "created_by_name", "created_by_uid", "namespace", "pod", "uid"}
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "Shutdown", "UnexpectedAdmissionError"}
 )
 
@@ -505,6 +505,20 @@ func createPodContainerStatusWaitingFamilyGenerator() generator.FamilyGenerator 
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
+			//createdBy := metav1.GetControllerOf(p)
+			//createdByKind := ""
+			//createdByName := ""
+			//if createdBy != nil {
+			//	if createdBy.Kind != "" {
+			//		createdByKind = createdBy.Kind
+			//	}
+			//	if createdBy.Name != "" {
+			//		createdByName = createdBy.Name
+			//	}
+			//}
+
+			//LabelKeys:   []string{"host_ip", "pod_ip", "node", "created_by_kind", "created_by_name", "priority_class", "host_network"},
+			//LabelValues: []string{p.Status.HostIP, p.Status.PodIP, p.Spec.NodeName, createdByKind, createdByName, p.Spec.PriorityClassName, strconv.FormatBool(p.Spec.HostNetwork)},
 
 			for i, cs := range p.Status.ContainerStatuses {
 				ms[i] = &metric.Metric{
@@ -605,21 +619,10 @@ func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			createdBy := metav1.GetControllerOf(p)
-			createdByKind := ""
-			createdByName := ""
-			if createdBy != nil {
-				if createdBy.Kind != "" {
-					createdByKind = createdBy.Kind
-				}
-				if createdBy.Name != "" {
-					createdByName = createdBy.Name
-				}
-			}
 
 			m := metric.Metric{
-				LabelKeys:   []string{"host_ip", "pod_ip", "node", "created_by_kind", "created_by_name", "priority_class", "host_network"},
-				LabelValues: []string{p.Status.HostIP, p.Status.PodIP, p.Spec.NodeName, createdByKind, createdByName, p.Spec.PriorityClassName, strconv.FormatBool(p.Spec.HostNetwork)},
+				LabelKeys:   []string{"host_ip", "pod_ip", "node", "priority_class", "host_network"},
+				LabelValues: []string{p.Status.HostIP, p.Status.PodIP, p.Spec.NodeName, p.Spec.PriorityClassName, strconv.FormatBool(p.Spec.HostNetwork)},
 				Value:       1,
 			}
 
@@ -1658,8 +1661,24 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Famil
 
 		metricFamily := f(pod)
 
+		createdBy := metav1.GetControllerOf(pod)
+		createdByKind := ""
+		createdByName := ""
+		createdByUID := ""
+		if createdBy != nil {
+			if createdBy.Kind != "" {
+				createdByKind = createdBy.Kind
+			}
+			if createdBy.Name != "" {
+				createdByName = createdBy.Name
+			}
+			if createdBy.UID != "" {
+				createdByUID = string(createdBy.UID)
+			}
+		}
+
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{createdByKind, createdByName, createdByUID, pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

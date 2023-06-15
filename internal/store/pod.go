@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	descPodLabelsDefaultLabels = []string{"created_by_kind", "created_by_name", "created_by_uid", "namespace", "pod", "uid"}
+	descPodLabelsDefaultLabels = []string{"created_by_kind", "created_by_name", "namespace", "pod", "uid"}
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "Shutdown", "UnexpectedAdmissionError"}
 )
 
@@ -1650,7 +1650,6 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Famil
 		createdBy := metav1.GetControllerOf(pod)
 		createdByKind := ""
 		createdByName := ""
-		createdByUID := ""
 		if createdBy != nil {
 			if createdBy.Kind != "" {
 				createdByKind = createdBy.Kind
@@ -1658,13 +1657,10 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Famil
 			if createdBy.Name != "" {
 				createdByName = createdBy.Name
 			}
-			if createdBy.UID != "" {
-				createdByUID = string(createdBy.UID)
-			}
 		}
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{createdByKind, createdByName, createdByUID, pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{createdByKind, createdByName, pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

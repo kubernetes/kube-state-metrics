@@ -505,20 +505,6 @@ func createPodContainerStatusWaitingFamilyGenerator() generator.FamilyGenerator 
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.ContainerStatuses))
-			//createdBy := metav1.GetControllerOf(p)
-			//createdByKind := ""
-			//createdByName := ""
-			//if createdBy != nil {
-			//	if createdBy.Kind != "" {
-			//		createdByKind = createdBy.Kind
-			//	}
-			//	if createdBy.Name != "" {
-			//		createdByName = createdBy.Name
-			//	}
-			//}
-
-			//LabelKeys:   []string{"host_ip", "pod_ip", "node", "created_by_kind", "created_by_name", "priority_class", "host_network"},
-			//LabelValues: []string{p.Status.HostIP, p.Status.PodIP, p.Spec.NodeName, createdByKind, createdByName, p.Spec.PriorityClassName, strconv.FormatBool(p.Spec.HostNetwork)},
 
 			for i, cs := range p.Status.ContainerStatuses {
 				ms[i] = &metric.Metric{

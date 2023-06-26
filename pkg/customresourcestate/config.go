@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
-	"k8s.io/kube-state-metrics/v2/pkg/util"
 )
 
 // customResourceState is used to prefix the auto-generated GVK labels as well as an appendix for the metric itself
@@ -166,8 +165,12 @@ type ConfigDecoder interface {
 	Decode(v interface{}) (err error)
 }
 
+type GVKToGVKP interface {
+	ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedGVKPs []discovery.GroupVersionKindPlural, err error)
+}
+
 // FromConfig decodes a configuration source into a slice of `customresource.RegistryFactory` that are ready to use.
-func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscoverer) (func() ([]customresource.RegistryFactory, error), error) {
+func FromConfig(decoder ConfigDecoder, discovererInstance GVKToGVKP) (func() ([]customresource.RegistryFactory, error), error) {
 	var customResourceConfig Metrics
 	factoriesIndex := map[string]bool{}
 	if err := decoder.Decode(&customResourceConfig); err != nil {
@@ -195,7 +198,7 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 			if err != nil {
 				return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
 			}
-			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			gvrString := customresource.GVRFromType(factory.Name(), factory.ExpectedType()).String()
 			if _, ok := factoriesIndex[gvrString]; ok {
 				klog.InfoS("reloaded factory", "GVR", gvrString)
 			}

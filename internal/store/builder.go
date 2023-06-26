@@ -52,7 +52,6 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/sharding"
-	"k8s.io/kube-state-metrics/v2/pkg/util"
 	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
 
@@ -201,7 +200,7 @@ func (b *Builder) DefaultGenerateCustomResourceStoresFunc() ksmtypes.BuildCustom
 func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory) {
 	for i := range fs {
 		f := fs[i]
-		gvr := util.GVRFromType(f.Name(), f.ExpectedType())
+		gvr := customresource.GVRFromType(f.Name(), f.ExpectedType())
 		var gvrString string
 		if gvr != nil {
 			gvrString = gvr.String()
@@ -549,7 +548,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 		familyHeaders = generator.ExtractMetricFamilyHeaders(metricFamilies)
 	}
 
-	gvr := util.GVRFromType(resourceName, expectedType)
+	gvr := customresource.GVRFromType(resourceName, expectedType)
 	var gvrString string
 	if gvr != nil {
 		gvrString = gvr.String()
@@ -591,11 +590,11 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 }
 
 func (b *Builder) hasResources(resourceName string, expectedType interface{}) bool {
-	gvr := util.GVRFromType(resourceName, expectedType)
+	gvr := customresource.GVRFromType(resourceName, expectedType)
 	if gvr == nil {
 		return true
 	}
-	discoveryClient, err := util.CreateDiscoveryClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	discoveryClient, err := customresource.CreateDiscoveryClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
 	if err != nil {
 		klog.ErrorS(err, "Failed to create discovery client")
 		return false
@@ -619,7 +618,7 @@ func (b *Builder) hasResources(resourceName string, expectedType interface{}) bo
 	// Wait for the resource to come up.
 	timer := time.NewTimer(ResourceDiscoveryTimeout)
 	ticker := time.NewTicker(ResourceDiscoveryInterval)
-	dynamicClient, err := util.CreateDynamicClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	dynamicClient, err := customresource.CreateDynamicClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
 	if err != nil {
 		klog.ErrorS(err, "Failed to create dynamic client")
 		return false

@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package discovery
+package app
 
 import (
 	"reflect"
@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"k8s.io/kube-state-metrics/v2/internal/discovery"
 )
 
 func TestGVKMapsResolveGVK(t *testing.T) {
@@ -26,21 +28,21 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 		desc    string
 		gvkmaps *CRDiscoverer
 		gvk     schema.GroupVersionKind
-		got     []groupVersionKindPlural
-		want    []groupVersionKindPlural
+		got     []discovery.GroupVersionKindPlural
+		want    []discovery.GroupVersionKindPlural
 	}
 	testcases := []testcase{
 		{
 			desc: "variable version and kind",
 			gvkmaps: &CRDiscoverer{
-				Map: map[string]map[string][]kindPlural{
+				Map: map[string]map[string][]discovery.KindPlural{
 					"apps": {
 						"v1": {
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "Deployment",
 								Plural: "deployments",
 							},
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "StatefulSet",
 								Plural: "statefulsets",
 							},
@@ -49,7 +51,7 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 				},
 			},
 			gvk: schema.GroupVersionKind{Group: "apps", Version: "*", Kind: "*"},
-			want: []groupVersionKindPlural{
+			want: []discovery.GroupVersionKindPlural{
 				{
 					GroupVersionKind: schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"},
 					Plural:           "deployments",
@@ -63,20 +65,20 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 		{
 			desc: "variable version",
 			gvkmaps: &CRDiscoverer{
-				Map: map[string]map[string][]kindPlural{
+				Map: map[string]map[string][]discovery.KindPlural{
 					"testgroup": {
 						"v1": {
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject1",
 								Plural: "testobjects1",
 							},
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject2",
 								Plural: "testobjects2",
 							},
 						},
 						"v1alpha1": {
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject1",
 								Plural: "testobjects1",
 							},
@@ -85,7 +87,7 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 				},
 			},
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "*", Kind: "TestObject1"},
-			want: []groupVersionKindPlural{
+			want: []discovery.GroupVersionKindPlural{
 				{
 					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
 					Plural:           "testobjects1",
@@ -99,20 +101,20 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 		{
 			desc: "variable kind",
 			gvkmaps: &CRDiscoverer{
-				Map: map[string]map[string][]kindPlural{
+				Map: map[string]map[string][]discovery.KindPlural{
 					"testgroup": {
 						"v1": {
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject1",
 								Plural: "testobjects1",
 							},
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject2",
 								Plural: "testobjects2",
 							},
 						},
 						"v1alpha1": {
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject1",
 								Plural: "testobjects1",
 							},
@@ -121,7 +123,7 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 				},
 			},
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "*"},
-			want: []groupVersionKindPlural{
+			want: []discovery.GroupVersionKindPlural{
 				{
 					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
 					Plural:           "testobjects1",
@@ -135,20 +137,20 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 		{
 			desc: "fixed version and kind",
 			gvkmaps: &CRDiscoverer{
-				Map: map[string]map[string][]kindPlural{
+				Map: map[string]map[string][]discovery.KindPlural{
 					"testgroup": {
 						"v1": {
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject1",
 								Plural: "testobjects1",
 							},
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject2",
 								Plural: "testobjects2",
 							},
 						},
 						"v1alpha1": {
-							kindPlural{
+							discovery.KindPlural{
 								Kind:   "TestObject1",
 								Plural: "testobjects1",
 							},
@@ -157,7 +159,7 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 				},
 			},
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-			want: []groupVersionKindPlural{
+			want: []discovery.GroupVersionKindPlural{
 				{
 					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
 					Plural:           "testobjects1",

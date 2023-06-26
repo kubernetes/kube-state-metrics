@@ -11,14 +11,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package discovery provides a discovery and resolution logic for GVKs.
-package discovery
+package app
 
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -27,15 +28,86 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
+	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
-	"k8s.io/kube-state-metrics/v2/pkg/util"
 )
 
 // Interval is the time interval between two cache sync checks.
 const Interval = 3 * time.Second
+
+// CRDiscoverer provides a cache of the collected GVKs, along with helper utilities.
+type CRDiscoverer struct {
+	// m is a mutex to protect the cache.
+	m sync.RWMutex
+	// Map is a cache of the collected GVKs.
+	Map map[string]map[string][]discovery.KindPlural
+	// ShouldUpdate is a flag that indicates whether the cache was updated.
+	WasUpdated bool
+	// CRDsAddEventsCounter tracks the number of times that the CRD informer triggered the "add" event.
+	CRDsAddEventsCounter prometheus.Counter
+	// CRDsDeleteEventsCounter tracks the number of times that the CRD informer triggered the "remove" event.
+	CRDsDeleteEventsCounter prometheus.Counter
+	// CRDsCacheCountGauge tracks the net amount of CRDs affecting the cache at this point.
+	CRDsCacheCountGauge prometheus.Gauge
+}
+
+// SafeRead executes the given function while holding a read lock.
+func (r *CRDiscoverer) SafeRead(f func()) {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	f()
+}
+
+// SafeWrite executes the given function while holding a write lock.
+func (r *CRDiscoverer) SafeWrite(f func()) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	f()
+}
+
+// AppendToMap appends the given GVKs to the cache.
+func (r *CRDiscoverer) AppendToMap(gvkps ...discovery.GroupVersionKindPlural) {
+	if r.Map == nil {
+		r.Map = map[string]map[string][]discovery.KindPlural{}
+	}
+	for _, gvkp := range gvkps {
+		if _, ok := r.Map[gvkp.Group]; !ok {
+			r.Map[gvkp.Group] = map[string][]discovery.KindPlural{}
+		}
+		if _, ok := r.Map[gvkp.Group][gvkp.Version]; !ok {
+			r.Map[gvkp.Group][gvkp.Version] = []discovery.KindPlural{}
+		}
+		r.Map[gvkp.Group][gvkp.Version] = append(r.Map[gvkp.Group][gvkp.Version], discovery.KindPlural{Kind: gvkp.Kind, Plural: gvkp.Plural})
+	}
+}
+
+// RemoveFromMap removes the given GVKs from the cache.
+func (r *CRDiscoverer) RemoveFromMap(gvkps ...discovery.GroupVersionKindPlural) {
+	for _, gvkp := range gvkps {
+		if _, ok := r.Map[gvkp.Group]; !ok {
+			continue
+		}
+		if _, ok := r.Map[gvkp.Group][gvkp.Version]; !ok {
+			continue
+		}
+		for i, el := range r.Map[gvkp.Group][gvkp.Version] {
+			if el.Kind == gvkp.Kind {
+				if len(r.Map[gvkp.Group][gvkp.Version]) == 1 {
+					delete(r.Map[gvkp.Group], gvkp.Version)
+					if len(r.Map[gvkp.Group]) == 0 {
+						delete(r.Map, gvkp.Group)
+					}
+					break
+				}
+				r.Map[gvkp.Group][gvkp.Version] = append(r.Map[gvkp.Group][gvkp.Version][:i], r.Map[gvkp.Group][gvkp.Version][i+1:]...)
+				break
+			}
+		}
+	}
+}
 
 // StartDiscovery starts the discovery process, fetching all the objects that can be listed from the apiserver, every `Interval` seconds.
 // resolveGVK needs to be called after StartDiscovery to generate factories.
@@ -56,7 +128,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 				v := version.(map[string]interface{})["name"].(string)
 				k := objSpec["names"].(map[string]interface{})["kind"].(string)
 				p := objSpec["names"].(map[string]interface{})["plural"].(string)
-				gotGVKP := groupVersionKindPlural{
+				gotGVKP := discovery.GroupVersionKindPlural{
 					GroupVersionKind: schema.GroupVersionKind{
 						Group:   g,
 						Version: v,
@@ -81,7 +153,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 				v := version.(map[string]interface{})["name"].(string)
 				k := objSpec["names"].(map[string]interface{})["kind"].(string)
 				p := objSpec["names"].(map[string]interface{})["plural"].(string)
-				gotGVKP := groupVersionKindPlural{
+				gotGVKP := discovery.GroupVersionKindPlural{
 					GroupVersionKind: schema.GroupVersionKind{
 						Group:   g,
 						Version: v,
@@ -116,7 +188,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 }
 
 // ResolveGVKToGVKPs resolves the variable VKs to a GVK list, based on the current cache.
-func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedGVKPs []groupVersionKindPlural, err error) { // nolint:revive
+func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedGVKPs []discovery.GroupVersionKindPlural, err error) { // nolint:revive
 	g := gvk.Group
 	v := gvk.Version
 	k := gvk.Kind
@@ -134,7 +206,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 				break
 			}
 		}
-		return []groupVersionKindPlural{
+		return []discovery.GroupVersionKindPlural{
 			{
 				GroupVersionKind: schema.GroupVersionKind{
 					Group:   g,
@@ -148,7 +220,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	if hasVersion && !hasKind {
 		kinds := r.Map[g][v]
 		for _, el := range kinds {
-			resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+			resolvedGVKPs = append(resolvedGVKPs, discovery.GroupVersionKindPlural{
 				GroupVersionKind: schema.GroupVersionKind{
 					Group:   g,
 					Version: v,
@@ -163,7 +235,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 		for version, kinds := range versions {
 			for _, el := range kinds {
 				if el.Kind == k {
-					resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+					resolvedGVKPs = append(resolvedGVKPs, discovery.GroupVersionKindPlural{
 						GroupVersionKind: schema.GroupVersionKind{
 							Group:   g,
 							Version: version,
@@ -179,7 +251,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 		versions := r.Map[g]
 		for version, kinds := range versions {
 			for _, el := range kinds {
-				resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+				resolvedGVKPs = append(resolvedGVKPs, discovery.GroupVersionKindPlural{
 					GroupVersionKind: schema.GroupVersionKind{
 						Group:   g,
 						Version: version,
@@ -216,11 +288,11 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		// Update the list of enabled custom resources.
 		var enabledCustomResources []string
 		for _, factory := range customFactories {
-			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			gvrString := customresource.GVRFromType(factory.Name(), factory.ExpectedType()).String()
 			enabledCustomResources = append(enabledCustomResources, gvrString)
 		}
 		// Create clients for discovered factories.
-		discoveredCustomResourceClients, err := util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
+		discoveredCustomResourceClients, err := customresource.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
 		if err != nil {
 			klog.ErrorS(err, "failed to update custom resource stores")
 		}

@@ -48,7 +48,6 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/sharding"
-	"k8s.io/kube-state-metrics/v2/pkg/util"
 	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
 
@@ -197,7 +196,7 @@ func (b *Builder) DefaultGenerateCustomResourceStoresFunc() ksmtypes.BuildCustom
 func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory) {
 	for i := range fs {
 		f := fs[i]
-		gvr := util.GVRFromType(f.Name(), f.ExpectedType())
+		gvr := customresource.GVRFromType(f.Name(), f.ExpectedType())
 		var gvrString string
 		if gvr != nil {
 			gvrString = gvr.String()
@@ -553,7 +552,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
 
-	gvr := util.GVRFromType(resourceName, expectedType)
+	gvr := customresource.GVRFromType(resourceName, expectedType)
 	var gvrString string
 	if gvr != nil {
 		gvrString = gvr.String()
@@ -592,6 +591,65 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 	}
 
 	return stores
+}
+
+func (b *Builder) hasResources(resourceName string, expectedType interface{}) bool {
+	gvr := customresource.GVRFromType(resourceName, expectedType)
+	if gvr == nil {
+		return true
+	}
+	discoveryClient, err := customresource.CreateDiscoveryClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	if err != nil {
+		klog.ErrorS(err, "Failed to create discovery client")
+		return false
+	}
+	g := gvr.Group
+	v := gvr.Version
+	r := gvr.Resource
+	isCRDInstalled, err := discovery.IsResourceEnabled(discoveryClient, schema.GroupVersionResource{
+		Group:    g,
+		Version:  v,
+		Resource: r,
+	})
+	if err != nil {
+		klog.ErrorS(err, "Failed to check if CRD is enabled", "group", g, "version", v, "resource", r)
+		return false
+	}
+	if !isCRDInstalled {
+		klog.InfoS("CRD is not installed", "group", g, "version", v, "resource", r)
+		return false
+	}
+	// Wait for the resource to come up.
+	timer := time.NewTimer(ResourceDiscoveryTimeout)
+	ticker := time.NewTicker(ResourceDiscoveryInterval)
+	dynamicClient, err := customresource.CreateDynamicClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	if err != nil {
+		klog.ErrorS(err, "Failed to create dynamic client")
+		return false
+	}
+	var list *unstructured.UnstructuredList
+	for range ticker.C {
+		select {
+		case <-timer.C:
+			klog.InfoS("No CRs found for GVR", "group", g, "version", v, "resource", r)
+			return false
+		default:
+			list, err = dynamicClient.Resource(schema.GroupVersionResource{
+				Group:    g,
+				Version:  v,
+				Resource: r,
+			}).List(b.ctx, metav1.ListOptions{})
+			if err != nil {
+				klog.ErrorS(err, "Failed to list objects", "group", g, "version", v, "resource", r)
+				return false
+			}
+		}
+		if len(list.Items) > 0 {
+			break
+		}
+	}
+
+	return true
 }
 
 // startReflector starts a Kubernetes client-go reflector with the given

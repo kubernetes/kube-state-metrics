@@ -26,9 +26,12 @@ import (
 	"net/http/pprof"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"k8s.io/client-go/rest"
 
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,11 +42,11 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	"gopkg.in/yaml.v3"
+	clientset "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
@@ -52,7 +55,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
-	"k8s.io/kube-state-metrics/v2/pkg/util"
+
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
 )
 
@@ -244,7 +247,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	proc.StartReaper()
 
 	storeBuilder.WithUtilOptions(opts)
-	kubeClient, err := util.CreateKubeClient(opts.Apiserver, opts.Kubeconfig)
+	kubeClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)
+
 	if err != nil {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
@@ -285,7 +289,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	// A nil CRS config implies that we need to hold off on all CRS operations.
 	if config != nil {
-		discovererInstance := &discovery.CRDiscoverer{
+		discovererInstance := &CRDiscoverer{
 			CRDsAddEventsCounter:    crdsAddEventsCounter,
 			CRDsDeleteEventsCounter: crdsDeleteEventsCounter,
 			CRDsCacheCountGauge:     crdsCacheCountGauge,
@@ -455,4 +459,39 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 		return yaml.NewDecoder(f), nil
 	}
 	return nil, nil
+}
+
+func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
+	var config *rest.Config
+
+	var err error
+
+	if config == nil {
+		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	config.UserAgent = fmt.Sprintf("%s/%s (%s/%s) kubernetes/%s", "kube-state-metrics", version.Version, runtime.GOOS, runtime.GOARCH, version.Revision)
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
+
+	kubeClient, err := clientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	// Informers don't seem to do a good job logging error messages when it
+	// can't reach the server, making debugging hard. This makes it easier to
+	// figure out if apiserver is configured incorrectly.
+	klog.InfoS("Tested communication with server")
+	v, err := kubeClient.Discovery().ServerVersion()
+	if err != nil {
+		return nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
+	}
+	klog.InfoS("Run with Kubernetes cluster version", "major", v.Major, "minor", v.Minor, "gitVersion", v.GitVersion, "gitTreeState", v.GitTreeState, "gitCommit", v.GitCommit, "platform", v.Platform)
+	klog.InfoS("Communication with server successful")
+
+	return kubeClient, nil
 }

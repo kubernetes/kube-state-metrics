@@ -21,7 +21,7 @@ package fake
 import (
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
-	v1alpha1 "k8s.io/kube-state-metrics/pkg/customresourcemonitor/client/clientset/versioned/typed/customresourcemonitor/v1alpha1"
+	v1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/typed/customresourcemonitor/v1alpha1"
 )
 
 type FakeCustomresourceV1alpha1 struct {

@@ -26,9 +26,9 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "k8s.io/kube-state-metrics/pkg/customresourcemonitor/client/clientset/versioned"
-	internalinterfaces "k8s.io/kube-state-metrics/pkg/customresourcemonitor/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "k8s.io/kube-state-metrics/pkg/customresourcemonitor/client/listers/customresourcemonitor/v1alpha1"
+	versioned "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned"
+	internalinterfaces "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/listers/customresourcemonitor/v1alpha1"
 	customresourcemonitorv1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/apis/customresourcemonitor/v1alpha1"
 )
 

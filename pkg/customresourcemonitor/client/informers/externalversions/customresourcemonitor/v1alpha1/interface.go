@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "k8s.io/kube-state-metrics/pkg/customresourcemonitor/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

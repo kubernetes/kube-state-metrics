@@ -19,8 +19,8 @@ limitations under the License.
 package customresourcemonitor
 
 import (
-	v1alpha1 "k8s.io/kube-state-metrics/pkg/customresourcemonitor/client/informers/externalversions/customresourcemonitor/v1alpha1"
-	internalinterfaces "k8s.io/kube-state-metrics/pkg/customresourcemonitor/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/informers/externalversions/customresourcemonitor/v1alpha1"
+	internalinterfaces "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

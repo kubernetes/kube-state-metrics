@@ -1,57 +1,75 @@
-# Kube-State-Metrics - Custom Resource Metrics CRD Proposal
+# Kube-State-Metrics - CustomResourceMonitor CRD Proposal
 
 
 ---
 
 Authors: Catherine Fang (CatherineF-dev@), Christian Schlotter (chrischdi@)
 
-Date: 17. Apr 2023
+Date: 26. Jun 2023
 
 Target release: v
 
 ---
+
+## Table of Contents
+- [Glossary](#glossary)
+- [Problem Statement](#problem-statement)
+- [Goal](#goal)
+- [Status Quo](#status-quo)
+- [Proposal](#proposal)
+   - [New flags](#new-flags)
+   - [CustomResourceMonitor Definition](#customresourcemonitor-definition)
+   - [Watch and Reconcile on CustomResourceMonitor CRs](#watch-and-reconcile-on-customresourcemonitor-crs)
+- [CUJ](#cuj)
+
 
 
 ## Glossary
 
 - kube-state-metrics: “Simple service that listens to the Kubernetes API server
   and generates metrics about the state of the objects”
+- Custom Resource: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources
+- [CustomResourceState](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md) monitoring feature: existing feature which collects custom resource metrics
+
 
 ## Problem Statement
 
-Coupled custom resources metrics targets and kube-state-metrics deployment, which causes managing custom resource configuration not easy.
-
-Currently, one of these flags is added into kube-state-metrics deployment.
+1. Using CustomResourceState monitoring feature is not user-friendly. Current ways on configuring CustomResourceState monitoring are:
 * `--custom-resource-state-config "inline yaml (see example)"` or
-* `--custom-resource-state-config-file /path/to/config.yaml`
+* `--custom-resource-state-config-file /path/to/config.yaml`. Either mounted or configmap.
 
-For example, for a company with two teams (monitoring platform team and application team), application team needs to change kube-state-metrics deployment managed by monitoring platform team.
+2. Current CustomResourceState monitoring feature doesn't support multiple configuration files.
+
+For example, for a company with 10 teams, each team wants to collect Custom Resource metrics for their owned Custom Resources. 
 
 
 ## Goal
 
-1. Add new custom resource metrics without changing kube-state-metrics deployment
-2. Isolate custom resource metrics when mulitple kube-state-metrics deployments are deployed. For a managed kubernetes solution (GKE/AKS/EKS), a kube-state-metrics might be deployed by cloud provider while another kube-state-metrics is deployed by customers. Cloud provider wants to monitor system CRs while customers want to monitor application CRs.
-
-## Status Quo
-
-Custom Resource store always [adds](https://github.com/kubernetes/kube-state-metrics/blob/main/internal/store/builder.go#L186) new custom resource metrics. Deletion of custom resource metrics needs to be implemented.
+A better UX to collect custom resource metrics
 
 ## Proposal
 
-Add a custom resource definition (CustomResourceMonitor) for custom resource metrics.
-So that kube-state-metrics watched on these CRs and change custom metrics store dynamically.
+Add a custom resource definition (CustomResourceMonitor) which contains customresourcestate.Metrics.
 
-Apart from existing two flags (`--custom-resource-state-config ` and `--custom-resource-state-config-file`), `--custom_resources_ksm_cr_watched` is added to watch all CustomResourceMonitor CRs.
-If `--custom_resources_ksm_cr_watched` is set, `--custom-resource-state-config` and `--custom-resource-state-config-file` will be ignored.
+kube-state-metrics watched on CustomResourceMonitor CRs and concatenate these CRs into one config `customresourcestate.Metrics` which has the same content using `--custom-resource-state-config`. 
 
-All new flags are:
-* `--custom_resources_ksm_cr_watched`: watch CustomResourceMonitor
-* `--custom_resources_ksm_cr_watched_labels`: only watch CustomResourceMonitor with label=x
-* `--custom_resources_ksm_cr_watched_namespaces`: only watch CustomResourceMonitor under namespaces=x
+### New flags
+Apart from existing two flags (`--custom-resource-state-config ` and `--custom-resource-state-config-file`), these three flags will be added: 
+* `--custom_resource_monitor_enabled`: whether watch CustomResourceMonitor CRs or not.
+* `--custom_resource_monitor_labels`: only watch CustomResourceMonitor with label=x. It's used to avoid double custom metrics collection when multiple kube-state-metrics are installed.
+* `--custom_resource_monitor_namespaces`: only watch CustomResourceMonitor under namespaces=x.
 
+If `--custom_resources_monitor_enabled` is set, `--custom-resource-state-config` and `--custom-resource-state-config-file` will be ignored.
 
-```
+### CustomResourceMonitor Definition
+
+* GroupName: kubestatemetrics.io
+   * Alternative kubestatemetrics.k8s.io: 1. *.k8s.io needs approval 2. ksm isn't inside k/k repo (need to double confirm)
+   * Alternative ksm.io:  has been used by a company
+* Version: v1alpha1
+* Kind: CustomResourceMonitor
+
+```go
 package v1alpha1
 
 import (
@@ -65,13 +83,40 @@ type CustomResourceMonitor struct {
 }
 ```
 
+```yaml
+# Example CR
+apiVersion: kubestatemetrics.io/v1alpha1
+kind: CustomResourceMonitor
+metadata:
+  name: test-cr2
+  namespace: kube-system
+  generation: 1
+spec:
+  resources:
+    - groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      metrics:
+        - name: "uptime"
+          help: "Foo uptime"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, uptime]
+```
+
+### Watch and Reconcile on CustomResourceMonitor CRs
+
 Kube-state-metrics listens on add, update and delete events of CustomResourceMonitor via Kubernetes
-client-go reflectors. On these events kube-state-metrics lists all CustomResourceMonitor CRs and concatenate CRs into one config `customresourcestate.Metrics` which has the same format with configs of `--custom-resource-state-config`. This generated custom resource config updates CustomResourceStore by adding monitored custom resource stores and deleting unmonitored custom resource stores.
+client-go reflectors. On these events kube-state-metrics lists all CustomResourceMonitor CRs and concatenate CRs into one config `customresourcestate.Metrics` which has the almost same content with `--custom-resource-state-config` config. 
+
+This generated custom resource config updates CustomResourceStore by adding monitored custom resource stores and deleting unmonitored custom resource stores.
 
 
 ```yaml
 # example cr
-apiVersion: customresource.ksm.io/v1alpha1
+apiVersion: kubestatemetrics.io/v1alpha1
 kind: CustomResourceMonitor
 metadata:
   name: nodepool
@@ -79,7 +124,7 @@ spec:
   resources:
     - groupVersionKind:
         group: addons.k8s.io
-        kind: "FakedNodePools"
+        kind: "FakedNodePool"
         version: "v1alpha1"
       metrics:
         - name: "nodepool_generation"
@@ -142,8 +187,25 @@ note right of custom_resource_store: generateMetrics(nodepool)
 
 </details>
 
+Custom Resource store always [adds](https://github.com/kubernetes/kube-state-metrics/blob/main/internal/store/builder.go#L186) new custom resource metrics. Deletion of custom resource metrics needs to be implemented.
+
+### Alternatives
+- Generate metrics configuration based on field annotations: https://github.com/kubernetes/kube-state-metrics/issues/1899
+  - Limitation: need to have source code permission 
+
+## Migrate from CustomResourceState
+```
++ apiVersion: kubestatemetrics.io/v1alpha1
+- kind: CustomResourceStateMetrics
++ kind: CustomResourceMonitor
++ metadata:
++  name: crm_nodepool
++  labels:
++    monitoring.backend.io: true
+spec: # copy content from --custom-resource-state-config-file
+```
 
 ## CUJ
 * cloud-provider: watch CustomResourceMonitor CRs with label `monitoring.(gke|aks|eks).io=true` under system namespaces
-* application platform: watch CustomResourceMonitor CRs with label `monitoring.app.io=true` under non-system namespaces
+* application platform: watch CustomResourceMonitor CRs with label `monitoring.frontend.io=true` under non-system namespaces
 * monitoring platform team: watch CustomResourceMonitor CRs with label `monitoring.platform.io=true` under non-system namespaces

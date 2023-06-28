@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"k8s.io/kube-state-metrics/v2/internal/discovery"
 )
 

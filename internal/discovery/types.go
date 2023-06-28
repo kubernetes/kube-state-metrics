@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// GroupVersionKindPlural embeds schema.GroupVersionKind, in addition to the plural representation of the Kind.
 type GroupVersionKindPlural struct {
 	schema.GroupVersionKind
 	Plural string
@@ -28,6 +29,7 @@ func (g GroupVersionKindPlural) String() string {
 	return fmt.Sprintf("%s/%s, Kind=%s, Plural=%s", g.Group, g.Version, g.Kind, g.Plural)
 }
 
+// KindPlural entails the Kind and its plural representation.
 type KindPlural struct {
 	Kind   string
 	Plural string

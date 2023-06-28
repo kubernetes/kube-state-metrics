@@ -11,7 +11,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package discovery provides a discovery and resolution logic for GVKs.
 package app
 
 import (
@@ -40,6 +39,7 @@ import (
 const Interval = 3 * time.Second
 
 // CRDiscoverer provides a cache of the collected GVKs, along with helper utilities.
+// It implements customresourcestate.GVKToGVKP.
 type CRDiscoverer struct {
 	// m is a mutex to protect the cache.
 	m sync.RWMutex

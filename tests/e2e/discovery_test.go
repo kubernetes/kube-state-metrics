@@ -29,12 +29,12 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/internal"
-	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 // PopulateTimeout is the timeout on populating the cache for the first time.
 const PopulateTimeout = 10 * time.Second
+const Interval = 3 * time.Second
 
 func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 
@@ -140,7 +140,8 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	// Wait for the metric to be available.
 	ch := make(chan bool, 1)
 	klog.InfoS("waiting for metrics to become available")
-	err = wait.PollUntilContextTimeout(context.TODO(), customresourcestate.Interval, PopulateTimeout, true, func(ctx context.Context) (bool, error) {
+
+	err = wait.PollUntilContextTimeout(context.TODO(), Interval, PopulateTimeout, true, func(ctx context.Context) (bool, error) {
 		out, err := exec.Command("curl", "localhost:8080/metrics").Output()
 		if err != nil {
 			return false, err

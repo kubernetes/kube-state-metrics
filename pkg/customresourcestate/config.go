@@ -165,6 +165,7 @@ type ConfigDecoder interface {
 	Decode(v interface{}) (err error)
 }
 
+// GVKToGVKP incorporates logic to resolve a given GVK, with variable version and/or kind, to it's []discovery.GroupVersionKindPlural representation.
 type GVKToGVKP interface {
 	ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedGVKPs []discovery.GroupVersionKindPlural, err error)
 }

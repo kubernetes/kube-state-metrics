@@ -157,8 +157,8 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 								})
 							} else {
 								ms = append(ms, &metric.Metric{
-									LabelKeys:   []string{"host", "path", "service_name", "service_port"},
-									LabelValues: []string{rule.Host, path.Path, "", ""},
+									LabelKeys:   []string{"host", "path", "api_group", "kind", "name"},
+									LabelValues: []string{rule.Host, path.Path, *path.Backend.Resource.APIGroup, path.Backend.Resource.Kind, path.Backend.Resource.Name},
 									Value:       1,
 								})
 							}

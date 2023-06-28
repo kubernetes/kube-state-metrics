@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"k8s.io/client-go/rest"
@@ -57,12 +56,29 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
+
+	crmonitorclientset "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned"
+
+	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	metricsPath = "/metrics"
 	healthzPath = "/healthz"
 )
+
+type Reconfigure struct {
+}
+
+func (r *Reconfigure) ResolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, error) {
+	return resolveCustomResourceConfig(opts)
+}
+
+func (r *Reconfigure) FromConfig(decoder customresourcestate.ConfigDecoder) ([]customresource.RegistryFactory, error) {
+	return customresourcestate.FromConfig2(decoder)
+}
 
 // promLogger implements promhttp.Logger
 type promLogger struct{}
@@ -247,8 +263,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	proc.StartReaper()
 
 	storeBuilder.WithUtilOptions(opts)
-	kubeClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)
-
+	kubeClient, ksmCRClient, err := createKubeClient(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
@@ -272,8 +287,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	m := metricshandler.New(
 		opts,
 		kubeClient,
+		ksmCRClient,
 		storeBuilder,
 		opts.EnableGZIPEncoding,
+		&Reconfigure{},
 	)
 	// Run MetricsHandler
 	if config == nil {
@@ -448,6 +465,30 @@ func md5HashAsMetricValue(data []byte) float64 {
 }
 
 func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, error) {
+	if opts.CustomResourcesKSMCRWatched {
+		ksmCRClient, err := createKubeCRClient(opts.Apiserver, opts.Kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("Can not create KSM CR client: %v", err)
+		}
+		// TODO(): fetch CRs in all namespaces
+		crMonitorList, err := ksmCRClient.CustomresourceV1alpha1().CustomResourceMonitors("kube-system").List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("Can not list KSM CR: %v", err)
+		}
+		var crconfig customresourcestate.Metrics
+		for _, item := range crMonitorList.Items {
+			crconfig.Spec.Resources = append(crconfig.Spec.Resources, item.Spec.Resources...)
+		}
+		fmt.Printf("Merged custom resource %v \n", crconfig)
+		var buf strings.Builder
+		encoder := yaml.NewEncoder(&buf)
+		err = encoder.Encode(&crconfig)
+		if err != nil {
+			return nil, fmt.Errorf("Can encode KSM CR: %v", err)
+		}
+		return yaml.NewDecoder(strings.NewReader(buf.String())), nil
+	}
+
 	if s := opts.CustomResourceConfig; s != "" {
 		return yaml.NewDecoder(strings.NewReader(s)), nil
 	}
@@ -461,7 +502,7 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 	return nil, nil
 }
 
-func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
+func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface, crmonitorclientset.Interface, error) {
 	var config *rest.Config
 
 	var err error
@@ -469,7 +510,7 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	if config == nil {
 		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -479,7 +520,7 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 
 	kubeClient, err := clientset.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Informers don't seem to do a good job logging error messages when it
@@ -488,10 +529,33 @@ func createKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	klog.InfoS("Tested communication with server")
 	v, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
-		return nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
+		return nil, nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
 	}
 	klog.InfoS("Run with Kubernetes cluster version", "major", v.Major, "minor", v.Minor, "gitVersion", v.GitVersion, "gitTreeState", v.GitTreeState, "gitCommit", v.GitCommit, "platform", v.Platform)
 	klog.InfoS("Communication with server successful")
 
-	return kubeClient, nil
+	customResourceMonitorClient, err := crmonitorclientset.NewForConfig(config)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return kubeClient, customResourceMonitorClient, nil
+}
+
+func createKubeCRClient(apiserver string, kubeconfig string) (crmonitorclientset.Interface, error) {
+	config, err := clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	config.UserAgent = version.Version
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
+
+	customResourceMonitorClients, err := crmonitorclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return customResourceMonitorClients, nil
 }

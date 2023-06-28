@@ -195,4 +195,9 @@ func TestWithAllowAnnotations(t *testing.T) {
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, resolvedAllowAnnotations)
 		}
 	}
+func TestNonCustomResourceName(t *testing.T) {
+	if len(availableStores) != len(nonCustomResourceStores) {
+		t.Errorf("Want: %d Got: %d", len(availableStores), len(nonCustomResourceStores))
+	}
+	// TODO: judge each nonCustomResourceStores is inside availableStores.
 }

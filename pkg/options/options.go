@@ -17,44 +17,50 @@ limitations under the License.
 package options
 
 import (
+	// "context"
 	"flag"
 	"fmt"
 	"os"
+	// "path/filepath"
 	"strings"
 
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
+	/* "gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/clientcmd" */
 	"k8s.io/klog/v2"
 )
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	AnnotationsAllowList     LabelsAllowList `yaml:"annotations_allow_list"`
-	Apiserver                string          `yaml:"apiserver"`
-	CustomResourceConfig     string          `yaml:"custom_resource_config"`
-	CustomResourceConfigFile string          `yaml:"custom_resource_config_file"`
-	CustomResourcesOnly      bool            `yaml:"custom_resources_only"`
-	EnableGZIPEncoding       bool            `yaml:"enable_gzip_encoding"`
-	Help                     bool            `yaml:"help"`
-	Host                     string          `yaml:"host"`
-	Kubeconfig               string          `yaml:"kubeconfig"`
-	LabelsAllowList          LabelsAllowList `yaml:"labels_allow_list"`
-	MetricAllowlist          MetricSet       `yaml:"metric_allowlist"`
-	MetricDenylist           MetricSet       `yaml:"metric_denylist"`
-	MetricOptInList          MetricSet       `yaml:"metric_opt_in_list"`
-	Namespace                string          `yaml:"namespace"`
-	Namespaces               NamespaceList   `yaml:"namespaces"`
-	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
-	Node                     NodeType        `yaml:"node"`
-	Pod                      string          `yaml:"pod"`
-	Port                     int             `yaml:"port"`
-	Resources                ResourceSet     `yaml:"resources"`
-	Shard                    int32           `yaml:"shard"`
-	TLSConfig                string          `yaml:"tls_config"`
-	TelemetryHost            string          `yaml:"telemetry_host"`
-	TelemetryPort            int             `yaml:"telemetry_port"`
-	TotalShards              int             `yaml:"total_shards"`
-	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
+	AnnotationsAllowList        LabelsAllowList `yaml:"annotations_allow_list"`
+	Apiserver                   string          `yaml:"apiserver"`
+	CustomResourceConfig        string          `yaml:"custom_resource_config"`
+	CustomResourceConfigFile    string          `yaml:"custom_resource_config_file"`
+	CustomResourcesOnly         bool            `yaml:"custom_resources_only"`
+	CustomResourcesKSMCRWatched bool            `yaml:"custom_resources_ksm_cr_watched"`
+	EnableGZIPEncoding          bool            `yaml:"enable_gzip_encoding"`
+	Help                        bool            `yaml:"help"`
+	Host                        string          `yaml:"host"`
+	Kubeconfig                  string          `yaml:"kubeconfig"`
+	LabelsAllowList             LabelsAllowList `yaml:"labels_allow_list"`
+	MetricAllowlist             MetricSet       `yaml:"metric_allowlist"`
+	MetricDenylist              MetricSet       `yaml:"metric_denylist"`
+	MetricOptInList             MetricSet       `yaml:"metric_opt_in_list"`
+	Namespace                   string          `yaml:"namespace"`
+	Namespaces                  NamespaceList   `yaml:"namespaces"`
+	NamespacesDenylist          NamespaceList   `yaml:"namespaces_denylist"`
+	Node                        NodeType        `yaml:"node"`
+	Pod                         string          `yaml:"pod"`
+	Port                        int             `yaml:"port"`
+	Resources                   ResourceSet     `yaml:"resources"`
+	Shard                       int32           `yaml:"shard"`
+	TLSConfig                   string          `yaml:"tls_config"`
+	TelemetryHost               string          `yaml:"telemetry_host"`
+	TelemetryPort               int             `yaml:"telemetry_port"`
+	TotalShards                 int             `yaml:"total_shards"`
+	UseAPIServerCache           bool            `yaml:"use_api_server_cache"`
 
 	Config string
 
@@ -120,6 +126,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
 
 	o.cmd.Flags().BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
+	o.cmd.Flags().BoolVar(&o.CustomResourcesKSMCRWatched, "custom-resource-ksm-cr-watched", false, "Watch KSM CR which can monitor custom resource metrics")
 	o.cmd.Flags().BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
 	o.cmd.Flags().BoolVarP(&o.Help, "help", "h", false, "Print Help text")
 	o.cmd.Flags().BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")

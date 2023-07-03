@@ -55,8 +55,8 @@ kube-state-metrics watched on CustomResourceMonitor CRs and concatenate these CR
 
 ### New flags
 Apart from existing two flags (`--custom-resource-state-config ` and `--custom-resource-state-config-file`), these three flags will be added: 
-* `--custom_resource_monitor_enabled`: whether watch CustomResourceMonitor CRs or not.
-* `--custom_resource_monitor_labels`: only watch CustomResourceMonitor with label=x. It's used to avoid double custom metrics collection when multiple kube-state-metrics are installed.
+* `--custom_resource_monitor`: whether watch CustomResourceMonitor CRs or not.
+* `--custom_resource_monitor_labels`: only watch CustomResourceMonitor with [labelSelectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#list-and-watch-filtering). For example, `environment=production,tier=frontend` means selecting CustomResourceMonitor CRs which have these two labels.  It's used to avoid double custom metrics collection when multiple kube-state-metrics are installed.
 * `--custom_resource_monitor_namespaces`: only watch CustomResourceMonitor under namespaces=x.
 
 If `--custom_resources_monitor_enabled` is set, `--custom-resource-state-config` and `--custom-resource-state-config-file` will be ignored.
@@ -205,7 +205,7 @@ Custom Resource store always [adds](https://github.com/kubernetes/kube-state-met
 spec: # copy content from --custom-resource-state-config-file
 ```
 
-## CUJ
+## Critical User Journey (CUJ)
 * cloud-provider: watch CustomResourceMonitor CRs with label `monitoring.(gke|aks|eks).io=true` under system namespaces
 * application platform: watch CustomResourceMonitor CRs with label `monitoring.frontend.io=true` under non-system namespaces
 * monitoring platform team: watch CustomResourceMonitor CRs with label `monitoring.platform.io=true` under non-system namespaces

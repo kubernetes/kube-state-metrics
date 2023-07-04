@@ -24,6 +24,7 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
 	customresourcev1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/apis/customresourcemonitor/v1alpha1"
 )
 

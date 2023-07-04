@@ -29,7 +29,6 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/internal"
-	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 

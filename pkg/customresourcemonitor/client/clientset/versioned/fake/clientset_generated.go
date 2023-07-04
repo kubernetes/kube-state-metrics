@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
+
 	clientset "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned"
 	customresourcev1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/typed/customresourcemonitor/v1alpha1"
 	fakecustomresourcev1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/typed/customresourcemonitor/v1alpha1/fake"

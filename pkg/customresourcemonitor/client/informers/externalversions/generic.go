@@ -23,6 +23,7 @@ import (
 
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
+
 	v1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/apis/customresourcemonitor/v1alpha1"
 )
 

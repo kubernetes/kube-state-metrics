@@ -22,8 +22,9 @@ import (
 	"net/http"
 
 	rest "k8s.io/client-go/rest"
-	"k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/scheme"
+
 	v1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/apis/customresourcemonitor/v1alpha1"
+	"k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/scheme"
 )
 
 type CustomresourceV1alpha1Interface interface {

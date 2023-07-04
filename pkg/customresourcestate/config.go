@@ -247,6 +247,7 @@ func configOverrides(config *Metrics) {
 }
 
 // FromConfig decodes a configuration source into a slice of customresource.RegistryFactory that are ready to use.
+// FromConfig2 decodes a configuration source into a slice of customresource.RegistryFactory that are ready to use.
 func FromConfig2(decoder ConfigDecoder) ([]customresource.RegistryFactory, error) {
 	var crconfig Metrics
 	var factories []customresource.RegistryFactory

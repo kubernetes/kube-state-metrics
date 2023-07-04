@@ -48,8 +48,11 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
+// Reconfigure provides two functions
 type Reconfigure interface {
+	// ResolveCustomResourceConfig update custom resource stores
 	ResolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, error)
+	// FromConfig construct customresource.RegistryFactory from ConfigDecoder
 	FromConfig(decoder customresourcestate.ConfigDecoder) ([]customresource.RegistryFactory, error)
 }
 
@@ -74,6 +77,7 @@ type MetricsHandler struct {
 
 // New creates and returns a new MetricsHandler with the given options.
 func New(opts *options.Options, kubeClient kubernetes.Interface, crMonitorClient crmonitorclientset.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool, reconfigure Reconfigure) *MetricsHandler {
+
 	return &MetricsHandler{
 		opts:               opts,
 		kubeClient:         kubeClient,
@@ -105,6 +109,7 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	m.curTotalShards = totalShards
 }
 
+// ReconfigureCustomResourceMetrics reconfigures customresource stores.
 func (m *MetricsHandler) ReconfigureCustomResourceMetrics(ctx context.Context, opts *options.Options) error {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()

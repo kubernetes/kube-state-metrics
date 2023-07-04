@@ -25,6 +25,7 @@ import (
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
+
 	customresourcev1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/typed/customresourcemonitor/v1alpha1"
 )
 

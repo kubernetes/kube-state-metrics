@@ -26,8 +26,9 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	scheme "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/scheme"
+
 	v1alpha1 "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/apis/customresourcemonitor/v1alpha1"
+	scheme "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned/scheme"
 )
 
 // CustomResourceMonitorsGetter has a method to return a CustomResourceMonitorInterface.

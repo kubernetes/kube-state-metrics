@@ -82,6 +82,32 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_validatingwebhookconfiguration_webhook_clientconfig_service",
+			"Service used by the apiserver to connect to a validating webhook.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, webhook := range vwc.Webhooks {
+					var serviceName, serviceNamespace string
+					if webhook.ClientConfig.Service != nil {
+						serviceName = webhook.ClientConfig.Service.Name
+						serviceNamespace = webhook.ClientConfig.Service.Namespace
+					}
+
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"webhook_name", "service_name", "service_namespace"},
+						LabelValues: []string{webhook.Name, serviceName, serviceNamespace},
+						Value:       1,
+					})
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 )
 

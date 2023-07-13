@@ -880,7 +880,7 @@ func (f *fooFactory) Name() string {
 }
 
 // CreateClient use fake client set to establish 10 foos.
-func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
+func (f *fooFactory) CreateClient(_ *rest.Config) (interface{}, error) {
 	fooClient := samplefake.NewSimpleClientset()
 	for i := 0; i < 10; i++ {
 		err := foo(fooClient, i)

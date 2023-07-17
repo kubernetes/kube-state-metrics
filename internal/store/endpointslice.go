@@ -141,15 +141,12 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 
 							// Because each endpoint can have multiple zones, we need to create a metric for each zone.
 							// and we need to make sure we aren't adding the hint label repeatedly, we need to copy the array
-							zoneLabelKeys := make([]string, len(labelKeys))
-							copy(zoneLabelKeys, labelKeys)
-							zoneLabelKeys = append(zoneLabelKeys, "hint")
 							for _, zone := range ep.Hints.ForZones {
 								zoneLabelValues := make([]string, len(newlabelValues))
 								copy(zoneLabelValues, newlabelValues)
 								zoneLabelValues = append(zoneLabelValues, zone.Name)
 								m = append(m, &metric.Metric{
-									LabelKeys:   zoneLabelKeys,
+									LabelKeys:   append(labelKeys, "hint"),
 									LabelValues: zoneLabelValues,
 									Value:       1,
 								})

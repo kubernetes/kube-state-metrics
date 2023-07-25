@@ -19,6 +19,10 @@ package metricsstore
 import (
 	"fmt"
 	"io"
+	"net/http"
+	"strings"
+
+	"qoobing.com/gomod/log"
 )
 
 // MetricsWriterList represent a list of MetricsWriter
@@ -42,6 +46,29 @@ func NewMetricsWriter(stores ...*MetricsStore) *MetricsWriter {
 	}
 }
 
+func (m MetricsWriter) Push(pushgateway string) error{
+	for _, s := range m.stores {
+		s.mutex.RLock()
+		defer func(s *MetricsStore) {
+			s.mutex.RUnlock()
+		}(s)
+	}
+
+	var builder strings.Builder
+	for i, _ := range m.stores[0].headers {
+		for _, s := range m.stores {
+			for _, metricFamilies := range s.metrics {
+				builder.WriteString(string(metricFamilies[i]))
+			}
+		}
+	}
+	_, err := http.Post(pushgateway, "text/plain", strings.NewReader(builder.String() + "\n"))
+	if err != nil {
+		log.Warningf("Error making POST request: %v\n", err)
+		return err
+	}
+	return nil
+}
 // WriteAll writes out metrics from the underlying stores to the given writer.
 //
 // WriteAll writes metrics so that the ones with the same name

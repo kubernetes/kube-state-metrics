@@ -1,13 +1,11 @@
 reviewers:
   - CatherineF-dev
   - dgrisonnet
-  - fpetkovski
   - logicalhan
   - mrueg
   - rexagod
 approvers:
   - dgrisonnet
-  - fpetkovski
   - mrueg
   - rexagod
 emeritus_approvers:
@@ -16,3 +14,4 @@ emeritus_approvers:
   - brancz
   - tariq1890
   - zouyee
+  - fpetkovski

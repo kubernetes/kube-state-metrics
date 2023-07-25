@@ -55,7 +55,9 @@ type Options struct {
 	TelemetryPort            int             `yaml:"telemetry_port"`
 	TotalShards              int             `yaml:"total_shards"`
 	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
-
+	PushGatewayURL           string          `yaml:"pushgateway"`
+	PushJobName                  string          `yaml:"pushjobname"`
+	PushInstance                 string          `yaml:"pushinstance"`     
 	Config string
 
 	cmd *cobra.Command
@@ -117,7 +119,9 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Lookup("logtostderr").NoOptDefVal = "true"
 
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
-
+	o.cmd.Flags().StringVar(&o.PushJobName, "pushjobname", "kube-state-metrics", `The name of job corresponding to specified metrics`)
+	o.cmd.Flags().StringVar(&o.PushInstance, "pushinstance", getInstanceIpAddress(), `The URL of instance(machine)`)
+	o.cmd.Flags().StringVar(&o.PushGatewayURL, "pushgateway", "", `The URL of the pushgateway`)
 	o.cmd.Flags().BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
 	o.cmd.Flags().BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
 	o.cmd.Flags().BoolVarP(&o.Help, "help", "h", false, "Print Help text")
@@ -171,3 +175,4 @@ func (o *Options) Validate() error {
 	}
 	return nil
 }
+

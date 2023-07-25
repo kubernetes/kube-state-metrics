@@ -17,7 +17,11 @@ limitations under the License.
 package options
 
 import (
+	"fmt"
+	"net"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"qoobing.com/gomod/log"
 )
 
 var (
@@ -56,3 +60,19 @@ var (
 		"volumeattachments":               struct{}{},
 	}
 )
+
+// Get instance ip address
+func getInstanceIpAddress() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Warningf(fmt.Sprintf("getInstanceIpAddress failed: [%s]", err))
+	}
+	for _, addr := range addrs {
+        if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+            if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+            }
+        }
+    }
+	return ""
+}

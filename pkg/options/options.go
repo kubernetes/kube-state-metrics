@@ -56,8 +56,8 @@ type Options struct {
 	TotalShards              int             `yaml:"total_shards"`
 	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
 	PushGatewayURL           string          `yaml:"pushgateway"`
-	PushJobName                  string          `yaml:"pushjobname"`
-	PushInstance                 string          `yaml:"pushinstance"`     
+	PushJobName              string          `yaml:"pushjobname"`
+	PushInstance             string          `yaml:"pushinstance"`     
 	Config string
 
 	cmd *cobra.Command

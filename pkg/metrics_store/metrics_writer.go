@@ -69,6 +69,7 @@ func (m MetricsWriter) Push(pushgateway string) error{
 	}
 	return nil
 }
+
 // WriteAll writes out metrics from the underlying stores to the given writer.
 //
 // WriteAll writes metrics so that the ones with the same name

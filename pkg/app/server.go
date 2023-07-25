@@ -329,7 +329,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		WebSystemdSocket:   new(bool),
 		WebConfigFile:      &tlsConfig,
 	}
-
+	// Start to push the metrics to pushgateway
+	m.PushMetrics()
 	// Run Telemetry server
 	{
 		g.Add(func() error {

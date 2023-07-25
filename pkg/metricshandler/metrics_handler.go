@@ -178,6 +178,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	<-ctx.Done()
 	return ctx.Err()
 }
+
 // Get metrics data and push to pushgateway!
 func (m *MetricsHandler) PushMetrics() {
 	if m.opts.PushGatewayURL == ""{ 

@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
+	"time"
 	"github.com/prometheus/common/expfmt"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -39,6 +39,7 @@ import (
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
+	"qoobing.com/gomod/log"
 )
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
@@ -176,6 +177,30 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	}
 	<-ctx.Done()
 	return ctx.Err()
+}
+// Get metrics data and push to pushgateway!
+func (m *MetricsHandler) PushMetrics() {
+	if m.opts.PushGatewayURL == ""{ 
+		return
+	}
+	pushMetricsURL := m.opts.PushGatewayURL + "/metrics/job/" + m.opts.PushJobName + "/instance/" + m.opts.PushInstance
+	log.Infof("Start to get metrics data and push to pushgateway!")
+	go func(){
+		for{
+			m.mtx.RLock()
+			// get metrics data
+			m.metricsWriters = metricsstore.SanitizeHeaders(m.metricsWriters)
+			for _, w := range m.metricsWriters {
+				err := w.Push(pushMetricsURL)
+				if err != nil {
+					log.Warningf("Fail to push data, err info:<%v>", err)
+				}
+			}
+			m.mtx.RUnlock()
+			log.Infof("Successfully get and push data, do another time in 5 seconds!")
+			time.Sleep(5 * time.Second)
+		}
+	}()
 }
 
 // ServeHTTP implements the http.Handler interface. It writes all generated

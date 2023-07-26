@@ -39,7 +39,7 @@ var (
 	descServiceLabelsDefaultLabels = []string{"namespace", "service", "uid"}
 )
 
-func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string, appendLabelList string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_info",
@@ -54,7 +54,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
-			}),
+			}, appendLabelList),
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_created",
@@ -72,7 +72,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					return &metric.Family{Metrics: []*metric.Metric{&m}}
 				}
 				return &metric.Family{Metrics: []*metric.Metric{}}
-			}),
+			}, appendLabelList),
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_spec_type",
@@ -88,7 +88,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
-			}),
+			}, appendLabelList),
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			descServiceAnnotationsName,
@@ -107,7 +107,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
-			}),
+			}, appendLabelList),
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			descServiceLabelsName,
@@ -126,7 +126,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
-			}),
+			}, appendLabelList),
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_spec_external_ip",
@@ -154,7 +154,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{
 					Metrics: ms,
 				}
-			}),
+			}, appendLabelList),
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_status_load_balancer_ingress",
@@ -182,19 +182,21 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{
 					Metrics: ms,
 				}
-			}),
+			}, appendLabelList),
 		),
 	}
 }
 
-func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.Family {
+func wrapSvcFunc(f func(*v1.Service) *metric.Family, appendLabelList string) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		svc := obj.(*v1.Service)
 
 		metricFamily := f(svc)
 
+		var additionalLabelsKeys, additionalLabelsValues []string = createAdditionalLabels(svc.Labels, appendLabelList)
+
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descServiceLabelsDefaultLabels, []string{svc.Namespace, svc.Name, string(svc.UID)}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(append(descServiceLabelsDefaultLabels, additionalLabelsKeys...), append([]string{svc.Namespace, svc.Name, string(svc.UID)}, additionalLabelsValues...), m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

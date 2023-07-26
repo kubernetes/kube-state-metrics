@@ -255,6 +255,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		return fmt.Errorf("failed to set up labels allowlist: %v", err)
 	}
 
+	storeBuilder.WithAppendLabels(opts.LabelsAppend)
+
 	ksmMetricsRegistry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		collectors.NewGoCollector(),

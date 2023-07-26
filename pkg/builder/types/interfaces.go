@@ -30,7 +30,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
-// BuilderInterface represent all methods that a Builder should implements
+// BuilderInterface represent all methods that a Builder should implement
 type BuilderInterface interface {
 	WithMetrics(r prometheus.Registerer)
 	WithEnabledResources(c []string) error
@@ -44,6 +44,7 @@ type BuilderInterface interface {
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)
 	WithAllowAnnotations(a map[string][]string)
 	WithAllowLabels(l map[string][]string) error
+	WithAppendLabels(l string)
 	WithGenerateStoresFunc(f BuildStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc

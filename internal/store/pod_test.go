@@ -70,6 +70,45 @@ func TestPodStore(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+					Labels: map[string]string{
+						"meta.example.com/owner": "team1",
+						"product":                "frontend1",
+						"nogood":                 "bad",
+						"regex_example":          "foo",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:  "container1",
+							Image: "k8s.gcr.io/hyperkube1_spec",
+						},
+					},
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:        "container1",
+							Image:       "k8s.gcr.io/hyperkube1",
+							ImageID:     "docker://sha256:aaa",
+							ContainerID: "docker://ab123",
+						},
+					},
+				},
+			},
+			AppendLabelsList: "product,regex=meta.example.com/(.*),owner,regex=regex_(.*)",
+			Want: `
+			# HELP kube_pod_container_info [STABLE] Information about a container in a pod.
+			# TYPE kube_pod_container_info gauge
+			kube_pod_container_info{container="container1",container_id="docker://ab123",image="k8s.gcr.io/hyperkube1",image_id="docker://sha256:aaa",image_spec="k8s.gcr.io/hyperkube1_spec",meta_example_com_owner="team1",namespace="ns1",pod="pod1",product="frontend1",regex_example="foo",uid="uid1"} 1`,
+			MetricNames: []string{"kube_pod_container_info"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
 					Namespace: "ns2",
 					UID:       "uid2",
@@ -2139,8 +2178,8 @@ func TestPodStore(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
-		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Func = generator.ComposeMetricGenFuncs(podMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList, c.AppendLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(podMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList, c.AppendLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -2150,7 +2189,7 @@ func TestPodStore(t *testing.T) {
 func BenchmarkPodStore(b *testing.B) {
 	b.ReportAllocs()
 
-	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil))
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil, ""))
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

@@ -85,6 +85,7 @@ type Builder struct {
 	buildCustomResourceStoresFunc ksmtypes.BuildCustomResourceStoresFunc
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
+	appendLabelsList              string
 	useAPIServerCache             bool
 	utilOptions                   *options.Options
 }
@@ -249,6 +250,11 @@ func (b *Builder) WithAllowLabels(labels map[string][]string) error {
 		}
 	}
 	return nil
+}
+
+// WithAppendLabels configures a custom append labels function
+func (b *Builder) WithAppendLabels(l string) {
+	b.appendLabelsList = l
 }
 
 // Build initializes and registers all enabled stores.
@@ -443,7 +449,7 @@ func (b *Builder) buildServiceAccountStores() []cache.Store {
 }
 
 func (b *Builder) buildServiceStores() []cache.Store {
-	return b.buildStoresFunc(serviceMetricFamilies(b.allowAnnotationsList["services"], b.allowLabelsList["services"]), &v1.Service{}, createServiceListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(serviceMetricFamilies(b.allowAnnotationsList["services"], b.allowLabelsList["services"], b.appendLabelsList), &v1.Service{}, createServiceListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildStatefulSetStores() []cache.Store {
@@ -455,7 +461,7 @@ func (b *Builder) buildStorageClassStores() []cache.Store {
 }
 
 func (b *Builder) buildPodStores() []cache.Store {
-	return b.buildStoresFunc(podMetricFamilies(b.allowAnnotationsList["pods"], b.allowLabelsList["pods"]), &v1.Pod{}, createPodListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(podMetricFamilies(b.allowAnnotationsList["pods"], b.allowLabelsList["pods"], b.appendLabelsList), &v1.Pod{}, createPodListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildCsrStores() []cache.Store {

@@ -86,6 +86,51 @@ func TestServiceStore(t *testing.T) {
 			},
 		},
 		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service1",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					UID:               "uid1",
+					Labels: map[string]string{
+						"meta.example.com/owner": "team1",
+						"product":                "frontend1",
+						"nogood":                 "bad",
+						"regex_example":          "foo",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					ClusterIP: "1.2.3.4",
+					Type:      v1.ServiceTypeClusterIP,
+				},
+			},
+			AppendLabelsList: "product,regex=meta.example.com/(.*),owner,regex=regex_(.*)",
+			Want: `
+				# HELP kube_service_annotations Kubernetes annotations converted to Prometheus labels.
+				# HELP kube_service_created [STABLE] Unix creation timestamp
+				# HELP kube_service_info [STABLE] Information about service.
+				# HELP kube_service_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+				# HELP kube_service_spec_type [STABLE] Type about service.
+				# TYPE kube_service_annotations gauge
+				# TYPE kube_service_created gauge
+				# TYPE kube_service_info gauge
+				# TYPE kube_service_labels gauge
+				# TYPE kube_service_spec_type gauge
+				kube_service_annotations{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1
+				kube_service_created{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1.5e+09
+				kube_service_info{cluster_ip="1.2.3.4",external_name="",load_balancer_ip="",meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1
+				kube_service_labels{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1
+				kube_service_spec_type{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",type="ClusterIP",uid="uid1"} 1
+`,
+			MetricNames: []string{
+				"kube_service_annotations",
+				"kube_service_created",
+				"kube_service_info",
+				"kube_service_labels",
+				"kube_service_spec_type",
+			},
+		},
+		{
 
 			Obj: &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
@@ -214,8 +259,8 @@ func TestServiceStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(serviceMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(serviceMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(serviceMetricFamilies(nil, nil, c.AppendLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(serviceMetricFamilies(nil, nil, c.AppendLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

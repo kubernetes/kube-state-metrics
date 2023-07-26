@@ -215,3 +215,48 @@ func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
 
 	return keys, values
 }
+
+func createAdditionalLabels(labels map[string]string, allowLabelsList string) ([]string, []string) {
+	var additionalLabelsKeys, additionalLabelsValues []string
+	for k, v := range labels {
+		if !allowLabelsMatchRegex(strings.Split(allowLabelsList, ","), k) {
+			continue
+		}
+		additionalLabelsKeys = append(additionalLabelsKeys, SanitizeLabelName(k))
+		additionalLabelsValues = append(additionalLabelsValues, v)
+	}
+	return additionalLabelsKeys, additionalLabelsValues
+}
+
+func allowLabelsMatchRegex(allowLabelsList []string, k string) bool {
+	for _, allowLabel := range allowLabelsList {
+		if strings.HasPrefix(allowLabel, "regex=") {
+			regex := strings.TrimPrefix(allowLabel, "regex=")
+			if regexMatchString(regex, k) {
+				return true
+			}
+		}
+		if contains(allowLabelsList, k) {
+			return true
+		}
+	}
+	return false
+}
+
+func regexMatchString(regex string, s string) bool {
+	re, err := regexp.Compile(regex)
+	if err != nil {
+		fmt.Println("error in regex", err)
+		return false
+	}
+	return re.MatchString(s)
+}
+
+func contains(list []string, k string) bool {
+	for _, v := range list {
+		if v == k {
+			return true
+		}
+	}
+	return false
+}

@@ -34,6 +34,7 @@ type generateMetricsTestCase struct {
 	MetricNames          []string
 	AllowAnnotationsList []string
 	AllowLabelsList      []string
+	AppendLabelsList     string
 	Want                 string
 	Headers              []string
 	Func                 func(interface{}) []metric.FamilyInterface

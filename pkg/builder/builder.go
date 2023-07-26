@@ -110,6 +110,11 @@ func (b *Builder) WithAllowLabels(l map[string][]string) error {
 	return b.internal.WithAllowLabels(l)
 }
 
+// WithAppendLabels configures which labels can be returned for all metrics
+func (b *Builder) WithAppendLabels(l string) {
+	b.internal.WithAppendLabels(l)
+}
+
 // WithGenerateStoresFunc configures a custom generate store function
 func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
 	b.internal.WithGenerateStoresFunc(f)

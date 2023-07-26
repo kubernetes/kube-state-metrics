@@ -276,6 +276,40 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 `,
 			MetricNames: []string{"kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition"},
 		},
+		{
+			Obj: &v1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "terminating-data",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				},
+				Spec: v1.PersistentVolumeClaimSpec{
+					AccessModes: []v1.PersistentVolumeAccessMode{
+						v1.ReadWriteOnce,
+					},
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceStorage: resource.MustParse("1Gi"),
+						},
+					},
+					VolumeName: "pvc-postgresql-data",
+				},
+				Status: v1.PersistentVolumeClaimStatus{
+					Phase: v1.ClaimBound,
+				},
+			},
+			Want: `
+				# HELP kube_persistentvolumeclaim_deletion_timestamp Unix deletion timestamp
+				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
+				# TYPE kube_persistentvolumeclaim_deletion_timestamp gauge
+				# TYPE kube_persistentvolumeclaim_status_phase gauge
+				kube_persistentvolumeclaim_deletion_timestamp{namespace="",persistentvolumeclaim="terminating-data"} 1.8e+09
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="terminating-data",phase="Bound"} 1
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="terminating-data",phase="Lost"} 0
+				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="terminating-data",phase="Pending"} 0
+`,
+			MetricNames: []string{"kube_persistentvolumeclaim_deletion_timestamp", "kube_persistentvolumeclaim_status_phase"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

@@ -2066,6 +2066,26 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_tolerations",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					ServiceAccountName: "service-account-name",
+				},
+			},
+			Want: `
+				# HELP kube_pod_service_account The service account for a pod.
+				# TYPE kube_pod_service_account gauge
+				kube_pod_service_account{namespace="ns1",pod="pod1",service_account="service-account-name",uid="uid1"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_service_account",
+			},
+		},
 	}
 
 	for i, c := range cases {
@@ -2161,7 +2181,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 50
+	expectedFamilies := 51
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

@@ -43,6 +43,9 @@ var (
 	descPersistentVolumeLabelsName          = "kube_persistentvolume_labels"
 	descPersistentVolumeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descPersistentVolumeLabelsDefaultLabels = []string{"persistentvolume"}
+
+	descPersistentVolumeCSIAttributesName = "kube_persistentvolume_csi_attributes"
+	descPersistentVolumeCSIAttributesHelp = "CSI attributes of the Persistent Volume."
 )
 
 func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -346,6 +349,46 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 
 				return &metric.Family{
 					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewOptInFamilyGenerator(
+			descPersistentVolumeCSIAttributesName,
+			descPersistentVolumeCSIAttributesHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				if p.Spec.CSI == nil {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
+
+				var csiMounter, csiMapOptions string
+				for k, v := range p.Spec.PersistentVolumeSource.CSI.VolumeAttributes {
+					// storage attributes handled by external CEPH CSI driver
+					if k == "mapOptions" {
+						csiMapOptions = v
+					} else if k == "mounter" {
+						csiMounter = v
+					}
+				}
+
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys: []string{
+								"csi_mounter",
+								"csi_map_options",
+							},
+							LabelValues: []string{
+								csiMounter,
+								csiMapOptions,
+							},
+							Value: 1,
+						},
+					},
 				}
 			}),
 		),

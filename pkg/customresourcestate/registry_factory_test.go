@@ -210,6 +210,23 @@ func Test_values(t *testing.T) {
 		}, wantResult: nil, wantErrors: []error{
 			errors.New("[foo]: got nil while resolving path"),
 		}},
+		{name: "exist path but valueFrom path is non-existent single", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec", "replicas"),
+			},
+			ValueFrom: mustCompilePath(t, "non-existent"),
+		}, wantResult: nil, wantErrors: nil,
+		},
+		{name: "exist path but valueFrom path non-existent array", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "condition_values"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "non-existent"),
+		}, wantResult: nil, wantErrors: nil,
+		},
 		{name: "array", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "condition_values"),

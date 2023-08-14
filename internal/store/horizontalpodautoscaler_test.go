@@ -210,8 +210,6 @@ func TestHPAStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_horizontalpodautoscaler_info{horizontalpodautoscaler="hpa1",namespace="ns1",scaletargetref_api_version="apps/v1",scaletargetref_kind="Deployment",scaletargetref_name="deployment1"} 1
-				kube_horizontalpodautoscaler_annotations{horizontalpodautoscaler="hpa1",namespace="ns1"} 1
-				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa1",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 4
 				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
@@ -389,7 +387,6 @@ func TestHPAStore(t *testing.T) {
 			Want: metadata + `
 				kube_horizontalpodautoscaler_info{horizontalpodautoscaler="hpa2",namespace="ns1",scaletargetref_kind="Deployment",scaletargetref_name="deployment1"} 1
 				kube_horizontalpodautoscaler_annotations{annotation_app_k8s_io_owner="@foo",horizontalpodautoscaler="hpa2",namespace="ns1"} 1
-				kube_horizontalpodautoscaler_labels{horizontalpodautoscaler="hpa2",namespace="ns1"} 1
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 4
 				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2

@@ -82,6 +82,9 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			basemetrics.ALPHA,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -102,6 +105,9 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

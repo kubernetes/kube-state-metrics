@@ -144,7 +144,6 @@ func TestEndpointSliceStore(t *testing.T) {
 					# TYPE kube_endpointslice_annotations gauge
 					# TYPE kube_endpointslice_labels gauge
 					kube_endpointslice_annotations{endpointslice="test_endpointslice-labels",annotation_foo="baz"} 1
-					kube_endpointslice_labels{endpointslice="test_endpointslice-labels"} 1
 				`,
 			MetricNames: []string{
 				"kube_endpointslice_annotations", "kube_endpointslice_labels",

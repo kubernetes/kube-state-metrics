@@ -164,6 +164,9 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 		basemetrics.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			if len(allowAnnotationsList) == 0 {
+				return &metric.Family{}
+			}
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -186,6 +189,9 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 		basemetrics.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			if len(allowLabelsList) == 0 {
+				return &metric.Family{}
+			}
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{

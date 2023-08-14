@@ -1826,7 +1826,6 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_pod_labels gauge
-				kube_pod_labels{namespace="ns1",pod="pod1",uid="uid1"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_labels",

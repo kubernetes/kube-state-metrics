@@ -174,8 +174,8 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
-						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+						metric.LabelKeys = []string{"reason", "condition", "status"}
+						metric.LabelValues = append([]string{c.Reason, string(c.Type)}, metric.LabelValues...)
 						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}

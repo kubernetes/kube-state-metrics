@@ -85,6 +85,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusQosClassFamilyGenerator(),
 		createPodStatusReadyFamilyGenerator(),
 		createPodStatusReadyTimeFamilyGenerator(),
+		createPodStatusInitializedTimeFamilyGenerator(),
 		createPodStatusContainerReadyTimeFamilyGenerator(),
 		createPodStatusReasonFamilyGenerator(),
 		createPodStatusScheduledFamilyGenerator(),
@@ -1327,6 +1328,33 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 					LabelKeys:   []string{"phase"},
 					LabelValues: []string{p.n},
 					Value:       boolFloat64(p.v),
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodStatusInitializedTimeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_status_initialized_time",
+		"Initialized time in unix timestamp for a pod.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, c := range p.Status.Conditions {
+				if c.Type == v1.PodInitialized && c.Status == v1.ConditionTrue {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64((c.LastTransitionTime).Unix()),
+					})
 				}
 			}
 

@@ -477,6 +477,9 @@ Examples:
 # indexing an array
 [spec, order, "0", value]                # spec.order[0].value = true
 
+# indexing a string array
+["."]
+
 # finding an element in a list by key=value  
 [status, conditions, "[name=a]", value]  # status.conditions[0].value = 45
 

@@ -88,6 +88,10 @@ func init() {
 					"status": "False",
 				},
 			},
+			"namespaces": Array{
+				"foo",
+				"bar",
+			},
 		},
 		"metadata": Obj{
 			"name": "foo",
@@ -161,6 +165,17 @@ func Test_values(t *testing.T) {
 	}
 
 	tests := []tc{
+		{name: "info labels from namespaces", each: &compiledInfo{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "namespaces"),
+				labelFromPath: map[string]valuePath{
+					"namespace": mustCompilePath(t, "."),
+				},
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "namespace", "bar"),
+			newEachValue(t, 1, "namespace", "foo"),
+		}},
 		{name: "single", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "spec", "replicas"),

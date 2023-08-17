@@ -192,7 +192,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		}
 		valueFromPath, err := compilePath(m.StateSet.ValueFrom)
 		if err != nil {
-			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
+			return nil, fmt.Errorf("each.stateSet.valueFrom: %w", err)
 		}
 		return &compiledStateSet{
 			compiledCommon: *cc,
@@ -630,6 +630,10 @@ func compilePath(path []string) (out valuePath, _ error) {
 							return fmt.Errorf("list index out of range: %s", part)
 						}
 						return s[i]
+					} else if s, ok := m.(string); ok {
+						if strings.Contains(path[len(path)-1], ".") {
+							return s
+						}
 					}
 					return nil
 				},

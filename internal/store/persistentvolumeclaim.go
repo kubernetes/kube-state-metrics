@@ -89,11 +89,17 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				storageClassName := getPersistentVolumeClaimClass(p)
 				volumeName := p.Spec.VolumeName
+
+				volumeMode := ""
+				if p.Spec.VolumeMode != nil {
+					volumeMode = string(*p.Spec.VolumeMode)
+				}
+
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"storageclass", "volumename"},
-							LabelValues: []string{storageClassName, volumeName},
+							LabelKeys:   []string{"storageclass", "volumename", "volumemode"},
+							LabelValues: []string{storageClassName, volumeName, volumeMode},
 							Value:       1,
 						},
 					},

@@ -29,6 +29,7 @@ import (
 
 func TestPersistentVolumeClaimStore(t *testing.T) {
 	storageClassName := "rbd"
+	volumeMode := v1.PersistentVolumeBlock
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
@@ -56,6 +57,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 						},
 					},
 					VolumeName: "pvc-mysql-data",
+					VolumeMode: &volumeMode,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimBound,
@@ -84,7 +86,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
 				kube_persistentvolumeclaim_created{namespace="default",persistentvolumeclaim="mysql-data"} 1.5e+09
-				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data"} 1
+				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Bound"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Pending"} 0
@@ -128,6 +130,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 						},
 					},
 					VolumeName: "pvc-mysql-data",
+					VolumeMode: &volumeMode,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimBound,
@@ -156,7 +159,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
 				kube_persistentvolumeclaim_created{namespace="default",persistentvolumeclaim="mysql-data"} 1.5e+09
-				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data"} 1
+				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Bound"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Pending"} 0
@@ -189,6 +192,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 					},
 					StorageClassName: &storageClassName,
 					VolumeName:       "pvc-prometheus-data",
+					VolumeMode:       &volumeMode,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimPending,
@@ -210,7 +214,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
 				kube_persistentvolumeclaim_created{namespace="default",persistentvolumeclaim="prometheus-data"} 1.5e+09
-				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",volumename="pvc-prometheus-data"} 1
+				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",volumename="pvc-prometheus-data",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Pending"} 1
@@ -229,6 +233,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						v1.ReadWriteOnce,
 					},
+					VolumeMode: &volumeMode,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimLost,
@@ -257,7 +262,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
 				kube_persistentvolumeclaim_created{namespace="",persistentvolumeclaim="mongo-data"} 1.5e+09
-				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="",volumename=""} 1
+				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="",volumename="",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Lost"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Pending"} 0
@@ -293,6 +298,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 						},
 					},
 					VolumeName: "pvc-postgresql-data",
+					VolumeMode: &volumeMode,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimBound,

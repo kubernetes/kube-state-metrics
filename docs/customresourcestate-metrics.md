@@ -109,6 +109,10 @@ spec:
         - id: 3
           value: false
     replicas: 1
+    refs:
+        - my_other_foo
+        - foo_2
+        - foo_with_extensions
 status:
     phase: Pending
     active:
@@ -207,6 +211,42 @@ Produces the following metrics:
 ```prometheus
 kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 2
 kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 4
+```
+
+#### Non-map Arrays
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      labelsFromPath:
+        name: [metadata, name]
+      metrics:
+        - name: "ref_info"
+          help: "Reference to other Foo"
+          each:
+            type: Info
+            info:
+              # targeting an array will produce a metric for each element
+              # labelsFromPath and value are relative to this path
+              path: [spec, refs]
+
+              # if path targets a list of values (e.g. strings or numbers, not objects or maps), individual values can
+              # referenced by a label using this syntax
+              labelsFromPath:
+                ref: []
+```
+
+Produces the following metrics:
+
+```prometheus
+kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="my_other_foo"} 1
+kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="foo_2"} 1
+kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="foo_with_extensions"} 1
 ```
 
 #### VerticalPodAutoscaler

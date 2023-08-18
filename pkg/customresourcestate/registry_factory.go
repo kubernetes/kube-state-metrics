@@ -72,6 +72,10 @@ func compileCommon(c MetricMeta) (*compiledCommon, error) {
 func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 	labels := resource.Labels.Merge(f.Labels)
 
+	if f.Each.Type == MetricTypeInfo && !strings.HasSuffix(f.Name, "_info") {
+		klog.InfoS("Info metric does not have _info suffix", "gvk", resource.GroupVersionKind.String(), "name", f.Name)
+	}
+
 	metric, err := newCompiledMetric(f.Each)
 	if err != nil {
 		return nil, fmt.Errorf("compiling metric: %w", err)

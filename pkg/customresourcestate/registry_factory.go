@@ -282,6 +282,9 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				onError(fmt.Errorf("[%d]: %w", i, err))
 				continue
 			}
+			if value == nil {
+				continue
+			}
 			addPathLabels(it, c.LabelFromPath(), value.Labels)
 			result = append(result, *value)
 		}
@@ -289,6 +292,9 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 		value, err := c.value(v)
 		if err != nil {
 			onError(err)
+			break
+		}
+		if value == nil {
 			break
 		}
 		addPathLabels(v, c.LabelFromPath(), value.Labels)

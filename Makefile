@@ -15,8 +15,8 @@ GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
-PROMETHEUS_VERSION = 2.40.6
-GO_VERSION = 1.19.4
+PROMETHEUS_VERSION = 2.45.0
+GO_VERSION = 1.20.6
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
@@ -66,7 +66,8 @@ build-local:
 build: kube-state-metrics
 
 kube-state-metrics:
-	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} make build-local
+	# Need to update git setting to prevent failing builds due to https://github.com/docker-library/golang/issues/452
+	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} git config --global --add safe.directory "*" && make build-local
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
@@ -133,7 +134,7 @@ examples/prometheus-alerting-rules/alerts.yaml: jsonnet $(shell find jsonnet | g
 	mkdir -p examples/prometheus-alerting-rules
 	jsonnet -J scripts/vendor scripts/mixin.jsonnet | gojsontoyaml > examples/prometheus-alerting-rules/alerts.yaml
 
-examples: examples/standard examples/autosharding mixin
+examples: examples/standard examples/autosharding examples/daemonsetsharding mixin
 
 examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor VERSION
 	mkdir -p examples/standard
@@ -143,6 +144,11 @@ examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/sta
 examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/autosharding.jsonnet scripts/vendor VERSION
 	mkdir -p examples/autosharding
 	jsonnet -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	find examples -type f ! -name '*.yaml' -delete
+
+examples/daemonsetsharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/daemonsetsharding.jsonnet scripts/vendor VERSION
+	mkdir -p examples/daemonsetsharding
+	jsonnet -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json

@@ -63,10 +63,10 @@ func TestBuilderWithCustomStore(t *testing.T) {
 	}
 }
 
-func customStore(metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
-	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
-	useAPIServerCache bool,
+func customStore(_ []generator.FamilyGenerator,
+	_ interface{},
+	_ func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	_ bool,
 ) []cache.Store {
 	stores := make([]cache.Store, 0, 2)
 	stores = append(stores, newFakeStore(fakeMetricLists[0]))
@@ -84,15 +84,15 @@ type fakeStore struct {
 	metrics []string
 }
 
-func (s *fakeStore) Add(obj interface{}) error {
+func (s *fakeStore) Add(_ interface{}) error {
 	return nil
 }
 
-func (s *fakeStore) Update(obj interface{}) error {
+func (s *fakeStore) Update(_ interface{}) error {
 	return nil
 }
 
-func (s *fakeStore) Delete(obj interface{}) error {
+func (s *fakeStore) Delete(_ interface{}) error {
 	return nil
 }
 
@@ -109,15 +109,15 @@ func (s *fakeStore) ListKeys() []string {
 	return nil
 }
 
-func (s *fakeStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
+func (s *fakeStore) Get(_ interface{}) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
-func (s *fakeStore) GetByKey(key string) (item interface{}, exists bool, err error) {
+func (s *fakeStore) GetByKey(_ string) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
-func (s *fakeStore) Replace(list []interface{}, _ string) error {
+func (s *fakeStore) Replace(_ []interface{}, _ string) error {
 	return nil
 }
 

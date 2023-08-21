@@ -1,3 +1,4 @@
+
 {
   local ksm = self,
   name:: error 'must set namespace',
@@ -184,9 +185,11 @@
       ],
       securityContext: {
         runAsUser: 65534,
+        runAsNonRoot: true,
         allowPrivilegeEscalation: false,
         readOnlyRootFilesystem: true,
         capabilities: { drop: ['ALL'] },
+        seccompProfile: { type: 'RuntimeDefault' },
       },
       livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 8080,
@@ -340,4 +343,83 @@
     clusterRole: ksm.clusterRole,
     clusterRoleBinding: ksm.clusterRoleBinding,
   },
+  daemonsetsharding:: {
+    local shardksmname = ksm.name + "-shard",
+		daemonsetService: std.mergePatch(ksm.service,
+       {
+				 metadata: {
+					 name: shardksmname,
+					 labels: {'app.kubernetes.io/name': shardksmname}
+				 },
+			   spec: {selector: {'app.kubernetes.io/name': shardksmname}},
+			 }
+		),
+    deployment:
+      // extending the default container from above
+      local c = ksm.deployment.spec.template.spec.containers[0] {
+        args: [
+          '--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments',
+        ],
+      };
+      std.mergePatch(ksm.deployment,
+        {
+          spec: {
+            template: {
+              spec: {
+                containers: [c],
+              },
+            },
+          },
+        },
+      ),
+
+    daemonset:
+      // extending the default container from above
+      local c0 = ksm.deployment.spec.template.spec.containers[0] {
+        args: [
+          '--resources=pods',
+          '--node=$(NODE_NAME)',
+        ],
+        env: [
+          { name: 'NODE_NAME', valueFrom: { fieldRef: { apiVersion: 'v1', fieldPath: 'spec.nodeName' } } },
+        ],
+      };
+
+      local c = std.mergePatch(c0, {name: shardksmname});
+
+      local ksmLabels =  std.mergePatch(ksm.commonLabels + ksm.extraRecommendedLabels, {'app.kubernetes.io/name': shardksmname});
+      local ksmPodLabels =  std.mergePatch(ksm.podLabels, {'app.kubernetes.io/name': shardksmname});
+
+      {
+        apiVersion: 'apps/v1',
+        kind: 'DaemonSet',
+        metadata: {
+          namespace: ksm.namespace,
+          labels: ksmLabels,
+					name: shardksmname,
+        },
+        spec: {
+          selector: { matchLabels: ksmPodLabels },
+          template: {
+            metadata: {
+              labels: ksmLabels,
+            },
+            spec: {
+              containers: [c],
+              serviceAccountName: ksm.serviceAccount.metadata.name,
+              automountServiceAccountToken: true,
+              nodeSelector: { 'kubernetes.io/os': 'linux' },
+            },
+          },
+        },
+      },
+
+  } + {
+    deploymentService: ksm.service,
+    serviceAccount: ksm.serviceAccount,
+    clusterRole: ksm.clusterRole,
+    clusterRoleBinding: ksm.clusterRoleBinding,
+  },
 }
+
+

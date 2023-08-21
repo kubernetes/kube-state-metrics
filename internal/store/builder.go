@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -37,8 +38,10 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	vpaautoscaling "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
-	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -49,8 +52,15 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/sharding"
+	"k8s.io/kube-state-metrics/v2/pkg/util"
 	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
+
+// ResourceDiscoveryTimeout is the timeout for the resource discovery.
+const ResourceDiscoveryTimeout = 10 * time.Second
+
+// ResourceDiscoveryInterval is the interval for the resource discovery.
+const ResourceDiscoveryInterval = 100 * time.Millisecond
 
 // Make sure the internal Builder implements the public BuilderInterface.
 // New Builder methods should be added to the public BuilderInterface.
@@ -61,7 +71,6 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 type Builder struct {
 	kubeClient            clientset.Interface
 	customResourceClients map[string]interface{}
-	vpaClient             vpaclientset.Interface
 	namespaces            options.NamespaceList
 	// namespaceFilter is inside fieldSelectorFilter
 	fieldSelectorFilter           string
@@ -77,12 +86,21 @@ type Builder struct {
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
 	useAPIServerCache             bool
+	utilOptions                   *options.Options
 }
 
 // NewBuilder returns a new builder.
 func NewBuilder() *Builder {
 	b := &Builder{}
 	return b
+}
+
+// WithUtilOptions sets the utilOptions property of a Builder.
+// These are the options that are necessary for the util package.
+func (b *Builder) WithUtilOptions(opts *options.Options) {
+	b.utilOptions = options.NewOptions()
+	b.utilOptions.Apiserver = opts.Apiserver
+	b.utilOptions.Kubeconfig = opts.Kubeconfig
 }
 
 // WithMetrics sets the metrics property of a Builder.
@@ -93,18 +111,18 @@ func (b *Builder) WithMetrics(r prometheus.Registerer) {
 
 // WithEnabledResources sets the enabledResources property of a Builder.
 func (b *Builder) WithEnabledResources(r []string) error {
-	for _, col := range r {
-		if !resourceExists(col) {
-			return fmt.Errorf("resource %s does not exist. Available resources: %s", col, strings.Join(availableResources(), ","))
+	for _, resource := range r {
+		if !resourceExists(resource) {
+			return fmt.Errorf("resource %s does not exist. Available resources: %s", resource, strings.Join(availableResources(), ","))
 		}
 	}
 
-	var copy []string
-	copy = append(copy, r...)
+	var sortedResources []string
+	sortedResources = append(sortedResources, r...)
 
-	sort.Strings(copy)
+	sort.Strings(sortedResources)
 
-	b.enabledResources = copy
+	b.enabledResources = append(b.enabledResources, sortedResources...)
 	return nil
 }
 
@@ -141,11 +159,6 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.kubeClient = c
-}
-
-// WithVPAClient sets the vpaClient property of a Builder so that the verticalpodautoscaler collector can query VPA objects.
-func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
-	b.vpaClient = c
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
@@ -188,13 +201,20 @@ func (b *Builder) DefaultGenerateCustomResourceStoresFunc() ksmtypes.BuildCustom
 func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory) {
 	for i := range fs {
 		f := fs[i]
-		if _, ok := availableStores[f.Name()]; ok {
-			klog.InfoS("The internal resource store already exists and is overridden by a custom resource store with the same name, please make sure it meets your expectation", "registryName", f.Name())
+		gvr := util.GVRFromType(f.Name(), f.ExpectedType())
+		var gvrString string
+		if gvr != nil {
+			gvrString = gvr.String()
+		} else {
+			gvrString = f.Name()
 		}
-		availableStores[f.Name()] = func(b *Builder) []cache.Store {
+		if _, ok := availableStores[gvrString]; ok {
+			klog.InfoS("Updating store", "GVR", gvrString)
+		}
+		availableStores[gvrString] = func(b *Builder) []cache.Store {
 			return b.buildCustomResourceStoresFunc(
 				f.Name(),
-				f.MetricFamilyGenerators(b.allowAnnotationsList[f.Name()], b.allowLabelsList[f.Name()]),
+				f.MetricFamilyGenerators(),
 				f.ExpectedType(),
 				f.ListWatch,
 				b.useAPIServerCache,
@@ -251,7 +271,9 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 		}
 	}
 
-	klog.InfoS("Active resources", "activeStoreNames", strings.Join(activeStoreNames, ","))
+	if len(activeStoreNames) > 0 {
+		klog.InfoS("Active resources", "activeStoreNames", strings.Join(activeStoreNames, ","))
+	}
 
 	return metricsWriters
 }
@@ -317,7 +339,6 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"storageclasses":                  func(b *Builder) []cache.Store { return b.buildStorageClassStores() },
 	"validatingwebhookconfigurations": func(b *Builder) []cache.Store { return b.buildValidatingWebhookConfigurationStores() },
 	"volumeattachments":               func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
-	"verticalpodautoscalers":          func(b *Builder) []cache.Store { return b.buildVPAStores() },
 }
 
 func resourceExists(name string) bool {
@@ -449,10 +470,6 @@ func (b *Builder) buildVolumeAttachmentStores() []cache.Store {
 	return b.buildStoresFunc(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache)
 }
 
-func (b *Builder) buildVPAStores() []cache.Store {
-	return b.buildStoresFunc(vpaMetricFamilies(b.allowAnnotationsList["verticalpodautoscalers"], b.allowLabelsList["verticalpodautoscalers"]), &vpaautoscaling.VerticalPodAutoscaler{}, createVPAListWatchFunc(b.vpaClient), b.useAPIServerCache)
-}
-
 func (b *Builder) buildLeasesStores() []cache.Store {
 	return b.buildStoresFunc(leaseMetricFamilies, &coordinationv1.Lease{}, createLeaseListWatch, b.useAPIServerCache)
 }
@@ -526,9 +543,20 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 ) []cache.Store {
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
-	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
 
-	customResourceClient, ok := b.customResourceClients[resourceName]
+	var familyHeaders []string
+	if b.hasResources(resourceName, expectedType) {
+		familyHeaders = generator.ExtractMetricFamilyHeaders(metricFamilies)
+	}
+
+	gvr := util.GVRFromType(resourceName, expectedType)
+	var gvrString string
+	if gvr != nil {
+		gvrString = gvr.String()
+	} else {
+		gvrString = resourceName
+	}
+	customResourceClient, ok := b.customResourceClients[gvrString]
 	if !ok {
 		klog.InfoS("Custom resource client does not exist", "resourceName", resourceName)
 		return []cache.Store{}
@@ -560,6 +588,65 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 	}
 
 	return stores
+}
+
+func (b *Builder) hasResources(resourceName string, expectedType interface{}) bool {
+	gvr := util.GVRFromType(resourceName, expectedType)
+	if gvr == nil {
+		return true
+	}
+	discoveryClient, err := util.CreateDiscoveryClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	if err != nil {
+		klog.ErrorS(err, "Failed to create discovery client")
+		return false
+	}
+	g := gvr.Group
+	v := gvr.Version
+	r := gvr.Resource
+	isCRDInstalled, err := discovery.IsResourceEnabled(discoveryClient, schema.GroupVersionResource{
+		Group:    g,
+		Version:  v,
+		Resource: r,
+	})
+	if err != nil {
+		klog.ErrorS(err, "Failed to check if CRD is enabled", "group", g, "version", v, "resource", r)
+		return false
+	}
+	if !isCRDInstalled {
+		klog.InfoS("CRD is not installed", "group", g, "version", v, "resource", r)
+		return false
+	}
+	// Wait for the resource to come up.
+	timer := time.NewTimer(ResourceDiscoveryTimeout)
+	ticker := time.NewTicker(ResourceDiscoveryInterval)
+	dynamicClient, err := util.CreateDynamicClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	if err != nil {
+		klog.ErrorS(err, "Failed to create dynamic client")
+		return false
+	}
+	var list *unstructured.UnstructuredList
+	for range ticker.C {
+		select {
+		case <-timer.C:
+			klog.InfoS("No CRs found for GVR", "group", g, "version", v, "resource", r)
+			return false
+		default:
+			list, err = dynamicClient.Resource(schema.GroupVersionResource{
+				Group:    g,
+				Version:  v,
+				Resource: r,
+			}).List(b.ctx, metav1.ListOptions{})
+			if err != nil {
+				klog.ErrorS(err, "Failed to list objects", "group", g, "version", v, "resource", r)
+				return false
+			}
+		}
+		if len(list.Items) > 0 {
+			break
+		}
+	}
+
+	return true
 }
 
 // startReflector starts a Kubernetes client-go reflector with the given

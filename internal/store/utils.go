@@ -123,10 +123,11 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 }
 
 func labelName(prefix, labelName string) string {
-	return prefix + "_" + lintLabelName(sanitizeLabelName(labelName))
+	return prefix + "_" + lintLabelName(SanitizeLabelName(labelName))
 }
 
-func sanitizeLabelName(s string) string {
+// SanitizeLabelName replaces all invalid characters with an underscore.
+func SanitizeLabelName(s string) string {
 	return invalidLabelCharRE.ReplaceAllString(s, "_")
 }
 

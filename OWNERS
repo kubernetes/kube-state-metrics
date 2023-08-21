@@ -1,17 +1,17 @@
 reviewers:
   - CatherineF-dev
   - dgrisonnet
-  - fpetkovski
   - logicalhan
   - mrueg
   - rexagod
 approvers:
   - dgrisonnet
-  - fpetkovski
   - mrueg
+  - rexagod
 emeritus_approvers:
   - LiliC
   - andyxning
   - brancz
   - tariq1890
   - zouyee
+  - fpetkovski

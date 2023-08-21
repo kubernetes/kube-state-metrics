@@ -39,7 +39,7 @@ var (
 	descJobLabelsName          = "kube_job_labels"
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
-	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadLineExceeded", "Evicted"}
+	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadlineExceeded", "Evicted"}
 )
 
 func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {

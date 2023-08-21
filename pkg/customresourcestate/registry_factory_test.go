@@ -18,6 +18,7 @@ package customresourcestate
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -63,7 +64,10 @@ func init() {
 					"ready":  4,
 				},
 			},
-			"uptime": 43.21,
+			"uptime":            43.21,
+			"quantity_milli":    "250m",
+			"quantity_binarySI": "5Gi",
+			"percentage":        "28%",
 			"condition_values": Array{
 				Obj{
 					"name":  "a",
@@ -94,6 +98,7 @@ func init() {
 				"qux": "quxx",
 				"bar": "baz",
 			},
+			"percentage":        "39%",
 			"creationTimestamp": "2022-06-28T00:00:00Z",
 		},
 	})
@@ -192,8 +197,36 @@ func Test_values(t *testing.T) {
 			},
 			ValueFrom: mustCompilePath(t, "creationTimestamp"),
 		}, wantResult: []eachValue{
-			newEachValue(t, 1.6563744e+09),
+			newEachValue(t, 1.6563744e+09, "name", "foo"),
 		}},
+		{name: "non-existent path", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "foo"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "creationTimestamp"),
+		}, wantResult: nil, wantErrors: []error{
+			errors.New("[foo]: got nil while resolving path"),
+		}},
+		{name: "exist path but valueFrom path is non-existent single", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec", "replicas"),
+			},
+			ValueFrom: mustCompilePath(t, "non-existent"),
+		}, wantResult: nil, wantErrors: nil,
+		},
+		{name: "exist path but valueFrom path non-existent array", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "condition_values"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "non-existent"),
+		}, wantResult: nil, wantErrors: nil,
+		},
 		{name: "array", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "condition_values"),
@@ -212,6 +245,38 @@ func Test_values(t *testing.T) {
 			},
 		}, wantResult: []eachValue{
 			newEachValue(t, 1656374400),
+		}},
+		{name: "quantity_milli", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "quantity_milli"),
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 0.25),
+		}},
+		{name: "quantity_binarySI", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "quantity_binarySI"),
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 5.36870912e+09),
+		}},
+		{name: "percentage", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "percentage"),
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 0.28),
+		}},
+		{name: "path-relative valueFrom percentage", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "metadata"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "percentage"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 0.39, "name", "foo"),
 		}},
 		{name: "boolean_string", each: &compiledGauge{
 			compiledCommon: compiledCommon{
@@ -243,6 +308,17 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "type", "type-a"),
 			newEachValue(t, 1, "type", "type-b"),
+		}},
+		{name: "info label from path", each: &compiledInfo{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "sub"),
+				labelFromPath: map[string]valuePath{
+					"active": mustCompilePath(t, "active"),
+				},
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "active", "1"),
+			newEachValue(t, 1, "active", "3"),
 		}},
 		{name: "stateset", each: &compiledStateSet{
 			compiledCommon: compiledCommon{

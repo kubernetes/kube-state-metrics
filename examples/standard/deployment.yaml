@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/version: 2.7.0
+    app.kubernetes.io/version: 2.9.2
   name: kube-state-metrics
   namespace: kube-system
 spec:
@@ -17,11 +17,11 @@ spec:
       labels:
         app.kubernetes.io/component: exporter
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/version: 2.7.0
+        app.kubernetes.io/version: 2.9.2
     spec:
       automountServiceAccountToken: true
       containers:
-      - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.7.0
+      - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.9.2
         livenessProbe:
           httpGet:
             path: /healthz
@@ -46,7 +46,10 @@ spec:
             drop:
             - ALL
           readOnlyRootFilesystem: true
+          runAsNonRoot: true
           runAsUser: 65534
+          seccompProfile:
+            type: RuntimeDefault
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: kube-state-metrics

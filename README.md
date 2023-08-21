@@ -37,7 +37,6 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   - [Container Image](#container-image)
 - [Metrics Documentation](#metrics-documentation)
   - [Conflict resolution in label names](#conflict-resolution-in-label-names)
-  - [Enabling VerticalPodAutoscalers](#enabling-verticalpodautoscalers)
 - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 - [Resource recommendation](#resource-recommendation)
 - [Latency](#latency)
@@ -74,11 +73,12 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.4.2**         | v1.23                        |
 | **v2.5.0**         | v1.24                        |
 | **v2.6.0**         | v1.24                        |
 | **v2.7.0**         | v1.25                        |
-| **main**           | v1.26                        |
+| **v2.8.2**         | v1.26                        |
+| **v2.9.2**         | v1.26                        |
+| **main**           | v1.27                        |
 
 
 #### Resource group version compatibility
@@ -90,7 +90,8 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.7.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.9.2` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.9.2)
 
 ### Metrics Documentation
 
@@ -121,13 +122,6 @@ you might want to consider addressing this issue on a different level of the sta
 e.g. by standardizing Kubernetes labels using an
 [Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 that ensures that there are no possible conflicts.
-
-#### Enabling VerticalPodAutoscalers
-
-Please note that the collector for `verticalpodautoscalers` is **disabled** by default; Vertical Pod Autoscaler metrics will not be collected until the collector is enabled. This is because Vertical Pod Autoscalers are managed as custom resources.
-
-If you want to enable this collector,
-the [instructions](./docs/verticalpodautoscaler-metrics.md#Configuration) are located in the [Vertical Pod Autoscaler Metrics](./docs/verticalpodautoscaler-metrics.md) documentation.
 
 ### Kube-state-metrics self metrics
 
@@ -304,7 +298,7 @@ service account token that has read-only access to the Kubernetes cluster.
 
 The ([`kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus/)) stack installs kube-state-metrics as one of its [components](https://github.com/prometheus-operator/kube-prometheus#kube-prometheus); you do not need to install kube-state-metrics if you're using the kube-prometheus stack.
 
-If you want to revise the default configuration for kube-prometheus, for example to enable non-default metrics, have a look at [Customizing Kube-Prometheus](https://github.com/prometheus-operator/kube-prometheus#customizing-kube-prometheus).
+If you want to revise the default configuration for kube-prometheus, for example to enable non-default metrics, have a look at [Customizing Kube-Prometheus](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/customizing.md).
 
 #### Kubernetes Deployment
 

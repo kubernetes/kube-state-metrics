@@ -24,13 +24,13 @@ case $(uname -m) in
 esac
 
 NODE_IMAGE_NAME="docker.io/kindest/node"
-KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.26.0"}
+KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.27.0"}
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics"
 KUBE_STATE_METRICS_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics-${ARCH}"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
-KIND_VERSION=v0.17.0
+KIND_VERSION=v0.19.0
 SUDO=${SUDO:-}
 
 OS=$(uname -s | awk '{print tolower($0)}')
@@ -51,7 +51,7 @@ function setup_kind() {
 }
 
 function setup_kubectl() {
-    curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/"$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"/bin/"${OS}"/"${ARCH}"/kubectl \
+    curl -sLo kubectl https://dl.k8s.io/release/"$(curl -sL https://dl.k8s.io/release/stable.txt)"/bin/"${OS}"/"${ARCH}"/kubectl \
         && chmod +x kubectl \
         && ${SUDO} mv kubectl /usr/local/bin/
 }
@@ -72,6 +72,53 @@ kind create cluster --image="${NODE_IMAGE_NAME}:${KUBERNETES_VERSION}"
 kind export kubeconfig
 
 set +e
+kubectl proxy &
+
+function kube_state_metrics_up() {
+    is_kube_state_metrics_running="false"
+    # this for loop waits until kube-state-metrics is running by accessing the healthz endpoint
+    for _ in {1..30}; do # timeout for 1 minutes
+        KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
+        if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then
+            is_kube_state_metrics_running="true"
+            break
+        fi
+
+        echo "waiting for kube-state-metrics to come up"
+        sleep 2
+    done
+
+    if [[ ${is_kube_state_metrics_running} != "true" ]]; then
+        kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics
+        echo "kube-state-metrics does not start within 1 minute"
+        exit 1
+    fi
+}
+function test_daemonset() {
+    sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/deployment.yaml
+    sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/daemonset.yaml
+
+    kubectl get deployment -n kube-system
+    kubectl create -f ./examples/daemonsetsharding
+    ls ./examples/daemonsetsharding
+    kube_state_metrics_up
+    curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-shard:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/pod-metrics
+    curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/nonpod-metrics
+    m1="$(cat ${KUBE_STATE_METRICS_LOG_DIR}/pod-metrics | grep "# TYPE kube_pod_info" || true)"
+    m2="$(cat ${KUBE_STATE_METRICS_LOG_DIR}/nonpod-metrics | grep "# TYPE kube_pod_info" || true)"
+    if [[ -z "${m1}" ]]; then
+        echo "can't found metric kube_pod_info from pod metrics service"
+        exit 1
+    fi
+    if [[ -n "${m2}" ]]; then
+        echo "shouldn't find metric kube_pod_info from non-pod metrics service"
+        exit 1
+    fi
+
+    kubectl delete -f ./examples/daemonsetsharding
+    sleep 20
+}
+
 
 is_kube_running="false"
 
@@ -106,6 +153,11 @@ kind load docker-image "${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IM
 
 # update kube-state-metrics image tag in deployment.yaml
 sed -i.bak "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/standard/deployment.yaml
+
+mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
+
+test_daemonset
+
 cat ./examples/standard/deployment.yaml
 
 trap finish EXIT
@@ -126,28 +178,8 @@ echo "make requests to kube-state-metrics"
 
 set +e
 
-is_kube_state_metrics_running="false"
 
-kubectl proxy &
-
-# this for loop waits until kube-state-metrics is running by accessing the healthz endpoint
-for _ in {1..30}; do # timeout for 1 minutes
-    KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
-    if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then
-        is_kube_state_metrics_running="true"
-        break
-    fi
-
-    echo "waiting for kube-state-metrics to come up"
-    sleep 2
-done
-
-if [[ ${is_kube_state_metrics_running} != "true" ]]; then
-    kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics
-    echo "kube-state-metrics does not start within 1 minute"
-    exit 1
-fi
-
+kube_state_metrics_up
 set -e
 
 echo "kube-state-metrics is up and running"
@@ -156,9 +188,6 @@ echo "start e2e test for kube-state-metrics"
 KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
 KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
 go test -v ./tests/e2e/main_test.go --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
-go test -v ./tests/e2e/hot-reload_test.go
-
-mkdir -p ${KUBE_STATE_METRICS_LOG_DIR}
 
 # TODO: re-implement the following test cases in Go with the goal of removing this file.
 echo "access kube-state-metrics metrics endpoint"
@@ -173,6 +202,13 @@ fi
 sleep 33
 klog_err=E$(date +%m%d)
 echo "check for errors in logs"
+
+echo "running discovery tests..."
+go test -race -v ./tests/e2e/discovery_test.go
+
+echo "running hot-reload tests..."
+go test -v ./tests/e2e/hot-reload_test.go
+
 output_logs=$(kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics)
 if echo "${output_logs}" | grep "^${klog_err}"; then
     echo ""

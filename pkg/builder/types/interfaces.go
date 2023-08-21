@@ -22,7 +22,6 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
 	"github.com/prometheus/client_golang/prometheus"
-	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -40,19 +39,18 @@ type BuilderInterface interface {
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
-	WithVPAClient(c vpaclientset.Interface)
 	WithCustomResourceClients(cs map[string]interface{})
 	WithUsingAPIServerCache(u bool)
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)
 	WithAllowAnnotations(a map[string][]string)
 	WithAllowLabels(l map[string][]string) error
 	WithGenerateStoresFunc(f BuildStoresFunc)
-	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc
 	WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory)
 	Build() metricsstore.MetricsWriterList
 	BuildStores() [][]cache.Store
+	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 }
 
 // BuildStoresFunc function signature that is used to return a list of cache.Store

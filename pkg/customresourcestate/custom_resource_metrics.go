@@ -75,7 +75,7 @@ func (s customResourceMetrics) CreateClient(cfg *rest.Config) (interface{}, erro
 	}), nil
 }
 
-func (s customResourceMetrics) MetricFamilyGenerators(_, _ []string) (result []generator.FamilyGenerator) {
+func (s customResourceMetrics) MetricFamilyGenerators() (result []generator.FamilyGenerator) {
 	klog.InfoS("Custom resource state added metrics", "familyNames", s.names())
 	for _, f := range s.Families {
 		result = append(result, famGen(f))

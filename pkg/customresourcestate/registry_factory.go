@@ -196,7 +196,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		}
 		valueFromPath, err := compilePath(m.StateSet.ValueFrom)
 		if err != nil {
-			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
+			return nil, fmt.Errorf("each.stateSet.valueFrom: %w", err)
 		}
 		return &compiledStateSet{
 			compiledCommon: *cc,

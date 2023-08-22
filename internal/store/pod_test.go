@@ -1444,6 +1444,57 @@ func TestPodStore(t *testing.T) {
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
+							Type:   v1.PodInitialized,
+							Status: v1.ConditionTrue,
+							LastTransitionTime: metav1.Time{
+								Time: time.Unix(1501666018, 0),
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.
+				# TYPE kube_pod_status_initialized_time gauge
+				kube_pod_status_initialized_time{namespace="ns1",pod="pod1",uid="uid1"} 1.501666018e+09
+			`,
+			MetricNames: []string{"kube_pod_status_initialized_time"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodInitialized,
+							Status: v1.ConditionFalse,
+							LastTransitionTime: metav1.Time{
+								Time: time.Unix(1501666018, 0),
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.
+				# TYPE kube_pod_status_initialized_time gauge
+			`,
+			MetricNames: []string{"kube_pod_status_initialized_time"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
 							Type:   v1.ContainersReady,
 							Status: v1.ConditionTrue,
 							LastTransitionTime: metav1.Time{
@@ -2181,7 +2232,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 51
+	expectedFamilies := 52
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

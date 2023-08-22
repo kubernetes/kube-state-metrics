@@ -49,6 +49,9 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.ALPHA,
 			"",
 			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -68,6 +71,9 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.STABLE,
 			"",
 			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

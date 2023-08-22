@@ -1035,6 +1035,9 @@ func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGe
 		basemetrics.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			if len(allowAnnotations) == 0 {
+				return &metric.Family{}
+			}
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotations)
 			m := metric.Metric{
 				LabelKeys:   annotationKeys,
@@ -1056,6 +1059,9 @@ func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerato
 		basemetrics.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			if len(allowLabelsList) == 0 {
+				return &metric.Family{}
+			}
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 			m := metric.Metric{
 				LabelKeys:   labelKeys,

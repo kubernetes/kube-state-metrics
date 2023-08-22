@@ -344,6 +344,9 @@ func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerat
 		basemetrics.ALPHA,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			if len(allowAnnotationsList) == 0 {
+				return &metric.Family{}
+			}
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -366,6 +369,9 @@ func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			if len(allowLabelsList) == 0 {
+				return &metric.Family{}
+			}
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{

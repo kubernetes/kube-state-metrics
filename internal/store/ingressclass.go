@@ -80,6 +80,9 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -99,6 +102,9 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

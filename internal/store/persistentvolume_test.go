@@ -522,7 +522,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{persistentvolume="test-labeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
@@ -538,7 +537,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
@@ -658,8 +656,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_annotations gauge
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_annotations{persistentvolume="test-defaul-labels-annotations"} 1
-					kube_persistentvolume_labels{persistentvolume="test-defaul-labels-annotations"} 1
 `,
 			MetricNames: []string{
 				"kube_persistentvolume_annotations",

@@ -52,6 +52,9 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.ALPHA,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -71,6 +74,9 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

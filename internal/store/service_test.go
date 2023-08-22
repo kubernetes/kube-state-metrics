@@ -116,10 +116,8 @@ func TestServiceStore(t *testing.T) {
 				# TYPE kube_service_info gauge
 				# TYPE kube_service_labels gauge
 				# TYPE kube_service_spec_type gauge
-				kube_service_annotations{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1
 				kube_service_created{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.4",external_name="",load_balancer_ip="",meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1
-				kube_service_labels{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",uid="uid1"} 1
 				kube_service_spec_type{meta_example_com_owner="team1",namespace="default",product="frontend1",regex_example="foo",service="test-service1",type="ClusterIP",uid="uid1"} 1
 `,
 			MetricNames: []string{

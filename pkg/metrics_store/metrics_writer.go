@@ -91,11 +91,13 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 func SanitizeHeaders(writers MetricsWriterList) MetricsWriterList {
 	var lastHeader string
 	for _, writer := range writers {
-		for i, header := range writer.stores[0].headers {
-			if header == lastHeader {
-				writer.stores[0].headers[i] = ""
-			} else {
-				lastHeader = header
+		if len(writer.stores) > 0 {
+			for i, header := range writer.stores[0].headers {
+				if header == lastHeader {
+					writer.stores[0].headers[i] = ""
+				} else {
+					lastHeader = header
+				}
 			}
 		}
 	}

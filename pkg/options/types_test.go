@@ -109,8 +109,8 @@ func TestNamespaceList_GetNamespaces(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		ns := &test.Namespaces
+	for i, test := range tests {
+		ns := &tests[i].Namespaces
 		allowedNamespaces := ns.GetNamespaces()
 		if !reflect.DeepEqual(allowedNamespaces, test.Wanted) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, allowedNamespaces)

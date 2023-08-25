@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
-	"k8s.io/kube-state-metrics/v2/pkg/util"
 )
 
 // customResourceState is used to prefix the auto-generated GVK labels as well as an appendix for the metric itself
@@ -34,11 +33,13 @@ import (
 const customResourceState string = "customresource"
 
 // Metrics is the top level configuration object.
+// +k8s:deepcopy-gen=true
 type Metrics struct {
 	Spec MetricsSpec `yaml:"spec" json:"spec"`
 }
 
 // MetricsSpec is the configuration describing the custom resource state metrics to generate.
+// +k8s:deepcopy-gen=true
 type MetricsSpec struct {
 	// Resources is the list of custom resources to be monitored. A resource with the same GroupVersionKind may appear
 	// multiple times (e.g., to customize the namespace or subsystem,) but will incur additional overhead.
@@ -46,24 +47,29 @@ type MetricsSpec struct {
 }
 
 // Resource configures a custom resource for metric generation.
+// +k8s:deepcopy-gen=true
 type Resource struct {
 	// MetricNamePrefix defines a prefix for all metrics of the resource.
 	// If set to "", no prefix will be added.
 	// Example: If set to "foo", MetricNamePrefix will be "foo_<metric>".
+	// +optional
 	MetricNamePrefix *string `yaml:"metricNamePrefix" json:"metricNamePrefix"`
 
 	// GroupVersionKind of the custom resource to be monitored.
 	GroupVersionKind GroupVersionKind `yaml:"groupVersionKind" json:"groupVersionKind"`
 
 	// Labels are added to all metrics. If the same key is used in a metric, the value from the metric will overwrite the value here.
+	// +optional
 	Labels `yaml:",inline" json:",inline"`
 
 	// Metrics are the custom resource fields to be collected.
 	Metrics []Generator `yaml:"metrics" json:"metrics"`
 	// ErrorLogV defines the verbosity threshold for errors logged for this resource.
+	// +optional
 	ErrorLogV klog.Level `yaml:"errorLogV" json:"errorLogV"`
 
 	// ResourcePlural sets the plural name of the resource. Defaults to the plural version of the Kind according to flect.Pluralize.
+	// +optional
 	ResourcePlural string `yaml:"resourcePlural" json:"resourcePlural"`
 }
 
@@ -98,10 +104,13 @@ func (gvk GroupVersionKind) String() string {
 }
 
 // Labels is common configuration of labels to add to metrics.
+// +k8s:deepcopy-gen=true
 type Labels struct {
 	// CommonLabels are added to all metrics.
+	// +optional
 	CommonLabels map[string]string `yaml:"commonLabels" json:"commonLabels"`
 	// LabelsFromPath adds additional labels where the value is taken from a field in the resource.
+	// +optional
 	LabelsFromPath map[string][]string `yaml:"labelsFromPath" json:"labelsFromPath"`
 }
 
@@ -129,6 +138,7 @@ func (l Labels) Merge(other Labels) Labels {
 }
 
 // Generator describes a unique metric name.
+// +k8s:deepcopy-gen=true
 type Generator struct {
 	// Name of the metric. Subject to prefixing based on the configuration of the Resource.
 	Name string `yaml:"name" json:"name"`
@@ -138,13 +148,16 @@ type Generator struct {
 	Each Metric `yaml:"each" json:"each"`
 
 	// Labels are added to all metrics. Labels from Each will overwrite these if using the same key.
+	// +optional
 	Labels `yaml:",inline" json:",inline"` // json will inline because it is already tagged
 	// ErrorLogV defines the verbosity threshold for errors logged for this metric. Must be non-zero to override the resource setting.
+	// +optional
 	ErrorLogV klog.Level `yaml:"errorLogV" json:"errorLogV"`
 }
 
 // Metric defines a metric to expose.
 // +union
+// +k8s:deepcopy-gen=true
 type Metric struct {
 	// Type defines the type of the metric.
 	// +unionDiscriminator
@@ -166,8 +179,13 @@ type ConfigDecoder interface {
 	Decode(v interface{}) (err error)
 }
 
+// GVKToGVKP interface implements ResolveGVKToGVKPs
+type GVKToGVKP interface {
+	ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedGVKPs []discovery.GroupVersionKindPlural, err error)
+}
+
 // FromConfig decodes a configuration source into a slice of `customresource.RegistryFactory` that are ready to use.
-func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscoverer) (func() ([]customresource.RegistryFactory, error), error) {
+func FromConfig(decoder ConfigDecoder, discovererInstance GVKToGVKP) (func() ([]customresource.RegistryFactory, error), error) {
 	var customResourceConfig Metrics
 	factoriesIndex := map[string]bool{}
 	if err := decoder.Decode(&customResourceConfig); err != nil {
@@ -195,7 +213,7 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 			if err != nil {
 				return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
 			}
-			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			gvrString := customresource.GVRFromType(factory.Name(), factory.ExpectedType()).String()
 			if _, ok := factoriesIndex[gvrString]; ok {
 				klog.InfoS("reloaded factory", "GVR", gvrString)
 			}
@@ -205,4 +223,26 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 		return factories, nil
 	}
 	return fn, nil
+}
+
+// FromConfig2 decodes a configuration source into a slice of customresource.RegistryFactory that are ready to use.
+func FromConfig2(decoder ConfigDecoder) ([]customresource.RegistryFactory, error) {
+	var crconfig Metrics
+	var factories []customresource.RegistryFactory
+	factoriesIndex := map[string]bool{}
+	if err := decoder.Decode(&crconfig); err != nil {
+		return nil, fmt.Errorf("failed to parse Custom Resource State metrics: %w", err)
+	}
+	for _, resource := range crconfig.Spec.Resources {
+		factory, err := NewCustomResourceMetrics(resource)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
+		}
+		if _, ok := factoriesIndex[factory.Name()]; ok {
+			return nil, fmt.Errorf("found multiple custom resource configurations for the same resource %s", factory.Name())
+		}
+		factoriesIndex[factory.Name()] = true
+		factories = append(factories, factory)
+	}
+	return factories, nil
 }

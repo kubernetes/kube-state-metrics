@@ -1,0 +1,20 @@
+# TODO: use another CR
+apiVersion: customresource.ksm.io/v1alpha1
+kind: CustomResourceMonitor
+metadata:
+  name: test-cr
+  namespace: kube-system
+  generation: 2
+spec:
+  resources:
+    - groupVersionKind:
+        group: addons.gke.io
+        kind: "Stackdriver"
+        version: "v1alpha1"
+      metrics:
+        - name: "uptime"
+          help: "Foo uptime"
+          each:
+            type: Gauge
+            gauge:
+              path: [metadata, generation]

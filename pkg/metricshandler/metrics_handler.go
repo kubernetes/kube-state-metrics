@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/prometheus/common/expfmt"
 
@@ -37,14 +38,29 @@ import (
 	"k8s.io/klog/v2"
 
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
+
+	crmonitorclientset "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/clientset/versioned"
+	crinformers "k8s.io/kube-state-metrics/v2/pkg/customresourcemonitor/client/informers/externalversions"
+
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
+
+// Reconfigure provides two functions
+type Reconfigure interface {
+	// ResolveCustomResourceConfig update custom resource stores
+	ResolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, error)
+	// FromConfig construct customresource.RegistryFactory from ConfigDecoder
+	FromConfig(decoder customresourcestate.ConfigDecoder) ([]customresource.RegistryFactory, error)
+}
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
 // /metrics endpoint. It allows concurrent reconfiguration at runtime.
 type MetricsHandler struct {
 	opts               *options.Options
+	ksmCRMonitorClient crmonitorclientset.Interface
 	kubeClient         kubernetes.Interface
 	storeBuilder       ksmtypes.BuilderInterface
 	enableGZIPEncoding bool
@@ -56,16 +72,20 @@ type MetricsHandler struct {
 	metricsWriters metricsstore.MetricsWriterList
 	curShard       int32
 	curTotalShards int
+	reconfigure    Reconfigure
 }
 
 // New creates and returns a new MetricsHandler with the given options.
-func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
+func New(opts *options.Options, kubeClient kubernetes.Interface, crMonitorClient crmonitorclientset.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool, reconfigure Reconfigure) *MetricsHandler {
+
 	return &MetricsHandler{
 		opts:               opts,
 		kubeClient:         kubeClient,
+		ksmCRMonitorClient: crMonitorClient,
 		storeBuilder:       storeBuilder,
 		enableGZIPEncoding: enableGZIPEncoding,
 		mtx:                &sync.RWMutex{},
+		reconfigure:        reconfigure,
 	}
 }
 
@@ -89,13 +109,44 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	m.curTotalShards = totalShards
 }
 
+// ReconfigureCustomResourceMetrics reconfigures customresource stores.
+func (m *MetricsHandler) ReconfigureCustomResourceMetrics(ctx context.Context, opts *options.Options) error {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	if m.cancel != nil {
+		m.cancel()
+	}
+
+	ctx, m.cancel = context.WithCancel(ctx)
+	m.storeBuilder.WithContext(ctx)
+
+	config, err := m.reconfigure.ResolveCustomResourceConfig(opts)
+	if err != nil {
+		return err
+	}
+
+	var factories []customresource.RegistryFactory
+
+	if config != nil {
+		factories, err = m.reconfigure.FromConfig(config)
+		if err != nil {
+			return fmt.Errorf("Parsing from Custom Resource State Metrics file failed: %v", err)
+		}
+	}
+	m.storeBuilder.WithCustomResourceStoreFactories(factories...)
+	m.metricsWriters = m.storeBuilder.Build()
+
+	return nil
+}
+
 // Run configures the MetricsHandler's sharding and if autosharding is enabled
 // re-configures sharding on re-sharding events. Run should only be called
 // once.
 func (m *MetricsHandler) Run(ctx context.Context) error {
 	autoSharding := len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
 
-	if !autoSharding {
+	if !autoSharding && !m.opts.CustomResourcesKSMCRWatched {
 		klog.InfoS("Autosharding disabled")
 		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
 		// Wait for context to be done, metrics will be served until then.
@@ -103,77 +154,113 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 		return ctx.Err()
 	}
 
-	klog.InfoS("Autosharding enabled with pod", "pod", klog.KRef(m.opts.Namespace, m.opts.Pod))
-	klog.InfoS("Auto detecting sharding settings")
-	ss, err := detectStatefulSet(m.kubeClient, m.opts.Pod, m.opts.Namespace)
-	if err != nil {
-		return fmt.Errorf("detect StatefulSet: %w", err)
+	allInformers := []cache.SharedIndexInformer{}
+	if !autoSharding {
+		klog.InfoS("Autosharding disabled")
+		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
+	} else {
+		klog.InfoS("Autosharding enabled with pod", "pod", klog.KRef(m.opts.Namespace, m.opts.Pod))
+		klog.InfoS("Auto detecting sharding settings")
+		ss, err := detectStatefulSet(m.kubeClient, m.opts.Pod, m.opts.Namespace)
+		if err != nil {
+			return fmt.Errorf("detect StatefulSet: %w", err)
+		}
+		statefulSetName := ss.Name
+
+		labelSelectorOptions := func(o *metav1.ListOptions) {
+			o.LabelSelector = fields.SelectorFromSet(ss.Labels).String()
+		}
+
+		i := cache.NewSharedIndexInformer(
+			cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, labelSelectorOptions),
+			&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+		)
+		i.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(o interface{}) {
+				ss := o.(*appsv1.StatefulSet)
+				if ss.Name != statefulSetName {
+					return
+				}
+
+				shard, totalShards, err := shardingSettingsFromStatefulSet(ss, m.opts.Pod)
+				if err != nil {
+					klog.ErrorS(err, "Detected sharding settings from StatefulSet")
+					return
+				}
+
+				m.mtx.RLock()
+				shardingUnchanged := m.curShard == shard && m.curTotalShards == totalShards
+				m.mtx.RUnlock()
+
+				if shardingUnchanged {
+					return
+				}
+
+				m.ConfigureSharding(ctx, shard, totalShards)
+			},
+			UpdateFunc: func(oldo, curo interface{}) {
+				old := oldo.(*appsv1.StatefulSet)
+				cur := curo.(*appsv1.StatefulSet)
+				if cur.Name != statefulSetName {
+					return
+				}
+
+				if old.ResourceVersion == cur.ResourceVersion {
+					return
+				}
+
+				shard, totalShards, err := shardingSettingsFromStatefulSet(cur, m.opts.Pod)
+				if err != nil {
+					klog.ErrorS(err, "Detected sharding settings from StatefulSet")
+					return
+				}
+
+				m.mtx.RLock()
+				shardingUnchanged := m.curShard == shard && m.curTotalShards == totalShards
+				m.mtx.RUnlock()
+
+				if shardingUnchanged {
+					return
+				}
+
+				m.ConfigureSharding(ctx, shard, totalShards)
+			},
+		})
+		go i.Run(ctx.Done())
+		allInformers = append(allInformers, i)
 	}
-	statefulSetName := ss.Name
 
-	labelSelectorOptions := func(o *metav1.ListOptions) {
-		o.LabelSelector = fields.SelectorFromSet(ss.Labels).String()
+	if m.opts.CustomResourcesKSMCRWatched {
+		informerFactory := crinformers.NewSharedInformerFactory(m.ksmCRMonitorClient, time.Second*60)
+		ksmCRMonitorInformer := informerFactory.Customresource().V1alpha1().CustomResourceMonitors().Informer()
+
+		ksmCRMonitorInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(o interface{}) {
+				fmt.Println("## CR added")
+				m.ReconfigureCustomResourceMetrics(ctx, m.opts)
+			},
+			UpdateFunc: func(oldo, curo interface{}) {
+				fmt.Println("## CR updated")
+				// TODO: only keep real update and skip re-sync updates
+				// m.ReconfigureCustomResourceMetrics(ctx, m.opts)
+			},
+			DeleteFunc: func(o interface{}) {
+				fmt.Println("## CR deleted")
+				m.ReconfigureCustomResourceMetrics(ctx, m.opts)
+			},
+		})
+		go ksmCRMonitorInformer.Run(ctx.Done())
+		allInformers = append(allInformers, ksmCRMonitorInformer)
 	}
 
-	i := cache.NewSharedIndexInformer(
-		cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, labelSelectorOptions),
-		&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-	)
-	i.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(o interface{}) {
-			ss := o.(*appsv1.StatefulSet)
-			if ss.Name != statefulSetName {
-				return
-			}
-
-			shard, totalShards, err := shardingSettingsFromStatefulSet(ss, m.opts.Pod)
-			if err != nil {
-				klog.ErrorS(err, "Detected sharding settings from StatefulSet")
-				return
-			}
-
-			m.mtx.RLock()
-			shardingUnchanged := m.curShard == shard && m.curTotalShards == totalShards
-			m.mtx.RUnlock()
-
-			if shardingUnchanged {
-				return
-			}
-
-			m.ConfigureSharding(ctx, shard, totalShards)
-		},
-		UpdateFunc: func(oldo, curo interface{}) {
-			old := oldo.(*appsv1.StatefulSet)
-			cur := curo.(*appsv1.StatefulSet)
-			if cur.Name != statefulSetName {
-				return
-			}
-
-			if old.ResourceVersion == cur.ResourceVersion {
-				return
-			}
-
-			shard, totalShards, err := shardingSettingsFromStatefulSet(cur, m.opts.Pod)
-			if err != nil {
-				klog.ErrorS(err, "Detected sharding settings from StatefulSet")
-				return
-			}
-
-			m.mtx.RLock()
-			shardingUnchanged := m.curShard == shard && m.curTotalShards == totalShards
-			m.mtx.RUnlock()
-
-			if shardingUnchanged {
-				return
-			}
-
-			m.ConfigureSharding(ctx, shard, totalShards)
-		},
-	})
-	go i.Run(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), i.HasSynced) {
+	hasSynced := []cache.InformerSynced{}
+	for _, x := range allInformers {
+		hasSynced = append(hasSynced, x.HasSynced)
+	}
+	if !cache.WaitForCacheSync(ctx.Done(), hasSynced...) {
 		return errors.New("waiting for informer cache to sync failed")
 	}
+
 	<-ctx.Done()
 	return ctx.Err()
 }

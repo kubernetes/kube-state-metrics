@@ -113,3 +113,10 @@ func TestWithAllowLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestNonCustomResourceName(t *testing.T) {
+	if len(availableStores) != len(nonCustomResourceStores) {
+		t.Errorf("Want: %d Got: %d", len(availableStores), len(nonCustomResourceStores))
+	}
+	// TODO: judge each nonCustomResourceStores is inside availableStores.
+}

@@ -52,7 +52,6 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/sharding"
-	"k8s.io/kube-state-metrics/v2/pkg/util"
 	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
 
@@ -199,9 +198,17 @@ func (b *Builder) DefaultGenerateCustomResourceStoresFunc() ksmtypes.BuildCustom
 
 // WithCustomResourceStoreFactories returns configures a custom resource stores factory
 func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory) {
+	deletedCutomResource := map[string]bool{}
+	for k := range availableStores {
+		if nonCustomResource(k) {
+			continue
+		}
+		deletedCutomResource[k] = true
+	}
+
 	for i := range fs {
 		f := fs[i]
-		gvr := util.GVRFromType(f.Name(), f.ExpectedType())
+		gvr := customresource.GVRFromType(f.Name(), f.ExpectedType())
 		var gvrString string
 		if gvr != nil {
 			gvrString = gvr.String()
@@ -219,6 +226,13 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 				f.ListWatch,
 				b.useAPIServerCache,
 			)
+		}
+		deletedCutomResource[f.Name()] = false
+	}
+
+	for k, v := range deletedCutomResource {
+		if v {
+			delete(availableStores, k)
 		}
 	}
 }
@@ -341,6 +355,45 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"volumeattachments":               func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
 }
 
+var nonCustomResourceStores = map[string]bool{
+	"certificatesigningrequests":      true,
+	"clusterroles":                    true,
+	"configmaps":                      true,
+	"clusterrolebindings":             true,
+	"cronjobs":                        true,
+	"daemonsets":                      true,
+	"deployments":                     true,
+	"endpoints":                       true,
+	"endpointslices":                  true,
+	"horizontalpodautoscalers":        true,
+	"ingresses":                       true,
+	"ingressclasses":                  true,
+	"jobs":                            true,
+	"leases":                          true,
+	"limitranges":                     true,
+	"mutatingwebhookconfigurations":   true,
+	"namespaces":                      true,
+	"networkpolicies":                 true,
+	"nodes":                           true,
+	"persistentvolumeclaims":          true,
+	"persistentvolumes":               true,
+	"poddisruptionbudgets":            true,
+	"pods":                            true,
+	"replicasets":                     true,
+	"replicationcontrollers":          true,
+	"resourcequotas":                  true,
+	"roles":                           true,
+	"rolebindings":                    true,
+	"secrets":                         true,
+	"serviceaccounts":                 true,
+	"services":                        true,
+	"statefulsets":                    true,
+	"storageclasses":                  true,
+	"validatingwebhookconfigurations": true,
+	"volumeattachments":               true,
+	"verticalpodautoscalers":          true,
+}
+
 func resourceExists(name string) bool {
 	_, ok := availableStores[name]
 	return ok
@@ -352,6 +405,13 @@ func availableResources() []string {
 		c = append(c, name)
 	}
 	return c
+}
+
+func nonCustomResource(name string) bool {
+	if val, ok := nonCustomResourceStores[name]; ok && val {
+		return true
+	}
+	return false
 }
 
 func (b *Builder) buildConfigMapStores() []cache.Store {
@@ -549,7 +609,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 		familyHeaders = generator.ExtractMetricFamilyHeaders(metricFamilies)
 	}
 
-	gvr := util.GVRFromType(resourceName, expectedType)
+	gvr := customresource.GVRFromType(resourceName, expectedType)
 	var gvrString string
 	if gvr != nil {
 		gvrString = gvr.String()
@@ -591,11 +651,11 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 }
 
 func (b *Builder) hasResources(resourceName string, expectedType interface{}) bool {
-	gvr := util.GVRFromType(resourceName, expectedType)
+	gvr := customresource.GVRFromType(resourceName, expectedType)
 	if gvr == nil {
 		return true
 	}
-	discoveryClient, err := util.CreateDiscoveryClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	discoveryClient, err := customresource.CreateDiscoveryClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
 	if err != nil {
 		klog.ErrorS(err, "Failed to create discovery client")
 		return false
@@ -619,7 +679,7 @@ func (b *Builder) hasResources(resourceName string, expectedType interface{}) bo
 	// Wait for the resource to come up.
 	timer := time.NewTimer(ResourceDiscoveryTimeout)
 	ticker := time.NewTicker(ResourceDiscoveryInterval)
-	dynamicClient, err := util.CreateDynamicClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
+	dynamicClient, err := customresource.CreateDynamicClient(b.utilOptions.Apiserver, b.utilOptions.Kubeconfig)
 	if err != nil {
 		klog.ErrorS(err, "Failed to create dynamic client")
 		return false

@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -454,7 +454,7 @@ func Test_fullName(t *testing.T) {
 		{
 			name: "no prefix",
 			args: args{
-				resource: r(pointer.String("")),
+				resource: r(ptr.To("")),
 				f:        count,
 			},
 			want: "count",
@@ -462,7 +462,7 @@ func Test_fullName(t *testing.T) {
 		{
 			name: "custom",
 			args: args{
-				resource: r(pointer.String("bar_baz")),
+				resource: r(ptr.To("bar_baz")),
 				f:        count,
 			},
 			want: "bar_baz_count",

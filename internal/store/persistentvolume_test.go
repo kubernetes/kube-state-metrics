@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -415,7 +415,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						Local: &v1.LocalVolumeSource{
-							FSType: pointer.String("ext4"),
+							FSType: ptr.To("ext4"),
 							Path:   "/mnt/data",
 						},
 					},
@@ -522,7 +522,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{persistentvolume="test-labeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
@@ -538,7 +537,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
@@ -658,8 +656,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_annotations gauge
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_annotations{persistentvolume="test-defaul-labels-annotations"} 1
-					kube_persistentvolume_labels{persistentvolume="test-defaul-labels-annotations"} 1
 `,
 			MetricNames: []string{
 				"kube_persistentvolume_annotations",

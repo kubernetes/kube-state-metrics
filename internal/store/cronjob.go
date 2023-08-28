@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	descCronJobAnnotationsName     = "kube_cronjob_annotations"
+	descCronJobAnnotationsName     = "kube_cronjob_annotations" //nolint:gosec
 	descCronJobAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCronJobLabelsName          = "kube_cronjob_labels"
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
@@ -52,6 +52,9 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.ALPHA,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -71,6 +74,9 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

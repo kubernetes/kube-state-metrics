@@ -17,6 +17,7 @@ limitations under the License.
 package metricsstore_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -229,5 +230,36 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 		if !strings.Contains(result, series) {
 			t.Fatalf("Did not find expected series %s", series)
 		}
+	}
+}
+
+// TestWriteAllWithEmptyStores checks that nothing is printed if no metrics exist for metric families.
+func TestWriteAllWithEmptyStores(t *testing.T) {
+	genFunc := func(obj interface{}) []metric.FamilyInterface {
+		mf1 := metric.Family{
+			Name:    "kube_service_info_1",
+			Metrics: []*metric.Metric{},
+		}
+
+		mf2 := metric.Family{
+			Name:    "kube_service_info_2",
+			Metrics: []*metric.Metric{},
+		}
+
+		return []metric.FamilyInterface{&mf1, &mf2}
+	}
+	store := metricsstore.NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+
+	multiNsWriter := metricsstore.NewMetricsWriter(store)
+	w := strings.Builder{}
+	err := multiNsWriter.WriteAll(&w)
+	if err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
+	result := w.String()
+	fmt.Println(result)
+
+	if result != "" {
+		t.Fatalf("Unexpected output, got %q, want %q", result, "")
 	}
 }

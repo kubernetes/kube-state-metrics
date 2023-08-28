@@ -7,7 +7,7 @@ require (
 	github.com/campoy/embedmd v1.0.0
 	github.com/google/go-jsonnet v0.20.0
 	github.com/jsonnet-bundler/jsonnet-bundler v0.5.1
-	golang.org/x/perf v0.0.0-20230427221525-d343f6398b76
+	golang.org/x/perf v0.0.0-20230822165715-3c60af34b3f4
 )
 
 require (

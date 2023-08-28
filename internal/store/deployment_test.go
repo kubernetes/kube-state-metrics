@@ -115,7 +115,6 @@ func TestDeploymentStore(t *testing.T) {
 			Want: metadata + `
         kube_deployment_annotations{annotation_company_io_team="my-brilliant-team",deployment="depl1",namespace="ns1"} 1
         kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
-        kube_deployment_labels{deployment="depl1",namespace="ns1"} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
         kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
         kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
@@ -170,8 +169,6 @@ func TestDeploymentStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-        kube_deployment_annotations{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_labels{deployment="depl2",namespace="ns2"} 1
         kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
         kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5

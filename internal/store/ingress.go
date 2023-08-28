@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	descIngressAnnotationsName     = "kube_ingress_annotations"
+	descIngressAnnotationsName     = "kube_ingress_annotations" //nolint:gosec
 	descIngressAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descIngressLabelsName          = "kube_ingress_labels"
 	descIngressLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
@@ -75,6 +75,9 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.ALPHA,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -94,6 +97,9 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", i.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

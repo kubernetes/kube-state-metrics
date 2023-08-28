@@ -44,6 +44,9 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.ALPHA,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", c.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -63,6 +66,9 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", c.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

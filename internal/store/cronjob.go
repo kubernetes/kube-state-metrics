@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	descCronJobAnnotationsName     = "kube_cronjob_annotations"
+	descCronJobAnnotationsName     = "kube_cronjob_annotations" //nolint:gosec
 	descCronJobAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCronJobLabelsName          = "kube_cronjob_labels"
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."

@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -415,7 +415,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						Local: &v1.LocalVolumeSource{
-							FSType: pointer.String("ext4"),
+							FSType: ptr.To("ext4"),
 							Path:   "/mnt/data",
 						},
 					},

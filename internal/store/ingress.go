@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	descIngressAnnotationsName     = "kube_ingress_annotations"
+	descIngressAnnotationsName     = "kube_ingress_annotations" //nolint:gosec
 	descIngressAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descIngressLabelsName          = "kube_ingress_labels"
 	descIngressLabelsHelp          = "Kubernetes labels converted to Prometheus labels."

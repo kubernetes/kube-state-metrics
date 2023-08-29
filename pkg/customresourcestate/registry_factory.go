@@ -228,6 +228,44 @@ type compiledGauge struct {
 	labelFromKey string
 }
 
+func underscoresToIndices(extractedValueFrom string, it interface{}) interface{} {
+	// `it` is the search space.
+	m, isResolvableMap := it.(map[string]interface{})
+	arr, isResolvableArr := it.([]interface{})
+	if !isResolvableMap && !isResolvableArr {
+		return nil
+	}
+	// `extractedValueFrom` is the search term.
+	// Split `extractedValueFrom` by underscores.
+	terms := strings.Split(extractedValueFrom, "_")
+	resolvedTerm := interface{}(terms[0])
+	for _, term := range terms[1:] {
+		if isResolvableMap {
+			t, ok := m[term]
+			if !ok {
+				return resolvedTerm
+			}
+			resolvedTerm = t
+			if _, isResolvableMap = t.(map[string]interface{}); isResolvableMap {
+				m = t.(map[string]interface{})
+			}
+		} else if isResolvableArr {
+			for _, el := range arr {
+				t, ok := el.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if v, ok := t[term]; ok {
+					resolvedTerm = v
+					m = t
+					break
+				}
+			}
+		}
+	}
+	return resolvedTerm
+}
+
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
 	onError := func(err error) {
 		errs = append(errs, fmt.Errorf("%s: %v", c.Path(), err))
@@ -249,9 +287,41 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				sValueFrom[0] == '[' && sValueFrom[len(sValueFrom)-1] == ']' &&
 				// "[...]" and not "[]".
 				len(sValueFrom) > 2 {
+				// remove the brackets
 				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
-				if key == extractedValueFrom {
-					gotFloat, err := toFloat64(it, c.NilIsZero)
+				// search space to resolve the dynamic valueFrom from the wildcard labels
+				dynamicValueFromScope := c.compiledCommon.labelFromPath
+				lastUnderscoreIndex := strings.LastIndex(extractedValueFrom, "_")
+				if lastUnderscoreIndex != -1 {
+					// For:
+					// labelsFromPath:
+					//  "foo_*": ["spec", "fooObj"]
+					unresolvedKey := extractedValueFrom[:lastUnderscoreIndex] + "_*"
+					dynamicPaths, ok := dynamicValueFromScope[unresolvedKey]
+					if ok {
+						var resolvedKeyArr []string
+						for _, dynamicPath := range dynamicPaths {
+							resolvedKeyArr = append(resolvedKeyArr, dynamicPath.part)
+						}
+						// resolvedKey will map to unresolved key "foo_*"'s corresponding valid path string, i.e., "spec_fooObj_*".
+						resolvedKey := strings.Join(resolvedKeyArr, "_")
+						extractedValueFrom = resolvedKey + extractedValueFrom[lastUnderscoreIndex:]
+					}
+				}
+				if strings.HasPrefix(extractedValueFrom, key) {
+					var gotFloat float64
+					var err error
+					if strings.Contains(extractedValueFrom, "_") {
+						resolvedExtractedValueFrom := underscoresToIndices(extractedValueFrom, it)
+						if _, didResolveFullPath := resolvedExtractedValueFrom.(string); didResolveFullPath {
+							gotFloat, err = toFloat64(resolvedExtractedValueFrom, c.NilIsZero)
+						}
+						if _, isFloat := resolvedExtractedValueFrom.(float64); isFloat {
+							gotFloat = resolvedExtractedValueFrom.(float64)
+						}
+					} else {
+						gotFloat, err = toFloat64(it, c.NilIsZero)
+					}
 					if err != nil {
 						onError(fmt.Errorf("[%s]: %w", key, err))
 						continue
@@ -710,23 +780,24 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 	}
 }
 
+func findWildcard(path valuePath, i *int) bool {
+	for ; *i < len(path); *i++ {
+		if path[*i].part == "*" {
+			return true
+		}
+	}
+	return false
+}
+
 func resolveWildcard(path valuePath, object map[string]interface{}) []valuePath {
 	if path == nil {
 		return nil
-	}
-	fn := func(i *int) bool {
-		for ; *i < len(path); *i++ {
-			if path[*i].part == "*" {
-				return true
-			}
-		}
-		return false
 	}
 	checkpoint := object
 	var expandedPaths []valuePath
 	var list []interface{}
 	var l int
-	for i, j := 0, 0; fn(&i); /* i is at "*" now */ {
+	for i, j := 0, 0; findWildcard(path, &i); /* i is at "*" now */ {
 		for ; j < i; j++ {
 			maybeCheckpoint, ok := checkpoint[path[j].part]
 			if !ok {
@@ -764,23 +835,10 @@ func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbos
 	klog.V(10).InfoS("Checked", "compiledFamilyName", f.Name, "unstructuredName", u.GetName())
 	var metrics []*metric.Metric
 	baseLabels := f.BaseLabels(u.Object)
-	fn := func() {
-		values, errorSet := scrapeValuesFor(f.Each, u.Object)
-		for _, err := range errorSet {
-			errLog.ErrorS(err, f.Name)
-		}
-
-		for _, v := range values {
-			v.DefaultLabels(baseLabels)
-			metrics = append(metrics, v.ToMetric())
-		}
-		klog.V(10).InfoS("Produced metrics for", "compiledFamilyName", f.Name, "metricsLength", len(metrics), "unstructuredName", u.GetName())
-	}
 	if f.Each.Path() != nil {
 		fPaths := resolveWildcard(f.Each.Path(), u.Object)
 		for _, fPath := range fPaths {
 			f.Each.SetPath(fPath)
-			fn()
 		}
 	}
 
@@ -797,8 +855,18 @@ func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbos
 		if len(labelsFromPath) > 0 {
 			f.Each.SetLabelFromPath(labelsFromPath)
 		}
-		fn()
 	}
+
+	values, errorSet := scrapeValuesFor(f.Each, u.Object)
+	for _, err := range errorSet {
+		errLog.ErrorS(err, f.Name)
+	}
+
+	for _, v := range values {
+		v.DefaultLabels(baseLabels)
+		metrics = append(metrics, v.ToMetric())
+	}
+	klog.V(10).InfoS("Produced metrics for", "compiledFamilyName", f.Name, "metricsLength", len(metrics), "unstructuredName", u.GetName())
 
 	return &metric.Family{
 		Metrics: metrics,

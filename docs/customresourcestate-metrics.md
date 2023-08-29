@@ -552,8 +552,11 @@ path: [status, namespaces, "*", status]
 labelsFromPath:
   # this can be combined with the wildcard prefixes feature introduced in #2052
   "available_*": [available]
+  "lorem_*": [pending]
+# this can be combined with dynamic valueFrom expressions introduced in #2068
+valueFrom: [lorem_resourceB] # or [available_resourceB]
 # outputs:
-...{...,available_resourceA="10",available_resourceB="20",...} ...
+...{...,available_resourceA="10",available_resourceB="20",lorem_resourceA="0",lorem_resourceB="6"...} 6
 ```
 
 ### Wildcard matching of version and kind fields

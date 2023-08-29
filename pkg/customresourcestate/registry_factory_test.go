@@ -37,6 +37,11 @@ func init() {
 		"spec": Obj{
 			"replicas": 1,
 			"version":  "v0.0.0",
+			"template": Obj{
+				"foo": Obj{
+					"bar": "42",
+				},
+			},
 			"order": Array{
 				Obj{
 					"id":    1,
@@ -102,7 +107,8 @@ func init() {
 		"metadata": Obj{
 			"name": "foo",
 			"labels": Obj{
-				"foo": "bar",
+				"foo":    "bar",
+				"numStr": "42",
 			},
 			"annotations": Obj{
 				"qux": "quxx",
@@ -370,6 +376,39 @@ func Test_values(t *testing.T) {
 			},
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "bar", "baz"),
+		}},
+		{name: "dynamic valueFrom independent of wildcard label", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "metadata"),
+				labelFromPath: map[string]valuePath{
+					"lorem_*": mustCompilePath(t, "labels"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "labels_numStr"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 42, "lorem_numStr", "42", "lorem_foo", "bar"),
+		}},
+		{name: "dynamic valueFrom dependent on wildcard label", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "metadata"),
+				labelFromPath: map[string]valuePath{
+					"lorem_*": mustCompilePath(t, "labels"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "lorem_numStr"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 42, "lorem_numStr", "42", "lorem_foo", "bar"),
+		}},
+		{name: "dynamic valueFrom dependent on wildcard label with multiple underscores and path values", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec"),
+				labelFromPath: map[string]valuePath{
+					"lorem_dolor_*": mustCompilePath(t, "template", "foo"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "lorem_dolor_bar"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 42, "lorem_dolor_bar", "42"),
 		}},
 	}
 	for _, tt := range tests {

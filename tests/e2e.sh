@@ -209,6 +209,9 @@ go test -race -v ./tests/e2e/discovery_test.go
 echo "running hot-reload tests..."
 go test -v ./tests/e2e/hot-reload_test.go
 
+echo "running hot-reload-kubeconfig tests..."
+go test -v ./tests/e2e/hot-reload-kubeconfig_test.go
+
 output_logs=$(kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics)
 if echo "${output_logs}" | grep "^${klog_err}"; then
     echo ""

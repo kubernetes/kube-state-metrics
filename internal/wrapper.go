@@ -95,6 +95,28 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		})
 		crcViper.WatchConfig()
 	}
+	if opts.Kubeconfig != "" {
+		kubecfgViper := viper.New()
+		kubecfgViper.SetConfigType("yaml")
+		kubecfgViper.SetConfigFile(opts.Kubeconfig)
+		if err := kubecfgViper.ReadInConfig(); err != nil {
+			if errors.Is(err, viper.ConfigFileNotFoundError{}) {
+				klog.ErrorS(err, "kubeconfig file not found", "file", opts.Kubeconfig)
+			} else {
+				klog.ErrorS(err, "Error reading kubeconfig file", "file", opts.Kubeconfig)
+			}
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
+		kubecfgViper.OnConfigChange(func(e fsnotify.Event) {
+			klog.InfoS("Changes detected", "name", e.Name)
+			cancel()
+			// Wait for the ports to be released.
+			<-time.After(3 * time.Second)
+			ctx, cancel = context.WithCancel(context.Background())
+			go KSMRunOrDie(ctx)
+		})
+		kubecfgViper.WatchConfig()
+	}
 	klog.InfoS("Starting kube-state-metrics")
 	KSMRunOrDie(ctx)
 	select {}

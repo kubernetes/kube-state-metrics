@@ -522,6 +522,9 @@ Examples:
 
 # if the value to be matched is a number or boolean, the value is compared as a number or boolean  
 [status, conditions, "[value=66]", name]  # status.conditions[1].name = "b"
+
+# For generally matching against a field in an object schema, use the following syntax:
+[metadata, "name=foo"] # if v, ok := metadata[name]; ok && v == "foo" { return v; } else { /* ignore */ }
 ```
 
 ### Wildcard matching of version and kind fields

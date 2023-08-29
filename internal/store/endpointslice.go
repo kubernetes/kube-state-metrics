@@ -75,6 +75,56 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_endpointslice_endpoints_hints",
+			"Topology routing hints attached to endpoints",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
+				m := []*metric.Metric{}
+				for _, ep := range e.Endpoints {
+					// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
+					// If there is no hint, skip this metric
+					if ep.Hints != nil && len(ep.Hints.ForZones) > 0 {
+						var (
+							labelKeys,
+							labelValues []string
+						)
+
+						if ep.Hostname != nil {
+							labelKeys = append(labelKeys, "hostname")
+							labelValues = append(labelValues, *ep.Hostname)
+						}
+
+						// Did you know that k8s will "assign" endpoints from a zone
+						// This field is useful for debugging weird network routing issues
+						if ep.Zone != nil {
+							labelKeys = append(labelKeys, "endpoint_zone")
+							labelValues = append(labelValues, *ep.Zone)
+						}
+
+						// Per Docs.
+						// This must contain at least one address but no more than
+						// 100. These are all assumed to be fungible and clients may choose to only
+						// use the first element. Refer to: https://issue.k8s.io/106267
+						labelKeys = append(labelKeys, "address")
+						labelValues = append(labelValues, ep.Addresses[0])
+
+						for _, zone := range ep.Hints.ForZones {
+							m = append(m, &metric.Metric{
+								LabelKeys:   append(labelKeys, "hint"),
+								LabelValues: append(labelValues, zone.Name),
+								Value:       1,
+							})
+						}
+					}
+				}
+				return &metric.Family{
+					Metrics: m,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpointslice_endpoints",
 			"Endpoints attached to the endpointslice.",
 			metric.Gauge,
@@ -136,28 +186,11 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 						copy(newlabelValues, labelValues)
 						newlabelValues = append(newlabelValues, address)
 
-						// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
-						if ep.Hints != nil && len(ep.Hints.ForZones) > 0 {
-
-							// Because each endpoint can have multiple zones, we need to create a metric for each zone.
-							// and we need to make sure we aren't adding the hint label repeatedly, we need to copy the array
-							for _, zone := range ep.Hints.ForZones {
-								zoneLabelValues := make([]string, len(newlabelValues))
-								copy(zoneLabelValues, newlabelValues)
-								zoneLabelValues = append(zoneLabelValues, zone.Name)
-								m = append(m, &metric.Metric{
-									LabelKeys:   append(labelKeys, "hint"),
-									LabelValues: zoneLabelValues,
-									Value:       1,
-								})
-							}
-						} else {
-							m = append(m, &metric.Metric{
-								LabelKeys:   labelKeys,
-								LabelValues: newlabelValues,
-								Value:       1,
-							})
-						}
+						m = append(m, &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: newlabelValues,
+							Value:       1,
+						})
 					}
 				}
 				return &metric.Family{

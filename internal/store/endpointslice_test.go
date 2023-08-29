@@ -113,7 +113,9 @@ func TestEndpointSliceStore(t *testing.T) {
 			},
 			Want: `
 					# HELP kube_endpointslice_endpoints Endpoints attached to the endpointslice.
+					# HELP kube_endpointslice_endpoints_hints Topology routing hints attached to endpoints
 					# TYPE kube_endpointslice_endpoints gauge
+					# TYPE kube_endpointslice_endpoints_hints gauge
 					kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",ready="true",terminating="false"} 1
 					kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",ready="true",terminating="false"} 1
 				  `,
@@ -148,9 +150,12 @@ func TestEndpointSliceStore(t *testing.T) {
 			},
 			Want: `
 					# HELP kube_endpointslice_endpoints Endpoints attached to the endpointslice.
+					# HELP kube_endpointslice_endpoints_hints Topology routing hints attached to endpoints
 					# TYPE kube_endpointslice_endpoints gauge
-					kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",ready="true",terminating="false",hint="zone1"} 1
-					kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",ready="true",terminating="false",hint="zone1"} 1
+        			# TYPE kube_endpointslice_endpoints_hints gauge
+         			kube_endpointslice_endpoints_hints{address="10.0.0.1",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hint="zone1",hostname="host"} 1
+        			kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",ready="true",terminating="false"} 1
+        			kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",ready="true",terminating="false"} 1
 				  `,
 
 			MetricNames: []string{

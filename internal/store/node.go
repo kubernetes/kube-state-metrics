@@ -164,6 +164,9 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 		basemetrics.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			if len(allowAnnotationsList) == 0 {
+				return &metric.Family{}
+			}
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -186,6 +189,9 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 		basemetrics.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			if len(allowLabelsList) == 0 {
+				return &metric.Family{}
+			}
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -489,12 +495,14 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 	}
 }
 
-func createNodeListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createNodeListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Nodes().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Nodes().Watch(context.TODO(), opts)
 		},
 	}

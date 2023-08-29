@@ -116,13 +116,15 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(interface{
 	}
 }
 
-func createLeaseListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createLeaseListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoordinationV1().Leases("").List(context.TODO(), opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoordinationV1().Leases(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoordinationV1().Leases("").Watch(context.TODO(), opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoordinationV1().Leases(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

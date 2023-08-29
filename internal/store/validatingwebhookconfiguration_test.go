@@ -28,6 +28,7 @@ import (
 func TestValidatingWebhookConfigurationStore(t *testing.T) {
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
+	externalURL := "example.com"
 
 	cases := []generateMetricsTestCase{
 		{
@@ -68,6 +69,37 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 			kube_validatingwebhookconfiguration_info{validatingwebhookconfiguration="validatingwebhookconfiguration2",namespace="ns2"} 1
 			`,
 			MetricNames: []string{"kube_validatingwebhookconfiguration_created", "kube_validatingwebhookconfiguration_info", "kube_validatingwebhookconfiguration_metadata_resource_version"},
+		},
+		{
+			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "validatingwebhookconfiguration3",
+					Namespace:         "ns3",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "abcdef",
+				},
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{
+					{
+						Name: "webhook_with_service",
+						ClientConfig: admissionregistrationv1.WebhookClientConfig{
+							Service: &admissionregistrationv1.ServiceReference{Name: "svc", Namespace: "ns"},
+						},
+					},
+					{
+						Name: "webhook_with_external_url",
+						ClientConfig: admissionregistrationv1.WebhookClientConfig{
+							URL: &externalURL,
+						},
+					},
+				},
+			},
+			Want: `
+			# HELP kube_validatingwebhookconfiguration_webhook_clientconfig_service Service used by the apiserver to connect to a validating webhook.
+			# TYPE kube_validatingwebhookconfiguration_webhook_clientconfig_service gauge
+			kube_validatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_external_url",namespace="ns3",service_name="",service_namespace="",validatingwebhookconfiguration="validatingwebhookconfiguration3"} 1
+			kube_validatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_service",namespace="ns3",service_name="svc",service_namespace="ns",validatingwebhookconfiguration="validatingwebhookconfiguration3"} 1
+			`,
+			MetricNames: []string{"kube_validatingwebhookconfiguration_webhook_clientconfig_service"},
 		},
 	}
 	for i, c := range cases {

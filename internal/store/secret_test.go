@@ -52,7 +52,6 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_info{namespace="ns1",secret="secret1"} 1
 				kube_secret_type{namespace="ns1",secret="secret1",type="Opaque"} 1
 				kube_secret_metadata_resource_version{namespace="ns1",secret="secret1"} 0
-				kube_secret_labels{namespace="ns1",secret="secret1"} 1
 `,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
 		},
@@ -80,7 +79,6 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_info{namespace="ns2",secret="secret2"} 1
 				kube_secret_type{namespace="ns2",secret="secret2",type="kubernetes.io/service-account-token"} 1
 				kube_secret_created{namespace="ns2",secret="secret2"} 1.501569018e+09
-				kube_secret_labels{namespace="ns2",secret="secret2"} 1
 				`,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
 		},
@@ -110,7 +108,6 @@ func TestSecretStore(t *testing.T) {
 				kube_secret_type{namespace="ns3",secret="secret3",type="kubernetes.io/dockercfg"} 1
 				kube_secret_created{namespace="ns3",secret="secret3"} 1.501569018e+09
 				kube_secret_metadata_resource_version{namespace="ns3",secret="secret3"} 0
-				kube_secret_labels{namespace="ns3",secret="secret3"} 1
 `,
 			MetricNames: []string{"kube_secret_info", "kube_secret_metadata_resource_version", "kube_secret_created", "kube_secret_labels", "kube_secret_type"},
 		},

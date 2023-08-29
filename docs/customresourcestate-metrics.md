@@ -16,8 +16,6 @@ If both flags are provided, the inline configuration will take precedence.
 When multiple entries for the same resource exist, kube-state-metrics will exit with an error.
 This includes configuration which refers to a different API version.
 
-In addition to specifying one of `--custom-resource-state-config*` flags, you should also add the custom resource *Kind*s in plural form to the list of exposed resources in the `--resources` flag. If you don't specify `--resources`, then all known custom resources configured in `--custom-resource-state-config*` and all available default kubernetes objects will be taken into account by kube-state-metrics.
-
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -46,7 +44,6 @@ spec:
                         each:
                           type: Gauge
                           ...
-          - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,foos,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
 ```
 
 It's also possible to configure kube-state-metrics to run in a `custom-resource-mode` only. In addition to specifying one of `--custom-resource-state-config*` flags, you could set `--custom-resource-state-only` to `true`.
@@ -85,6 +82,11 @@ spec:
 
 NOTE: The `customresource_group`, `customresource_version`, and `customresource_kind` common labels are reserved, and will be overwritten by the values from the `groupVersionKind` field.
 
+### RBAC-enabled Clusters
+
+Please be aware that kube-state-metrics needs list and watch permissions granted to `customresourcedefinitions.apiextensions.k8s.io` as well as to the resources you want to gather metrics from.
+
+
 ### Examples
 
 The examples in this section will use the following custom resource:
@@ -107,6 +109,10 @@ spec:
         - id: 3
           value: false
     replicas: 1
+    refs:
+        - my_other_foo
+        - foo_2
+        - foo_with_extensions
 status:
     phase: Pending
     active:
@@ -205,6 +211,42 @@ Produces the following metrics:
 ```prometheus
 kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a"} 2
 kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b"} 4
+```
+
+#### Non-map Arrays
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      labelsFromPath:
+        name: [metadata, name]
+      metrics:
+        - name: "ref_info"
+          help: "Reference to other Foo"
+          each:
+            type: Info
+            info:
+              # targeting an array will produce a metric for each element
+              # labelsFromPath and value are relative to this path
+              path: [spec, refs]
+
+              # if path targets a list of values (e.g. strings or numbers, not objects or maps), individual values can
+              # referenced by a label using this syntax
+              labelsFromPath:
+                ref: []
+```
+
+Produces the following metrics:
+
+```prometheus
+kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="my_other_foo"} 1
+kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="foo_2"} 1
+kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="foo_with_extensions"} 1
 ```
 
 #### VerticalPodAutoscaler
@@ -480,6 +522,9 @@ Examples:
 
 # if the value to be matched is a number or boolean, the value is compared as a number or boolean  
 [status, conditions, "[value=66]", name]  # status.conditions[1].name = "b"
+
+# For generally matching against a field in an object schema, use the following syntax:
+[metadata, "name=foo"] # if v, ok := metadata[name]; ok && v == "foo" { return v; } else { /* ignore */ }
 ```
 
 ### Wildcard matching of version and kind fields

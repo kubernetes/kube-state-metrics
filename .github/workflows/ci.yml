@@ -21,21 +21,21 @@ env:
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
   GO_VERSION: "^1.20"
-  GOLANGCI_LINT_VERSION: "v1.51.2"
+  GOLANGCI_LINT_VERSION: "v1.54.2"
 
 jobs:
   ci-go-lint:
     name: ci-go-lint
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |
@@ -50,14 +50,14 @@ jobs:
     name: ci-validate-manifests
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |
@@ -71,14 +71,14 @@ jobs:
     name: ci-validate-go-modules
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |
@@ -92,14 +92,14 @@ jobs:
     name: ci-validate-docs
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |
@@ -113,14 +113,14 @@ jobs:
     name: ci-unit-tests
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |
@@ -149,14 +149,14 @@ jobs:
     name: ci-benchmark-tests
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |
@@ -170,14 +170,14 @@ jobs:
     name: ci-build-kube-state-metrics
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |
@@ -191,14 +191,14 @@ jobs:
     name: ci-e2e-tests
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Setup environment
       run: |

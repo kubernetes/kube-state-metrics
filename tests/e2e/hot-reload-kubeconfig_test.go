@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubernetes Authors All rights reserved.
+Copyright 2023 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +18,11 @@ package e2e
 
 import (
 	"context"
+	"io"
 	"net"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -29,32 +32,38 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
-func TestConfigHotReload(t *testing.T) {
+func TestKubeConfigHotReload(t *testing.T) {
 
 	// Initialise options.
 	opts := options.NewOptions()
 	cmd := options.InitCommand
 	opts.AddFlags(cmd)
 
-	// Create testdata.
-	f, err := os.CreateTemp("", "config")
-	if err != nil {
-		t.Fatal(err)
+	// Open kubeconfig
+	originalKubeconfig := os.Getenv("KUBECONFIG")
+	if originalKubeconfig == "" {
+		// Assume $HOME is always defined.
+		originalKubeconfig = os.Getenv("HOME") + "/.kube/config"
 	}
+	originalKubeconfigFp, err := os.Open(filepath.Clean(originalKubeconfig))
+	if err != nil {
+		t.Fatalf("failed to open kubeconfig: %v", err)
+	}
+	defer originalKubeconfigFp.Close()
 
-	// Delete artefacts.
-	defer func() {
-		err := os.Remove(opts.Config)
-		if err != nil {
-			t.Fatalf("failed to remove config file: %v", err)
-		}
-	}()
+	// Create temporal kubeconfig based on original one
+	kubeconfigFp, err := os.CreateTemp("", "ksm-hot-reload-kubeconfig")
+	if err != nil {
+		t.Fatalf("failed to create temporal kubeconfig: %v", err)
+	}
+	defer os.Remove(kubeconfigFp.Name())
 
-	// Populate options.
-	opts.Config = f.Name()
+	if _, err := io.Copy(kubeconfigFp, originalKubeconfigFp); err != nil {
+		t.Fatalf("failed to copy from original kubeconfig to new one: %v", err)
+	}
+	kubeconfig := kubeconfigFp.Name()
 
-	// Assume $HOME is always defined.
-	opts.Kubeconfig = os.Getenv("HOME") + "/.kube/config"
+	opts.Kubeconfig = kubeconfig
 
 	// Run general validation on options.
 	if err := opts.Parse(); err != nil {
@@ -81,11 +90,21 @@ func TestConfigHotReload(t *testing.T) {
 	}
 
 	// Modify config to trigger hot reload.
-	config := `foo: "bar"`
-	err = os.WriteFile(opts.Config, []byte(config), 0600 /* rw------- */)
+	err = exec.Command("kubectl", "config", "set-cluster", "ksm-hot-reload-kubeconfig-test", "--kubeconfig", kubeconfig).Run() //nolint:gosec
 	if err != nil {
-		t.Fatalf("failed to write config file: %v", err)
+		t.Fatalf("failed to modify kubeconfig: %v", err)
 	}
+
+	// Revert kubeconfig to original one.
+	defer func() {
+		err := exec.Command("kubectl", "config", "delete-cluster", "ksm-hot-reload-kubeconfig-test", "--kubeconfig", kubeconfig).Run() //nolint:gosec
+		if err != nil {
+			t.Fatalf("failed to revert kubeconfig: %v", err)
+		}
+	}()
+
+	// Wait for new kubeconfig to be reloaded.
+	time.Sleep(5 * time.Second)
 
 	// Wait for port 8080 to come up.
 	ch := make(chan bool, 1)

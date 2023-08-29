@@ -235,12 +235,14 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
 # HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
 # HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
+# HELP kube_pod_service_account The service account for a pod.
 # HELP kube_pod_owner [STABLE] Information about the Pod's owner.
 # HELP kube_pod_restart_policy [STABLE] Describes the restart policy in use by this pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim is mounted read only.
 # HELP kube_pod_start_time [STABLE] Start time in unix timestamp for a pod.
 # HELP kube_pod_status_container_ready_time Readiness achieved time in unix timestamp for a pod containers.
+# HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.
 # HELP kube_pod_status_qos_class The pods current qosClass.
 # HELP kube_pod_status_phase [STABLE] The pods current phase.
 # HELP kube_pod_status_ready_time Readiness achieved time in unix timestamp for a pod.
@@ -284,12 +286,14 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_overhead_cpu_cores gauge
 # TYPE kube_pod_overhead_memory_bytes gauge
 # TYPE kube_pod_runtimeclass_name_info gauge
+# TYPE kube_pod_service_account gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge
 # TYPE kube_pod_status_container_ready_time gauge
+# TYPE kube_pod_status_initialized_time gauge
 # TYPE kube_pod_status_phase gauge
 # TYPE kube_pod_status_qos_class gauge
 # TYPE kube_pod_status_ready gauge
@@ -299,7 +303,6 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
 # TYPE kube_pod_tolerations gauge
-kube_pod_annotations{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",image_spec="k8s.gcr.io/hyperkube2_spec",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",image_spec="k8s.gcr.io/hyperkube3_spec",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
@@ -331,9 +334,9 @@ kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",con
 kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
 kube_pod_created{namespace="default",pod="pod0",uid="abc-0"} 1.5e+09
 kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_ip="1.2.3.4",node="node1",created_by_kind="",created_by_name="",priority_class="",host_network="false"} 1
-kube_pod_labels{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="",owner_name="",owner_is_controller=""} 1
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
+kube_pod_service_account{namespace="default",pod="pod0",uid="abc-0",service_account=""} 1
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Failed"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Pending"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Running"} 1
@@ -880,7 +883,7 @@ func (f *fooFactory) Name() string {
 }
 
 // CreateClient use fake client set to establish 10 foos.
-func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
+func (f *fooFactory) CreateClient(_ *rest.Config) (interface{}, error) {
 	fooClient := samplefake.NewSimpleClientset()
 	for i := 0; i < 10; i++ {
 		err := foo(fooClient, i)

@@ -48,6 +48,9 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -67,6 +70,9 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.ALPHA,
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -132,7 +138,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 	}
 }
 
-func createClusterRoleListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createClusterRoleListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector

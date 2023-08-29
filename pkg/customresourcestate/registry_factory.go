@@ -72,6 +72,10 @@ func compileCommon(c MetricMeta) (*compiledCommon, error) {
 func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 	labels := resource.Labels.Merge(f.Labels)
 
+	if f.Each.Type == MetricTypeInfo && !strings.HasSuffix(f.Name, "_info") {
+		klog.InfoS("Info metric does not have _info suffix", "gvk", resource.GroupVersionKind.String(), "name", f.Name)
+	}
+
 	metric, err := newCompiledMetric(f.Each)
 	if err != nil {
 		return nil, fmt.Errorf("compiling metric: %w", err)
@@ -192,7 +196,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		}
 		valueFromPath, err := compilePath(m.StateSet.ValueFrom)
 		if err != nil {
-			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
+			return nil, fmt.Errorf("each.stateSet.valueFrom: %w", err)
 		}
 		return &compiledStateSet{
 			compiledCommon: *cc,
@@ -278,6 +282,9 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				onError(fmt.Errorf("[%d]: %w", i, err))
 				continue
 			}
+			if value == nil {
+				continue
+			}
 			addPathLabels(it, c.LabelFromPath(), value.Labels)
 			result = append(result, *value)
 		}
@@ -285,6 +292,9 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 		value, err := c.value(v)
 		if err != nil {
 			onError(err)
+			break
+		}
+		if value == nil {
 			break
 		}
 		addPathLabels(v, c.LabelFromPath(), value.Labels)
@@ -613,6 +623,16 @@ func compilePath(path []string) (out valuePath, _ error) {
 				part: part,
 				op: func(m interface{}) interface{} {
 					if mp, ok := m.(map[string]interface{}); ok {
+						kv := strings.Split(part, "=")
+						if len(kv) == 2 /* k=v */ {
+							key := kv[0]
+							val := kv[1]
+							if v, ok := mp[key]; ok {
+								if v == val {
+									return v
+								}
+							}
+						}
 						return mp[part]
 					} else if s, ok := m.([]interface{}); ok {
 						i, err := strconv.Atoi(part)

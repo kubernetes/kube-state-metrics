@@ -58,20 +58,16 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		}(s)
 	}
 
-	// If the first store has no headers, but has metrics, we need to write out
-	// an empty header to ensure that the metrics are written out correctly.
-	if m.stores[0].headers == nil && m.stores[0].metrics != nil {
-		m.stores[0].headers = []string{""}
-	}
 	for i, help := range m.stores[0].headers {
 		if help != "" && help != "\n" {
 			help += "\n"
 		}
-		// TODO: This writes out the help text for each metric family, before checking if the metrics for it exist,
-		// TODO: which is not ideal, and furthermore, diverges from the OpenMetrics standard.
-		_, err := w.Write([]byte(help))
-		if err != nil {
-			return fmt.Errorf("failed to write help text: %v", err)
+
+		if len(m.stores[0].metrics) > 0 {
+			_, err := w.Write([]byte(help))
+			if err != nil {
+				return fmt.Errorf("failed to write help text: %v", err)
+			}
 		}
 
 		for _, s := range m.stores {
@@ -91,11 +87,13 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 func SanitizeHeaders(writers MetricsWriterList) MetricsWriterList {
 	var lastHeader string
 	for _, writer := range writers {
-		for i, header := range writer.stores[0].headers {
-			if header == lastHeader {
-				writer.stores[0].headers[i] = ""
-			} else {
-				lastHeader = header
+		if len(writer.stores) > 0 {
+			for i, header := range writer.stores[0].headers {
+				if header == lastHeader {
+					writer.stores[0].headers[i] = ""
+				} else {
+					lastHeader = header
+				}
 			}
 		}
 	}

@@ -16,6 +16,7 @@ limitations under the License.
 package markers
 
 import (
+	"errors"
 	"fmt"
 
 	"sigs.k8s.io/controller-tools/pkg/markers"
@@ -59,12 +60,17 @@ func (labelFromPathMarker) Help() *markers.DefinitionHelp {
 }
 
 func (n labelFromPathMarker) ApplyToResource(resource *customresourcestate.Resource) error {
-	if resource.LabelsFromPath == nil {
-		resource.LabelsFromPath = map[string][]string{}
+	if resource == nil {
+		return errors.New("expected resource to not be nil")
 	}
+
 	jsonPathElems, err := n.JSONPath.Parse()
 	if err != nil {
 		return err
+	}
+
+	if resource.LabelsFromPath == nil {
+		resource.LabelsFromPath = map[string][]string{}
 	}
 
 	if jsonPath, labelExists := resource.LabelsFromPath[n.Name]; labelExists {

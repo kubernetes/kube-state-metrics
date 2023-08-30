@@ -96,13 +96,6 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 							labelValues = append(labelValues, *ep.Hostname)
 						}
 
-						// Did you know that k8s will "assign" endpoints from a zone
-						// This field is useful for debugging weird network routing issues
-						if ep.Zone != nil {
-							labelKeys = append(labelKeys, "endpoint_zone")
-							labelValues = append(labelValues, *ep.Zone)
-						}
-
 						// Per Docs.
 						// This must contain at least one address but no more than
 						// 100. These are all assumed to be fungible and clients may choose to only

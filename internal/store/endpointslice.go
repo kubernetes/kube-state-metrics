@@ -105,7 +105,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 
 						for _, zone := range ep.Hints.ForZones {
 							m = append(m, &metric.Metric{
-								LabelKeys:   append(labelKeys, "hint"),
+								LabelKeys:   append(labelKeys, "for_zone"),
 								LabelValues: append(labelValues, zone.Name),
 								Value:       1,
 							})

@@ -91,11 +91,6 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 							labelValues []string
 						)
 
-						if ep.Hostname != nil {
-							labelKeys = append(labelKeys, "hostname")
-							labelValues = append(labelValues, *ep.Hostname)
-						}
-
 						// Per Docs.
 						// This must contain at least one address but no more than
 						// 100. These are all assumed to be fungible and clients may choose to only

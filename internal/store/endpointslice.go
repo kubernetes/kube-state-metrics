@@ -75,6 +75,44 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_endpointslice_endpoints_hints",
+			"Topology routing hints attached to endpoints",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
+				m := []*metric.Metric{}
+				for _, ep := range e.Endpoints {
+					// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
+					// If there is no hint, skip this metric
+					if ep.Hints != nil && len(ep.Hints.ForZones) > 0 {
+						var (
+							labelKeys,
+							labelValues []string
+						)
+
+						// Per Docs.
+						// This must contain at least one address but no more than
+						// 100. These are all assumed to be fungible and clients may choose to only
+						// use the first element. Refer to: https://issue.k8s.io/106267
+						labelKeys = append(labelKeys, "address")
+						labelValues = append(labelValues, ep.Addresses[0])
+
+						for _, zone := range ep.Hints.ForZones {
+							m = append(m, &metric.Metric{
+								LabelKeys:   append(labelKeys, "for_zone"),
+								LabelValues: append(labelValues, zone.Name),
+								Value:       1,
+							})
+						}
+					}
+				}
+				return &metric.Family{
+					Metrics: m,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpointslice_endpoints",
 			"Endpoints attached to the endpointslice.",
 			metric.Gauge,
@@ -134,9 +172,11 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					for _, address := range ep.Addresses {
 						newlabelValues := make([]string, len(labelValues))
 						copy(newlabelValues, labelValues)
+						newlabelValues = append(newlabelValues, address)
+
 						m = append(m, &metric.Metric{
 							LabelKeys:   labelKeys,
-							LabelValues: append(newlabelValues, address),
+							LabelValues: newlabelValues,
 							Value:       1,
 						})
 					}

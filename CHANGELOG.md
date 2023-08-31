@@ -1,3 +1,25 @@
+## v2.10.0 / 2023-08-31
+
+### Note
+- Label and annotation metrics aren't exposed by default anymore to reduce the memory usage of the default configuration of kube-state-metrics. Before this change, they used to only include the name and namespace of the objects which is not relevant to users not opting in these metrics.
+
+* [BUGFIX] Log no _info suffix in name only once per reading the configuration for custommetrics by @chrischdi in https://github.com/kubernetes/kube-state-metrics/pull/2157
+* [BUGFIX] Don't crash on non-existent valueFrom path values by @chihshenghuang in https://github.com/kubernetes/kube-state-metrics/pull/2140
+* [BUGFIX] Index out of range in metrics_store.SanitizeHeaders by @mrueg in https://github.com/kubernetes/kube-state-metrics/pull/2166
+* [BUGFIX] Always extract the headers but only write it when we have custommetrics by @chrischdi in https://github.com/kubernetes/kube-state-metrics/pull/2154
+* [BUGFIX] Add filtering for Lease metrics by @ntoofu in https://github.com/kubernetes/kube-state-metrics/pull/2122
+* [FEATURE] Implement kube_pod_status_initialized_time by @opeco17 in https://github.com/kubernetes/kube-state-metrics/pull/2148
+* [FEATURE] Disable labels and annotations metrics when metric-annotations-… by @opeco17 in https://github.com/kubernetes/kube-state-metrics/pull/2145
+* [FEATURE] Add webhooks client config service metrics by @dgrisonnet in https://github.com/kubernetes/kube-state-metrics/pull/2114
+* [FEATURE] Support kube_persistentvolumeclaim_deletion_timestamp by @maxime1907 in https://github.com/kubernetes/kube-state-metrics/pull/2074
+* [FEATURE] Support kube_persistentvolume_deletion_timestamp by @maxime1907 in https://github.com/kubernetes/kube-state-metrics/pull/2075
+* [FEATURE] Adds new metric `kube_pod_service_account` by @swarup-stripe in https://github.com/kubernetes/kube-state-metrics/pull/2096
+* [FEATURE] Add volumemode to PVC info metric by @machadovilaca in https://github.com/kubernetes/kube-state-metrics/pull/2134
+* [FEATURE] Enable metric-annotations-allowlist and metric-labels-allowlist for ResourceQuota by @opeco17 in https://github.com/kubernetes/kube-state-metrics/pull/2175
+* [FEATURE] Allow field KV general matching by @rexagod in https://github.com/kubernetes/kube-state-metrics/pull/2067
+* [FEATURE] Support hot reload for kubeconfig by @opeco17 in https://github.com/kubernetes/kube-state-metrics/pull/2144
+* [FEATURE] Add support for endpoint topology routing hints by @MarkSRobinson in https://github.com/kubernetes/kube-state-metrics/pull/2090
+
 ## v2.9.2 / 2023-05-30
 
 This release does not incorporate any user-facing changes. Re-running release procedures as the process for the previous release failed. Changes are listed in v2.9.0.

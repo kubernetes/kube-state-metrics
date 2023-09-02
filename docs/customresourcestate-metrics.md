@@ -1,6 +1,6 @@
 # Custom Resource State Metrics
 
-This section describes how to add metrics based on the state of a custom resource without writing a custom resource 
+This section describes how to add metrics based on the state of a custom resource without writing a custom resource
 registry and running your own build of KSM.
 
 ## Configuration
@@ -85,7 +85,6 @@ NOTE: The `customresource_group`, `customresource_version`, and `customresource_
 ### RBAC-enabled Clusters
 
 Please be aware that kube-state-metrics needs list and watch permissions granted to `customresourcedefinitions.apiextensions.k8s.io` as well as to the resources you want to gather metrics from.
-
 
 ### Examples
 
@@ -287,7 +286,6 @@ spec:
 
 The above configuration was tested on [this](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml) VPA configuration, with an added annotation (`foo: 123`).
 
-
 ### Metric types
 
 The configuration supports three kind of metrics from the [OpenMetrics specification](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md).
@@ -335,9 +333,9 @@ Supported types are:
 * for string the following logic applies
   * `"true"` and `"yes"` are mapped to `1.0` and `"false"` and `"no"` are mapped to `0.0` (all case-insensitive)
   * RFC3339 times are parsed to float timestamp  
-  * Quantities like "250m" or "512Gi" are parsed to float using https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
+  * Quantities like "250m" or "512Gi" are parsed to float using <https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go>
   * Percentages ending with a "%" are parsed to float
-  * finally the string is parsed to float using https://pkg.go.dev/strconv#ParseFloat which should support all common number formats. If that fails an error is yielded
+  * finally the string is parsed to float using <https://pkg.go.dev/strconv#ParseFloat> which should support all common number formats. If that fails an error is yielded
 
 ##### Example for status conditions on Kubernetes Controllers
 
@@ -368,7 +366,7 @@ spec:
           valueFrom: ["status"]
 ```
 
-This will work for kubernetes controller CRs which expose status conditions according to the kubernetes api (https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition):
+This will work for kubernetes controller CRs which expose status conditions according to the kubernetes api (<https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition>):
 
 ```yaml
 status:
@@ -462,6 +460,7 @@ spec:
 ```
 
 Produces:
+
 ```prometheus
 myteam_foos_uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
@@ -480,6 +479,7 @@ spec:
 ```
 
 Produces:
+
 ```prometheus
 uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
@@ -562,5 +562,5 @@ kube_customresource_myobject_info{customresource_group="myteam.io",customresourc
 
 #### Note
 
-- For cases where the GVKs defined in a CRD have multiple versions under a single group for the same kind, as expected, the wildcard value will resolve to *all* versions, but a query for any specific version will return all resources under all versions, in that versions' representation. This basically means that for two such versions `A` and `B`,  if a resource exists under `B`, it will reflect in the metrics generated for `A` as well, in addition to any resources of itself, and vice-versa. This logic is based on the [current `list`ing behavior](https://github.com/kubernetes/client-go/issues/1251#issuecomment-1544083071) of the client-go library.
-- The introduction of this feature further discourages (and discontinues) the use of native objects in the CRS featureset, since these do not have an explicit CRD associated with them, and conflict with internal stores defined specifically for such native resources. Please consider opening an issue or raising a PR if you'd like to expand on the current metric labelsets for them. Also, any such configuration will be ignored, and no metrics will be generated for the same.
+* For cases where the GVKs defined in a CRD have multiple versions under a single group for the same kind, as expected, the wildcard value will resolve to *all* versions, but a query for any specific version will return all resources under all versions, in that versions' representation. This basically means that for two such versions `A` and `B`,  if a resource exists under `B`, it will reflect in the metrics generated for `A` as well, in addition to any resources of itself, and vice-versa. This logic is based on the [current `list`ing behavior](https://github.com/kubernetes/client-go/issues/1251#issuecomment-1544083071) of the client-go library.
+* The introduction of this feature further discourages (and discontinues) the use of native objects in the CRS featureset, since these do not have an explicit CRD associated with them, and conflict with internal stores defined specifically for such native resources. Please consider opening an issue or raising a PR if you'd like to expand on the current metric labelsets for them. Also, any such configuration will be ignored, and no metrics will be generated for the same.

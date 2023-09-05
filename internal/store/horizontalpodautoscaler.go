@@ -50,7 +50,7 @@ var (
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "horizontalpodautoscaler"}
 
-	targetMetricLabels = []string{"metric_name", "metric_target_type"}
+	targetMetricLabels = []string{"metric_name", "metric_target_type", "metric_selector"}
 )
 
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -194,13 +194,17 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				var metricTarget autoscaling.MetricTarget
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
+				// Consistent with the empty value returned by metav1.FormatLabelSelector
+				metricSelector := "<none>"
 
 				switch m.Type {
 				case autoscaling.ObjectMetricSourceType:
 					metricName = m.Object.Metric.Name
+					metricSelector = metav1.FormatLabelSelector(m.Object.Metric.Selector)
 					metricTarget = m.Object.Target
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
+					metricSelector = metav1.FormatLabelSelector(m.Pods.Metric.Selector)
 					metricTarget = m.Pods.Target
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
@@ -210,6 +214,7 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 					metricTarget = m.ContainerResource.Target
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
+					metricSelector = metav1.FormatLabelSelector(m.External.Metric.Selector)
 					metricTarget = m.External.Target
 				default:
 					// Skip unsupported metric type
@@ -229,7 +234,7 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				for metricTypeIndex, metricValue := range metricMap {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelValues: []string{metricName, metricTypeIndex.String(), metricSelector},
 						Value:       metricValue,
 					})
 				}
@@ -253,13 +258,17 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				var currentMetric autoscaling.MetricValueStatus
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
+				// Consistent with the empty value returned by metav1.FormatLabelSelector
+				metricSelector := "<none>"
 
 				switch m.Type {
 				case autoscaling.ObjectMetricSourceType:
 					metricName = m.Object.Metric.Name
+					metricSelector = metav1.FormatLabelSelector(m.Object.Metric.Selector)
 					currentMetric = m.Object.Current
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
+					metricSelector = metav1.FormatLabelSelector(m.Pods.Metric.Selector)
 					currentMetric = m.Pods.Current
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
@@ -269,6 +278,7 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 					currentMetric = m.ContainerResource.Current
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
+					metricSelector = metav1.FormatLabelSelector(m.External.Metric.Selector)
 					currentMetric = m.External.Current
 				default:
 					// Skip unsupported metric type
@@ -288,7 +298,7 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				for metricTypeIndex, metricValue := range metricMap {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelValues: []string{metricName, metricTypeIndex.String(), metricSelector},
 						Value:       metricValue,
 					})
 				}

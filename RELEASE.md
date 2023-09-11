@@ -21,12 +21,14 @@ Maintaining the release branches for older minor releases happens on a best effo
   * Changelog entry
     * Only include user relevant changes
     * Entries in the [`CHANGELOG.md`](CHANGELOG.md) are meant to be in this order:
+
     ```
     [CHANGE]
     [FEATURE]
     [ENHANCEMENT]
     [BUGFIX]
     ```
+
     * All lines should be full sentences
   * kube-state-metrics image tag used in Kubernetes deployment yaml config.
 * Cut the new release branch, e.g. `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on

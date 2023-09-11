@@ -495,14 +495,12 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 	}
 }
 
-func createNodeListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+func createNodeListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Nodes().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Nodes().Watch(context.TODO(), opts)
 		},
 	}

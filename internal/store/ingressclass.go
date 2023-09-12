@@ -134,14 +134,12 @@ func wrapIngressClassFunc(f func(*networkingv1.IngressClass) *metric.Family) fun
 	}
 }
 
-func createIngressClassListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+func createIngressClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.NetworkingV1().IngressClasses().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.NetworkingV1().IngressClasses().Watch(context.TODO(), opts)
 		},
 	}

@@ -366,14 +366,12 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(
 	}
 }
 
-func createPersistentVolumeListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+func createPersistentVolumeListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().PersistentVolumes().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().PersistentVolumes().Watch(context.TODO(), opts)
 		},
 	}

@@ -391,4 +391,4 @@ To run the e2e tests locally see the documentation in [tests/README.md](./tests/
 
 #### Developer Contributions
 
-When developing, there are certain code patterns to follow to better your contributing experience and likelihood of e2e and other ci tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).
+When developing, there are certain code patterns to follow to better your contributing experience and likelihood of E2E and other CI tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).

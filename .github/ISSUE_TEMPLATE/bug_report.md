@@ -21,7 +21,8 @@ If the matter is security related, please disclose it privately see https://gith
 **Anything else we need to know?**:
 
 **Environment**:
-- kube-state-metrics version: 
-- Kubernetes version (use `kubectl version`):
-- Cloud provider or hardware configuration:
-- Other info:
+
+* kube-state-metrics version:
+* Kubernetes version (use `kubectl version`):
+* Cloud provider or hardware configuration:
+* Other info:

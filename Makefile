@@ -21,6 +21,8 @@ IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
+MARKDOWNLINT_CLI2_VERSION = 0.9.2
+
 
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
@@ -41,11 +43,12 @@ licensecheck:
                exit 1; \
        fi
 
-lint: shellcheck licensecheck
+lint: shellcheck licensecheck lint-markdown-format
 	golangci-lint run
 
-lint-fix:
+lint-fix: fix-markdown-format
 	golangci-lint run --fix -v
+	
 
 doccheck: generate
 	@echo "- Checking if the generated documentation is up to date..."
@@ -77,6 +80,12 @@ test-rules:
 
 shellcheck:
 	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
+
+lint-markdown-format:
+	${DOCKER_CLI} run -v "${PWD}:/workdir" davidanson/markdownlint-cli2:v${MARKDOWNLINT_CLI2_VERSION} --config .markdownlint-cli2.jsonc
+
+fix-markdown-format:
+	${DOCKER_CLI} run -v "${PWD}:/workdir" davidanson/markdownlint-cli2:v${MARKDOWNLINT_CLI2_VERSION} --fix --config .markdownlint-cli2.jsonc
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.

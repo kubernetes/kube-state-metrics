@@ -80,6 +80,7 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 | **v2.10.1**        | v1.27                        |
 | **main**           | v1.28                        |
 
+
 #### Resource group version compatibility
 
 Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
@@ -89,7 +90,6 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-
 * `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 * View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.10.1)
 

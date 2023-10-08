@@ -1,3 +1,11 @@
+## v2.10.1 / 2023-10-09
+
+### Note
+- This release addresses a regression introduced in https://github.com/kubernetes/kube-state-metrics/pull/2105.
+
+* [BUGFIX] Remove FieldSelector from non-namespaced resources by @mrueg and @dgrisonnet in https://github.com/kubernetes/kube-state-metrics/pull/2190
+* [ENHANCEMENT] Bump Go to v1.20.8
+
 ## v2.10.0 / 2023-08-31
 
 ### Note

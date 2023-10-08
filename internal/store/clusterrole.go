@@ -138,12 +138,14 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 	}
 }
 
-func createClusterRoleListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createClusterRoleListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.RbacV1().ClusterRoles().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.RbacV1().ClusterRoles().Watch(context.TODO(), opts)
 		},
 	}

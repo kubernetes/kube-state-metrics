@@ -175,7 +175,25 @@ func TestNodeFieldSelector(t *testing.T) {
 
 	for _, test := range tests {
 		node := test.Node
-		actual := node.GetNodeFieldSelector()
+		actual := node.GetNodeFieldSelector(false)
+		if !reflect.DeepEqual(actual, test.Wanted) {
+			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, actual)
+		}
+	}
+	tests1 := []struct {
+		Desc   string
+		Node   NodeType
+		Wanted string
+	}{
+		{
+			Desc:   "empty node name",
+			Node:   "",
+			Wanted: "spec.nodeName=",
+		},
+	}
+	for _, test := range tests1 {
+		node := test.Node
+		actual := node.GetNodeFieldSelector(true)
 		if !reflect.DeepEqual(actual, test.Wanted) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v.", test.Desc, test.Wanted, actual)
 		}
@@ -238,7 +256,7 @@ func TestMergeFieldSelectors(t *testing.T) {
 		ns := test.Namespaces
 		deniedNS := test.DeniedNamespaces
 		selector1 := ns.GetExcludeNSFieldSelector(deniedNS)
-		selector2 := test.Node.GetNodeFieldSelector()
+		selector2 := test.Node.GetNodeFieldSelector(false)
 		actual, err := MergeFieldSelectors([]string{selector1, selector2})
 		if err != nil {
 			t.Errorf("Test error for Desc: %s. Can't merge field selector %v.", test.Desc, err)

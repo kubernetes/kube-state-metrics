@@ -108,9 +108,12 @@ func (r *ResourceSet) Type() string {
 type NodeType string
 
 // GetNodeFieldSelector returns a nodename field selector.
-func (n *NodeType) GetNodeFieldSelector() string {
+func (n *NodeType) GetNodeFieldSelector(b bool) string {
 	if string(*n) != "" {
 		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
+	}
+	if b {
+		return fields.OneTermEqualSelector("spec.nodeName", "").String()
 	}
 	return EmptyFieldSelector()
 }

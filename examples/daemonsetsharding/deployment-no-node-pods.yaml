@@ -3,9 +3,9 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/component: exporter
-    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/name: kube-state-metrics-global
     app.kubernetes.io/version: 2.10.0
-  name: kube-state-metrics-pods
+  name: kube-state-metrics-global
   namespace: kube-system
 spec:
   replicas: 1

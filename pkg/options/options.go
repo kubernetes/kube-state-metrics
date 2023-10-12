@@ -46,7 +46,6 @@ type Options struct {
 	Namespaces               NamespaceList   `yaml:"namespaces"`
 	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
 	Node                     NodeType        `yaml:"node"`
-	NoNodeScrape             bool            `yaml:"no_node_scrape"`
 	Pod                      string          `yaml:"pod"`
 	Port                     int             `yaml:"port"`
 	Resources                ResourceSet     `yaml:"resources"`

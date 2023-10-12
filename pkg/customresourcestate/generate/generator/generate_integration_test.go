@@ -22,6 +22,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"sigs.k8s.io/controller-tools/pkg/genall"
 	"sigs.k8s.io/controller-tools/pkg/loader"
 	"sigs.k8s.io/controller-tools/pkg/markers"
@@ -73,10 +74,15 @@ func Test_Generate(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(expectedFile) != output {
+	diff := cmp.Diff(string(expectedFile), output)
+	if diff != "" {
 		t.Log("output:")
 		t.Log(output)
-		t.Error("Expected output to match file testdata/foo-config.yaml")
+		t.Log("diff:")
+		t.Log(diff)
+		t.Log("Expected output to match file `testdata/foo-config.yaml` but it does not.")
+		t.Log("If the change is intended, use `go generate ./pkg/customresourcestate/generate/generator/testdata` to regenerate the `testdata/foo-config.yaml` file.")
+		t.Error("Detected a diff between the output of the integration test and the file `testdata/foo-config.yaml`.")
 	}
 }
 

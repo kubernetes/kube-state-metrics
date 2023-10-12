@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Changes to this file may require to regenerate the `foo-config.yaml`. Otherwise the
+// tests in ../generate_integration_test.go may fail.
+// The below marker can be used to regenerate the `foo-config.yaml` file by running
+// the following command:
+// $ go generate ./pkg/customresourcestate/generate/generator/testdata
 //go:generate sh -c "go run ../../../../../ generate ./... > foo-config.yaml"
 
 // +groupName=bar.example.com

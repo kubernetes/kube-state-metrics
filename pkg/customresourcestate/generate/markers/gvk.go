@@ -55,6 +55,8 @@ func (gvkMarker) Help() *markers.DefinitionHelp {
 }
 
 func (n gvkMarker) ApplyToResource(resource *customresourcestate.Resource) error {
-	resource.MetricNamePrefix = &n.NamePrefix
+	if n.NamePrefix != "" {
+		resource.MetricNamePrefix = &n.NamePrefix
+	}
 	return nil
 }

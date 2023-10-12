@@ -44,7 +44,7 @@ var (
 // GenerateCommand runs the kube-state-metrics custom resource config generator.
 var GenerateCommand = &cobra.Command{
 	Use:                   "generate [flags] /path/to/package [/path/to/package]",
-	Short:                 "Generate custom resource metrics configuration from go-code markers.",
+	Short:                 "Generate custom resource metrics configuration from go-code markers (experimental).",
 	DisableFlagsInUseLine: true,
 	Args:                  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {

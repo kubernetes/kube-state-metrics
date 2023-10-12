@@ -166,6 +166,11 @@ func TestNodeFieldSelector(t *testing.T) {
 			Wanted: "",
 		},
 		{
+			Desc:   "with node name",
+			Node:   nil,
+			Wanted: "",
+		},
+		{
 			Desc: "empty node name",
 			Node: NodeType(
 				map[string]struct{}{

@@ -18,6 +18,7 @@ package options
 
 import (
 	"errors"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -105,17 +106,52 @@ func (r *ResourceSet) Type() string {
 }
 
 // NodeType represents a nodeName to query from.
-type NodeType string
+type NodeType map[string]struct{}
+
+func (n *NodeType) Set(value string) error {
+	s := *n
+	cols := strings.Split(value, ",")
+	for _, col := range cols {
+		col = strings.TrimSpace(col)
+		if len(col) != 0 {
+			s[col] = struct{}{}
+		}
+	}
+	return nil
+}
+
+func (n NodeType) AsSlice() []string {
+	cols := make([]string, 0, len(n))
+	for col := range n {
+		cols = append(cols, col)
+	}
+	return cols
+}
+
+func (n NodeType) String() string {
+	return strings.Join(n.AsSlice(), ",")
+}
+
+func (n *NodeType) Type() string {
+	return "string"
+}
 
 // GetNodeFieldSelector returns a nodename field selector.
-func (n *NodeType) GetNodeFieldSelector(b bool) string {
-	if string(*n) != "" {
-		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
+func (n *NodeType) GetNodeFieldSelector() string {
+	if nil == n || len(*n) == 0 {
+		klog.InfoS("Using node type is nil")
+		return EmptyFieldSelector()
 	}
-	if b {
-		return fields.OneTermEqualSelector("spec.nodeName", "").String()
-	}
-	return EmptyFieldSelector()
+	pattern := "[^a-zA-Z0-9_,-]+"
+	re := regexp.MustCompile(pattern)
+	result := re.ReplaceAllString(n.String(), "")
+	klog.InfoS("Using node type", "node", result)
+	return fields.OneTermEqualSelector("spec.nodeName", result).String()
+
+}
+
+type NodeValue interface {
+	GetNodeFieldSelector() string
 }
 
 // EmptyFieldSelector returns an empty field selector.

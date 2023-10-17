@@ -20,6 +20,7 @@ limitations under the License.
 // the following command:
 // $ go generate ./pkg/customresourcestate/generate/generator/testdata
 //go:generate sh -c "go run ../../../../../ generate ./... > foo-config.yaml"
+//go:generate sh -c "controller-gen crd paths=./ output:stdout > foo-crd.yaml"
 
 // +groupName=bar.example.com
 package foo
@@ -30,16 +31,15 @@ import (
 
 // FooSpec is the spec of Foo.
 type FooSpec struct {
-	// This tests that defaulted fields are stripped for v1beta1,
-	// but not for v1
-	DefaultedString string `json:"defaultedString"`
+	// SomeString is a string.
+	SomeString string `json:"someString"`
 }
 
 // FooStatus is the status of Foo.
 type FooStatus struct {
 	// +Metrics:stateset:name="status_condition",help="The condition of a foo.",labelName="status",JSONPath=".status",list={"True","False","Unknown"},labelsFromPath={"type":".type"}
 	// +Metrics:gauge:name="status_condition_last_transition_time",help="The condition last transition time of a foo.",valueFrom=.lastTransitionTime,labelsFromPath={"type":".type","status":".status"}
-	Conditions Condition `json:"conditions,omitempty"`
+	Conditions []Condition `json:"conditions,omitempty"`
 }
 
 // Foo is a test object.

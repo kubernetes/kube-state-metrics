@@ -1,0 +1,18 @@
+# HELP foo_created Unix creation timestamp.
+# TYPE foo_created gauge
+foo_created{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar"} 1.697543739e+09
+# HELP foo_owner Owner references.
+# TYPE foo_owner info
+foo_owner{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",owner_is_controller="true",owner_kind="foo",owner_name="foo",owner_uid="someuid"} 1
+# HELP foo_status_condition The condition of a foo.
+# TYPE foo_status_condition stateset
+foo_status_condition{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="False",type="AnotherType"} 1
+foo_status_condition{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="False",type="SomeType"} 0
+foo_status_condition{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="True",type="AnotherType"} 0
+foo_status_condition{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="True",type="SomeType"} 1
+foo_status_condition{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="Unknown",type="AnotherType"} 0
+foo_status_condition{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="Unknown",type="SomeType"} 0
+# HELP foo_status_condition_last_transition_time The condition last transition time of a foo.
+# TYPE foo_status_condition_last_transition_time gauge
+foo_status_condition_last_transition_time{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="False",type="AnotherType"} 1.697119142e+09
+foo_status_condition_last_transition_time{customresource_group="bar.example.com",customresource_kind="Foo",customresource_version="foo",name="bar",status="True",type="SomeType"} 1.697119142e+09

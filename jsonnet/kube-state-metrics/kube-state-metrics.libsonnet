@@ -380,7 +380,7 @@
           '--node=""',
         ],
       };
-      local shardksmname = ksm.name + "-global";
+      local shardksmname = ksm.name + "-pods";
       std.mergePatch(ksm.deployment,
         {
           metadata: {

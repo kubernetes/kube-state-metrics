@@ -46,11 +46,14 @@ var GenerateCommand = &cobra.Command{
 	Use:                   "generate [flags] /path/to/package [/path/to/package]",
 	Short:                 "Generate custom resource metrics configuration from go-code markers (experimental).",
 	DisableFlagsInUseLine: true,
-	Args:                  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if generateWhichMarkersFlag {
 			PrintMarkerDocs()
 			return nil
+		}
+
+		if len(args) == 0 {
+			return fmt.Errorf("requires at least 1 arg(s), only received %d", len(args))
 		}
 
 		// Register the metric generator itself as marker so genall.FromOptions is able to initialize the runtime properly.

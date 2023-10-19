@@ -2136,6 +2136,26 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_service_account",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					SchedulerName: "scheduler1",
+				},
+			},
+			Want: `
+				# HELP kube_pod_scheduler_name The scheduler name for a pod.
+				# TYPE kube_pod_scheduler_name gauge
+				kube_pod_scheduler_name{namespace="ns1",pod="pod1",scheduler_name="scheduler1",uid="uid1"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_scheduler_name",
+			},
+		},
 	}
 
 	for i, c := range cases {
@@ -2231,7 +2251,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 52
+	expectedFamilies := 53
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

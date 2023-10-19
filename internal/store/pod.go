@@ -94,6 +94,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodTolerationsFamilyGenerator(),
 		createPodNodeSelectorsFamilyGenerator(),
 		createPodServiceAccountFamilyGenerator(),
+		createPodSchedulerNameFamilyGenerator(),
 	}
 }
 
@@ -1698,6 +1699,27 @@ func createPodServiceAccountFamilyGenerator() generator.FamilyGenerator {
 			m := metric.Metric{
 				LabelKeys:   []string{"service_account"},
 				LabelValues: []string{p.Spec.ServiceAccountName},
+				Value:       1,
+			}
+
+			return &metric.Family{
+				Metrics: []*metric.Metric{&m},
+			}
+		}),
+	)
+}
+
+func createPodSchedulerNameFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_scheduler_name",
+		"The scheduler name for a pod.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			m := metric.Metric{
+				LabelKeys:   []string{"scheduler_name"},
+				LabelValues: []string{p.Spec.SchedulerName},
 				Value:       1,
 			}
 

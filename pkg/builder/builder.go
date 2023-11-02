@@ -101,8 +101,8 @@ func (b *Builder) WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter) {
 }
 
 // WithAllowAnnotations configures which annotations can be returned for metrics
-func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
-	b.internal.WithAllowAnnotations(annotations)
+func (b *Builder) WithAllowAnnotations(annotations map[string][]string) error {
+	return b.internal.WithAllowAnnotations(annotations)
 }
 
 // WithAllowLabels configures which labels can be returned for metrics

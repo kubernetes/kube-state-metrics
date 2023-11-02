@@ -250,7 +250,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	storeBuilder.WithKubeClient(kubeClient)
 
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
-	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
+	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
+		return fmt.Errorf("failed to set up annotations allowlist: %v", err)
+	}
 	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
 		return fmt.Errorf("failed to set up labels allowlist: %v", err)
 	}

@@ -1,5 +1,6 @@
 # Network Policy Metrics
 
+
 | Metric name                           | Metric type | Description                                                                                                               | Labels/tags                                                                   | Status       |
 | ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------ |
 | kube_networkpolicy_annotations        | Gauge       | Kubernetes annotations converted to Prometheus labels controlled via [--metric-annotations-allowlist](./cli-arguments.md) | `namespace`=&lt;namespace name&gt; `networkpolicy`=&lt;networkpolicy name&gt; | EXPERIMENTAL |

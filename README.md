@@ -30,31 +30,31 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 
 ## Table of Contents
 
-* [Versioning](#versioning)
-  * [Kubernetes Version](#kubernetes-version)
-  * [Compatibility matrix](#compatibility-matrix)
-  * [Resource group version compatibility](#resource-group-version-compatibility)
-  * [Container Image](#container-image)
-* [Metrics Documentation](#metrics-documentation)
-  * [Conflict resolution in label names](#conflict-resolution-in-label-names)
-* [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
-* [Resource recommendation](#resource-recommendation)
-* [Latency](#latency)
-* [A note on costing](#a-note-on-costing)
-* [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
-* [Scaling kube-state-metrics](#scaling-kube-state-metrics)
-  * [Resource recommendation](#resource-recommendation)
-  * [Horizontal sharding](#horizontal-sharding)
-    * [Automated sharding](#automated-sharding)
-  * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
-* [Setup](#setup)
-  * [Building the Docker container](#building-the-docker-container)
-* [Usage](#usage)
-  * [Kubernetes Deployment](#kubernetes-deployment)
-  * [Limited privileges environment](#limited-privileges-environment)
-  * [Helm Chart](#helm-chart)
-  * [Development](#development)
-  * [Developer Contributions](#developer-contributions)
+- [Versioning](#versioning)
+  - [Kubernetes Version](#kubernetes-version)
+  - [Compatibility matrix](#compatibility-matrix)
+  - [Resource group version compatibility](#resource-group-version-compatibility)
+  - [Container Image](#container-image)
+- [Metrics Documentation](#metrics-documentation)
+  - [Conflict resolution in label names](#conflict-resolution-in-label-names)
+- [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
+- [Resource recommendation](#resource-recommendation)
+- [Latency](#latency)
+- [A note on costing](#a-note-on-costing)
+- [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
+- [Scaling kube-state-metrics](#scaling-kube-state-metrics)
+  - [Resource recommendation](#resource-recommendation)
+  - [Horizontal sharding](#horizontal-sharding)
+    - [Automated sharding](#automated-sharding)
+  - [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
+- [Setup](#setup)
+  - [Building the Docker container](#building-the-docker-container)
+- [Usage](#usage)
+  - [Kubernetes Deployment](#kubernetes-deployment)
+  - [Limited privileges environment](#limited-privileges-environment)
+  - [Helm Chart](#helm-chart)
+  - [Development](#development)
+  - [Developer Contributions](#developer-contributions)
 
 ### Versioning
 
@@ -80,6 +80,7 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 | **v2.10.1**        | v1.27                        |
 | **main**           | v1.28                        |
 
+
 #### Resource group version compatibility
 
 Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
@@ -89,7 +90,6 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-
 * `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
 * View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.10.1)
 
@@ -132,7 +132,6 @@ If you encounter those errors in the metrics, it is most likely a configuration 
 at the logs of kube-state-metrics.
 
 Example of the above mentioned metrics:
-
 ```
 kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
 kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
@@ -140,7 +139,6 @@ kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
 ```
 
 kube-state-metrics also exposes some http request metrics, examples of those are:
-
 ```
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="2.5"} 30
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="5"} 30
@@ -151,7 +149,6 @@ http_request_duration_seconds_count{handler="metrics",method="get"} 30
 ```
 
 kube-state-metrics also exposes build and configuration metrics:
-
 ```
 kube_state_metrics_build_info{branch="main",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
 kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
@@ -249,13 +246,11 @@ The downside of using an auto-sharded setup comes from the rollout strategy supp
 ### Daemonset sharding for pod metrics
 
 For pod metrics, they can be sharded per node with the following flag:
-
 * `--node`
 
 Each kube-state-metrics pod uses FieldSelector (spec.nodeName) to watch/list pod metrics only on the same node.
 
 A daemonset kube-state-metrics example:
-
 ```
 apiVersion: apps/v1
 kind: DaemonSet
@@ -290,7 +285,6 @@ go get k8s.io/kube-state-metrics
 
 Simply run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
-
 ```
 make container
 ```
@@ -318,7 +312,7 @@ To have Prometheus discover kube-state-metrics instances it is advised to create
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info --format='value(config.account)')
 ```
 
-Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>.
+Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
 
@@ -326,8 +320,7 @@ After running the above, if you see `Clusterrolebinding "cluster-admin-binding" 
 
 If you want to run kube-state-metrics in an environment where you don't have cluster-reader role, you can:
 
-* create a serviceaccount
-
+- create a serviceaccount
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -336,8 +329,7 @@ metadata:
   namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-* give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the NS you want your serviceaccount to access*)
-
+- give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the NS you want your serviceaccount to access*)
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -354,7 +346,7 @@ subjects:
     namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-* then specify a set of namespaces (using the `--namespaces` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+- then specify a set of namespaces (using the `--namespaces` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
 
 ```yaml
 spec:
@@ -369,6 +361,7 @@ spec:
 
 For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
 
+
 #### Helm Chart
 
 Starting from the kube-state-metrics chart `v2.13.3` (kube-state-metrics image `v1.9.8`), the official [Helm chart](https://artifacthub.io/packages/helm/prometheus-community/kube-state-metrics/) is maintained in [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics). Starting from kube-state-metrics chart `v3.0.0` only kube-state-metrics images of `v2.0.0 +` are supported.
@@ -380,12 +373,12 @@ running:
 
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
- go install
- kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
+	go install
+	kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
 
 Then curl the metrics endpoint
 
- curl localhost:8080/metrics
+	curl localhost:8080/metrics
 
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
 

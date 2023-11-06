@@ -19,8 +19,9 @@ spec:
           - '--apiserver=<APISERVER>'
 ```
 
-## Available options
+## Available options:
 
+[embedmd]:# (../help.txt)
 ```txt
 $ kube-state-metrics -h
 kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects.

@@ -2148,12 +2148,12 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_pod_scheduler_name The scheduler name for a pod.
-				# TYPE kube_pod_scheduler_name gauge
-				kube_pod_scheduler_name{namespace="ns1",pod="pod1",scheduler_name="scheduler1",uid="uid1"} 1
+				# HELP kube_pod_scheduler The scheduler for a pod.
+				# TYPE kube_pod_scheduler gauge
+				kube_pod_scheduler{namespace="ns1",pod="pod1",name="scheduler1",uid="uid1"} 1
 			`,
 			MetricNames: []string{
-				"kube_pod_scheduler_name",
+				"kube_pod_scheduler",
 			},
 		},
 	}

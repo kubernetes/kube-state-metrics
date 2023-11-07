@@ -1711,14 +1711,14 @@ func createPodServiceAccountFamilyGenerator() generator.FamilyGenerator {
 
 func createPodSchedulerNameFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
-		"kube_pod_scheduler_name",
-		"The scheduler name for a pod.",
+		"kube_pod_scheduler",
+		"The scheduler for a pod.",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			m := metric.Metric{
-				LabelKeys:   []string{"scheduler_name"},
+				LabelKeys:   []string{"name"},
 				LabelValues: []string{p.Spec.SchedulerName},
 				Value:       1,
 			}

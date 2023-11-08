@@ -205,7 +205,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
 	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}}))
 	// Add index
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, _ = w.Write([]byte(`<html>
              <head><title>Kube-State-Metrics Metrics Server</title></head>
              <body>
              <h1>Kube-State-Metrics Metrics</h1>
@@ -215,7 +215,7 @@ func telemetryServer(registry prometheus.Gatherer, host string, port int) {
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(listenAddress, mux))
+	log.Fatal(http.ListenAndServe(listenAddress, mux)) // #nosec: G114 - intentionally leaving this without timeouts)
 }
 
 func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuilder *store.Builder, opts *options.Options, host string, port int, enableGZIPEncoding bool) {
@@ -239,17 +239,19 @@ func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuil
 		storeBuilder,
 		enableGZIPEncoding,
 	)
-	go m.Run(ctx)
+	go func() {
+		_ = m.Run(ctx)
+	}()
 	mux.Handle(metricsPath, m)
 
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(http.StatusText(http.StatusOK)))
+		_, _ = w.Write([]byte(http.StatusText(http.StatusOK)))
 	})
 	// Add index
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, _ = w.Write([]byte(`<html>
              <head><title>Kube Metrics Server</title></head>
              <body>
              <h1>Kube Metrics</h1>
@@ -260,5 +262,5 @@ func serveMetrics(ctx context.Context, kubeClient clientset.Interface, storeBuil
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(listenAddress, mux))
+	log.Fatal(http.ListenAndServe(listenAddress, mux)) // #nosec: G114 - intentionally leaving this without timeouts
 }

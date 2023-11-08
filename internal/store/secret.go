@@ -29,7 +29,7 @@ import (
 
 var (
 	descSecretLabelsName          = "kube_secret_labels"
-	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels." // #nosec: G101 -- ignore false positive
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 
 	secretMetricFamilies = []metric.FamilyGenerator{

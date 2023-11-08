@@ -91,6 +91,6 @@ type sharding struct {
 
 func (s *sharding) keep(o metav1.Object) bool {
 	h := fnv.New64a()
-	h.Write([]byte(o.GetUID()))
+	_, _ = h.Write([]byte(o.GetUID()))
 	return jump.Hash(h.Sum64(), s.totalShards) == s.shard
 }

@@ -204,7 +204,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// In case we gzipped the response, we have to close the writer.
 	if closer, ok := writer.(io.Closer); ok {
-		closer.Close()
+		_ = closer.Close()
 	}
 }
 
@@ -225,7 +225,7 @@ func shardingSettingsFromStatefulSet(ss *appsv1.StatefulSet, podName string) (no
 
 func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 	nominalString := strings.TrimPrefix(podName, statefulSetName+"-")
-	nominal, err := strconv.Atoi(nominalString)
+	nominal, err := strconv.ParseInt(nominalString, 10, 16)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to detect shard index for Pod %s of StatefulSet %s, parsed %s", podName, statefulSetName, nominalString)
 	}

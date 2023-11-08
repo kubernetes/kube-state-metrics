@@ -156,10 +156,10 @@ func (s *MetricsStore) WriteAll(w io.Writer) {
 	defer s.mutex.RUnlock()
 
 	for i, help := range s.headers {
-		w.Write([]byte(help))
-		w.Write([]byte{'\n'})
+		_, _ = w.Write([]byte(help))
+		_, _ = w.Write([]byte{'\n'})
 		for _, metricFamilies := range s.metrics {
-			w.Write(metricFamilies[i])
+			_, _ = w.Write(metricFamilies[i])
 		}
 	}
 }

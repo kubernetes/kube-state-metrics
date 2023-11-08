@@ -84,8 +84,8 @@ func (k *KSMClient) isHealthz() (bool, error) {
 		return false, err
 	}
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
+		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode != http.StatusOK {
@@ -111,15 +111,15 @@ func (k *KSMClient) metrics(w io.Writer) error {
 		return err
 	}
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
+		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("server returned HTTP status %s", resp.Status)
 	}
 
-	io.Copy(w, resp.Body)
+	_, _ = io.Copy(w, resp.Body)
 
 	return nil
 }

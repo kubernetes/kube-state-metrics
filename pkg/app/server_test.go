@@ -235,6 +235,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
 # HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
 # HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
+# HELP kube_pod_scheduler The scheduler for a pod.
 # HELP kube_pod_service_account The service account for a pod.
 # HELP kube_pod_owner [STABLE] Information about the Pod's owner.
 # HELP kube_pod_restart_policy [STABLE] Describes the restart policy in use by this pod.
@@ -286,6 +287,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_overhead_cpu_cores gauge
 # TYPE kube_pod_overhead_memory_bytes gauge
 # TYPE kube_pod_runtimeclass_name_info gauge
+# TYPE kube_pod_scheduler gauge
 # TYPE kube_pod_service_account gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
@@ -336,6 +338,7 @@ kube_pod_created{namespace="default",pod="pod0",uid="abc-0"} 1.5e+09
 kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_ip="1.2.3.4",node="node1",created_by_kind="",created_by_name="",priority_class="",host_network="false"} 1
 kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="",owner_name="",owner_is_controller=""} 1
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
+kube_pod_scheduler{namespace="default",pod="pod0",uid="abc-0",name="scheduler1"} 1
 kube_pod_service_account{namespace="default",pod="pod0",uid="abc-0",service_account=""} 1
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Failed"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Pending"} 0
@@ -774,6 +777,7 @@ func pod(client *fake.Clientset, index int) error {
 			UID:               types.UID("abc-" + i),
 		},
 		Spec: v1.PodSpec{
+			SchedulerName: "scheduler1",
 			RestartPolicy: v1.RestartPolicyAlways,
 			NodeName:      "node1",
 			Containers: []v1.Container{

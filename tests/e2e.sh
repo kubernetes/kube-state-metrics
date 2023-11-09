@@ -166,7 +166,7 @@ echo "kube-state-metrics is up and running"
 
 echo "start e2e test for kube-state-metrics"
 KSMURL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
-go test -v ./tests/e2e/ --ksmurl=${KSMURL}
+go test -tags e2e -v ./tests/e2e/ --ksmurl=${KSMURL}
 
 # TODO: re-implement the following test cases in Go with the goal of removing this file.
 echo "access kube-state-metrics metrics endpoint"

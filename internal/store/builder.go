@@ -219,32 +219,43 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 	}
 }
 
-// WithAllowAnnotations configures which annotations can be returned for metrics
-func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
-	if len(annotations) > 0 {
-		b.allowAnnotationsList = annotations
+// allowList validates the given map and checks if the resources exists.
+// If there is a '*' as key, return new map with all enabled resources.
+func (b *Builder) allowList(list map[string][]string) (map[string][]string, error) {
+	if len(list) == 0 {
+		return nil, nil
 	}
+
+	for l := range list {
+		if !resourceExists(l) && l != "*" {
+			return nil, fmt.Errorf("resource %s does not exist. Available resources: %s", l, strings.Join(availableResources(), ","))
+		}
+	}
+
+	// "*" takes precedence over other specifications
+	allowedList, ok := list["*"]
+	if !ok {
+		return list, nil
+	}
+	m := make(map[string][]string)
+	for _, resource := range b.enabledResources {
+		m[resource] = allowedList
+	}
+	return m, nil
+}
+
+// WithAllowAnnotations configures which annotations can be returned for metrics
+func (b *Builder) WithAllowAnnotations(annotations map[string][]string) error {
+	var err error
+	b.allowAnnotationsList, err = b.allowList(annotations)
+	return err
 }
 
 // WithAllowLabels configures which labels can be returned for metrics
 func (b *Builder) WithAllowLabels(labels map[string][]string) error {
-	if len(labels) > 0 {
-		for label := range labels {
-			if !resourceExists(label) && label != "*" {
-				return fmt.Errorf("resource %s does not exist. Available resources: %s", label, strings.Join(availableResources(), ","))
-			}
-		}
-		b.allowLabelsList = labels
-		// "*" takes precedence over other specifications
-		if allowedLabels, ok := labels["*"]; ok {
-			m := make(map[string][]string)
-			for _, resource := range b.enabledResources {
-				m[resource] = allowedLabels
-			}
-			b.allowLabelsList = m
-		}
-	}
-	return nil
+	var err error
+	b.allowLabelsList, err = b.allowList(labels)
+	return err
 }
 
 // Build initializes and registers all enabled stores.

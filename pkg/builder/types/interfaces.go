@@ -42,7 +42,7 @@ type BuilderInterface interface {
 	WithCustomResourceClients(cs map[string]interface{})
 	WithUsingAPIServerCache(u bool)
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)
-	WithAllowAnnotations(a map[string][]string)
+	WithAllowAnnotations(a map[string][]string) error
 	WithAllowLabels(l map[string][]string) error
 	WithGenerateStoresFunc(f BuildStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc

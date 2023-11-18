@@ -89,6 +89,7 @@ func TestPodStore(t *testing.T) {
 						{
 							Name:  "initContainer",
 							Image: "k8s.gcr.io/initfoo_spec",
+							RestartPolicy: v1.RestartPolicyAlways
 						},
 					},
 				},

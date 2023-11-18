@@ -677,7 +677,7 @@ func createPodInitContainerInfoFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
-			labelKeys := []string{"container", "image_spec", "image", "image_id", "container_id"}
+			labelKeys := []string{"container", "image_spec", "image", "image_id", "container_id", "type"}
 
 			for _, c := range p.Spec.InitContainers {
 				for _, cs := range p.Status.InitContainerStatuses {
@@ -686,7 +686,7 @@ func createPodInitContainerInfoFamilyGenerator() generator.FamilyGenerator {
 					}
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   labelKeys,
-						LabelValues: []string{cs.Name, c.Image, cs.Image, cs.ImageID, cs.ContainerID},
+						LabelValues: []string{cs.Name, c.Image, cs.Image, cs.ImageID, cs.ContainerID, c.RestartPolicy},
 						Value:       1,
 					})
 				}

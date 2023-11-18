@@ -89,6 +89,7 @@ func TestPodStore(t *testing.T) {
 						{
 							Name:  "initContainer",
 							Image: "k8s.gcr.io/initfoo_spec",
+							RestartPolicy: v1.ContainerRestartPolicyAlways
 						},
 					},
 				},
@@ -124,7 +125,7 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_init_container_info gauge
 				kube_pod_container_info{container="container2",container_id="docker://cd456",image_spec="k8s.gcr.io/hyperkube2_spec",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2",uid="uid2"} 1
 				kube_pod_container_info{container="container3",container_id="docker://ef789",image_spec="k8s.gcr.io/hyperkube3_spec",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2",uid="uid2"} 1
-				kube_pod_init_container_info{container="initContainer",container_id="docker://ef123",image_spec="k8s.gcr.io/initfoo_spec",image="k8s.gcr.io/initfoo",image_id="docker://sha256:wxyz",namespace="ns2",pod="pod2",uid="uid2"} 1`,
+				kube_pod_init_container_info{container="initContainer",container_id="docker://ef123",image_spec="k8s.gcr.io/initfoo_spec",image="k8s.gcr.io/initfoo",image_id="docker://sha256:wxyz",namespace="ns2",pod="pod2",uid="uid2", type="Always"} 1`,
 			MetricNames: []string{"kube_pod_container_info", "kube_pod_init_container_info"},
 		},
 		{

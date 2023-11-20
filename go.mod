@@ -22,7 +22,7 @@ require (
 	k8s.io/client-go v0.28.4
 	k8s.io/component-base v0.28.4
 	k8s.io/klog/v2 v2.110.1
-	k8s.io/sample-controller v0.28.3
+	k8s.io/sample-controller v0.28.4
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 

@@ -28,6 +28,7 @@ If the matter is security related, please disclose it privately see https://gith
 * Other info:
 
 **Reproduce example**:
+
 ```bash
 # https://github.com/kubernetes/kube-state-metrics/issues/2223#issuecomment-1792850276
 minikube start

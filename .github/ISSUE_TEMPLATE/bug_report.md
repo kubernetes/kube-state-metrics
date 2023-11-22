@@ -17,6 +17,12 @@ If the matter is security related, please disclose it privately see https://gith
 **What you expected to happen**:
 
 **How to reproduce it (as minimally and precisely as possible)**:
+```bash
+# An example: https://github.com/kubernetes/kube-state-metrics/issues/2223#issuecomment-1792850276
+minikube start
+...
+go run main.go --custom-resource-state-only --custom-resource-state-config-file ksm-2223/custom-resource-config-file.yaml --kubeconfig ~/.kube/config
+```
 
 **Anything else we need to know?**:
 
@@ -26,12 +32,3 @@ If the matter is security related, please disclose it privately see https://gith
 * Kubernetes version (use `kubectl version`):
 * Cloud provider or hardware configuration:
 * Other info:
-
-**Reproduce example**:
-
-```bash
-# https://github.com/kubernetes/kube-state-metrics/issues/2223#issuecomment-1792850276
-minikube start
-...
-go run main.go --custom-resource-state-only --custom-resource-state-config-file ksm-2223/custom-resource-config-file.yaml --kubeconfig ~/.kube/config
-```

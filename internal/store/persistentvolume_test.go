@@ -697,6 +697,52 @@ func TestPersistentVolumeStore(t *testing.T) {
 `,
 			MetricNames: []string{"kube_persistentvolume_deletion_timestamp"},
 		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						CSI: &v1.CSIPersistentVolumeSource{
+							Driver:       "test-driver",
+							VolumeHandle: "test-volume-handle",
+						},
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_csi_attributes CSI attributes of the Persistent Volume.
+					# TYPE kube_persistentvolume_csi_attributes gauge
+					kube_persistentvolume_csi_attributes{persistentvolume="test-pv-available",csi_mounter="",csi_map_options=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_csi_attributes"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						CSI: &v1.CSIPersistentVolumeSource{
+							Driver:       "test-driver",
+							VolumeHandle: "test-volume-handle",
+							VolumeAttributes: map[string]string{
+								"mounter":    "rbd",
+								"mapOptions": "krbd:rxbounce",
+							},
+						},
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_csi_attributes CSI attributes of the Persistent Volume.
+					# TYPE kube_persistentvolume_csi_attributes gauge
+					kube_persistentvolume_csi_attributes{persistentvolume="test-pv-available",csi_mounter="rbd",csi_map_options="krbd:rxbounce"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_csi_attributes"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

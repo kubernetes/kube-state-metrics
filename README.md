@@ -250,7 +250,7 @@ The downside of using an auto-sharded setup comes from the rollout strategy supp
 
 For pod metrics, they can be sharded per node with the following flag:
 
-* `--node`
+* `--node=$(NODE_NAME)`
 
 Each kube-state-metrics pod uses FieldSelector (spec.nodeName) to watch/list pod metrics only on the same node.
 
@@ -274,6 +274,21 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: spec.nodeName
+```
+
+To track metrics for unassigned pods, you need to add an additional deployment and set `--node=""`, as shown in the following example:
+```
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:IMAGE_TAG
+        name: kube-state-metrics
+        args:
+        - --resources=pods
+        - --node=""
 ```
 
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).

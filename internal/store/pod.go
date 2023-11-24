@@ -186,7 +186,10 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 					case v1.ResourceStorage:
 						fallthrough
 					case v1.ResourceEphemeralStorage:
-						fallthrough
+						ms = append(ms, &metric.Metric{
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+							Value:       float64(val.Value()),
+						})
 					case v1.ResourceMemory:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
@@ -250,7 +253,10 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 					case v1.ResourceStorage:
 						fallthrough
 					case v1.ResourceEphemeralStorage:
-						fallthrough
+						ms = append(ms, &metric.Metric{
+							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+							Value:       float64(val.Value()),
+						})
 					case v1.ResourceMemory:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},

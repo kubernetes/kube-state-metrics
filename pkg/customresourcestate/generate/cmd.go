@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubernetes Authors All rights reserved.
+Copyright 2023 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ var GenerateCommand = &cobra.Command{
 		}
 
 		if len(args) == 0 {
-			return fmt.Errorf("requires at least 1 arg(s), only received %d", len(args))
+			return fmt.Errorf("requires at least 1 package argument")
 		}
 
 		// Register the metric generator itself as marker so genall.FromOptions is able to initialize the runtime properly.

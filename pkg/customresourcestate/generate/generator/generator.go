@@ -113,9 +113,9 @@ func (g CustomResourceConfigGenerator) Generate(ctx *genall.GenerationContext) e
 	})
 
 	// Write the rendered yaml to the context which will result in stdout.
-	filePath := "metrics.yaml"
-	if err := ctx.WriteYAML(filePath, "", []interface{}{metrics}, genall.WithTransform(addCustomResourceStateKind)); err != nil {
-		return fmt.Errorf("WriteYAML to %s: %w", filePath, err)
+	virtualFilePath := "metrics.yaml"
+	if err := ctx.WriteYAML(virtualFilePath, "", []interface{}{metrics}, genall.WithTransform(addCustomResourceStateKind)); err != nil {
+		return fmt.Errorf("WriteYAML to %s: %w", virtualFilePath, err)
 	}
 
 	return nil

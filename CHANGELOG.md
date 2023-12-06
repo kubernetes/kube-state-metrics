@@ -1,3 +1,26 @@
+## v2.11.0 / 2023-12-20
+
+* [FEATURE] introduce Markdown linter and formatter by @opeco17 in <https://github.com/kubernetes/kube-state-metrics/pull/2184>
+* [FEATURE] ingress resource backend support added by @rohitphatak in <https://github.com/kubernetes/kube-state-metrics/pull/2109>
+* [FEATURE] Add new metric kube_pod_scheduler by @adinhodovic in <https://github.com/kubernetes/kube-state-metrics/pull/2222>
+* [FEATURE] Support filtering annotations allowlist by "\*" by @xonvanetta in <https://github.com/kubernetes/kube-state-metrics/pull/2234>
+* [FEATURE] create opt-in kube_persistentvolume_csi_attributes metric by @machadovilaca in <https://github.com/kubernetes/kube-state-metrics/pull/2133>
+* [ENHANCEMENT] Build with go 1.21 by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2183>
+* [ENHANCEMENT] Bump to kubernetes 1.28 by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2182>
+* [FEATURE] Add namespace label to endpoinslice metrics by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2266>
+* [FEATURE] Add kube_node_status_addresses metric by @stonith in <https://github.com/kubernetes/kube-state-metrics/pull/2252>
+* [BUGFIX] Support scraping pods metrics that is still in scheduling status and has no assigned node by @mickeyzzc in <https://github.com/kubernetes/kube-state-metrics/pull/2217>
+* [FEATURE] Add restartPolicy to `kube_pod_init_container_info` metric by @changhyuni in <https://github.com/kubernetes/kube-state-metrics/pull/2240>
+
+## v2.10.1 / 2023-10-09
+
+### Note
+
+* This release addresses a regression introduced in <https://github.com/kubernetes/kube-state-metrics/pull/2105>.
+
+* [BUGFIX] Remove FieldSelector from non-namespaced resources by @mrueg and @dgrisonnet in <https://github.com/kubernetes/kube-state-metrics/pull/2190>
+* [ENHANCEMENT] Bump Go to v1.20.8
+
 ## v2.10.0 / 2023-08-31
 
 ### Note

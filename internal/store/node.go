@@ -55,6 +55,7 @@ func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 		createNodeStatusAllocatableFamilyGenerator(),
 		createNodeStatusCapacityFamilyGenerator(),
 		createNodeStatusConditionFamilyGenerator(),
+		createNodeStateAddressFamilyGenerator(),
 	}
 }
 
@@ -98,6 +99,29 @@ func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {
 				})
 			}
 
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createNodeStateAddressFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_node_status_addresses",
+		"Node address information.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			ms := []*metric.Metric{}
+			for _, address := range n.Status.Addresses {
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"type", "address"},
+					LabelValues: []string{string(address.Type), address.Address},
+					Value:       1,
+				})
+			}
 			return &metric.Family{
 				Metrics: ms,
 			}

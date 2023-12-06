@@ -48,3 +48,10 @@ func (f Family) ByteSlice() []byte {
 
 	return []byte(b.String())
 }
+
+// SetLabelKeys set same label name to all metrics
+func SetLabelKeys(metrics []*Metric, labelKeys []string) {
+	for _, metric := range metrics {
+		metric.LabelKeys = labelKeys
+	}
+}

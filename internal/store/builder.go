@@ -119,7 +119,20 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	sort.Strings(sortedResources)
 
 	b.enabledResources = append(b.enabledResources, sortedResources...)
+	b.enabledResources = unique(b.enabledResources)
 	return nil
+}
+
+func unique(arr []string) []string {
+	mp := make(map[string]bool)
+	for _, s := range arr {
+		mp[s] = true
+	}
+	result := []string{}
+	for key, _ := range mp {
+		result = append(result, key)
+	}
+	return result
 }
 
 // WithFieldSelectorFilter sets the fieldSelector property of a Builder.

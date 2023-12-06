@@ -21,6 +21,9 @@ spec:
 
 ## Available options
 
+<!-- markdownlint-disable blanks-around-fences -->
+<!-- markdownlint-disable link-image-reference-definitions -->
+[embedmd]:# (../help.txt)
 ```txt
 $ kube-state-metrics -h
 kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects.
@@ -52,7 +55,7 @@ Flags:
       --log_file_max_size uint                     Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                                log to standard error instead of files (default true)
       --metric-allowlist string                    Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.
-      --metric-annotations-allowlist string        Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.
+      --metric-annotations-allowlist string        Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').
       --metric-denylist string                     Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.
       --metric-labels-allowlist string             Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the labels metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.
       --metric-opt-in-list string                  Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists
@@ -67,7 +70,7 @@ Flags:
       --shard int32                                The instances shard nominal (zero indexed) within the total number of shards. (default 0)
       --skip_headers                               If true, avoid header prefixes in the log messages
       --skip_log_headers                           If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity                   logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity                   logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --telemetry-host string                      Host to expose kube-state-metrics self metrics on. (default "::")
       --telemetry-port int                         Port to expose kube-state-metrics self metrics on. (default 8081)
       --tls-config string                          Path to the TLS configuration file
@@ -78,3 +81,5 @@ Flags:
 
 Use "kube-state-metrics [command] --help" for more information about a command.
 ```
+<!-- markdownlint-enable link-image-reference-definitions -->
+<!-- markdownlint-enable blanks-around-fences -->

@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0
 	github.com/prometheus/common v0.45.0
-	github.com/prometheus/exporter-toolkit v0.10.0
+	github.com/prometheus/exporter-toolkit v0.11.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.1

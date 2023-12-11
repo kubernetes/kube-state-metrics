@@ -35,7 +35,7 @@ var (
 	descEndpointSliceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descEndpointSliceLabelsName          = "kube_endpointslice_labels"
 	descEndpointSliceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descEndpointSliceLabelsDefaultLabels = []string{"endpointslice"}
+	descEndpointSliceLabelsDefaultLabels = []string{"endpointslice", "namespace"}
 )
 
 func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -261,7 +261,7 @@ func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) fu
 		metricFamily := f(endpointSlice)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descEndpointSliceLabelsDefaultLabels, []string{endpointSlice.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descEndpointSliceLabelsDefaultLabels, []string{endpointSlice.Name, endpointSlice.Namespace}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

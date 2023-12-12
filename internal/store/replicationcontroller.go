@@ -33,9 +33,11 @@ import (
 )
 
 var (
-	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
+	descReplicationControllerLabelsDefaultLabels = SharedLabelKeys{"namespace", "replicationcontroller"}
+)
 
-	replicationControllerMetricFamilies = []generator.FamilyGenerator{
+func replicationControllerMetricFamilies() []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicationcontroller_created",
 			"Unix creation timestamp",
@@ -51,6 +53,8 @@ var (
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -63,12 +67,16 @@ var (
 			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.Replicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.Replicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -79,12 +87,15 @@ var (
 			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.FullyLabeledReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.FullyLabeledReplicas),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -95,12 +106,15 @@ var (
 			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.ReadyReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.ReadyReplicas),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -111,12 +125,14 @@ var (
 			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.AvailableReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.AvailableReplicas),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -127,12 +143,15 @@ var (
 			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.ObservedGeneration),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.ObservedGeneration),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -151,6 +170,8 @@ var (
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -163,12 +184,15 @@ var (
 			basemetrics.STABLE,
 			"",
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.ObjectMeta.Generation),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.ObjectMeta.Generation),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -185,7 +209,6 @@ var (
 				owners := r.GetOwnerReferences()
 				if len(owners) == 0 {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   labelKeys,
 						LabelValues: []string{"", "", ""},
 						Value:       1,
 					})
@@ -197,12 +220,13 @@ var (
 						}
 
 						ms = append(ms, &metric.Metric{
-							LabelKeys:   labelKeys,
 							LabelValues: []string{owner.Kind, owner.Name, ownerIsController},
 							Value:       1,
 						})
 					}
 				}
+
+				metric.SetLabelKeys(ms, labelKeys)
 
 				return &metric.Family{
 					Metrics: ms,
@@ -210,7 +234,7 @@ var (
 			}),
 		),
 	}
-)
+}
 
 func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

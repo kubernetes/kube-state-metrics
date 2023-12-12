@@ -434,7 +434,7 @@ func (b *Builder) buildReplicaSetStores() []cache.Store {
 }
 
 func (b *Builder) buildReplicationControllerStores() []cache.Store {
-	return b.buildStoresFunc(replicationControllerMetricFamilies, &v1.ReplicationController{}, createReplicationControllerListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(replicationControllerMetricFamilies(), &v1.ReplicationController{}, createReplicationControllerListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildResourceQuotaStores() []cache.Store {

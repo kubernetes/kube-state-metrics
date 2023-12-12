@@ -163,8 +163,8 @@ func TestReplicationControllerStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(replicationControllerMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(replicationControllerMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(replicationControllerMetricFamilies())
+		c.Headers = generator.ExtractMetricFamilyHeaders(replicationControllerMetricFamilies())
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

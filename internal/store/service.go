@@ -36,7 +36,7 @@ var (
 	descServiceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descServiceLabelsName          = "kube_service_labels"
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descServiceLabelsDefaultLabels = []string{"namespace", "service", "uid"}
+	descServiceLabelsDefaultLabels = SharedLabelKeys{"namespace", "service", "uid"}
 )
 
 func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -48,12 +48,14 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				m := metric.Metric{
-					LabelKeys:   []string{"cluster_ip", "external_name", "load_balancer_ip"},
-					LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
-					Value:       1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
+						Value:       1,
+					},
 				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
+				metric.SetLabelKeys(ms, []string{"cluster_ip", "external_name", "load_balancer_ip"})
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -64,12 +66,13 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if !s.CreationTimestamp.IsZero() {
-					m := metric.Metric{
-						LabelKeys:   nil,
-						LabelValues: nil,
-						Value:       float64(s.CreationTimestamp.Unix()),
+					ms := []*metric.Metric{
+						{
+							Value: float64(s.CreationTimestamp.Unix()),
+						},
 					}
-					return &metric.Family{Metrics: []*metric.Metric{&m}}
+					metric.SetLabelKeys(ms, []string{})
+					return &metric.Family{Metrics: ms}
 				}
 				return &metric.Family{Metrics: []*metric.Metric{}}
 			}),
@@ -81,13 +84,15 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				m := metric.Metric{
+				ms := []*metric.Metric{
+					{
 
-					LabelKeys:   []string{"type"},
-					LabelValues: []string{string(s.Spec.Type)},
-					Value:       1,
+						LabelValues: []string{string(s.Spec.Type)},
+						Value:       1,
+					},
 				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
+				metric.SetLabelKeys(ms, []string{"type"})
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -101,12 +106,14 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
-				m := metric.Metric{
-					LabelKeys:   annotationKeys,
-					LabelValues: annotationValues,
-					Value:       1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
+					},
 				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -120,12 +127,14 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
-				m := metric.Metric{
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
+					},
 				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -145,11 +154,12 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				for i, externalIP := range s.Spec.ExternalIPs {
 					ms[i] = &metric.Metric{
-						LabelKeys:   []string{"external_ip"},
 						LabelValues: []string{externalIP},
 						Value:       1,
 					}
 				}
+
+				metric.SetLabelKeys(ms, []string{"external_ip"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -173,11 +183,12 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				for i, ingress := range s.Status.LoadBalancer.Ingress {
 					ms[i] = &metric.Metric{
-						LabelKeys:   []string{"ip", "hostname"},
 						LabelValues: []string{ingress.IP, ingress.Hostname},
 						Value:       1,
 					}
 				}
+
+				metric.SetLabelKeys(ms, []string{"ip", "hostname"})
 
 				return &metric.Family{
 					Metrics: ms,

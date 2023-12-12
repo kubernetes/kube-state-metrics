@@ -37,7 +37,7 @@ var (
 	descStatefulSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descStatefulSetLabelsName          = "kube_statefulset_labels"
 	descStatefulSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descStatefulSetLabelsDefaultLabels = []string{"namespace", "statefulset"}
+	descStatefulSetLabelsDefaultLabels = SharedLabelKeys{"namespace", "statefulset"}
 )
 
 func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -57,6 +57,8 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -69,12 +71,16 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(s.Status.Replicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(s.Status.Replicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -85,12 +91,16 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.ALPHA,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(s.Status.AvailableReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(s.Status.AvailableReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -101,12 +111,16 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(s.Status.CurrentReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(s.Status.CurrentReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -117,12 +131,16 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(s.Status.ReadyReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(s.Status.ReadyReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -133,12 +151,16 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(s.Status.UpdatedReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(s.Status.UpdatedReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -149,12 +171,16 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(s.Status.ObservedGeneration),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(s.Status.ObservedGeneration),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -172,6 +198,8 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 						Value: float64(*s.Spec.Replicas),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -193,6 +221,8 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -205,12 +235,16 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(s.ObjectMeta.Generation),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(s.ObjectMeta.Generation),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -231,11 +265,12 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				ms := []*metric.Metric{}
 				if deletedPolicyLabel != "" || scaledPolicyLabel != "" {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"when_deleted", "when_scaled"},
 						LabelValues: []string{deletedPolicyLabel, scaledPolicyLabel},
 						Value:       1,
 					})
 				}
+				metric.SetLabelKeys(ms, []string{"when_deleted", "when_scaled"})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -252,14 +287,15 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -274,14 +310,15 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -292,14 +329,17 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"revision"},
-							LabelValues: []string{s.Status.CurrentRevision},
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{s.Status.CurrentRevision},
+						Value:       1,
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{"revision"})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -310,14 +350,17 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"revision"},
-							LabelValues: []string{s.Status.UpdateRevision},
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{s.Status.UpdateRevision},
+						Value:       1,
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{"revision"})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

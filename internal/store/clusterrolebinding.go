@@ -36,7 +36,7 @@ var (
 	descClusterRoleBindingAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descClusterRoleBindingLabelsName          = "kube_clusterrolebinding_labels"
 	descClusterRoleBindingLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descClusterRoleBindingLabelsDefaultLabels = []string{"clusterrolebinding"}
+	descClusterRoleBindingLabelsDefaultLabels = SharedLabelKeys{"clusterrolebinding"}
 )
 
 func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -52,14 +52,15 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -74,14 +75,15 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -94,12 +96,15 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 			wrapClusterRoleBindingFunc(func(r *rbacv1.ClusterRoleBinding) *metric.Family {
 				labelKeys := []string{"roleref_kind", "roleref_name"}
 				labelValues := []string{r.RoleRef.Kind, r.RoleRef.Name}
+				ms := []*metric.Metric{{
+					LabelValues: labelValues,
+					Value:       1,
+				}}
+
+				metric.SetLabelKeys(ms, labelKeys)
+
 				return &metric.Family{
-					Metrics: []*metric.Metric{{
-						LabelKeys:   labelKeys,
-						LabelValues: labelValues,
-						Value:       1,
-					}},
+					Metrics: ms,
 				}
 			}),
 		),
@@ -114,11 +119,11 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 
 				if !r.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(r.CreationTimestamp.Unix()),
 					})
 				}
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,

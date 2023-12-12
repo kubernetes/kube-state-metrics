@@ -478,7 +478,7 @@ func (b *Builder) buildVolumeAttachmentStores() []cache.Store {
 }
 
 func (b *Builder) buildLeasesStores() []cache.Store {
-	return b.buildStoresFunc(leaseMetricFamilies, &coordinationv1.Lease{}, createLeaseListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(leaseMetricFamilies(), &coordinationv1.Lease{}, createLeaseListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildClusterRoleStores() []cache.Store {

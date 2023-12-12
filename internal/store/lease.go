@@ -32,9 +32,11 @@ import (
 )
 
 var (
-	descLeaseLabelsDefaultLabels = []string{"lease"}
+	descLeaseLabelsDefaultLabels = SharedLabelKeys{"lease"}
+)
 
-	leaseMetricFamilies = []generator.FamilyGenerator{
+func leaseMetricFamilies() []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_lease_owner",
 			"Information about the Lease's owner.",
@@ -51,26 +53,28 @@ var (
 
 				owners := l.GetOwnerReferences()
 				if len(owners) == 0 {
-					return &metric.Family{
-						Metrics: []*metric.Metric{
-							{
-								LabelKeys:   labelKeys,
-								LabelValues: []string{"", "", l.Namespace, holder},
-								Value:       1,
-							},
+					ms := []*metric.Metric{
+						{
+							LabelValues: []string{"", "", l.Namespace, holder},
+							Value:       1,
 						},
+					}
+
+					metric.SetLabelKeys(ms, labelKeys)
+
+					return &metric.Family{
+						Metrics: ms,
 					}
 				}
 				ms := make([]*metric.Metric, len(owners))
 
 				for i, owner := range owners {
 					ms[i] = &metric.Metric{
-						LabelKeys:   labelKeys,
 						LabelValues: []string{owner.Kind, owner.Name, l.Namespace, holder},
 						Value:       1,
 					}
 				}
-
+				metric.SetLabelKeys(ms, labelKeys)
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -94,13 +98,16 @@ var (
 						Value:       float64(l.Spec.RenewTime.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, labelKeys)
+
 				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
 		),
 	}
-)
+}
 
 func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

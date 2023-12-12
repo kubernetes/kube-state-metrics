@@ -36,7 +36,7 @@ var (
 	descSecretAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels." //nolint:gosec
 	descSecretLabelsName          = "kube_secret_labels"
 	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels." //nolint:gosec
-	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
+	descSecretLabelsDefaultLabels = SharedLabelKeys{"namespace", "secret"}
 )
 
 func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -48,12 +48,14 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				ms := []*metric.Metric{{
+					Value: 1,
+				}}
+
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
-					},
+					Metrics: ms,
 				}
 			}),
 		),
@@ -64,14 +66,17 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"type"},
-							LabelValues: []string{string(s.Type)},
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{string(s.Type)},
+						Value:       1,
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{"type"})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -86,14 +91,15 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 
 			}),
@@ -109,14 +115,15 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 
 			}),
@@ -135,6 +142,8 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 						Value: float64(s.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,

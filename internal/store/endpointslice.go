@@ -35,7 +35,7 @@ var (
 	descEndpointSliceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descEndpointSliceLabelsName          = "kube_endpointslice_labels"
 	descEndpointSliceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descEndpointSliceLabelsDefaultLabels = []string{"endpointslice", "namespace"}
+	descEndpointSliceLabelsDefaultLabels = SharedLabelKeys{"endpointslice", "namespace"}
 )
 
 func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -47,13 +47,16 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
-
-				m := metric.Metric{
-					LabelKeys:   []string{"addresstype"},
-					LabelValues: []string{string(s.AddressType)},
-					Value:       1,
+				labelKeys := []string{"addresstype"}
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{string(s.AddressType)},
+						Value:       1,
+					},
 				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
+
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -69,6 +72,7 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 						Value: float64(s.CreationTimestamp.Unix()),
 					})
 				}
+				metric.SetLabelKeys(ms, []string{})
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -194,16 +198,17 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
-				m := []*metric.Metric{}
+				ms := []*metric.Metric{}
+				labelKeys := []string{"port_name", "port_protocol", "port_number"}
 				for _, port := range e.Ports {
-					m = append(m, &metric.Metric{
+					ms = append(ms, &metric.Metric{
 						LabelValues: []string{*port.Name, string(*port.Protocol), strconv.FormatInt(int64(*port.Port), 10)},
-						LabelKeys:   []string{"port_name", "port_protocol", "port_number"},
 						Value:       1,
 					})
 				}
+				metric.SetLabelKeys(ms, labelKeys)
 				return &metric.Family{
-					Metrics: m,
+					Metrics: ms,
 				}
 			}),
 		),
@@ -218,14 +223,15 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -240,14 +246,15 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

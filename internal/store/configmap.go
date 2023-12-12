@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
+	descConfigMapLabelsDefaultLabels = SharedLabelKeys{"namespace", "configmap"}
 )
 
 func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -48,14 +48,15 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", c.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -70,14 +71,15 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", c.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -88,12 +90,15 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+				ms := []*metric.Metric{{
+					LabelValues: []string{},
+					Value:       1,
+				}}
+
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
-					Metrics: []*metric.Metric{{
-						LabelKeys:   []string{},
-						LabelValues: []string{},
-						Value:       1,
-					}},
+					Metrics: ms,
 				}
 			}),
 		),
@@ -108,11 +113,12 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 
 				if !c.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(c.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,

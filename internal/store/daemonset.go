@@ -36,7 +36,7 @@ var (
 	descDaemonSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descDaemonSetLabelsName          = "kube_daemonset_labels"
 	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
+	descDaemonSetLabelsDefaultLabels = SharedLabelKeys{"namespace", "daemonset"}
 )
 
 func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -52,11 +52,12 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 
 				if !d.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(d.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -70,14 +71,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.Status.CurrentNumberScheduled),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.Status.CurrentNumberScheduled),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -88,14 +92,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.Status.DesiredNumberScheduled),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.Status.DesiredNumberScheduled),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -106,14 +113,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.Status.NumberAvailable),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.Status.NumberAvailable),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -124,14 +134,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.Status.NumberMisscheduled),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.Status.NumberMisscheduled),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -142,14 +155,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.Status.NumberReady),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.Status.NumberReady),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -160,14 +176,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.Status.NumberUnavailable),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.Status.NumberUnavailable),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -178,14 +197,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.Status.ObservedGeneration),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.Status.ObservedGeneration),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -196,12 +218,16 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.Status.UpdatedNumberScheduled),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.Status.UpdatedNumberScheduled),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -212,14 +238,17 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(d.ObjectMeta.Generation),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(d.ObjectMeta.Generation),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -234,14 +263,15 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -256,14 +286,15 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

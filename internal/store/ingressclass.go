@@ -34,7 +34,7 @@ var (
 	descIngressClassAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descIngressClassLabelsName          = "kube_ingressclass_labels" //nolint:gosec
 	descIngressClassLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descIngressClassLabelsDefaultLabels = []string{"ingressclass"}
+	descIngressClassLabelsDefaultLabels = SharedLabelKeys{"ingressclass"}
 )
 
 func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -47,12 +47,15 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
 
-				m := metric.Metric{
-					LabelKeys:   []string{"controller"},
-					LabelValues: []string{s.Spec.Controller},
-					Value:       1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{s.Spec.Controller},
+						Value:       1,
+					},
 				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
+
+				metric.SetLabelKeys(ms, []string{"controller"})
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -68,6 +71,7 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 						Value: float64(s.CreationTimestamp.Unix()),
 					})
 				}
+				metric.SetLabelKeys(ms, []string{})
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -84,14 +88,15 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -106,14 +111,15 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

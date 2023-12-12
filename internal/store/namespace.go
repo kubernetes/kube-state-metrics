@@ -37,7 +37,7 @@ var (
 	descNamespaceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descNamespaceLabelsName          = "kube_namespace_labels"
 	descNamespaceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descNamespaceLabelsDefaultLabels = []string{"namespace"}
+	descNamespaceLabelsDefaultLabels = SharedLabelKeys{"namespace"}
 )
 
 func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -56,6 +56,8 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -73,14 +75,15 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -95,14 +98,15 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -124,9 +128,7 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					},
 				}
 
-				for _, metric := range ms {
-					metric.LabelKeys = []string{"phase"}
-				}
+				metric.SetLabelKeys(ms, []string{"phase"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -147,13 +149,13 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 
 						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}
 
+				metric.SetLabelKeys(ms, []string{"condition", "status"})
 				return &metric.Family{
 					Metrics: ms,
 				}

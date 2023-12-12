@@ -110,14 +110,15 @@ func createHPAInfo() generator.FamilyGenerator {
 				labelKeys = append([]string{"scaletargetref_api_version"}, labelKeys...)
 				labelValues = append([]string{a.Spec.ScaleTargetRef.APIVersion}, labelValues...)
 			}
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   labelKeys,
-						LabelValues: labelValues,
-						Value:       1,
-					},
+			ms := []*metric.Metric{
+				{
+					LabelValues: labelValues,
+					Value:       1,
 				},
+			}
+			metric.SetLabelKeys(ms, labelKeys)
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -131,12 +132,16 @@ func createHPAMetaDataGeneration() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						Value: float64(a.ObjectMeta.Generation),
-					},
+			ms := []*metric.Metric{
+				{
+					Value: float64(a.ObjectMeta.Generation),
 				},
+			}
+
+			metric.SetLabelKeys(ms, []string{})
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -150,12 +155,16 @@ func createHPASpecMaxReplicas() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						Value: float64(a.Spec.MaxReplicas),
-					},
+			ms := []*metric.Metric{
+				{
+					Value: float64(a.Spec.MaxReplicas),
 				},
+			}
+
+			metric.SetLabelKeys(ms, []string{})
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -169,12 +178,16 @@ func createHPASpecMinReplicas() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						Value: float64(*a.Spec.MinReplicas),
-					},
+			ms := []*metric.Metric{
+				{
+					Value: float64(*a.Spec.MinReplicas),
 				},
+			}
+
+			metric.SetLabelKeys(ms, []string{})
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -228,12 +241,14 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 
 				for metricTypeIndex, metricValue := range metricMap {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   targetMetricLabels,
 						LabelValues: []string{metricName, metricTypeIndex.String()},
 						Value:       metricValue,
 					})
 				}
 			}
+
+			metric.SetLabelKeys(ms, targetMetricLabels)
+
 			return &metric.Family{Metrics: ms}
 		}),
 	)
@@ -287,12 +302,14 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 
 				for metricTypeIndex, metricValue := range metricMap {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   targetMetricLabels,
 						LabelValues: []string{metricName, metricTypeIndex.String()},
 						Value:       metricValue,
 					})
 				}
 			}
+
+			metric.SetLabelKeys(ms, targetMetricLabels)
+
 			return &metric.Family{Metrics: ms}
 		}),
 	)
@@ -306,12 +323,16 @@ func createHPAStatusCurrentReplicas() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						Value: float64(a.Status.CurrentReplicas),
-					},
+			ms := []*metric.Metric{
+				{
+					Value: float64(a.Status.CurrentReplicas),
 				},
+			}
+
+			metric.SetLabelKeys(ms, []string{})
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -325,12 +346,16 @@ func createHPAStatusDesiredReplicas() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						Value: float64(a.Status.DesiredReplicas),
-					},
+			ms := []*metric.Metric{
+				{
+					Value: float64(a.Status.DesiredReplicas),
 				},
+			}
+
+			metric.SetLabelKeys(ms, []string{})
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -348,14 +373,15 @@ func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerat
 				return &metric.Family{}
 			}
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   annotationKeys,
-						LabelValues: annotationValues,
-						Value:       1,
-					},
+			ms := []*metric.Metric{
+				{
+					LabelValues: annotationValues,
+					Value:       1,
 				},
+			}
+			metric.SetLabelKeys(ms, annotationKeys)
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -373,14 +399,15 @@ func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
 				return &metric.Family{}
 			}
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   labelKeys,
-						LabelValues: labelValues,
-						Value:       1,
-					},
+			ms := []*metric.Metric{
+				{
+					LabelValues: labelValues,
+					Value:       1,
 				},
+			}
+			metric.SetLabelKeys(ms, labelKeys)
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -395,17 +422,19 @@ func createHPAStatusCondition() generator.FamilyGenerator {
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(a.Status.Conditions)*len(conditionStatuses))
+			labelKeys := []string{"condition", "status"}
 
 			for _, c := range a.Status.Conditions {
 				metrics := addConditionMetrics(c.Status)
 
 				for _, m := range metrics {
 					metric := m
-					metric.LabelKeys = []string{"condition", "status"}
 					metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 					ms = append(ms, metric)
 				}
 			}
+
+			metric.SetLabelKeys(ms, labelKeys)
 
 			return &metric.Family{
 				Metrics: ms,

@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descPodDisruptionBudgetLabelsDefaultLabels = []string{"namespace", "poddisruptionbudget"}
+	descPodDisruptionBudgetLabelsDefaultLabels = SharedLabelKeys{"namespace", "poddisruptionbudget"}
 	descPodDisruptionBudgetAnnotationsName     = "kube_poddisruptionbudget_annotations"
 	descPodDisruptionBudgetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descPodDisruptionBudgetLabelsName          = "kube_poddisruptionbudget_labels"
@@ -52,14 +52,15 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -74,14 +75,15 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -100,6 +102,8 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -112,12 +116,16 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			basemetrics.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(p.Status.CurrentHealthy),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(p.Status.CurrentHealthy),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -128,12 +136,16 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			basemetrics.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(p.Status.DesiredHealthy),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(p.Status.DesiredHealthy),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -144,12 +156,16 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			basemetrics.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(p.Status.DisruptionsAllowed),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(p.Status.DisruptionsAllowed),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -160,12 +176,16 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			basemetrics.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(p.Status.ExpectedPods),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(p.Status.ExpectedPods),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -176,12 +196,16 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			basemetrics.STABLE,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(p.Status.ObservedGeneration),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(p.Status.ObservedGeneration),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

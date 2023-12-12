@@ -39,7 +39,7 @@ var (
 	descNodeAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descNodeLabelsName          = "kube_node_labels"
 	descNodeLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descNodeLabelsDefaultLabels = []string{"node"}
+	descNodeLabelsDefaultLabels = SharedLabelKeys{"node"}
 )
 
 func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -75,6 +75,8 @@ func createNodeDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
 				})
 			}
 
+			metric.SetLabelKeys(ms, []string{})
+
 			return &metric.Family{
 				Metrics: ms,
 			}
@@ -94,10 +96,12 @@ func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {
 
 			if !n.CreationTimestamp.IsZero() {
 				ms = append(ms, &metric.Metric{
-
-					Value: float64(n.CreationTimestamp.Unix()),
+					LabelValues: []string{},
+					Value:       float64(n.CreationTimestamp.Unix()),
 				})
 			}
+
+			metric.SetLabelKeys(ms, []string{})
 
 			return &metric.Family{
 				Metrics: ms,
@@ -168,14 +172,16 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 			labelKeys = append(labelKeys, "internal_ip")
 			labelValues = append(labelValues, internalIP)
 
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   labelKeys,
-						LabelValues: labelValues,
-						Value:       1,
-					},
+			ms := []*metric.Metric{
+				{
+					LabelValues: labelValues,
+					Value:       1,
 				},
+			}
+			metric.SetLabelKeys(ms, labelKeys)
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -193,14 +199,15 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 				return &metric.Family{}
 			}
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   annotationKeys,
-						LabelValues: annotationValues,
-						Value:       1,
-					},
+			ms := []*metric.Metric{
+				{
+					LabelValues: annotationValues,
+					Value:       1,
 				},
+			}
+			metric.SetLabelKeys(ms, annotationKeys)
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -218,14 +225,15 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 				return &metric.Family{}
 			}
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   labelKeys,
-						LabelValues: labelValues,
-						Value:       1,
-					},
+			ms := []*metric.Metric{
+				{
+					LabelValues: labelValues,
+					Value:       1,
 				},
+			}
+			metric.SetLabelKeys(ms, labelKeys)
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -241,15 +249,16 @@ func createNodeRoleFamilyGenerator() generator.FamilyGenerator {
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			const prefix = "node-role.kubernetes.io/"
 			ms := []*metric.Metric{}
+			labelKeys := []string{"role"}
 			for lbl := range n.Labels {
 				if strings.HasPrefix(lbl, prefix) {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"role"},
 						LabelValues: []string{strings.TrimPrefix(lbl, prefix)},
 						Value:       float64(1),
 					})
 				}
 			}
+			metric.SetLabelKeys(ms, labelKeys)
 			return &metric.Family{
 				Metrics: ms,
 			}
@@ -266,17 +275,19 @@ func createNodeSpecTaintFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := make([]*metric.Metric, len(n.Spec.Taints))
+			labelKeys := []string{"key", "value", "effect"}
 
 			for i, taint := range n.Spec.Taints {
 				// Taints are applied to repel pods from nodes that do not have a corresponding
 				// toleration.  Many node conditions are optionally reflected as taints
 				// by the node controller in order to simplify scheduling constraints.
 				ms[i] = &metric.Metric{
-					LabelKeys:   []string{"key", "value", "effect"},
 					LabelValues: []string{taint.Key, taint.Value, string(taint.Effect)},
 					Value:       1,
 				}
 			}
+
+			metric.SetLabelKeys(ms, labelKeys)
 
 			return &metric.Family{
 				Metrics: ms,
@@ -293,12 +304,16 @@ func createNodeSpecUnschedulableFamilyGenerator() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						Value: boolFloat64(n.Spec.Unschedulable),
-					},
+			ms := []*metric.Metric{
+				{
+					Value: boolFloat64(n.Spec.Unschedulable),
 				},
+			}
+
+			metric.SetLabelKeys(ms, []string{})
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)
@@ -313,6 +328,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
+			labelKeys := []string{"resource", "unit"}
 
 			allocatable := n.Status.Allocatable
 
@@ -377,9 +393,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 				}
 			}
 
-			for _, m := range ms {
-				m.LabelKeys = []string{"resource", "unit"}
-			}
+			metric.SetLabelKeys(ms, labelKeys)
 
 			return &metric.Family{
 				Metrics: ms,
@@ -397,6 +411,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
+			labelKeys := []string{"resource", "unit"}
 
 			capacity := n.Status.Capacity
 			for resourceName, val := range capacity {
@@ -460,9 +475,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 				}
 			}
 
-			for _, metric := range ms {
-				metric.LabelKeys = []string{"resource", "unit"}
-			}
+			metric.SetLabelKeys(ms, labelKeys)
 
 			return &metric.Family{
 				Metrics: ms,
@@ -492,12 +505,13 @@ func createNodeStatusConditionFamilyGenerator() generator.FamilyGenerator {
 				for j, m := range conditionMetrics {
 					metric := m
 
-					metric.LabelKeys = []string{"condition", "status"}
 					metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
-
 					ms[i*len(conditionStatuses)+j] = metric
 				}
+
 			}
+
+			metric.SetLabelKeys(ms, []string{"condition", "status"})
 
 			return &metric.Family{
 				Metrics: ms,

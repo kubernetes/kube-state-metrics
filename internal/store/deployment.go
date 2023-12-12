@@ -38,7 +38,7 @@ var (
 	descDeploymentAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descDeploymentLabelsName          = "kube_deployment_labels"
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
+	descDeploymentLabelsDefaultLabels = SharedLabelKeys{"namespace", "deployment"}
 )
 
 func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -58,6 +58,8 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -70,12 +72,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.Status.Replicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.Status.Replicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -86,12 +92,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.Status.ReadyReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.Status.ReadyReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -102,12 +112,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.Status.AvailableReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.Status.AvailableReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -118,12 +132,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.Status.UnavailableReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.Status.UnavailableReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -134,12 +152,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.Status.UpdatedReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.Status.UpdatedReplicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -150,12 +172,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.Status.ObservedGeneration),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.Status.ObservedGeneration),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -192,12 +218,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(*d.Spec.Replicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(*d.Spec.Replicas),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -208,12 +238,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: boolFloat64(d.Spec.Paused),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: boolFloat64(d.Spec.Paused),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -233,12 +267,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					panic(err)
 				}
 
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(maxUnavailable),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(maxUnavailable),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -258,12 +296,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					panic(err)
 				}
 
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(maxSurge),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(maxSurge),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -274,12 +316,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(d.ObjectMeta.Generation),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(d.ObjectMeta.Generation),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -294,14 +340,18 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+
+				metric.SetLabelKeys(ms, annotationKeys)
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -316,14 +366,18 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+
+						Value: 1,
 					},
+				}
+
+				metric.SetLabelKeys(ms, labelKeys)
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

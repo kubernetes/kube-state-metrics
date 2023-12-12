@@ -40,7 +40,7 @@ var (
 	descCronJobAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCronJobLabelsName          = "kube_cronjob_labels"
 	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
+	descCronJobLabelsDefaultLabels = SharedLabelKeys{"namespace", "cronjob"}
 )
 
 func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -56,14 +56,15 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -78,14 +79,15 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -96,14 +98,15 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"schedule", "concurrency_policy"},
-							LabelValues: []string{j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy)},
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy)},
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, []string{"schedule", "concurrency_policy"})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -117,11 +120,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				ms := []*metric.Metric{}
 				if !j.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(j.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -135,14 +139,15 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(len(j.Status.Active)),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(len(j.Status.Active)),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -157,11 +162,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				if j.Status.LastScheduleTime != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(j.Status.LastScheduleTime.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -179,11 +185,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				if j.Status.LastSuccessfulTime != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(j.Status.LastSuccessfulTime.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -201,11 +208,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				if j.Spec.Suspend != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       boolFloat64(*j.Spec.Suspend),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -223,12 +231,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				if j.Spec.StartingDeadlineSeconds != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(*j.Spec.StartingDeadlineSeconds),
 					})
 
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -250,11 +259,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					panic(err)
 				} else if !*j.Spec.Suspend {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(nextScheduledTime.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -284,11 +294,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				if j.Spec.SuccessfulJobsHistoryLimit != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(*j.Spec.SuccessfulJobsHistoryLimit),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -306,11 +317,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				if j.Spec.FailedJobsHistoryLimit != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(*j.Spec.FailedJobsHistoryLimit),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,

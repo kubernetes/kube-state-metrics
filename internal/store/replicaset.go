@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	descReplicaSetLabelsDefaultLabels = []string{"namespace", "replicaset"}
+	descReplicaSetLabelsDefaultLabels = SharedLabelKeys{"namespace", "replicaset"}
 	descReplicaSetAnnotationsName     = "kube_replicaset_annotations"
 	descReplicaSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descReplicaSetLabelsName          = "kube_replicaset_labels"
@@ -54,10 +54,11 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 
 				if !r.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-
 						Value: float64(r.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -71,12 +72,15 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.Replicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.Replicas),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -87,12 +91,15 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.FullyLabeledReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.FullyLabeledReplicas),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -103,12 +110,15 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.ReadyReplicas),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.ReadyReplicas),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -119,12 +129,16 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.Status.ObservedGeneration),
-						},
+
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.Status.ObservedGeneration),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -143,6 +157,8 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -155,12 +171,15 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(r.ObjectMeta.Generation),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(r.ObjectMeta.Generation),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -171,17 +190,19 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
 				owners := r.GetOwnerReferences()
 
 				if len(owners) == 0 {
-					return &metric.Family{
-						Metrics: []*metric.Metric{
-							{
-								LabelKeys:   []string{"owner_kind", "owner_name", "owner_is_controller"},
-								LabelValues: []string{"", "", ""},
-								Value:       1,
-							},
+					ms := []*metric.Metric{
+						{
+							LabelValues: []string{"", "", ""},
+							Value:       1,
 						},
+					}
+					metric.SetLabelKeys(ms, labelKeys)
+					return &metric.Family{
+						Metrics: ms,
 					}
 				}
 
@@ -200,9 +221,10 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 				}
 
 				for _, m := range ms {
-					m.LabelKeys = []string{"owner_kind", "owner_name", "owner_is_controller"}
 					m.Value = 1
 				}
+
+				metric.SetLabelKeys(ms, labelKeys)
 
 				return &metric.Family{
 					Metrics: ms,
@@ -220,14 +242,15 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -242,14 +265,15 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

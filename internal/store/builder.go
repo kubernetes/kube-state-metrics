@@ -402,7 +402,7 @@ func (b *Builder) buildLimitRangeStores() []cache.Store {
 }
 
 func (b *Builder) buildMutatingWebhookConfigurationStores() []cache.Store {
-	return b.buildStoresFunc(mutatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(mutatingWebhookConfigurationMetricFamilies(), &admissionregistrationv1.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildNamespaceStores() []cache.Store {

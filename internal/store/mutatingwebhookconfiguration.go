@@ -32,9 +32,11 @@ import (
 )
 
 var (
-	descMutatingWebhookConfigurationDefaultLabels = []string{"namespace", "mutatingwebhookconfiguration"}
+	descMutatingWebhookConfigurationDefaultLabels = SharedLabelKeys{"namespace", "mutatingwebhookconfiguration"}
+)
 
-	mutatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
+func mutatingWebhookConfigurationMetricFamilies() []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_mutatingwebhookconfiguration_info",
 			"Information about the MutatingWebhookConfiguration.",
@@ -42,12 +44,14 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
+				ms := []*metric.Metric{
+					{
+						Value: 1,
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -65,6 +69,8 @@ var (
 						Value: float64(mwc.CreationTimestamp.Unix()),
 					})
 				}
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -98,18 +104,19 @@ var (
 					}
 
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"webhook_name", "service_name", "service_namespace"},
 						LabelValues: []string{webhook.Name, serviceName, serviceNamespace},
 						Value:       1,
 					})
 				}
+				metric.SetLabelKeys(ms, []string{"webhook_name", "service_name", "service_namespace"})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
 		),
 	}
-)
+}
 
 func createMutatingWebhookConfigurationListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{

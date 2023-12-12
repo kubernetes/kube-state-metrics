@@ -57,6 +57,8 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -84,9 +86,7 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					})
 				}
 
-				for _, m := range ms {
-					m.LabelKeys = []string{"resource", "type"}
-				}
+				metric.SetLabelKeys(ms, []string{"resource", "type"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -104,14 +104,15 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -126,14 +127,15 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

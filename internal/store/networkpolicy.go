@@ -36,7 +36,7 @@ var (
 	descNetworkPolicyAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descNetworkPolicyLabelsName          = "kube_networkpolicy_labels"
 	descNetworkPolicyLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
+	descNetworkPolicyLabelsDefaultLabels = SharedLabelKeys{"namespace", "networkpolicy"}
 )
 
 func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -48,14 +48,15 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(n.CreationTimestamp.Unix()),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(n.CreationTimestamp.Unix()),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -70,14 +71,15 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -92,14 +94,15 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -110,14 +113,15 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(len(n.Spec.Ingress)),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(len(n.Spec.Ingress)),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -128,14 +132,15 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(len(n.Spec.Egress)),
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(len(n.Spec.Egress)),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

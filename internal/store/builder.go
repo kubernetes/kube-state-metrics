@@ -474,7 +474,7 @@ func (b *Builder) buildValidatingWebhookConfigurationStores() []cache.Store {
 }
 
 func (b *Builder) buildVolumeAttachmentStores() []cache.Store {
-	return b.buildStoresFunc(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(volumeAttachmentMetricFamilies(), &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildLeasesStores() []cache.Store {

@@ -35,8 +35,10 @@ var (
 	descVolumeAttachmentLabelsName          = "kube_volumeattachment_labels"
 	descVolumeAttachmentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descVolumeAttachmentLabelsDefaultLabels = []string{"volumeattachment"}
+)
 
-	volumeAttachmentMetricFamilies = []generator.FamilyGenerator{
+func volumeAttachmentMetricFamilies() []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			descVolumeAttachmentLabelsName,
 			descVolumeAttachmentLabelsHelp,
@@ -45,14 +47,15 @@ var (
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				labelKeys, labelValues := kubeMapToPrometheusLabels("label", va.Labels)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -63,14 +66,15 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"attacher", "node"},
-							LabelValues: []string{va.Spec.Attacher, va.Spec.NodeName},
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{va.Spec.Attacher, va.Spec.NodeName},
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, []string{"attacher", "node"})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -82,12 +86,14 @@ var (
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				if !va.CreationTimestamp.IsZero() {
-					m := metric.Metric{
-						LabelKeys:   nil,
-						LabelValues: nil,
-						Value:       float64(va.CreationTimestamp.Unix()),
+					ms := []*metric.Metric{
+						{
+							Value: float64(va.CreationTimestamp.Unix()),
+						},
 					}
-					return &metric.Family{Metrics: []*metric.Metric{&m}}
+
+					metric.SetLabelKeys(ms, []string{})
+					return &metric.Family{Metrics: ms}
 				}
 				return &metric.Family{Metrics: []*metric.Metric{}}
 			}),
@@ -100,15 +106,15 @@ var (
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				if va.Spec.Source.PersistentVolumeName != nil {
-					return &metric.Family{
-						Metrics: []*metric.Metric{
-							{
-								LabelKeys:   []string{"volumename"},
-								LabelValues: []string{*va.Spec.Source.PersistentVolumeName},
-								Value:       1,
-							},
+					ms := []*metric.Metric{
+						{
+							LabelValues: []string{*va.Spec.Source.PersistentVolumeName},
+							Value:       1,
 						},
 					}
+					metric.SetLabelKeys(ms, []string{"volumename"})
+
+					return &metric.Family{Metrics: ms}
 				}
 				return &metric.Family{}
 			}),
@@ -120,14 +126,14 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   nil,
-							LabelValues: nil,
-							Value:       boolFloat64(va.Status.Attached),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: boolFloat64(va.Status.Attached),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -139,19 +145,20 @@ var (
 			"",
 			wrapVolumeAttachmentFunc(func(va *storagev1.VolumeAttachment) *metric.Family {
 				labelKeys, labelValues := mapToPrometheusLabels(va.Status.AttachmentMetadata, "metadata")
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
 	}
-)
+}
 
 func wrapVolumeAttachmentFunc(f func(*storagev1.VolumeAttachment) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

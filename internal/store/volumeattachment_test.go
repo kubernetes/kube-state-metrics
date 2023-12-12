@@ -87,8 +87,8 @@ func TestVolumeAttachmentStore(t *testing.T) {
 		}
 	)
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(volumeAttachmentMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttachmentMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(volumeAttachmentMetricFamilies())
+		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttachmentMetricFamilies())
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

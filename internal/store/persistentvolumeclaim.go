@@ -37,7 +37,7 @@ var (
 	descPersistentVolumeClaimAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descPersistentVolumeClaimLabelsName          = "kube_persistentvolumeclaim_labels"
 	descPersistentVolumeClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
+	descPersistentVolumeClaimLabelsDefaultLabels = SharedLabelKeys{"namespace", "persistentvolumeclaim"}
 )
 
 func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -53,14 +53,15 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -75,14 +76,15 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -101,14 +103,15 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 					volumeMode = string(*p.Spec.VolumeMode)
 				}
 
+				ms := []*metric.Metric{{
+					LabelValues: []string{storageClassName, volumeName, volumeMode},
+					Value:       1,
+				}}
+
+				metric.SetLabelKeys(ms, []string{"storageclass", "volumename", "volumemode"})
+
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"storageclass", "volumename", "volumemode"},
-							LabelValues: []string{storageClassName, volumeName, volumeMode},
-							Value:       1,
-						},
-					},
+					Metrics: ms,
 				}
 			}),
 		),
@@ -143,9 +146,7 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 					},
 				}
 
-				for _, m := range ms {
-					m.LabelKeys = []string{"phase"}
-				}
+				metric.SetLabelKeys(ms, []string{"phase"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -166,7 +167,7 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 						Value: float64(storage.Value()),
 					})
 				}
-
+				metric.SetLabelKeys(ms, []string{})
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -183,11 +184,12 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 
 				for i, mode := range p.Spec.AccessModes {
 					ms[i] = &metric.Metric{
-						LabelKeys:   []string{"access_mode"},
 						LabelValues: []string{string(mode)},
 						Value:       1,
 					}
 				}
+
+				metric.SetLabelKeys(ms, []string{"access_mode"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -209,12 +211,13 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 
 						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}
+
+				metric.SetLabelKeys(ms, []string{"condition", "status"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -232,11 +235,12 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 
 				if !p.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(p.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -254,11 +258,12 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 
 				if p.DeletionTimestamp != nil && !p.DeletionTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(p.DeletionTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,

@@ -470,7 +470,7 @@ func (b *Builder) buildCsrStores() []cache.Store {
 }
 
 func (b *Builder) buildValidatingWebhookConfigurationStores() []cache.Store {
-	return b.buildStoresFunc(validatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(validatingWebhookConfigurationMetricFamilies(), &admissionregistrationv1.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildVolumeAttachmentStores() []cache.Store {

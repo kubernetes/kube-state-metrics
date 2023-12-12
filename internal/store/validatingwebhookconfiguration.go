@@ -33,8 +33,10 @@ import (
 
 var (
 	descValidatingWebhookConfigurationDefaultLabels = []string{"namespace", "validatingwebhookconfiguration"}
+)
 
-	validatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
+func validatingWebhookConfigurationMetricFamilies() []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_validatingwebhookconfiguration_info",
 			"Information about the ValidatingWebhookConfiguration.",
@@ -42,12 +44,16 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
+				ms := []*metric.Metric{
+					{
+						Value: 1,
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -65,6 +71,9 @@ var (
 						Value: float64(vwc.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -98,18 +107,20 @@ var (
 					}
 
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"webhook_name", "service_name", "service_namespace"},
 						LabelValues: []string{webhook.Name, serviceName, serviceNamespace},
 						Value:       1,
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{"webhook_name", "service_name", "service_namespace"})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
 		),
 	}
-)
+}
 
 func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{

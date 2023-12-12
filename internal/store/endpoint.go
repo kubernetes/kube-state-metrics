@@ -37,7 +37,7 @@ var (
 	descEndpointAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descEndpointLabelsName          = "kube_endpoint_labels"
 	descEndpointLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
+	descEndpointLabelsDefaultLabels = SharedLabelKeys{"namespace", "endpoint"}
 )
 
 func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -49,12 +49,14 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			basemetrics.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				ms := []*metric.Metric{{
+					Value: 1,
+				}}
+
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
-					},
+					Metrics: ms,
 				}
 			}),
 		),
@@ -74,6 +76,8 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -90,14 +94,15 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", e.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -112,14 +117,15 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", e.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -134,13 +140,15 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				for _, s := range e.Subsets {
 					available += len(s.Addresses) * len(s.Ports)
 				}
+				ms := []*metric.Metric{
+					{
+						Value: float64(available),
+					},
+				}
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(available),
-						},
-					},
+					Metrics: ms,
 				}
 			}),
 		),
@@ -155,12 +163,15 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				for _, s := range e.Subsets {
 					notReady += len(s.NotReadyAddresses) * len(s.Ports)
 				}
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(notReady),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(notReady),
 					},
+				}
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -172,22 +183,22 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
+				labelKeys := []string{"ip", "ready"}
 				for _, s := range e.Subsets {
 					for _, available := range s.Addresses {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{available.IP, "true"},
-							LabelKeys:   []string{"ip", "ready"},
 							Value:       1,
 						})
 					}
 					for _, notReadyAddresses := range s.NotReadyAddresses {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{notReadyAddresses.IP, "false"},
-							LabelKeys:   []string{"ip", "ready"},
 							Value:       1,
 						})
 					}
 				}
+				metric.SetLabelKeys(ms, labelKeys)
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -201,15 +212,16 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
+				labelKeys := []string{"port_name", "port_protocol", "port_number"}
 				for _, s := range e.Subsets {
 					for _, port := range s.Ports {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{port.Name, string(port.Protocol), strconv.FormatInt(int64(port.Port), 10)},
-							LabelKeys:   []string{"port_name", "port_protocol", "port_number"},
 							Value:       1,
 						})
 					}
 				}
+				metric.SetLabelKeys(ms, labelKeys)
 				return &metric.Family{
 					Metrics: ms,
 				}

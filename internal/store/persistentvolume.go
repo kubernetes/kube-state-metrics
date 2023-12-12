@@ -64,20 +64,21 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 						Metrics: []*metric.Metric{},
 					}
 				}
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys: []string{
-								"name",
-								"claim_namespace",
-							},
-							LabelValues: []string{
-								p.Spec.ClaimRef.Name,
-								p.Spec.ClaimRef.Namespace,
-							},
-							Value: 1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{
+							p.Spec.ClaimRef.Name,
+							p.Spec.ClaimRef.Namespace,
 						},
+						Value: 1,
 					},
+				}
+				metric.SetLabelKeys(ms, []string{
+					"name",
+					"claim_namespace",
+				})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -92,14 +93,15 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -114,14 +116,15 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -164,9 +167,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 					},
 				}
 
-				for _, m := range ms {
-					m.LabelKeys = []string{"phase"}
-				}
+				metric.SetLabelKeys(ms, []string{"phase"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -180,6 +181,27 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				labelKeys := []string{
+					"storageclass",
+					"gce_persistent_disk_name",
+					"ebs_volume_id",
+					"azure_disk_name",
+					"fc_wwids",
+					"fc_lun",
+					"fc_target_wwns",
+					"iscsi_target_portal",
+					"iscsi_iqn",
+					"iscsi_lun",
+					"iscsi_initiator_name",
+					"nfs_server",
+					"nfs_path",
+					"csi_driver",
+					"csi_volume_handle",
+					"local_path",
+					"local_fs",
+					"host_path",
+					"host_path_type",
+				}
 				var (
 					gcePDDiskName,
 					ebsVolumeID,
@@ -240,54 +262,35 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 					}
 				}
 
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys: []string{
-								"storageclass",
-								"gce_persistent_disk_name",
-								"ebs_volume_id",
-								"azure_disk_name",
-								"fc_wwids",
-								"fc_lun",
-								"fc_target_wwns",
-								"iscsi_target_portal",
-								"iscsi_iqn",
-								"iscsi_lun",
-								"iscsi_initiator_name",
-								"nfs_server",
-								"nfs_path",
-								"csi_driver",
-								"csi_volume_handle",
-								"local_path",
-								"local_fs",
-								"host_path",
-								"host_path_type",
-							},
-							LabelValues: []string{
-								p.Spec.StorageClassName,
-								gcePDDiskName,
-								ebsVolumeID,
-								azureDiskName,
-								fcWWIDs,
-								fcLun,
-								fcTargetWWNs,
-								iscsiTargetPortal,
-								iscsiIQN,
-								iscsiLun,
-								iscsiInitiatorName,
-								nfsServer,
-								nfsPath,
-								csiDriver,
-								csiVolumeHandle,
-								localPath,
-								localFS,
-								hostPath,
-								hostPathType,
-							},
-							Value: 1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{
+							p.Spec.StorageClassName,
+							gcePDDiskName,
+							ebsVolumeID,
+							azureDiskName,
+							fcWWIDs,
+							fcLun,
+							fcTargetWWNs,
+							iscsiTargetPortal,
+							iscsiIQN,
+							iscsiLun,
+							iscsiInitiatorName,
+							nfsServer,
+							nfsPath,
+							csiDriver,
+							csiVolumeHandle,
+							localPath,
+							localFS,
+							hostPath,
+							hostPathType,
 						},
+						Value: 1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -299,12 +302,17 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 			"",
 			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 				storage := p.Spec.Capacity[v1.ResourceStorage]
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(storage.Value()),
-						},
+
+				ms := []*metric.Metric{
+					{
+						Value: float64(storage.Value()),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -319,11 +327,12 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 
 				if !p.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(p.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -341,11 +350,12 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 
 				if p.DeletionTimestamp != nil && !p.DeletionTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(p.DeletionTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -375,20 +385,21 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 					}
 				}
 
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys: []string{
-								"csi_mounter",
-								"csi_map_options",
-							},
-							LabelValues: []string{
-								csiMounter,
-								csiMapOptions,
-							},
-							Value: 1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{
+							csiMounter,
+							csiMapOptions,
 						},
+						Value: 1,
 					},
+				}
+				metric.SetLabelKeys(ms, []string{
+					"csi_mounter",
+					"csi_map_options",
+				})
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

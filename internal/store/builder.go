@@ -398,7 +398,7 @@ func (b *Builder) buildJobStores() []cache.Store {
 }
 
 func (b *Builder) buildLimitRangeStores() []cache.Store {
-	return b.buildStoresFunc(limitRangeMetricFamilies, &v1.LimitRange{}, createLimitRangeListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(limitRangeMetricFamilies(), &v1.LimitRange{}, createLimitRangeListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildMutatingWebhookConfigurationStores() []cache.Store {

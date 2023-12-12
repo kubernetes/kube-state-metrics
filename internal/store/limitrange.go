@@ -32,9 +32,11 @@ import (
 )
 
 var (
-	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
+	descLimitRangeLabelsDefaultLabels = SharedLabelKeys{"namespace", "limitrange"}
+)
 
-	limitRangeMetricFamilies = []generator.FamilyGenerator{
+func limitRangeMetricFamilies() []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_limitrange",
 			"Information about limit range.",
@@ -106,14 +108,14 @@ var (
 						Value: float64(r.CreationTimestamp.Unix()),
 					})
 				}
-
+				metric.SetLabelKeys(ms, []string{})
 				return &metric.Family{
 					Metrics: ms,
 				}
 			}),
 		),
 	}
-)
+}
 
 func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

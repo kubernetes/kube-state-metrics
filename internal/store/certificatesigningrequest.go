@@ -37,7 +37,7 @@ var (
 	descCSRAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCSRLabelsName          = "kube_certificatesigningrequest_labels"
 	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest", "signer_name"}
+	descCSRLabelsDefaultLabels = SharedLabelKeys{"certificatesigningrequest", "signer_name"}
 )
 
 func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -53,14 +53,15 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -75,14 +76,15 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -96,11 +98,12 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				ms := []*metric.Metric{}
 				if !csr.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(csr.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -126,14 +129,18 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.STABLE,
 			"",
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{},
-							LabelValues: []string{},
-							Value:       float64(len(csr.Status.Certificate)),
-						},
+
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{},
+						Value:       float64(len(csr.Status.Certificate)),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -177,16 +184,16 @@ func addCSRConditionMetrics(cs certv1.CertificateSigningRequestStatus) []*metric
 		}
 	}
 
-	return []*metric.Metric{
+	ms := []*metric.Metric{
 		{
 			LabelValues: []string{"approved"},
 			Value:       float64(cApproved),
-			LabelKeys:   []string{"condition"},
 		},
 		{
 			LabelValues: []string{"denied"},
 			Value:       float64(cDenied),
-			LabelKeys:   []string{"condition"},
 		},
 	}
+	metric.SetLabelKeys(ms, []string{"condition"})
+	return ms
 }

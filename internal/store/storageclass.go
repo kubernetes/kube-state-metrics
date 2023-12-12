@@ -35,7 +35,7 @@ var (
 	descStorageClassAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descStorageClassLabelsName          = "kube_storageclass_labels"
 	descStorageClassLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descStorageClassLabelsDefaultLabels = []string{"storageclass"}
+	descStorageClassLabelsDefaultLabels = SharedLabelKeys{"storageclass"}
 	defaultReclaimPolicy                = v1.PersistentVolumeReclaimDelete
 	defaultVolumeBindingMode            = storagev1.VolumeBindingImmediate
 )
@@ -59,12 +59,15 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 					s.VolumeBindingMode = &defaultVolumeBindingMode
 				}
 
-				m := metric.Metric{
-					LabelKeys:   []string{"provisioner", "reclaim_policy", "volume_binding_mode"},
-					LabelValues: []string{s.Provisioner, string(*s.ReclaimPolicy), string(*s.VolumeBindingMode)},
-					Value:       1,
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{s.Provisioner, string(*s.ReclaimPolicy), string(*s.VolumeBindingMode)},
+						Value:       1,
+					},
 				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
+
+				metric.SetLabelKeys(ms, []string{"provisioner", "reclaim_policy", "volume_binding_mode"})
+				return &metric.Family{Metrics: ms}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -80,6 +83,7 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 						Value: float64(s.CreationTimestamp.Unix()),
 					})
 				}
+				metric.SetLabelKeys(ms, []string{})
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -96,14 +100,15 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -118,14 +123,15 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

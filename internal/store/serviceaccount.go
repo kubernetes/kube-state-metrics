@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	descServiceAccountLabelsDefaultLabels = []string{"namespace", "serviceaccount", "uid"}
+	descServiceAccountLabelsDefaultLabels = SharedLabelKeys{"namespace", "serviceaccount", "uid"}
 )
 
 func serviceAccountMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -64,12 +64,15 @@ func createServiceAccountInfoFamilyGenerator() generator.FamilyGenerator {
 				labelValues = append(labelValues, strconv.FormatBool(*sa.AutomountServiceAccountToken))
 			}
 
+			ms := []*metric.Metric{{
+				LabelValues: labelValues,
+				Value:       1,
+			}}
+
+			metric.SetLabelKeys(ms, labelKeys)
+
 			return &metric.Family{
-				Metrics: []*metric.Metric{{
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
-					Value:       1,
-				}},
+				Metrics: ms,
 			}
 		}),
 	)
@@ -87,11 +90,12 @@ func createServiceAccountCreatedFamilyGenerator() generator.FamilyGenerator {
 
 			if !sa.CreationTimestamp.IsZero() {
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{},
 					LabelValues: []string{},
 					Value:       float64(sa.CreationTimestamp.Unix()),
 				})
 			}
+
+			metric.SetLabelKeys(ms, []string{})
 
 			return &metric.Family{
 				Metrics: ms,
@@ -112,11 +116,12 @@ func createServiceAccountDeletedFamilyGenerator() generator.FamilyGenerator {
 
 			if sa.DeletionTimestamp != nil && !sa.DeletionTimestamp.IsZero() {
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{},
 					LabelValues: []string{},
 					Value:       float64(sa.DeletionTimestamp.Unix()),
 				})
 			}
+
+			metric.SetLabelKeys(ms, []string{})
 
 			return &metric.Family{
 				Metrics: ms,
@@ -134,14 +139,16 @@ func createServiceAccountSecretFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			var ms []*metric.Metric
+			labelKeys := []string{"name"}
 
 			for _, s := range sa.Secrets {
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{"name"},
 					LabelValues: []string{s.Name},
 					Value:       1,
 				})
 			}
+
+			metric.SetLabelKeys(ms, labelKeys)
 
 			return &metric.Family{
 				Metrics: ms,
@@ -159,14 +166,16 @@ func createServiceAccountImagePullSecretFamilyGenerator() generator.FamilyGenera
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
 			var ms []*metric.Metric
+			labelKeys := []string{"name"}
 
 			for _, s := range sa.ImagePullSecrets {
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{"name"},
 					LabelValues: []string{s.Name},
 					Value:       1,
 				})
 			}
+
+			metric.SetLabelKeys(ms, labelKeys)
 
 			return &metric.Family{
 				Metrics: ms,
@@ -188,10 +197,10 @@ func createServiceAccountAnnotationsGenerator(allowAnnotations []string) generat
 			}
 			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", sa.Annotations, allowAnnotations)
 			m := metric.Metric{
-				LabelKeys:   annotationKeys,
 				LabelValues: annotationValues,
 				Value:       1,
 			}
+			metric.SetLabelKeys([]*metric.Metric{&m}, annotationKeys)
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}
@@ -212,10 +221,10 @@ func createServiceAccountLabelsGenerator(allowLabelsList []string) generator.Fam
 			}
 			labelKeys, labelValues := createPrometheusLabelKeysValues("label", sa.Labels, allowLabelsList)
 			m := metric.Metric{
-				LabelKeys:   labelKeys,
 				LabelValues: labelValues,
 				Value:       1,
 			}
+			metric.SetLabelKeys([]*metric.Metric{&m}, labelKeys)
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}

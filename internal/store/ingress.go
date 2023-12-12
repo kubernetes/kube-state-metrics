@@ -38,7 +38,7 @@ var (
 	descIngressAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descIngressLabelsName          = "kube_ingress_labels"
 	descIngressLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
+	descIngressLabelsDefaultLabels = SharedLabelKeys{"namespace", "ingress"}
 )
 
 func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -50,6 +50,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				labelKeys := []string{"ingressclass"}
 				ingressClassName := "_default"
 				if i.Spec.IngressClassName != nil {
 					ingressClassName = *i.Spec.IngressClassName
@@ -58,14 +59,16 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					ingressClassName = className
 				}
 
+				ms := []*metric.Metric{{
+					LabelValues: []string{ingressClassName},
+					Value:       1,
+				}}
+
+				metric.SetLabelKeys(ms, labelKeys)
+
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   []string{"ingressclass"},
-							LabelValues: []string{ingressClassName},
-							Value:       1,
-						},
-					}}
+					Metrics: ms,
+				}
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
@@ -79,14 +82,16 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowAnnotationsList)
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
+					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					}}
+					Metrics: ms,
+				}
 
 			}),
 		),
@@ -101,14 +106,16 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", i.Labels, allowLabelsList)
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
+					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					}}
+					Metrics: ms,
+				}
 
 			}),
 		),
@@ -127,6 +134,8 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -144,6 +153,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
+		// TODO(#1833): two sets of labels
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingress_path",
 			"Ingress host, paths and backend service information.",
@@ -191,12 +201,14 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				for _, tls := range i.Spec.TLS {
 					for _, host := range tls.Hosts {
 						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"tls_host", "secret"},
 							LabelValues: []string{host, tls.SecretName},
 							Value:       1,
 						})
 					}
 				}
+
+				metric.SetLabelKeys(ms, []string{"tls_host", "secret"})
+
 				return &metric.Family{
 					Metrics: ms,
 				}

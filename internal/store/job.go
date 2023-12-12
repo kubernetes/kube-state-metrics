@@ -38,7 +38,7 @@ var (
 	descJobAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descJobLabelsName          = "kube_job_labels"
 	descJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
+	descJobLabelsDefaultLabels = SharedLabelKeys{"namespace", "job_name"}
 	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadlineExceeded", "Evicted"}
 )
 
@@ -55,14 +55,15 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					return &metric.Family{}
 				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: annotationValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, annotationKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -77,14 +78,15 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					return &metric.Family{}
 				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				ms := []*metric.Metric{
+					{
+						LabelValues: labelValues,
+						Value:       1,
 					},
+				}
+				metric.SetLabelKeys(ms, labelKeys)
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -95,12 +97,16 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.STABLE,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
+				ms := []*metric.Metric{
+					{
+						Value: 1,
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -118,6 +124,8 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						Value: float64(j.CreationTimestamp.Unix()),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -139,6 +147,8 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -158,6 +168,8 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						Value: float64(*j.Spec.Completions),
 					})
 				}
+
+				metric.SetLabelKeys(ms, []string{})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -179,6 +191,8 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -191,12 +205,16 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.STABLE,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(j.Status.Succeeded),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(j.Status.Succeeded),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -256,12 +274,16 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.STABLE,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(j.Status.Active),
-						},
+				ms := []*metric.Metric{
+					{
+						Value: float64(j.Status.Active),
 					},
+				}
+
+				metric.SetLabelKeys(ms, []string{})
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),
@@ -278,11 +300,11 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						metrics := addConditionMetrics(c.Status)
 						for _, m := range metrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
 							ms = append(ms, metric)
 						}
 					}
 				}
+				metric.SetLabelKeys(ms, []string{"condition"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -303,11 +325,12 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						metrics := addConditionMetrics(c.Status)
 						for _, m := range metrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
 							ms = append(ms, metric)
 						}
 					}
 				}
+
+				metric.SetLabelKeys(ms, []string{"condition"})
 
 				return &metric.Family{
 					Metrics: ms,
@@ -330,6 +353,8 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -350,6 +375,8 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					})
 				}
 
+				metric.SetLabelKeys(ms, []string{})
+
 				return &metric.Family{
 					Metrics: ms,
 				}
@@ -367,14 +394,18 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				owners := j.GetOwnerReferences()
 
 				if len(owners) == 0 {
-					return &metric.Family{
-						Metrics: []*metric.Metric{
-							{
-								LabelKeys:   labelKeys,
-								LabelValues: []string{"", "", ""},
-								Value:       1,
-							},
+					ms := []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{"", "", ""},
+							Value:       1,
 						},
+					}
+
+					metric.SetLabelKeys(ms, labelKeys)
+
+					return &metric.Family{
+						Metrics: ms,
 					}
 				}
 
@@ -383,18 +414,18 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				for i, owner := range owners {
 					if owner.Controller != nil {
 						ms[i] = &metric.Metric{
-							LabelKeys:   labelKeys,
 							LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
 							Value:       1,
 						}
 					} else {
 						ms[i] = &metric.Metric{
-							LabelKeys:   labelKeys,
 							LabelValues: []string{owner.Kind, owner.Name, "false"},
 							Value:       1,
 						}
 					}
 				}
+
+				metric.SetLabelKeys(ms, labelKeys)
 
 				return &metric.Family{
 					Metrics: ms,

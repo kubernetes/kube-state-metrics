@@ -145,6 +145,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 			},
 		}, nil
 	}
+
 	if hasVersion && !hasKind {
 		kinds := r.Map[g][v]
 		for _, el := range kinds {
@@ -157,12 +158,12 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 				Plural: el.Plural,
 			})
 		}
-	}
-	if !hasVersion && hasKind {
+	} else {
+		// !hasVersion
 		versions := r.Map[g]
 		for version, kinds := range versions {
 			for _, el := range kinds {
-				if el.Kind == k {
+				if !hasKind || el.Kind == k {
 					resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
 						GroupVersionKind: schema.GroupVersionKind{
 							Group:   g,
@@ -172,21 +173,6 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 						Plural: el.Plural,
 					})
 				}
-			}
-		}
-	}
-	if !hasVersion && !hasKind {
-		versions := r.Map[g]
-		for version, kinds := range versions {
-			for _, el := range kinds {
-				resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-					GroupVersionKind: schema.GroupVersionKind{
-						Group:   g,
-						Version: version,
-						Kind:    el.Kind,
-					},
-					Plural: el.Plural,
-				})
 			}
 		}
 	}

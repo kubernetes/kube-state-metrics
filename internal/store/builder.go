@@ -119,6 +119,7 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	sort.Strings(sortedResources)
 
 	b.enabledResources = append(b.enabledResources, sortedResources...)
+	// It's an mitigation for #2223. unique should be removed after #2223 is fixed.
 	b.enabledResources = unique(b.enabledResources)
 	return nil
 }

@@ -168,7 +168,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 						GroupVersionKind: schema.GroupVersionKind{
 							Group:   g,
 							Version: version,
-							Kind:    k,
+							Kind:    el.Kind,
 						},
 						Plural: el.Plural,
 					})

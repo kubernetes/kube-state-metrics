@@ -166,6 +166,28 @@ jobs:
       run: |
         make test-benchmark-compare
 
+    - name: Comment benchmark results
+      uses: actions/github-script@v4
+      with:
+        script: |
+          const fs = require('fs');
+          const data = fs.readFileSync('benchstat.txt', 'utf8');
+          github.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `
+          <details>
+          <summary>Benchmark results</summary>
+          
+          \`\`\`
+            ${data}
+          \`\`\`
+
+          </details>
+            `
+          });
+
   ci-build-kube-state-metrics:
     name: ci-build-kube-state-metrics
     runs-on: ubuntu-latest

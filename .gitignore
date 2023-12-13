@@ -41,5 +41,8 @@ _testmain.go
 # Generated CLI help file
 help.txt
 
+# Generated benchmark data
+benchstat.txt
+
 # jsonnet dependency management
 /scripts/vendor

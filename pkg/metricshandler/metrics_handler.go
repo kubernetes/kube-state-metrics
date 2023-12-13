@@ -187,6 +187,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var writer io.Writer = w
 
 	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
+	gotContentType := contentType
 
 	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022
 	if contentType != expfmt.FmtOpenMetrics_1_0_0 && contentType != expfmt.FmtOpenMetrics_0_0_1 {
@@ -208,7 +209,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	m.metricsWriters = metricsstore.SanitizeHeaders(m.metricsWriters)
+	m.metricsWriters = metricsstore.SanitizeHeaders(string(gotContentType), m.metricsWriters)
 	for _, w := range m.metricsWriters {
 		err := w.WriteAll(writer)
 		if err != nil {

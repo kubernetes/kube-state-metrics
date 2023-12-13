@@ -19,6 +19,11 @@ package metricsstore
 import (
 	"fmt"
 	"io"
+	"strings"
+
+	"github.com/prometheus/common/expfmt"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 // MetricsWriterList represent a list of MetricsWriter
@@ -82,13 +87,22 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 	return nil
 }
 
-// SanitizeHeaders removes duplicate headers from the given MetricsWriterList for the same family (generated through CRS).
-// These are expected to be consecutive since G** resolution generates groups of similar metrics with same headers before moving onto the next G** spec in the CRS configuration.
-func SanitizeHeaders(writers MetricsWriterList) MetricsWriterList {
+// SanitizeHeaders sanitizes the headers of the given MetricsWriterList.
+func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWriterList {
 	var lastHeader string
 	for _, writer := range writers {
 		if len(writer.stores) > 0 {
 			for i, header := range writer.stores[0].headers {
+				// If the requested content type was proto-based, replace the type with "gauge", as "info" and "statesets" are not recognized by Prometheus' protobuf machinery.
+				if strings.HasPrefix(contentType, expfmt.ProtoType) &&
+					strings.HasPrefix(header, "# HELP") &&
+					(strings.HasSuffix(header, " "+string(metric.Info)) || strings.HasSuffix(header, " "+string(metric.StateSet))) {
+					typeStringWithoutTypePaddedIndex := strings.LastIndex(header, " ")
+					typeStringWithoutType := header[:typeStringWithoutTypePaddedIndex]
+					writer.stores[0].headers[i] = typeStringWithoutType + " " + string(metric.Gauge)
+				}
+				// Removes duplicate headers from the given MetricsWriterList for the same family (generated through CRS).
+				// These are expected to be consecutive since G** resolution generates groups of similar metrics with same headers before moving onto the next G** spec in the CRS configuration.
 				if header == lastHeader {
 					writer.stores[0].headers[i] = ""
 				} else {

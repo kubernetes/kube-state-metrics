@@ -18,6 +18,7 @@ package metricsstore_test
 
 import (
 	"fmt"
+	"github.com/prometheus/common/expfmt"
 	"strings"
 	"testing"
 
@@ -261,5 +262,51 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 
 	if result != "" {
 		t.Fatalf("Unexpected output, got %q, want %q", result, "")
+	}
+}
+
+func BenchmarkSanitizeHeaders(b *testing.B) {
+	benchmarks := []struct {
+		name                      string
+		contentType               expfmt.Format
+		writersContainsDuplicates bool
+	}{
+		{
+			name:                      "text-format unique headers",
+			contentType:               expfmt.FmtText,
+			writersContainsDuplicates: false,
+		},
+		{
+			name:                      "text-format duplicate headers",
+			contentType:               expfmt.FmtText,
+			writersContainsDuplicates: true,
+		},
+		{
+			name:                      "proto-format unique headers",
+			contentType:               expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			writersContainsDuplicates: false,
+		},
+		{
+			name:                      "proto-format duplicate headers",
+			contentType:               expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			writersContainsDuplicates: true,
+		},
+	}
+
+	for _, benchmark := range benchmarks {
+		headers := []string{}
+		for j := 0; j < 10e4; j++ {
+			if benchmark.writersContainsDuplicates {
+				headers = append(headers, fmt.Sprintf("# HELP foo foo_help\n# TYPE foo info"))
+			} else {
+				headers = append(headers, fmt.Sprintf("# HELP foo_%d foo_help\n# TYPE foo_%d info", j, j))
+			}
+		}
+		writer := metricsstore.NewMetricsWriter(metricsstore.NewMetricsStore(headers, nil))
+		b.Run(benchmark.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				metricsstore.SanitizeHeaders(string(benchmark.contentType), metricsstore.MetricsWriterList{writer})
+			}
+		})
 	}
 }

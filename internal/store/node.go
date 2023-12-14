@@ -158,6 +158,7 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 				n.Status.NodeInfo.SystemUUID,
 			}
 
+			// TODO: remove internal_ip in v3, replaced by kube_node_status_addresses
 			internalIP := ""
 			for _, address := range n.Status.Addresses {
 				if address.Type == "InternalIP" {

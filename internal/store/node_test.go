@@ -274,6 +274,30 @@ func TestNodeStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_node_spec_taint"},
 		},
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "127.0.0.1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: "InternalIP", Address: "1.2.3.4"},
+						{Type: "InternalIP", Address: "fc00::"},
+						{Type: "ExternalIP", Address: "5.6.7.8"},
+						{Type: "ExternalIP", Address: "2001:db8::"},
+					},
+				},
+			},
+			Want: `
+						# HELP kube_node_status_addresses Node address information.
+						# TYPE kube_node_status_addresses gauge
+						kube_node_status_addresses{node="127.0.0.1",type="InternalIP",address="1.2.3.4"} 1
+						kube_node_status_addresses{node="127.0.0.1",type="InternalIP",address="fc00::"} 1
+						kube_node_status_addresses{node="127.0.0.1",type="ExternalIP",address="5.6.7.8"} 1
+						kube_node_status_addresses{node="127.0.0.1",type="ExternalIP",address="2001:db8::"} 1
+					`,
+			MetricNames: []string{"kube_node_status_addresses"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(nodeMetricFamilies(nil, nil))

@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kubernetes/kube-state-metrics.svg)](https://pkg.go.dev/github.com/kubernetes/kube-state-metrics)
 [![govulncheck](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics (KSM) is a simple service that listens to the Kubernetes API
 server and generates metrics about the state of the objects. (See examples in

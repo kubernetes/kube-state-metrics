@@ -1,0 +1,31 @@
+header:
+  schema-version: "1.0.0"
+  expiration-date: "2023-12-15T19:10:00.000Z"
+  project-url: https://github.com/kubernetes/kube-state-metrics
+  changelog: https://github.com/kubernetes/kube-state-metrics/blob/main/CHANGELOG.md
+  license: https://github.com/kubernetes/kube-state-metrics/blob/main/LICENSE
+project-lifecycle:
+  status: active
+  bug-fixes-only: false
+  core-maintainers:
+    - github:dgrisonnet
+    - github:mrueg
+    - github:rexagod
+contribution-policy:
+  accepts-pull-requests: true
+  accepts-automated-pull-requests: true
+  contributing-policy: https://github.com/kubernetes/kube-state-metrics/blob/main/CONTRIBUTING.md
+  code-of-conduct: https://github.com/kubernetes/kube-state-metrics/blob/main/code-of-conduct.md
+distribution-points:
+  - https://github.com/kubernetes/kube-state-metrics/releases
+security-contacts:
+  - type: website
+    value: https://github.com/kubernetes/kube-state-metrics/blob/main/SECURITY_CONTACTS
+vulnerability-reporting:
+  accepts-vulnerability-reports: true
+  security-policy: https://github.com/kubernetes/kube-state-metrics/blob/main/SECURITY.md
+dependencies:
+  third-party-packages: true
+  dependencies-lists:
+    - https://github.com/kubernetes/kube-state-metrics/blob/main/go.mod
+    - https://github.com/kubernetes/kube-state-metrics/blob/main/Dockerfile

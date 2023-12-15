@@ -16,16 +16,6 @@ limitations under the License.
 
 package customresourcestate
 
-// MetricType is the type of a metric.
-type MetricType string
-
-// Supported metric types.
-const (
-	MetricTypeGauge    MetricType = "Gauge"
-	MetricTypeStateSet MetricType = "StateSet"
-	MetricTypeInfo     MetricType = "Info"
-)
-
 // MetricMeta are variables which may used for any metric type.
 type MetricMeta struct {
 	// LabelsFromPath adds additional labels where the value of the label is taken from a field under Path.

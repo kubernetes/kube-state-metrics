@@ -18,9 +18,10 @@ package metricsstore_test
 
 import (
 	"fmt"
-	"github.com/prometheus/common/expfmt"
 	"strings"
 	"testing"
+
+	"github.com/prometheus/common/expfmt"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -297,7 +298,7 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 		headers := []string{}
 		for j := 0; j < 10e4; j++ {
 			if benchmark.writersContainsDuplicates {
-				headers = append(headers, fmt.Sprintf("# HELP foo foo_help\n# TYPE foo info"))
+				headers = append(headers, "# HELP foo foo_help\n# TYPE foo info")
 			} else {
 				headers = append(headers, fmt.Sprintf("# HELP foo_%d foo_help\n# TYPE foo_%d info", j, j))
 			}

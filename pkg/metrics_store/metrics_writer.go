@@ -93,20 +93,31 @@ func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWrite
 	for _, writer := range writers {
 		if len(writer.stores) > 0 {
 			for i, header := range writer.stores[0].headers {
-				// If the requested content type was proto-based, replace the type with "gauge", as "info" and "statesets" are not recognized by Prometheus' protobuf machinery.
-				if strings.HasPrefix(contentType, expfmt.ProtoType) &&
-					strings.HasPrefix(header, "# HELP") &&
-					(strings.HasSuffix(header, " "+string(metric.Info)) || strings.HasSuffix(header, " "+string(metric.StateSet))) {
-					typeStringWithoutTypePaddedIndex := strings.LastIndex(header, " ")
-					typeStringWithoutType := header[:typeStringWithoutTypePaddedIndex]
-					writer.stores[0].headers[i] = typeStringWithoutType + " " + string(metric.Gauge)
+
+				// Nothing to sanitize.
+				if len(header) == 0 {
+					continue
 				}
+
 				// Removes duplicate headers from the given MetricsWriterList for the same family (generated through CRS).
 				// These are expected to be consecutive since G** resolution generates groups of similar metrics with same headers before moving onto the next G** spec in the CRS configuration.
 				if header == lastHeader {
 					writer.stores[0].headers[i] = ""
-				} else {
+				} else if strings.HasPrefix(header, "# HELP") {
 					lastHeader = header
+
+					// If the requested content type was proto-based, replace the type with "gauge", as "info" and "statesets" are not recognized by Prometheus' protobuf machinery,
+					// else replace them by their respective string representations.
+					if strings.HasPrefix(contentType, expfmt.ProtoType) &&
+						(strings.HasSuffix(header, metric.InfoN.NString()) || strings.HasSuffix(header, metric.StateSetN.NString())) {
+						writer.stores[0].headers[i] = header[:len(header)-1] + string(metric.Gauge)
+					}
+
+					// Replace all remaining type enums with their string representations.
+					n := int(header[len(header)-1]) - '0'
+					if n >= 0 && n < len(metric.MetricTypeNMap) {
+						writer.stores[0].headers[i] = header[:len(header)-1] + string(metric.MetricTypeNMap[metric.TypeN(n)])
+					}
 				}
 			}
 		}

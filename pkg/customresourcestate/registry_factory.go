@@ -72,7 +72,7 @@ func compileCommon(c MetricMeta) (*compiledCommon, error) {
 func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 	labels := resource.Labels.Merge(f.Labels)
 
-	if f.Each.Type == MetricTypeInfo && !strings.HasSuffix(f.Name, "_info") {
+	if f.Each.Type == metric.Info && !strings.HasSuffix(f.Name, "_info") {
 		klog.InfoS("Info metric does not have _info suffix", "gvk", resource.GroupVersionKind.String(), "name", f.Name)
 	}
 
@@ -153,7 +153,7 @@ type compiledMetric interface {
 // newCompiledMetric returns a compiledMetric depending on the given metric type.
 func newCompiledMetric(m Metric) (compiledMetric, error) {
 	switch m.Type {
-	case MetricTypeGauge:
+	case metric.Gauge:
 		if m.Gauge == nil {
 			return nil, errors.New("expected each.gauge to not be nil")
 		}
@@ -172,7 +172,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			NilIsZero:      m.Gauge.NilIsZero,
 			labelFromKey:   m.Gauge.LabelFromKey,
 		}, nil
-	case MetricTypeInfo:
+	case metric.Info:
 		if m.Info == nil {
 			return nil, errors.New("expected each.info to not be nil")
 		}
@@ -185,7 +185,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			compiledCommon: *cc,
 			labelFromKey:   m.Info.LabelFromKey,
 		}, nil
-	case MetricTypeStateSet:
+	case metric.StateSet:
 		if m.StateSet == nil {
 			return nil, errors.New("expected each.stateSet to not be nil")
 		}

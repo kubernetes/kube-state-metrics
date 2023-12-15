@@ -31,33 +31,31 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 
 ## Table of Contents
 
-- [Overview](#overview)
-  - [Table of Contents](#table-of-contents)
-    - [Versioning](#versioning)
-      - [Kubernetes Version](#kubernetes-version)
-      - [Compatibility matrix](#compatibility-matrix)
-      - [Resource group version compatibility](#resource-group-version-compatibility)
-      - [Container Image](#container-image)
-    - [Metrics Documentation](#metrics-documentation)
-      - [Conflict resolution in label names](#conflict-resolution-in-label-names)
-    - [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
-    - [Scaling kube-state-metrics](#scaling-kube-state-metrics)
-      - [Resource recommendation](#resource-recommendation)
-    - [Latency](#latency)
-    - [A note on costing](#a-note-on-costing)
-    - [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
-    - [Horizontal sharding](#horizontal-sharding)
-      - [Automated sharding](#automated-sharding)
-    - [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
-    - [Setup](#setup)
-      - [Building the Docker container](#building-the-docker-container)
-    - [Usage](#usage)
-      - [For users of prometheus-operator/kube-prometheus stack](#for-users-of-prometheus-operatorkube-prometheus-stack)
-      - [Kubernetes Deployment](#kubernetes-deployment)
-      - [Limited privileges environment](#limited-privileges-environment)
-      - [Helm Chart](#helm-chart)
-      - [Development](#development)
-      - [Developer Contributions](#developer-contributions)
+* [Versioning](#versioning)
+  * [Kubernetes Version](#kubernetes-version)
+  * [Compatibility matrix](#compatibility-matrix)
+  * [Resource group version compatibility](#resource-group-version-compatibility)
+  * [Container Image](#container-image)
+* [Metrics Documentation](#metrics-documentation)
+  * [Conflict resolution in label names](#conflict-resolution-in-label-names)
+* [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
+* [Resource recommendation](#resource-recommendation)
+* [Latency](#latency)
+* [A note on costing](#a-note-on-costing)
+* [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
+* [Scaling kube-state-metrics](#scaling-kube-state-metrics)
+  * [Resource recommendation](#resource-recommendation)
+  * [Horizontal sharding](#horizontal-sharding)
+    * [Automated sharding](#automated-sharding)
+  * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
+* [Setup](#setup)
+  * [Building the Docker container](#building-the-docker-container)
+* [Usage](#usage)
+  * [Kubernetes Deployment](#kubernetes-deployment)
+  * [Limited privileges environment](#limited-privileges-environment)
+  * [Helm Chart](#helm-chart)
+  * [Development](#development)
+  * [Developer Contributions](#developer-contributions)
 
 ### Versioning
 
@@ -75,13 +73,13 @@ At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kub
 Generally, it is recommended to use the latest release of kube-state-metrics. If you run a very recent version of Kubernetes, you might want to use an unreleased version to have the full range of supported resources. If you run an older version of Kubernetes, you might need to run an older version in order to have full support for all resources. Be aware, that the maintainers will only support the latest release. Older versions might be supported by interested users of the community.
 
 | kube-state-metrics | Kubernetes client-go Version |
-| ------------------ | :--------------------------: |
-| **v2.6.0**         |            v1.24             |
-| **v2.7.0**         |            v1.25             |
-| **v2.8.2**         |            v1.26             |
-| **v2.9.2**         |            v1.26             |
-| **v2.10.0**        |            v1.27             |
-| **main**           |            v1.28             |
+|--------------------|:----------------------------:|
+| **v2.6.0**         | v1.24                        |
+| **v2.7.0**         | v1.25                        |
+| **v2.8.2**         | v1.26                        |
+| **v2.9.2**         | v1.26                        |
+| **v2.10.0**        | v1.27                        |
+| **main**           | v1.28                        |
 
 #### Resource group version compatibility
 

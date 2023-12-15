@@ -8,6 +8,9 @@ on:
 env:
   GO_VERSION: "^1.21"
 
+permissions:
+  contents: read
+
 jobs:
   ci-security-checks:
     runs-on: ubuntu-latest

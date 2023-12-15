@@ -1,6 +1,6 @@
 header:
   schema-version: "1.0.0"
-  expiration-date: "2023-12-15T19:10:00.000Z"
+  expiration-date: "2024-12-15T19:10:00.000Z"
   project-url: https://github.com/kubernetes/kube-state-metrics
   changelog: https://github.com/kubernetes/kube-state-metrics/blob/main/CHANGELOG.md
   license: https://github.com/kubernetes/kube-state-metrics/blob/main/LICENSE

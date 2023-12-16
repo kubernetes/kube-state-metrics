@@ -12,6 +12,7 @@ project-lifecycle:
     - github:dgrisonnet
     - github:mrueg
     - github:rexagod
+  release-process: https://github.com/kubernetes/kube-state-metrics/blob/main/RELEASE.md
 contribution-policy:
   accepts-pull-requests: true
   accepts-automated-pull-requests: true

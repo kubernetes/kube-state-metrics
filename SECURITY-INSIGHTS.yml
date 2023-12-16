@@ -1,3 +1,4 @@
+# Refer: https://github.com/ossf/security-insights-spec/blob/main/specification.md#specification
 header:
   schema-version: "1.0.0"
   expiration-date: "2024-12-15T19:10:00.000Z"

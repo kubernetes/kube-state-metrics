@@ -1,0 +1,19 @@
+name: openvex
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+jobs:
+  vexctl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set environment variables
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - uses: openvex/generate-vex@c59881b41451d7ccba5c3b74cd195382b8971fcd
+        # Refer: https://github.com/openvex/vexctl#operational-model
+        name: Run vexctl
+        with:
+            product: pkg:golang/k8s.io/kube-state-metrics/v2@${{ env.RELEASE_VERSION }}

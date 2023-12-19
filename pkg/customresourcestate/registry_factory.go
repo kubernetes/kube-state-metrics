@@ -152,7 +152,7 @@ type compiledMetric interface {
 
 // newCompiledMetric returns a compiledMetric depending on the given metric type.
 func newCompiledMetric(m Metric) (compiledMetric, error) {
-	switch m.Type {
+	switch metric.Type(strings.ToLower(string(m.Type))) {
 	case metric.Gauge:
 		if m.Gauge == nil {
 			return nil, errors.New("expected each.gauge to not be nil")

@@ -40,33 +40,10 @@ var (
 // Type represents the type of the metric. See https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#metric-types.
 type Type string
 
-// TypeN represents the type of the metric as an integer.
-type TypeN int
-
 // String returns the string representation of the metric type.
-func (i TypeN) String() string {
-	return string(TypeNMap[i])
+func (t Type) String() string {
+	return string(t)
 }
-
-// NString returns the string representation of the metric type as an integer.
-func (i TypeN) NString() string {
-	return strconv.Itoa(int(i))
-}
-
-// Supported metric types.
-const (
-	// GaugeN defines an OpenMetrics gauge.
-	GaugeN TypeN = iota
-
-	// InfoN defines an OpenMetrics info.
-	InfoN
-
-	// StateSetN defines an OpenMetrics stateset.
-	StateSetN
-
-	// CounterN defines an OpenMetrics counter.
-	CounterN
-)
 
 // Supported metric types.
 var (
@@ -82,22 +59,6 @@ var (
 
 	// Counter defines an OpenMetrics counter.
 	Counter Type = "counter"
-
-	// TypeNMap is a map of MetricTypeN to MetricType.
-	TypeNMap = map[TypeN]Type{
-		GaugeN:    Gauge,
-		InfoN:     Info,
-		StateSetN: StateSet,
-		CounterN:  Counter,
-	}
-
-	// TypeMap is a map of MetricType to MetricTypeN.
-	TypeMap = map[Type]TypeN{
-		Gauge:    GaugeN,
-		Info:     InfoN,
-		StateSet: StateSetN,
-		Counter:  CounterN,
-	}
 )
 
 // Metric represents a single time series.

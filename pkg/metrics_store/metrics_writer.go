@@ -106,17 +106,16 @@ func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWrite
 				} else if strings.HasPrefix(header, "# HELP") {
 					lastHeader = header
 
-					// If the requested content type was proto-based, replace the type with "gauge", as "info" and "statesets" are not recognized by Prometheus' protobuf machinery,
-					// else replace them by their respective string representations.
-					if strings.HasPrefix(contentType, expfmt.ProtoType) &&
-						(strings.HasSuffix(header, metric.InfoN.NString()) || strings.HasSuffix(header, metric.StateSetN.NString())) {
-						writer.stores[0].headers[i] = header[:len(header)-1] + string(metric.Gauge)
-					}
-
-					// Replace all remaining type enums with their string representations.
-					n := int(header[len(header)-1]) - '0'
-					if n >= 0 && n < len(metric.TypeNMap) {
-						writer.stores[0].headers[i] = header[:len(header)-1] + string(metric.TypeNMap[metric.TypeN(n)])
+					// If the requested content type was proto-based, replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' protobuf machinery.
+					if strings.HasPrefix(contentType, expfmt.ProtoType) {
+						infoTypeString := metric.Info.String()
+						stateSetTypeString := metric.StateSet.String()
+						if strings.HasSuffix(header, infoTypeString) {
+							writer.stores[0].headers[i] = header[:len(header)-len(infoTypeString)] + string(metric.Gauge)
+						}
+						if strings.HasSuffix(header, stateSetTypeString) {
+							writer.stores[0].headers[i] = header[:len(header)-len(stateSetTypeString)] + string(metric.Gauge)
+						}
 					}
 				}
 			}

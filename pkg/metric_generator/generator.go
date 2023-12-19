@@ -90,7 +90,7 @@ func (g *FamilyGenerator) generateHeader() string {
 	header.WriteString("# TYPE ")
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
-	header.WriteString(metric.TypeMap[g.Type].NString())
+	header.WriteString(g.Type.String())
 
 	return header.String()
 }

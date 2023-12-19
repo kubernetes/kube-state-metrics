@@ -373,6 +373,30 @@
         },
       ),
 
+    deploymentNoNodePods:
+      local c = ksm.deployment.spec.template.spec.containers[0] {
+        args: [
+          '--resources=pods',
+          '--node=""',
+        ],
+      };
+      local shardksmname = ksm.name + "-pods";
+      std.mergePatch(ksm.deployment,
+        {
+          metadata: {
+            name: shardksmname,
+            labels: {'app.kubernetes.io/name': shardksmname}
+          },
+          spec: {
+            template: {
+              spec: {
+                containers: [c],
+              },
+            },
+          },
+        },
+      ),
+
     daemonset:
       // extending the default container from above
       local c0 = ksm.deployment.spec.template.spec.containers[0] {

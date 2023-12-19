@@ -162,13 +162,30 @@ func TestNodeFieldSelector(t *testing.T) {
 		Wanted string
 	}{
 		{
-			Desc:   "empty node name",
-			Node:   "",
+			Desc:   "with node name",
 			Wanted: "",
 		},
 		{
 			Desc:   "with node name",
-			Node:   "k8s-node-1",
+			Node:   nil,
+			Wanted: "",
+		},
+		{
+			Desc: "empty node name",
+			Node: NodeType(
+				map[string]struct{}{
+					"": {},
+				},
+			),
+			Wanted: "spec.nodeName=",
+		},
+		{
+			Desc: "with node name",
+			Node: NodeType(
+				map[string]struct{}{
+					"k8s-node-1": {},
+				},
+			),
 			Wanted: "spec.nodeName=k8s-node-1",
 		},
 	}
@@ -194,43 +211,67 @@ func TestMergeFieldSelectors(t *testing.T) {
 			Desc:             "empty DeniedNamespaces",
 			Namespaces:       NamespaceList{"default", "kube-system"},
 			DeniedNamespaces: NamespaceList{},
-			Node:             "",
-			Wanted:           "",
+			Node: NodeType(
+				map[string]struct{}{
+					"": {},
+				},
+			),
+			Wanted: "spec.nodeName=",
 		},
 		{
 			Desc:             "all DeniedNamespaces",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"some-system"},
-			Node:             "",
-			Wanted:           "metadata.namespace!=some-system",
+			Node: NodeType(
+				map[string]struct{}{
+					"": {},
+				},
+			),
+			Wanted: "metadata.namespace!=some-system,spec.nodeName=",
 		},
 		{
 			Desc:             "general case",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"case1-system", "case2-system"},
-			Node:             "",
-			Wanted:           "metadata.namespace!=case1-system,metadata.namespace!=case2-system",
+			Node: NodeType(
+				map[string]struct{}{
+					"": {},
+				},
+			),
+			Wanted: "metadata.namespace!=case1-system,metadata.namespace!=case2-system,spec.nodeName=",
 		},
 		{
 			Desc:             "empty DeniedNamespaces",
 			Namespaces:       NamespaceList{"default", "kube-system"},
 			DeniedNamespaces: NamespaceList{},
-			Node:             "k8s-node-1",
-			Wanted:           "spec.nodeName=k8s-node-1",
+			Node: NodeType(
+				map[string]struct{}{
+					"k8s-node-1": {},
+				},
+			),
+			Wanted: "spec.nodeName=k8s-node-1",
 		},
 		{
 			Desc:             "all DeniedNamespaces",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"some-system"},
-			Node:             "k8s-node-1",
-			Wanted:           "metadata.namespace!=some-system,spec.nodeName=k8s-node-1",
+			Node: NodeType(
+				map[string]struct{}{
+					"k8s-node-1": {},
+				},
+			),
+			Wanted: "metadata.namespace!=some-system,spec.nodeName=k8s-node-1",
 		},
 		{
 			Desc:             "general case",
 			Namespaces:       DefaultNamespaces,
 			DeniedNamespaces: NamespaceList{"case1-system", "case2-system"},
-			Node:             "k8s-node-1",
-			Wanted:           "metadata.namespace!=case1-system,metadata.namespace!=case2-system,spec.nodeName=k8s-node-1",
+			Node: NodeType(
+				map[string]struct{}{
+					"k8s-node-1": {},
+				},
+			),
+			Wanted: "metadata.namespace!=case1-system,metadata.namespace!=case2-system,spec.nodeName=k8s-node-1",
 		},
 	}
 

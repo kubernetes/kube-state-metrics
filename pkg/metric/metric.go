@@ -44,8 +44,8 @@ type Type string
 type TypeN int
 
 // String returns the string representation of the metric type.
-func (i TypeN) String() Type {
-	return MetricTypeNMap[i]
+func (i TypeN) String() string {
+	return string(TypeNMap[i])
 }
 
 // NString returns the string representation of the metric type as an integer.
@@ -55,7 +55,7 @@ func (i TypeN) NString() string {
 
 // Supported metric types.
 const (
-	// GaugeN defines a OpenMetrics gauge.
+	// GaugeN defines an OpenMetrics gauge.
 	GaugeN TypeN = iota
 
 	// InfoN defines an OpenMetrics info.
@@ -64,14 +64,14 @@ const (
 	// StateSetN defines an OpenMetrics stateset.
 	StateSetN
 
-	// CounterN defines a OpenMetrics counter.
+	// CounterN defines an OpenMetrics counter.
 	CounterN
 )
 
 // Supported metric types.
 var (
 
-	// Gauge defines a OpenMetrics gauge.
+	// Gauge defines an OpenMetrics gauge.
 	Gauge Type = "gauge"
 
 	// Info defines an OpenMetrics info.
@@ -80,19 +80,19 @@ var (
 	// StateSet defines an OpenMetrics stateset.
 	StateSet Type = "stateset"
 
-	// Counter defines a OpenMetrics counter.
+	// Counter defines an OpenMetrics counter.
 	Counter Type = "counter"
 
-	// MetricTypeNMap is a map of MetricTypeN to MetricType.
-	MetricTypeNMap = map[TypeN]Type{
+	// TypeNMap is a map of MetricTypeN to MetricType.
+	TypeNMap = map[TypeN]Type{
 		GaugeN:    Gauge,
 		InfoN:     Info,
 		StateSetN: StateSet,
 		CounterN:  Counter,
 	}
 
-	// MetricTypeMap is a map of MetricType to MetricTypeN.
-	MetricTypeMap = map[Type]TypeN{
+	// TypeMap is a map of MetricType to MetricTypeN.
+	TypeMap = map[Type]TypeN{
 		Gauge:    GaugeN,
 		Info:     InfoN,
 		StateSet: StateSetN,

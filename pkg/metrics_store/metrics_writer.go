@@ -115,8 +115,8 @@ func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWrite
 
 					// Replace all remaining type enums with their string representations.
 					n := int(header[len(header)-1]) - '0'
-					if n >= 0 && n < len(metric.MetricTypeNMap) {
-						writer.stores[0].headers[i] = header[:len(header)-1] + string(metric.MetricTypeNMap[metric.TypeN(n)])
+					if n >= 0 && n < len(metric.TypeNMap) {
+						writer.stores[0].headers[i] = header[:len(header)-1] + string(metric.TypeNMap[metric.TypeN(n)])
 					}
 				}
 			}

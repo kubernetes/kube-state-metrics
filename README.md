@@ -277,6 +277,7 @@ spec:
 ```
 
 To track metrics for unassigned pods, you need to add an additional deployment and set `--node=""`, as shown in the following example:
+
 ```
 apiVersion: apps/v1
 kind: Deployment

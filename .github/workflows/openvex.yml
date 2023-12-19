@@ -2,9 +2,8 @@ name: openvex
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*.*.*'
+  release:
+    types: [published]
 jobs:
   vexctl:
     runs-on: ubuntu-latest
@@ -17,4 +16,4 @@ jobs:
         # Refer: https://github.com/openvex/vexctl#operational-model
         name: Run vexctl
         with:
-            product: pkg:golang/kubernetes/kube-state-metrics@${{ env.RELEASE_VERSION }}
+            product: pkg:golang/k8s.io/kube-state-metrics/v2@${{ env.RELEASE_VERSION }}

@@ -18,11 +18,12 @@ package metricsstore
 
 import (
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/prometheus/common/expfmt"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/prometheus/common/expfmt"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -266,7 +267,8 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 	}
 }
 
-// TODO: AFAIR empty headers are ignored by Prometheus? If not, we should remove them.
+// TODO: AFFAIR empty headers are ignored by Prometheus? If not, we should remove them.
+// No two consecutive headers will be entirely the same. The cases used below are only for their suffixes.
 func TestSanitizeHeaders(t *testing.T) {
 	boilerplateHeaders := []string{
 		"",

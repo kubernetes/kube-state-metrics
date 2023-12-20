@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package metricsstore_test
+package metricsstore
 
 import (
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"github.com/prometheus/common/expfmt"
+	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/prometheus/common/expfmt"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 )
 
 func TestWriteAllWithSingleStore(t *testing.T) {
@@ -62,7 +62,7 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	store := metricsstore.NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	store := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
 	svcs := []v1.Service{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -86,7 +86,7 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 		}
 	}
 
-	multiNsWriter := metricsstore.NewMetricsWriter(store)
+	multiNsWriter := NewMetricsWriter(store)
 	w := strings.Builder{}
 	err := multiNsWriter.WriteAll(&w)
 	if err != nil {
@@ -150,7 +150,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	s1 := metricsstore.NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	s1 := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
 	svcs1 := []v1.Service{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -190,7 +190,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 			},
 		},
 	}
-	s2 := metricsstore.NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	s2 := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
 	for _, s := range svcs2 {
 		svc := s
 		if err := s2.Add(&svc); err != nil {
@@ -198,7 +198,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 		}
 	}
 
-	multiNsWriter := metricsstore.NewMetricsWriter(s1, s2)
+	multiNsWriter := NewMetricsWriter(s1, s2)
 	w := strings.Builder{}
 	err := multiNsWriter.WriteAll(&w)
 	if err != nil {
@@ -250,9 +250,9 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	store := metricsstore.NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	store := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
 
-	multiNsWriter := metricsstore.NewMetricsWriter(store)
+	multiNsWriter := NewMetricsWriter(store)
 	w := strings.Builder{}
 	err := multiNsWriter.WriteAll(&w)
 	if err != nil {
@@ -263,6 +263,103 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 
 	if result != "" {
 		t.Fatalf("Unexpected output, got %q, want %q", result, "")
+	}
+}
+
+// TODO: AFAIR empty headers are ignored by Prometheus? If not, we should remove them.
+func TestSanitizeHeaders(t *testing.T) {
+	boilerplateHeaders := []string{
+		"",
+		"",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"# HELP foo foo_help\n# TYPE foo info",
+		"# HELP foo foo_help\n# TYPE foo stateset",
+		"# HELP foo foo_help\n# TYPE foo counter",
+	}
+	duplicatedBoilerplateHeaders := []string{
+		"",
+		"",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"# HELP foo foo_help\n# TYPE foo info",
+		"# HELP foo foo_help\n# TYPE foo info",
+		"# HELP foo foo_help\n# TYPE foo stateset",
+		"# HELP foo foo_help\n# TYPE foo stateset",
+		"# HELP foo foo_help\n# TYPE foo counter",
+		"# HELP foo foo_help\n# TYPE foo counter",
+	}
+	dedepedBoilerplateHeaders := []string{
+		"",
+		"",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"",
+		"# HELP foo foo_help\n# TYPE foo info",
+		"",
+		"# HELP foo foo_help\n# TYPE foo stateset",
+		"",
+		"# HELP foo foo_help\n# TYPE foo counter",
+		"",
+	}
+	protoIngestibleHeaders := []string{
+		"",
+		"",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"# HELP foo foo_help\n# TYPE foo counter",
+	}
+	dedepedProtoIngestibleHeaders := []string{
+		"",
+		"",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"",
+		"# HELP foo foo_help\n# TYPE foo gauge",
+		"",
+		"# HELP foo foo_help\n# TYPE foo counter",
+		"",
+	}
+	testcases := []struct {
+		name            string
+		contentType     expfmt.Format
+		headers         []string
+		expectedHeaders []string
+	}{
+		{
+			name:            "text-format unique headers",
+			contentType:     expfmt.FmtText,
+			headers:         boilerplateHeaders,
+			expectedHeaders: boilerplateHeaders,
+		},
+		{
+			name:            "text-format consecutive duplicate headers",
+			contentType:     expfmt.FmtText,
+			headers:         duplicatedBoilerplateHeaders,
+			expectedHeaders: dedepedBoilerplateHeaders,
+		},
+		{
+			name:            "proto-format unique headers",
+			contentType:     expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			headers:         boilerplateHeaders,
+			expectedHeaders: protoIngestibleHeaders,
+		},
+		{
+			name:            "proto-format consecutive duplicate headers",
+			contentType:     expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			headers:         duplicatedBoilerplateHeaders,
+			expectedHeaders: dedepedProtoIngestibleHeaders,
+		},
+	}
+
+	for _, testcase := range testcases {
+		writer := NewMetricsWriter(NewMetricsStore(testcase.headers, nil))
+		t.Run(testcase.name, func(t *testing.T) {
+			SanitizeHeaders(string(testcase.contentType), MetricsWriterList{writer})
+			if !reflect.DeepEqual(testcase.expectedHeaders, writer.stores[0].headers) {
+				t.Fatalf("(-want, +got):\n%s", cmp.Diff(testcase.expectedHeaders, writer.stores[0].headers))
+			}
+		})
 	}
 }
 
@@ -303,10 +400,10 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 				headers = append(headers, fmt.Sprintf("# HELP foo_%d foo_help\n# TYPE foo_%d info", j, j))
 			}
 		}
-		writer := metricsstore.NewMetricsWriter(metricsstore.NewMetricsStore(headers, nil))
+		writer := NewMetricsWriter(NewMetricsStore(headers, nil))
 		b.Run(benchmark.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				metricsstore.SanitizeHeaders(string(benchmark.contentType), metricsstore.MetricsWriterList{writer})
+				SanitizeHeaders(string(benchmark.contentType), MetricsWriterList{writer})
 			}
 		})
 	}

@@ -101,25 +101,45 @@ func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWrite
 
 				// Removes duplicate headers from the given MetricsWriterList for the same family (generated through CRS).
 				// These are expected to be consecutive since G** resolution generates groups of similar metrics with same headers before moving onto the next G** spec in the CRS configuration.
-				if header == lastHeader {
-					writer.stores[0].headers[i] = ""
-				} else if strings.HasPrefix(header, "# HELP") {
-					lastHeader = header
+				// Skip this step if we encounter a repeated header, as it will be removed.
+				if header != lastHeader && strings.HasPrefix(header, "# HELP") {
 
 					// If the requested content type was proto-based, replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' protobuf machinery.
 					if strings.HasPrefix(contentType, expfmt.ProtoType) {
 						infoTypeString := metric.Info.String()
 						stateSetTypeString := metric.StateSet.String()
 						if strings.HasSuffix(header, infoTypeString) {
-							writer.stores[0].headers[i] = header[:len(header)-len(infoTypeString)] + string(metric.Gauge)
+							header = header[:len(header)-len(infoTypeString)] + string(metric.Gauge)
+							writer.stores[0].headers[i] = header
 						}
 						if strings.HasSuffix(header, stateSetTypeString) {
-							writer.stores[0].headers[i] = header[:len(header)-len(stateSetTypeString)] + string(metric.Gauge)
+							header = header[:len(header)-len(stateSetTypeString)] + string(metric.Gauge)
+							writer.stores[0].headers[i] = header
 						}
 					}
+				}
+
+				// Nullify duplicate headers after the sanitization to not miss out on any new candidates.
+				if header == lastHeader {
+					writer.stores[0].headers[i] = ""
+				}
+
+				// Update the last header.
+				lastHeader = header
+			}
+		}
+	}
+
+	// Remove all empty headers.
+	for _, writer := range writers {
+		if len(writer.stores) > 0 {
+			for i := len(writer.stores[0].headers) - 1; i >= 0; i-- {
+				if writer.stores[0].headers[i] == "" {
+					writer.stores[0].headers = append(writer.stores[0].headers[:i], writer.stores[0].headers[i+1:]...)
 				}
 			}
 		}
 	}
+
 	return writers
 }

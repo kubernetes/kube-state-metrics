@@ -267,61 +267,8 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 	}
 }
 
-// TODO: AFFAIR empty headers are ignored by Prometheus? If not, we should remove them.
 // No two consecutive headers will be entirely the same. The cases used below are only for their suffixes.
 func TestSanitizeHeaders(t *testing.T) {
-	boilerplateHeaders := []string{
-		"",
-		"",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"# HELP foo foo_help\n# TYPE foo info",
-		"# HELP foo foo_help\n# TYPE foo stateset",
-		"# HELP foo foo_help\n# TYPE foo counter",
-	}
-	duplicatedBoilerplateHeaders := []string{
-		"",
-		"",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"# HELP foo foo_help\n# TYPE foo info",
-		"# HELP foo foo_help\n# TYPE foo info",
-		"# HELP foo foo_help\n# TYPE foo stateset",
-		"# HELP foo foo_help\n# TYPE foo stateset",
-		"# HELP foo foo_help\n# TYPE foo counter",
-		"# HELP foo foo_help\n# TYPE foo counter",
-	}
-	dedepedBoilerplateHeaders := []string{
-		"",
-		"",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"",
-		"# HELP foo foo_help\n# TYPE foo info",
-		"",
-		"# HELP foo foo_help\n# TYPE foo stateset",
-		"",
-		"# HELP foo foo_help\n# TYPE foo counter",
-		"",
-	}
-	protoIngestibleHeaders := []string{
-		"",
-		"",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"# HELP foo foo_help\n# TYPE foo counter",
-	}
-	dedepedProtoIngestibleHeaders := []string{
-		"",
-		"",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"",
-		"# HELP foo foo_help\n# TYPE foo gauge",
-		"",
-		"# HELP foo foo_help\n# TYPE foo counter",
-		"",
-	}
 	testcases := []struct {
 		name            string
 		contentType     expfmt.Format
@@ -329,28 +276,80 @@ func TestSanitizeHeaders(t *testing.T) {
 		expectedHeaders []string
 	}{
 		{
-			name:            "text-format unique headers",
-			contentType:     expfmt.FmtText,
-			headers:         boilerplateHeaders,
-			expectedHeaders: boilerplateHeaders,
+			name:        "text-format unique headers",
+			contentType: expfmt.FmtText,
+			headers: []string{
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+			expectedHeaders: []string{
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
 		},
 		{
-			name:            "text-format consecutive duplicate headers",
-			contentType:     expfmt.FmtText,
-			headers:         duplicatedBoilerplateHeaders,
-			expectedHeaders: dedepedBoilerplateHeaders,
+			name:        "text-format consecutive duplicate headers",
+			contentType: expfmt.FmtText,
+			headers: []string{
+				"",
+				"",
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+			expectedHeaders: []string{
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
 		},
 		{
-			name:            "proto-format unique headers",
-			contentType:     expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
-			headers:         boilerplateHeaders,
-			expectedHeaders: protoIngestibleHeaders,
+			name:        "proto-format unique headers",
+			contentType: expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			headers: []string{
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+			expectedHeaders: []string{
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
 		},
 		{
-			name:            "proto-format consecutive duplicate headers",
-			contentType:     expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
-			headers:         duplicatedBoilerplateHeaders,
-			expectedHeaders: dedepedProtoIngestibleHeaders,
+			name:        "proto-format consecutive duplicate headers",
+			contentType: expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			headers: []string{
+				"",
+				"",
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+			expectedHeaders: []string{
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
 		},
 	}
 

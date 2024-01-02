@@ -39,6 +39,24 @@ type FamilyGenerator struct {
 	GenerateFunc      func(obj interface{}) *metric.Family
 }
 
+// NewFamilyGeneratorWithStabilityV2 creates new FamilyGenerator instances with metric
+// stabilityLevel and explicit labels. These explicit labels are used for verifying stable metrics.
+func NewFamilyGeneratorWithStabilityV2(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, labels []string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+	f := &FamilyGenerator{
+		Name:              name,
+		Type:              metricType,
+		Help:              help,
+		OptIn:             false,
+		StabilityLevel:    stabilityLevel,
+		DeprecatedVersion: deprecatedVersion,
+		GenerateFunc:      wrapLabels(generateFunc, labels),
+	}
+	if deprecatedVersion != "" {
+		f.Help = fmt.Sprintf("(Deprecated since %s) %s", deprecatedVersion, help)
+	}
+	return f
+}
+
 // NewFamilyGeneratorWithStability creates new FamilyGenerator instances with metric
 // stabilityLevel.
 func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
@@ -55,6 +73,19 @@ func NewFamilyGeneratorWithStability(name string, help string, metricType metric
 		f.Help = fmt.Sprintf("(Deprecated since %s) %s", deprecatedVersion, help)
 	}
 	return f
+}
+
+func wrapLabels(generateFunc func(obj interface{}) *metric.Family, labels []string) func(obj interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
+
+		metricFamily := generateFunc(obj)
+
+		for _, m := range metricFamily.Metrics {
+			m.LabelKeys = append(m.LabelKeys, labels...)
+		}
+
+		return metricFamily
+	}
 }
 
 // NewOptInFamilyGenerator creates new FamilyGenerator instances for opt-in metric families.

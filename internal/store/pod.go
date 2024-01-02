@@ -882,17 +882,17 @@ func createPodInitContainerStatusReadyFamilyGenerator() generator.FamilyGenerato
 }
 
 func createPodInitContainerStatusRestartsTotalFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithStabilityV2(
 		"kube_pod_init_container_status_restarts_total",
 		"The number of restarts for the init container.",
 		metric.Counter, basemetrics.STABLE,
 		"",
+		[]string{"container"},
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, len(p.Status.InitContainerStatuses))
 
 			for i, cs := range p.Status.InitContainerStatuses {
 				ms[i] = &metric.Metric{
-					LabelKeys:   []string{"container"},
 					LabelValues: []string{cs.Name},
 					Value:       float64(cs.RestartCount),
 				}

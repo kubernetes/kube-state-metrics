@@ -1,0 +1,6 @@
+- name: kube_pod_init_container_status_restarts_total
+  help: The number of restarts for the init container.
+  type: Counter
+  stabilityLevel: STABLE
+  labels:
+  - container

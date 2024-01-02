@@ -207,3 +207,24 @@ jobs:
     - name: End-to-end tests
       run: |
         make e2e
+
+  ci-validate-stable-metrics-tests:
+    name: ci-validate-stable-metrics
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: End-to-end tests
+      run: |
+        make validate-stable-metrics

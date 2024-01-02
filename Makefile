@@ -129,6 +129,12 @@ clean:
 e2e:
 	./tests/e2e.sh
 
+validate-stable-metrics:
+	./tests/validate-stability.sh
+
+fix-stable-metrics:
+	./tests/fix-stability.sh
+
 generate: build-local
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh

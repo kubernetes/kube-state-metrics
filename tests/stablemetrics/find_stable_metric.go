@@ -17,20 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"go/ast"
-
-	"k8s.io/component-base/metrics"
 )
-
-var metricsOptionStructuresNames = []string{
-	"KubeOpts",
-	"CounterOpts",
-	"GaugeOpts",
-	"HistogramOpts",
-	"SummaryOpts",
-	"TimingHistogramOpts",
-}
 
 func findStableMetricDeclaration(tree ast.Node, metricsImportName string) ([]*ast.CallExpr, []error) {
 	v := stableMetricFinder{
@@ -52,75 +40,18 @@ type stableMetricFinder struct {
 
 var _ ast.Visitor = (*stableMetricFinder)(nil)
 
-func contains(v metrics.StabilityLevel, a []metrics.StabilityLevel) bool {
-	for _, i := range a {
-		if i == v {
-			return true
-		}
-	}
-	return false
-}
-
 func (f *stableMetricFinder) Visit(node ast.Node) (w ast.Visitor) {
 	switch opts := node.(type) {
 	case *ast.CallExpr:
+		f.currentFunctionCall = opts
 		if se, ok := opts.Fun.(*ast.SelectorExpr); ok {
-			if se.Sel.Name == "NewDesc" {
-				sl, _ := decodeStabilityLevel(opts.Args[4], f.metricsImportName)
-				if sl != nil {
-					classes := []metrics.StabilityLevel{metrics.STABLE, metrics.BETA}
-					if ALL_STABILITY_CLASSES {
-						classes = append(classes, metrics.ALPHA)
-					}
-					switch {
-					case contains(*sl, classes):
-						f.stableMetricsFunctionCalls = append(f.stableMetricsFunctionCalls, opts)
-						f.currentFunctionCall = nil
-					default:
-						return nil
-					}
+			if se.Sel.Name == "NewFamilyGeneratorWithStabilityV2" {
+				sl, _ := decodeStabilityLevel(opts.Args[3], f.metricsImportName)
+				if sl != nil && string(*sl) == "STABLE" {
+					f.stableMetricsFunctionCalls = append(f.stableMetricsFunctionCalls, opts)
+					f.currentFunctionCall = nil
 				}
-			} else {
-				f.currentFunctionCall = opts
 			}
-
-		} else {
-			f.currentFunctionCall = opts
-		}
-	case *ast.CompositeLit:
-		se, ok := opts.Type.(*ast.SelectorExpr)
-		if !ok {
-			return f
-		}
-		if !isMetricOps(se.Sel.Name) {
-			return f
-		}
-		id, ok := se.X.(*ast.Ident)
-		if !ok {
-			return f
-		}
-		if id.Name != f.metricsImportName {
-			return f
-		}
-		stabilityLevel, err := getStabilityLevel(opts, f.metricsImportName)
-		if err != nil {
-			f.errors = append(f.errors, err)
-			return nil
-		}
-		classes := []metrics.StabilityLevel{metrics.STABLE, metrics.BETA}
-		if ALL_STABILITY_CLASSES {
-			classes = append(classes, metrics.ALPHA)
-		}
-		switch {
-		case contains(*stabilityLevel, classes):
-			if f.currentFunctionCall == nil {
-				f.errors = append(f.errors, newDecodeErrorf(opts, errNotDirectCall))
-				return nil
-			}
-			f.stableMetricsFunctionCalls = append(f.stableMetricsFunctionCalls, f.currentFunctionCall)
-			f.currentFunctionCall = nil
-		default:
-			return nil
 		}
 	default:
 		if f.currentFunctionCall == nil || node == nil || node.Pos() < f.currentFunctionCall.Rparen {
@@ -129,31 +60,4 @@ func (f *stableMetricFinder) Visit(node ast.Node) (w ast.Visitor) {
 		f.currentFunctionCall = nil
 	}
 	return f
-}
-
-func isMetricOps(name string) bool {
-	var found = false
-	for _, optsName := range metricsOptionStructuresNames {
-		if name == optsName {
-			found = true
-			break
-		}
-	}
-	return found
-}
-
-func getStabilityLevel(opts *ast.CompositeLit, metricsFrameworkImportName string) (*metrics.StabilityLevel, error) {
-	for _, expr := range opts.Elts {
-		kv, ok := expr.(*ast.KeyValueExpr)
-		if !ok {
-			return nil, newDecodeErrorf(expr, errPositionalArguments)
-		}
-		key := fmt.Sprintf("%v", kv.Key)
-		if key != "StabilityLevel" {
-			continue
-		}
-		return decodeStabilityLevel(kv.Value, metricsFrameworkImportName)
-	}
-	stability := metrics.ALPHA
-	return &stability, nil
 }

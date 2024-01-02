@@ -20,15 +20,6 @@ import (
 	"k8s.io/component-base/metrics"
 )
 
-const (
-	counterMetricType    = "Counter"
-	gaugeMetricType      = "Gauge"
-	histogramMetricType  = "Histogram"
-	summaryMetricType    = "Summary"
-	timingRatioHistogram = "TimingRatioHistogram"
-	customType           = "Custom"
-)
-
 type metric struct {
 	Name              string              `yaml:"name" json:"name"`
 	Subsystem         string              `yaml:"subsystem,omitempty" json:"subsystem,omitempty"`

@@ -407,11 +407,13 @@ Then curl the metrics endpoint
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
 
 ##### Debug CustomStateMetrics feature
-```
+
+```bash
 minikube start
 ...
 go run main.go --custom-resource-state-only --custom-resource-state-config-file ksm-2223/custom-resource-config-file.yaml --kubeconfig ~/.kube/config
 ```
+
 See more details in https://github.com/kubernetes/kube-state-metrics/issues/2223#issuecomment-1792850276
 
 #### Developer Contributions

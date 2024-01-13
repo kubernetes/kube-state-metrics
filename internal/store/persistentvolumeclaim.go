@@ -104,7 +104,8 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"storageclass", "volumename", "volumemode"},
+							// Matches the labels from kube_persistentvolume_*
+							LabelKeys:   []string{"storageclass", "persistentvolume", "volumemode"},
 							LabelValues: []string{storageClassName, volumeName, volumeMode},
 							Value:       1,
 						},

@@ -178,8 +178,8 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// ServeHTTP implements the http.Handler interface. It writes all generated
-// metrics to the response body.
+// ServeHTTP implements the http.Handler interface. It writes all generated metrics to the response body.
+// Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()

@@ -222,6 +222,7 @@ func configOverrides(config *Metrics) {
 		for j := range config.Spec.Resources[i].Metrics {
 
 			// Override the metric type to lowercase, so the internals have a single source of truth for metric type definitions.
+			// This is done as a convenience measure for users, so they don't have to remember the exact casing.
 			config.Spec.Resources[i].Metrics[j].Each.Type = metric.Type(strings.ToLower(string(config.Spec.Resources[i].Metrics[j].Each.Type)))
 		}
 	}

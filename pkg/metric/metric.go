@@ -40,11 +40,6 @@ var (
 // Type represents the type of the metric. See https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#metric-types.
 type Type string
 
-// String returns the string representation of the metric type.
-func (t Type) String() string {
-	return string(t)
-}
-
 // Supported metric types.
 var (
 

@@ -1,4 +1,4 @@
-## Next:
+## Next
 
 ### Note
 

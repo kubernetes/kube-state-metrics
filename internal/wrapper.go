@@ -119,5 +119,4 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	}
 	klog.InfoS("Starting kube-state-metrics")
 	KSMRunOrDie(ctx)
-	select {}
 }

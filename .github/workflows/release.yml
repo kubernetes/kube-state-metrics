@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  GO_VERSION: "^1.21"
+  GOLANGCI_LINT_VERSION: "v1.54.2"
+  E2E_SETUP_KIND: yes
+  E2E_SETUP_KUBECTL: yes
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract pushed release tag
+        id: extract_tag
+        run: echo "::set-output name=tag::${GITHUB_REF##*/}"
+      - name: Checkout into the corresponding release branch
+        uses: actions/checkout@v4
+      - name: Create VCS sandbox
+        run: |
+          git checkout -b release-${{ steps.extract_tag.outputs.tag }}
+      - name: Set up the Go@${{ env.GO_VERSION }} environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Get the pushed tag
+        id: get_tag
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Store the previous tag
+        id: get_previous_tag
+        run: echo ::set-output name=previous_tag::$(cat VERSION | cut -d. -f1,2)
+      - name: Update the VERSION manifest to the pushed tag
+        run: echo "${{ steps.get_tag.outputs.tag }}" | sed 's/^v//' > VERSION
+      - name: Update the compatibility matrix (README.md)
+        run: ./scripts/update-compatibility-matrix.sh
+      - name: Generate the release notes (CHANGELOG.md)
+        run: ./scripts/generate-release-notes.sh
+      - name: Install tools
+        run: make install-tools
+      - name: Lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+          sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+          make lint-fix
+      - name: Generate manifests
+        run: make examples
+      - name: Run rule tests
+        run: PROMTOOL_CLI=./promtool make install-promtool test-rules
+      - name: Run unit tests
+        run: make test-unit
+      - name: Run end-to-end tests
+        run: make e2e
+      - name: Update the remote and commit the changes
+        run: |
+          git config --local user.email "ksm-release-bot@mock-k8s.io"
+          git config --local user.name "KSM Release Bot"
+          git add .
+          git commit -m "chore: Cut ${{ steps.get_tag.outputs.tag }}"
+          git push origin HEAD:release-${{ steps.get_tag.outputs.tag }} --force-with-lease
+      - name: Benchmark tests
+        run: LATEST_RELEASE_BRANCH=release-${{ steps.get_previous_tag.outputs.previous_tag }} make test-benchmark-compare
+      - name: Validate docs
+        run: make doccheck
+      - name: Validate manifests
+        run: make validate-manifests
+      - name: Validate go modules
+        run: make validate-modules
+      - name: Create a pull request
+        run: |
+          gh pr create \
+            --title "chore: Cut ${{ steps.get_tag.outputs.tag }}" \
+            --body "This PR was automatically created by the release workflow, and should be targeted to the corresponding release branch." \
+            --base main \
+            --head release-${{ steps.get_tag.outputs.tag }}
+            --reviewer @sig-instrumentation-approvers \
+            --assignee @sig-instrumentation-leads
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

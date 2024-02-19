@@ -21,6 +21,7 @@ IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
+MARKDOWNFMT = $(shell which markdownfmt)
 MARKDOWNLINT_CLI2_VERSION = 0.9.2
 
 
@@ -43,10 +44,10 @@ licensecheck:
                exit 1; \
        fi
 
-lint: shellcheck licensecheck lint-markdown-format
+lint: shellcheck licensecheck lint-markdownfmt lint-markdown-format
 	golangci-lint run
 
-lint-fix: fix-markdown-format
+lint-fix: lint-markdownfmt-fix fix-markdown-format
 	golangci-lint run --fix -v
 	
 
@@ -83,6 +84,12 @@ shellcheck:
 
 lint-markdown-format:
 	${DOCKER_CLI} run -v "${PWD}:/workdir" davidanson/markdownlint-cli2:v${MARKDOWNLINT_CLI2_VERSION} --config .markdownlint-cli2.jsonc
+
+lint-markdownfmt:
+	${MARKDOWNFMT} -d -gofmt README.md
+
+lint-markdownfmt-fix:
+	${MARKDOWNFMT} -w -gofmt README.md
 
 fix-markdown-format:
 	${DOCKER_CLI} run -v "${PWD}:/workdir" davidanson/markdownlint-cli2:v${MARKDOWNLINT_CLI2_VERSION} --fix --config .markdownlint-cli2.jsonc

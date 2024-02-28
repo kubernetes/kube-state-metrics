@@ -523,13 +523,17 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 }
 
 func createNodeListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
-	// if given node name, it then lists and watches specified node by its name instead of all nodes.
+	// if node name given, it then lists and watches specified node by its name instead of all nodes.
 	if fieldSelector != "" {
 		selector, _ := fields.ParseSelector(fieldSelector)
 		nodeName, ok := selector.RequiresExactMatch("spec.nodeName")
 		if ok {
 			fieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 			klog.InfoS("Transform fieldSelector for node store", "fieldSelector", fieldSelector)
+		} else {
+			// it removes the field selector if it does not contain node name.
+			// for example, the namespace selector is not necessary for nodes resource.
+			fieldSelector = ""
 		}
 	}
 	return &cache.ListWatch{

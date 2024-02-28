@@ -18,11 +18,11 @@ package store
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/klog/v2"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/fields"
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"

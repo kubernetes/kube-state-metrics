@@ -1,33 +1,12 @@
 # Overview
 
-[![Build Status](https://github.com/kubernetes/kube-state-metrics/workflows/continuous-integration/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics)
-[![Go Reference](https://pkg.go.dev/badge/github.com/kubernetes/kube-state-metrics.svg)](https://pkg.go.dev/github.com/kubernetes/kube-state-metrics)
-[![govulncheck](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics)
+[![Build Status](https://github.com/kubernetes/kube-state-metrics/workflows/continuous-integration/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions) [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics) [![Go Reference](https://pkg.go.dev/badge/github.com/kubernetes/kube-state-metrics.svg)](https://pkg.go.dev/github.com/kubernetes/kube-state-metrics) [![govulncheck](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics)
 
-kube-state-metrics (KSM) is a simple service that listens to the Kubernetes API
-server and generates metrics about the state of the objects. (See examples in
-the Metrics section below.) It is not focused on the health of the individual
-Kubernetes components, but rather on the health of the various objects inside,
-such as deployments, nodes and pods.
+kube-state-metrics (KSM) is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects. (See examples in the Metrics section below.) It is not focused on the health of the individual Kubernetes components, but rather on the health of the various objects inside, such as deployments, nodes and pods.
 
-kube-state-metrics is about generating metrics from Kubernetes API objects
-without modification. This ensures that features provided by kube-state-metrics
-have the same grade of stability as the Kubernetes API objects themselves. In
-turn, this means that kube-state-metrics in certain situations may not show the
-exact same values as kubectl, as kubectl applies certain heuristics to display
-comprehensible messages. kube-state-metrics exposes raw data unmodified from the
-Kubernetes API, this way users have all the data they require and perform
-heuristics as they see fit.
+kube-state-metrics is about generating metrics from Kubernetes API objects without modification. This ensures that features provided by kube-state-metrics have the same grade of stability as the Kubernetes API objects themselves. In turn, this means that kube-state-metrics in certain situations may not show the exact same values as kubectl, as kubectl applies certain heuristics to display comprehensible messages. kube-state-metrics exposes raw data unmodified from the Kubernetes API, this way users have all the data they require and perform heuristics as they see fit.
 
-The metrics are exported on the HTTP endpoint `/metrics` on the listening port
-(default 8080). They are served as plaintext. They are designed to be consumed
-either by Prometheus itself or by a scraper that is compatible with scraping a
-Prometheus client endpoint. You can also open `/metrics` in a browser to see
-the raw metrics. Note that the metrics exposed on the `/metrics` endpoint
-reflect the current state of the Kubernetes cluster. When Kubernetes objects
-are deleted they are no longer visible on the `/metrics` endpoint.
+The metrics are exported on the HTTP endpoint `/metrics` on the listening port (default 8080). They are served as plaintext. They are designed to be consumed either by Prometheus itself or by a scraper that is compatible with scraping a Prometheus client endpoint. You can also open `/metrics` in a browser to see the raw metrics. Note that the metrics exposed on the `/metrics` endpoint reflect the current state of the Kubernetes cluster. When Kubernetes objects are deleted they are no longer visible on the `/metrics` endpoint.
 
 ## Table of Contents
 
@@ -61,31 +40,24 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 
 #### Kubernetes Version
 
-kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
-Kubernetes clusters. The supported Kubernetes cluster version is determined by `client-go`.
-The compatibility matrix for client-go and Kubernetes cluster can be found
-[here](https://github.com/kubernetes/client-go#compatibility-matrix).
-All additional compatibility is only best effort, or happens to still/already be supported.
+kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with Kubernetes clusters. The supported Kubernetes cluster version is determined by `client-go`. The compatibility matrix for client-go and Kubernetes cluster can be found [here](https://github.com/kubernetes/client-go#compatibility-matrix). All additional compatibility is only best effort, or happens to still/already be supported.
 
 #### Compatibility matrix
 
-At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below.
-Generally, it is recommended to use the latest release of kube-state-metrics. If you run a very recent version of Kubernetes, you might want to use an unreleased version to have the full range of supported resources. If you run an older version of Kubernetes, you might need to run an older version in order to have full support for all resources. Be aware, that the maintainers will only support the latest release. Older versions might be supported by interested users of the community.
+At most, 5 kube-state-metrics and 5 [kubernetes releases](https://github.com/kubernetes/kubernetes/releases) will be recorded below. Generally, it is recommended to use the latest release of kube-state-metrics. If you run a very recent version of Kubernetes, you might want to use an unreleased version to have the full range of supported resources. If you run an older version of Kubernetes, you might need to run an older version in order to have full support for all resources. Be aware, that the maintainers will only support the latest release. Older versions might be supported by interested users of the community.
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.6.0**         | v1.24                        |
-| **v2.7.0**         | v1.25                        |
-| **v2.8.2**         | v1.26                        |
-| **v2.9.2**         | v1.26                        |
-| **v2.10.0**        | v1.27                        |
-| **main**           | v1.28                        |
+| **v2.6.0**         |            v1.24             |
+| **v2.7.0**         |            v1.25             |
+| **v2.8.2**         |            v1.26             |
+| **v2.9.2**         |            v1.26             |
+| **v2.10.0**        |            v1.27             |
+| **main**           |            v1.28             |
 
 #### Resource group version compatibility
 
-Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
-in different Kubernetes versions. For now, kube-state-metrics will only use the oldest API available in the latest
-release.
+Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA in different Kubernetes versions. For now, kube-state-metrics will only use the oldest API available in the latest release.
 
 #### Container Image
 
@@ -96,41 +68,25 @@ The latest container image can be found at:
 
 ### Metrics Documentation
 
-Any resources and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee,
-which may be changed at any given release.
+Any resources and metrics based on alpha Kubernetes APIs are excluded from any stability guarantee, which may be changed at any given release.
 
 See the [`docs`](docs) directory for more information on the exposed metrics.
 
 #### Conflict resolution in label names
 
-The `*_labels` family of metrics exposes Kubernetes labels as Prometheus labels.
-As [Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set)
-is more liberal than
-[Prometheus](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels)
-in terms of allowed characters in label names,
-we automatically convert unsupported characters to underscores.
-For example, `app.kubernetes.io/name` becomes `label_app_kubernetes_io_name`.
+The `*_labels` family of metrics exposes Kubernetes labels as Prometheus labels. As [Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set) is more liberal than [Prometheus](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels) in terms of allowed characters in label names, we automatically convert unsupported characters to underscores. For example, `app.kubernetes.io/name` becomes `label_app_kubernetes_io_name`.
 
-This conversion can create conflicts when multiple Kubernetes labels like
-`foo-bar` and `foo_bar` would be converted to the same Prometheus label `label_foo_bar`.
+This conversion can create conflicts when multiple Kubernetes labels like `foo-bar` and `foo_bar` would be converted to the same Prometheus label `label_foo_bar`.
 
-Kube-state-metrics automatically adds a suffix `_conflictN` to resolve this conflict,
-so it converts the above labels to
-`label_foo_bar_conflict1` and `label_foo_bar_conflict2`.
+Kube-state-metrics automatically adds a suffix `_conflictN` to resolve this conflict, so it converts the above labels to `label_foo_bar_conflict1` and `label_foo_bar_conflict2`.
 
-If you'd like to have more control over how this conflict is resolved,
-you might want to consider addressing this issue on a different level of the stack,
-e.g. by standardizing Kubernetes labels using an
-[Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
-that ensures that there are no possible conflicts.
+If you'd like to have more control over how this conflict is resolved, you might want to consider addressing this issue on a different level of the stack, e.g. by standardizing Kubernetes labels using an [Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) that ensures that there are no possible conflicts.
 
 ### Kube-state-metrics self metrics
 
 kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 8081).
 
-kube-state-metrics also exposes list and watch success and error metrics. These can be used to calculate the error rate of list or watch resources.
-If you encounter those errors in the metrics, it is most likely a configuration or permission issue, and the next thing to investigate would be looking
-at the logs of kube-state-metrics.
+kube-state-metrics also exposes list and watch success and error metrics. These can be used to calculate the error rate of list or watch resources. If you encounter those errors in the metrics, it is most likely a configuration or permission issue, and the next thing to investigate would be looking at the logs of kube-state-metrics.
 
 Example of the above mentioned metrics:
 
@@ -159,10 +115,7 @@ kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
 kube_state_metrics_total_shards 1
 ```
 
-`kube_state_metrics_build_info` is used to expose version and other build information. For more usage about the info pattern,
-please check the blog post [here](https://www.robustperception.io/exposing-the-software-version-to-prometheus).
-Sharding metrics expose `--shard` and `--total-shards` flags and can be used to validate
-run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/prometheus-alerting-rules).
+`kube_state_metrics_build_info` is used to expose version and other build information. For more usage about the info pattern, please check the blog post [here](https://www.robustperception.io/exposing-the-software-version-to-prometheus). Sharding metrics expose `--shard` and `--total-shards` flags and can be used to validate run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/prometheus-alerting-rules).
 
 kube-state-metrics also exposes metrics about it config file and the Custom Resource State config file:
 
@@ -179,8 +132,7 @@ kube_state_metrics_last_config_reload_successful{filename="config.yml",type="con
 
 #### Resource recommendation
 
-Resource usage for kube-state-metrics changes with the Kubernetes objects (Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
-To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
+Resource usage for kube-state-metrics changes with the Kubernetes objects (Pods/Nodes/Deployments/Secrets etc.) size of the cluster. To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
 
 As a general rule, you should allocate:
 
@@ -205,26 +157,11 @@ By default, kube-state-metrics exposes several metrics for events across your cl
 
 ### kube-state-metrics vs. metrics-server
 
-The [metrics-server](https://github.com/kubernetes-incubator/metrics-server)
-is a project that has been inspired by
-[Heapster](https://github.com/kubernetes-retired/heapster) and is implemented
-to serve the goals of core metrics pipelines in [Kubernetes monitoring
-architecture](https://github.com/kubernetes/design-proposals-archive/blob/main/instrumentation/monitoring_architecture.md).
-It is a cluster level component which periodically scrapes metrics from all
-Kubernetes nodes served by Kubelet through Metrics API. The metrics are
-aggregated, stored in memory and served in [Metrics API
-format](https://git.k8s.io/metrics/pkg/apis/metrics/v1alpha1/types.go). The
-metrics-server stores the latest values only and is not responsible for
-forwarding metrics to third-party destinations.
+The [metrics-server](https://github.com/kubernetes-incubator/metrics-server) is a project that has been inspired by [Heapster](https://github.com/kubernetes-retired/heapster) and is implemented to serve the goals of core metrics pipelines in [Kubernetes monitoring architecture](https://github.com/kubernetes/design-proposals-archive/blob/main/instrumentation/monitoring_architecture.md). It is a cluster level component which periodically scrapes metrics from all Kubernetes nodes served by Kubelet through Metrics API. The metrics are aggregated, stored in memory and served in [Metrics API format](https://git.k8s.io/metrics/pkg/apis/metrics/v1alpha1/types.go). The metrics-server stores the latest values only and is not responsible for forwarding metrics to third-party destinations.
 
-kube-state-metrics is focused on generating completely new metrics from
-Kubernetes' object state (e.g. metrics based on deployments, replica sets,
-etc.). It holds an entire snapshot of Kubernetes state in memory and
-continuously generates new metrics based off of it. And just like the
-metrics-server it too is not responsible for exporting its metrics anywhere.
+kube-state-metrics is focused on generating completely new metrics from Kubernetes' object state (e.g. metrics based on deployments, replica sets, etc.). It holds an entire snapshot of Kubernetes state in memory and continuously generates new metrics based off of it. And just like the metrics-server it too is not responsible for exporting its metrics anywhere.
 
-Having kube-state-metrics as a separate project also enables access to these
-metrics from monitoring systems such as Prometheus.
+Having kube-state-metrics as a separate project also enables access to these metrics from monitoring systems such as Prometheus.
 
 ### Horizontal sharding
 
@@ -305,8 +242,7 @@ go get k8s.io/kube-state-metrics
 
 #### Building the Docker container
 
-Simply run the following command in this root folder, which will create a
-self-contained, statically-linked binary and build a Docker image:
+Simply run the following command in this root folder, which will create a self-contained, statically-linked binary and build a Docker image:
 
 ```
 make container
@@ -314,8 +250,7 @@ make container
 
 ### Usage
 
-Simply build and run kube-state-metrics inside a Kubernetes pod which has a
-service account token that has read-only access to the Kubernetes cluster.
+Simply build and run kube-state-metrics inside a Kubernetes pod which has a service account token that has read-only access to the Kubernetes cluster.
 
 #### For users of prometheus-operator/kube-prometheus stack
 
@@ -335,7 +270,7 @@ To have Prometheus discover kube-state-metrics instances it is advised to create
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info --format='value(config.account)')
 ```
 
-Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>.
+Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
 
@@ -392,17 +327,15 @@ Starting from the kube-state-metrics chart `v2.13.3` (kube-state-metrics image `
 
 #### Development
 
-When developing, test a metric dump against your local Kubernetes cluster by
-running:
+When developing, test a metric dump against your local Kubernetes cluster by running:
 
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
- go install
- kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
+go install kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
 
 Then curl the metrics endpoint
 
- curl localhost:8080/metrics
+curl localhost:8080/metrics
 
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
 

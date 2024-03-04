@@ -379,7 +379,7 @@ func createPodContainerStatusLastTerminatedExitCodeFamilyGenerator() generator.F
 func createPodContainerStatusLastTerminatedTimestampFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_last_terminated_timestamp",
-		"Last terminated time for a pod container, when container was terminated with kube_pod_container_status_last_terminated_reason, in unix timestamp.",
+		"Last terminated time for a pod container in unix timestamp.",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",

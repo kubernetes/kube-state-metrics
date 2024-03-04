@@ -209,7 +209,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
 # HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
-# HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container, when container was terminated with kube_pod_container_status_last_terminated_reason, in unix timestamp.
+# HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container in unix timestamp.
 # HELP kube_pod_container_status_ready [STABLE] Describes whether the containers readiness check succeeded.
 # HELP kube_pod_container_status_restarts_total [STABLE] The number of container restarts per container.
 # HELP kube_pod_container_status_running [STABLE] Describes whether the container is currently in running state.

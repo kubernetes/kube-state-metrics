@@ -20,6 +20,7 @@ limitations under the License.
 package tools
 
 import (
+	_ "github.com/Kunde21/markdownfmt/v3/markdown"
 	_ "github.com/brancz/gojsontoyaml"
 	_ "github.com/campoy/embedmd"
 	_ "github.com/google/go-jsonnet/cmd/jsonnet"

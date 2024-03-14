@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics-pods
-    app.kubernetes.io/version: 2.10.0
+    app.kubernetes.io/version: 2.11.0
   name: kube-state-metrics-pods
   namespace: kube-system
 spec:
@@ -17,14 +17,14 @@ spec:
       labels:
         app.kubernetes.io/component: exporter
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/version: 2.10.0
+        app.kubernetes.io/version: 2.11.0
     spec:
       automountServiceAccountToken: true
       containers:
       - args:
         - --resources=pods
         - --node=""
-        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.0
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.11.0
         livenessProbe:
           httpGet:
             path: /healthz

@@ -111,12 +111,12 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	}
 	statefulSetName := ss.Name
 
-	labelSelectorOptions := func(o *metav1.ListOptions) {
-		o.LabelSelector = fields.SelectorFromSet(ss.Labels).String()
+	fieldSelectorOptions := func(o *metav1.ListOptions) {
+		o.FieldSelector = fields.OneTermEqualSelector("metadata.name", statefulSetName).String()
 	}
 
 	i := cache.NewSharedIndexInformer(
-		cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, labelSelectorOptions),
+		cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, fieldSelectorOptions),
 		&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	i.AddEventHandler(cache.ResourceEventHandlerFuncs{

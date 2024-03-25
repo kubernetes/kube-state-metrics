@@ -1,0 +1,84 @@
+---
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+  - errorLogV: 0
+    groupVersionKind:
+      group: bar.example.com
+      kind: Foo
+      version: foo
+    labelsFromPath:
+      cluster_name:
+      - metadata
+      - labels
+      - cluster.x-k8s.io/cluster-name
+      name:
+      - metadata
+      - name
+    metricNamePrefix: foo
+    metrics:
+    - each:
+        gauge:
+          labelFromKey: ""
+          nilIsZero: false
+          path:
+          - metadata
+          - creationTimestamp
+          valueFrom: null
+        type: Gauge
+      help: Unix creation timestamp.
+      name: created
+    - each:
+        info:
+          labelFromKey: ""
+          labelsFromPath:
+            owner_is_controller:
+            - controller
+            owner_kind:
+            - kind
+            owner_name:
+            - name
+            owner_uid:
+            - uid
+          path:
+          - metadata
+          - ownerReferences
+        type: Info
+      help: Owner references.
+      name: owner
+    - each:
+        stateSet:
+          labelName: status
+          labelsFromPath:
+            type:
+            - type
+          list:
+          - "True"
+          - "False"
+          - Unknown
+          path:
+          - status
+          - conditions
+          valueFrom:
+          - status
+        type: StateSet
+      help: The condition of a foo.
+      name: status_condition
+    - each:
+        gauge:
+          labelFromKey: ""
+          labelsFromPath:
+            status:
+            - status
+            type:
+            - type
+          nilIsZero: false
+          path:
+          - status
+          - conditions
+          valueFrom:
+          - lastTransitionTime
+        type: Gauge
+      help: The condition last transition time of a foo.
+      name: status_condition_last_transition_time
+    resourcePlural: ""

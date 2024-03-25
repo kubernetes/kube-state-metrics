@@ -1,0 +1,21 @@
+---
+apiVersion: bar.example.com/foo
+kind: Foo
+metadata:
+  name: bar
+  ownerReferences:
+  - apiVersion: v1
+    kind: foo
+    controller: true
+    name: foo
+    uid: someuid
+spec:
+  someString: test
+status:
+  conditions:
+  - lastTransitionTime: "2023-10-12T13:59:02Z"
+    status: "True"
+    type: SomeType
+  - lastTransitionTime: "2023-10-12T13:59:02Z"
+    status: "False"
+    type: AnotherType

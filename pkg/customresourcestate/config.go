@@ -100,9 +100,9 @@ func (gvk GroupVersionKind) String() string {
 // Labels is common configuration of labels to add to metrics.
 type Labels struct {
 	// CommonLabels are added to all metrics.
-	CommonLabels map[string]string `yaml:"commonLabels" json:"commonLabels"`
+	CommonLabels map[string]string `yaml:"commonLabels" json:"commonLabels,omitempty"`
 	// LabelsFromPath adds additional labels where the value is taken from a field in the resource.
-	LabelsFromPath map[string][]string `yaml:"labelsFromPath" json:"labelsFromPath"`
+	LabelsFromPath map[string][]string `yaml:"labelsFromPath" json:"labelsFromPath,omitempty"`
 }
 
 // Merge combines the labels from two configs, returning a new config. The other Labels will overwrite keys in this Labels.
@@ -140,7 +140,7 @@ type Generator struct {
 	// Labels are added to all metrics. Labels from Each will overwrite these if using the same key.
 	Labels `yaml:",inline" json:",inline"` // json will inline because it is already tagged
 	// ErrorLogV defines the verbosity threshold for errors logged for this metric. Must be non-zero to override the resource setting.
-	ErrorLogV klog.Level `yaml:"errorLogV" json:"errorLogV"`
+	ErrorLogV klog.Level `yaml:"errorLogV" json:"errorLogV,omitempty"`
 }
 
 // Metric defines a metric to expose.
@@ -152,13 +152,13 @@ type Metric struct {
 
 	// Gauge defines a gauge metric.
 	// +optional
-	Gauge *MetricGauge `yaml:"gauge" json:"gauge"`
+	Gauge *MetricGauge `yaml:"gauge,omitempty" json:"gauge,omitempty"`
 	// StateSet defines a state set metric.
 	// +optional
-	StateSet *MetricStateSet `yaml:"stateSet" json:"stateSet"`
+	StateSet *MetricStateSet `yaml:"stateSet,omitempty" json:"stateSet,omitempty"`
 	// Info defines an info metric.
 	// +optional
-	Info *MetricInfo `yaml:"info" json:"info"`
+	Info *MetricInfo `yaml:"info,omitempty" json:"info,omitempty"`
 }
 
 // ConfigDecoder is for use with FromConfig.

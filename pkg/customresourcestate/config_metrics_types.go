@@ -29,7 +29,7 @@ const (
 // MetricMeta are variables which may used for any metric type.
 type MetricMeta struct {
 	// LabelsFromPath adds additional labels where the value of the label is taken from a field under Path.
-	LabelsFromPath map[string][]string `yaml:"labelsFromPath" json:"labelsFromPath"`
+	LabelsFromPath map[string][]string `yaml:"labelsFromPath,omitempty" json:"labelsFromPath,omitempty"`
 	// Path is the path to to generate metric(s) for.
 	Path []string `yaml:"path" json:"path"`
 }

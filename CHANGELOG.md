@@ -1,8 +1,14 @@
+## v2.12.0 / 2024-03-07
+
+### Note
+
+This release builds with Golang `v1.21.8` (w/ `client-go`@`v0.29.2`).
+
 ## v2.11.0 / 2024-03-04
 
 ### Note
 
-This release builds with Golang `v1.21.8`.
+This release builds with Golang `v1.21.8` (w/ `client-go`@`v0.28.4`).
 
 * [ENHANCEMENT] Add OpenSSF Scorecard to README by @dalehenries in <https://github.com/kubernetes/kube-state-metrics/pull/2277>
 * [ENHANCEMENT] Generate OpenVX data for every release by @shafeeqes in <https://github.com/kubernetes/kube-state-metrics/pull/2276>

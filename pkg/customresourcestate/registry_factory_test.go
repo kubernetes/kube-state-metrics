@@ -134,12 +134,15 @@ func Test_addPathLabels(t *testing.T) {
 		{name: "*", args: args{
 			obj: cr,
 			labels: map[string]valuePath{
-				"*1":  mustCompilePath(t, "metadata", "annotations"),
-				"bar": mustCompilePath(t, "metadata", "labels", "foo"),
+				"*1":             mustCompilePath(t, "metadata", "annotations"),
+				"bar":            mustCompilePath(t, "metadata", "labels", "foo"),
+				"label_object_*": mustCompilePath(t, "metadata", "annotations"),
 			},
 			want: map[string]string{
-				"qux": "quxx",
-				"bar": "bar",
+				"qux":              "quxx",
+				"bar":              "bar",
+				"label_object_qux": "quxx",
+				"label_object_bar": "baz",
 			},
 		}},
 	}

@@ -100,7 +100,7 @@ func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWrite
 				// Skip this step if we encounter a repeated header, as it will be removed.
 				if header != lastHeader && strings.HasPrefix(header, "# HELP") {
 
-					// If the requested content type was proto-based, replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' protobuf machinery.
+					// If the requested content type was proto-based (such as FmtProtoDelim, FmtProtoText, or FmtProtoCompact), replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' protobuf machinery.
 					if strings.HasPrefix(contentType, expfmt.ProtoType) {
 						infoTypeString := string(metric.Info)
 						stateSetTypeString := string(metric.StateSet)

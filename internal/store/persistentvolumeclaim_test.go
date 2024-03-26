@@ -51,7 +51,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 						v1.ReadWriteOnce,
 					},
 					StorageClassName: &storageClassName,
-					Resources: v1.ResourceRequirements{
+					Resources: v1.VolumeResourceRequirements{
 						Requests: v1.ResourceList{
 							v1.ResourceStorage: resource.MustParse("1Gi"),
 						},
@@ -123,7 +123,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 						v1.ReadWriteOnce,
 					},
 					StorageClassName: &storageClassName,
-					Resources: v1.ResourceRequirements{
+					Resources: v1.VolumeResourceRequirements{
 						Requests: v1.ResourceList{
 							v1.ResourceStorage: resource.MustParse("1Gi"),
 						},
@@ -287,7 +287,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						v1.ReadWriteOnce,
 					},
-					Resources: v1.ResourceRequirements{
+					Resources: v1.VolumeResourceRequirements{
 						Requests: v1.ResourceList{
 							v1.ResourceStorage: resource.MustParse("1Gi"),
 						},

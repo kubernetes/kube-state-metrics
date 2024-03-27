@@ -37,14 +37,29 @@ func init() {
 		"spec": Obj{
 			"replicas": 1,
 			"version":  "v0.0.0",
+			"template": Obj{
+				"foo": Obj{
+					"bar": "42",
+				},
+			},
 			"order": Array{
 				Obj{
 					"id":    1,
 					"value": true,
+					"arr": Array{
+						Obj{
+							"foo": "bar",
+						},
+					},
 				},
 				Obj{
 					"id":    3,
 					"value": false,
+					"arr": Array{
+						Obj{
+							"foo": "baz",
+						},
+					},
 				},
 			},
 		},
@@ -92,7 +107,8 @@ func init() {
 		"metadata": Obj{
 			"name": "foo",
 			"labels": Obj{
-				"foo": "bar",
+				"foo":    "bar",
+				"numStr": "42",
 			},
 			"annotations": Obj{
 				"qux": "quxx",
@@ -361,6 +377,39 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "bar", "baz"),
 		}},
+		{name: "dynamic valueFrom independent of wildcard label", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "metadata"),
+				labelFromPath: map[string]valuePath{
+					"lorem_*": mustCompilePath(t, "labels"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "labels_numStr"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 42, "lorem_numStr", "42", "lorem_foo", "bar"),
+		}},
+		{name: "dynamic valueFrom dependent on wildcard label", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "metadata"),
+				labelFromPath: map[string]valuePath{
+					"lorem_*": mustCompilePath(t, "labels"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "lorem_numStr"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 42, "lorem_numStr", "42", "lorem_foo", "bar"),
+		}},
+		{name: "dynamic valueFrom dependent on wildcard label with multiple underscores and path values", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec"),
+				labelFromPath: map[string]valuePath{
+					"lorem_dolor_*": mustCompilePath(t, "template", "foo"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "lorem_dolor_bar"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 42, "lorem_dolor_bar", "42"),
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -527,6 +576,46 @@ func Test_valuePath_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := mustCompilePath(t, tt.p...)
 			assert.Equal(t, tt.want, p.Get(cr))
+		})
+	}
+}
+
+func Test_resolveWildcard(t *testing.T) {
+	tests := []struct {
+		path valuePath
+		want []valuePath
+		name string
+	}{
+		{
+			name: "wildcard not at the boundary",
+			path: mustCompilePath(t, "spec", "order", "*", "value"),
+			want: []valuePath{
+				mustCompilePath(t, "spec", "order", "0", "value"),
+				mustCompilePath(t, "spec", "order", "1", "value"),
+			},
+		},
+		{
+			name: "wildcard at the boundary",
+			path: mustCompilePath(t, "spec", "order", "*"),
+			want: []valuePath{
+				mustCompilePath(t, "spec", "order", "0"),
+				mustCompilePath(t, "spec", "order", "1"),
+			},
+		},
+		{
+			name: "multiple wildcards",
+			path: mustCompilePath(t, "spec", "order", "*", "arr", "*", "foo"),
+			want: []valuePath{
+				mustCompilePath(t, "spec", "order", "0", "arr", "0", "foo"),
+				mustCompilePath(t, "spec", "order", "1", "arr", "0", "foo"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveWildcard(tt.path, cr)
+			reflect.DeepEqual(got, tt.want)
 		})
 	}
 }

@@ -277,7 +277,7 @@ func TestSanitizeHeaders(t *testing.T) {
 	}{
 		{
 			name:        "text-format unique headers",
-			contentType: expfmt.FmtText,
+			contentType: expfmt.NewFormat(expfmt.TypeTextPlain),
 			headers: []string{
 				"",
 				"# HELP foo foo_help\n# TYPE foo gauge",
@@ -294,7 +294,7 @@ func TestSanitizeHeaders(t *testing.T) {
 		},
 		{
 			name:        "text-format consecutive duplicate headers",
-			contentType: expfmt.FmtText,
+			contentType: expfmt.NewFormat(expfmt.TypeTextPlain),
 			headers: []string{
 				"",
 				"",
@@ -317,7 +317,7 @@ func TestSanitizeHeaders(t *testing.T) {
 		},
 		{
 			name:        "proto-format unique headers",
-			contentType: expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			contentType: expfmt.NewFormat(expfmt.TypeProtoText), // Prometheus ProtoFmt is the only proto-based format we check for.
 			headers: []string{
 				"",
 				"# HELP foo foo_help\n# TYPE foo gauge",
@@ -332,7 +332,7 @@ func TestSanitizeHeaders(t *testing.T) {
 		},
 		{
 			name:        "proto-format consecutive duplicate headers",
-			contentType: expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			contentType: expfmt.NewFormat(expfmt.TypeProtoText), // Prometheus ProtoFmt is the only proto-based format we check for.
 			headers: []string{
 				"",
 				"",
@@ -372,22 +372,22 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 	}{
 		{
 			name:                      "text-format unique headers",
-			contentType:               expfmt.FmtText,
+			contentType:               expfmt.NewFormat(expfmt.TypeTextPlain),
 			writersContainsDuplicates: false,
 		},
 		{
 			name:                      "text-format duplicate headers",
-			contentType:               expfmt.FmtText,
+			contentType:               expfmt.NewFormat(expfmt.TypeTextPlain),
 			writersContainsDuplicates: true,
 		},
 		{
 			name:                      "proto-format unique headers",
-			contentType:               expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			contentType:               expfmt.NewFormat(expfmt.TypeProtoText), // Prometheus ProtoFmt is the only proto-based format we check for.
 			writersContainsDuplicates: false,
 		},
 		{
 			name:                      "proto-format duplicate headers",
-			contentType:               expfmt.ProtoFmt, // Prometheus ProtoFmt is the only proto-based format we check for.
+			contentType:               expfmt.NewFormat(expfmt.TypeProtoText), // Prometheus ProtoFmt is the only proto-based format we check for.
 			writersContainsDuplicates: true,
 		},
 	}

@@ -1,3 +1,9 @@
+## Next
+
+### Note
+
+* [BUGFIX] Change `volumename` label to `persistentvolume` in `kube_persistentvolumeclaim_*` metrics by @multani in <https://github.com/kubernetes/kube-state-metrics/pull/2303>
+
 ## v2.11.0 / 2024-03-04
 
 ### Note

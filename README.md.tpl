@@ -77,13 +77,12 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.7.0**         | v1.25                        |
-| **v2.8.2**         | v1.26                        |
-| **v2.9.2**         | v1.26                        |
-| **v2.10.1**        | v1.27                        |
-| **v2.11.0**        | v1.28                        |
-| **main**           | v1.29                        |
-
+{{ define "compat-matrix" -}}
+{{- range . -}}
+| **{{ .version }}**{{ strings.Repeat (conv.ToInt (math.Sub 15 (len .version))) " " }}| v{{ .kubernetes }}                        |
+{{ end -}}
+{{- end -}}
+{{ template "compat-matrix" (datasource "config").compat }}
 #### Resource group version compatibility
 
 Resources in Kubernetes can evolve, i.e., the group version for a resource may change from alpha to beta and finally GA
@@ -93,9 +92,11 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.11.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
-* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.11.0)
+{{ define "get-latest-release" -}}
+{{ (index . (math.Sub (len .) 2)).version -}}
+{{ end }}
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:{{ template "get-latest-release" (datasource "config").compat }}` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:{{ template "get-latest-release" (datasource "config").compat -}})
 
 ### Metrics Documentation
 

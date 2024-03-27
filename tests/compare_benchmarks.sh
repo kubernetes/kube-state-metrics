@@ -38,4 +38,12 @@ echo ""
 echo "### Result"
 echo "old=${REF_TO_COMPARE} new=${REF_CURRENT}"
 
-benchstat "${RESULT_TO_COMPARE}" "${RESULT_CURRENT}"
+BENCHSTAT_OUT=$(benchstat "${RESULT_TO_COMPARE}" "${RESULT_CURRENT}")
+
+# Display the result.
+cat <<EOF
+${BENCHSTAT_OUT}
+EOF
+
+# Append the result to the benchstat.txt file.
+echo "${BENCHSTAT_OUT}" >> "benchstat.txt"

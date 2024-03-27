@@ -37,21 +37,24 @@ var (
 	}
 )
 
-// Type represents the type of a metric e.g. a counter. See
-// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#metric-types.
+// Type represents the type of the metric. See https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#metric-types.
 type Type string
 
-// Gauge defines a OpenMetrics gauge.
-var Gauge Type = "gauge"
+// Supported metric types.
+var (
 
-// Info defines an OpenMetrics info.
-var Info Type = "info"
+	// Gauge defines an OpenMetrics gauge.
+	Gauge Type = "gauge"
 
-// StateSet defines an OpenMetrics stateset.
-var StateSet Type = "stateset"
+	// Info defines an OpenMetrics info.
+	Info Type = "info"
 
-// Counter defines a OpenMetrics counter.
-var Counter Type = "counter"
+	// StateSet defines an OpenMetrics stateset.
+	StateSet Type = "stateset"
+
+	// Counter defines an OpenMetrics counter.
+	Counter Type = "counter"
+)
 
 // Metric represents a single time series.
 type Metric struct {

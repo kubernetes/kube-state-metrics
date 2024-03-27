@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+
 	"github.com/gobuffalo/flect"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
@@ -148,7 +150,7 @@ type Generator struct {
 type Metric struct {
 	// Type defines the type of the metric.
 	// +unionDiscriminator
-	Type MetricType `yaml:"type" json:"type"`
+	Type metric.Type `yaml:"type" json:"type"`
 
 	// Gauge defines a gauge metric.
 	// +optional
@@ -170,9 +172,16 @@ type ConfigDecoder interface {
 func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscoverer) (func() ([]customresource.RegistryFactory, error), error) {
 	var customResourceConfig Metrics
 	factoriesIndex := map[string]bool{}
+
+	// Decode the configuration.
 	if err := decoder.Decode(&customResourceConfig); err != nil {
 		return nil, fmt.Errorf("failed to parse Custom Resource State metrics: %w", err)
 	}
+
+	// Override the configuration with any custom overrides.
+	configOverrides(&customResourceConfig)
+
+	// Create a factory for each resource.
 	fn := func() (factories []customresource.RegistryFactory, err error) {
 		resources := customResourceConfig.Spec.Resources
 		// resolvedGVKPs will have the final list of GVKs, in addition to the resolved G** resources.
@@ -205,4 +214,16 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 		return factories, nil
 	}
 	return fn, nil
+}
+
+// configOverrides applies overrides to the configuration.
+func configOverrides(config *Metrics) {
+	for i := range config.Spec.Resources {
+		for j := range config.Spec.Resources[i].Metrics {
+
+			// Override the metric type to lowercase, so the internals have a single source of truth for metric type definitions.
+			// This is done as a convenience measure for users, so they don't have to remember the exact casing.
+			config.Spec.Resources[i].Metrics[j].Each.Type = metric.Type(strings.ToLower(string(config.Spec.Resources[i].Metrics[j].Each.Type)))
+		}
+	}
 }

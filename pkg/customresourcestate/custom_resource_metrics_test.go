@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 )
@@ -55,7 +57,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						Name: "test_metrics",
 						Help: "metrics for testing",
 						Each: Metric{
-							Type: MetricTypeInfo,
+							Type: metric.Info,
 							Info: &MetricInfo{
 								MetricMeta: MetricMeta{
 									Path: []string{
@@ -117,7 +119,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						Name: "test_metrics",
 						Help: "metrics for testing",
 						Each: Metric{
-							Type: MetricTypeInfo,
+							Type: metric.Info,
 							Info: &MetricInfo{
 								MetricMeta: MetricMeta{
 									Path: []string{
@@ -180,7 +182,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						Name: "test_metrics",
 						Help: "metrics for testing",
 						Each: Metric{
-							Type: MetricTypeInfo,
+							Type: metric.Info,
 							Info: &MetricInfo{
 								MetricMeta: MetricMeta{
 									Path: []string{

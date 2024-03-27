@@ -32,6 +32,7 @@ var testData string
 func Test_Metrics_deserialization(t *testing.T) {
 	var m Metrics
 	assert.NoError(t, yaml.NewDecoder(strings.NewReader(testData)).Decode(&m))
+	configOverrides(&m)
 	assert.Equal(t, "active_count", m.Spec.Resources[0].Metrics[0].Name)
 
 	t.Run("can create resource factory", func(t *testing.T) {

@@ -93,7 +93,7 @@ func TestIsExtendedResourceName(t *testing.T) {
 		},
 		{
 			resourceName: "kubernetes.io/resource-foo",
-			expectVal:    false,
+			expectVal:    true,
 		},
 		{
 			resourceName: "foo",

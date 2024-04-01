@@ -105,7 +105,7 @@ jobs:
       run: |
         make install-tools
 
-    - name: Check that all metrics are documented
+    - name: Check that all metrics are documented and templates have no delta
       run: |
         make doccheck
 

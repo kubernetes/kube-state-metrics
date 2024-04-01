@@ -23,6 +23,7 @@ import (
 	_ "github.com/brancz/gojsontoyaml"
 	_ "github.com/campoy/embedmd"
 	_ "github.com/google/go-jsonnet/cmd/jsonnet"
+	_ "github.com/hairyhenderson/gomplate/v3/cmd/gomplate"
 	_ "github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb"
 	_ "golang.org/x/perf/cmd/benchstat"
 )

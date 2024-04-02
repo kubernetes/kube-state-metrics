@@ -1,3 +1,14 @@
+## v2.12.0 / 2024-04-02
+
+### Note
+
+* This release addresses a critical issue where scraping the exposition data for certain types caused metrics-backends to crash: <https://github.com/kubernetes/kube-state-metrics/issues/2248>.
+* This release builds with `k8s.io/client-go`: `v0.29.3`.
+
+* [BUGFIX] Fallback to `gauge` for `protobuf`-based negotiations by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2270>
+* [ENHANCEMENT] Add `kube_pod_container_status_last_terminated_timestamp`by @tetianakravchenko in <https://github.com/kubernetes/kube-state-metrics/pull/2291>
+* [FEATURE] Allow prefixing expandable paths by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2052>
+
 ## v2.11.0 / 2024-03-04
 
 ### Note

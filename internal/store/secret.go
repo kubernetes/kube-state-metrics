@@ -37,7 +37,7 @@ var (
 	descSecretAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels." //nolint:gosec
 	descSecretLabelsName          = "kube_secret_labels"
 	descSecretLabelsHelp          = "Kubernetes labels converted to Prometheus labels." //nolint:gosec
-	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
+	descSecretLabelsDefaultLabels = []string{"namespace", "secret", "type"}
 )
 
 func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -211,7 +211,7 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric
 		metricFamily := f(secret)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descSecretLabelsDefaultLabels, []string{secret.Namespace, secret.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descSecretLabelsDefaultLabels, []string{secret.Namespace, secret.Name, string(secret.Type)}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

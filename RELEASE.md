@@ -14,10 +14,11 @@ Maintaining the release branches for older minor releases happens on a best effo
 
 ## Prepare your release
 
-* Bump the version in the `VERSION` file in the root of the repository.
+* Update the [data.yaml](data.yaml)
+  * Update the compat list
+  * Update the version key to refer to your new release
 * Run `make examples`, which will re-generate all example manifests to use the new version.
 * Make a PR to update:
-  * Update the [[`data.yaml`](data.yaml)
   * Run `make generate`, which will update the compatibility matrix in README.md
   * Changelog entry
     * Only include user relevant changes

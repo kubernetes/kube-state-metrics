@@ -32,44 +32,44 @@ See each file for specific documentation about the exposed metrics:
 
 ### Default Resources
 
-* [CertificateSigningRequest Metrics](certificatesigningrequest-metrics.md)
-* [ConfigMap Metrics](configmap-metrics.md)
-* [CronJob Metrics](cronjob-metrics.md)
-* [DaemonSet Metrics](daemonset-metrics.md)
-* [Deployment Metrics](deployment-metrics.md)
-* [Endpoint Metrics](endpoint-metrics.md)
-* [Horizontal Pod Autoscaler Metrics](horizontalpodautoscaler-metrics.md)
-* [Ingress Metrics](ingress-metrics.md)
-* [Job Metrics](job-metrics.md)
-* [Lease Metrics](lease-metrics.md)
-* [LimitRange Metrics](limitrange-metrics.md)
-* [MutatingWebhookConfiguration Metrics](mutatingwebhookconfiguration-metrics.md)
-* [Namespace Metrics](namespace-metrics.md)
-* [NetworkPolicy Metrics](networkpolicy-metrics.md)
-* [Node Metrics](node-metrics.md)
-* [PersistentVolume Metrics](persistentvolume-metrics.md)
-* [PersistentVolumeClaim Metrics](persistentvolumeclaim-metrics.md)
-* [Pod Disruption Budget Metrics](poddisruptionbudget-metrics.md)
-* [Pod Metrics](pod-metrics.md)
-* [ReplicaSet Metrics](replicaset-metrics.md)
-* [ReplicationController Metrics](replicationcontroller-metrics.md)
-* [ResourceQuota Metrics](resourcequota-metrics.md)
-* [Secret Metrics](secret-metrics.md)
-* [Service Metrics](service-metrics.md)
-* [StatefulSet Metrics](statefulset-metrics.md)
-* [StorageClass Metrics](storageclass-metrics.md)
-* [ValidatingWebhookConfiguration Metrics](validatingwebhookconfiguration-metrics.md)
-* [VolumeAttachment Metrics](volumeattachment-metrics.md)
+* [CertificateSigningRequest Metrics](metrics/auth/certificatesigningrequest-metrics.md)
+* [ConfigMap Metrics](metrics/storage/configmap-metrics.md)
+* [CronJob Metrics](metrics/workload/cronjob-metrics.md)
+* [DaemonSet Metrics](metrics/workload/daemonset-metrics.md)
+* [Deployment Metrics](metrics/workload/deployment-metrics.md)
+* [Endpoint Metrics](metrics/service/endpoint-metrics.md)
+* [Horizontal Pod Autoscaler Metrics](metrics/workload/horizontalpodautoscaler-metrics.md)
+* [Ingress Metrics](metrics/service/ingress-metrics.md)
+* [Job Metrics](metrics/workload/job-metrics.md)
+* [Lease Metrics](metrics/cluster/lease-metrics.md)
+* [LimitRange Metrics](metrics/policy/limitrange-metrics.md)
+* [MutatingWebhookConfiguration Metrics](metrics/extend/mutatingwebhookconfiguration-metrics.md)
+* [Namespace Metrics](metrics/cluster/namespace-metrics.md)
+* [NetworkPolicy Metrics](metrics/policy/networkpolicy-metrics.md)
+* [Node Metrics](metrics/cluster/node-metrics.md)
+* [PersistentVolume Metrics](metrics/storage/persistentvolume-metrics.md)
+* [PersistentVolumeClaim Metrics](metrics/storage/persistentvolumeclaim-metrics.md)
+* [Pod Disruption Budget Metrics](metrics/policy/poddisruptionbudget-metrics.md)
+* [Pod Metrics](metrics/workload/pod-metrics.md)
+* [ReplicaSet Metrics](metrics/workload/replicaset-metrics.md)
+* [ReplicationController Metrics](metrics/workload/replicationcontroller-metrics.md)
+* [ResourceQuota Metrics](metrics/policy/resourcequota-metrics.md)
+* [Secret Metrics](metrics/storage/secret-metrics.md)
+* [Service Metrics](metrics/service/service-metrics.md)
+* [StatefulSet Metrics](metrics/workload/statefulset-metrics.md)
+* [StorageClass Metrics](metrics/storage/storageclass-metrics.md)
+* [ValidatingWebhookConfiguration Metrics](metrics/extend/validatingwebhookconfiguration-metrics.md)
+* [VolumeAttachment Metrics](metrics/storage/volumeattachment-metrics.md)
 
 ### Optional Resources
 
-* [ClusterRole Metrics](clusterrole-metrics.md)
-* [ClusterRoleBinding Metrics](clusterrolebinding-metrics.md)
-* [EndpointSlice Metrics](endpointslice-metrics.md)
-* [IngressClass Metrics](ingressclass-metrics.md)
-* [Role Metrics](role-metrics.md)
-* [RoleBinding Metrics](rolebinding-metrics.md)
-* [ServiceAccount Metrics](serviceaccount-metrics.md)
+* [ClusterRole Metrics](metrics/cluster/clusterrole-metrics.md)
+* [ClusterRoleBinding Metrics](metrics/cluster/clusterrolebinding-metrics.md)
+* [EndpointSlice Metrics](metrics/service/endpointslice-metrics.md)
+* [IngressClass Metrics](metrics/service/ingressclass-metrics.md)
+* [Role Metrics](metrics/auth/role-metrics.md)
+* [RoleBinding Metrics](metrics/auth/rolebinding-metrics.md)
+* [ServiceAccount Metrics](metrics/auth/serviceaccount-metrics.md)
 
 ## Join Metrics
 
@@ -92,8 +92,8 @@ sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod,
 
 ## Metrics from Custom Resources
 
-See [Custom Resource State Metrics](customresourcestate-metrics.md) for experimental support for custom resources.
+See [Custom Resource State Metrics](metrics/extend/customresourcestate-metrics.md) for experimental support for custom resources.
 
 ## CLI Arguments
 
-Additionally, options for `kube-state-metrics` can be passed when executing as a CLI, or in a kubernetes / openshift environment. More information can be found here: [CLI Arguments](cli-arguments.md)
+Additionally, options for `kube-state-metrics` can be passed when executing as a CLI, or in a kubernetes / openshift environment. More information can be found here: [CLI Arguments](developer/cli-arguments.md)

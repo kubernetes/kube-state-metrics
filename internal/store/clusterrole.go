@@ -91,7 +91,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
+			wrapClusterRoleFunc(func(_ *rbacv1.ClusterRole) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},

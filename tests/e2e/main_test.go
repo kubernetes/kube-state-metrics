@@ -154,7 +154,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 	// Match wildcard patterns for dynamic labels such as label_CRONJOB_LABEL
 	patternRe := regexp.MustCompile(`_[A-Z_]+`)
 
-	err := filepath.WalkDir("../../docs", func(p string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir("../../docs", func(p string, d fs.DirEntry, _ error) error {
 
 		if d.IsDir() || !fileRe.MatchString(d.Name()) {
 			// Ignore the entry

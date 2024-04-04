@@ -188,7 +188,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 		return nil
 	})
 	if err != nil {
-		log.Fatalf("impossible to walk directories: %s", err)
+		log.Fatalf("cannot walk the documentation directory: %w", err)
 	}
 
 	return documentedMetrics, nil

@@ -205,7 +205,7 @@ In a 100 node cluster scaling test the latency numbers were as follows:
 
 ### A note on costing
 
-By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
+By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/developer/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
 
 ### kube-state-metrics vs. metrics-server
 
@@ -388,7 +388,7 @@ spec:
           - '--namespaces=project1'
 ```
 
-For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
+For the full list of arguments available, see the documentation in [docs/developer/cli-arguments.md](./docs/developer/cli-arguments.md)
 
 #### Helm Chart
 

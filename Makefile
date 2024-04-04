@@ -54,13 +54,13 @@ doccheck: generate validate-template
 	@echo "- Checking if the generated documentation is up to date..."
 	@git diff --exit-code
 	@echo "- Checking if the documentation is in sync with the code..."
-	@grep -hoE -d skip '\| kube_[^ |]+' docs/* --exclude=README.md | sed -E 's/\| //g' | sort -u > documented_metrics
+	@grep -rhoE '\| kube_[^ |]+' docs/metrics/* --exclude=README.md | sed -E 's/\| //g' | sort -u > documented_metrics
 	@find internal/store -type f -not -name '*_test.go' -exec sed -nE 's/.*"(kube_[^"]+)".*/\1/p' {} \; | sort -u > code_metrics
 	@diff -u0 code_metrics documented_metrics || (echo "ERROR: Metrics with - are present in code but missing in documentation, metrics with + are documented but not found in code."; exit 1)
 	@echo OK
 	@rm -f code_metrics documented_metrics
 	@echo "- Checking for orphan documentation files"
-	@cd docs; for doc in *.md; do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
+	@cd docs; for doc in $$(find metrics/* -name '*.md' | sed 's/.*\///'); do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
 build-local:

@@ -21,7 +21,7 @@ IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-MARKDOWNLINT_CLI2_VERSION = 0.9.2
+MARKDOWNLINT_CLI2_VERSION = 0.13.0
 
 
 export DOCKER_CLI_EXPERIMENTAL=enabled

@@ -238,7 +238,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 // TestWriteAllWithEmptyStores checks that nothing is printed if no metrics exist for metric families.
 func TestWriteAllWithEmptyStores(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(_ interface{}) []metric.FamilyInterface {
 		mf1 := metric.Family{
 			Name:    "kube_service_info_1",
 			Metrics: []*metric.Metric{},

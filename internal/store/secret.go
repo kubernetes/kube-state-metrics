@@ -48,7 +48,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+			wrapSecretFunc(func(_ *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

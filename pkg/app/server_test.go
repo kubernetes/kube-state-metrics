@@ -100,7 +100,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
-	b.Run("GenerateMetrics", func(b *testing.B) {
+	b.Run("GenerateMetrics", func(_ *testing.B) {
 		handler.ConfigureSharding(ctx, 0, 1)
 
 		// Wait for caches to fill

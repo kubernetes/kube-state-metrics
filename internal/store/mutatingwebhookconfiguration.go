@@ -41,7 +41,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
+			wrapMutatingWebhookConfigurationFunc(func(_ *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

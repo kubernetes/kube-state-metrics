@@ -83,7 +83,7 @@ func NewOptions() *Options {
 func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd = cmd
 
-	completionCommand.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+	completionCommand.SetHelpFunc(func(_ *cobra.Command, _ []string) {
 		if shellPath, ok := os.LookupEnv("SHELL"); ok {
 			shell := shellPath[strings.LastIndex(shellPath, "/")+1:]
 			fmt.Println(FetchLoadInstructions(shell))
@@ -97,7 +97,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	versionCommand := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information.",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Printf("%s\n", version.Print("kube-state-metrics"))
 			klog.FlushAndExit(klog.ExitFlushTimeout, 0)
 		},

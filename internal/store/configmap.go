@@ -87,7 +87,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+			wrapConfigMapFunc(func(_ *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},

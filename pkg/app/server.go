@@ -403,7 +403,7 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationObserver, m))
 
 	// Add healthzPath
-	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(http.StatusText(http.StatusOK)))
 	})

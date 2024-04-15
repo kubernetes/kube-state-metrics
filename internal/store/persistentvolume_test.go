@@ -754,7 +754,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_volume_mode Volume Mode information for PersistentVolume.
+					# HELP kube_persistentvolume_volume_mode Volume Mode information for the PersistentVolume.
 					# TYPE kube_persistentvolume_volume_mode gauge
 					kube_persistentvolume_volume_mode{persistentvolume="test-default-volumemode",volumemode="Filesystem"} 1
 				`,
@@ -770,7 +770,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_volume_mode Volume Mode information for PersistentVolume.
+					# HELP kube_persistentvolume_volume_mode Volume Mode information for the PersistentVolume.
 					# TYPE kube_persistentvolume_volume_mode gauge
 					kube_persistentvolume_volume_mode{persistentvolume="test-block-volumemode",volumemode="Block"} 1
 				`,

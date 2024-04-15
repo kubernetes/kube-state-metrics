@@ -394,7 +394,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolume_volume_mode",
-			"Volume Mode information for PersistentVolume.",
+			"Volume Mode information for the PersistentVolume.",
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",

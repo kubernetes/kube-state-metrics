@@ -392,6 +392,30 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_persistentvolume_volume_mode",
+			"Volume Mode information for PersistentVolume.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+				volumeMode := ""
+				if p.Spec.VolumeMode != nil {
+					volumeMode = string(*p.Spec.VolumeMode)
+				} else {
+					volumeMode = string("Filesystem") // Filesystem is the default mode used when volumeMode parameter is omitted.
+				}
+
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"volumemode"},
+							LabelValues: []string{volumeMode},
+							Value:       1,
+						},
+					}}
+			}),
+		),
 	}
 }
 

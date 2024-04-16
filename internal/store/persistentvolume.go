@@ -46,6 +46,9 @@ var (
 
 	descPersistentVolumeCSIAttributesName = "kube_persistentvolume_csi_attributes"
 	descPersistentVolumeCSIAttributesHelp = "CSI attributes of the Persistent Volume."
+
+	descPersistentVolumeVolumeModeName = "kube_persistentvolume_volume_mode"
+	descPersistentVolumeVolumeModeHelp = "The volume mode of the Persistent Volume."
 )
 
 func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -189,10 +192,12 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 					nfsServer, nfsPath,
 					csiDriver, csiVolumeHandle,
 					localFS, localPath,
-					hostPath, hostPathType string
+					hostPath, hostPathType, volumeMode string
 				)
 
 				switch {
+				case p.Spec.VolumeMode != nil:
+					volumeMode = string(*p.Spec.VolumeMode)
 				case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
 					gcePDDiskName = p.Spec.PersistentVolumeSource.GCEPersistentDisk.PDName
 				case p.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil:
@@ -263,6 +268,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 								"local_fs",
 								"host_path",
 								"host_path_type",
+								"volume_mode",
 							},
 							LabelValues: []string{
 								p.Spec.StorageClassName,
@@ -284,6 +290,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 								localFS,
 								hostPath,
 								hostPathType,
+								volumeMode,
 							},
 							Value: 1,
 						},

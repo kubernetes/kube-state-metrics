@@ -34,9 +34,8 @@ import (
 )
 
 var (
-	descPersistentVolumeClaimRefName          = "kube_persistentvolume_claim_ref"
-	descPersistentVolumeClaimRefHelp          = "Information about the Persistent Volume Claim Reference."
-	descPersistentVolumeClaimRefDefaultLabels = []string{"persistentvolume"}
+	descPersistentVolumeClaimRefName = "kube_persistentvolume_claim_ref"
+	descPersistentVolumeClaimRefHelp = "Information about the Persistent Volume Claim Reference."
 
 	descPersistentVolumeAnnotationsName     = "kube_persistentvolume_annotations"
 	descPersistentVolumeAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."

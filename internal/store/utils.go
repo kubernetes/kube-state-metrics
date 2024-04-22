@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -214,4 +215,25 @@ func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
 	}
 
 	return keys, values
+}
+
+// some kubernetes does not support node selector, for example: deployments, replicasets, etc.
+// It removes node selector from current `fieldSelector` and returns new one.
+func removeNodeSelector(fieldSelector string) (newFieldSelector string) {
+	if fieldSelector == "" {
+		return fieldSelector
+	}
+	selector, _ := fields.ParseSelector(fieldSelector)
+	if selector != nil {
+		selector, _ = selector.Transform(func(field, value string) (newField, newValue string, err error) {
+			if field == options.NodeNameFilter {
+				return "", "", nil
+			}
+			return field, value, nil
+		})
+	}
+	if selector != nil {
+		return selector.String()
+	}
+	return ""
 }

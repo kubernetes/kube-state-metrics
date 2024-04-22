@@ -29,6 +29,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// NodeNameFilter for kubernetes resources filtering by node name when ListAndWatch.
+	NodeNameFilter = `spec.nodeName`
+)
+
 var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
 
 // MetricSet represents a collection which has a unique set of metrics.
@@ -149,7 +154,7 @@ func (n *NodeType) GetNodeFieldSelector() string {
 	re := regexp.MustCompile(pattern)
 	result := re.ReplaceAllString(n.String(), "")
 	klog.InfoS("Using node type", "node", result)
-	return fields.OneTermEqualSelector("spec.nodeName", result).String()
+	return fields.OneTermEqualSelector(NodeNameFilter, result).String()
 
 }
 

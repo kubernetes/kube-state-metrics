@@ -27,6 +27,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -526,7 +527,7 @@ func createNodeListWatch(kubeClient clientset.Interface, _ string, fieldSelector
 	// if node name given, it then lists and watches specified node by its name instead of all nodes.
 	if fieldSelector != "" {
 		selector, _ := fields.ParseSelector(fieldSelector)
-		nodeName, ok := selector.RequiresExactMatch("spec.nodeName")
+		nodeName, ok := selector.RequiresExactMatch(options.NodeNameFilter)
 		if ok {
 			fieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 			klog.InfoS("Transform fieldSelector for node store", "fieldSelector", fieldSelector)

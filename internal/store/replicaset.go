@@ -20,17 +20,16 @@ import (
 	"context"
 	"strconv"
 
-	basemetrics "k8s.io/component-base/metrics"
-
-	"k8s.io/kube-state-metrics/v2/pkg/metric"
-	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
-
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -271,6 +270,7 @@ func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(interface{})
 }
 
 func createReplicaSetListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	fieldSelector = removeNodeSelector(fieldSelector)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector

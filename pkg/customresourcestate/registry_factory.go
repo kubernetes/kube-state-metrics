@@ -72,7 +72,7 @@ func compileCommon(c MetricMeta) (*compiledCommon, error) {
 func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 	labels := resource.Labels.Merge(f.Labels)
 
-	if f.Each.Type == MetricTypeInfo && !strings.HasSuffix(f.Name, "_info") {
+	if f.Each.Type == metric.Info && !strings.HasSuffix(f.Name, "_info") {
 		klog.InfoS("Info metric does not have _info suffix", "gvk", resource.GroupVersionKind.String(), "name", f.Name)
 	}
 
@@ -153,7 +153,7 @@ type compiledMetric interface {
 // newCompiledMetric returns a compiledMetric depending on the given metric type.
 func newCompiledMetric(m Metric) (compiledMetric, error) {
 	switch m.Type {
-	case MetricTypeGauge:
+	case metric.Gauge:
 		if m.Gauge == nil {
 			return nil, errors.New("expected each.gauge to not be nil")
 		}
@@ -172,7 +172,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			NilIsZero:      m.Gauge.NilIsZero,
 			labelFromKey:   m.Gauge.LabelFromKey,
 		}, nil
-	case MetricTypeInfo:
+	case metric.Info:
 		if m.Info == nil {
 			return nil, errors.New("expected each.info to not be nil")
 		}
@@ -185,7 +185,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			compiledCommon: *cc,
 			labelFromKey:   m.Info.LabelFromKey,
 		}, nil
-	case MetricTypeStateSet:
+	case metric.StateSet:
 		if m.StateSet == nil {
 			return nil, errors.New("expected each.stateSet to not be nil")
 		}
@@ -517,21 +517,24 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 	// always do that first so other labels can override
 	var stars []string
 	for k := range labels {
-		if strings.HasPrefix(k, "*") {
+		if strings.HasPrefix(k, "*") || strings.HasSuffix(k, "*") {
 			stars = append(stars, k)
 		}
 	}
 	sort.Strings(stars)
-	for _, k := range stars {
-		m := labels[k].Get(obj)
+	for _, star := range stars {
+		m := labels[star].Get(obj)
 		if kv, ok := m.(map[string]interface{}); ok {
 			for k, v := range kv {
+				if strings.HasSuffix(star, "*") {
+					k = star[:len(star)-1] + k
+				}
 				result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
 			}
 		}
 	}
 	for k, v := range labels {
-		if strings.HasPrefix(k, "*") {
+		if strings.HasPrefix(k, "*") || strings.HasSuffix(k, "*") {
 			continue
 		}
 		value := v.Get(obj)

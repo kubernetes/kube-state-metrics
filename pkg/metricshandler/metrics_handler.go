@@ -178,8 +178,8 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// ServeHTTP implements the http.Handler interface. It writes all generated
-// metrics to the response body.
+// ServeHTTP implements the http.Handler interface. It writes all generated metrics to the response body.
+// Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
@@ -188,9 +188,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
 
-	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022
-	if contentType != expfmt.FmtOpenMetrics_1_0_0 && contentType != expfmt.FmtOpenMetrics_0_0_1 {
-		contentType = expfmt.FmtText
+	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022.
+
+	if contentType.FormatType() != expfmt.TypeOpenMetrics {
+		contentType = expfmt.NewFormat(expfmt.TypeTextPlain)
 	}
 	resHeader.Set("Content-Type", string(contentType))
 
@@ -208,7 +209,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	m.metricsWriters = metricsstore.SanitizeHeaders(m.metricsWriters)
+	m.metricsWriters = metricsstore.SanitizeHeaders(string(contentType), m.metricsWriters)
 	for _, w := range m.metricsWriters {
 		err := w.WriteAll(writer)
 		if err != nil {
@@ -217,7 +218,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// OpenMetrics spec requires that we end with an EOF directive.
-	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
+	if contentType.FormatType() == expfmt.TypeOpenMetrics {
 		_, err := writer.Write([]byte("# EOF\n"))
 		if err != nil {
 			klog.ErrorS(err, "Failed to write EOF directive")

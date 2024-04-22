@@ -29,6 +29,9 @@ the raw metrics. Note that the metrics exposed on the `/metrics` endpoint
 reflect the current state of the Kubernetes cluster. When Kubernetes objects
 are deleted they are no longer visible on the `/metrics` endpoint.
 
+> [!NOTE]
+> This README is generated from a [template](./README.md.tpl). Please make your changes there and run `make generate-template`.
+
 ## Table of Contents
 
 * [Versioning](#versioning)
@@ -74,12 +77,12 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.6.0**         | v1.24                        |
-| **v2.7.0**         | v1.25                        |
 | **v2.8.2**         | v1.26                        |
 | **v2.9.2**         | v1.26                        |
-| **v2.10.0**        | v1.27                        |
-| **main**           | v1.28                        |
+| **v2.10.1**        | v1.27                        |
+| **v2.11.0**        | v1.28                        |
+| **v2.12.0**        | v1.29                        |
+| **main**           | v1.29                        |
 
 #### Resource group version compatibility
 
@@ -91,8 +94,8 @@ release.
 
 The latest container image can be found at:
 
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
-* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.10.0)
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.12.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.12.0)
 
 ### Metrics Documentation
 
@@ -201,7 +204,7 @@ In a 100 node cluster scaling test the latency numbers were as follows:
 
 ### A note on costing
 
-By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
+By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/developer/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
 
 ### kube-state-metrics vs. metrics-server
 
@@ -384,7 +387,7 @@ spec:
           - '--namespaces=project1'
 ```
 
-For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
+For the full list of arguments available, see the documentation in [docs/developer/cli-arguments.md](./docs/developer/cli-arguments.md)
 
 #### Helm Chart
 

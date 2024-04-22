@@ -48,7 +48,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+			wrapEndpointFunc(func(_ *v1.Endpoints) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

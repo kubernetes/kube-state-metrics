@@ -20,8 +20,8 @@ env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
-  GO_VERSION: "^1.21"
-  GOLANGCI_LINT_VERSION: "v1.54.2"
+  GO_VERSION: "^1.22"
+  GOLANGCI_LINT_VERSION: "v1.56.2"
 
 jobs:
   ci-go-lint:
@@ -105,7 +105,7 @@ jobs:
       run: |
         make install-tools
 
-    - name: Check that all metrics are documented
+    - name: Check that all metrics are documented and templates have no delta
       run: |
         make doccheck
 

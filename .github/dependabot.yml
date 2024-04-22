@@ -2,6 +2,10 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
+    groups:
+      k8s-dependencies:
+        patterns:
+          - "k8s.io*"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

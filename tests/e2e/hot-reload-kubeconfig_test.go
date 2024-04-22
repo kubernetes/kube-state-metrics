@@ -74,7 +74,7 @@ func TestKubeConfigHotReload(t *testing.T) {
 	go internal.RunKubeStateMetricsWrapper(opts)
 
 	// Wait for port 8080 to come up.
-	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(_ context.Context) (bool, error) {
 		conn, err := net.Dial("tcp", "localhost:8080")
 		if err != nil {
 			return false, nil
@@ -108,7 +108,7 @@ func TestKubeConfigHotReload(t *testing.T) {
 
 	// Wait for port 8080 to come up.
 	ch := make(chan bool, 1)
-	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(_ context.Context) (bool, error) {
 		conn, err := net.Dial("tcp", "localhost:8080")
 		if err != nil {
 			return false, nil

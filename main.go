@@ -27,7 +27,7 @@ import (
 func main() {
 	opts := options.NewOptions()
 	cmd := options.InitCommand
-	cmd.Run = func(cmd *cobra.Command, args []string) {
+	cmd.Run = func(_ *cobra.Command, _ []string) {
 		internal.RunKubeStateMetricsWrapper(opts)
 	}
 	opts.AddFlags(cmd)

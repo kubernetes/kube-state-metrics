@@ -24,7 +24,7 @@ case $(uname -m) in
 esac
 
 NODE_IMAGE_NAME="docker.io/kindest/node"
-KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.28.0"}
+KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.29.0"}
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics"
 KUBE_STATE_METRICS_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics-${ARCH}"

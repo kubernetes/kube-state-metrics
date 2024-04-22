@@ -91,7 +91,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
+			wrapRoleFunc(func(_ *rbacv1.Role) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},

@@ -1,3 +1,40 @@
+## v2.12.0 / 2024-04-02
+
+### Note
+
+* This release addresses a critical issue where scraping the exposition data for certain types caused metrics-backends to crash: <https://github.com/kubernetes/kube-state-metrics/issues/2248>.
+* This release builds with `k8s.io/client-go`: `v0.29.3`.
+
+* [BUGFIX] Fallback to `gauge` for `protobuf`-based negotiations by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2270>
+* [ENHANCEMENT] Add `kube_pod_container_status_last_terminated_timestamp`by @tetianakravchenko in <https://github.com/kubernetes/kube-state-metrics/pull/2291>
+* [FEATURE] Allow prefixing expandable paths by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2052>
+
+## v2.11.0 / 2024-03-04
+
+### Note
+
+This release builds with Golang `v1.21.8`.
+
+* [ENHANCEMENT] Add OpenSSF Scorecard to README by @dalehenries in <https://github.com/kubernetes/kube-state-metrics/pull/2277>
+* [ENHANCEMENT] Generate OpenVX data for every release by @shafeeqes in <https://github.com/kubernetes/kube-state-metrics/pull/2276>
+* [ENHANCEMENT] Add restartPolicy to `kube_pod_init_container_info` metric by @changhyuni in <https://github.com/kubernetes/kube-state-metrics/pull/2240>
+* [FEATURE] Add `kube_node_status_addresses` metric by @stonith in <https://github.com/kubernetes/kube-state-metrics/pull/2252>
+* [FEATURE] Add namespace label to `endpointslice` metrics by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2266>
+* [FEATURE] Add opt-in `kube_persistentvolume_csi_attributes` metric by @machadovilaca in <https://github.com/kubernetes/kube-state-metrics/pull/2133>
+* [FEATURE] Add new metric `kube_pod_scheduler` metric by @adinhodovic in <https://github.com/kubernetes/kube-state-metrics/pull/2222>
+* [FEATURE] Support filtering annotations allow-list by `*` by @xonvanetta in <https://github.com/kubernetes/kube-state-metrics/pull/2234>
+* [ENHANCEMENT] Support scraping pod metrics that are still in scheduling status and have no assigned nodes by @mickeyzzc in <https://github.com/kubernetes/kube-state-metrics/pull/2217>
+* [FEATURE] Add backend resource info for `kube_ingress_path` by @rohitphatak in <https://github.com/kubernetes/kube-state-metrics/pull/2109>
+
+## v2.10.1 / 2023-10-09
+
+### Note
+
+* This release addresses a regression introduced in [#2105](https://github.com/kubernetes/kube-state-metrics/pull/2105).
+
+* [BUGFIX] Remove FieldSelector from non-namespaced resources by @mrueg and @dgrisonnet in [#2190](https://github.com/kubernetes/kube-state-metrics/pull/2190)
+* [ENHANCEMENT] Bump Go to v1.20.8
+
 ## v2.10.0 / 2023-08-31
 
 ### Note

@@ -97,7 +97,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	klog.InfoS("started KSM")
 
 	// Wait for port 8080 to come up.
-	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(_ context.Context) (bool, error) {
 		conn, err := net.Dial("tcp", "localhost:8080")
 		if err != nil {
 			return false, nil
@@ -140,7 +140,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	// Wait for the metric to be available.
 	ch := make(chan bool, 1)
 	klog.InfoS("waiting for metrics to become available")
-	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, PopulateTimeout, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, PopulateTimeout, true, func(_ context.Context) (bool, error) {
 		out, err := exec.Command("curl", "localhost:8080/metrics").Output()
 		if err != nil {
 			return false, err

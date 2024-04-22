@@ -94,7 +94,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			wrapJobFunc(func(_ *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

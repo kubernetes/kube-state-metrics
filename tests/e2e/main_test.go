@@ -21,9 +21,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -145,12 +145,6 @@ func TestDocumentation(t *testing.T) {
 func getLabelsDocumentation() (map[string][]string, error) {
 	documentedMetrics := map[string][]string{}
 
-	docPath := "../../docs/"
-	docFiles, err := os.ReadDir(docPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read documentation directory: %w", err)
-	}
-
 	// Match file names such as daemonset-metrics.md
 	fileRe := regexp.MustCompile(`^([a-z]*)-metrics.md$`)
 	// Match doc lines such as | kube_node_created | Gauge | `node`=&lt;node-address&gt;| STABLE |
@@ -160,15 +154,16 @@ func getLabelsDocumentation() (map[string][]string, error) {
 	// Match wildcard patterns for dynamic labels such as label_CRONJOB_LABEL
 	patternRe := regexp.MustCompile(`_[A-Z_]+`)
 
-	for _, file := range docFiles {
-		if file.IsDir() || !fileRe.MatchString(file.Name()) {
-			continue
+	err := filepath.WalkDir("../../docs", func(p string, d fs.DirEntry, _ error) error {
+
+		if d.IsDir() || !fileRe.MatchString(d.Name()) {
+			// Ignore the entry
+			return nil
 		}
 
-		filePath := path.Join(docPath, file.Name())
-		f, err := os.Open(filepath.Clean(filePath))
-		if err != nil {
-			return nil, fmt.Errorf("cannot read file %s: %w", filePath, err)
+		f, e := os.Open(filepath.Clean(p))
+		if e != nil {
+			return fmt.Errorf("cannot read file %s: %w", p, e)
 		}
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
@@ -183,14 +178,19 @@ func getLabelsDocumentation() (map[string][]string, error) {
 			labelPatterns := make([]string, len(labels))
 			for i, l := range labels {
 				if len(l) <= 1 {
-					return nil, fmt.Errorf("Label documentation %s did not match regex", labelsDoc)
+					return fmt.Errorf("label documentation %s did not match regex", labelsDoc)
 				}
 				labelPatterns[i] = patternRe.ReplaceAllString(l[1], "_.*")
 			}
 
 			documentedMetrics[metric] = labelPatterns
 		}
+		return nil
+	})
+	if err != nil {
+		log.Fatalf("cannot walk the documentation directory: %s", err)
 	}
+
 	return documentedMetrics, nil
 }
 

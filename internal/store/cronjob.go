@@ -249,7 +249,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				ms := []*metric.Metric{}
 
 				// If the cron job is suspended, don't track the next scheduled time
-				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp)
+				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
 				if err != nil {
 					panic(err)
 				} else if !*j.Spec.Suspend {
@@ -351,7 +351,11 @@ func createCronJobListWatch(kubeClient clientset.Interface, ns string, fieldSele
 	}
 }
 
-func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time) (time.Time, error) {
+func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time, timeZone *string) (time.Time, error) {
+	if timeZone != nil {
+		schedule = fmt.Sprintf("CRON_TZ=%s %s", *timeZone, schedule)
+	}
+
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %w", schedule, err)

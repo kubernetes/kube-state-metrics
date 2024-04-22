@@ -96,11 +96,15 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
+				timeZone := "local"
+				if j.Spec.TimeZone != nil {
+					timeZone = *j.Spec.TimeZone
+				}
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"schedule", "concurrency_policy"},
-							LabelValues: []string{j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy)},
+							LabelKeys:   []string{"schedule", "concurrency_policy", "timezone"},
+							LabelValues: []string{j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy), timeZone},
 							Value:       1,
 						},
 					},

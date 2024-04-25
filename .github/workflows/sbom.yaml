@@ -3,7 +3,7 @@ name: Generate SBOM with Kubernetes BOM
 on:
   release:
     types:
-      - published
+      - released
 
 permissions:
   contents: read

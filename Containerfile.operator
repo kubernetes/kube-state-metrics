@@ -1,0 +1,20 @@
+# Copyright Contributors to the Open Cluster Management project
+# Licensed under the Apache License 2.0
+
+FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_8_1.20 AS builder
+
+WORKDIR /workspace
+COPY . .
+ENV GOFLAGS="-mod=mod"
+RUN GO_FLAGS="" go build --installsuffix cgo
+
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+
+RUN microdnf update -y && microdnf clean all
+LABEL io.k8s.display-name="kube-state-metrics" \
+      io.k8s.description="This is a component that exposes metrics about Kubernetes objects." \
+      summary="This is a component that exposes metrics about Kubernetes objects."
+
+COPY --from=builder /workspace/kube-state-metrics  /usr/bin/kube-state-metrics
+USER nobody
+ENTRYPOINT ["/usr/bin/kube-state-metrics"]

@@ -48,7 +48,7 @@ lint: shellcheck licensecheck lint-markdown-format
 
 lint-fix: fix-markdown-format
 	golangci-lint run --fix -v
-	
+
 
 doccheck: generate validate-template
 	@echo "- Checking if the generated documentation is up to date..."

@@ -296,6 +296,12 @@ spec:
         - --node=""
 ```
 
+| KSM --node parameter | FieldSelector | Note |
+| ---                  | --- | --- |
+| --node="node1"       | kubectl get pods --field-selector spec.nodeName="node1" | Fetch all pods running on node1 |
+| --node=              | kubectl get pods --field-selector spec.nodeName= | Fetch all pods without an assigned node |
+|                      | kubectl get pods | Fetch all pods no matter whether they have an assigned node or not|
+
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 
 ### Setup

@@ -379,8 +379,9 @@
           '--resources=pods',
           '--node=""',
         ],
+        name: shardksmname,
       };
-      local shardksmname = ksm.name + "-pods";
+      local shardksmname = ksm.name + "-no-node-pods";
       std.mergePatch(ksm.deployment,
         {
           metadata: {
@@ -388,7 +389,15 @@
             labels: {'app.kubernetes.io/name': shardksmname}
           },
           spec: {
+            selector{
+              matchLabels: {app.kubernetes.io/name': shardksmname}
+            }
             template: {
+              metadata: {
+                labels: {
+                  app.kubernetes.io/name': shardksmname
+                }
+              }
               spec: {
                 containers: [c],
               },
@@ -397,6 +406,27 @@
         },
       ),
 
+    deploymentNoNodePodsService:
+      local c = ksm.deployment.spec.template.spec.containers[0] {
+        args: [
+          '--resources=pods',
+          '--node=""',
+        ],
+      };
+      local shardksmname = ksm.name + "-no-node-pods";
+      std.mergePatch(ksm.service,
+        {
+          metadata: {
+            name: shardksmname,
+            labels: {'app.kubernetes.io/name': shardksmname}
+          },
+          spec: {
+            selector: {
+              'app.kubernetes.io/name': shardksmname
+            }
+          }
+        }
+      ),
     daemonset:
       // extending the default container from above
       local c0 = ksm.deployment.spec.template.spec.containers[0] {

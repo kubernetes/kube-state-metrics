@@ -18,7 +18,6 @@ package options
 
 import (
 	"errors"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -141,15 +140,18 @@ func (n *NodeType) Type() string {
 
 // GetNodeFieldSelector returns a nodename field selector.
 func (n *NodeType) GetNodeFieldSelector() string {
-	if nil == n || len(*n) == 0 {
+	if nil == n {
 		klog.InfoS("Using node type is nil")
 		return EmptyFieldSelector()
 	}
-	pattern := "[^a-zA-Z0-9_,-]+"
-	re := regexp.MustCompile(pattern)
-	result := re.ReplaceAllString(n.String(), "")
-	klog.InfoS("Using node type", "node", result)
-	return fields.OneTermEqualSelector("spec.nodeName", result).String()
+	nodeName := n.String()
+	// `--node=""` find pods without node name assigned which uses fieldselector spec.nodeName=""
+	klog.InfoS("Using node name", nodeName)
+	if nodeName == "" {
+		klog.InfoS("Using spec.nodeName= to select unscheduable pods without node")
+		return "spec.nodeName="
+	}
+	return fields.OneTermEqualSelector("spec.nodeName", nodeName).String()
 
 }
 

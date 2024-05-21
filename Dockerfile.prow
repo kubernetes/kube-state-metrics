@@ -1,13 +1,13 @@
 # Copyright Contributors to the Open Cluster Management project
 
-FROM registry.ci.openshift.org/stolostron/builder:go1.18-linux AS builder
+FROM registry.ci.openshift.org/stolostron/builder:go1.21-linux AS builder
 
 WORKDIR /workspace
 COPY . .
 ENV GOFLAGS="-mod=mod"
 RUN go build --installsuffix cgo
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 RUN microdnf update -y && microdnf clean all
 LABEL io.k8s.display-name="kube-state-metrics" \

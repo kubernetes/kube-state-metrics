@@ -1,0 +1,47 @@
+# Refer: https://github.com/ossf/security-insights-spec/blob/main/specification.md#specification
+header:
+  schema-version: "1.0.0"
+  expiration-date: "2024-12-15T19:10:00.000Z"
+  project-url: https://github.com/kubernetes/kube-state-metrics
+  changelog: https://github.com/kubernetes/kube-state-metrics/blob/main/CHANGELOG.md
+  license: https://github.com/kubernetes/kube-state-metrics/blob/main/LICENSE
+project-lifecycle:
+  status: active
+  bug-fixes-only: false
+  core-maintainers:
+    - github:dgrisonnet
+    - github:mrueg
+    - github:rexagod
+  release-process: https://github.com/kubernetes/kube-state-metrics/blob/main/RELEASE.md
+contribution-policy:
+  accepts-pull-requests: true
+  accepts-automated-pull-requests: true
+  contributing-policy: https://github.com/kubernetes/kube-state-metrics/blob/main/CONTRIBUTING.md
+  code-of-conduct: https://github.com/kubernetes/kube-state-metrics/blob/main/code-of-conduct.md
+distribution-points:
+  - https://github.com/kubernetes/kube-state-metrics/releases
+  - https://github.com/kubernetes/k8s.io/blob/main/registry.k8s.io/images/k8s-staging-kube-state-metrics/images.yaml
+security-contacts:
+  - type: website
+    value: https://github.com/kubernetes/kube-state-metrics/blob/main/SECURITY_CONTACTS
+vulnerability-reporting:
+  accepts-vulnerability-reports: true
+  security-policy: https://github.com/kubernetes/kube-state-metrics/blob/main/SECURITY.md
+dependencies:
+  third-party-packages: true
+  dependencies-lists:
+    - https://github.com/kubernetes/kube-state-metrics/blob/main/go.mod
+    - https://github.com/kubernetes/kube-state-metrics/blob/main/Dockerfile
+documentation:
+    - https://github.com/kubernetes/kube-state-metrics/tree/main/docs
+security-testing:
+- tool-type: dast
+  tool-name: govulncheck
+  tool-version: latest
+  tool-url: https://go.googlesource.com/vuln
+  tool-rulesets:
+  - built-in
+  integration:
+    ci: true
+  comment: |
+    Detects vulnerabilities as a result of the affected call-paths being invoked directly in the repository, while reducing false positives by ignoring dormant call-paths for package dependencies.

@@ -37,15 +37,24 @@ var (
 	}
 )
 
-// Type represents the type of a metric e.g. a counter. See
-// https://prometheus.io/docs/concepts/metric_types/.
+// Type represents the type of the metric. See https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#metric-types.
 type Type string
 
-// Gauge defines a Prometheus gauge.
-var Gauge Type = "gauge"
+// Supported metric types.
+var (
 
-// Counter defines a Prometheus counter.
-var Counter Type = "counter"
+	// Gauge defines an OpenMetrics gauge.
+	Gauge Type = "gauge"
+
+	// Info defines an OpenMetrics info.
+	Info Type = "info"
+
+	// StateSet defines an OpenMetrics stateset.
+	StateSet Type = "stateset"
+
+	// Counter defines an OpenMetrics counter.
+	Counter Type = "counter"
+)
 
 // Metric represents a single time series.
 type Metric struct {
@@ -94,7 +103,7 @@ var (
 // '\"'.
 // Taken from github.com/prometheus/common/expfmt/text_create.go.
 func escapeString(m *strings.Builder, v string) {
-	_, _ = escapeWithDoubleQuote.WriteString(m, v)
+	escapeWithDoubleQuote.WriteString(m, v)
 }
 
 // writeFloat is equivalent to fmt.Fprint with a float64 argument but hardcodes

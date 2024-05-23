@@ -24,17 +24,19 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/google/go-cmp/cmp"
 
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 type generateMetricsTestCase struct {
-	Obj         interface{}
-	MetricNames []string
-	Want        string
-	Headers     []string
-	Func        func(interface{}) []metricsstore.FamilyByteSlicer
+	Obj                  interface{}
+	MetricNames          []string
+	AllowAnnotationsList []string
+	AllowLabelsList      []string
+	Want                 string
+	Headers              []string
+	Func                 func(interface{}) []metric.FamilyInterface
 }
 
 func (testCase *generateMetricsTestCase) run() error {
@@ -51,7 +53,7 @@ func (testCase *generateMetricsTestCase) run() error {
 	out := headers + "\n" + metrics
 
 	if err := compareOutput(testCase.Want, out); err != nil {
-		return errors.Wrap(err, "expected wanted output to equal output")
+		return fmt.Errorf("expected wanted output to equal output: %w", err)
 	}
 
 	return nil
@@ -66,8 +68,8 @@ func compareOutput(expected, actual string) error {
 		}
 	}
 
-	if entities[0] != entities[1] {
-		return errors.Errorf("\nEXPECTED:\n--------------\n%v\nACTUAL:\n--------------\n%v", entities[0], entities[1])
+	if diff := cmp.Diff(entities[0], entities[1]); diff != "" {
+		return fmt.Errorf("(-want, +got):\n%s", diff)
 	}
 
 	return nil

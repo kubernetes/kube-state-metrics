@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestLimitRangeStore(t *testing.T) {
@@ -33,9 +33,9 @@ func TestLimitRangeStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-	# HELP kube_limitrange_created Unix creation timestamp
+	# HELP kube_limitrange_created [STABLE] Unix creation timestamp
 	# TYPE kube_limitrange_created gauge
-	# HELP kube_limitrange Information about limit range.
+	# HELP kube_limitrange [STABLE] Information about limit range.
 	# TYPE kube_limitrange gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -81,8 +81,8 @@ func TestLimitRangeStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(limitRangeMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(limitRangeMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(limitRangeMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(limitRangeMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

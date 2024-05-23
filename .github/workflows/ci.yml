@@ -1,0 +1,209 @@
+name: continuous-integration
+
+on:
+  push:
+    branches:
+    - main
+    - release*
+    tags:
+    - v1.*
+    - v2.*
+  pull_request:
+    branches:
+    - main
+    - release*
+
+permissions:
+  contents: read
+
+env:
+  E2E_SETUP_KIND: yes
+  E2E_SETUP_KUBECTL: yes
+  SUDO: sudo
+  GO_VERSION: "^1.21"
+  GOLANGCI_LINT_VERSION: "v1.54.2"
+
+jobs:
+  ci-go-lint:
+    name: ci-go-lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: Lint
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+        make lint
+
+  ci-validate-manifests:
+    name: ci-validate-manifests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: Validate generated manifests
+      run: |
+        make validate-manifests
+
+  ci-validate-go-modules:
+    name: ci-validate-go-modules
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: Validate go modules
+      run: |
+        make validate-modules
+
+  ci-validate-docs:
+    name: ci-validate-docs
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: Check that all metrics are documented and templates have no delta
+      run: |
+        make doccheck
+
+  ci-unit-tests:
+    name: ci-unit-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: Unit tests
+      run: |
+        make test-unit
+
+  ci-rule-tests:
+    name: ci-rule-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Setup promtool
+        run: |
+          make install-promtool
+
+      - name: Rule tests
+        run: |
+          PROMTOOL_CLI=./promtool make test-rules
+
+  ci-benchmark-tests:
+    name: ci-benchmark-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: Benchmark tests
+      run: |
+        make test-benchmark-compare
+
+  ci-build-kube-state-metrics:
+    name: ci-build-kube-state-metrics
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: Build
+      run: |
+        make build
+
+  ci-e2e-tests:
+    name: ci-e2e-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+
+    - name: Setup environment
+      run: |
+        make install-tools
+
+    - name: End-to-end tests
+      run: |
+        make e2e

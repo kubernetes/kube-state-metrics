@@ -19,23 +19,26 @@ package metricshandler
 import (
 	"compress/gzip"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/pkg/errors"
+	"github.com/prometheus/common/expfmt"
+
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/internal/store"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
-	"k8s.io/kube-state-metrics/pkg/options"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
@@ -43,20 +46,20 @@ import (
 type MetricsHandler struct {
 	opts               *options.Options
 	kubeClient         kubernetes.Interface
-	storeBuilder       *store.Builder
+	storeBuilder       ksmtypes.BuilderInterface
 	enableGZIPEncoding bool
 
 	cancel func()
 
-	// mtx protects stores, curShard, and curTotalShards
+	// mtx protects metricsWriters, curShard, and curTotalShards
 	mtx            *sync.RWMutex
-	stores         []*metricsstore.MetricsStore
+	metricsWriters metricsstore.MetricsWriterList
 	curShard       int32
 	curTotalShards int
 }
 
 // New creates and returns a new MetricsHandler with the given options.
-func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder *store.Builder, enableGZIPEncoding bool) *MetricsHandler {
+func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
 	return &MetricsHandler{
 		opts:               opts,
 		kubeClient:         kubeClient,
@@ -76,12 +79,12 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 		m.cancel()
 	}
 	if totalShards != 1 {
-		klog.Infof("configuring sharding of this instance to be shard index %d (zero-indexed) out of %d total shards", shard, totalShards)
+		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
 	}
 	ctx, m.cancel = context.WithCancel(ctx)
 	m.storeBuilder.WithSharding(shard, totalShards)
 	m.storeBuilder.WithContext(ctx)
-	m.stores = m.storeBuilder.Build()
+	m.metricsWriters = m.storeBuilder.Build()
 	m.curShard = shard
 	m.curTotalShards = totalShards
 }
@@ -93,17 +96,18 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	autoSharding := len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
 
 	if !autoSharding {
-		klog.Info("Autosharding disabled")
+		klog.InfoS("Autosharding disabled")
 		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
+		// Wait for context to be done, metrics will be served until then.
 		<-ctx.Done()
 		return ctx.Err()
 	}
 
-	klog.Infof("Autosharding enabled with pod=%v pod_namespace=%v", m.opts.Pod, m.opts.Namespace)
-	klog.Infof("Auto detecting sharding settings.")
+	klog.InfoS("Autosharding enabled with pod", "pod", klog.KRef(m.opts.Namespace, m.opts.Pod))
+	klog.InfoS("Auto detecting sharding settings")
 	ss, err := detectStatefulSet(m.kubeClient, m.opts.Pod, m.opts.Namespace)
 	if err != nil {
-		return errors.Wrap(err, "detect StatefulSet")
+		return fmt.Errorf("detect StatefulSet: %w", err)
 	}
 	statefulSetName := ss.Name
 
@@ -124,7 +128,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 			shard, totalShards, err := shardingSettingsFromStatefulSet(ss, m.opts.Pod)
 			if err != nil {
-				klog.Errorf("detect sharding settings from StatefulSet: %v", err)
+				klog.ErrorS(err, "Detected sharding settings from StatefulSet")
 				return
 			}
 
@@ -151,7 +155,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 			shard, totalShards, err := shardingSettingsFromStatefulSet(cur, m.opts.Pod)
 			if err != nil {
-				klog.Errorf("detect sharding settings from StatefulSet: %v", err)
+				klog.ErrorS(err, "Detected sharding settings from StatefulSet")
 				return
 			}
 
@@ -174,15 +178,22 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// ServeHTTP implements the http.Handler interface. It writes the metrics in
-// its stores to the response body.
+// ServeHTTP implements the http.Handler interface. It writes all generated metrics to the response body.
+// Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 	resHeader := w.Header()
 	var writer io.Writer = w
 
-	resHeader.Set("Content-Type", `text/plain; version=`+"0.0.4")
+	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
+
+	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022.
+
+	if contentType.FormatType() != expfmt.TypeOpenMetrics {
+		contentType = expfmt.NewFormat(expfmt.TypeTextPlain)
+	}
+	resHeader.Set("Content-Type", string(contentType))
 
 	if m.enableGZIPEncoding {
 		// Gzip response if requested. Taken from
@@ -198,20 +209,35 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for _, s := range m.stores {
-		s.WriteAll(w)
+	m.metricsWriters = metricsstore.SanitizeHeaders(string(contentType), m.metricsWriters)
+	for _, w := range m.metricsWriters {
+		err := w.WriteAll(writer)
+		if err != nil {
+			klog.ErrorS(err, "Failed to write metrics")
+		}
+	}
+
+	// OpenMetrics spec requires that we end with an EOF directive.
+	if contentType.FormatType() == expfmt.TypeOpenMetrics {
+		_, err := writer.Write([]byte("# EOF\n"))
+		if err != nil {
+			klog.ErrorS(err, "Failed to write EOF directive")
+		}
 	}
 
 	// In case we gzipped the response, we have to close the writer.
 	if closer, ok := writer.(io.Closer); ok {
-		_ = closer.Close()
+		err := closer.Close()
+		if err != nil {
+			klog.ErrorS(err, "Failed to close the writer")
+		}
 	}
 }
 
 func shardingSettingsFromStatefulSet(ss *appsv1.StatefulSet, podName string) (nominal int32, totalReplicas int, err error) {
 	nominal, err = detectNominalFromPod(ss.Name, podName)
 	if err != nil {
-		return 0, 0, errors.Wrap(err, "detecting Pod nominal")
+		return 0, 0, fmt.Errorf("detecting Pod nominal: %w", err)
 	}
 
 	totalReplicas = 1
@@ -225,18 +251,18 @@ func shardingSettingsFromStatefulSet(ss *appsv1.StatefulSet, podName string) (no
 
 func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 	nominalString := strings.TrimPrefix(podName, statefulSetName+"-")
-	nominal, err := strconv.ParseInt(nominalString, 10, 16)
+	nominal, err := strconv.ParseInt(nominalString, 10, 32)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to detect shard index for Pod %s of StatefulSet %s, parsed %s", podName, statefulSetName, nominalString)
+		return 0, fmt.Errorf("failed to detect shard index for Pod %s of StatefulSet %s, parsed %s: %w", podName, statefulSetName, nominalString, err)
 	}
 
 	return int32(nominal), nil
 }
 
 func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {
-	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(podName, metav1.GetOptions{})
+	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieve pod %s for sharding", podName)
+		return nil, fmt.Errorf("retrieve pod %s for sharding: %w", podName, err)
 	}
 
 	owners := p.GetOwnerReferences()
@@ -245,13 +271,13 @@ func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName s
 			continue
 		}
 
-		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(o.Name, metav1.GetOptions{})
+		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(context.TODO(), o.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "retrieve shard's StatefulSet: %s/%s", namespaceName, o.Name)
+			return nil, fmt.Errorf("retrieve shard's StatefulSet: %s/%s: %w", namespaceName, o.Name, err)
 		}
 
 		return ss, nil
 	}
 
-	return nil, errors.Errorf("no suitable statefulset found for auto detecting sharding for Pod %s/%s", namespaceName, podName)
+	return nil, fmt.Errorf("no suitable statefulset found for auto detecting sharding for Pod %s/%s", namespaceName, podName)
 }

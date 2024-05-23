@@ -11,8 +11,8 @@ set -u
 REF_CURRENT="$(git rev-parse --abbrev-ref HEAD)"
 REF_TO_COMPARE=$1
 
-RESULT_CURRENT="$(mktemp)"
-RESULT_TO_COMPARE="$(mktemp)"
+RESULT_CURRENT="$(mktemp)-${REF_CURRENT}"
+RESULT_TO_COMPARE="$(mktemp)-${REF_TO_COMPARE}"
 
 echo ""
 echo "### Testing ${REF_CURRENT}"
@@ -25,9 +25,9 @@ echo "### Done testing ${REF_CURRENT}"
 echo ""
 echo "### Testing ${REF_TO_COMPARE}"
 
-git checkout "$REF_TO_COMPARE"
+git checkout "${REF_TO_COMPARE}"
 
-go test -benchmem -run=NONE -bench=. ./... | tee "$RESULT_TO_COMPARE"
+go test -benchmem -run=NONE -bench=. ./... | tee "${RESULT_TO_COMPARE}"
 
 echo ""
 echo "### Done testing ${REF_TO_COMPARE}"
@@ -38,4 +38,4 @@ echo ""
 echo "### Result"
 echo "old=${REF_TO_COMPARE} new=${REF_CURRENT}"
 
-benchcmp "$RESULT_TO_COMPARE" "$RESULT_CURRENT"
+benchstat "${RESULT_TO_COMPARE}" "${RESULT_CURRENT}"

@@ -5,7 +5,8 @@ FROM registry.ci.openshift.org/stolostron/builder:go1.21-linux AS builder
 WORKDIR /workspace
 COPY . .
 ENV GOFLAGS="-mod=mod"
-RUN go build --installsuffix cgo
+# RUN go build --installsuffix cgo
+RUN make -f Makefile.prow build-local
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 

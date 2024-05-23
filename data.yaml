@@ -1,0 +1,14 @@
+# List at max 5 releases here + the main branch
+compat:
+  - version: "v2.8.2"
+    kubernetes: "1.26"
+  - version: "v2.9.2"
+    kubernetes: "1.26"
+  - version: "v2.10.1"
+    kubernetes: "1.27"
+  - version: "v2.11.0"
+    kubernetes: "1.28"
+  - version: "v2.12.0"
+    kubernetes: "1.29"
+  - version: "main"
+    kubernetes: "1.29"

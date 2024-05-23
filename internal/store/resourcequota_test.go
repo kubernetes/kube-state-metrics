@@ -24,17 +24,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestResourceQuotaStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-	# HELP kube_resourcequota Information about resource quota.
+	# HELP kube_resourcequota [STABLE] Information about resource quota.
+	# HELP kube_resourcequota_annotations Kubernetes annotations converted to Prometheus labels.
 	# TYPE kube_resourcequota gauge
-	# HELP kube_resourcequota_created Unix creation timestamp
+	# HELP kube_resourcequota_created [STABLE] Unix creation timestamp
+	# HELP kube_resourcequota_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+	# TYPE kube_resourcequota_annotations gauge
 	# TYPE kube_resourcequota_created gauge
+	# TYPE kube_resourcequota_labels gauge
 	`
 	cases := []generateMetricsTestCase{
 		// Verify populating base metric and that metric for unset fields are skipped.
@@ -132,10 +136,38 @@ func TestResourceQuotaStore(t *testing.T) {
 			kube_resourcequota{namespace="testNS",resource="storage",resourcequota="quotaTest",type="used"} 9e+09
 			`,
 		},
+		// Verify kube_resourcequota_annotations and kube_resourcequota_labels are shown.
+		{
+			AllowAnnotationsList: []string{
+				"foo",
+			},
+			AllowLabelsList: []string{
+				"hello",
+			},
+			Obj: &v1.ResourceQuota{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "quotaTest",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "testNS",
+					Annotations: map[string]string{
+						"foo": "bar",
+					},
+					Labels: map[string]string{
+						"hello": "world",
+					},
+				},
+				Status: v1.ResourceQuotaStatus{},
+			},
+			Want: metadata + `
+			kube_resourcequota_annotations{annotation_foo="bar",namespace="testNS",resourcequota="quotaTest"} 1
+			kube_resourcequota_created{namespace="testNS",resourcequota="quotaTest"} 1.5e+09
+			kube_resourcequota_labels{label_hello="world",namespace="testNS",resourcequota="quotaTest"} 1
+			`,
+		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(resourceQuotaMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(resourceQuotaMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

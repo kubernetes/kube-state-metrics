@@ -4,6 +4,6 @@ metadata:
   name: volumeattachment
 spec:
   attacher: attacher
-  nodeName: minikube
+  nodeName: kind
   source:
     persistentVolumeName: persistentvolume

@@ -6,21 +6,49 @@ _As contributors and maintainers of this project, and in the interest of fosteri
 
 ## Getting Started
 
-We have full documentation on how to get started contributing here: 
+We have full documentation on how to get started contributing here:
 
-<!---
-If your repo has certain guidelines for contribution, put them here ahead of the general k8s resources
--->
+### Semantic Commit Messages
 
-- [Contributor License Agreement](https://git.k8s.io/community/CLA.md) Kubernetes projects require that you sign a Contributor License Agreement (CLA) before we can accept your pull requests
-- [Kubernetes Contributor Guide](http://git.k8s.io/community/contributors/guide) - Main contributor documentation, or you can just jump directly to the [contributing section](http://git.k8s.io/community/contributors/guide#contributing)
-- [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet.md) - Common resources for existing developers
+We use [semantic commit messages](https://www.conventionalcommits.org/en/v1.0.0/) in this repository.
+
+They follow this format: `<type>[optional scope]: <description>`
+
+Examples for commit messages following this are:
+
+`feat: allow provided config object to extend other configs`
+
+You can also include a scope within parenthesis:
+
+`fix(scope): Prevent wrong calculation of storage`
+
+Here's a list of types that we use:
+
+| Type | Explanation |
+|---|---|
+| feat | A new feature |
+| fix | A bug fix |
+| docs | Documentation only changes |
+| style | Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc) |
+| refactor | A code change that neither fixes a bug nor adds a feature |
+| perf |  A code change that improves performance |
+| test | Adding missing tests or correcting existing tests |
+| build |Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm) |
+| ci | Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs) |
+| chore | Other changes that don't modify src or test files |
+| revert | Reverts a previous commit |
+
+### Further Information
+
+* [Contributor License Agreement](https://git.k8s.io/community/CLA.md) Kubernetes projects require that you sign a Contributor License Agreement (CLA) before we can accept your pull requests
+* [Kubernetes Contributor Guide](http://git.k8s.io/community/contributors/guide) - Main contributor documentation, or you can just jump directly to the [contributing section](http://git.k8s.io/community/contributors/guide#contributing)
+* [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet/README.md) - Common resources for existing developers
 
 ## Mentorship
 
-- [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!
+* [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!
 
 ## Contact Information
 
-- [Join Slack](http://slack.k8s.io) to sign up and join the Kubernetes Slack. Please make sure to read our [Slack Guidelines](https://github.com/kubernetes/community/blob/master/communication/slack-guidelines.md) before participating.
--  The [kube-state-metrics slack channel](https://kubernetes.slack.com/messages/CJJ529RUY) provides an effective communication platform to reach out to members and other users of the project. It offers an alternative to submitting a GitHub issue for when you have questions and issues.
+* [Join Slack](http://slack.k8s.io) to sign up and join the Kubernetes Slack. Please make sure to read our [Slack Guidelines](https://github.com/kubernetes/community/blob/master/communication/slack-guidelines.md) before participating.
+* The [kube-state-metrics slack channel](https://kubernetes.slack.com/messages/CJJ529RUY) provides an effective communication platform to reach out to members and other users of the project. It offers an alternative to submitting a GitHub issue for when you have questions and issues.

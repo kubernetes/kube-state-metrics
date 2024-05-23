@@ -18,58 +18,48 @@ package options
 
 import (
 	"os"
-	"sync"
 	"testing"
-
-	"github.com/spf13/pflag"
 )
 
 func TestOptionsParse(t *testing.T) {
 	tests := []struct {
-		Desc           string
-		Args           []string
-		RecoverInvoked bool
+		Desc         string
+		Args         []string
+		ExpectsError bool
 	}{
 		{
-			Desc:           "collectors command line argument",
-			Args:           []string{"./kube-state-metrics", "--collectors=configmaps,pods"},
-			RecoverInvoked: false,
+			Desc:         "resources command line argument",
+			Args:         []string{"./kube-state-metrics", "--resources=configmaps,pods"},
+			ExpectsError: false,
 		},
 		{
-			Desc:           "namespace command line argument",
-			Args:           []string{"./kube-state-metrics", "--namespace=default,kube-system"},
-			RecoverInvoked: false,
+			Desc:         "namespaces command line argument",
+			Args:         []string{"./kube-state-metrics", "--namespaces=default,kube-system"},
+			ExpectsError: false,
+		},
+		{
+			Desc:         "foo command line argument",
+			Args:         []string{"./kube-state-metrics", "--foo=bar,baz"},
+			ExpectsError: true,
 		},
 	}
 
+	opts := NewOptions()
+	opts.AddFlags(InitCommand)
+
 	for _, test := range tests {
-		var wg sync.WaitGroup
+		t.Run(test.Desc, func(t *testing.T) {
+			os.Args = test.Args
 
-		opts := NewOptions()
-		opts.AddFlags()
+			err := opts.Parse()
 
-		flags := pflag.NewFlagSet("options_test", pflag.PanicOnError)
-		flags.AddFlagSet(opts.flags)
+			if !test.ExpectsError && err != nil {
+				t.Errorf("Error for test with description: %s: %v", test.Desc, err.Error())
+			}
 
-		opts.flags = flags
-
-		os.Args = test.Args
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			defer func() {
-				if err := recover(); err != nil {
-					test.RecoverInvoked = true
-				}
-			}()
-
-			opts.Parse()
-		}()
-
-		wg.Wait()
-		if test.RecoverInvoked {
-			t.Errorf("Test error for Desc: %s. Test panic", test.Desc)
-		}
+			if test.ExpectsError && err == nil {
+				t.Errorf("Expected error for test with description: %s", test.Desc)
+			}
+		})
 	}
 }

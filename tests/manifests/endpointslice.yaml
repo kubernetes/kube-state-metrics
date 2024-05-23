@@ -1,0 +1,13 @@
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: example-endpointslice
+  namespace: default
+addressType: IPv4
+endpoints:
+- addresses:
+  - 10.0.0.2
+  conditions:
+    ready: true
+    serving: true
+    terminating: false

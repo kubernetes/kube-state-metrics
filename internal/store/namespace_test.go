@@ -23,18 +23,20 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestNamespaceStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_namespace_created Unix creation timestamp
+		# HELP kube_namespace_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_namespace_annotations gauge
+		# HELP kube_namespace_created [STABLE] Unix creation timestamp
 		# TYPE kube_namespace_created gauge
-		# HELP kube_namespace_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_namespace_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_namespace_labels gauge
-		# HELP kube_namespace_status_phase kubernetes namespace status phase.
+		# HELP kube_namespace_status_phase [STABLE] kubernetes namespace status phase.
 		# TYPE kube_namespace_status_phase gauge
 		# HELP kube_namespace_status_condition The condition of a namespace.
 		# TYPE kube_namespace_status_condition gauge
@@ -54,7 +56,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{namespace="nsActiveTest"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Active"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Terminating"} 0
 `,
@@ -72,7 +73,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Terminating"} 1
 `,
@@ -95,7 +95,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{namespace="nsTerminateWithConditionTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Terminating"} 1
 				kube_namespace_status_condition{condition="NamespaceDeletionContentFailure",namespace="nsTerminateWithConditionTest",status="false"} 0
@@ -128,7 +127,6 @@ func TestNamespaceStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_namespace_created{namespace="ns1"} 1.5e+09
-				kube_namespace_labels{label_app="example1",namespace="ns1"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
 `,
@@ -150,7 +148,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_labels{label_app="example2",label_l2="label2",namespace="ns2"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
 `,
@@ -158,8 +155,8 @@ func TestNamespaceStore(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(namespaceMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(namespaceMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(namespaceMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(namespaceMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -18,6 +18,7 @@ package store
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -176,11 +177,77 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 			expectKeys:   []string{"label_an", "label_order", "label_test"},
 			expectValues: []string{"", "", ""},
 		},
+		{
+			kubeLabels: map[string]string{
+				"conflicting_label1": "underscore",
+				"conflicting.label1": "dot",
+				"conflicting-label1": "hyphen",
+
+				"conflicting.label2": "dot",
+				"conflicting-label2": "hyphen",
+				"conflicting_label2": "underscore",
+
+				"conflicting-label3": "hyphen",
+				"conflicting_label3": "underscore",
+				"conflicting.label3": "dot",
+			},
+			// keys are sorted alphabetically during sanitization
+			expectKeys: []string{
+				"label_conflicting_label1_conflict1",
+				"label_conflicting_label2_conflict1",
+				"label_conflicting_label3_conflict1",
+				"label_conflicting_label1_conflict2",
+				"label_conflicting_label2_conflict2",
+				"label_conflicting_label3_conflict2",
+				"label_conflicting_label1_conflict3",
+				"label_conflicting_label2_conflict3",
+				"label_conflicting_label3_conflict3",
+			},
+			expectValues: []string{
+				"hyphen",
+				"hyphen",
+				"hyphen",
+				"dot",
+				"dot",
+				"dot",
+				"underscore",
+				"underscore",
+				"underscore",
+			},
+		},
+		{
+			kubeLabels: map[string]string{
+				"camelCase": "camel_case",
+			},
+			expectKeys:   []string{"label_camel_case"},
+			expectValues: []string{"camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"snake_camelCase": "snake_and_camel_case",
+			},
+			expectKeys:   []string{"label_snake_camel_case"},
+			expectValues: []string{"snake_and_camel_case"},
+		},
+		{
+			kubeLabels: map[string]string{
+				"conflicting_camelCase":  "camel_case",
+				"conflicting_camel_case": "snake_case",
+			},
+			expectKeys: []string{
+				"label_conflicting_camel_case_conflict1",
+				"label_conflicting_camel_case_conflict2",
+			},
+			expectValues: []string{
+				"camel_case",
+				"snake_case",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("kubelabels input=%v , expected prometheus keys=%v, expected prometheus values=%v", tc.kubeLabels, tc.expectKeys, tc.expectValues), func(t *testing.T) {
-			labelKeys, labelValues := kubeLabelsToPrometheusLabels(tc.kubeLabels)
+			labelKeys, labelValues := kubeMapToPrometheusLabels("label", tc.kubeLabels)
 			if len(labelKeys) != len(tc.expectKeys) {
 				t.Errorf("Got Prometheus label keys with len %d but expected %d", len(labelKeys), len(tc.expectKeys))
 			}
@@ -197,4 +264,58 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 		})
 	}
 
+}
+
+func TestMergeKeyValues(t *testing.T) {
+	testCases := []struct {
+		name               string
+		keyValuePairSlices [][]string
+		expectKeys         []string
+		expectValues       []string
+	}{
+		{
+			name: "singlePair",
+			keyValuePairSlices: [][]string{
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+			},
+			expectKeys:   []string{"keyA", "keyB", "keyC"},
+			expectValues: []string{"valueA", "valueB", "valueC"},
+		},
+		{
+			name: "evenPair",
+			keyValuePairSlices: [][]string{
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+				{"keyX", "keyY", "keyZ"},
+				{"valueX", "valueY", "valueZ"},
+			},
+			expectKeys:   []string{"keyA", "keyB", "keyC", "keyX", "keyY", "keyZ"},
+			expectValues: []string{"valueA", "valueB", "valueC", "valueX", "valueY", "valueZ"},
+		},
+		{
+			name: "oddPair",
+			keyValuePairSlices: [][]string{
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+				{"keyX", "keyY", "keyZ"},
+				{"valueX", "valueY", "valueZ"},
+				{"keyM", "keyN", "keyP"},
+				{"valueM", "valueN", "valueP"},
+			},
+			expectKeys:   []string{"keyA", "keyB", "keyC", "keyX", "keyY", "keyZ", "keyM", "keyN", "keyP"},
+			expectValues: []string{"valueA", "valueB", "valueC", "valueX", "valueY", "valueZ", "valueM", "valueN", "valueP"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotKeys, gotValues := mergeKeyValues(tc.keyValuePairSlices...)
+			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+				t.Errorf("mergeKeyValues() got = %v, want %v", gotKeys, tc.expectKeys)
+			}
+			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+				t.Errorf("mergeKeyValues() got1 = %v, want %v", gotValues, tc.expectValues)
+			}
+		})
+	}
 }

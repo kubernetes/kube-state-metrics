@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    groups:
+      k8s-dependencies:
+        patterns:
+          - "k8s.io*"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "tools"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

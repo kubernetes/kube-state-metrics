@@ -1,33 +1,37 @@
 FLAGS =
 TESTENVVAR =
-REGISTRY = quay.io/coreos
+REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
 TAG_PREFIX = v
 VERSION = $(shell cat VERSION)
-TAG = $(TAG_PREFIX)$(VERSION)
+TAG ?= $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell grep -ohE "[0-9]+.[0-9]+" VERSION)
+BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
+DOCKER_CLI ?= docker
+PROMTOOL_CLI ?= promtool
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
-BuildDate = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-Commit = $(shell git rev-parse --short HEAD)
+BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
+OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
-PKG = k8s.io/kube-state-metrics/pkg
-GO_VERSION = 1.13
-FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
-BENCHCMP_BINARY := $(FIRST_GOPATH)/bin/benchcmp
-GOLANGCI_VERSION := v1.19.1
-HAS_GOLANGCI := $(shell which golangci-lint)
-
+PKG = github.com/prometheus/common
+PROMETHEUS_VERSION = 2.46.0
+GO_VERSION = 1.21.8
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
+USER ?= $(shell id -u -n)
+HOST ?= $(shell hostname)
+MARKDOWNLINT_CLI2_VERSION = 0.9.2
+
+
+export DOCKER_CLI_EXPERIMENTAL=enabled
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
 	go mod verify
 	@echo "- Checking for any unused/missing packages in go.mod..."
 	go mod tidy
-	@echo "- Checking for unused packages in vendor..."
-	go mod vendor
-	@git diff --exit-code -- go.sum go.mod vendor/
+	@git diff --exit-code -- go.sum go.mod
 
 licensecheck:
 	@echo ">> checking license header"
@@ -39,18 +43,19 @@ licensecheck:
                exit 1; \
        fi
 
-lint: shellcheck licensecheck
-ifndef HAS_GOLANGCI
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin ${GOLANGCI_VERSION}
-endif
+lint: shellcheck licensecheck lint-markdown-format
 	golangci-lint run
 
-doccheck: generate
+lint-fix: fix-markdown-format
+	golangci-lint run --fix -v
+	
+
+doccheck: generate validate-template
 	@echo "- Checking if the generated documentation is up to date..."
 	@git diff --exit-code
 	@echo "- Checking if the documentation is in sync with the code..."
-	@grep -hoE '(kube_[^ |]+)' docs/* --exclude=README.md| sort -u > documented_metrics
-	@find internal/store -type f -not -name '*_test.go' -exec sed -nE 's/.*"(kube_[^"]+)"/\1/p' {} \; | sed -E 's/,//g' | sort -u > code_metrics
+	@grep -hoE -d skip '\| kube_[^ |]+' docs/* --exclude=README.md | sed -E 's/\| //g' | sort -u > documented_metrics
+	@find internal/store -type f -not -name '*_test.go' -exec sed -nE 's/.*"(kube_[^"]+)".*/\1/p' {} \; | sort -u > code_metrics
 	@diff -u0 code_metrics documented_metrics || (echo "ERROR: Metrics with - are present in code but missing in documentation, metrics with + are documented but not found in code."; exit 1)
 	@echo OK
 	@rm -f code_metrics documented_metrics
@@ -58,69 +63,70 @@ doccheck: generate
 	@cd docs; for doc in *.md; do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
-build-local: clean
-	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=1 go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
+build-local:
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE}" -o kube-state-metrics
 
-build: clean
-	docker run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics golang:${GO_VERSION} make build-local
+build: kube-state-metrics
 
-test-unit: clean
+kube-state-metrics:
+	# Need to update git setting to prevent failing builds due to https://github.com/docker-library/golang/issues/452
+	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} git config --global --add safe.directory "*" && make build-local
+
+test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
 
+test-rules:
+	${PROMTOOL_CLI} test rules tests/rules/alerts-test.yaml
+
 shellcheck:
-	docker run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
+	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
+
+lint-markdown-format:
+	${DOCKER_CLI} run -v "${PWD}:/workdir" davidanson/markdownlint-cli2:v${MARKDOWNLINT_CLI2_VERSION} --config .markdownlint-cli2.jsonc
+
+fix-markdown-format:
+	${DOCKER_CLI} run -v "${PWD}:/workdir" davidanson/markdownlint-cli2:v${MARKDOWNLINT_CLI2_VERSION} --fix --config .markdownlint-cli2.jsonc
+
+generate-template:
+	gomplate -d config=./data.yaml --file README.md.tpl > README.md
+
+validate-template: generate-template
+	git diff --no-ext-diff --quiet --exit-code README.md
 
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
-test-benchmark-compare: $(BENCHCMP_BINARY)
-	./tests/compare_benchmarks.sh master
+test-benchmark-compare:
+	@git fetch
+	./tests/compare_benchmarks.sh main
 	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
 
-TEMP_DIR := $(shell mktemp -d)
-
 all: all-container
+
+# Container build for multiple architectures as defined in ALL_ARCH
+
+container: container-$(ARCH)
+
+container-%:
+	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
 
 sub-container-%:
 	$(MAKE) --no-print-directory ARCH=$* container
 
-sub-push-%:
-	$(MAKE) --no-print-directory ARCH=$* push
-
 all-container: $(addprefix sub-container-,$(ALL_ARCH))
 
-all-push: $(addprefix sub-push-,$(ALL_ARCH))
+# Container push, push is the target to push for multiple architectures as defined in ALL_ARCH
 
-container: .container-$(ARCH)
-.container-$(ARCH):
-	docker run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=linux -e GOARCH=$(ARCH) -e CGO_ENABLED=1 golang:${GO_VERSION} go build -ldflags "-s -w -X ${PKG}/version.Release=${TAG} -X ${PKG}/version.Commit=${Commit} -X ${PKG}/version.BuildDate=${BuildDate}" -o kube-state-metrics
-	cp -r * "${TEMP_DIR}"
-	docker build -t $(MULTI_ARCH_IMG):$(TAG) "${TEMP_DIR}"
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(MULTI_ARCH_IMG):latest
-	rm -rf "${TEMP_DIR}"
+push: $(addprefix sub-push-,$(ALL_ARCH)) push-multi-arch;
 
-ifeq ($(ARCH), amd64)
-	# Adding check for amd64
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):latest
-endif
+sub-push-%: container-% do-push-% ;
 
-quay-push: .quay-push-$(ARCH)
-.quay-push-$(ARCH): .container-$(ARCH)
-	docker push $(MULTI_ARCH_IMG):$(TAG)
-	docker push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	docker push $(IMAGE):$(TAG)
-	docker push $(IMAGE):latest
-endif
+do-push-%:
+	${DOCKER_CLI} push $(IMAGE)-$*:$(TAG)
 
-push: .push-$(ARCH)
-.push-$(ARCH): .container-$(ARCH)
-	gcloud docker -- push $(MULTI_ARCH_IMG):$(TAG)
-	gcloud docker -- push $(MULTI_ARCH_IMG):latest
-ifeq ($(ARCH), amd64)
-	gcloud docker -- push $(IMAGE):$(TAG)
-	gcloud docker -- push $(IMAGE):latest
-endif
+push-multi-arch:
+	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
+	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
 
 clean:
 	rm -f kube-state-metrics
@@ -129,10 +135,10 @@ clean:
 e2e:
 	./tests/e2e.sh
 
-generate: build-local
+generate: build-local generate-template
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
-	@$(GOPATH)/bin/embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+	embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
 validate-manifests: examples
 	@git diff --exit-code
@@ -143,7 +149,7 @@ examples/prometheus-alerting-rules/alerts.yaml: jsonnet $(shell find jsonnet | g
 	mkdir -p examples/prometheus-alerting-rules
 	jsonnet -J scripts/vendor scripts/mixin.jsonnet | gojsontoyaml > examples/prometheus-alerting-rules/alerts.yaml
 
-examples: examples/standard examples/autosharding mixin
+examples: examples/standard examples/autosharding examples/daemonsetsharding mixin
 
 examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor VERSION
 	mkdir -p examples/standard
@@ -155,11 +161,21 @@ examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts
 	jsonnet -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
+examples/daemonsetsharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/daemonsetsharding.jsonnet scripts/vendor VERSION
+	mkdir -p examples/daemonsetsharding
+	jsonnet -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	find examples -type f ! -name '*.yaml' -delete
+
 scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json
 	cd scripts && jb install
 
 install-tools:
 	@echo Installing tools from tools.go
-	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
+	grep '^\s*_' tools/tools.go | awk '{print $$2}' | xargs -tI % go install -mod=readonly -modfile=tools/go.mod %
 
-.PHONY: all build build-local all-push all-container test-unit test-benchmark-compare container push quay-push clean e2e validate-modules shellcheck licensecheck lint generate embedmd
+install-promtool:
+	@echo Installing promtool
+	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" |\
+	tar xvz --strip-components=1 prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}/promtool
+
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template embedmd

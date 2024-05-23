@@ -17,9 +17,14 @@ limitations under the License.
 package store
 
 import (
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"context"
 
-	certv1beta1 "k8s.io/api/certificates/v1beta1"
+	basemetrics "k8s.io/component-base/metrics"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+
+	certv1 "k8s.io/api/certificates/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -28,17 +33,48 @@ import (
 )
 
 var (
+	descCSRAnnotationsName     = "kube_certificatesigningrequest_annotations"
+	descCSRAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descCSRLabelsName          = "kube_certificatesigningrequest_labels"
 	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest"}
+	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest", "signer_name"}
+)
 
-	csrMetricFamilies = []metric.FamilyGenerator{
-		{
-			Name: descCSRLabelsName,
-			Type: metric.Gauge,
-			Help: descCSRLabelsHelp,
-			GenerateFunc: wrapCSRFunc(func(j *certv1beta1.CertificateSigningRequest) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(j.Labels)
+func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGeneratorWithStability(
+			descCSRAnnotationsName,
+			descCSRAnnotationsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descCSRLabelsName,
+			descCSRLabelsHelp,
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -49,12 +85,14 @@ var (
 					},
 				}
 			}),
-		},
-		{
-			Name: "kube_certificatesigningrequest_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_certificatesigningrequest_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				ms := []*metric.Metric{}
 				if !csr.CreationTimestamp.IsZero() {
 					ms = append(ms, &metric.Metric{
@@ -68,22 +106,26 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_certificatesigningrequest_condition",
-			Type: metric.Gauge,
-			Help: "The number of each certificatesigningrequest condition",
-			GenerateFunc: wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_certificatesigningrequest_condition",
+			"The number of each certificatesigningrequest condition",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: addCSRConditionMetrics(csr.Status),
 				}
 			}),
-		},
-		{
-			Name: "kube_certificatesigningrequest_cert_length",
-			Type: metric.Gauge,
-			Help: "Length of the issued cert",
-			GenerateFunc: wrapCSRFunc(func(csr *certv1beta1.CertificateSigningRequest) *metric.Family {
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_certificatesigningrequest_cert_length",
+			"Length of the issued cert",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -94,45 +136,43 @@ var (
 					},
 				}
 			}),
-		},
+		),
 	}
-)
+}
 
-func wrapCSRFunc(f func(*certv1beta1.CertificateSigningRequest) *metric.Family) func(interface{}) *metric.Family {
+func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		csr := obj.(*certv1beta1.CertificateSigningRequest)
-
+		csr := obj.(*certv1.CertificateSigningRequest)
 		metricFamily := f(csr)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descCSRLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{csr.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descCSRLabelsDefaultLabels, []string{csr.Name, csr.Spec.SignerName}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily
 	}
 }
 
-func createCSRListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createCSRListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().List(opts)
+			return kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CertificatesV1beta1().CertificateSigningRequests().Watch(opts)
+			return kubeClient.CertificatesV1().CertificateSigningRequests().Watch(context.TODO(), opts)
 		},
 	}
 }
 
 // addCSRConditionMetrics generates one metric for each possible csr condition status
-func addCSRConditionMetrics(cs certv1beta1.CertificateSigningRequestStatus) []*metric.Metric {
+func addCSRConditionMetrics(cs certv1.CertificateSigningRequestStatus) []*metric.Metric {
 	cApproved := 0
 	cDenied := 0
 	for _, s := range cs.Conditions {
-		if s.Type == certv1beta1.CertificateApproved {
+		if s.Type == certv1.CertificateApproved {
 			cApproved++
 		}
-		if s.Type == certv1beta1.CertificateDenied {
+		if s.Type == certv1.CertificateDenied {
 			cDenied++
 		}
 	}

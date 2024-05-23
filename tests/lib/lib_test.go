@@ -30,8 +30,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
-	metricsstore "k8s.io/kube-state-metrics/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 )
 
 func TestAsLibrary(t *testing.T) {
@@ -44,7 +44,7 @@ func TestAsLibrary(t *testing.T) {
 		},
 	}
 
-	_, err := kubeClient.CoreV1().Services(metav1.NamespaceDefault).Create(&service)
+	_, err := kubeClient.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,11 @@ func TestAsLibrary(t *testing.T) {
 	time.Sleep(time.Second)
 
 	w := strings.Builder{}
-	c.WriteAll(&w)
+	mw := metricsstore.NewMetricsWriter(c)
+	err = mw.WriteAll(&w)
+	if err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
 	m := w.String()
 
 	if !strings.Contains(m, service.ObjectMeta.Name) {
@@ -68,10 +72,10 @@ func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore
 
 	lw := cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).List(opts)
+			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).Watch(opts)
+			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).Watch(context.TODO(), opts)
 		},
 	}
 
@@ -82,7 +86,7 @@ func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore
 	return store
 }
 
-func generateServiceMetrics(obj interface{}) []metricsstore.FamilyByteSlicer {
+func generateServiceMetrics(obj interface{}) []metric.FamilyInterface {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 
@@ -97,5 +101,5 @@ func generateServiceMetrics(obj interface{}) []metricsstore.FamilyByteSlicer {
 		Metrics: []*metric.Metric{&m},
 	}
 
-	return []metricsstore.FamilyByteSlicer{&family}
+	return []metric.FamilyInterface{&family}
 }

@@ -22,12 +22,13 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestMutatingWebhookConfigurationStore(t *testing.T) {
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
+	externalURL := "example.com"
 
 	cases := []generateMetricsTestCase{
 		{
@@ -69,10 +70,41 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_mutatingwebhookconfiguration_created", "kube_mutatingwebhookconfiguration_info", "kube_mutatingwebhookconfiguration_metadata_resource_version"},
 		},
+		{
+			Obj: &admissionregistrationv1.MutatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "mutatingwebhookconfiguration3",
+					Namespace:         "ns3",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "abcdef",
+				},
+				Webhooks: []admissionregistrationv1.MutatingWebhook{
+					{
+						Name: "webhook_with_service",
+						ClientConfig: admissionregistrationv1.WebhookClientConfig{
+							Service: &admissionregistrationv1.ServiceReference{Name: "svc", Namespace: "ns"},
+						},
+					},
+					{
+						Name: "webhook_with_external_url",
+						ClientConfig: admissionregistrationv1.WebhookClientConfig{
+							URL: &externalURL,
+						},
+					},
+				},
+			},
+			Want: `
+			# HELP kube_mutatingwebhookconfiguration_webhook_clientconfig_service Service used by the apiserver to connect to a mutating webhook.
+			# TYPE kube_mutatingwebhookconfiguration_webhook_clientconfig_service gauge
+			kube_mutatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_external_url",namespace="ns3",service_name="",service_namespace="",mutatingwebhookconfiguration="mutatingwebhookconfiguration3"} 1
+			kube_mutatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_service",namespace="ns3",service_name="svc",service_namespace="ns",mutatingwebhookconfiguration="mutatingwebhookconfiguration3"} 1
+			`,
+			MetricNames: []string{"kube_mutatingwebhookconfiguration_webhook_clientconfig_service"},
+		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(mutatingWebhookConfigurationMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(mutatingWebhookConfigurationMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(mutatingWebhookConfigurationMetricFamilies)
+		c.Headers = generator.ExtractMetricFamilyHeaders(mutatingWebhookConfigurationMetricFamilies)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

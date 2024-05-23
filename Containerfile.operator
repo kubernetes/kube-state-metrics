@@ -6,7 +6,8 @@ FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.21 AS bui
 WORKDIR /workspace
 COPY . .
 ENV GOFLAGS="-mod=mod"
-RUN GO_FLAGS="" go build --installsuffix cgo
+# RUN GO_FLAGS="" go build --installsuffix cgo
+RUN make -f Makefile.prow build-local
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 

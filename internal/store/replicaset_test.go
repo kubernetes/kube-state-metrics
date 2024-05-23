@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
@@ -36,23 +36,25 @@ func TestReplicaSetStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_replicaset_created Unix creation timestamp
+		# HELP kube_replicaset_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_replicaset_annotations gauge
+		# HELP kube_replicaset_created [STABLE] Unix creation timestamp
 		# TYPE kube_replicaset_created gauge
-	  # HELP kube_replicaset_metadata_generation Sequence number representing a specific generation of the desired state.
+		# HELP kube_replicaset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
-		# HELP kube_replicaset_status_replicas The number of replicas per ReplicaSet.
+		# HELP kube_replicaset_status_replicas [STABLE] The number of replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_replicas gauge
-		# HELP kube_replicaset_status_fully_labeled_replicas The number of fully labeled replicas per ReplicaSet.
+		# HELP kube_replicaset_status_fully_labeled_replicas [STABLE] The number of fully labeled replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_fully_labeled_replicas gauge
-		# HELP kube_replicaset_status_ready_replicas The number of ready replicas per ReplicaSet.
+		# HELP kube_replicaset_status_ready_replicas [STABLE] The number of ready replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_ready_replicas gauge
-		# HELP kube_replicaset_status_observed_generation The generation observed by the ReplicaSet controller.
+		# HELP kube_replicaset_status_observed_generation [STABLE] The generation observed by the ReplicaSet controller.
 		# TYPE kube_replicaset_status_observed_generation gauge
-		# HELP kube_replicaset_spec_replicas Number of desired pods for a ReplicaSet.
+		# HELP kube_replicaset_spec_replicas [STABLE] Number of desired pods for a ReplicaSet.
 		# TYPE kube_replicaset_spec_replicas gauge
-		# HELP kube_replicaset_owner Information about the ReplicaSet's owner.
+		# HELP kube_replicaset_owner [STABLE] Information about the ReplicaSet's owner.
 		# TYPE kube_replicaset_owner gauge
-		# HELP kube_replicaset_labels Kubernetes labels converted to Prometheus labels.
+		# HELP kube_replicaset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_replicaset_labels gauge
 	`
 	cases := []generateMetricsTestCase{
@@ -85,7 +87,6 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_replicaset_labels{replicaset="rs1",namespace="ns1",label_app="example1"} 1
 				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
 				kube_replicaset_status_replicas{namespace="ns1",replicaset="rs1"} 5
@@ -118,20 +119,19 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_replicaset_labels{replicaset="rs2",namespace="ns2",label_app="example2",label_env="ex"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_status_observed_generation{namespace="ns2",replicaset="rs2"} 5
 				kube_replicaset_status_fully_labeled_replicas{namespace="ns2",replicaset="rs2"} 5
 				kube_replicaset_status_ready_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_spec_replicas{namespace="ns2",replicaset="rs2"} 0
-				kube_replicaset_owner{namespace="ns2",owner_is_controller="<none>",owner_kind="<none>",owner_name="<none>",replicaset="rs2"} 1
+				kube_replicaset_owner{namespace="ns2",owner_is_controller="",owner_kind="",owner_name="",replicaset="rs2"} 1
 			`,
 		},
 	}
 	for i, c := range cases {
-		c.Func = metric.ComposeMetricGenFuncs(replicaSetMetricFamilies)
-		c.Headers = metric.ExtractMetricFamilyHeaders(replicaSetMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(replicaSetMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(replicaSetMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

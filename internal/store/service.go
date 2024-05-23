@@ -17,27 +17,37 @@ limitations under the License.
 package store
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	basemetrics "k8s.io/component-base/metrics"
 
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 var (
+	descServiceAnnotationsName     = "kube_service_annotations"
+	descServiceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descServiceLabelsName          = "kube_service_labels"
 	descServiceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descServiceLabelsDefaultLabels = []string{"namespace", "service"}
+	descServiceLabelsDefaultLabels = []string{"namespace", "service", "uid"}
+)
 
-	serviceMetricFamilies = []metric.FamilyGenerator{
-		{
-			Name: "kube_service_info",
-			Type: metric.Gauge,
-			Help: "Information about service.",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_info",
+			"Information about service.",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
 					LabelKeys:   []string{"cluster_ip", "external_name", "load_balancer_ip"},
 					LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
@@ -45,12 +55,14 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: "kube_service_created",
-			Type: metric.Gauge,
-			Help: "Unix creation timestamp",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_created",
+			"Unix creation timestamp",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if !s.CreationTimestamp.IsZero() {
 					m := metric.Metric{
 						LabelKeys:   nil,
@@ -61,12 +73,14 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{}}
 			}),
-		},
-		{
-			Name: "kube_service_spec_type",
-			Type: metric.Gauge,
-			Help: "Type about service.",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_spec_type",
+			"Type about service.",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
 
 					LabelKeys:   []string{"type"},
@@ -75,27 +89,52 @@ var (
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: descServiceLabelsName,
-			Type: metric.Gauge,
-			Help: descServiceLabelsHelp,
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
-				labelKeys, labelValues := kubeLabelsToPrometheusLabels(s.Labels)
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descServiceAnnotationsName,
+			descServiceAnnotationsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				m := metric.Metric{
-
+					LabelKeys:   annotationKeys,
+					LabelValues: annotationValues,
+					Value:       1,
+				}
+				return &metric.Family{Metrics: []*metric.Metric{&m}}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descServiceLabelsName,
+			descServiceLabelsHelp,
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
+				m := metric.Metric{
 					LabelKeys:   labelKeys,
 					LabelValues: labelValues,
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
-		},
-		{
-			Name: "kube_service_spec_external_ip",
-			Type: metric.Gauge,
-			Help: "Service external ips. One series for each ip",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_spec_external_ip",
+			"Service external ips. One series for each ip",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if len(s.Spec.ExternalIPs) == 0 {
 					return &metric.Family{
 						Metrics: []*metric.Metric{},
@@ -116,12 +155,14 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
-		{
-			Name: "kube_service_status_load_balancer_ingress",
-			Type: metric.Gauge,
-			Help: "Service load balancer ingress status",
-			GenerateFunc: wrapSvcFunc(func(s *v1.Service) *metric.Family {
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_status_load_balancer_ingress",
+			"Service load balancer ingress status",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				if len(s.Status.LoadBalancer.Ingress) == 0 {
 					return &metric.Family{
 						Metrics: []*metric.Metric{},
@@ -142,9 +183,9 @@ var (
 					Metrics: ms,
 				}
 			}),
-		},
+		),
 	}
-)
+}
 
 func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
@@ -153,21 +194,22 @@ func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.F
 		metricFamily := f(svc)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = append(descServiceLabelsDefaultLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{svc.Namespace, svc.Name}, m.LabelValues...)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descServiceLabelsDefaultLabels, []string{svc.Namespace, svc.Name, string(svc.UID)}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily
 	}
 }
 
-func createServiceListWatch(kubeClient clientset.Interface, ns string) cache.ListerWatcher {
+func createServiceListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Services(ns).List(opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoreV1().Services(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Services(ns).Watch(opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoreV1().Services(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

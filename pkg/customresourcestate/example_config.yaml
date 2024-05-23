@@ -1,0 +1,64 @@
+#    Copyright 2021 The Kubernetes Authors All rights reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    -
+      groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      labelsFromPath:
+        name: [ metadata, name ]
+      metrics:
+        - name: "active_count"
+          help: "Number Foo Bars active"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, active]
+              labelFromKey: type
+              labelsFromPath:
+                bar: [bar]
+              value: [count]
+          commonLabels:
+            custom_metric: "yes"
+
+          labelsFromPath:
+            "*": [metadata, labels]  # copy all labels from CR labels
+            foo: [metadata, labels, foo]  # copy a single label (overrides *)
+
+        - name: "other_count"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, other]
+          errorLogV: 5
+
+        - name: "info"
+          each:
+            type: Info
+            info:
+              path: [spec, version]
+          errorLogV: 5
+
+        - name: "phase"
+          each:
+            type: StateSet
+            stateSet:
+              path: [status, phase]
+              labelName: phase
+              list: [Active, Running, Terminating]
+          errorLogV: 5

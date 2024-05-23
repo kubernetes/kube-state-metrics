@@ -17,11 +17,19 @@ limitations under the License.
 package options
 
 import (
+	"errors"
+	"regexp"
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/fields"
+
+	"k8s.io/klog/v2"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -60,19 +68,19 @@ func (ms *MetricSet) Type() string {
 	return "string"
 }
 
-// CollectorSet represents a collection which has a unique set of collectors.
-type CollectorSet map[string]struct{}
+// ResourceSet represents a collection which has a unique set of resources.
+type ResourceSet map[string]struct{}
 
-func (c *CollectorSet) String() string {
-	s := *c
+func (r *ResourceSet) String() string {
+	s := *r
 	ss := s.AsSlice()
 	sort.Strings(ss)
 	return strings.Join(ss, ",")
 }
 
-// Set converts a comma-separated string of collectors into a slice and appends it to the CollectorSet.
-func (c *CollectorSet) Set(value string) error {
-	s := *c
+// Set converts a comma-separated string of resources into a slice and appends it to the ResourceSet.
+func (r *ResourceSet) Set(value string) error {
+	s := *r
 	cols := strings.Split(value, ",")
 	for _, col := range cols {
 		col = strings.TrimSpace(col)
@@ -83,18 +91,108 @@ func (c *CollectorSet) Set(value string) error {
 	return nil
 }
 
-// AsSlice returns the Collector in the form of a plain string slice.
-func (c CollectorSet) AsSlice() []string {
-	cols := make([]string, 0, len(c))
-	for col := range c {
+// AsSlice returns the Resource in the form of a plain string slice.
+func (r ResourceSet) AsSlice() []string {
+	cols := make([]string, 0, len(r))
+	for col := range r {
 		cols = append(cols, col)
 	}
 	return cols
 }
 
-// Type returns a descriptive string about the CollectorSet type.
-func (c *CollectorSet) Type() string {
+// Type returns a descriptive string about the ResourceSet type.
+func (r *ResourceSet) Type() string {
 	return "string"
+}
+
+// NodeType represents a nodeName to query from.
+type NodeType map[string]struct{}
+
+// Set converts a comma-separated string of nodename into a slice and appends it to the NodeList
+func (n *NodeType) Set(value string) error {
+	s := *n
+	cols := strings.Split(value, ",")
+	for _, col := range cols {
+		col = strings.TrimSpace(col)
+		if len(col) != 0 {
+			s[col] = struct{}{}
+		}
+	}
+	return nil
+}
+
+// AsSlice returns the LabelsAllowList in the form of plain string slice.
+func (n NodeType) AsSlice() []string {
+	cols := make([]string, 0, len(n))
+	for col := range n {
+		cols = append(cols, col)
+	}
+	return cols
+}
+
+func (n NodeType) String() string {
+	return strings.Join(n.AsSlice(), ",")
+}
+
+// Type returns a descriptive string about the NodeList type.
+func (n *NodeType) Type() string {
+	return "string"
+}
+
+// GetNodeFieldSelector returns a nodename field selector.
+func (n *NodeType) GetNodeFieldSelector() string {
+	if nil == n || len(*n) == 0 {
+		klog.InfoS("Using node type is nil")
+		return EmptyFieldSelector()
+	}
+	pattern := "[^a-zA-Z0-9_,-]+"
+	re := regexp.MustCompile(pattern)
+	result := re.ReplaceAllString(n.String(), "")
+	klog.InfoS("Using node type", "node", result)
+	return fields.OneTermEqualSelector("spec.nodeName", result).String()
+
+}
+
+// NodeValue represents a nodeName to query from.
+type NodeValue interface {
+	GetNodeFieldSelector() string
+}
+
+// EmptyFieldSelector returns an empty field selector.
+func EmptyFieldSelector() string {
+	return fields.Nothing().String()
+}
+
+// MergeFieldSelectors returns AND of a list of field selectors.
+func MergeFieldSelectors(selectors []string) (string, error) {
+	var err error
+	merged := EmptyFieldSelector()
+	for _, s := range selectors {
+		merged, err = MergeTwoFieldSelectors(merged, s)
+		if err != nil {
+			return "", err
+		}
+	}
+	return merged, nil
+}
+
+// MergeTwoFieldSelectors returns AND of two field selectors.
+func MergeTwoFieldSelectors(s1 string, s2 string) (string, error) {
+	selector1, err := fields.ParseSelector(s1)
+	if err != nil {
+		return EmptyFieldSelector(), err
+	}
+	selector2, err := fields.ParseSelector(s2)
+	if err != nil {
+		return EmptyFieldSelector(), err
+	}
+	if selector1.Empty() {
+		return selector2.String(), nil
+	}
+	if selector2.Empty() {
+		return selector1.String(), nil
+	}
+	return fields.AndSelectors(selector1, selector2).String(), nil
 }
 
 // NamespaceList represents a list of namespaces to query from.
@@ -122,7 +220,130 @@ func (n *NamespaceList) Set(value string) error {
 	return nil
 }
 
+// GetNamespaces is a helper function to get namespaces from opts.Namespaces
+func (n *NamespaceList) GetNamespaces() NamespaceList {
+	ns := *n
+	if len(*n) == 0 {
+		klog.InfoS("Using all namespaces")
+		ns = DefaultNamespaces
+	} else {
+		if n.IsAllNamespaces() {
+			klog.InfoS("Using all namespaces")
+		} else {
+			klog.InfoS("Using namespaces", "nameSpaces", ns)
+		}
+	}
+	return ns
+}
+
+// GetExcludeNSFieldSelector will return excluded namespace field selector
+// if nsDenylist = {case1,case2}, the result will be "metadata.namespace!=case1,metadata.namespace!=case2".
+func (n *NamespaceList) GetExcludeNSFieldSelector(nsDenylist []string) string {
+	if len(nsDenylist) == 0 {
+		return ""
+	}
+
+	namespaceExcludeSelectors := make([]fields.Selector, len(nsDenylist))
+	for i, ns := range nsDenylist {
+		selector := fields.OneTermNotEqualSelector("metadata.namespace", ns)
+		namespaceExcludeSelectors[i] = selector
+	}
+	return fields.AndSelectors(namespaceExcludeSelectors...).String()
+}
+
 // Type returns a descriptive string about the NamespaceList type.
 func (n *NamespaceList) Type() string {
+	return "string"
+}
+
+// LabelWildcard allowlists any label
+const LabelWildcard = "*"
+
+// LabelsAllowList represents a list of allowed labels for metrics.
+type LabelsAllowList map[string][]string
+
+// Set converts a comma-separated string of resources and their allowed Kubernetes labels and appends to the LabelsAllowList.
+// Value is in the following format:
+// resource=[k8s-label-name,another-k8s-label],another-resource[k8s-label]
+// Example: pods=[app.kubernetes.io/component,app],resource=[blah]
+func (l *LabelsAllowList) Set(value string) error {
+	// Taken from text/scanner EOF constant.
+	const EOF = -1
+	var (
+		m            = make(map[string][]string, len(*l))
+		previous     rune
+		next         rune
+		firstWordPos int
+		name         string
+	)
+	firstWordPos = 0
+
+	for i, v := range value {
+		if i+1 == len(value) {
+			next = EOF
+		} else {
+			next = []rune(value)[i+1]
+		}
+		if i-1 >= 0 {
+			previous = []rune(value)[i-1]
+		} else {
+			previous = v
+		}
+
+		switch v {
+		case '=':
+			if previous == ',' || next != '[' {
+				return errLabelsAllowListFormat
+			}
+			name = strings.TrimSpace(string(([]rune(value)[firstWordPos:i])))
+			m[name] = []string{}
+			firstWordPos = i + 1
+		case '[':
+			if previous != '=' {
+				return errLabelsAllowListFormat
+			}
+			firstWordPos = i + 1
+		case ']':
+			// if after metric group, has char not comma or end.
+			if next != EOF && next != ',' {
+				return errLabelsAllowListFormat
+			}
+			if previous != '[' {
+				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+			}
+			firstWordPos = i + 1
+		case ',':
+			// if starts or ends with comma
+			if previous == v || next == EOF || next == ']' {
+				return errLabelsAllowListFormat
+			}
+			if previous != ']' {
+				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+			}
+			firstWordPos = i + 1
+		}
+	}
+	*l = m
+	return nil
+}
+
+// asSlice returns the LabelsAllowList in the form of plain string slice.
+func (l LabelsAllowList) asSlice() []string {
+	metrics := make([]string, 0, len(l))
+	for metric := range l {
+		metrics = append(metrics, metric)
+	}
+	return metrics
+}
+
+func (l *LabelsAllowList) String() string {
+	s := *l
+	ss := s.asSlice()
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
+}
+
+// Type returns a descriptive string about the LabelsAllowList type.
+func (l *LabelsAllowList) Type() string {
 	return "string"
 }

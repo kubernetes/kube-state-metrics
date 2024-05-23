@@ -3,7 +3,8 @@ name: openvex
 on:
   workflow_dispatch:
   release:
-    types: [published]
+    types:
+      - released
 
 permissions:
   contents: read

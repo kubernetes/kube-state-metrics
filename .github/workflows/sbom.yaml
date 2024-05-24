@@ -16,7 +16,7 @@ jobs:
       contents: write
 
     env:
-      OUTPUT: kube-state-metrics-${{ github.event.release.tag_name }}.spdx
+      OUTPUT: sbom.spdx
       TAG: ${{ github.event.release.tag_name }}
 
     steps:

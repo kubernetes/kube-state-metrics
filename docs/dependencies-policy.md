@@ -12,20 +12,20 @@ This policy applies to all kube-state-metrics maintainers and all third-party pa
 
 kube-state-metrics maintainers must follow these guidelines when consuming third-party packages:
 
-- Only use third-party packages that are necessary for the functionality of kube-state-metrics.
-- Use the latest version of all third-party packages whenever possible.
-- Avoid using third-party packages that are known to have security vulnerabilities.
-- Pin all third-party packages to specific versions in the kube-state-metrics codebase.
-- Use a dependency management tool, such as Go modules, to manage third-party dependencies.
+* Only use third-party packages that are necessary for the functionality of kube-state-metrics.
+* Use the latest version of all third-party packages whenever possible.
+* Avoid using third-party packages that are known to have security vulnerabilities.
+* Pin all third-party packages to specific versions in the kube-state-metrics codebase.
+* Use a dependency management tool, such as Go modules, to manage third-party dependencies.
 
 ## Procedure
 
 When adding a new third-party package to kube-state-metrics, maintainers must follow these steps:
 
-1. Evaluate the need for the package. Is it necessary for the functionality of kube-state-metrics? 
-2. Research the package. Is it actively maintained? Does it have a good reputation? 
-3. Choose a version of the package. Use the latest version whenever possible. 
-4. Pin the package to the specific version in the kube-state-metrics codebase. 
+1. Evaluate the need for the package. Is it necessary for the functionality of kube-state-metrics?
+2. Research the package. Is it actively maintained? Does it have a good reputation?
+3. Choose a version of the package. Use the latest version whenever possible.
+4. Pin the package to the specific version in the kube-state-metrics codebase.
 5. Update the kube-state-metrics documentation to reflect the new dependency.
 
 ## Enforcement

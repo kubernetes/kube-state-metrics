@@ -32,6 +32,8 @@ dependencies:
   dependencies-lists:
     - https://github.com/kubernetes/kube-state-metrics/blob/main/go.mod
     - https://github.com/kubernetes/kube-state-metrics/blob/main/Dockerfile
+  env-dependencies-policy:
+    policy-url: https://github.com/kubernetes/kube-state-metrics/blob/main/docs/dependencies-policy.md
 documentation:
     - https://github.com/kubernetes/kube-state-metrics/tree/main/docs
 security-testing:

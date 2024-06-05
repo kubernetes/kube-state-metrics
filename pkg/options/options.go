@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
@@ -55,6 +56,8 @@ type Options struct {
 	TelemetryPort            int             `yaml:"telemetry_port"`
 	TotalShards              int             `yaml:"total_shards"`
 	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
+	ServerReadTimeout        time.Duration   `yaml:"server_read_timeout"`
+	ServerWriteTimeout       time.Duration   `yaml:"server_write_timeout"`
 
 	Config string
 
@@ -146,6 +149,8 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
 	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
+	o.cmd.Flags().DurationVar(&o.ServerReadTimeout, "server-read-timeout", 30*time.Second, "The maximum duration for reading the entire request, including the body.")
+	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", 60*time.Second, "The maximum duration before timing out writes of the response.")
 }
 
 // Parse parses the flag definitions from the argument list.

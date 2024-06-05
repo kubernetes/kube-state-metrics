@@ -326,6 +326,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	metricsServer := http.Server{
 		Handler:           metricsMux,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       opts.ServerReadTimeout,
+		WriteTimeout:      opts.ServerWriteTimeout,
 	}
 	metricsFlags := web.FlagConfig{
 		WebListenAddresses: &[]string{metricsServerListenAddress},
@@ -401,7 +403,6 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationObserver, m))
-
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

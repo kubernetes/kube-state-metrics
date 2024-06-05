@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -x
 set -e
 set -o pipefail
 
@@ -75,10 +76,14 @@ set +e
 kubectl proxy &
 
 function kube_state_metrics_up() {
+    serviceName="kube-state-metrics"
+    if [[ -n "$1" ]]; then
+        serviceName="$1"
+    fi
     is_kube_state_metrics_running="false"
     # this for loop waits until kube-state-metrics is running by accessing the healthz endpoint
     for _ in {1..30}; do # timeout for 1 minutes
-        KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
+        KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/${serviceName}:http-metrics/proxy/healthz")
         if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then
             is_kube_state_metrics_running="true"
             break
@@ -94,27 +99,76 @@ function kube_state_metrics_up() {
         exit 1
     fi
 }
+function kube_pod_up() {
+    is_pod_running="false"
+
+    for _ in {1..90}; do # timeout for 3 minutes
+        kubectl get pods -A | grep "$1" 1>/dev/null 2>&1
+        if [[ $? -ne 1 ]]; then
+            is_pod_running="true"
+            break
+        fi
+
+        echo "waiting for pod $1 to come up"
+        sleep 2
+    done
+
+    if [[ ${is_pod_running} == "false" ]]; then
+        echo "Pod does not show up within 3 minutes"
+        exit 1
+    fi
+}
+
 function test_daemonset() {
     sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/deployment.yaml
     sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/daemonset.yaml
+    sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/deployment-no-node-pods.yaml
 
+    cat ./examples/daemonsetsharding/deployment-no-node-pods.yaml
+    sleep 3
     kubectl get deployment -n kube-system
-    kubectl create -f ./examples/daemonsetsharding
     ls ./examples/daemonsetsharding
-    kube_state_metrics_up
-    curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-shard:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/pod-metrics
-    curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/nonpod-metrics
-    m1="$(cat ${KUBE_STATE_METRICS_LOG_DIR}/pod-metrics | grep "# TYPE kube_pod_info" || true)"
-    m2="$(cat ${KUBE_STATE_METRICS_LOG_DIR}/nonpod-metrics | grep "# TYPE kube_pod_info" || true)"
-    if [[ -z "${m1}" ]]; then
-        echo "can't found metric kube_pod_info from pod metrics service"
-        exit 1
-    fi
-    if [[ -n "${m2}" ]]; then
-        echo "shouldn't find metric kube_pod_info from non-pod metrics service"
+    kubectl create -f ./examples/daemonsetsharding
+    kube_state_metrics_up kube-state-metrics-no-node-pods
+    kube_state_metrics_up kube-state-metrics
+    kube_state_metrics_up kube-state-metrics-shard
+    kubectl apply -f ./tests/e2e/testdata/pods.yaml
+    kube_pod_up runningpod1
+    kube_pod_up pendingpod2
+
+    kubectl get deployment -n default
+    # curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-shard:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/daemonset-scraped-metrics
+    # curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-metrics
+    # curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-no-node-pods:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-no-node-metrics
+
+    # cat ${KUBE_STATE_METRICS_LOG_DIR}/daemonset-scraped-metrics ${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-metrics ${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-no-node-metrics >> ${KUBE_STATE_METRICS_LOG_DIR}/all-metrics
+    # cat ${KUBE_STATE_METRICS_LOG_DIR}/all-metrics | grep "kube_pod_info"
+    runningpod1="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-shard:http-metrics/proxy/metrics" | grep "runningpod1"  | grep -c "kube_pod_info" )"
+    node1="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" | grep -c "# TYPE kube_node_info" )"
+    expected_num_pod=1
+    if [ "${runningpod1}" != "${expected_num_pod}" ]; then
+        echo "metric kube_pod_info for runningpod1 doesn't show up only once, got ${runningpod1} times"
         exit 1
     fi
 
+    if [ "${node1}" != "1" ]; then
+        echo "metric kube_node_info doesn't show up only once, got ${node1} times"
+        exit 1
+    fi
+
+    kubectl logs deployment/kube-state-metrics-no-node-pods -n kube-system
+    sleep 3
+    curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-no-node-pods:http-metrics/proxy/metrics"
+    sleep 3
+    kubectl get pods -A --field-selector spec.nodeName=""
+    sleep 3
+    pendingpod2="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-no-node-pods:http-metrics/proxy/metrics"  | grep "pendingpod2" | grep -c "kube_pod_info" )"
+    if [ "${pendingpod2}" != "${expected_num_pod}" ]; then
+        echo "metric kube_pod_info for pendingpod2 doesn't show up only once, got ${runningpod1} times"
+        exit 1
+    fi
+
+    kubectl delete -f ./tests/e2e/testdata/pods.yaml
     kubectl delete -f ./examples/daemonsetsharding
     sleep 20
 }
@@ -144,6 +198,9 @@ set -e
 kubectl version
 
 # query kube-state-metrics image tag
+cat pkg/options/types.go
+sleep 3
+
 REGISTRY="registry.k8s.io/kube-state-metrics" make container
 docker images -a
 KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep "${KUBE_STATE_METRICS_IMAGE_NAME}" |grep -v 'latest'|awk '{print $2}'|sort -u)

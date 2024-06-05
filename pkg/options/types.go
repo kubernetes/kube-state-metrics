@@ -130,6 +130,7 @@ func (n NodeType) AsSlice() []string {
 }
 
 func (n NodeType) String() string {
+	klog.InfoS("n.AsSlice()", n.AsSlice())
 	return strings.Join(n.AsSlice(), ",")
 }
 
@@ -151,6 +152,7 @@ func (n *NodeType) GetNodeFieldSelector() string {
 		klog.InfoS("Using spec.nodeName= to select unscheduable pods without node")
 		return "spec.nodeName="
 	}
+	klog.InfoS("Using spec.nodeName=", nodeName)
 	return fields.OneTermEqualSelector("spec.nodeName", nodeName).String()
 
 }

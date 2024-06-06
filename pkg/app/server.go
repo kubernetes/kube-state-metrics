@@ -325,9 +325,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	metricsServer := http.Server{
 		Handler:           metricsMux,
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: opts.ServerReadHeaderTimeout,
 		ReadTimeout:       opts.ServerReadTimeout,
 		WriteTimeout:      opts.ServerWriteTimeout,
+		IdleTimeout:       opts.ServerIdleTimeout,
 	}
 	metricsFlags := web.FlagConfig{
 		WebListenAddresses: &[]string{metricsServerListenAddress},

@@ -105,10 +105,10 @@ func (r *ResourceSet) Type() string {
 	return "string"
 }
 
-// NodeType represents a nodeName to query from.
+// NodeType represents a set of nodeNames to query from.
 type NodeType map[string]struct{}
 
-// Set converts a comma-separated string of nodename into a slice and appends it to the NodeList
+// Set splits a comma-separated string of nodeNames and appends them to the NodeType set
 func (n *NodeType) Set(value string) error {
 	s := *n
 	cols := strings.Split(value, ",")
@@ -121,7 +121,7 @@ func (n *NodeType) Set(value string) error {
 	return nil
 }
 
-// AsSlice returns the LabelsAllowList in the form of plain string slice.
+// AsSlice returns the NodeType set in the form of a plain string slice.
 func (n NodeType) AsSlice() []string {
 	cols := make([]string, 0, len(n))
 	for col := range n {
@@ -130,16 +130,17 @@ func (n NodeType) AsSlice() []string {
 	return cols
 }
 
+// String returns the NodeType set in the form of a comma-separated string.
 func (n NodeType) String() string {
 	return strings.Join(n.AsSlice(), ",")
 }
 
-// Type returns a descriptive string about the NodeList type.
+// Type returns a descriptive string about the NodeType set type.
 func (n *NodeType) Type() string {
 	return "string"
 }
 
-// GetNodeFieldSelector returns a nodename field selector.
+// GetNodeFieldSelector returns a nodeName field selector.
 func (n *NodeType) GetNodeFieldSelector() string {
 	if nil == n || len(*n) == 0 {
 		klog.InfoS("Using node type is nil")

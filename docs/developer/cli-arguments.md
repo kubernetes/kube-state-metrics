@@ -69,7 +69,7 @@ Flags:
       --resources string                           Comma-separated list of Resources to be enabled. Defaults to "certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments"
       --server-idle-timeout duration               The maximum amount of time to wait for the next request when keep-alives are enabled. (default 5m0s)
       --server-read-header-timeout duration        The maximum duration for reading the header of requests. (default 5s)
-      --server-read-timeout duration               The maximum duration for reading the entire request, including the body. (default 30s)
+      --server-read-timeout duration               The maximum duration for reading the entire request, including the body. (default 1m0s)
       --server-write-timeout duration              The maximum duration before timing out writes of the response. (default 1m0s)
       --shard int32                                The instances shard nominal (zero indexed) within the total number of shards. (default 0)
       --skip_headers                               If true, avoid header prefixes in the log messages

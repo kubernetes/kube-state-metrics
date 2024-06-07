@@ -377,7 +377,7 @@
       local c = ksm.deployment.spec.template.spec.containers[0] {
         args: [
           '--resources=pods',
-          '--node=""',
+          '--enable-no-node-scrape',
         ],
         name: shardksmname,
       };
@@ -410,7 +410,7 @@
       local c = ksm.deployment.spec.template.spec.containers[0] {
         args: [
           '--resources=pods',
-          '--node=""',
+          '--enable-no-node-scrape',
         ],
       };
       local shardksmname = ksm.name + "-no-node-pods";

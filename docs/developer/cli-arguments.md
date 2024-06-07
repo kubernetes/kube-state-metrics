@@ -48,6 +48,7 @@ Flags:
       --custom-resource-state-config-file string   Path to a Custom Resource State Metrics config file (experimental)
       --custom-resource-state-only                 Only provide Custom Resource State metrics (experimental)
       --enable-gzip-encoding                       Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.
+      --enable-no-node-scrape                      This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of no scheduled pods is scraped. This is experimental.
   -h, --help                                       Print Help text
       --host string                                Host to expose metrics on. (default "::")
       --kubeconfig string                          Absolute path to the kubeconfig file

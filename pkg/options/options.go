@@ -59,6 +59,7 @@ type Options struct {
 	Namespaces               NamespaceList   `yaml:"namespaces"`
 	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
 	Node                     NodeType        `yaml:"node"`
+	EnableNoNodeScrape       bool            `yaml:"enable_no_node_scrape"`
 	Pod                      string          `yaml:"pod"`
 	Port                     int             `yaml:"port"`
 	Resources                ResourceSet     `yaml:"resources"`
@@ -90,7 +91,6 @@ func NewOptions() *Options {
 		MetricAllowlist:      MetricSet{},
 		MetricDenylist:       MetricSet{},
 		MetricOptInList:      MetricSet{},
-		Node:                 NodeType{},
 		AnnotationsAllowList: LabelsAllowList{},
 		LabelsAllowList:      LabelsAllowList{},
 	}
@@ -138,6 +138,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 
 	o.cmd.Flags().BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
 	o.cmd.Flags().BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
+	o.cmd.Flags().BoolVar(&o.EnableNoNodeScrape, "enable-no-node-scrape", false, "This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of no scheduled pods is scraped. This is experimental.")
 	o.cmd.Flags().BoolVarP(&o.Help, "help", "h", false, "Print Help text")
 	o.cmd.Flags().BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
 	o.cmd.Flags().Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
@@ -156,7 +157,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.cmd.Flags().StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().StringVar(&o.Config, "config", "", "Path to the kube-state-metrics options config file")
-	o.cmd.Flags().Var(&o.Node, "node", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
+	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
 	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
 	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the labels metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
 	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
@@ -186,7 +187,7 @@ func (o *Options) Usage() {
 // Validate validates arguments
 func (o *Options) Validate() error {
 	shardableResource := "pods"
-	if o.Node.String() == "" {
+	if o.Node == "" {
 		return nil
 	}
 	for _, x := range o.Resources.AsSlice() {

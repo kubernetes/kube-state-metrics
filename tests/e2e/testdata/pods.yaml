@@ -26,7 +26,7 @@ spec:
       - command:
         - /agnhost
         - netexec
-        - --http-port=8080q
+        - --http-port=8080
         image: registry.k8s.io/e2e-test-images/agnhost:2.39
         imagePullPolicy: IfNotPresent
         name: agnhost

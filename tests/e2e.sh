@@ -124,10 +124,7 @@ function test_daemonset() {
     sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/daemonset.yaml
     sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/deployment-no-node-pods.yaml
 
-    cat ./examples/daemonsetsharding/deployment-no-node-pods.yaml
-    sleep 3
     kubectl get deployment -n kube-system
-    ls ./examples/daemonsetsharding
     kubectl create -f ./examples/daemonsetsharding
     kube_state_metrics_up kube-state-metrics-no-node-pods
     kube_state_metrics_up kube-state-metrics
@@ -137,12 +134,6 @@ function test_daemonset() {
     kube_pod_up pendingpod2
 
     kubectl get deployment -n default
-    # curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-shard:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/daemonset-scraped-metrics
-    # curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-metrics
-    # curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-no-node-pods:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-no-node-metrics
-
-    # cat ${KUBE_STATE_METRICS_LOG_DIR}/daemonset-scraped-metrics ${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-metrics ${KUBE_STATE_METRICS_LOG_DIR}/deployment-scraped-no-node-metrics >> ${KUBE_STATE_METRICS_LOG_DIR}/all-metrics
-    # cat ${KUBE_STATE_METRICS_LOG_DIR}/all-metrics | grep "kube_pod_info"
     runningpod1="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-shard:http-metrics/proxy/metrics" | grep "runningpod1"  | grep -c "kube_pod_info" )"
     node1="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" | grep -c "# TYPE kube_node_info" )"
     expected_num_pod=1
@@ -157,11 +148,9 @@ function test_daemonset() {
     fi
 
     kubectl logs deployment/kube-state-metrics-no-node-pods -n kube-system
-    sleep 3
-    curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-no-node-pods:http-metrics/proxy/metrics"
-    sleep 3
+    sleep 2
     kubectl get pods -A --field-selector spec.nodeName=""
-    sleep 3
+    sleep 2
     pendingpod2="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-no-node-pods:http-metrics/proxy/metrics"  | grep "pendingpod2" | grep -c "kube_pod_info" )"
     if [ "${pendingpod2}" != "${expected_num_pod}" ]; then
         echo "metric kube_pod_info for pendingpod2 doesn't show up only once, got ${runningpod1} times"
@@ -244,6 +233,8 @@ echo "kube-state-metrics is up and running"
 echo "start e2e test for kube-state-metrics"
 KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
 KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
+
+kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics
 go test -v ./tests/e2e/main_test.go --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
 
 # TODO: re-implement the following test cases in Go with the goal of removing this file.

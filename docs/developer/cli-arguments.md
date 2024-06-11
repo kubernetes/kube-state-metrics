@@ -67,10 +67,10 @@ Flags:
       --pod-namespace string                       Name of the namespace of the pod specified by --pod. When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice.
       --port int                                   Port to expose metrics on. (default 8080)
       --resources string                           Comma-separated list of Resources to be enabled. Defaults to "certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments"
-      --server-idle-timeout duration               The maximum amount of time to wait for the next request when keep-alives are enabled. (default 5m0s)
+      --server-idle-timeout duration               The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients. (default 5m0s)
       --server-read-header-timeout duration        The maximum duration for reading the header of requests. (default 5s)
-      --server-read-timeout duration               The maximum duration for reading the entire request, including the body. (default 1m0s)
-      --server-write-timeout duration              The maximum duration before timing out writes of the response. (default 1m0s)
+      --server-read-timeout duration               The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients.  (default 1m0s)
+      --server-write-timeout duration              The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients.. (default 1m0s)
       --shard int32                                The instances shard nominal (zero indexed) within the total number of shards. (default 0)
       --skip_headers                               If true, avoid header prefixes in the log messages
       --skip_log_headers                           If true, avoid headers when opening log files (no effect when -logtostderr=true)

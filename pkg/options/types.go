@@ -110,6 +110,9 @@ type NodeType string
 // GetNodeFieldSelector returns a nodename field selector.
 func (n *NodeType) GetNodeFieldSelector(noNodeAssigned bool) string {
 	if noNodeAssigned {
+		if string(*n) != "" {
+			klog.Warningf("spec.nodeName=%s will not be used, because --enable-unscheduled-pods-fetching is set", string(*n))
+		}
 		klog.InfoS("Using spec.nodeName= to select unscheduable pods without node")
 		return "spec.nodeName="
 	}

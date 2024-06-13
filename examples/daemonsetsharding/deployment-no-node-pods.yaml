@@ -23,7 +23,7 @@ spec:
       containers:
       - args:
         - --resources=pods
-        - --fetch-unscheduled-pods
+        - --enable-unscheduled-pods-fetching
         image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
         livenessProbe:
           httpGet:

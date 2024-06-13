@@ -190,6 +190,11 @@ func TestNodeFieldSelector(t *testing.T) {
 			Node:   "",
 			Wanted: "spec.nodeName=",
 		},
+		{
+			Desc:   "have node name when --enable-unscheduled-pods-fetching is set",
+			Node:   "",
+			Wanted: "spec.nodeName=",
+		},
 	}
 	for _, test := range tests1 {
 		node := test.Node

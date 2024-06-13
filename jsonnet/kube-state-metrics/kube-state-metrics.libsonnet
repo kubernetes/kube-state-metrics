@@ -377,7 +377,7 @@
       local c = ksm.deployment.spec.template.spec.containers[0] {
         args: [
           '--resources=pods',
-          '--fetch-unscheduled-pods',
+          '--enable-unscheduled-pods-fetching',
         ],
         name: shardksmname,
       };
@@ -410,7 +410,7 @@
       local c = ksm.deployment.spec.template.spec.containers[0] {
         args: [
           '--resources=pods',
-          '--fetch-unscheduled-pods',
+          '--enable-unscheduled-pods-fetching',
         ],
       };
       local shardksmname = ksm.name + "-no-node-pods";

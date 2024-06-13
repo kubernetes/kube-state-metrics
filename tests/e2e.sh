@@ -187,9 +187,6 @@ set -e
 kubectl version
 
 # query kube-state-metrics image tag
-cat pkg/options/types.go
-sleep 3
-
 REGISTRY="registry.k8s.io/kube-state-metrics" make container
 docker images -a
 KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep "${KUBE_STATE_METRICS_IMAGE_NAME}" |grep -v 'latest'|awk '{print $2}'|sort -u)
@@ -234,7 +231,6 @@ echo "start e2e test for kube-state-metrics"
 KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
 KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
 
-kubectl --namespace=kube-system logs deployment/kube-state-metrics kube-state-metrics
 go test -v ./tests/e2e/main_test.go --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
 
 # TODO: re-implement the following test cases in Go with the goal of removing this file.

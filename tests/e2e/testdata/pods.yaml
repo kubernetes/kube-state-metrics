@@ -27,7 +27,7 @@ spec:
         - /agnhost
         - netexec
         - --http-port=8080
-        image: registry.k8s.io/e2e-test-images/agnhost:2.39
+        image: registry.k8s.io/e2e-test-images/agnhost@sha256:7e8bdd271312fd25fc5ff5a8f04727be84044eb3d7d8d03611972a6752e2e11e # 2.39
         imagePullPolicy: IfNotPresent
         name: agnhost
         terminationMessagePath: /dev/termination-log
@@ -64,7 +64,7 @@ spec:
         - /agnhost
         - netexec
         - --http-port=8080
-        image: registry.k8s.io/e2e-test-images/agnhost:2.39
+        image: registry.k8s.io/e2e-test-images/agnhost@sha256:7e8bdd271312fd25fc5ff5a8f04727be84044eb3d7d8d03611972a6752e2e11e # 2.39
         imagePullPolicy: IfNotPresent
         name: agnhost
         terminationMessagePath: /dev/termination-log

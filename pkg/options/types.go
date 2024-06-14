@@ -108,8 +108,8 @@ func (r *ResourceSet) Type() string {
 type NodeType string
 
 // GetNodeFieldSelector returns a nodename field selector.
-func (n *NodeType) GetNodeFieldSelector(noNodeAssigned bool) string {
-	if noNodeAssigned {
+func (n *NodeType) GetNodeFieldSelector(fetchUnscheduledPods bool) string {
+	if fetchUnscheduledPods {
 		if string(*n) != "" {
 			klog.Warningf("spec.nodeName=%s will not be used, because --enable-unscheduled-pods-fetching is set", string(*n))
 		}

@@ -1,3 +1,13 @@
+## v2.13.0 / 2024-06-18
+
+### Note
+
+* This release builds with Golang `v1.22.4`.
+* This release builds with `k8s.io/client-go`: `v0.30.1`.
+
+* [FEATURE] Add kube_persistentvolume_volume_mode metric by @ricardoapl in <https://github.com/kubernetes/kube-state-metrics/pull/2370>
+* [BUGFIX]  Pod autosharding: transition from labelselector to fieldselector by @pkoutsovasilis in <https://github.com/kubernetes/kube-state-metrics/pull/2347>
+
 ## v2.12.0 / 2024-04-02
 
 ### Note

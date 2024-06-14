@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   release:
     types: [published]
+
+permissions:
+  contents: read
+
 jobs:
   vexctl:
     runs-on: ubuntu-latest

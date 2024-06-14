@@ -1,3 +1,18 @@
+## v2.13.0 / 2024-07-18
+
+### Note
+
+* This release builds with Golang `v1.22.5`.
+* This release builds with `k8s.io/client-go`: `v0.30.3`.
+* This release adds read and write timeouts for requests. The defaults might have an impact on scrapes that take a long time.
+
+* [BUGFIX]  Pod autosharding: transition from labelselector to fieldselector by @pkoutsovasilis in <https://github.com/kubernetes/kube-state-metrics/pull/2347>
+* [ENHANCEMENT] Add automatic detection of memory limits by @SuperQ in <https://github.com/kubernetes/kube-state-metrics/pull/2447>
+* [FEATURE] Add `readyz` endpoint by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2442>
+* [FEATURE] Add `livez` endpoint by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2418>
+* [FEATURE] Add kube_persistentvolume_volume_mode metric by @ricardoapl in <https://github.com/kubernetes/kube-state-metrics/pull/2370>
+* [FEATURE] Add read and write timeouts by @Pokom in <https://github.com/kubernetes/kube-state-metrics/pull/2412>
+
 ## v2.12.0 / 2024-04-02
 
 ### Note

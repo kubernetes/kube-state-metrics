@@ -60,19 +60,19 @@ type Options struct {
 	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
 	Node                     NodeType        `yaml:"node"`
 	EnableUnscheduledPodsFetching bool            `yaml:"enable_unscheduled_pods_fetching"`
-	Pod                      string          `yaml:"pod"`
-	Port                     int             `yaml:"port"`
-	Resources                ResourceSet     `yaml:"resources"`
-	Shard                    int32           `yaml:"shard"`
-	TLSConfig                string          `yaml:"tls_config"`
-	TelemetryHost            string          `yaml:"telemetry_host"`
-	TelemetryPort            int             `yaml:"telemetry_port"`
-	TotalShards              int             `yaml:"total_shards"`
-	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
-	ServerReadTimeout        time.Duration   `yaml:"server_read_timeout"`
-	ServerWriteTimeout       time.Duration   `yaml:"server_write_timeout"`
-	ServerIdleTimeout        time.Duration   `yaml:"server_idle_timeout"`
-	ServerReadHeaderTimeout  time.Duration   `yaml:"server_read_header_timeout"`
+	Pod                           string          `yaml:"pod"`
+	Port                          int             `yaml:"port"`
+	Resources                     ResourceSet     `yaml:"resources"`
+	Shard                         int32           `yaml:"shard"`
+	TLSConfig                     string          `yaml:"tls_config"`
+	TelemetryHost                 string          `yaml:"telemetry_host"`
+	TelemetryPort                 int             `yaml:"telemetry_port"`
+	TotalShards                   int             `yaml:"total_shards"`
+	UseAPIServerCache             bool            `yaml:"use_api_server_cache"`
+	ServerReadTimeout             time.Duration   `yaml:"server_read_timeout"`
+	ServerWriteTimeout            time.Duration   `yaml:"server_write_timeout"`
+	ServerIdleTimeout             time.Duration   `yaml:"server_idle_timeout"`
+	ServerReadHeaderTimeout       time.Duration   `yaml:"server_read_header_timeout"`
 
 	Config string
 
@@ -138,7 +138,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 
 	o.cmd.Flags().BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
 	o.cmd.Flags().BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
-	o.cmd.Flags().BoolVar(&o.EnableUnscheduledPodsFetching, "enable-unscheduled-pods-fetching", false, "This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of no scheduled pods is scraped. This is experimental.")
+	o.cmd.Flags().BoolVar(&o.EnableUnscheduledPodsFetching, "enable-unscheduled-pods-fetching", false, "This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of unscheduled pods is fetched from the Kubernetes API Server. This is experimental.")
 	o.cmd.Flags().BoolVarP(&o.Help, "help", "h", false, "Print Help text")
 	o.cmd.Flags().BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
 	o.cmd.Flags().Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")

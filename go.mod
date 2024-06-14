@@ -2,7 +2,7 @@ module k8s.io/kube-state-metrics/v2
 
 go 1.22.0
 
-toolchain go1.22.2
+toolchain go1.22.5
 
 require (
 	github.com/KimMachineGun/automemlimit v0.6.1
@@ -20,13 +20,13 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.30.2
-	k8s.io/apimachinery v0.30.2
-	k8s.io/client-go v0.30.2
-	k8s.io/component-base v0.30.2
+	k8s.io/api v0.30.3
+	k8s.io/apimachinery v0.30.3
+	k8s.io/client-go v0.30.3
+	k8s.io/component-base v0.30.3
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/sample-controller v0.30.2
-	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
+	k8s.io/sample-controller v0.30.3
+	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 )
 
 require (

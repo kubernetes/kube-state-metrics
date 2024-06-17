@@ -21,10 +21,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+)
+
+var (
+	// Align with the default scrape interval from Prometheus: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
+	defaultServerReadTimeout  = 60 * time.Second
+	defaultServerWriteTimeout = 60 * time.Second
+	// ServerIdleTimeout is set to 5 minutes to match the default idle timeout of Prometheus scrape clients
+	// https://github.com/prometheus/common/blob/318309999517402ad522877ac7e55fa650a11114/config/http_config.go#L55
+	defaultServerIdleTimeout       = 5 * time.Minute
+	defaultServerReadHeaderTimeout = 5 * time.Second
 )
 
 // Options are the configurable parameters for kube-state-metrics.
@@ -55,6 +66,10 @@ type Options struct {
 	TelemetryPort            int             `yaml:"telemetry_port"`
 	TotalShards              int             `yaml:"total_shards"`
 	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
+	ServerReadTimeout        time.Duration   `yaml:"server_read_timeout"`
+	ServerWriteTimeout       time.Duration   `yaml:"server_write_timeout"`
+	ServerIdleTimeout        time.Duration   `yaml:"server_idle_timeout"`
+	ServerReadHeaderTimeout  time.Duration   `yaml:"server_read_header_timeout"`
 
 	Config string
 
@@ -146,6 +161,11 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
 	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
+
+	o.cmd.Flags().DurationVar(&o.ServerReadTimeout, "server-read-timeout", defaultServerReadTimeout, "The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients. ")
+	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")
+	o.cmd.Flags().DurationVar(&o.ServerIdleTimeout, "server-idle-timeout", defaultServerIdleTimeout, "The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients.")
+	o.cmd.Flags().DurationVar(&o.ServerReadHeaderTimeout, "server-read-header-timeout", defaultServerReadHeaderTimeout, "The maximum duration for reading the header of requests.")
 }
 
 // Parse parses the flag definitions from the argument list.

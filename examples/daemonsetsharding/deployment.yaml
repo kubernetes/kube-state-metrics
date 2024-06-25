@@ -38,7 +38,7 @@ spec:
           name: telemetry
         readinessProbe:
           httpGet:
-            path: /
+            path: /metrics
             port: 8081
           initialDelaySeconds: 5
           timeoutSeconds: 5

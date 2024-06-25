@@ -197,7 +197,7 @@
       } },
       readinessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 8081,
-        path: '/',
+        path: '/metrics',
       } },
     };
 

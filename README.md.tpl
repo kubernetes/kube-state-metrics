@@ -343,6 +343,14 @@ Note that your GCP identity is case sensitive but `gcloud info` as of Google Clo
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
 
+#### Healthcheck Endpoints
+
+The following healthcheck endpoints are available, some of which are used to determine the result of the aforementioned probes:
+
+* `/livez`: Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend to use this as a liveness probe.
+* `/metrics`: Returns a 200 status code if the application is able to serve metrics. While this is available for both ports, we recommend to use the telemetry metrics endpoint as a readiness probe.
+* `/healthz`: Returns a 200 status code if the application is running. We recommend to use this as a startup probe.
+
 #### Limited privileges environment
 
 If you want to run kube-state-metrics in an environment where you don't have cluster-reader role, you can:

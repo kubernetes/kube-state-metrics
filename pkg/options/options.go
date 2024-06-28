@@ -40,37 +40,37 @@ var (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	AnnotationsAllowList          LabelsAllowList `yaml:"annotations_allow_list"`
-	Apiserver                     string          `yaml:"apiserver"`
-	CustomResourceConfig          string          `yaml:"custom_resource_config"`
-	CustomResourceConfigFile      string          `yaml:"custom_resource_config_file"`
-	CustomResourcesOnly           bool            `yaml:"custom_resources_only"`
-	EnableGZIPEncoding            bool            `yaml:"enable_gzip_encoding"`
-	Help                          bool            `yaml:"help"`
-	Host                          string          `yaml:"host"`
-	Kubeconfig                    string          `yaml:"kubeconfig"`
-	LabelsAllowList               LabelsAllowList `yaml:"labels_allow_list"`
-	MetricAllowlist               MetricSet       `yaml:"metric_allowlist"`
-	MetricDenylist                MetricSet       `yaml:"metric_denylist"`
-	MetricOptInList               MetricSet       `yaml:"metric_opt_in_list"`
-	Namespace                     string          `yaml:"namespace"`
-	Namespaces                    NamespaceList   `yaml:"namespaces"`
-	NamespacesDenylist            NamespaceList   `yaml:"namespaces_denylist"`
-	Node                          NodeType        `yaml:"node"`
-	EnableUnscheduledPodsFetching bool            `yaml:"enable_unscheduled_pods_fetching"`
-	Pod                           string          `yaml:"pod"`
-	Port                          int             `yaml:"port"`
-	Resources                     ResourceSet     `yaml:"resources"`
-	Shard                         int32           `yaml:"shard"`
-	TLSConfig                     string          `yaml:"tls_config"`
-	TelemetryHost                 string          `yaml:"telemetry_host"`
-	TelemetryPort                 int             `yaml:"telemetry_port"`
-	TotalShards                   int             `yaml:"total_shards"`
-	UseAPIServerCache             bool            `yaml:"use_api_server_cache"`
-	ServerReadTimeout             time.Duration   `yaml:"server_read_timeout"`
-	ServerWriteTimeout            time.Duration   `yaml:"server_write_timeout"`
-	ServerIdleTimeout             time.Duration   `yaml:"server_idle_timeout"`
-	ServerReadHeaderTimeout       time.Duration   `yaml:"server_read_header_timeout"`
+	AnnotationsAllowList     LabelsAllowList `yaml:"annotations_allow_list"`
+	Apiserver                string          `yaml:"apiserver"`
+	CustomResourceConfig     string          `yaml:"custom_resource_config"`
+	CustomResourceConfigFile string          `yaml:"custom_resource_config_file"`
+	CustomResourcesOnly      bool            `yaml:"custom_resources_only"`
+	EnableGZIPEncoding       bool            `yaml:"enable_gzip_encoding"`
+	Help                     bool            `yaml:"help"`
+	Host                     string          `yaml:"host"`
+	Kubeconfig               string          `yaml:"kubeconfig"`
+	LabelsAllowList          LabelsAllowList `yaml:"labels_allow_list"`
+	MetricAllowlist          MetricSet       `yaml:"metric_allowlist"`
+	MetricDenylist           MetricSet       `yaml:"metric_denylist"`
+	MetricOptInList          MetricSet       `yaml:"metric_opt_in_list"`
+	Namespace                string          `yaml:"namespace"`
+	Namespaces               NamespaceList   `yaml:"namespaces"`
+	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
+	Node                     NodeType        `yaml:"node"`
+	TrackUnscheduledPods     bool            `yaml:"track_unscheduled_pods"`
+	Pod                      string          `yaml:"pod"`
+	Port                     int             `yaml:"port"`
+	Resources                ResourceSet     `yaml:"resources"`
+	Shard                    int32           `yaml:"shard"`
+	TLSConfig                string          `yaml:"tls_config"`
+	TelemetryHost            string          `yaml:"telemetry_host"`
+	TelemetryPort            int             `yaml:"telemetry_port"`
+	TotalShards              int             `yaml:"total_shards"`
+	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
+	ServerReadTimeout        time.Duration   `yaml:"server_read_timeout"`
+	ServerWriteTimeout       time.Duration   `yaml:"server_write_timeout"`
+	ServerIdleTimeout        time.Duration   `yaml:"server_idle_timeout"`
+	ServerReadHeaderTimeout  time.Duration   `yaml:"server_read_header_timeout"`
 
 	Config string
 
@@ -136,7 +136,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 
 	o.cmd.Flags().BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
 	o.cmd.Flags().BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
-	o.cmd.Flags().BoolVar(&o.EnableUnscheduledPodsFetching, "enable-unscheduled-pods-fetching", false, "This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of unscheduled pods is fetched from the Kubernetes API Server. This is experimental.")
+	o.cmd.Flags().BoolVar(&o.TrackUnscheduledPods, "track-unscheduled-pods", false, "This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of unscheduled pods is fetched from the Kubernetes API Server. This is experimental.")
 	o.cmd.Flags().BoolVarP(&o.Help, "help", "h", false, "Print Help text")
 	o.cmd.Flags().BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
 	o.cmd.Flags().Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")

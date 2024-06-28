@@ -120,8 +120,8 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	g := gvk.Group
 	v := gvk.Version
 	k := gvk.Kind
-	if g == "" || g == "*" {
-		return nil, fmt.Errorf("group is required in the defined GVK %v", gvk)
+	if g == "*" {
+		return nil, fmt.Errorf("non-wildcard group is required in the defined GVK %v", gvk)
 	}
 	hasVersion := v != "" && v != "*"
 	hasKind := k != "" && k != "*"
@@ -216,7 +216,11 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		// Update the list of enabled custom resources.
 		var enabledCustomResources []string
 		for _, factory := range customFactories {
-			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			gvr, err := util.GVRFromType(factory.Name(), factory.ExpectedType())
+			if err != nil {
+				klog.ErrorS(err, "invalid type")
+			}
+			gvrString := gvr.String()
 			enabledCustomResources = append(enabledCustomResources, gvrString)
 		}
 		// Create clients for discovered factories.

@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -95,7 +96,11 @@ func CreateCustomResourceClients(apiserver string, kubeconfig string, factories 
 		if err != nil {
 			return nil, err
 		}
-		gvrString := GVRFromType(f.Name(), f.ExpectedType()).String()
+		gvr, err := GVRFromType(f.Name(), f.ExpectedType())
+		if err != nil {
+			klog.ErrorS(err, "invalid type")
+		}
+		gvrString := gvr.String()
 		customResourceClients[gvrString] = customResourceClient
 	}
 	return customResourceClients, nil
@@ -135,22 +140,32 @@ func CreateDynamicClient(apiserver string, kubeconfig string) (*dynamic.DynamicC
 }
 
 // GVRFromType returns the GroupVersionResource for a given type.
-func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVersionResource {
+func GVRFromType(resourceName string, expectedType interface{}) (*schema.GroupVersionResource, error) {
 	if _, ok := expectedType.(*testUnstructuredMock.Foo); ok {
 		// testUnstructuredMock.Foo is a mock type for testing
-		return nil
+		return nil, nil
 	}
 	apiVersion := expectedType.(*unstructured.Unstructured).Object["apiVersion"].(string)
 	expectedTypeSlice := strings.Split(apiVersion, "/")
-	g := expectedTypeSlice[0]
-	v := expectedTypeSlice[1]
-	if v == "" /* "" group (core) objects */ {
-		v = expectedTypeSlice[0]
+	var g string
+	var v string
+	switch len(expectedTypeSlice) {
+	case 1: // apiVersion = /v1
+		g = ""
+		v = apiVersion
+	case 2: // apiVersion = apps/v1
+		g = expectedTypeSlice[0]
+		v = expectedTypeSlice[1]
+		if v == "" /* "" group (core) objects */ {
+			v = expectedTypeSlice[0]
+		}
+	default:
+		return nil, errors.New("Expected resourceName to have exactly one slash")
 	}
 	r := resourceName
 	return &schema.GroupVersionResource{
 		Group:    g,
 		Version:  v,
 		Resource: r,
-	}
+	}, nil
 }

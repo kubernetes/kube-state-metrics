@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kubernetes/kube-state-metrics.svg)](https://pkg.go.dev/github.com/kubernetes/kube-state-metrics)
 [![govulncheck](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8696/badge)](https://www.bestpractices.dev/projects/8696)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics (KSM) is a simple service that listens to the Kubernetes API
@@ -59,6 +60,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Helm Chart](#helm-chart)
   * [Development](#development)
   * [Developer Contributions](#developer-contributions)
+  * [Community](#community)
 
 ### Versioning
 
@@ -420,3 +422,15 @@ To run the e2e tests locally see the documentation in [tests/README.md](./tests/
 #### Developer Contributions
 
 When developing, there are certain code patterns to follow to better your contributing experience and likelihood of e2e and other ci tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).
+
+#### Community
+
+This project is sponsored by [SIG Instrumentation](https://github.com/kubernetes/community/tree/master/sig-instrumentation).
+
+There is also a channel for [#kube-state-metrics](https://kubernetes.slack.com/archives/CJJ529RUY) on Kubernetes' Slack.
+
+You can also join the SIG Instrumentation [mailing list](https://groups.google.com/forum/#!forum/kubernetes-sig-instrumentation).
+This will typically add invites for the following meetings to your calendar, in which topics around kube-state-metrics can be discussed.
+
+* Regular SIG Meeting: [Thursdays at 9:30 PT (Pacific Time)](https://zoom.us/j/5342565819?pwd=RlVsK21NVnR1dmE3SWZQSXhveHZPdz09) (biweekly). [Convert to your timezone](http://www.thetimezoneconverter.com/?t=9:30&tz=PT%20%28Pacific%20Time%29).
+* Regular Triage Meeting: [Thursdays at 9:30 PT (Pacific Time)](https://zoom.us/j/5342565819?pwd=RlVsK21NVnR1dmE3SWZQSXhveHZPdz09) (biweekly - alternating with regular meeting). [Convert to your timezone](http://www.thetimezoneconverter.com/?t=9:30&tz=PT%20%28Pacific%20Time%29).

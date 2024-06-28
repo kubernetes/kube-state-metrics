@@ -111,7 +111,7 @@ type NodeType string
 func (n *NodeType) GetNodeFieldSelector(fetchUnscheduledPods bool) string {
 	if fetchUnscheduledPods {
 		if string(*n) != "" {
-			klog.Warningf("spec.nodeName=%s will not be used, because --enable-unscheduled-pods-fetching is set", string(*n))
+			klog.Warningf("spec.nodeName=%s will not be used, because --track-unscheduled-pods is set", string(*n))
 		}
 		klog.InfoS("Using spec.nodeName= to select unscheduable pods without node")
 		return "spec.nodeName="

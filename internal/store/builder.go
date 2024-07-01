@@ -119,7 +119,22 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	sort.Strings(sortedResources)
 
 	b.enabledResources = append(b.enabledResources, sortedResources...)
+	// It's an mitigation for #2223. unique should be removed after #2223 is fixed.
+	b.enabledResources = unique(b.enabledResources)
+	sort.Strings(b.enabledResources)
 	return nil
+}
+
+func unique(arr []string) []string {
+	mp := make(map[string]bool)
+	for _, s := range arr {
+		mp[s] = true
+	}
+	result := []string{}
+	for key, _ := range mp {
+		result = append(result, key)
+	}
+	return result
 }
 
 // WithFieldSelectorFilter sets the fieldSelector property of a Builder.

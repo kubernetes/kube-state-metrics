@@ -20,11 +20,14 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/fields"
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -520,12 +523,27 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 	}
 }
 
-func createNodeListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createNodeListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+	// if node name given, it then lists and watches specified node by its name instead of all nodes.
+	if fieldSelector != "" {
+		selector, _ := fields.ParseSelector(fieldSelector)
+		nodeName, ok := selector.RequiresExactMatch(options.NodeNameFilter)
+		if ok {
+			fieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
+			klog.InfoS("Transform fieldSelector for node store", "fieldSelector", fieldSelector)
+		} else {
+			// it removes the field selector if it does not contain node name.
+			// for example, the namespace selector is not necessary for nodes resource.
+			fieldSelector = ""
+		}
+	}
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Nodes().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().Nodes().Watch(context.TODO(), opts)
 		},
 	}

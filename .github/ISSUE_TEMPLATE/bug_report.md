@@ -27,6 +27,8 @@ go run main.go --custom-resource-state-only --custom-resource-state-config-file 
 
 **Anything else we need to know?**:
 
+For example, the bug starts after version=1.x.0
+
 **Environment**:
 
 * kube-state-metrics version:

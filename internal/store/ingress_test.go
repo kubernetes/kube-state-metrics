@@ -40,12 +40,14 @@ func TestIngressStore(t *testing.T) {
 		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
 		# HELP kube_ingress_path [STABLE] Ingress host, paths and backend service information.
 		# HELP kube_ingress_tls [STABLE] Ingress TLS host and secret information.
+		# HELP kube_ingress_status [STABLE] Ingress status.
 		# TYPE kube_ingress_created gauge
 		# TYPE kube_ingress_info gauge
 		# TYPE kube_ingress_labels gauge
 		# TYPE kube_ingress_metadata_resource_version gauge
 		# TYPE kube_ingress_path gauge
 		# TYPE kube_ingress_tls gauge
+		# TYPE kube_ingress_status gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -97,7 +99,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_created{namespace="ns2",ingress="ingress2"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns2",ingress="ingress2"} 123456
 				`,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -113,7 +115,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_info{namespace="ns3",ingress="ingress3",ingressclass="_default"} 1
 				kube_ingress_created{namespace="ns3",ingress="ingress3"} 1.501569018e+09
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -167,7 +169,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",service_name="someservice",service_port="1234"} 1
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath2",resource_api_group="",resource_kind="somekind",resource_name="somename"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -193,7 +195,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost1",secret="somesecret"} 1
 				kube_ingress_tls{namespace="ns5",ingress="ingress5",tls_host="somehost2",secret="somesecret"} 1
 `,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -212,7 +214,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_created{namespace="ns6",ingress="ingress6"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns6",ingress="ingress6"} 123456
 				`,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
 		},
 		{
 			Obj: &networkingv1.Ingress{
@@ -231,7 +233,42 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_created{namespace="ns7",ingress="ingress7"} 1.501569018e+09
 				kube_ingress_metadata_resource_version{namespace="ns7",ingress="ingress7"} 123456
 				`,
-			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
+		},
+		{
+			Obj: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress8",
+					Namespace:         "ns8",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "123456",
+				},
+				Status: networkingv1.IngressStatus{
+					LoadBalancer: networkingv1.IngressLoadBalancerStatus{
+						Ingress: []networkingv1.IngressLoadBalancerIngress{
+							{
+
+								IP:       "1.2.3.4",
+								Hostname: "www.example.com",
+								Ports: []networkingv1.IngressPortStatus{
+									{
+										Port:     8888,
+										Protocol: "TCP",
+										Error:    nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_ingress_created{namespace="ns8",ingress="ingress8"} 1.501569018e+09
+				kube_ingress_info{namespace="ns8",ingress="ingress8",ingressclass="_default"} 1
+				kube_ingress_metadata_resource_version{namespace="ns8",ingress="ingress8"} 123456
+				kube_ingress_status{namespace="ns8",ingress="ingress8",ip="1.2.3.4",hostname="www.example.com",port="8888",protocol="TCP"} 1
+				`,
+			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
 		},
 	}
 	for i, c := range cases {

@@ -164,6 +164,28 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "fixed version and kind, empty group",
+			gvkmaps: &CRDiscoverer{
+				Map: map[string]map[string][]kindPlural{
+					"": {
+						"v1": {
+							kindPlural{
+								Kind:   "Node",
+								Plural: "nodes",
+							},
+						},
+					},
+				},
+			},
+			gvk: schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Node"},
+			want: []groupVersionKindPlural{
+				{
+					GroupVersionKind: schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Node"},
+					Plural:           "nodes",
+				},
+			},
+		},
 	}
 	for _, tc := range testcases {
 		got, err := tc.gvkmaps.ResolveGVKToGVKPs(tc.gvk)

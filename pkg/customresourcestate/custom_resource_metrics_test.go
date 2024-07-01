@@ -162,6 +162,69 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 			},
 		},
 		{
+			// https://github.com/kubernetes/kube-state-metrics/issues/2434
+			name: "cr metric with dynamic metric type, empty group",
+			r: Resource{
+				GroupVersionKind: GroupVersionKind{
+					Group:   "",
+					Version: "v1",
+					Kind:    "Node",
+				},
+				Labels: Labels{
+					LabelsFromPath: map[string][]string{
+						"name": {"metadata", "name"},
+					},
+					CommonLabels: map[string]string{
+						"hello": "world",
+					},
+				},
+				Metrics: []Generator{
+					{
+						Name: "test_metrics",
+						Help: "metrics for testing",
+						Each: Metric{
+							Type: metric.Info,
+							Info: &MetricInfo{
+								MetricMeta: MetricMeta{
+									Path: []string{
+										"metadata",
+										"annotations",
+									},
+								},
+								LabelFromKey: "test",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			wantResult: &customResourceMetrics{
+				MetricNamePrefix: "kube_customresource",
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "",
+					Version: "v1",
+					Kind:    "Node",
+				},
+				ResourceName: "nodes",
+				Families: []compiledFamily{
+					{
+						Name: "kube_customresource_test_metrics",
+						Help: "metrics for testing",
+						Each: &compiledInfo{},
+						Labels: map[string]string{
+							"customresource_group":   "",
+							"customresource_kind":    "Node",
+							"customresource_version": "v1",
+							"hello":                  "world",
+						},
+						LabelFromPath: map[string]valuePath{
+							"name": mustCompilePath(t, "metadata", "name"),
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "cr metric with custom prefix - expect error",
 			r: Resource{
 				GroupVersionKind: GroupVersionKind{

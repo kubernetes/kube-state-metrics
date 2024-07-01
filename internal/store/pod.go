@@ -42,64 +42,64 @@ var (
 
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		createPodCompletionTimeFamilyGenerator(),
-		createPodContainerInfoFamilyGenerator(),
-		createPodContainerResourceLimitsFamilyGenerator(),
-		createPodContainerResourceRequestsFamilyGenerator(),
-		createPodContainerStateStartedFamilyGenerator(),
-		createPodContainerStatusLastTerminatedReasonFamilyGenerator(),
-		createPodContainerStatusLastTerminatedExitCodeFamilyGenerator(),
-		createPodContainerStatusLastTerminatedTimestampFamilyGenerator(),
-		createPodContainerStatusReadyFamilyGenerator(),
-		createPodContainerStatusRestartsTotalFamilyGenerator(),
-		createPodContainerStatusRunningFamilyGenerator(),
-		createPodContainerStatusTerminatedFamilyGenerator(),
-		createPodContainerStatusTerminatedReasonFamilyGenerator(),
-		createPodContainerStatusWaitingFamilyGenerator(),
-		createPodContainerStatusWaitingReasonFamilyGenerator(),
-		createPodCreatedFamilyGenerator(),
-		createPodDeletionTimestampFamilyGenerator(),
-		createPodInfoFamilyGenerator(),
-		createPodIPFamilyGenerator(),
-		createPodInitContainerInfoFamilyGenerator(),
-		createPodInitContainerResourceLimitsFamilyGenerator(),
-		createPodInitContainerResourceRequestsFamilyGenerator(),
-		createPodInitContainerStatusLastTerminatedReasonFamilyGenerator(),
-		createPodInitContainerStatusReadyFamilyGenerator(),
-		createPodInitContainerStatusRestartsTotalFamilyGenerator(),
-		createPodInitContainerStatusRunningFamilyGenerator(),
-		createPodInitContainerStatusTerminatedFamilyGenerator(),
-		createPodInitContainerStatusTerminatedReasonFamilyGenerator(),
-		createPodInitContainerStatusWaitingFamilyGenerator(),
-		createPodInitContainerStatusWaitingReasonFamilyGenerator(),
+		createPodCompletionTimeFamilyGenerator(allowLabelsList),
+		createPodContainerInfoFamilyGenerator(allowLabelsList),
+		createPodContainerResourceLimitsFamilyGenerator(allowLabelsList),
+		createPodContainerResourceRequestsFamilyGenerator(allowLabelsList),
+		createPodContainerStateStartedFamilyGenerator(allowLabelsList),
+		createPodContainerStatusLastTerminatedReasonFamilyGenerator(allowLabelsList),
+		createPodContainerStatusLastTerminatedExitCodeFamilyGenerator(allowLabelsList),
+		createPodContainerStatusLastTerminatedTimestampFamilyGenerator(allowLabelsList),
+		createPodContainerStatusReadyFamilyGenerator(allowLabelsList),
+		createPodContainerStatusRestartsTotalFamilyGenerator(allowLabelsList),
+		createPodContainerStatusRunningFamilyGenerator(allowLabelsList),
+		createPodContainerStatusTerminatedFamilyGenerator(allowLabelsList),
+		createPodContainerStatusTerminatedReasonFamilyGenerator(allowLabelsList),
+		createPodContainerStatusWaitingFamilyGenerator(allowLabelsList),
+		createPodContainerStatusWaitingReasonFamilyGenerator(allowLabelsList),
+		createPodCreatedFamilyGenerator(allowLabelsList),
+		createPodDeletionTimestampFamilyGenerator(allowLabelsList),
+		createPodInfoFamilyGenerator(allowLabelsList),
+		createPodIPFamilyGenerator(allowLabelsList),
+		createPodInitContainerInfoFamilyGenerator(allowLabelsList),
+		createPodInitContainerResourceLimitsFamilyGenerator(allowLabelsList),
+		createPodInitContainerResourceRequestsFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusLastTerminatedReasonFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusReadyFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusRestartsTotalFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusRunningFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusTerminatedFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusTerminatedReasonFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusWaitingFamilyGenerator(allowLabelsList),
+		createPodInitContainerStatusWaitingReasonFamilyGenerator(allowLabelsList),
 		createPodAnnotationsGenerator(allowAnnotationsList),
 		createPodLabelsGenerator(allowLabelsList),
-		createPodOverheadCPUCoresFamilyGenerator(),
-		createPodOverheadMemoryBytesFamilyGenerator(),
-		createPodOwnerFamilyGenerator(),
-		createPodRestartPolicyFamilyGenerator(),
-		createPodRuntimeClassNameInfoFamilyGenerator(),
-		createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator(),
-		createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator(),
-		createPodStartTimeFamilyGenerator(),
-		createPodStatusPhaseFamilyGenerator(),
-		createPodStatusQosClassFamilyGenerator(),
-		createPodStatusReadyFamilyGenerator(),
-		createPodStatusReadyTimeFamilyGenerator(),
-		createPodStatusInitializedTimeFamilyGenerator(),
-		createPodStatusContainerReadyTimeFamilyGenerator(),
-		createPodStatusReasonFamilyGenerator(),
-		createPodStatusScheduledFamilyGenerator(),
-		createPodStatusScheduledTimeFamilyGenerator(),
-		createPodStatusUnschedulableFamilyGenerator(),
-		createPodTolerationsFamilyGenerator(),
-		createPodNodeSelectorsFamilyGenerator(),
-		createPodServiceAccountFamilyGenerator(),
-		createPodSchedulerNameFamilyGenerator(),
+		createPodOverheadCPUCoresFamilyGenerator(allowLabelsList),
+		createPodOverheadMemoryBytesFamilyGenerator(allowLabelsList),
+		createPodOwnerFamilyGenerator(allowLabelsList),
+		createPodRestartPolicyFamilyGenerator(allowLabelsList),
+		createPodRuntimeClassNameInfoFamilyGenerator(allowLabelsList),
+		createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator(allowLabelsList),
+		createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator(allowLabelsList),
+		createPodStartTimeFamilyGenerator(allowLabelsList),
+		createPodStatusPhaseFamilyGenerator(allowLabelsList),
+		createPodStatusQosClassFamilyGenerator(allowLabelsList),
+		createPodStatusReadyFamilyGenerator(allowLabelsList),
+		createPodStatusReadyTimeFamilyGenerator(allowLabelsList),
+		createPodStatusInitializedTimeFamilyGenerator(allowLabelsList),
+		createPodStatusContainerReadyTimeFamilyGenerator(allowLabelsList),
+		createPodStatusReasonFamilyGenerator(allowLabelsList),
+		createPodStatusScheduledFamilyGenerator(allowLabelsList),
+		createPodStatusScheduledTimeFamilyGenerator(allowLabelsList),
+		createPodStatusUnschedulableFamilyGenerator(allowLabelsList),
+		createPodTolerationsFamilyGenerator(allowLabelsList),
+		createPodNodeSelectorsFamilyGenerator(allowLabelsList),
+		createPodServiceAccountFamilyGenerator(allowLabelsList),
+		createPodSchedulerNameFamilyGenerator(allowLabelsList),
 	}
 }
 
-func createPodCompletionTimeFamilyGenerator() generator.FamilyGenerator {
+func createPodCompletionTimeFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_completion_time",
 		"Completion time in unix timestamp for a pod.",
@@ -130,11 +130,11 @@ func createPodCompletionTimeFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerInfoFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerInfoFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_info",
 		"Information about a container in a pod.",
@@ -160,11 +160,11 @@ func createPodContainerInfoFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerResourceLimitsFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_resource_limits",
 		"The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.",
@@ -224,11 +224,11 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerResourceRequestsFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_resource_requests",
 		"The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.",
@@ -287,11 +287,11 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStateStartedFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStateStartedFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_state_started",
 		"Start time in unix timestamp for a pod container.",
@@ -320,11 +320,11 @@ func createPodContainerStateStartedFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusLastTerminatedReasonFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusLastTerminatedReasonFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_last_terminated_reason",
 		"Describes the last reason the container was in terminated state.",
@@ -346,11 +346,11 @@ func createPodContainerStatusLastTerminatedReasonFamilyGenerator() generator.Fam
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusLastTerminatedExitCodeFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusLastTerminatedExitCodeFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_last_terminated_exitcode",
 		"Describes the exit code for the last container in terminated state.",
@@ -372,11 +372,11 @@ func createPodContainerStatusLastTerminatedExitCodeFamilyGenerator() generator.F
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusLastTerminatedTimestampFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusLastTerminatedTimestampFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_last_terminated_timestamp",
 		"Last terminated time for a pod container in unix timestamp.",
@@ -398,11 +398,11 @@ func createPodContainerStatusLastTerminatedTimestampFamilyGenerator() generator.
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusReadyFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusReadyFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_ready",
 		"Describes whether the containers readiness check succeeded.",
@@ -422,11 +422,11 @@ func createPodContainerStatusReadyFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusRestartsTotalFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusRestartsTotalFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_restarts_total",
 		"The number of container restarts per container.",
@@ -446,11 +446,11 @@ func createPodContainerStatusRestartsTotalFamilyGenerator() generator.FamilyGene
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusRunningFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusRunningFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_running",
 		"Describes whether the container is currently in running state.",
@@ -471,11 +471,11 @@ func createPodContainerStatusRunningFamilyGenerator() generator.FamilyGenerator 
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusTerminatedFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusTerminatedFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_terminated",
 		"Describes whether the container is currently in terminated state.",
@@ -496,11 +496,11 @@ func createPodContainerStatusTerminatedFamilyGenerator() generator.FamilyGenerat
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusTerminatedReasonFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusTerminatedReasonFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_terminated_reason",
 		"Describes the reason the container is currently in terminated state.",
@@ -522,11 +522,11 @@ func createPodContainerStatusTerminatedReasonFamilyGenerator() generator.FamilyG
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusWaitingFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusWaitingFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_waiting",
 		"Describes whether the container is currently in waiting state.",
@@ -547,11 +547,11 @@ func createPodContainerStatusWaitingFamilyGenerator() generator.FamilyGenerator 
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodContainerStatusWaitingReasonFamilyGenerator() generator.FamilyGenerator {
+func createPodContainerStatusWaitingReasonFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_container_status_waiting_reason",
 		"Describes the reason the container is currently in waiting state.",
@@ -573,11 +573,11 @@ func createPodContainerStatusWaitingReasonFamilyGenerator() generator.FamilyGene
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodCreatedFamilyGenerator() generator.FamilyGenerator {
+func createPodCreatedFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_created",
 		"Unix creation timestamp",
@@ -598,11 +598,11 @@ func createPodCreatedFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
+func createPodDeletionTimestampFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_deletion_timestamp",
 		"Unix deletion timestamp",
@@ -623,11 +623,11 @@ func createPodDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInfoFamilyGenerator() generator.FamilyGenerator {
+func createPodInfoFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_info",
 		"Information about pod.",
@@ -656,11 +656,11 @@ func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodIPFamilyGenerator() generator.FamilyGenerator {
+func createPodIPFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_ips",
 		"Pod IP addresses",
@@ -692,10 +692,10 @@ func createPodIPFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}))
+		}, allowLabelsList))
 }
 
-func createPodInitContainerInfoFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerInfoFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_info",
 		"Information about an init container in a pod.",
@@ -727,11 +727,11 @@ func createPodInitContainerInfoFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerResourceLimitsFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_resource_limits",
 		"The number of requested limit resource by an init container.",
@@ -791,11 +791,11 @@ func createPodInitContainerResourceLimitsFamilyGenerator() generator.FamilyGener
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerResourceRequestsFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_resource_requests",
 		"The number of requested request resource by an init container.",
@@ -854,11 +854,11 @@ func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGen
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusLastTerminatedReasonFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusLastTerminatedReasonFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_last_terminated_reason",
 		"Describes the last reason the init container was in terminated state.",
@@ -879,11 +879,11 @@ func createPodInitContainerStatusLastTerminatedReasonFamilyGenerator() generator
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusReadyFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusReadyFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_ready",
 		"Describes whether the init containers readiness check succeeded.",
@@ -904,11 +904,11 @@ func createPodInitContainerStatusReadyFamilyGenerator() generator.FamilyGenerato
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusRestartsTotalFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusRestartsTotalFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_restarts_total",
 		"The number of restarts for the init container.",
@@ -928,11 +928,11 @@ func createPodInitContainerStatusRestartsTotalFamilyGenerator() generator.Family
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusRunningFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusRunningFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_running",
 		"Describes whether the init container is currently in running state.",
@@ -953,11 +953,11 @@ func createPodInitContainerStatusRunningFamilyGenerator() generator.FamilyGenera
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusTerminatedFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusTerminatedFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_terminated",
 		"Describes whether the init container is currently in terminated state.",
@@ -978,11 +978,11 @@ func createPodInitContainerStatusTerminatedFamilyGenerator() generator.FamilyGen
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusTerminatedReasonFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusTerminatedReasonFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_terminated_reason",
 		"Describes the reason the init container is currently in terminated state.",
@@ -1004,11 +1004,11 @@ func createPodInitContainerStatusTerminatedReasonFamilyGenerator() generator.Fam
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusWaitingFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusWaitingFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_waiting",
 		"Describes whether the init container is currently in waiting state.",
@@ -1029,11 +1029,11 @@ func createPodInitContainerStatusWaitingFamilyGenerator() generator.FamilyGenera
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodInitContainerStatusWaitingReasonFamilyGenerator() generator.FamilyGenerator {
+func createPodInitContainerStatusWaitingReasonFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_waiting_reason",
 		"Describes the reason the init container is currently in waiting state.",
@@ -1056,7 +1056,7 @@ func createPodInitContainerStatusWaitingReasonFamilyGenerator() generator.Family
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
@@ -1080,7 +1080,7 @@ func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGe
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}
-		}),
+		}, nil),
 	)
 }
 
@@ -1095,20 +1095,17 @@ func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerato
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
 			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 			m := metric.Metric{
-				LabelKeys:   labelKeys,
-				LabelValues: labelValues,
-				Value:       1,
+				Value: 1,
 			}
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodOverheadCPUCoresFamilyGenerator() generator.FamilyGenerator {
+func createPodOverheadCPUCoresFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_overhead_cpu_cores",
 		"The pod overhead in regards to cpu cores associated with running a pod.",
@@ -1130,11 +1127,11 @@ func createPodOverheadCPUCoresFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodOverheadMemoryBytesFamilyGenerator() generator.FamilyGenerator {
+func createPodOverheadMemoryBytesFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_overhead_memory_bytes",
 		"The pod overhead in regards to memory associated with running a pod.",
@@ -1157,11 +1154,11 @@ func createPodOverheadMemoryBytesFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
+func createPodOwnerFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_owner",
 		"Information about the Pod's owner.",
@@ -1205,11 +1202,11 @@ func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodRestartPolicyFamilyGenerator() generator.FamilyGenerator {
+func createPodRestartPolicyFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_restart_policy",
 		"Describes the restart policy in use by this pod.",
@@ -1226,11 +1223,11 @@ func createPodRestartPolicyFamilyGenerator() generator.FamilyGenerator {
 					},
 				},
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodRuntimeClassNameInfoFamilyGenerator() generator.FamilyGenerator {
+func createPodRuntimeClassNameInfoFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_runtimeclass_name_info",
 		"The runtimeclass associated with the pod.",
@@ -1251,11 +1248,11 @@ func createPodRuntimeClassNameInfoFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.FamilyGenerator {
+func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
 		"Information about persistentvolumeclaim volumes in a pod.",
@@ -1278,11 +1275,11 @@ func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.F
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generator.FamilyGenerator {
+func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
 		"Describes whether a persistentvolumeclaim is mounted read only.",
@@ -1305,11 +1302,11 @@ func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generat
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStartTimeFamilyGenerator() generator.FamilyGenerator {
+func createPodStartTimeFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_start_time",
 		"Start time in unix timestamp for a pod.",
@@ -1329,11 +1326,11 @@ func createPodStartTimeFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusPhaseFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_phase",
 		"The pods current phase.",
@@ -1373,11 +1370,11 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusInitializedTimeFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusInitializedTimeFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_initialized_time",
 		"Initialized time in unix timestamp for a pod.",
@@ -1400,11 +1397,11 @@ func createPodStatusInitializedTimeFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusContainerReadyTimeFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusContainerReadyTimeFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_container_ready_time",
 		"Readiness achieved time in unix timestamp for a pod containers.",
@@ -1427,11 +1424,11 @@ func createPodStatusContainerReadyTimeFamilyGenerator() generator.FamilyGenerato
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusReadyTimeFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusReadyTimeFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_ready_time",
 		"Readiness achieved time in unix timestamp for a pod.",
@@ -1455,11 +1452,11 @@ func createPodStatusReadyTimeFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusQosClassFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusQosClassFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_qos_class",
 		"The pods current qosClass.",
@@ -1497,11 +1494,11 @@ func createPodStatusQosClassFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusReadyFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusReadyFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_ready",
 		"Describes whether the pod is ready to serve requests.",
@@ -1526,11 +1523,11 @@ func createPodStatusReadyFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusReasonFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_reason",
 		"The pod status reasons",
@@ -1555,11 +1552,11 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusScheduledFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusScheduledFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_scheduled",
 		"Describes the status of the scheduling process for the pod.",
@@ -1584,11 +1581,11 @@ func createPodStatusScheduledFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusScheduledTimeFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusScheduledTimeFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_scheduled_time",
 		"Unix timestamp when pod moved into scheduled status",
@@ -1611,11 +1608,11 @@ func createPodStatusScheduledTimeFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusUnschedulableFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_unschedulable",
 		"Describes the unschedulable status for the pod.",
@@ -1638,11 +1635,11 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
+func createPodTolerationsFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_tolerations",
 		"Information about the pod tolerations",
@@ -1695,11 +1692,11 @@ func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: ms,
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodNodeSelectorsFamilyGenerator() generator.FamilyGenerator {
+func createPodNodeSelectorsFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewOptInFamilyGenerator(
 		"kube_pod_nodeselectors",
 		"Describes the Pod nodeSelectors.",
@@ -1716,11 +1713,11 @@ func createPodNodeSelectorsFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodServiceAccountFamilyGenerator() generator.FamilyGenerator {
+func createPodServiceAccountFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_service_account",
 		"The service account for a pod.",
@@ -1737,11 +1734,11 @@ func createPodServiceAccountFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func createPodSchedulerNameFamilyGenerator() generator.FamilyGenerator {
+func createPodSchedulerNameFamilyGenerator(allowLabelsList []string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_scheduler",
 		"The scheduler for a pod.",
@@ -1758,18 +1755,27 @@ func createPodSchedulerNameFamilyGenerator() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}
-		}),
+		}, allowLabelsList),
 	)
 }
 
-func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Family {
+func wrapPodFunc(f func(*v1.Pod) *metric.Family, allowLabelsList []string) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		pod := obj.(*v1.Pod)
 
 		metricFamily := f(pod)
 
+		var allowedLabelKeys, allowedLabelValues []string
+		if len(allowLabelsList) > 0 {
+			allowedLabelKeys, allowedLabelValues = createPrometheusLabelKeysValues("label", pod.Labels, allowLabelsList)
+		}
+
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(
+				descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)},
+				m.LabelKeys, m.LabelValues,
+				allowedLabelKeys, allowedLabelValues,
+			)
 		}
 
 		return metricFamily

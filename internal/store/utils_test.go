@@ -283,6 +283,17 @@ func TestMergeKeyValues(t *testing.T) {
 			expectValues: []string{"valueA", "valueB", "valueC"},
 		},
 		{
+			name: "emptyPair",
+			keyValuePairSlices: [][]string{
+				{"keyA", "keyB", "keyC"},
+				{"valueA", "valueB", "valueC"},
+				nil,
+				nil,
+			},
+			expectKeys:   []string{"keyA", "keyB", "keyC"},
+			expectValues: []string{"valueA", "valueB", "valueC"},
+		},
+		{
 			name: "evenPair",
 			keyValuePairSlices: [][]string{
 				{"keyA", "keyB", "keyC"},

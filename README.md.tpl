@@ -283,7 +283,7 @@ spec:
               fieldPath: spec.nodeName
 ```
 
-To track metrics for unassigned pods, you need to add an additional deployment and set `--node=""`, as shown in the following example:
+To track metrics for unassigned pods, you need to add an additional deployment and set `--track-unscheduled-pods`, as shown in the following example:
 
 ```
 apiVersion: apps/v1
@@ -296,7 +296,7 @@ spec:
         name: kube-state-metrics
         args:
         - --resources=pods
-        - --node=""
+        - --track-unscheduled-pods
 ```
 
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).

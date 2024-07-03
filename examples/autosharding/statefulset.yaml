@@ -38,7 +38,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /livez
-            port: 8080
+            port: http-metrics
           initialDelaySeconds: 5
           timeoutSeconds: 5
         name: kube-state-metrics
@@ -49,8 +49,8 @@ spec:
           name: telemetry
         readinessProbe:
           httpGet:
-            path: /metrics
-            port: 8081
+            path: /readyz
+            port: http-metrics
           initialDelaySeconds: 5
           timeoutSeconds: 5
         securityContext:

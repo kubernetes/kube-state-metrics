@@ -266,7 +266,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_created{namespace="ns8",ingress="ingress8"} 1.501569018e+09
 				kube_ingress_info{namespace="ns8",ingress="ingress8",ingressclass="_default"} 1
 				kube_ingress_metadata_resource_version{namespace="ns8",ingress="ingress8"} 123456
-				kube_ingress_status{namespace="ns8",ingress="ingress8",ip="1.2.3.4",hostname="www.example.com",port="8888",protocol="TCP"} 1
+				kube_ingress_status{namespace="ns8",ingress="ingress8",hostname="www.example.com",port="8888",protocol="TCP"} 1
 				`,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls", "kube_ingress_status"},
 		},

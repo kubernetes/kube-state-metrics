@@ -213,8 +213,8 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				for _, ingress := range i.Status.LoadBalancer.Ingress {
 					for _, port := range ingress.Ports {
 						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"ip", "hostname", "port", "protocol"},
-							LabelValues: []string{ingress.IP, ingress.Hostname, strconv.Itoa(int(port.Port)), string(port.Protocol)},
+							LabelKeys:   []string{"hostname", "port", "protocol"},
+							LabelValues: []string{ingress.Hostname, strconv.Itoa(int(port.Port)), string(port.Protocol)},
 							Value:       1,
 						})
 					}

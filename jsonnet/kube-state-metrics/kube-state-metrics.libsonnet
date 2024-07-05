@@ -196,7 +196,7 @@
         path: '/livez',
       } },
       readinessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
-        port: "http-metrics",
+        port: "telemetry",
         path: '/readyz',
       } },
     };

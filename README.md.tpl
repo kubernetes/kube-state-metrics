@@ -347,11 +347,11 @@ After running the above, if you see `Clusterrolebinding "cluster-admin-binding" 
 
 #### Healthcheck Endpoints
 
-The following healthcheck endpoints are available, some of which are used to determine the result of the aforementioned probes:
+The following healthcheck endpoints are available (`self` refers to the telemetry port, while `main` refers to the exposition port):
 
-* `/healthz`: Returns a 200 status code if the application is running. We recommend to use this for the startup probe.
-* `/livez`: Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend to using this for the liveness probe.
-* `/readyz`: Returns a 200 status code if the application is ready to accept traffic. We recommend using this for the readiness probe.
+* `/healthz` (exposed on `main`): Returns a 200 status code if the application is running. We recommend to use this for the startup probe.
+* `/livez` (exposed on `main`): Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend to using this for the liveness probe.
+* `/readyz` (exposed on `self`): Returns a 200 status code if the application is ready to accept traffic. We recommend using this for the readiness probe.
 
 Note that it is discouraged to use the telemetry metrics endpoint for any probe when proxying the exposition data.
 

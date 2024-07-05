@@ -42,6 +42,7 @@ import (
 	versionCollector "github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 
@@ -377,6 +378,18 @@ func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 	// Add metricsPath
 	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}}))
 
+	// Add readyzPath
+	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		count, err := testutil.GatherAndCount(registry)
+		if err != nil || count == 0 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
+	}))
+
 	// Add index
 	landingConfig := web.LandingConfig{
 		Name:        "kube-state-metrics",
@@ -425,9 +438,6 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 
 	// Add livezPath
 	mux.Handle(livezPath, handleClusterDelegationForProber(client, livezPath))
-
-	// Add readyzPath
-	mux.Handle(readyzPath, handleClusterDelegationForProber(client, readyzPath))
 
 	// Add healthzPath
 	mux.Handle(healthzPath, handleClusterDelegationForProber(client, healthzPath))

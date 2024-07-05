@@ -37,7 +37,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /readyz
-            port: http-metrics
+            port: telemetry
           initialDelaySeconds: 5
           timeoutSeconds: 5
         securityContext:

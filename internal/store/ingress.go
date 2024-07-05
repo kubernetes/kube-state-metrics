@@ -206,7 +206,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"kube_ingress_status",
 			"Ingress status.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			basemetrics.ALPHA,
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}

@@ -40,7 +40,7 @@ func TestIngressStore(t *testing.T) {
 		# HELP kube_ingress_metadata_resource_version Resource version representing a specific version of ingress.
 		# HELP kube_ingress_path [STABLE] Ingress host, paths and backend service information.
 		# HELP kube_ingress_tls [STABLE] Ingress TLS host and secret information.
-		# HELP kube_ingress_status [STABLE] Ingress status.
+		# HELP kube_ingress_status Ingress status.
 		# TYPE kube_ingress_created gauge
 		# TYPE kube_ingress_info gauge
 		# TYPE kube_ingress_labels gauge

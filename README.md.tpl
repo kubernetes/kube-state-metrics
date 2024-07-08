@@ -351,7 +351,7 @@ The following healthcheck endpoints are available (`self` refers to the telemetr
 
 * `/healthz` (exposed on `main`): Returns a 200 status code if the application is running. We recommend to use this for the startup probe.
 * `/livez` (exposed on `main`): Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend to using this for the liveness probe.
-* `/readyz` (exposed on `self`): Returns a 200 status code if the application is ready to accept traffic. We recommend using this for the readiness probe.
+* `/readyz` (exposed on `self`): Returns a 200 status code if the application is ready to accept requests and expose metrics. We recommend using this for the readiness probe.
 
 Note that it is discouraged to use the telemetry metrics endpoint for any probe when proxying the exposition data.
 

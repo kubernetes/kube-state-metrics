@@ -21,7 +21,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/prometheus/common/version"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
@@ -31,6 +30,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	testUnstructuredMock "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/version"
 
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 )
@@ -153,4 +155,20 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 		Version:  v,
 		Resource: r,
 	}
+}
+
+// GatherAndCount gathers all metrics from the provided Gatherer and counts
+// them. It returns the number of metric children in all gathered metric
+// families together.
+func GatherAndCount(g prometheus.Gatherer) (int, error) {
+	got, err := g.Gather()
+	if err != nil {
+		return 0, fmt.Errorf("gathering metrics failed: %w", err)
+	}
+
+	result := 0
+	for _, mf := range got {
+		result += len(mf.GetMetric())
+	}
+	return result, nil
 }

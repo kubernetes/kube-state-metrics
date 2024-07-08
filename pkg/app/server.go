@@ -42,7 +42,6 @@ import (
 	versionCollector "github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 
@@ -380,7 +379,7 @@ func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 
 	// Add readyzPath
 	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		count, err := testutil.GatherAndCount(registry)
+		count, err := util.GatherAndCount(registry)
 		if err != nil || count == 0 {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
@@ -440,7 +439,10 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 	mux.Handle(livezPath, handleClusterDelegationForProber(client, livezPath))
 
 	// Add healthzPath
-	mux.Handle(healthzPath, handleClusterDelegationForProber(client, healthzPath))
+	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
+	})
 
 	// Add index
 	landingConfig := web.LandingConfig{

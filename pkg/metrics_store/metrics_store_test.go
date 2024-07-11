@@ -41,7 +41,7 @@ func (f *metricFamily) ByteSlice() []byte {
 }
 
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
-	serviceIDS := []string{"a", "b"}
+	serviceIDs := []string{"a", "b"}
 
 	genFunc := func(obj interface{}) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
@@ -65,7 +65,7 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 
 	ms := NewMetricsStore([]string{"Information about service."}, genFunc)
 
-	for _, id := range serviceIDS {
+	for _, id := range serviceIDs {
 		s := v1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "service",
@@ -88,7 +88,7 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	}
 	m := w.String()
 
-	for _, id := range serviceIDS {
+	for _, id := range serviceIDs {
 		if !strings.Contains(m, fmt.Sprintf("uid=\"%v\"", id)) {
 			t.Fatalf("expected to find metric with uid %v", id)
 		}

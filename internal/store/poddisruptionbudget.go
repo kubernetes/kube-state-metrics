@@ -48,6 +48,9 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			basemetrics.ALPHA,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -67,6 +70,9 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 			basemetrics.ALPHA,
 			"",
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

@@ -1,0 +1,17 @@
+{
+  "globs": [
+    "**/*.md"
+  ],
+  // ToDo: Following rules can't be fixed automatically. They should be enabled when fixed.
+  "config": {
+    "MD004": {
+      "style": "asterisk"
+    },
+    "MD013": false, // https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md#md013---line-length
+    "MD024": false, // https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md#md024---multiple-headers-with-the-same-content
+    "MD033": false, // https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md#md033---inline-html
+    "MD036": false, // https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md#md036---emphasis-used-instead-of-a-header
+    "MD040": false, // https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md#md040---fenced-code-blocks-should-have-a-language-specified
+    "MD041": false // https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md#md041---first-line-in-file-should-be-a-top-level-header 
+  }
+}

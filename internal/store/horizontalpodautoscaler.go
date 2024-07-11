@@ -55,285 +55,17 @@ var (
 
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_info",
-			"Information about this autoscaler.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				labelKeys := []string{"scaletargetref_kind", "scaletargetref_name"}
-				labelValues := []string{a.Spec.ScaleTargetRef.Kind, a.Spec.ScaleTargetRef.Name}
-				if a.Spec.ScaleTargetRef.APIVersion != "" {
-					labelKeys = append([]string{"scaletargetref_api_version"}, labelKeys...)
-					labelValues = append([]string{a.Spec.ScaleTargetRef.APIVersion}, labelValues...)
-				}
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_metadata_generation",
-			"The generation observed by the HorizontalPodAutoscaler controller.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(a.ObjectMeta.Generation),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_spec_max_replicas",
-			"Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(a.Spec.MaxReplicas),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_spec_min_replicas",
-			"Lower limit for the number of pods that can be set by the autoscaler, default 1.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(*a.Spec.MinReplicas),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_spec_target_metric",
-			"The metric specifications used by this autoscaler when calculating the desired replica count.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
-				for _, m := range a.Spec.Metrics {
-					var metricName string
-					var metricTarget autoscaling.MetricTarget
-					// The variable maps the type of metric to the corresponding value
-					metricMap := make(map[metricTargetType]float64)
-
-					switch m.Type {
-					case autoscaling.ObjectMetricSourceType:
-						metricName = m.Object.Metric.Name
-						metricTarget = m.Object.Target
-					case autoscaling.PodsMetricSourceType:
-						metricName = m.Pods.Metric.Name
-						metricTarget = m.Pods.Target
-					case autoscaling.ResourceMetricSourceType:
-						metricName = string(m.Resource.Name)
-						metricTarget = m.Resource.Target
-					case autoscaling.ContainerResourceMetricSourceType:
-						metricName = string(m.ContainerResource.Name)
-						metricTarget = m.ContainerResource.Target
-					case autoscaling.ExternalMetricSourceType:
-						metricName = m.External.Metric.Name
-						metricTarget = m.External.Target
-					default:
-						// Skip unsupported metric type
-						continue
-					}
-
-					if metricTarget.Value != nil {
-						metricMap[value] = float64(metricTarget.Value.MilliValue()) / 1000
-					}
-					if metricTarget.AverageValue != nil {
-						metricMap[average] = float64(metricTarget.AverageValue.MilliValue()) / 1000
-					}
-					if metricTarget.AverageUtilization != nil {
-						metricMap[utilization] = float64(*metricTarget.AverageUtilization)
-					}
-
-					for metricTypeIndex, metricValue := range metricMap {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   targetMetricLabels,
-							LabelValues: []string{metricName, metricTypeIndex.String()},
-							Value:       metricValue,
-						})
-					}
-				}
-				return &metric.Family{Metrics: ms}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_status_target_metric",
-			"The current metric status used by this autoscaler when calculating the desired replica count.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
-				for _, m := range a.Status.CurrentMetrics {
-					var metricName string
-					var currentMetric autoscaling.MetricValueStatus
-					// The variable maps the type of metric to the corresponding value
-					metricMap := make(map[metricTargetType]float64)
-
-					switch m.Type {
-					case autoscaling.ObjectMetricSourceType:
-						metricName = m.Object.Metric.Name
-						currentMetric = m.Object.Current
-					case autoscaling.PodsMetricSourceType:
-						metricName = m.Pods.Metric.Name
-						currentMetric = m.Pods.Current
-					case autoscaling.ResourceMetricSourceType:
-						metricName = string(m.Resource.Name)
-						currentMetric = m.Resource.Current
-					case autoscaling.ContainerResourceMetricSourceType:
-						metricName = string(m.ContainerResource.Name)
-						currentMetric = m.ContainerResource.Current
-					case autoscaling.ExternalMetricSourceType:
-						metricName = m.External.Metric.Name
-						currentMetric = m.External.Current
-					default:
-						// Skip unsupported metric type
-						continue
-					}
-
-					if currentMetric.Value != nil {
-						metricMap[value] = float64(currentMetric.Value.MilliValue()) / 1000
-					}
-					if currentMetric.AverageValue != nil {
-						metricMap[average] = float64(currentMetric.AverageValue.MilliValue()) / 1000
-					}
-					if currentMetric.AverageUtilization != nil {
-						metricMap[utilization] = float64(*currentMetric.AverageUtilization)
-					}
-
-					for metricTypeIndex, metricValue := range metricMap {
-						ms = append(ms, &metric.Metric{
-							LabelKeys:   targetMetricLabels,
-							LabelValues: []string{metricName, metricTypeIndex.String()},
-							Value:       metricValue,
-						})
-					}
-				}
-				return &metric.Family{Metrics: ms}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_status_current_replicas",
-			"Current number of replicas of pods managed by this autoscaler.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(a.Status.CurrentReplicas),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_status_desired_replicas",
-			"Desired number of replicas of pods managed by this autoscaler.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(a.Status.DesiredReplicas),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descHorizontalPodAutoscalerAnnotationsName,
-			descHorizontalPodAutoscalerAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descHorizontalPodAutoscalerLabelsName,
-			descHorizontalPodAutoscalerLabelsHelp,
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_horizontalpodautoscaler_status_condition",
-			"The condition of this autoscaler.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-				ms := make([]*metric.Metric, 0, len(a.Status.Conditions)*len(conditionStatuses))
-
-				for _, c := range a.Status.Conditions {
-					metrics := addConditionMetrics(c.Status)
-
-					for _, m := range metrics {
-						metric := m
-						metric.LabelKeys = []string{"condition", "status"}
-						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
-						ms = append(ms, metric)
-					}
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
+		createHPAInfo(),
+		createHPAMetaDataGeneration(),
+		createHPASpecMaxReplicas(),
+		createHPASpecMinReplicas(),
+		createHPASpecTargetMetric(),
+		createHPAStatusTargetMetric(),
+		createHPAStatusCurrentReplicas(),
+		createHPAStatusDesiredReplicas(),
+		createHPAAnnotations(allowAnnotationsList),
+		createHPALabels(allowLabelsList),
+		createHPAStatusCondition(),
 	}
 }
 
@@ -362,4 +94,322 @@ func createHPAListWatch(kubeClient clientset.Interface, ns string, fieldSelector
 			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Watch(context.TODO(), opts)
 		},
 	}
+}
+
+func createHPAInfo() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_info",
+		"Information about this autoscaler.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			labelKeys := []string{"scaletargetref_kind", "scaletargetref_name"}
+			labelValues := []string{a.Spec.ScaleTargetRef.Kind, a.Spec.ScaleTargetRef.Name}
+			if a.Spec.ScaleTargetRef.APIVersion != "" {
+				labelKeys = append([]string{"scaletargetref_api_version"}, labelKeys...)
+				labelValues = append([]string{a.Spec.ScaleTargetRef.APIVersion}, labelValues...)
+			}
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   labelKeys,
+						LabelValues: labelValues,
+						Value:       1,
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPAMetaDataGeneration() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_metadata_generation",
+		"The generation observed by the HorizontalPodAutoscaler controller.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(a.ObjectMeta.Generation),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPASpecMaxReplicas() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_spec_max_replicas",
+		"Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(a.Spec.MaxReplicas),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPASpecMinReplicas() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_spec_min_replicas",
+		"Lower limit for the number of pods that can be set by the autoscaler, default 1.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(*a.Spec.MinReplicas),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPASpecTargetMetric() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_spec_target_metric",
+		"The metric specifications used by this autoscaler when calculating the desired replica count.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
+			for _, m := range a.Spec.Metrics {
+				var metricName string
+				var metricTarget autoscaling.MetricTarget
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
+
+				switch m.Type {
+				case autoscaling.ObjectMetricSourceType:
+					metricName = m.Object.Metric.Name
+					metricTarget = m.Object.Target
+				case autoscaling.PodsMetricSourceType:
+					metricName = m.Pods.Metric.Name
+					metricTarget = m.Pods.Target
+				case autoscaling.ResourceMetricSourceType:
+					metricName = string(m.Resource.Name)
+					metricTarget = m.Resource.Target
+				case autoscaling.ContainerResourceMetricSourceType:
+					metricName = string(m.ContainerResource.Name)
+					metricTarget = m.ContainerResource.Target
+				case autoscaling.ExternalMetricSourceType:
+					metricName = m.External.Metric.Name
+					metricTarget = m.External.Target
+				default:
+					// Skip unsupported metric type
+					continue
+				}
+
+				if metricTarget.Value != nil {
+					metricMap[value] = float64(metricTarget.Value.MilliValue()) / 1000
+				}
+				if metricTarget.AverageValue != nil {
+					metricMap[average] = float64(metricTarget.AverageValue.MilliValue()) / 1000
+				}
+				if metricTarget.AverageUtilization != nil {
+					metricMap[utilization] = float64(*metricTarget.AverageUtilization)
+				}
+
+				for metricTypeIndex, metricValue := range metricMap {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   targetMetricLabels,
+						LabelValues: []string{metricName, metricTypeIndex.String()},
+						Value:       metricValue,
+					})
+				}
+			}
+			return &metric.Family{Metrics: ms}
+		}),
+	)
+}
+
+func createHPAStatusTargetMetric() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_status_target_metric",
+		"The current metric status used by this autoscaler when calculating the desired replica count.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+			for _, m := range a.Status.CurrentMetrics {
+				var metricName string
+				var currentMetric autoscaling.MetricValueStatus
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
+
+				switch m.Type {
+				case autoscaling.ObjectMetricSourceType:
+					metricName = m.Object.Metric.Name
+					currentMetric = m.Object.Current
+				case autoscaling.PodsMetricSourceType:
+					metricName = m.Pods.Metric.Name
+					currentMetric = m.Pods.Current
+				case autoscaling.ResourceMetricSourceType:
+					metricName = string(m.Resource.Name)
+					currentMetric = m.Resource.Current
+				case autoscaling.ContainerResourceMetricSourceType:
+					metricName = string(m.ContainerResource.Name)
+					currentMetric = m.ContainerResource.Current
+				case autoscaling.ExternalMetricSourceType:
+					metricName = m.External.Metric.Name
+					currentMetric = m.External.Current
+				default:
+					// Skip unsupported metric type
+					continue
+				}
+
+				if currentMetric.Value != nil {
+					metricMap[value] = float64(currentMetric.Value.MilliValue()) / 1000
+				}
+				if currentMetric.AverageValue != nil {
+					metricMap[average] = float64(currentMetric.AverageValue.MilliValue()) / 1000
+				}
+				if currentMetric.AverageUtilization != nil {
+					metricMap[utilization] = float64(*currentMetric.AverageUtilization)
+				}
+
+				for metricTypeIndex, metricValue := range metricMap {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   targetMetricLabels,
+						LabelValues: []string{metricName, metricTypeIndex.String()},
+						Value:       metricValue,
+					})
+				}
+			}
+			return &metric.Family{Metrics: ms}
+		}),
+	)
+}
+
+func createHPAStatusCurrentReplicas() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_status_current_replicas",
+		"Current number of replicas of pods managed by this autoscaler.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(a.Status.CurrentReplicas),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPAStatusDesiredReplicas() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_status_desired_replicas",
+		"Desired number of replicas of pods managed by this autoscaler.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(a.Status.DesiredReplicas),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		descHorizontalPodAutoscalerAnnotationsName,
+		descHorizontalPodAutoscalerAnnotationsHelp,
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			if len(allowAnnotationsList) == 0 {
+				return &metric.Family{}
+			}
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
+						Value:       1,
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		descHorizontalPodAutoscalerLabelsName,
+		descHorizontalPodAutoscalerLabelsHelp,
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			if len(allowLabelsList) == 0 {
+				return &metric.Family{}
+			}
+			labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   labelKeys,
+						LabelValues: labelValues,
+						Value:       1,
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createHPAStatusCondition() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_status_condition",
+		"The condition of this autoscaler.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Status.Conditions)*len(conditionStatuses))
+
+			for _, c := range a.Status.Conditions {
+				metrics := addConditionMetrics(c.Status)
+
+				for _, m := range metrics {
+					metric := m
+					metric.LabelKeys = []string{"condition", "status"}
+					metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+					ms = append(ms, metric)
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
 }

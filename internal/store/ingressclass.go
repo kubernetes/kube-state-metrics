@@ -32,7 +32,7 @@ import (
 var (
 	descIngressClassAnnotationsName     = "kube_ingressclass_annotations"
 	descIngressClassAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
-	descIngressClassLabelsName          = "kube_ingressclass_labels"
+	descIngressClassLabelsName          = "kube_ingressclass_labels" //nolint:gosec
 	descIngressClassLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descIngressClassLabelsDefaultLabels = []string{"ingressclass"}
 )
@@ -80,6 +80,9 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -99,6 +102,9 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			basemetrics.ALPHA,
 			"",
 			wrapIngressClassFunc(func(s *networkingv1.IngressClass) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -128,7 +134,7 @@ func wrapIngressClassFunc(f func(*networkingv1.IngressClass) *metric.Family) fun
 	}
 }
 
-func createIngressClassListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createIngressClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.NetworkingV1().IngressClasses().List(context.TODO(), opts)

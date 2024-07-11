@@ -18,6 +18,7 @@ package options
 
 import (
 	"errors"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -105,14 +106,56 @@ func (r *ResourceSet) Type() string {
 }
 
 // NodeType represents a nodeName to query from.
-type NodeType string
+type NodeType map[string]struct{}
+
+// Set converts a comma-separated string of nodename into a slice and appends it to the NodeList
+func (n *NodeType) Set(value string) error {
+	s := *n
+	cols := strings.Split(value, ",")
+	for _, col := range cols {
+		col = strings.TrimSpace(col)
+		if len(col) != 0 {
+			s[col] = struct{}{}
+		}
+	}
+	return nil
+}
+
+// AsSlice returns the LabelsAllowList in the form of plain string slice.
+func (n NodeType) AsSlice() []string {
+	cols := make([]string, 0, len(n))
+	for col := range n {
+		cols = append(cols, col)
+	}
+	return cols
+}
+
+func (n NodeType) String() string {
+	return strings.Join(n.AsSlice(), ",")
+}
+
+// Type returns a descriptive string about the NodeList type.
+func (n *NodeType) Type() string {
+	return "string"
+}
 
 // GetNodeFieldSelector returns a nodename field selector.
 func (n *NodeType) GetNodeFieldSelector() string {
-	if string(*n) != "" {
-		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
+	if nil == n || len(*n) == 0 {
+		klog.InfoS("Using node type is nil")
+		return EmptyFieldSelector()
 	}
-	return EmptyFieldSelector()
+	pattern := "[^a-zA-Z0-9_,-]+"
+	re := regexp.MustCompile(pattern)
+	result := re.ReplaceAllString(n.String(), "")
+	klog.InfoS("Using node type", "node", result)
+	return fields.OneTermEqualSelector("spec.nodeName", result).String()
+
+}
+
+// NodeValue represents a nodeName to query from.
+type NodeValue interface {
+	GetNodeFieldSelector() string
 }
 
 // EmptyFieldSelector returns an empty field selector.

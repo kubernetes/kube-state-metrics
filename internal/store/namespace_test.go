@@ -56,8 +56,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_annotations{namespace="nsActiveTest"} 1
-				kube_namespace_labels{namespace="nsActiveTest"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Active"} 1
 				kube_namespace_status_phase{namespace="nsActiveTest",phase="Terminating"} 0
 `,
@@ -75,8 +73,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_annotations{namespace="nsTerminateTest"} 1
-				kube_namespace_labels{namespace="nsTerminateTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateTest",phase="Terminating"} 1
 `,
@@ -99,8 +95,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_annotations{namespace="nsTerminateWithConditionTest"} 1
-				kube_namespace_labels{namespace="nsTerminateWithConditionTest"} 1
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Active"} 0
 				kube_namespace_status_phase{namespace="nsTerminateWithConditionTest",phase="Terminating"} 1
 				kube_namespace_status_condition{condition="NamespaceDeletionContentFailure",namespace="nsTerminateWithConditionTest",status="false"} 0
@@ -132,9 +126,7 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_annotations{namespace="ns1"} 1
 				kube_namespace_created{namespace="ns1"} 1.5e+09
-				kube_namespace_labels{namespace="ns1"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns1",phase="Terminating"} 0
 `,
@@ -156,8 +148,6 @@ func TestNamespaceStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_namespace_annotations{namespace="ns2"} 1
-				kube_namespace_labels{namespace="ns2"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Active"} 1
 				kube_namespace_status_phase{namespace="ns2",phase="Terminating"} 0
 `,

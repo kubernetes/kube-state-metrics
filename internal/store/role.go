@@ -48,6 +48,9 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			basemetrics.ALPHA,
 			"",
 			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -67,6 +70,9 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			basemetrics.ALPHA,
 			"",
 			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -85,7 +91,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapRoleFunc(func(r *rbacv1.Role) *metric.Family {
+			wrapRoleFunc(func(_ *rbacv1.Role) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},

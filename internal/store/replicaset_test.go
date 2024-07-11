@@ -87,8 +87,6 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_replicaset_annotations{replicaset="rs1",namespace="ns1"} 1
-				kube_replicaset_labels{replicaset="rs1",namespace="ns1"} 1
 				kube_replicaset_created{namespace="ns1",replicaset="rs1"} 1.5e+09
 				kube_replicaset_metadata_generation{namespace="ns1",replicaset="rs1"} 21
 				kube_replicaset_status_replicas{namespace="ns1",replicaset="rs1"} 5
@@ -121,8 +119,6 @@ func TestReplicaSetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_replicaset_annotations{replicaset="rs2",namespace="ns2"} 1
-				kube_replicaset_labels{replicaset="rs2",namespace="ns2"} 1
 				kube_replicaset_metadata_generation{namespace="ns2",replicaset="rs2"} 14
 				kube_replicaset_status_replicas{namespace="ns2",replicaset="rs2"} 0
 				kube_replicaset_status_observed_generation{namespace="ns2",replicaset="rs2"} 5

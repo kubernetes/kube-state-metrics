@@ -88,7 +88,6 @@ func TestIngressClassStore(t *testing.T) {
 					# TYPE kube_ingressclass_annotations gauge
 					# TYPE kube_ingressclass_labels gauge
 					kube_ingressclass_annotations{ingressclass="test_ingressclass-labels",annotation_ingressclass_kubernetes_io_is_default_class="true"} 1
-					kube_ingressclass_labels{ingressclass="test_ingressclass-labels"} 1
 				`,
 			MetricNames: []string{
 				"kube_ingressclass_annotations", "kube_ingressclass_labels",

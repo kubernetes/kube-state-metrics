@@ -32,9 +32,15 @@ import (
 )
 
 var (
+	descResourceQuotaAnnotationsName     = "kube_resourcequota_annotations"
+	descResourceQuotaAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descResourceQuotaLabelsName          = "kube_resourcequota_labels"
+	descResourceQuotaLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
+)
 
-	resourceQuotaMetricFamilies = []generator.FamilyGenerator{
+func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourcequota_created",
 			"Unix creation timestamp",
@@ -87,8 +93,52 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceQuotaAnnotationsName,
+			descResourceQuotaAnnotationsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapResourceQuotaFunc(func(d *v1.ResourceQuota) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   annotationKeys,
+							LabelValues: annotationValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceQuotaLabelsName,
+			descResourceQuotaLabelsHelp,
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapResourceQuotaFunc(func(d *v1.ResourceQuota) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
-)
+}
 
 func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {

@@ -98,6 +98,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	if !autoSharding {
 		klog.InfoS("Autosharding disabled")
 		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
+		// Wait for context to be done, metrics will be served until then.
 		<-ctx.Done()
 		return ctx.Err()
 	}
@@ -110,12 +111,12 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	}
 	statefulSetName := ss.Name
 
-	labelSelectorOptions := func(o *metav1.ListOptions) {
-		o.LabelSelector = fields.SelectorFromSet(ss.Labels).String()
+	fieldSelectorOptions := func(o *metav1.ListOptions) {
+		o.FieldSelector = fields.OneTermEqualSelector("metadata.name", statefulSetName).String()
 	}
 
 	i := cache.NewSharedIndexInformer(
-		cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, labelSelectorOptions),
+		cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, fieldSelectorOptions),
 		&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	i.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -177,8 +178,8 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// ServeHTTP implements the http.Handler interface. It writes all generated
-// metrics to the response body.
+// ServeHTTP implements the http.Handler interface. It writes all generated metrics to the response body.
+// Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
@@ -187,9 +188,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
 
-	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022
-	if contentType != expfmt.FmtOpenMetrics_1_0_0 && contentType != expfmt.FmtOpenMetrics_0_0_1 {
-		contentType = expfmt.FmtText
+	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022.
+
+	if contentType.FormatType() != expfmt.TypeOpenMetrics {
+		contentType = expfmt.NewFormat(expfmt.TypeTextPlain)
 	}
 	resHeader.Set("Content-Type", string(contentType))
 
@@ -207,6 +209,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	m.metricsWriters = metricsstore.SanitizeHeaders(string(contentType), m.metricsWriters)
 	for _, w := range m.metricsWriters {
 		err := w.WriteAll(writer)
 		if err != nil {
@@ -214,9 +217,12 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// If we send openmetrics, we need to include a EOF directive
-	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
-		writer.Write([]byte("# EOF\n"))
+	// OpenMetrics spec requires that we end with an EOF directive.
+	if contentType.FormatType() == expfmt.TypeOpenMetrics {
+		_, err := writer.Write([]byte("# EOF\n"))
+		if err != nil {
+			klog.ErrorS(err, "Failed to write EOF directive")
+		}
 	}
 
 	// In case we gzipped the response, we have to close the writer.

@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/version: 2.8.2
+    app.kubernetes.io/version: 2.12.0
   name: kube-state-metrics
   namespace: kube-system
 spec:
@@ -17,16 +17,16 @@ spec:
       labels:
         app.kubernetes.io/component: exporter
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/version: 2.8.2
+        app.kubernetes.io/version: 2.12.0
     spec:
       automountServiceAccountToken: true
       containers:
       - args:
         - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
-        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.8.2
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.12.0
         livenessProbe:
           httpGet:
-            path: /healthz
+            path: /livez
             port: 8080
           initialDelaySeconds: 5
           timeoutSeconds: 5
@@ -38,7 +38,7 @@ spec:
           name: telemetry
         readinessProbe:
           httpGet:
-            path: /
+            path: /metrics
             port: 8081
           initialDelaySeconds: 5
           timeoutSeconds: 5

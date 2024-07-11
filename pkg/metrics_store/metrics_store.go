@@ -113,12 +113,12 @@ func (s *MetricsStore) ListKeys() []string {
 }
 
 // Get implements the Get method of the store interface.
-func (s *MetricsStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
+func (s *MetricsStore) Get(_ interface{}) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
 // GetByKey implements the GetByKey method of the store interface.
-func (s *MetricsStore) GetByKey(key string) (item interface{}, exists bool, err error) {
+func (s *MetricsStore) GetByKey(_ string) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 

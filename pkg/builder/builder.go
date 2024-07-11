@@ -101,8 +101,8 @@ func (b *Builder) WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter) {
 }
 
 // WithAllowAnnotations configures which annotations can be returned for metrics
-func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
-	b.internal.WithAllowAnnotations(annotations)
+func (b *Builder) WithAllowAnnotations(annotations map[string][]string) error {
+	return b.internal.WithAllowAnnotations(annotations)
 }
 
 // WithAllowLabels configures which labels can be returned for metrics
@@ -113,11 +113,6 @@ func (b *Builder) WithAllowLabels(l map[string][]string) error {
 // WithGenerateStoresFunc configures a custom generate store function
 func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
 	b.internal.WithGenerateStoresFunc(f)
-}
-
-// WithGenerateCustomResourceStoresFunc configures a custom generate custom resource store function
-func (b *Builder) WithGenerateCustomResourceStoresFunc(f ksmtypes.BuildCustomResourceStoresFunc) {
-	b.internal.WithGenerateCustomResourceStoresFunc(f)
 }
 
 // DefaultGenerateStoresFunc returns default buildStore function
@@ -145,4 +140,9 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 // Returns metric stores.
 func (b *Builder) BuildStores() [][]cache.Store {
 	return b.internal.BuildStores()
+}
+
+// WithGenerateCustomResourceStoresFunc configures a custom generate custom resource store function
+func (b *Builder) WithGenerateCustomResourceStoresFunc(f ksmtypes.BuildCustomResourceStoresFunc) {
+	b.internal.WithGenerateCustomResourceStoresFunc(f)
 }

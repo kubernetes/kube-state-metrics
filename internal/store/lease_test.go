@@ -57,7 +57,7 @@ func TestLeaseStore(t *testing.T) {
 				},
 				Want: metadata + `
                     kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master",namespace="default",lease_holder="kube-master"} 1
-                    kube_lease_renew_time{lease="kube-master"} 1.5e+09
+                    kube_lease_renew_time{lease="kube-master",namespace="default"} 1.5e+09
 			`,
 				MetricNames: []string{
 					"kube_lease_owner",
@@ -84,7 +84,7 @@ func TestLeaseStore(t *testing.T) {
 				},
 				Want: metadata + `
                     kube_lease_owner{lease="kube-master",owner_kind="Node",owner_name="kube-master",namespace="default",lease_holder=""} 1
-                    kube_lease_renew_time{lease="kube-master"} 1.5e+09
+                    kube_lease_renew_time{lease="kube-master",namespace="default"} 1.5e+09
 			`,
 				MetricNames: []string{
 					"kube_lease_owner",

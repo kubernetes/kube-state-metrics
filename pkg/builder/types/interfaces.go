@@ -42,15 +42,15 @@ type BuilderInterface interface {
 	WithCustomResourceClients(cs map[string]interface{})
 	WithUsingAPIServerCache(u bool)
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)
-	WithAllowAnnotations(a map[string][]string)
+	WithAllowAnnotations(a map[string][]string) error
 	WithAllowLabels(l map[string][]string) error
 	WithGenerateStoresFunc(f BuildStoresFunc)
-	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc
 	WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory)
 	Build() metricsstore.MetricsWriterList
 	BuildStores() [][]cache.Store
+	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 }
 
 // BuildStoresFunc function signature that is used to return a list of cache.Store

@@ -193,11 +193,11 @@
       },
       livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 8080,
-        path: '/healthz',
+        path: '/livez',
       } },
       readinessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 8081,
-        path: '/',
+        path: '/metrics',
       } },
     };
 
@@ -363,6 +363,30 @@
       };
       std.mergePatch(ksm.deployment,
         {
+          spec: {
+            template: {
+              spec: {
+                containers: [c],
+              },
+            },
+          },
+        },
+      ),
+
+    deploymentNoNodePods:
+      local c = ksm.deployment.spec.template.spec.containers[0] {
+        args: [
+          '--resources=pods',
+          '--node=""',
+        ],
+      };
+      local shardksmname = ksm.name + "-pods";
+      std.mergePatch(ksm.deployment,
+        {
+          metadata: {
+            name: shardksmname,
+            labels: {'app.kubernetes.io/name': shardksmname}
+          },
           spec: {
             template: {
               spec: {

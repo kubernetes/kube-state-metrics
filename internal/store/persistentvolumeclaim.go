@@ -49,6 +49,9 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			basemetrics.STABLE,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -68,6 +71,9 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -89,11 +95,17 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				storageClassName := getPersistentVolumeClaimClass(p)
 				volumeName := p.Spec.VolumeName
+
+				volumeMode := ""
+				if p.Spec.VolumeMode != nil {
+					volumeMode = string(*p.Spec.VolumeMode)
+				}
+
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"storageclass", "volumename"},
-							LabelValues: []string{storageClassName, volumeName},
+							LabelKeys:   []string{"storageclass", "volumename", "volumemode"},
+							LabelValues: []string{storageClassName, volumeName, volumeMode},
 							Value:       1,
 						},
 					},
@@ -223,6 +235,28 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(p.CreationTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_persistentvolumeclaim_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if p.DeletionTimestamp != nil && !p.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(p.DeletionTimestamp.Unix()),
 					})
 				}
 

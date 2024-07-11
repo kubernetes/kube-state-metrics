@@ -1,7 +1,7 @@
 To run these tests, you need to provide two CLI flags:
 
-- `--ksm-http-metrics-url`: url to access the kube-state-metrics service
-- `--ksm-telemetry-url`: url to access the kube-state-metrics telemetry endpoint
+* `--ksm-http-metrics-url`: url to access the kube-state-metrics service
+* `--ksm-telemetry-url`: url to access the kube-state-metrics telemetry endpoint
 
 Example:
 

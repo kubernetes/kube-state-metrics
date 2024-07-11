@@ -27,15 +27,13 @@ import (
 func main() {
 	opts := options.NewOptions()
 	cmd := options.InitCommand
-	cmd.Run = func(cmd *cobra.Command, args []string) {
+	cmd.Run = func(_ *cobra.Command, _ []string) {
 		internal.RunKubeStateMetricsWrapper(opts)
 	}
 	opts.AddFlags(cmd)
-
 	if err := opts.Parse(); err != nil {
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
-
 	if err := opts.Validate(); err != nil {
 		klog.ErrorS(err, "Validating options error")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)

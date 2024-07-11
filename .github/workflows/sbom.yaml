@@ -1,0 +1,41 @@
+name: Generate SBOM with Kubernetes BOM
+
+on:
+  release:
+    types:
+      - released
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      OUTPUT: sbom.spdx
+      TAG: ${{ github.event.release.tag_name }}
+
+    steps:
+      - name: Fetch source code into GITHUB_WORKSPACE
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Install Kubernetes BOM
+        uses: kubernetes-sigs/release-actions/setup-bom@2f8b9ec22aedc9ce15039b6c7716aa6c2907df1c # v0.2.0
+
+      - name: Generate SBOM
+        run: |
+          bom generate \
+            --dirs=. \
+            --image=registry.k8s.io/kube-state-metrics/kube-state-metrics:$TAG \
+            --namespace=https://github.com/kubernetes/kube-state-metrics/releases/download/$TAG/$OUTPUT
+            --output=$OUTPUT
+
+      - name: Upload SBOM to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload $TAG $OUTPUT

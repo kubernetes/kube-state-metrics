@@ -161,7 +161,6 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveRunningCronJob1",namespace="ns1",schedule="0 */6 * * *"} 1
 				kube_cronjob_annotations{annotation_app_k8s_io_owner="@foo",cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
-				kube_cronjob_labels{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_failed_job_history_limit{cronjob="ActiveRunningCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="ActiveRunningCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_successful_job_history_limit{cronjob="ActiveRunningCronJob1",namespace="ns1"} 3
@@ -235,7 +234,6 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				# TYPE kube_cronjob_status_last_successful_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
-				kube_cronjob_labels{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_failed_job_history_limit{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="SuspendedCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_successful_job_history_limit{cronjob="SuspendedCronJob1",namespace="ns1"} 3
@@ -295,7 +293,6 @@ func TestCronJobStore(t *testing.T) {
 				# TYPE kube_cronjob_status_last_schedule_time gauge
 				# TYPE kube_cronjob_status_last_successful_time gauge
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="SuspendedCronJob1",namespace="ns1",schedule="0 */3 * * *"} 1
-				kube_cronjob_labels{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_failed_job_history_limit{cronjob="SuspendedCronJob1",namespace="ns1"} 1
 				kube_cronjob_spec_starting_deadline_seconds{cronjob="SuspendedCronJob1",namespace="ns1"} 300
 				kube_cronjob_spec_successful_job_history_limit{cronjob="SuspendedCronJob1",namespace="ns1"} 3
@@ -364,7 +361,6 @@ func TestCronJobStore(t *testing.T) {
 				kube_cronjob_spec_suspend{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 0
 				kube_cronjob_info{concurrency_policy="Forbid",cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1",schedule="25 * * * *"} 1
 				kube_cronjob_created{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1.520766296e+09
-				kube_cronjob_labels{cronjob="ActiveCronJob1NoLastScheduled",namespace="ns1"} 1
 ` +
 				fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ActiveCronJob1NoLastScheduled\",namespace=\"ns1\"} %ve+09\n",
 					float64(ActiveCronJob1NoLastScheduledNextScheduleTime.Unix())/math.Pow10(9)),

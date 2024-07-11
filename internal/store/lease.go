@@ -83,11 +83,15 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapLeaseFunc(func(l *coordinationv1.Lease) *metric.Family {
+				labelKeys := []string{"namespace"}
+
 				ms := []*metric.Metric{}
 
 				if !l.Spec.RenewTime.IsZero() {
 					ms = append(ms, &metric.Metric{
-						Value: float64(l.Spec.RenewTime.Unix()),
+						LabelKeys:   labelKeys,
+						LabelValues: []string{l.Namespace},
+						Value:       float64(l.Spec.RenewTime.Unix()),
 					})
 				}
 				return &metric.Family{
@@ -112,13 +116,15 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(interface{
 	}
 }
 
-func createLeaseListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createLeaseListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoordinationV1().Leases("").List(context.TODO(), opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoordinationV1().Leases(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoordinationV1().Leases("").Watch(context.TODO(), opts)
+			opts.FieldSelector = fieldSelector
+			return kubeClient.CoordinationV1().Leases(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

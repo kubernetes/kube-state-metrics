@@ -1,3 +1,95 @@
+## v2.12.0 / 2024-04-02
+
+### Note
+
+* This release addresses a critical issue where scraping the exposition data for certain types caused metrics-backends to crash: <https://github.com/kubernetes/kube-state-metrics/issues/2248>.
+* This release builds with `k8s.io/client-go`: `v0.29.3`.
+
+* [BUGFIX] Fallback to `gauge` for `protobuf`-based negotiations by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2270>
+* [ENHANCEMENT] Add `kube_pod_container_status_last_terminated_timestamp`by @tetianakravchenko in <https://github.com/kubernetes/kube-state-metrics/pull/2291>
+* [FEATURE] Allow prefixing expandable paths by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2052>
+
+## v2.11.0 / 2024-03-04
+
+### Note
+
+This release builds with Golang `v1.21.8`.
+
+* [ENHANCEMENT] Add OpenSSF Scorecard to README by @dalehenries in <https://github.com/kubernetes/kube-state-metrics/pull/2277>
+* [ENHANCEMENT] Generate OpenVX data for every release by @shafeeqes in <https://github.com/kubernetes/kube-state-metrics/pull/2276>
+* [ENHANCEMENT] Add restartPolicy to `kube_pod_init_container_info` metric by @changhyuni in <https://github.com/kubernetes/kube-state-metrics/pull/2240>
+* [FEATURE] Add `kube_node_status_addresses` metric by @stonith in <https://github.com/kubernetes/kube-state-metrics/pull/2252>
+* [FEATURE] Add namespace label to `endpointslice` metrics by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2266>
+* [FEATURE] Add opt-in `kube_persistentvolume_csi_attributes` metric by @machadovilaca in <https://github.com/kubernetes/kube-state-metrics/pull/2133>
+* [FEATURE] Add new metric `kube_pod_scheduler` metric by @adinhodovic in <https://github.com/kubernetes/kube-state-metrics/pull/2222>
+* [FEATURE] Support filtering annotations allow-list by `*` by @xonvanetta in <https://github.com/kubernetes/kube-state-metrics/pull/2234>
+* [ENHANCEMENT] Support scraping pod metrics that are still in scheduling status and have no assigned nodes by @mickeyzzc in <https://github.com/kubernetes/kube-state-metrics/pull/2217>
+* [FEATURE] Add backend resource info for `kube_ingress_path` by @rohitphatak in <https://github.com/kubernetes/kube-state-metrics/pull/2109>
+
+## v2.10.1 / 2023-10-09
+
+### Note
+
+* This release addresses a regression introduced in [#2105](https://github.com/kubernetes/kube-state-metrics/pull/2105).
+
+* [BUGFIX] Remove FieldSelector from non-namespaced resources by @mrueg and @dgrisonnet in [#2190](https://github.com/kubernetes/kube-state-metrics/pull/2190)
+* [ENHANCEMENT] Bump Go to v1.20.8
+
+## v2.10.0 / 2023-08-31
+
+### Note
+
+* Label and annotation metrics aren't exposed by default anymore to reduce the memory usage of the default configuration of kube-state-metrics. Before this change, they used to only include the name and namespace of the objects which is not relevant to users not opting in these metrics.
+
+* [BUGFIX] Log no _info suffix in name only once per reading the configuration for custommetrics by @chrischdi in <https://github.com/kubernetes/kube-state-metrics/pull/2157>
+* [BUGFIX] Don't crash on non-existent valueFrom path values by @chihshenghuang in <https://github.com/kubernetes/kube-state-metrics/pull/2140>
+* [BUGFIX] Index out of range in metrics_store.SanitizeHeaders by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2166>
+* [BUGFIX] Always extract the headers but only write it when we have custommetrics by @chrischdi in <https://github.com/kubernetes/kube-state-metrics/pull/2154>
+* [BUGFIX] Add filtering for Lease metrics by @ntoofu in <https://github.com/kubernetes/kube-state-metrics/pull/2122>
+* [FEATURE] Implement kube_pod_status_initialized_time by @opeco17 in <https://github.com/kubernetes/kube-state-metrics/pull/2148>
+* [FEATURE] Disable labels and annotations metrics when metric-annotations-… by @opeco17 in <https://github.com/kubernetes/kube-state-metrics/pull/2145>
+* [FEATURE] Add webhooks client config service metrics by @dgrisonnet in <https://github.com/kubernetes/kube-state-metrics/pull/2114>
+* [FEATURE] Support kube_persistentvolumeclaim_deletion_timestamp by @maxime1907 in <https://github.com/kubernetes/kube-state-metrics/pull/2074>
+* [FEATURE] Support kube_persistentvolume_deletion_timestamp by @maxime1907 in <https://github.com/kubernetes/kube-state-metrics/pull/2075>
+* [FEATURE] Adds new metric `kube_pod_service_account` by @swarup-stripe in <https://github.com/kubernetes/kube-state-metrics/pull/2096>
+* [FEATURE] Add volumemode to PVC info metric by @machadovilaca in <https://github.com/kubernetes/kube-state-metrics/pull/2134>
+* [FEATURE] Enable metric-annotations-allowlist and metric-labels-allowlist for ResourceQuota by @opeco17 in <https://github.com/kubernetes/kube-state-metrics/pull/2175>
+* [FEATURE] Allow field KV general matching by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2067>
+* [FEATURE] Support hot reload for kubeconfig by @opeco17 in <https://github.com/kubernetes/kube-state-metrics/pull/2144>
+* [FEATURE] Add support for endpoint topology routing hints by @MarkSRobinson in <https://github.com/kubernetes/kube-state-metrics/pull/2090>
+
+## v2.9.2 / 2023-05-30
+
+This release does not incorporate any user-facing changes. Re-running release procedures as the process for the previous release failed. Changes are listed in v2.9.0.
+
+## v2.9.1 / 2023-05-29
+
+This release does not incorporate any user-facing changes. Re-running release procedures as the process for the previous release failed. Changes are listed in v2.9.0.
+
+## v2.9.0 / 2023-05-23
+
+The changes mentioned below are only the user-facing ones. For a list of the complete set of changes, refer the changelog associated with the release tag.
+
+### Note
+
+* The deprecated experimental VerticalPodAutoscaler metrics are no longer supported, and have been removed. We recommend to use CustomResourceState metrics to gather metrics from custom resources like the Vertical Pod Autoscaler.
+* #2004 regulated label names to adhere with [OTel-Prometheus standards](https://github.com/open-telemetry/opentelemetry-specification/blob/8946dfc6a2302f78b0224fcc3f4dfb816a7bb1f4/specification/compatibility/prometheus_and_openmetrics.md?plain=1#L224-L229), so existing label names that do not follow the same may be replaced by the ones that do. Please refer to the PR for more details.
+
+* [BUGFIX] Adhere to OTel-Prometheus standard for labels #2004 @rexagod
+* [BUGFIX] Respect relative paths for label resolutions #2007 @rexagod
+* [BUGFIX] Support LabelsFromPath functionality for Info-typed metrics #2048 @murphd40
+* [CHANGE] Remove VerticalPodAutoscaler #2017 @mrueg
+* [ENHANCEMENT] Add StatefulSet Start Ordinal metrics for KEP-3335 #1959 @pwschuurman
+* [ENHANCEMENT] Add namespace label to `kube_lease_renew_time` #2073 @A-Hilaly
+* [ENHANCEMENT] Add parameters for PodSecurity #2042 @jcpunk
+* [ENHANCEMENT] Add support for multi cluster prometheus alerts #2058 @jkroepke
+* [ENHANCEMENT] Don't crash on non-existent path values #1998 @rexagod
+* [ENHANCEMENT] Only use OpenMetrics and Text in contentType #2024 @CatherineF-dev
+* [ENHANCEMENT] Update go version to 1.20.4 #2056 @RamakrishnanArun
+* [FEATURE] Add support for variable VKs in CRS config #1851 @rexagod
+* [FEATURE] Support quantities and percentages #1989 @mrueg
+* [FEATURE] Use prometheus/exporter-toolkit landing page #2034 @mrueg
+
 ## v2.8.2 / 2023-03-17
 
 * [BUGFIX]      Only use OpenMetrics and Text in contentType #2024 @CatherineF-dev
@@ -64,6 +156,7 @@ See: #1847
 * [BUGFIX]      Allow lease metrics to be exported across all namespaces #1845 @lantingchiang
 
 ## v2.6.0 / 2022-08-26
+
 * [FEATURE]     Add local storage labels to kube_persistentvolume_info #1814 @nabokihms
 * [FEATURE]     Add support for StateSet and Info metrics for Custom-Resource State #1777 @chrischdi
 * [FEATURE]     Add support for Rolebinding resource metrics #1799 @kaitoii11
@@ -97,9 +190,11 @@ See: #1847
 * [BUGFIX]      Properly initialize KSM Server test #1699 @fpetkovski
 
 ## v2.4.2 / 2022-02-10
-* [BUGFIX]  Publish images with with the correct tag 
+
+* [BUGFIX]  Publish images with with the correct tag
 
 ## v2.4.1 / 2022-02-10
+
 * [FEATURE]     Add `ingressclass` label to `kube_ingress_info` metric #1652 @adammw
 * [FEATURE]     Extend KSM library to support custom resource metrics #1644 @Garrybest
 * [ENHANCEMENT] Use apiVersion `v1` for `PodDisruptionBudget` and `CronJob` resources #1491 @bison
@@ -124,9 +219,10 @@ See: #1847
 
 ## v2.2.3 / 2021-10-13
 
-* [BUGFIX] Fix the image build job. Reverts #1602 
+* [BUGFIX] Fix the image build job. Reverts #1602
 
 ## v2.2.2 / 2021-10-13
+
 * [BUGFIX]  Downgrade latest allowed go version to 1.16.9 #1601 @mrueg
 * [BUGFIX]  Fix CI variable names used for building KSM images @mrueg
 
@@ -200,6 +296,7 @@ Location on quay.io will not be updated anymore. Previously pushed images will b
 * [BUGFIX] Propagate resource version when sharded #1402
 
 ## v2.0.0-beta / 2020-12-04
+
 Promotion to beta release after a period of no bugs.
 
 ## v2.0.0-alpha.3 / 2020-11-19
@@ -222,69 +319,68 @@ kube_pod_container_resource_requests and kube_pod_container_resource_limits
 
 * [CHANGE] Update go module path to k8s.io/kube-state-metrics/v2 #1238
 * [CHANGE] Bump klog to v2 and client-go to 1.19 #1250
-* [FEATURE] Add iscsi initiator name to persistentvolume_info #1235 
-* [BUGFIX] Added Namespace to Rolebinding Jsonnet #1233 
-* [BUGFIX] Reference closure scoped family generator #1240 
+* [FEATURE] Add iscsi initiator name to persistentvolume_info #1235
+* [BUGFIX] Added Namespace to Rolebinding Jsonnet #1233
+* [BUGFIX] Reference closure scoped family generator #1240
 
 ## v2.0.0-alpha / 2020-09-16
 
 NOTE: This is a major new alpha 2.0 release with breaking changes and removed metrics. See details below!
 
-* [CHANGE] Apply boundaries to metrics and allow via flag (--labels-allow-list) what labels to include #1125 
+* [CHANGE] Apply boundaries to metrics and allow via flag (--labels-allow-list) what labels to include #1125
 * [CHANGE] Update DaemonSet updated_number_scheduled metric name to be consistent #1181
-Metric was changed from kube_daemonset_updated_number_scheduled to kube_daemonset_status_updated_number_scheduled 
+Metric was changed from kube_daemonset_updated_number_scheduled to kube_daemonset_status_updated_number_scheduled
 * [CHANGE] Rework resource metrics #1168
 Metrics kube_pod_container_resource_requests, kube_pod_container_resource_limits, kube_pod_overhead, kube_pod_init_container_resource_limits, kube_pod_init_container_resource_requests changed
-* [CHANGE] Convert k8s labels to snake case #1165 
-* [CHANGE] Mutatingwebhookconfiguration.go: Switch to v1 #1144 
+* [CHANGE] Convert k8s labels to snake case #1165
+* [CHANGE] Mutatingwebhookconfiguration.go: Switch to v1 #1144
 * [CHANGE] v2: Rename storage class labels reclaimPolicy to reclaim_policy and volumeBindingMode to volume_binding_mode #1107
 * [CHANGE] v2: Renamed --namespace flag to --namespaces #1098
 * [CHANGE] Rename kube_pod_deleted to kube_pod_deletion_timestamp #1079
 * [CHANGE] v2: Rename collector flag to resource flag #1006
 --resources is the new flag
-* [CHANGE] Remove non-identifying labels from pod metrics #1009 
+* [CHANGE] Remove non-identifying labels from pod metrics #1009
 * [CHANGE] v2: Remove deprecated stable metrics #1004
 Note that some of these were replaced with EXPERIMENTAL resource metrics. See #1168 for more details.
   `kube_pod_container_resource_requests` and `kube_pod_container_resource_limits` are the replacements with `resource` labels
   representing the resource name and `unit` labels representing the resource unit.
-  - kube_pod_container_resource_requests_cpu_cores
-  - kube_pod_container_resource_limits_cpu_cores
-  - kube_pod_container_resource_requests_memory_bytes
-  - kube_pod_container_resource_limits_memory_bytes
-  - `kube_node_status_capacity` and `kube_node_status_allocatable` are the replacements with `resource` labels
+  * kube_pod_container_resource_requests_cpu_cores
+  * kube_pod_container_resource_limits_cpu_cores
+  * kube_pod_container_resource_requests_memory_bytes
+  * kube_pod_container_resource_limits_memory_bytes
+  * `kube_node_status_capacity` and `kube_node_status_allocatable` are the replacements with `resource` labels
   representing the resource name and `unit` labels representing the resource unit.
-  - kube_node_status_capacity_pods
-  - kube_node_status_capacity_cpu_cores
-  - kube_node_status_capacity_memory_bytes
-  - kube_node_status_allocatable_pods
-  - kube_node_status_allocatable_cpu_cores
-  - kube_node_status_allocatable_memory_bytes
+  * kube_node_status_capacity_pods
+  * kube_node_status_capacity_cpu_cores
+  * kube_node_status_capacity_memory_bytes
+  * kube_node_status_allocatable_pods
+  * kube_node_status_allocatable_cpu_cores
+  * kube_node_status_allocatable_memory_bytes
 * [CHANGE] Rename black-/whitelist to allow/deny-list #1045
 New flags are --metric-allowlist and --metric-denylist
-* [CHANGE] Update telemetry port to 8081 #1049 
-* [CHANGE] v2: Rename hpa metrics to use full horizontalpodautoscaler #1003 
+* [CHANGE] Update telemetry port to 8081 #1049
+* [CHANGE] v2: Rename hpa metrics to use full horizontalpodautoscaler #1003
 All metrics with prefix of kube_hpa_ were renamed to kube_horizontalpodautoscaler_
-* [CHANGE] v2: change metrics port to 8080, telemetry port to 8081 #1005 
+* [CHANGE] v2: change metrics port to 8080, telemetry port to 8081 #1005
 * [FEATURE] Add http request metric for kube-state-metrics main /metrics #1218  
-* [FEATURE] Add fc/iscsi/nfs identifier tags to persistentvolume_info metric #1208 
-* [FEATURE] Adds new pod metric kube_pod_container_state_started #1183 
+* [FEATURE] Add fc/iscsi/nfs identifier tags to persistentvolume_info metric #1208
+* [FEATURE] Adds new pod metric kube_pod_container_state_started #1183
 * [FEATURE] Add observedGeneration metric (kube_daemonset_status_observed_generation) for DaemonSets #1178
-* [FEATURE] Add internal_ip to node_info #1172 
-* [FEATURE] Avoid conflicts when mapping Kubernetes labels to Prometheus labels #1156 
+* [FEATURE] Add internal_ip to node_info #1172
+* [FEATURE] Avoid conflicts when mapping Kubernetes labels to Prometheus labels #1156
 * [FEATURE] Add aws/gce volume id to kube_persistentvolume_info #1146
 * [FEATURE] Add UnexpectedAdmissionError to kube_pod_status_reason metric #1145
 * [FEATURE] Add init container requests (kube_pod_init_container_resource_requests) #1123
-* [FEATURE] Add host_network to kube_pod_info #1100 
-* [FEATURE] Add kube_replicationcontroller_owner #1058 
-* [FEATURE] Pod: add gauges for pod overhead (kube_pod_overhead) #1053 
-* [FEATURE] Add "Terminating" status in kube_pod_status_phase metrics #1013 
-* [FEATURE] Add lease collector metrics #1038 
+* [FEATURE] Add host_network to kube_pod_info #1100
+* [FEATURE] Add kube_replicationcontroller_owner #1058
+* [FEATURE] Pod: add gauges for pod overhead (kube_pod_overhead) #1053
+* [FEATURE] Add "Terminating" status in kube_pod_status_phase metrics #1013
+* [FEATURE] Add lease collector metrics #1038
 * [ENHANCEMENT] Add DeprecatedVersion to struct FamilyGenerator and func NewFamilyGenerator #1160
-* [ENHANCEMENT] Add security context to deployment and statefulset #1034 
+* [ENHANCEMENT] Add security context to deployment and statefulset #1034
 * [BUGFIX] Fix VolumeAttachment API version mismatch: expected v1 but watching v1beta1 #1136
-* [BUGFIX] Fix various CI issues (kube_volumeattachment_info nodeName -> node label rename) #1117 
-* [BUGFIX] Fix maxUnavailable to round down instead up #1076 
-
+* [BUGFIX] Fix various CI issues (kube_volumeattachment_info nodeName -> node label rename) #1117
+* [BUGFIX] Fix maxUnavailable to round down instead up #1076
 
 ## v1.9.7 / 2020-05-24
 

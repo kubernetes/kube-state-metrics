@@ -33,6 +33,7 @@ func TestPodStore(t *testing.T) {
 	runtimeclass := "foo"
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
+	restartPolicyAlways := v1.ContainerRestartPolicyAlways
 
 	cases := []generateMetricsTestCase{
 		{
@@ -87,8 +88,9 @@ func TestPodStore(t *testing.T) {
 					},
 					InitContainers: []v1.Container{
 						{
-							Name:  "initContainer",
-							Image: "k8s.gcr.io/initfoo_spec",
+							Name:          "initContainer",
+							Image:         "k8s.gcr.io/initfoo_spec",
+							RestartPolicy: &restartPolicyAlways,
 						},
 					},
 				},
@@ -124,7 +126,7 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_init_container_info gauge
 				kube_pod_container_info{container="container2",container_id="docker://cd456",image_spec="k8s.gcr.io/hyperkube2_spec",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",namespace="ns2",pod="pod2",uid="uid2"} 1
 				kube_pod_container_info{container="container3",container_id="docker://ef789",image_spec="k8s.gcr.io/hyperkube3_spec",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",namespace="ns2",pod="pod2",uid="uid2"} 1
-				kube_pod_init_container_info{container="initContainer",container_id="docker://ef123",image_spec="k8s.gcr.io/initfoo_spec",image="k8s.gcr.io/initfoo",image_id="docker://sha256:wxyz",namespace="ns2",pod="pod2",uid="uid2"} 1`,
+				kube_pod_init_container_info{container="initContainer",container_id="docker://ef123",image_spec="k8s.gcr.io/initfoo_spec",image="k8s.gcr.io/initfoo",image_id="docker://sha256:wxyz",namespace="ns2",pod="pod2",uid="uid2",restart_policy="Always"} 1`,
 			MetricNames: []string{"kube_pod_container_info", "kube_pod_init_container_info"},
 		},
 		{
@@ -688,7 +690,6 @@ func TestPodStore(t *testing.T) {
 			},
 		},
 		{
-
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod6",
@@ -718,6 +719,9 @@ func TestPodStore(t *testing.T) {
 								Terminated: &v1.ContainerStateTerminated{
 									Reason:   "OOMKilled",
 									ExitCode: 137,
+									FinishedAt: metav1.Time{
+										Time: time.Unix(1501779547, 0),
+									},
 								},
 							},
 						},
@@ -727,6 +731,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 				# HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
+				# HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container in unix timestamp.
 				# HELP kube_pod_container_status_running [STABLE] Describes whether the container is currently in running state.
 				# HELP kube_pod_container_status_terminated [STABLE] Describes whether the container is currently in terminated state.
 				# HELP kube_pod_container_status_terminated_reason Describes the reason the container is currently in terminated state.
@@ -735,6 +740,7 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
 				# TYPE kube_pod_container_status_last_terminated_reason gauge
 				# TYPE kube_pod_container_status_last_terminated_exitcode gauge
+				# TYPE kube_pod_container_status_last_terminated_timestamp gauge
 				# TYPE kube_pod_container_status_running gauge
 				# TYPE kube_pod_container_status_terminated gauge
 				# TYPE kube_pod_container_status_terminated_reason gauge
@@ -747,10 +753,12 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_waiting{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 0
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns6",pod="pod6",reason="OOMKilled",uid="uid6"} 1
 				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 137
+				kube_pod_container_status_last_terminated_timestamp{container="container7",namespace="ns6",pod="pod6",uid="uid6"} 1.501779547e+09
 			`,
 			MetricNames: []string{
 				"kube_pod_container_status_last_terminated_reason",
 				"kube_pod_container_status_last_terminated_exitcode",
+				"kube_pod_container_status_last_terminated_timestamp",
 				"kube_pod_container_status_running",
 				"kube_pod_container_state_started",
 				"kube_pod_container_status_terminated",
@@ -788,6 +796,9 @@ func TestPodStore(t *testing.T) {
 								Terminated: &v1.ContainerStateTerminated{
 									Reason:   "DeadlineExceeded",
 									ExitCode: 143,
+									FinishedAt: metav1.Time{
+										Time: time.Unix(1501779547, 0),
+									},
 								},
 							},
 						},
@@ -797,6 +808,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 				# HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
+				# HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container in unix timestamp.
 				# HELP kube_pod_container_status_running [STABLE] Describes whether the container is currently in running state.
 				# HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
 				# HELP kube_pod_container_status_terminated [STABLE] Describes whether the container is currently in terminated state.
@@ -805,6 +817,7 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_container_status_waiting_reason [STABLE] Describes the reason the container is currently in waiting state.
 				# TYPE kube_pod_container_status_last_terminated_exitcode gauge
 				# TYPE kube_pod_container_status_last_terminated_reason gauge
+				# TYPE kube_pod_container_status_last_terminated_timestamp gauge
 				# TYPE kube_pod_container_status_running gauge
 				# TYPE kube_pod_container_state_started gauge
 				# TYPE kube_pod_container_status_terminated gauge
@@ -814,6 +827,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_state_started{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1.501777018e+09
 				kube_pod_container_status_last_terminated_exitcode{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 143
 				kube_pod_container_status_last_terminated_reason{container="container7",namespace="ns7",pod="pod7",reason="DeadlineExceeded",uid="uid7"} 1
+				kube_pod_container_status_last_terminated_timestamp{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1.501779547e+09
 				kube_pod_container_status_running{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 1
 				kube_pod_container_status_terminated{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
 				kube_pod_container_status_waiting{container="container7",namespace="ns7",pod="pod7",uid="uid7"} 0
@@ -823,6 +837,7 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_container_state_started",
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
+				"kube_pod_container_status_last_terminated_timestamp",
 				"kube_pod_container_status_waiting",
 				"kube_pod_container_status_last_terminated_reason",
 				"kube_pod_container_status_last_terminated_exitcode",
@@ -1444,6 +1459,57 @@ func TestPodStore(t *testing.T) {
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
+							Type:   v1.PodInitialized,
+							Status: v1.ConditionTrue,
+							LastTransitionTime: metav1.Time{
+								Time: time.Unix(1501666018, 0),
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.
+				# TYPE kube_pod_status_initialized_time gauge
+				kube_pod_status_initialized_time{namespace="ns1",pod="pod1",uid="uid1"} 1.501666018e+09
+			`,
+			MetricNames: []string{"kube_pod_status_initialized_time"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodInitialized,
+							Status: v1.ConditionFalse,
+							LastTransitionTime: metav1.Time{
+								Time: time.Unix(1501666018, 0),
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.
+				# TYPE kube_pod_status_initialized_time gauge
+			`,
+			MetricNames: []string{"kube_pod_status_initialized_time"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
 							Type:   v1.ContainersReady,
 							Status: v1.ConditionTrue,
 							LastTransitionTime: metav1.Time{
@@ -1826,7 +1892,6 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# TYPE kube_pod_labels gauge
-				kube_pod_labels{namespace="ns1",pod="pod1",uid="uid1"} 1
 		`,
 			MetricNames: []string{
 				"kube_pod_labels",
@@ -2066,6 +2131,46 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_tolerations",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					ServiceAccountName: "service-account-name",
+				},
+			},
+			Want: `
+				# HELP kube_pod_service_account The service account for a pod.
+				# TYPE kube_pod_service_account gauge
+				kube_pod_service_account{namespace="ns1",pod="pod1",service_account="service-account-name",uid="uid1"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_service_account",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					SchedulerName: "scheduler1",
+				},
+			},
+			Want: `
+				# HELP kube_pod_scheduler The scheduler for a pod.
+				# TYPE kube_pod_scheduler gauge
+				kube_pod_scheduler{namespace="ns1",pod="pod1",name="scheduler1",uid="uid1"} 1
+			`,
+			MetricNames: []string{
+				"kube_pod_scheduler",
+			},
+		},
 	}
 
 	for i, c := range cases {
@@ -2118,6 +2223,9 @@ func BenchmarkPodStore(b *testing.B) {
 					},
 					LastTerminationState: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
+							FinishedAt: metav1.Time{
+								Time: time.Unix(1501779547, 0),
+							},
 							Reason:   "OOMKilled",
 							ExitCode: 137,
 						},
@@ -2135,6 +2243,9 @@ func BenchmarkPodStore(b *testing.B) {
 					},
 					LastTerminationState: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
+							FinishedAt: metav1.Time{
+								Time: time.Unix(1501779547, 0),
+							},
 							Reason:   "OOMKilled",
 							ExitCode: 137,
 						},
@@ -2152,6 +2263,9 @@ func BenchmarkPodStore(b *testing.B) {
 					},
 					LastTerminationState: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
+							FinishedAt: metav1.Time{
+								Time: time.Unix(1501779547, 0),
+							},
 							Reason:   "OOMKilled",
 							ExitCode: 137,
 						},
@@ -2161,7 +2275,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 50
+	expectedFamilies := 54
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

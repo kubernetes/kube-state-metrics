@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -134,12 +134,15 @@ func Test_addPathLabels(t *testing.T) {
 		{name: "*", args: args{
 			obj: cr,
 			labels: map[string]valuePath{
-				"*1":  mustCompilePath(t, "metadata", "annotations"),
-				"bar": mustCompilePath(t, "metadata", "labels", "foo"),
+				"*1":             mustCompilePath(t, "metadata", "annotations"),
+				"bar":            mustCompilePath(t, "metadata", "labels", "foo"),
+				"label_object_*": mustCompilePath(t, "metadata", "annotations"),
 			},
 			want: map[string]string{
-				"qux": "quxx",
-				"bar": "bar",
+				"qux":              "quxx",
+				"bar":              "bar",
+				"label_object_qux": "quxx",
+				"label_object_bar": "baz",
 			},
 		}},
 	}
@@ -210,6 +213,23 @@ func Test_values(t *testing.T) {
 		}, wantResult: nil, wantErrors: []error{
 			errors.New("[foo]: got nil while resolving path"),
 		}},
+		{name: "exist path but valueFrom path is non-existent single", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec", "replicas"),
+			},
+			ValueFrom: mustCompilePath(t, "non-existent"),
+		}, wantResult: nil, wantErrors: nil,
+		},
+		{name: "exist path but valueFrom path non-existent array", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "condition_values"),
+				labelFromPath: map[string]valuePath{
+					"name": mustCompilePath(t, "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "non-existent"),
+		}, wantResult: nil, wantErrors: nil,
+		},
 		{name: "array", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "condition_values"),
@@ -332,6 +352,15 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 0, "type", "Provisioned"),
 			newEachValue(t, 1, "type", "Ready"),
 		}},
+		{name: "= expression matching", each: &compiledInfo{
+			compiledCommon: compiledCommon{
+				labelFromPath: map[string]valuePath{
+					"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
+				},
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "bar", "baz"),
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -437,7 +466,7 @@ func Test_fullName(t *testing.T) {
 		{
 			name: "no prefix",
 			args: args{
-				resource: r(pointer.String("")),
+				resource: r(ptr.To("")),
 				f:        count,
 			},
 			want: "count",
@@ -445,7 +474,7 @@ func Test_fullName(t *testing.T) {
 		{
 			name: "custom",
 			args: args{
-				resource: r(pointer.String("bar_baz")),
+				resource: r(ptr.To("bar_baz")),
 				f:        count,
 			},
 			want: "bar_baz_count",

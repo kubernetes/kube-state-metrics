@@ -100,7 +100,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	// This test is not suitable to be compared in terms of time, as it includes
 	// a one second wait. Use for memory allocation comparisons, profiling, ...
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
-	b.Run("GenerateMetrics", func(b *testing.B) {
+	b.Run("GenerateMetrics", func(_ *testing.B) {
 		handler.ConfigureSharding(ctx, 0, 1)
 
 		// Wait for caches to fill
@@ -209,6 +209,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
 # HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
+# HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container in unix timestamp.
 # HELP kube_pod_container_status_ready [STABLE] Describes whether the containers readiness check succeeded.
 # HELP kube_pod_container_status_restarts_total [STABLE] The number of container restarts per container.
 # HELP kube_pod_container_status_running [STABLE] Describes whether the container is currently in running state.
@@ -235,12 +236,15 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_overhead_cpu_cores The pod overhead in regards to cpu cores associated with running a pod.
 # HELP kube_pod_overhead_memory_bytes The pod overhead in regards to memory associated with running a pod.
 # HELP kube_pod_runtimeclass_name_info The runtimeclass associated with the pod.
+# HELP kube_pod_scheduler The scheduler for a pod.
+# HELP kube_pod_service_account The service account for a pod.
 # HELP kube_pod_owner [STABLE] Information about the Pod's owner.
 # HELP kube_pod_restart_policy [STABLE] Describes the restart policy in use by this pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim is mounted read only.
 # HELP kube_pod_start_time [STABLE] Start time in unix timestamp for a pod.
 # HELP kube_pod_status_container_ready_time Readiness achieved time in unix timestamp for a pod containers.
+# HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.
 # HELP kube_pod_status_qos_class The pods current qosClass.
 # HELP kube_pod_status_phase [STABLE] The pods current phase.
 # HELP kube_pod_status_ready_time Readiness achieved time in unix timestamp for a pod.
@@ -258,6 +262,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_container_state_started gauge
 # TYPE kube_pod_container_status_last_terminated_exitcode gauge
 # TYPE kube_pod_container_status_last_terminated_reason gauge
+# TYPE kube_pod_container_status_last_terminated_timestamp gauge
 # TYPE kube_pod_container_status_ready gauge
 # TYPE kube_pod_container_status_restarts_total counter
 # TYPE kube_pod_container_status_running gauge
@@ -284,12 +289,15 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_overhead_cpu_cores gauge
 # TYPE kube_pod_overhead_memory_bytes gauge
 # TYPE kube_pod_runtimeclass_name_info gauge
+# TYPE kube_pod_scheduler gauge
+# TYPE kube_pod_service_account gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge
 # TYPE kube_pod_status_container_ready_time gauge
+# TYPE kube_pod_status_initialized_time gauge
 # TYPE kube_pod_status_phase gauge
 # TYPE kube_pod_status_qos_class gauge
 # TYPE kube_pod_status_ready gauge
@@ -299,7 +307,6 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
 # TYPE kube_pod_tolerations gauge
-kube_pod_annotations{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",image_spec="k8s.gcr.io/hyperkube2_spec",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",image_spec="k8s.gcr.io/hyperkube3_spec",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
 kube_pod_container_resource_limits{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",node="node1",resource="cpu",unit="core"} 0.2
@@ -318,6 +325,7 @@ kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",
 kube_pod_container_resource_requests{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",node="node1",resource="memory",unit="byte"} 2e+08
 kube_pod_container_status_last_terminated_exitcode{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 137
 kube_pod_container_status_last_terminated_reason{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",reason="OOMKilled"} 1
+kube_pod_container_status_last_terminated_timestamp{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 1.501779547e+09
 kube_pod_container_status_ready{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0
 kube_pod_container_status_ready{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
 kube_pod_container_status_restarts_total{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1"} 0
@@ -331,9 +339,10 @@ kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",con
 kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
 kube_pod_created{namespace="default",pod="pod0",uid="abc-0"} 1.5e+09
 kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_ip="1.2.3.4",node="node1",created_by_kind="",created_by_name="",priority_class="",host_network="false"} 1
-kube_pod_labels{namespace="default",pod="pod0",uid="abc-0"} 1
 kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="",owner_name="",owner_is_controller=""} 1
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
+kube_pod_scheduler{namespace="default",pod="pod0",uid="abc-0",name="scheduler1"} 1
+kube_pod_service_account{namespace="default",pod="pod0",uid="abc-0",service_account=""} 1
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Failed"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Pending"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Running"} 1
@@ -771,6 +780,7 @@ func pod(client *fake.Clientset, index int) error {
 			UID:               types.UID("abc-" + i),
 		},
 		Spec: v1.PodSpec{
+			SchedulerName: "scheduler1",
 			RestartPolicy: v1.RestartPolicyAlways,
 			NodeName:      "node1",
 			Containers: []v1.Container{
@@ -827,6 +837,9 @@ func pod(client *fake.Clientset, index int) error {
 					},
 					LastTerminationState: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
+							FinishedAt: metav1.Time{
+								Time: time.Unix(1501779547, 0),
+							},
 							Reason:   "OOMKilled",
 							ExitCode: 137,
 						},
@@ -880,7 +893,7 @@ func (f *fooFactory) Name() string {
 }
 
 // CreateClient use fake client set to establish 10 foos.
-func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
+func (f *fooFactory) CreateClient(_ *rest.Config) (interface{}, error) {
 	fooClient := samplefake.NewSimpleClientset()
 	for i := 0; i < 10; i++ {
 		err := foo(fooClient, i)
@@ -891,7 +904,7 @@ func (f *fooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
 	return fooClient, nil
 }
 
-func (f *fooFactory) MetricFamilyGenerators(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func (f *fooFactory) MetricFamilyGenerators() []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_foo_spec_replicas",

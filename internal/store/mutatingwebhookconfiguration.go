@@ -41,7 +41,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
+			wrapMutatingWebhookConfigurationFunc(func(_ *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -82,10 +82,36 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_mutatingwebhookconfiguration_webhook_clientconfig_service",
+			"Service used by the apiserver to connect to a mutating webhook.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, webhook := range mwc.Webhooks {
+					var serviceName, serviceNamespace string
+					if webhook.ClientConfig.Service != nil {
+						serviceName = webhook.ClientConfig.Service.Name
+						serviceNamespace = webhook.ClientConfig.Service.Namespace
+					}
+
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"webhook_name", "service_name", "service_namespace"},
+						LabelValues: []string{webhook.Name, serviceName, serviceNamespace},
+						Value:       1,
+					})
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 )
 
-func createMutatingWebhookConfigurationListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createMutatingWebhookConfigurationListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().List(context.TODO(), opts)

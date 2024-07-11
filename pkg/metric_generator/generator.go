@@ -81,8 +81,6 @@ func (g *FamilyGenerator) generateHeader() string {
 	header.WriteString("# HELP ")
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
-	// TODO(#1833): remove if-else after all metrics are attached with right
-	// StabilityLevel.
 	if g.StabilityLevel == basemetrics.STABLE {
 		header.WriteString(fmt.Sprintf("[%v] %v", g.StabilityLevel, g.Help))
 	} else {

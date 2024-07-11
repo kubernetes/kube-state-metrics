@@ -26,26 +26,27 @@ import (
 	"net/http/pprof"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
-
-	"github.com/oklog/run"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/version"
-	"github.com/prometheus/exporter-toolkit/web"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/oklog/run"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	versionCollector "github.com/prometheus/client_golang/prometheus/collectors/version"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/version"
+	"github.com/prometheus/exporter-toolkit/web"
+
+	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
@@ -54,12 +55,14 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
+	"k8s.io/kube-state-metrics/v2/pkg/util"
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
 )
 
 const (
 	metricsPath = "/metrics"
 	healthzPath = "/healthz"
+	livezPath   = "/livez"
 )
 
 // promLogger implements promhttp.Logger
@@ -90,11 +93,8 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) erro
 // which implements customresource.RegistryFactory and pass all factories into this function.
 func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	promLogger := promLogger{}
-
-	storeBuilder := store.NewBuilder()
-
 	ksmMetricsRegistry := prometheus.NewRegistry()
-	ksmMetricsRegistry.MustRegister(version.NewCollector("kube_state_metrics"))
+	ksmMetricsRegistry.MustRegister(versionCollector.NewCollector("kube_state_metrics"))
 	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:        "http_request_duration_seconds",
@@ -119,6 +119,20 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			Help: "Timestamp of the last successful configuration reload.",
 		}, []string{"type", "filename"})
 
+	// Register self-metrics to track the state of the cache.
+	crdsAddEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
+		Name: "kube_state_metrics_custom_resource_state_add_events_total",
+		Help: "Number of times that the CRD informer triggered the add event.",
+	})
+	crdsDeleteEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
+		Name: "kube_state_metrics_custom_resource_state_delete_events_total",
+		Help: "Number of times that the CRD informer triggered the remove event.",
+	})
+	crdsCacheCountGauge := promauto.With(ksmMetricsRegistry).NewGauge(prometheus.GaugeOpts{
+		Name: "kube_state_metrics_custom_resource_state_cache",
+		Help: "Net amount of CRDs affecting the cache currently.",
+	})
+	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 
 	got := options.GetConfigFile(*opts)
@@ -146,6 +160,11 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		}
 	}
 
+	kubeConfig, err := clientcmd.BuildConfigFromFlags(opts.Apiserver, opts.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to build config from flags: %v", err)
+	}
+
 	// Loading custom resource state configuration from cli argument or config file
 	config, err := resolveCustomResourceConfig(opts)
 	if err != nil {
@@ -153,14 +172,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 
 	var factories []customresource.RegistryFactory
-
-	if config != nil {
-		factories, err = customresourcestate.FromConfig(config)
-		if err != nil {
-			return fmt.Errorf("Parsing from Custom Resource State Metrics file failed: %v", err)
-		}
-	}
-	storeBuilder.WithCustomResourceStoreFactories(factories...)
 
 	if opts.CustomResourceConfigFile != "" {
 		crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
@@ -185,8 +196,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		resources.Insert(options.DefaultResources.AsSlice()...)
 		klog.InfoS("Used default resources")
 	case opts.CustomResourcesOnly:
-		// enable custom resource only
-		klog.InfoS("Used CRD resources only", "resources", resources)
+		// enable custom resource only, these resources will be populated later on
+		klog.InfoS("Used CRD resources only")
 	default:
 		resources.Insert(opts.Resources.AsSlice()...)
 		klog.InfoS("Used resources", "resources", resources)
@@ -234,18 +245,19 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	storeBuilder.WithUsingAPIServerCache(opts.UseAPIServerCache)
 	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc())
-	storeBuilder.WithGenerateCustomResourceStoresFunc(storeBuilder.DefaultGenerateCustomResourceStoresFunc())
-
 	proc.StartReaper()
 
-	kubeClient, customResourceClients, err := createKubeClient(opts.Apiserver, opts.Kubeconfig, factories...)
+	storeBuilder.WithUtilOptions(opts)
+	kubeClient, err := util.CreateKubeClient(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
 	storeBuilder.WithKubeClient(kubeClient)
-	storeBuilder.WithCustomResourceClients(customResourceClients)
+
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
-	storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList)
+	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
+		return fmt.Errorf("failed to set up annotations allowlist: %v", err)
+	}
 	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
 		return fmt.Errorf("failed to set up labels allowlist: %v", err)
 	}
@@ -264,7 +276,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		opts.EnableGZIPEncoding,
 	)
 	// Run MetricsHandler
-	{
+	if config == nil {
 		ctxMetricsHandler, cancel := context.WithCancel(ctx)
 		g.Add(func() error {
 			return m.Run(ctxMetricsHandler)
@@ -274,6 +286,33 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 
 	tlsConfig := opts.TLSConfig
+
+	// A nil CRS config implies that we need to hold off on all CRS operations.
+	if config != nil {
+		discovererInstance := &discovery.CRDiscoverer{
+			CRDsAddEventsCounter:    crdsAddEventsCounter,
+			CRDsDeleteEventsCounter: crdsDeleteEventsCounter,
+			CRDsCacheCountGauge:     crdsCacheCountGauge,
+		}
+		// This starts a goroutine that will watch for any new GVKs to extract from CRDs.
+		err = discovererInstance.StartDiscovery(ctx, kubeConfig)
+		if err != nil {
+			return err
+		}
+		// FromConfig will return different behaviours when a G**-based config is supplied (since that is subject to change based on the resources present in the cluster).
+		fn, err := customresourcestate.FromConfig(config, discovererInstance)
+		if err != nil {
+			return err
+		}
+		// This starts a goroutine that will keep the cache up to date.
+		discovererInstance.PollForCacheUpdates(
+			ctx,
+			opts,
+			storeBuilder,
+			m,
+			fn,
+		)
+	}
 
 	telemetryMux := buildTelemetryServer(ksmMetricsRegistry)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
@@ -286,12 +325,15 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		WebConfigFile:      &tlsConfig,
 	}
 
-	metricsMux := buildMetricsServer(m, durationVec)
+	metricsMux := buildMetricsServer(m, durationVec, kubeClient)
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	metricsServer := http.Server{
 		Handler:           metricsMux,
-		ReadHeaderTimeout: 5 * time.Second}
-
+		ReadHeaderTimeout: opts.ServerReadHeaderTimeout,
+		ReadTimeout:       opts.ServerReadTimeout,
+		WriteTimeout:      opts.ServerWriteTimeout,
+		IdleTimeout:       opts.ServerIdleTimeout,
+	}
 	metricsFlags := web.FlagConfig{
 		WebListenAddresses: &[]string{metricsServerListenAddress},
 		WebSystemdSocket:   new(bool),
@@ -324,46 +366,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	if err := g.Run(); err != nil {
 		return fmt.Errorf("run server group error: %v", err)
 	}
+
 	klog.InfoS("Exited")
 	return nil
-}
-
-func createKubeClient(apiserver string, kubeconfig string, factories ...customresource.RegistryFactory) (clientset.Interface, map[string]interface{}, error) {
-	config, err := clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	config.UserAgent = fmt.Sprintf("%s/%s (%s/%s) kubernetes/%s", "kube-state-metrics", version.Version, runtime.GOOS, runtime.GOARCH, version.Revision)
-	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
-	config.ContentType = "application/vnd.kubernetes.protobuf"
-
-	kubeClient, err := clientset.NewForConfig(config)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	customResourceClients := make(map[string]interface{}, len(factories))
-	for _, f := range factories {
-		customResourceClient, err := f.CreateClient(config)
-		if err != nil {
-			return nil, nil, err
-		}
-		customResourceClients[f.Name()] = customResourceClient
-	}
-
-	// Informers don't seem to do a good job logging error messages when it
-	// can't reach the server, making debugging hard. This makes it easier to
-	// figure out if apiserver is configured incorrectly.
-	klog.InfoS("Tested communication with server")
-	v, err := kubeClient.Discovery().ServerVersion()
-	if err != nil {
-		return nil, nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
-	}
-	klog.InfoS("Run with Kubernetes cluster version", "major", v.Major, "minor", v.Minor, "gitVersion", v.GitVersion, "gitTreeState", v.GitTreeState, "gitCommit", v.GitCommit, "platform", v.Platform)
-	klog.InfoS("Communication with server successful")
-
-	return kubeClient, customResourceClients, nil
 }
 
 func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
@@ -392,7 +397,7 @@ func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 	return mux
 }
 
-func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec) *http.ServeMux {
+func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// TODO: This doesn't belong into serveMetrics
@@ -402,10 +407,25 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
+	// Add metricsPath
 	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationObserver, m))
 
+	// Add livezPath
+	mux.Handle(livezPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+
+		// Query the Kube API to make sure we are not affected by a network outage.
+		got := client.CoreV1().RESTClient().Get().AbsPath("/livez").Do(context.Background())
+		if got.Error() != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
+	}))
+
 	// Add healthzPath
-	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(http.StatusText(http.StatusOK)))
 	})
@@ -423,6 +443,10 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 			{
 				Address: healthzPath,
 				Text:    "Healthz",
+			},
+			{
+				Address: livezPath,
+				Text:    "Livez",
 			},
 		},
 	}

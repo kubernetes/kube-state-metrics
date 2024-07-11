@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -47,8 +48,15 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/sharding"
+	"k8s.io/kube-state-metrics/v2/pkg/util"
 	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
+
+// ResourceDiscoveryTimeout is the timeout for the resource discovery.
+const ResourceDiscoveryTimeout = 10 * time.Second
+
+// ResourceDiscoveryInterval is the interval for the resource discovery.
+const ResourceDiscoveryInterval = 100 * time.Millisecond
 
 // Make sure the internal Builder implements the public BuilderInterface.
 // New Builder methods should be added to the public BuilderInterface.
@@ -74,12 +82,21 @@ type Builder struct {
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
 	useAPIServerCache             bool
+	utilOptions                   *options.Options
 }
 
 // NewBuilder returns a new builder.
 func NewBuilder() *Builder {
 	b := &Builder{}
 	return b
+}
+
+// WithUtilOptions sets the utilOptions property of a Builder.
+// These are the options that are necessary for the util package.
+func (b *Builder) WithUtilOptions(opts *options.Options) {
+	b.utilOptions = options.NewOptions()
+	b.utilOptions.Apiserver = opts.Apiserver
+	b.utilOptions.Kubeconfig = opts.Kubeconfig
 }
 
 // WithMetrics sets the metrics property of a Builder.
@@ -90,18 +107,18 @@ func (b *Builder) WithMetrics(r prometheus.Registerer) {
 
 // WithEnabledResources sets the enabledResources property of a Builder.
 func (b *Builder) WithEnabledResources(r []string) error {
-	for _, col := range r {
-		if !resourceExists(col) {
-			return fmt.Errorf("resource %s does not exist. Available resources: %s", col, strings.Join(availableResources(), ","))
+	for _, resource := range r {
+		if !resourceExists(resource) {
+			return fmt.Errorf("resource %s does not exist. Available resources: %s", resource, strings.Join(availableResources(), ","))
 		}
 	}
 
-	var copy []string
-	copy = append(copy, r...)
+	var sortedResources []string
+	sortedResources = append(sortedResources, r...)
 
-	sort.Strings(copy)
+	sort.Strings(sortedResources)
 
-	b.enabledResources = copy
+	b.enabledResources = append(b.enabledResources, sortedResources...)
 	return nil
 }
 
@@ -180,13 +197,20 @@ func (b *Builder) DefaultGenerateCustomResourceStoresFunc() ksmtypes.BuildCustom
 func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory) {
 	for i := range fs {
 		f := fs[i]
-		if _, ok := availableStores[f.Name()]; ok {
-			klog.InfoS("The internal resource store already exists and is overridden by a custom resource store with the same name, please make sure it meets your expectation", "registryName", f.Name())
+		gvr := util.GVRFromType(f.Name(), f.ExpectedType())
+		var gvrString string
+		if gvr != nil {
+			gvrString = gvr.String()
+		} else {
+			gvrString = f.Name()
 		}
-		availableStores[f.Name()] = func(b *Builder) []cache.Store {
+		if _, ok := availableStores[gvrString]; ok {
+			klog.InfoS("Updating store", "GVR", gvrString)
+		}
+		availableStores[gvrString] = func(b *Builder) []cache.Store {
 			return b.buildCustomResourceStoresFunc(
 				f.Name(),
-				f.MetricFamilyGenerators(b.allowAnnotationsList[f.Name()], b.allowLabelsList[f.Name()]),
+				f.MetricFamilyGenerators(),
 				f.ExpectedType(),
 				f.ListWatch,
 				b.useAPIServerCache,
@@ -195,32 +219,43 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 	}
 }
 
-// WithAllowAnnotations configures which annotations can be returned for metrics
-func (b *Builder) WithAllowAnnotations(annotations map[string][]string) {
-	if len(annotations) > 0 {
-		b.allowAnnotationsList = annotations
+// allowList validates the given map and checks if the resources exists.
+// If there is a '*' as key, return new map with all enabled resources.
+func (b *Builder) allowList(list map[string][]string) (map[string][]string, error) {
+	if len(list) == 0 {
+		return nil, nil
 	}
+
+	for l := range list {
+		if !resourceExists(l) && l != "*" {
+			return nil, fmt.Errorf("resource %s does not exist. Available resources: %s", l, strings.Join(availableResources(), ","))
+		}
+	}
+
+	// "*" takes precedence over other specifications
+	allowedList, ok := list["*"]
+	if !ok {
+		return list, nil
+	}
+	m := make(map[string][]string)
+	for _, resource := range b.enabledResources {
+		m[resource] = allowedList
+	}
+	return m, nil
+}
+
+// WithAllowAnnotations configures which annotations can be returned for metrics
+func (b *Builder) WithAllowAnnotations(annotations map[string][]string) error {
+	var err error
+	b.allowAnnotationsList, err = b.allowList(annotations)
+	return err
 }
 
 // WithAllowLabels configures which labels can be returned for metrics
 func (b *Builder) WithAllowLabels(labels map[string][]string) error {
-	if len(labels) > 0 {
-		for label := range labels {
-			if !resourceExists(label) && label != "*" {
-				return fmt.Errorf("resource %s does not exist. Available resources: %s", label, strings.Join(availableResources(), ","))
-			}
-		}
-		b.allowLabelsList = labels
-		// "*" takes precedence over other specifications
-		if allowedLabels, ok := labels["*"]; ok {
-			m := make(map[string][]string)
-			for _, resource := range b.enabledResources {
-				m[resource] = allowedLabels
-			}
-			b.allowLabelsList = m
-		}
-	}
-	return nil
+	var err error
+	b.allowLabelsList, err = b.allowList(labels)
+	return err
 }
 
 // Build initializes and registers all enabled stores.
@@ -243,7 +278,9 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 		}
 	}
 
-	klog.InfoS("Active resources", "activeStoreNames", strings.Join(activeStoreNames, ","))
+	if len(activeStoreNames) > 0 {
+		klog.InfoS("Active resources", "activeStoreNames", strings.Join(activeStoreNames, ","))
+	}
 
 	return metricsWriters
 }
@@ -401,7 +438,7 @@ func (b *Builder) buildReplicationControllerStores() []cache.Store {
 }
 
 func (b *Builder) buildResourceQuotaStores() []cache.Store {
-	return b.buildStoresFunc(resourceQuotaMetricFamilies, &v1.ResourceQuota{}, createResourceQuotaListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(resourceQuotaMetricFamilies(b.allowAnnotationsList["resourcequotas"], b.allowLabelsList["resourcequotas"]), &v1.ResourceQuota{}, createResourceQuotaListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildSecretStores() []cache.Store {
@@ -513,9 +550,17 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 ) []cache.Store {
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
+
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
 
-	customResourceClient, ok := b.customResourceClients[resourceName]
+	gvr := util.GVRFromType(resourceName, expectedType)
+	var gvrString string
+	if gvr != nil {
+		gvrString = gvr.String()
+	} else {
+		gvrString = resourceName
+	}
+	customResourceClient, ok := b.customResourceClients[gvrString]
 	if !ok {
 		klog.InfoS("Custom resource client does not exist", "resourceName", resourceName)
 		return []cache.Store{}

@@ -99,7 +99,6 @@ func TestStatefulSetStore(t *testing.T) {
  				kube_statefulset_status_observed_generation{namespace="ns1",statefulset="statefulset1"} 1
  				kube_statefulset_replicas{namespace="ns1",statefulset="statefulset1"} 3
  				kube_statefulset_metadata_generation{namespace="ns1",statefulset="statefulset1"} 3
-				kube_statefulset_labels{namespace="ns1",statefulset="statefulset1"} 1
 `,
 			MetricNames: []string{
 				"kube_statefulset_created",
@@ -177,7 +176,6 @@ func TestStatefulSetStore(t *testing.T) {
 				kube_statefulset_status_observed_generation{namespace="ns2",statefulset="statefulset2"} 2
 				kube_statefulset_replicas{namespace="ns2",statefulset="statefulset2"} 6
 				kube_statefulset_metadata_generation{namespace="ns2",statefulset="statefulset2"} 21
-				kube_statefulset_labels{namespace="ns2",statefulset="statefulset2"} 1
 				kube_statefulset_status_current_revision{namespace="ns2",revision="cr2",statefulset="statefulset2"} 1
 `,
 			MetricNames: []string{
@@ -247,7 +245,6 @@ func TestStatefulSetStore(t *testing.T) {
 				kube_statefulset_status_replicas_updated{namespace="ns3",statefulset="statefulset3"} 0
 				kube_statefulset_replicas{namespace="ns3",statefulset="statefulset3"} 9
 				kube_statefulset_metadata_generation{namespace="ns3",statefulset="statefulset3"} 36
-				kube_statefulset_labels{namespace="ns3",statefulset="statefulset3"} 1
 				kube_statefulset_status_current_revision{namespace="ns3",revision="cr3",statefulset="statefulset3"} 1
  			`,
 			MetricNames: []string{
@@ -321,7 +318,6 @@ func TestStatefulSetStore(t *testing.T) {
 				kube_statefulset_replicas{namespace="ns4",statefulset="statefulset4"} 3
  				kube_statefulset_metadata_generation{namespace="ns4",statefulset="statefulset4"} 1
  				kube_statefulset_persistentvolumeclaim_retention_policy{namespace="ns4",statefulset="statefulset4",when_deleted="Retain",when_scaled="Delete"} 1
-				kube_statefulset_labels{namespace="ns4",statefulset="statefulset4"} 1
 				kube_statefulset_status_current_revision{namespace="ns4",revision="cr3",statefulset="statefulset4"} 1
  			`,
 			MetricNames: []string{
@@ -397,7 +393,6 @@ func TestStatefulSetStore(t *testing.T) {
 				kube_statefulset_replicas{namespace="ns5",statefulset="statefulset5"} 3
 				kube_statefulset_ordinals_start{namespace="ns5",statefulset="statefulset5"} 2
  				kube_statefulset_metadata_generation{namespace="ns5",statefulset="statefulset5"} 1
-				kube_statefulset_labels{namespace="ns5",statefulset="statefulset5"} 1
 				kube_statefulset_status_current_revision{namespace="ns5",revision="cr5",statefulset="statefulset5"} 1
  			`,
 			MetricNames: []string{

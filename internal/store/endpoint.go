@@ -48,7 +48,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+			wrapEndpointFunc(func(_ *v1.Endpoints) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -86,6 +86,9 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			basemetrics.ALPHA,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", e.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -105,6 +108,9 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			basemetrics.STABLE,
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", e.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

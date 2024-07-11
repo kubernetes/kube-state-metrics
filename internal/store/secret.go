@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +48,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+			wrapSecretFunc(func(_ *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -82,6 +83,9 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			basemetrics.ALPHA,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -102,6 +106,9 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			basemetrics.STABLE,
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -144,6 +151,52 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(s.ObjectMeta.ResourceVersion),
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_secret_owner",
+			"Information about the Secret's owner.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapSecretFunc(func(j *v1.Secret) *metric.Family {
+				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+
+				owners := j.GetOwnerReferences()
+
+				if len(owners) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
+								LabelKeys:   labelKeys,
+								LabelValues: []string{"", "", ""},
+								Value:       1,
+							},
+						},
+					}
+				}
+
+				ms := make([]*metric.Metric, len(owners))
+
+				for i, owner := range owners {
+					if owner.Controller != nil {
+						ms[i] = &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
+							Value:       1,
+						}
+					} else {
+						ms[i] = &metric.Metric{
+							LabelKeys:   labelKeys,
+							LabelValues: []string{owner.Kind, owner.Name, "false"},
+							Value:       1,
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

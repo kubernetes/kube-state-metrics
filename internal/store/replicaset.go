@@ -216,6 +216,9 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.ALPHA,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -235,6 +238,9 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

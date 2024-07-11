@@ -113,3 +113,86 @@ func TestWithAllowLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestWithAllowAnnotations(t *testing.T) {
+	tests := []struct {
+		Desc                 string
+		AnnotationsAllowlist map[string][]string
+		EnabledResources     []string
+		Wanted               LabelsAllowList
+		err                  expectedError
+	}{
+		{
+			Desc:                 "wildcard key-value as the only element",
+			AnnotationsAllowlist: map[string][]string{"*": {"*"}},
+			EnabledResources:     []string{"cronjobs", "pods", "deployments"},
+			Wanted: LabelsAllowList(map[string][]string{
+				"deployments": {"*"},
+				"pods":        {"*"},
+				"cronjobs":    {"*"},
+			}),
+		},
+		{
+			Desc:                 "wildcard key-value as not the only element",
+			AnnotationsAllowlist: map[string][]string{"*": {"*"}, "pods": {"*"}, "cronjobs": {"*"}},
+			EnabledResources:     []string{"cronjobs", "pods", "deployments"},
+			Wanted: LabelsAllowList(map[string][]string{
+				"deployments": {"*"},
+				"pods":        {"*"},
+				"cronjobs":    {"*"},
+			}),
+		},
+		{
+			Desc:                 "wildcard key-value as not the only element, with resource mismatch",
+			AnnotationsAllowlist: map[string][]string{"*": {"*"}, "pods": {"*"}, "cronjobs": {"*"}, "configmaps": {"*"}},
+			EnabledResources:     []string{"cronjobs", "pods", "deployments"},
+			Wanted:               LabelsAllowList{},
+			err: expectedError{
+				expectedNotEqual: true,
+			},
+		},
+		{
+			Desc:                 "wildcard key-value as not the only element, with other mutually-exclusive keys",
+			AnnotationsAllowlist: map[string][]string{"*": {"*"}, "foo": {"*"}, "bar": {"*"}, "cronjobs": {"*"}},
+			EnabledResources:     []string{"cronjobs", "pods", "deployments"},
+			Wanted:               LabelsAllowList(nil),
+			err: expectedError{
+				expectedLabelError: true,
+			},
+		},
+		{
+			Desc:                 "wildcard key-value as not the only element, with other resources that do not exist",
+			AnnotationsAllowlist: map[string][]string{"*": {"*"}, "cronjobs": {"*"}},
+			EnabledResources:     []string{"cronjobs", "pods", "deployments", "foo", "bar"},
+			Wanted:               LabelsAllowList{},
+			err: expectedError{
+				expectedResourceError: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		b := NewBuilder()
+
+		// Set the enabled resources.
+		err := b.WithEnabledResources(test.EnabledResources)
+		if err != nil && !test.err.expectedResourceError {
+			t.Log("Did not expect error while setting resources (--resources).")
+			t.Errorf("Test error for Desc: %s. Got Error: %v", test.Desc, err)
+		}
+
+		// Resolve the allow list.
+		err = b.WithAllowAnnotations(test.AnnotationsAllowlist)
+		if err != nil && !test.err.expectedLabelError {
+			t.Log("Did not expect error while parsing allow list annotations (--metric-annotations-allowlist).")
+			t.Errorf("Test error for Desc: %s. Got Error: %v", test.Desc, err)
+		}
+		resolvedAllowAnnotations := LabelsAllowList(b.allowAnnotationsList)
+
+		// Evaluate.
+		if !reflect.DeepEqual(resolvedAllowAnnotations, test.Wanted) && !test.err.expectedNotEqual {
+			t.Log("Expected maps to be equal.")
+			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, resolvedAllowAnnotations)
+		}
+	}
+}

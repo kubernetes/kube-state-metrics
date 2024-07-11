@@ -66,6 +66,9 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -85,6 +88,9 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapNetworkPolicyFunc(func(n *networkingv1.NetworkPolicy) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{

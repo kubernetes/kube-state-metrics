@@ -23,13 +23,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
 func TestPersistentVolumeStore(t *testing.T) {
 	iscsiInitiatorName := "iqn.my.test.initiator:112233"
+	volumeMode := v1.PersistentVolumeBlock
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
@@ -415,7 +416,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						Local: &v1.LocalVolumeSource{
-							FSType: pointer.String("ext4"),
+							FSType: ptr.To("ext4"),
 							Path:   "/mnt/data",
 						},
 					},
@@ -522,7 +523,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{persistentvolume="test-labeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
@@ -538,7 +538,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 			Want: `
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_labels{persistentvolume="test-unlabeled-pv"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_labels"},
 		},
@@ -658,8 +657,6 @@ func TestPersistentVolumeStore(t *testing.T) {
 					# HELP kube_persistentvolume_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_persistentvolume_annotations gauge
 					# TYPE kube_persistentvolume_labels gauge
-					kube_persistentvolume_annotations{persistentvolume="test-defaul-labels-annotations"} 1
-					kube_persistentvolume_labels{persistentvolume="test-defaul-labels-annotations"} 1
 `,
 			MetricNames: []string{
 				"kube_persistentvolume_annotations",
@@ -682,6 +679,102 @@ func TestPersistentVolumeStore(t *testing.T) {
 				kube_persistentvolume_created{persistentvolume="test-pv-created"} 1.5e+09
 `,
 			MetricNames: []string{"kube_persistentvolume_created"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-pv-terminating",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				},
+				Status: v1.PersistentVolumeStatus{
+					Phase: v1.VolumeBound,
+				},
+			},
+			Want: `
+				# HELP kube_persistentvolume_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_persistentvolume_deletion_timestamp gauge
+				kube_persistentvolume_deletion_timestamp{persistentvolume="test-pv-terminating"} 1.8e+09
+`,
+			MetricNames: []string{"kube_persistentvolume_deletion_timestamp"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						CSI: &v1.CSIPersistentVolumeSource{
+							Driver:       "test-driver",
+							VolumeHandle: "test-volume-handle",
+						},
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_csi_attributes CSI attributes of the Persistent Volume.
+					# TYPE kube_persistentvolume_csi_attributes gauge
+					kube_persistentvolume_csi_attributes{persistentvolume="test-pv-available",csi_mounter="",csi_map_options=""} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_csi_attributes"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-available",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					PersistentVolumeSource: v1.PersistentVolumeSource{
+						CSI: &v1.CSIPersistentVolumeSource{
+							Driver:       "test-driver",
+							VolumeHandle: "test-volume-handle",
+							VolumeAttributes: map[string]string{
+								"mounter":    "rbd",
+								"mapOptions": "krbd:rxbounce",
+							},
+						},
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_csi_attributes CSI attributes of the Persistent Volume.
+					# TYPE kube_persistentvolume_csi_attributes gauge
+					kube_persistentvolume_csi_attributes{persistentvolume="test-pv-available",csi_mounter="rbd",csi_map_options="krbd:rxbounce"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_csi_attributes"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-default-volumemode",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					VolumeMode: nil,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_volume_mode Volume Mode information for the PersistentVolume.
+					# TYPE kube_persistentvolume_volume_mode gauge
+					kube_persistentvolume_volume_mode{persistentvolume="test-default-volumemode",volumemode="Filesystem"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_volume_mode"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-block-volumemode",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					VolumeMode: &volumeMode,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_volume_mode Volume Mode information for the PersistentVolume.
+					# TYPE kube_persistentvolume_volume_mode gauge
+					kube_persistentvolume_volume_mode{persistentvolume="test-block-volumemode",volumemode="Block"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_volume_mode"},
 		},
 	}
 	for i, c := range cases {

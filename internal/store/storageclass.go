@@ -92,6 +92,9 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			basemetrics.ALPHA,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -111,6 +114,9 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 			basemetrics.STABLE,
 			"",
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -140,7 +146,7 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(i
 	}
 }
 
-func createStorageClassListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createStorageClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.StorageV1().StorageClasses().List(context.TODO(), opts)

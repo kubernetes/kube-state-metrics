@@ -35,7 +35,7 @@ var (
 	descEndpointSliceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descEndpointSliceLabelsName          = "kube_endpointslice_labels"
 	descEndpointSliceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descEndpointSliceLabelsDefaultLabels = []string{"endpointslice"}
+	descEndpointSliceLabelsDefaultLabels = []string{"endpointslice", "namespace"}
 )
 
 func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -71,6 +71,44 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				}
 				return &metric.Family{
 					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_endpointslice_endpoints_hints",
+			"Topology routing hints attached to endpoints",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
+				m := []*metric.Metric{}
+				for _, ep := range e.Endpoints {
+					// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
+					// If there is no hint, skip this metric
+					if ep.Hints != nil && len(ep.Hints.ForZones) > 0 {
+						var (
+							labelKeys,
+							labelValues []string
+						)
+
+						// Per Docs.
+						// This must contain at least one address but no more than
+						// 100. These are all assumed to be fungible and clients may choose to only
+						// use the first element. Refer to: https://issue.k8s.io/106267
+						labelKeys = append(labelKeys, "address")
+						labelValues = append(labelValues, ep.Addresses[0])
+
+						for _, zone := range ep.Hints.ForZones {
+							m = append(m, &metric.Metric{
+								LabelKeys:   append(labelKeys, "for_zone"),
+								LabelValues: append(labelValues, zone.Name),
+								Value:       1,
+							})
+						}
+					}
+				}
+				return &metric.Family{
+					Metrics: m,
 				}
 			}),
 		),
@@ -134,9 +172,11 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 					for _, address := range ep.Addresses {
 						newlabelValues := make([]string, len(labelValues))
 						copy(newlabelValues, labelValues)
+						newlabelValues = append(newlabelValues, address)
+
 						m = append(m, &metric.Metric{
 							LabelKeys:   labelKeys,
-							LabelValues: append(newlabelValues, address),
+							LabelValues: newlabelValues,
 							Value:       1,
 						})
 					}
@@ -174,6 +214,9 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -193,6 +236,9 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			basemetrics.ALPHA,
 			"",
 			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -215,7 +261,7 @@ func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) fu
 		metricFamily := f(endpointSlice)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descEndpointSliceLabelsDefaultLabels, []string{endpointSlice.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descEndpointSliceLabelsDefaultLabels, []string{endpointSlice.Name, endpointSlice.Namespace}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily
@@ -225,9 +271,11 @@ func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) fu
 func createEndpointSliceListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.DiscoveryV1().EndpointSlices(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return kubeClient.DiscoveryV1().EndpointSlices(ns).Watch(context.TODO(), opts)
 		},
 	}

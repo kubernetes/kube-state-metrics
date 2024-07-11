@@ -51,6 +51,9 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.ALPHA,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -70,6 +73,9 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			basemetrics.STABLE,
 			"",
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -88,7 +94,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			wrapJobFunc(func(_ *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

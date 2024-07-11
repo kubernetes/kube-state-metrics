@@ -100,7 +100,6 @@ func TestStorageClassStore(t *testing.T) {
 			Want: `
 					# HELP kube_storageclass_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 					# TYPE kube_storageclass_labels gauge
-					kube_storageclass_labels{storageclass="test_storageclass-labels"} 1
 				`,
 			MetricNames: []string{
 				"kube_storageclass_labels",

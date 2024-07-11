@@ -4,6 +4,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kubernetes/kube-state-metrics.svg)](https://pkg.go.dev/github.com/kubernetes/kube-state-metrics)
 [![govulncheck](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8696/badge)](https://www.bestpractices.dev/projects/8696)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics (KSM) is a simple service that listens to the Kubernetes API
 server and generates metrics about the state of the objects. (See examples in
@@ -28,33 +30,37 @@ the raw metrics. Note that the metrics exposed on the `/metrics` endpoint
 reflect the current state of the Kubernetes cluster. When Kubernetes objects
 are deleted they are no longer visible on the `/metrics` endpoint.
 
+> [!NOTE]
+> This README is generated from a [template](./README.md.tpl). Please make your changes there and run `make generate-template`.
+
 ## Table of Contents
 
-- [Versioning](#versioning)
-  - [Kubernetes Version](#kubernetes-version)
-  - [Compatibility matrix](#compatibility-matrix)
-  - [Resource group version compatibility](#resource-group-version-compatibility)
-  - [Container Image](#container-image)
-- [Metrics Documentation](#metrics-documentation)
-  - [Conflict resolution in label names](#conflict-resolution-in-label-names)
-- [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
-- [Resource recommendation](#resource-recommendation)
-- [Latency](#latency)
-- [A note on costing](#a-note-on-costing)
-- [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
-- [Scaling kube-state-metrics](#scaling-kube-state-metrics)
-  - [Resource recommendation](#resource-recommendation)
-  - [Horizontal sharding](#horizontal-sharding)
-    - [Automated sharding](#automated-sharding)
-  - [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
-- [Setup](#setup)
-  - [Building the Docker container](#building-the-docker-container)
-- [Usage](#usage)
-  - [Kubernetes Deployment](#kubernetes-deployment)
-  - [Limited privileges environment](#limited-privileges-environment)
-  - [Helm Chart](#helm-chart)
-  - [Development](#development)
-  - [Developer Contributions](#developer-contributions)
+* [Versioning](#versioning)
+  * [Kubernetes Version](#kubernetes-version)
+  * [Compatibility matrix](#compatibility-matrix)
+  * [Resource group version compatibility](#resource-group-version-compatibility)
+  * [Container Image](#container-image)
+* [Metrics Documentation](#metrics-documentation)
+  * [Conflict resolution in label names](#conflict-resolution-in-label-names)
+* [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
+* [Resource recommendation](#resource-recommendation)
+* [Latency](#latency)
+* [A note on costing](#a-note-on-costing)
+* [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
+* [Scaling kube-state-metrics](#scaling-kube-state-metrics)
+  * [Resource recommendation](#resource-recommendation)
+  * [Horizontal sharding](#horizontal-sharding)
+    * [Automated sharding](#automated-sharding)
+  * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
+* [Setup](#setup)
+  * [Building the Docker container](#building-the-docker-container)
+* [Usage](#usage)
+  * [Kubernetes Deployment](#kubernetes-deployment)
+  * [Limited privileges environment](#limited-privileges-environment)
+  * [Helm Chart](#helm-chart)
+  * [Development](#development)
+  * [Developer Contributions](#developer-contributions)
+  * [Community](#community)
 
 ### Versioning
 
@@ -73,13 +79,12 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.4.2**         | v1.23                        |
-| **v2.5.0**         | v1.24                        |
-| **v2.6.0**         | v1.24                        |
-| **v2.7.0**         | v1.25                        |
-| **v2.8.1**         | v1.26                        |
-| **main**           | v1.26                        |
-
+| **v2.8.2**         | v1.26                        |
+| **v2.9.2**         | v1.26                        |
+| **v2.10.1**        | v1.27                        |
+| **v2.11.0**        | v1.28                        |
+| **v2.12.0**        | v1.29                        |
+| **main**           | v1.30                        |
 
 #### Resource group version compatibility
 
@@ -90,7 +95,9 @@ release.
 #### Container Image
 
 The latest container image can be found at:
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.8.1` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.12.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.12.0)
 
 ### Metrics Documentation
 
@@ -131,6 +138,7 @@ If you encounter those errors in the metrics, it is most likely a configuration 
 at the logs of kube-state-metrics.
 
 Example of the above mentioned metrics:
+
 ```
 kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
 kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
@@ -138,6 +146,7 @@ kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
 ```
 
 kube-state-metrics also exposes some http request metrics, examples of those are:
+
 ```
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="2.5"} 30
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="5"} 30
@@ -148,6 +157,7 @@ http_request_duration_seconds_count{handler="metrics",method="get"} 30
 ```
 
 kube-state-metrics also exposes build and configuration metrics:
+
 ```
 kube_state_metrics_build_info{branch="main",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
 kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
@@ -196,7 +206,7 @@ In a 100 node cluster scaling test the latency numbers were as follows:
 
 ### A note on costing
 
-By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
+By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/developer/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
 
 ### kube-state-metrics vs. metrics-server
 
@@ -245,11 +255,13 @@ The downside of using an auto-sharded setup comes from the rollout strategy supp
 ### Daemonset sharding for pod metrics
 
 For pod metrics, they can be sharded per node with the following flag:
-* `--node`
+
+* `--node=$(NODE_NAME)`
 
 Each kube-state-metrics pod uses FieldSelector (spec.nodeName) to watch/list pod metrics only on the same node.
 
 A daemonset kube-state-metrics example:
+
 ```
 apiVersion: apps/v1
 kind: DaemonSet
@@ -270,6 +282,22 @@ spec:
               fieldPath: spec.nodeName
 ```
 
+To track metrics for unassigned pods, you need to add an additional deployment and set `--node=""`, as shown in the following example:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:IMAGE_TAG
+        name: kube-state-metrics
+        args:
+        - --resources=pods
+        - --node=""
+```
+
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 
 ### Setup
@@ -284,6 +312,7 @@ go get k8s.io/kube-state-metrics
 
 Simply run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
+
 ```
 make container
 ```
@@ -311,15 +340,24 @@ To have Prometheus discover kube-state-metrics instances it is advised to create
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info --format='value(config.account)')
 ```
 
-Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID.
+Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
+
+#### Healthcheck Endpoints
+
+The following healthcheck endpoints are available, some of which are used to determine the result of the aforementioned probes:
+
+* `/livez`: Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend to use this as a liveness probe.
+* `/metrics`: Returns a 200 status code if the application is able to serve metrics. While this is available for both ports, we recommend to use the telemetry metrics endpoint as a readiness probe.
+* `/healthz`: Returns a 200 status code if the application is running. We recommend to use this as a startup probe.
 
 #### Limited privileges environment
 
 If you want to run kube-state-metrics in an environment where you don't have cluster-reader role, you can:
 
-- create a serviceaccount
+* create a serviceaccount
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -328,7 +366,8 @@ metadata:
   namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the NS you want your serviceaccount to access*)
+* give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the NS you want your serviceaccount to access*)
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -345,7 +384,7 @@ subjects:
     namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-- then specify a set of namespaces (using the `--namespaces` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
+* then specify a set of namespaces (using the `--namespaces` option) and a set of kubernetes objects (using the `--resources`) that your serviceaccount has access to in the `kube-state-metrics` deployment configuration
 
 ```yaml
 spec:
@@ -358,8 +397,7 @@ spec:
           - '--namespaces=project1'
 ```
 
-For the full list of arguments available, see the documentation in [docs/cli-arguments.md](./docs/cli-arguments.md)
-
+For the full list of arguments available, see the documentation in [docs/developer/cli-arguments.md](./docs/developer/cli-arguments.md)
 
 #### Helm Chart
 
@@ -372,15 +410,27 @@ running:
 
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
-	go install
-	kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
+ go install
+ kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
 
 Then curl the metrics endpoint
 
-	curl localhost:8080/metrics
+ curl localhost:8080/metrics
 
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
 
 #### Developer Contributions
 
 When developing, there are certain code patterns to follow to better your contributing experience and likelihood of e2e and other ci tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).
+
+#### Community
+
+This project is sponsored by [SIG Instrumentation](https://github.com/kubernetes/community/tree/master/sig-instrumentation).
+
+There is also a channel for [#kube-state-metrics](https://kubernetes.slack.com/archives/CJJ529RUY) on Kubernetes' Slack.
+
+You can also join the SIG Instrumentation [mailing list](https://groups.google.com/forum/#!forum/kubernetes-sig-instrumentation).
+This will typically add invites for the following meetings to your calendar, in which topics around kube-state-metrics can be discussed.
+
+* Regular SIG Meeting: [Thursdays at 9:30 PT (Pacific Time)](https://zoom.us/j/5342565819?pwd=RlVsK21NVnR1dmE3SWZQSXhveHZPdz09) (biweekly). [Convert to your timezone](http://www.thetimezoneconverter.com/?t=9:30&tz=PT%20%28Pacific%20Time%29).
+* Regular Triage Meeting: [Thursdays at 9:30 PT (Pacific Time)](https://zoom.us/j/5342565819?pwd=RlVsK21NVnR1dmE3SWZQSXhveHZPdz09) (biweekly - alternating with regular meeting). [Convert to your timezone](http://www.thetimezoneconverter.com/?t=9:30&tz=PT%20%28Pacific%20Time%29).

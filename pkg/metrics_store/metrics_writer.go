@@ -19,6 +19,11 @@ package metricsstore
 import (
 	"fmt"
 	"io"
+	"strings"
+
+	"github.com/prometheus/common/expfmt"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 // MetricsWriterList represent a list of MetricsWriter
@@ -59,9 +64,15 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 	}
 
 	for i, help := range m.stores[0].headers {
-		_, err := w.Write([]byte(help + "\n"))
-		if err != nil {
-			return fmt.Errorf("failed to write help text: %v", err)
+		if help != "" && help != "\n" {
+			help += "\n"
+		}
+
+		if len(m.stores[0].metrics) > 0 {
+			_, err := w.Write([]byte(help))
+			if err != nil {
+				return fmt.Errorf("failed to write help text: %v", err)
+			}
 		}
 
 		for _, s := range m.stores {
@@ -74,4 +85,52 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		}
 	}
 	return nil
+}
+
+// SanitizeHeaders sanitizes the headers of the given MetricsWriterList.
+func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWriterList {
+	var lastHeader string
+	for _, writer := range writers {
+		if len(writer.stores) > 0 {
+			for i := 0; i < len(writer.stores[0].headers); {
+				header := writer.stores[0].headers[i]
+
+				// Removes duplicate headers from the given MetricsWriterList for the same family (generated through CRS).
+				// These are expected to be consecutive since G** resolution generates groups of similar metrics with same headers before moving onto the next G** spec in the CRS configuration.
+				// Skip this step if we encounter a repeated header, as it will be removed.
+				if header != lastHeader && strings.HasPrefix(header, "# HELP") {
+
+					// If the requested content type was proto-based (such as FmtProtoDelim, FmtProtoText, or FmtProtoCompact), replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' protobuf machinery.
+					if strings.HasPrefix(contentType, expfmt.ProtoType) {
+						infoTypeString := string(metric.Info)
+						stateSetTypeString := string(metric.StateSet)
+						if strings.HasSuffix(header, infoTypeString) {
+							header = header[:len(header)-len(infoTypeString)] + string(metric.Gauge)
+							writer.stores[0].headers[i] = header
+						}
+						if strings.HasSuffix(header, stateSetTypeString) {
+							header = header[:len(header)-len(stateSetTypeString)] + string(metric.Gauge)
+							writer.stores[0].headers[i] = header
+						}
+					}
+				}
+
+				// Nullify duplicate headers after the sanitization to not miss out on any new candidates.
+				if header == lastHeader {
+					writer.stores[0].headers = append(writer.stores[0].headers[:i], writer.stores[0].headers[i+1:]...)
+
+					// Do not increment the index, as the next header is now at the current index.
+					continue
+				}
+
+				// Update the last header.
+				lastHeader = header
+
+				// Move to the next header.
+				i++
+			}
+		}
+	}
+
+	return writers
 }

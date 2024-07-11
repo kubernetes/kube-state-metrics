@@ -68,6 +68,10 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.ALPHA,
 			"",
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+
 				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -87,6 +91,9 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			basemetrics.STABLE,
 			"",
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
 				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -169,7 +176,7 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *
 	}
 }
 
-func createNamespaceListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createNamespaceListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CoreV1().Namespaces().List(context.TODO(), opts)

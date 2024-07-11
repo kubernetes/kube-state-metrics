@@ -67,8 +67,6 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-			kube_poddisruptionbudget_annotations{namespace="ns1",poddisruptionbudget="pdb1"} 1
-			kube_poddisruptionbudget_labels{namespace="ns1",poddisruptionbudget="pdb1"} 1
 			kube_poddisruptionbudget_created{namespace="ns1",poddisruptionbudget="pdb1"} 1.5e+09
 			kube_poddisruptionbudget_status_current_healthy{namespace="ns1",poddisruptionbudget="pdb1"} 12
 			kube_poddisruptionbudget_status_desired_healthy{namespace="ns1",poddisruptionbudget="pdb1"} 10
@@ -93,8 +91,6 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_poddisruptionbudget_annotations{namespace="ns2",poddisruptionbudget="pdb2"} 1
-				kube_poddisruptionbudget_labels{namespace="ns2",poddisruptionbudget="pdb2"} 1
 				kube_poddisruptionbudget_status_current_healthy{namespace="ns2",poddisruptionbudget="pdb2"} 8
 				kube_poddisruptionbudget_status_desired_healthy{namespace="ns2",poddisruptionbudget="pdb2"} 9
 				kube_poddisruptionbudget_status_pod_disruptions_allowed{namespace="ns2",poddisruptionbudget="pdb2"} 0

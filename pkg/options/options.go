@@ -21,10 +21,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+)
+
+var (
+	// Align with the default scrape interval from Prometheus: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
+	defaultServerReadTimeout  = 60 * time.Second
+	defaultServerWriteTimeout = 60 * time.Second
+	// ServerIdleTimeout is set to 5 minutes to match the default idle timeout of Prometheus scrape clients
+	// https://github.com/prometheus/common/blob/318309999517402ad522877ac7e55fa650a11114/config/http_config.go#L55
+	defaultServerIdleTimeout       = 5 * time.Minute
+	defaultServerReadHeaderTimeout = 5 * time.Second
 )
 
 // Options are the configurable parameters for kube-state-metrics.
@@ -55,6 +66,10 @@ type Options struct {
 	TelemetryPort            int             `yaml:"telemetry_port"`
 	TotalShards              int             `yaml:"total_shards"`
 	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
+	ServerReadTimeout        time.Duration   `yaml:"server_read_timeout"`
+	ServerWriteTimeout       time.Duration   `yaml:"server_write_timeout"`
+	ServerIdleTimeout        time.Duration   `yaml:"server_idle_timeout"`
+	ServerReadHeaderTimeout  time.Duration   `yaml:"server_read_header_timeout"`
 
 	Config string
 
@@ -73,6 +88,7 @@ func NewOptions() *Options {
 		MetricAllowlist:      MetricSet{},
 		MetricDenylist:       MetricSet{},
 		MetricOptInList:      MetricSet{},
+		Node:                 NodeType{},
 		AnnotationsAllowList: LabelsAllowList{},
 		LabelsAllowList:      LabelsAllowList{},
 	}
@@ -82,7 +98,7 @@ func NewOptions() *Options {
 func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd = cmd
 
-	completionCommand.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+	completionCommand.SetHelpFunc(func(_ *cobra.Command, _ []string) {
 		if shellPath, ok := os.LookupEnv("SHELL"); ok {
 			shell := shellPath[strings.LastIndex(shellPath, "/")+1:]
 			fmt.Println(FetchLoadInstructions(shell))
@@ -96,7 +112,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	versionCommand := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information.",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Printf("%s\n", version.Print("kube-state-metrics"))
 			klog.FlushAndExit(klog.ExitFlushTimeout, 0)
 		},
@@ -136,15 +152,20 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.cmd.Flags().StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().StringVar(&o.Config, "config", "", "Path to the kube-state-metrics options config file")
-	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
-	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional annotations provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
-	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the metric contains only name and namespace labels. To include additional labels provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
+	o.cmd.Flags().Var(&o.Node, "node", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
+	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
+	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the labels metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
 	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.cmd.Flags().Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
 	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
+
+	o.cmd.Flags().DurationVar(&o.ServerReadTimeout, "server-read-timeout", defaultServerReadTimeout, "The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients. ")
+	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")
+	o.cmd.Flags().DurationVar(&o.ServerIdleTimeout, "server-idle-timeout", defaultServerIdleTimeout, "The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients.")
+	o.cmd.Flags().DurationVar(&o.ServerReadHeaderTimeout, "server-read-header-timeout", defaultServerReadHeaderTimeout, "The maximum duration for reading the header of requests.")
 }
 
 // Parse parses the flag definitions from the argument list.
@@ -161,7 +182,7 @@ func (o *Options) Usage() {
 // Validate validates arguments
 func (o *Options) Validate() error {
 	shardableResource := "pods"
-	if o.Node == "" {
+	if o.Node.String() == "" {
 		return nil
 	}
 	for _, x := range o.Resources.AsSlice() {

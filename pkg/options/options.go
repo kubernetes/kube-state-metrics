@@ -42,6 +42,8 @@ var (
 type Options struct {
 	AnnotationsAllowList     LabelsAllowList `yaml:"annotations_allow_list"`
 	Apiserver                string          `yaml:"apiserver"`
+	AutoGoMemlimit           bool            `yaml:"auto-gomemlimit"`
+	AutoGoMemlimitRatio      float64         `yaml:"auto-gomemlimit-ratio"`
 	CustomResourceConfig     string          `yaml:"custom_resource_config"`
 	CustomResourceConfigFile string          `yaml:"custom_resource_config_file"`
 	CustomResourcesOnly      bool            `yaml:"custom_resources_only"`
@@ -143,6 +145,8 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
 	o.cmd.Flags().StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
+	o.cmd.Flags().BoolVar(&o.AutoGoMemlimit, "auto-gomemlimit", false, "Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)")
+	o.cmd.Flags().Float64Var(&o.AutoGoMemlimitRatio, "auto-gomemlimit-ratio", float64(0.9), "The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
 	o.cmd.Flags().StringVar(&o.Host, "host", "::", `Host to expose metrics on.`)
@@ -190,5 +194,10 @@ func (o *Options) Validate() error {
 			return fmt.Errorf("resource %s can't be sharded by field selector spec.nodeName", x)
 		}
 	}
+
+	if o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
+		return fmt.Errorf("value for --auto-gomemlimit-ratio=%f must be greater than 0 and less than or equal to 1", o.AutoGoMemlimitRatio)
+	}
+
 	return nil
 }

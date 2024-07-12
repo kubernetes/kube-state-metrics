@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
+	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -156,6 +157,20 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
 			hash := md5HashAsMetricValue(configFile)
 			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+		}
+	}
+
+	if opts.AutoGoMemlimit {
+		if _, err := memlimit.SetGoMemLimitWithOpts(
+			memlimit.WithRatio(opts.AutoGoMemlimitRatio),
+			memlimit.WithProvider(
+				memlimit.ApplyFallback(
+					memlimit.FromCgroup,
+					memlimit.FromSystem,
+				),
+			),
+		); err != nil {
+			return fmt.Errorf("failed to set GOMEMLIMIT automatically: %w", err)
 		}
 	}
 

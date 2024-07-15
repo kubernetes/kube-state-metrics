@@ -62,6 +62,7 @@ const (
 	metricsPath = "/metrics"
 	healthzPath = "/healthz"
 	livezPath   = "/livez"
+	readyzPath  = "/readyz"
 )
 
 // promLogger implements promhttp.Logger
@@ -376,6 +377,18 @@ func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 	// Add metricsPath
 	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: promLogger{}}))
 
+	// Add readyzPath
+	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		count, err := util.GatherAndCount(registry)
+		if err != nil || count == 0 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
+	}))
+
 	// Add index
 	landingConfig := web.LandingConfig{
 		Name:        "kube-state-metrics",
@@ -396,6 +409,19 @@ func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
 	return mux
 }
 
+func handleClusterDelegationForProber(client kubernetes.Interface, probeType string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		got := client.CoreV1().RESTClient().Get().AbsPath(probeType).Do(context.Background())
+		if got.Error() != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
+	}
+}
+
 func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface) *http.ServeMux {
 	mux := http.NewServeMux()
 
@@ -410,18 +436,7 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationObserver, m))
 
 	// Add livezPath
-	mux.Handle(livezPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-
-		// Query the Kube API to make sure we are not affected by a network outage.
-		got := client.CoreV1().RESTClient().Get().AbsPath("/livez").Do(context.Background())
-		if got.Error() != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(http.StatusText(http.StatusOK)))
-	}))
+	mux.Handle(livezPath, handleClusterDelegationForProber(client, livezPath))
 
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, _ *http.Request) {

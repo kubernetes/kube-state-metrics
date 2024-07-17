@@ -107,15 +107,19 @@ func (r *ResourceSet) Type() string {
 // NodeType represents a nodeName to query from.
 type NodeType string
 
+// Set sets the node name to NodeType.
+func (n *NodeType) Set(value string) error {
+	*n = NodeType(value)
+	return nil
+}
+
+// String gets node name.
+func (n NodeType) String() string {
+	return string(n)
+}
+
 // GetNodeFieldSelector returns a nodename field selector.
-func (n *NodeType) GetNodeFieldSelector(fetchUnscheduledPods bool) string {
-	if fetchUnscheduledPods {
-		if string(*n) != "" {
-			klog.Warningf("spec.nodeName=%s will not be used, because --track-unscheduled-pods is set", string(*n))
-		}
-		klog.InfoS("Using spec.nodeName= to select unscheduable pods without node")
-		return "spec.nodeName="
-	}
+func (n *NodeType) GetNodeFieldSelector() string {
 	if string(*n) != "" {
 		return fields.OneTermEqualSelector("spec.nodeName", string(*n)).String()
 	}

@@ -60,19 +60,19 @@ type Options struct {
 	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
 	Node                     NodeType        `yaml:"node"`
 	TrackUnscheduledPods     bool            `yaml:"track_unscheduled_pods"`
-	Pod                           string          `yaml:"pod"`
-	Port                          int             `yaml:"port"`
-	Resources                     ResourceSet     `yaml:"resources"`
-	Shard                         int32           `yaml:"shard"`
-	TLSConfig                     string          `yaml:"tls_config"`
-	TelemetryHost                 string          `yaml:"telemetry_host"`
-	TelemetryPort                 int             `yaml:"telemetry_port"`
-	TotalShards                   int             `yaml:"total_shards"`
-	UseAPIServerCache             bool            `yaml:"use_api_server_cache"`
-	ServerReadTimeout             time.Duration   `yaml:"server_read_timeout"`
-	ServerWriteTimeout            time.Duration   `yaml:"server_write_timeout"`
-	ServerIdleTimeout             time.Duration   `yaml:"server_idle_timeout"`
-	ServerReadHeaderTimeout       time.Duration   `yaml:"server_read_header_timeout"`
+	Pod                      string          `yaml:"pod"`
+	Port                     int             `yaml:"port"`
+	Resources                ResourceSet     `yaml:"resources"`
+	Shard                    int32           `yaml:"shard"`
+	TLSConfig                string          `yaml:"tls_config"`
+	TelemetryHost            string          `yaml:"telemetry_host"`
+	TelemetryPort            int             `yaml:"telemetry_port"`
+	TotalShards              int             `yaml:"total_shards"`
+	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
+	ServerReadTimeout        time.Duration   `yaml:"server_read_timeout"`
+	ServerWriteTimeout       time.Duration   `yaml:"server_write_timeout"`
+	ServerIdleTimeout        time.Duration   `yaml:"server_idle_timeout"`
+	ServerReadHeaderTimeout  time.Duration   `yaml:"server_read_header_timeout"`
 
 	Config string
 

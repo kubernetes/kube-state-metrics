@@ -224,7 +224,13 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	namespaces := opts.Namespaces.GetNamespaces()
 	nsFieldSelector := namespaces.GetExcludeNSFieldSelector(opts.NamespacesDenylist)
-	nodeFieldSelector := opts.Node.GetNodeFieldSelector(opts.TrackUnscheduledPods)
+	var nodeFieldSelector string
+	if opts.TrackUnscheduledPods {
+		nodeFieldSelector = "spec.nodeName="
+		klog.InfoS("Using spec.nodeName= to select unscheduable pods without node")
+	} else {
+		nodeFieldSelector = opts.Node.GetNodeFieldSelector()
+	}
 	merged, err := storeBuilder.MergeFieldSelectors([]string{nsFieldSelector, nodeFieldSelector})
 	if err != nil {
 		return err

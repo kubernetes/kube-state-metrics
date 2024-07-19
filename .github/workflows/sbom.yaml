@@ -31,7 +31,7 @@ jobs:
           bom generate \
             --dirs=. \
             --image=registry.k8s.io/kube-state-metrics/kube-state-metrics:$TAG \
-            --namespace=https://github.com/kubernetes/kube-state-metrics/releases/download/$TAG/$OUTPUT
+            --namespace=https://github.com/kubernetes/kube-state-metrics/releases/download/$TAG/$OUTPUT \
             --output=$OUTPUT
 
       - name: Upload SBOM to GitHub Release

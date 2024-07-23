@@ -41,6 +41,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
+	gatewayapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
@@ -320,6 +321,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"deployments":                     func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
 	"endpoints":                       func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
 	"endpointslices":                  func(b *Builder) []cache.Store { return b.buildEndpointSlicesStores() },
+	"gatewayclasses":                  func(b *Builder) []cache.Store { return b.buildGatewayClassStores() },
 	"horizontalpodautoscalers":        func(b *Builder) []cache.Store { return b.buildHPAStores() },
 	"ingresses":                       func(b *Builder) []cache.Store { return b.buildIngressStores() },
 	"ingressclasses":                  func(b *Builder) []cache.Store { return b.buildIngressClassStores() },
@@ -499,6 +501,10 @@ func (b *Builder) buildRoleBindingStores() []cache.Store {
 
 func (b *Builder) buildIngressClassStores() []cache.Store {
 	return b.buildStoresFunc(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildGatewayClassStores() []cache.Store {
+	return b.buildStoresFunc(gatewayClassMetricFamilies(b.allowAnnotationsList["gatewayclasses"], b.allowLabelsList["gatewayclasses"]), &gatewayapiv1.GatewayClass{}, createGatewayClassListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildStores(

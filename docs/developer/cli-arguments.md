@@ -81,6 +81,7 @@ Flags:
       --telemetry-port int                         Port to expose kube-state-metrics self metrics on. (default 8081)
       --tls-config string                          Path to the TLS configuration file
       --total-shards int                           The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
+      --track-unscheduled-pods                     This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of unscheduled pods is fetched from the Kubernetes API Server. This is experimental.
       --use-apiserver-cache                        Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.
   -v, --v Level                                    number for the log level verbosity
       --vmodule moduleSpec                         comma-separated list of pattern=N settings for file-filtered logging

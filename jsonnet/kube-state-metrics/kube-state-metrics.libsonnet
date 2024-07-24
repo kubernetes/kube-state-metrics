@@ -1,4 +1,3 @@
-
 {
   local ksm = self,
   name:: error 'must set namespace',
@@ -164,7 +163,7 @@
         ],
         verbs: ['list', 'watch'],
       },
-     ];
+    ];
 
     {
       apiVersion: 'rbac.authorization.k8s.io/v1',
@@ -192,11 +191,11 @@
         seccompProfile: { type: 'RuntimeDefault' },
       },
       livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
-        port: "http-metrics",
+        port: 'http-metrics',
         path: '/livez',
       } },
       readinessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
-        port: "telemetry",
+        port: 'telemetry',
         path: '/readyz',
       } },
     };
@@ -344,16 +343,17 @@
     clusterRoleBinding: ksm.clusterRoleBinding,
   },
   daemonsetsharding:: {
-    local shardksmname = ksm.name + "-shard",
-		daemonsetService: std.mergePatch(ksm.service,
-       {
-				 metadata: {
-					 name: shardksmname,
-					 labels: {'app.kubernetes.io/name': shardksmname}
-				 },
-			   spec: {selector: {'app.kubernetes.io/name': shardksmname}},
-			 }
-		),
+    local shardksmname = ksm.name + '-shard',
+    daemonsetService: std.mergePatch(
+      ksm.service,
+      {
+        metadata: {
+          name: shardksmname,
+          labels: { 'app.kubernetes.io/name': shardksmname },
+        },
+        spec: { selector: { 'app.kubernetes.io/name': shardksmname } },
+      }
+    ),
     deployment:
       // extending the default container from above
       local c = ksm.deployment.spec.template.spec.containers[0] {
@@ -361,7 +361,8 @@
           '--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments',
         ],
       };
-      std.mergePatch(ksm.deployment,
+      std.mergePatch(
+        ksm.deployment,
         {
           spec: {
             template: {
@@ -374,6 +375,7 @@
       ),
 
     deploymentNoNodePods:
+      local shardksmname = ksm.name + '-unscheduled-pods-fetching';
       local c = ksm.deployment.spec.template.spec.containers[0] {
         args: [
           '--resources=pods',
@@ -381,23 +383,23 @@
         ],
         name: shardksmname,
       };
-      local shardksmname = ksm.name + "-unscheduled-pods-fetching";
-      std.mergePatch(ksm.deployment,
+      std.mergePatch(
+        ksm.deployment,
         {
           metadata: {
             name: shardksmname,
-            labels: {'app.kubernetes.io/name': shardksmname}
+            labels: { 'app.kubernetes.io/name': shardksmname },
           },
           spec: {
-            selector{
-              matchLabels: {app.kubernetes.io/name': shardksmname}
-            }
+            selector: {
+              matchLabels: { 'app.kubernetes.io/name': shardksmname },
+            },
             template: {
               metadata: {
                 labels: {
-                  app.kubernetes.io/name': shardksmname
-                }
-              }
+                  'app.kubernetes.io/name': shardksmname,
+                },
+              },
               spec: {
                 containers: [c],
               },
@@ -413,18 +415,19 @@
           '--track-unscheduled-pods',
         ],
       };
-      local shardksmname = ksm.name + "-no-node-pods";
-      std.mergePatch(ksm.service,
+      local shardksmname = ksm.name + '-no-node-pods';
+      std.mergePatch(
+        ksm.service,
         {
           metadata: {
             name: shardksmname,
-            labels: {'app.kubernetes.io/name': shardksmname}
+            labels: { 'app.kubernetes.io/name': shardksmname },
           },
           spec: {
             selector: {
-              'app.kubernetes.io/name': shardksmname
-            }
-          }
+              'app.kubernetes.io/name': shardksmname,
+            },
+          },
         }
       ),
     daemonset:
@@ -439,10 +442,10 @@
         ],
       };
 
-      local c = std.mergePatch(c0, {name: shardksmname});
+      local c = std.mergePatch(c0, { name: shardksmname });
 
-      local ksmLabels =  std.mergePatch(ksm.commonLabels + ksm.extraRecommendedLabels, {'app.kubernetes.io/name': shardksmname});
-      local ksmPodLabels =  std.mergePatch(ksm.podLabels, {'app.kubernetes.io/name': shardksmname});
+      local ksmLabels = std.mergePatch(ksm.commonLabels + ksm.extraRecommendedLabels, { 'app.kubernetes.io/name': shardksmname });
+      local ksmPodLabels = std.mergePatch(ksm.podLabels, { 'app.kubernetes.io/name': shardksmname });
 
       {
         apiVersion: 'apps/v1',
@@ -450,7 +453,7 @@
         metadata: {
           namespace: ksm.namespace,
           labels: ksmLabels,
-					name: shardksmname,
+          name: shardksmname,
         },
         spec: {
           selector: { matchLabels: ksmPodLabels },
@@ -475,5 +478,3 @@
     clusterRoleBinding: ksm.clusterRoleBinding,
   },
 }
-
-

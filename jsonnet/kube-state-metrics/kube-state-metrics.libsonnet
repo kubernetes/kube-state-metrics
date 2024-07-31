@@ -389,15 +389,15 @@
             labels: {'app.kubernetes.io/name': shardksmname}
           },
           spec: {
-            selector{
-              matchLabels: {app.kubernetes.io/name': shardksmname}
+            selector: {
+              matchLabels: {'app.kubernetes.io/name': shardksmname}
             }
             template: {
               metadata: {
                 labels: {
-                  app.kubernetes.io/name': shardksmname
+                  'app.kubernetes.io/name': shardksmname
                 }
-              }
+              },
               spec: {
                 containers: [c],
               },

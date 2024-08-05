@@ -415,7 +415,7 @@
           '--track-unscheduled-pods',
         ],
       };
-      local shardksmname = ksm.name + '-no-node-pods';
+      local shardksmname = ksm.name + '-unscheduled-pods-fetching';
       std.mergePatch(
         ksm.service,
         {

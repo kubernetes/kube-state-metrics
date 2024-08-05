@@ -79,7 +79,7 @@ func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore
 		},
 	}
 
-	r := cache.NewReflector(&lw, &v1.Service{}, store, 0)
+	r := cache.NewReflectorWithOptions(&lw, &v1.Service{}, store, cache.ReflectorOptions{ResyncPeriod: 0})
 
 	go r.Run(context.TODO().Done())
 

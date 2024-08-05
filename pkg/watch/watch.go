@@ -74,31 +74,31 @@ func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetr
 
 // List is a wrapper func around the cache.ListerWatcher.List func. It increases the success/error
 // / counters based on the outcome of the List operation it instruments.
-func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (res runtime.Object, err error) {
+func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (runtime.Object, error) {
 
 	if i.useAPIServerCache {
 		options.ResourceVersion = "0"
 	}
 
-	res, err = i.lw.List(options)
+	res, err := i.lw.List(options)
 	if err != nil {
 		i.metrics.ListTotal.WithLabelValues("error", i.resource).Inc()
-		return
+		return nil, err
 	}
 
 	i.metrics.ListTotal.WithLabelValues("success", i.resource).Inc()
-	return
+	return res, nil
 }
 
 // Watch is a wrapper func around the cache.ListerWatcher.Watch func. It increases the success/error
 // counters based on the outcome of the Watch operation it instruments.
-func (i *InstrumentedListerWatcher) Watch(options metav1.ListOptions) (res watch.Interface, err error) {
-	res, err = i.lw.Watch(options)
+func (i *InstrumentedListerWatcher) Watch(options metav1.ListOptions) (watch.Interface, error) {
+	res, err := i.lw.Watch(options)
 	if err != nil {
 		i.metrics.WatchTotal.WithLabelValues("error", i.resource).Inc()
-		return
+		return nil, err
 	}
 
 	i.metrics.WatchTotal.WithLabelValues("success", i.resource).Inc()
-	return
+	return res, nil
 }

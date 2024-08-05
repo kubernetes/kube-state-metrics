@@ -122,7 +122,7 @@ function kube_pod_up() {
 function test_daemonset() {
     sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/deployment.yaml
     sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/daemonset.yaml
-    sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/deployment-no-node-pods.yaml
+    sed -i "s|${KUBE_STATE_METRICS_CURRENT_IMAGE_NAME}:v.*|${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}|g" ./examples/daemonsetsharding/deployment-unscheduled-pods-fetching.yaml
 
     kubectl get deployment -n kube-system
     kubectl create -f ./examples/daemonsetsharding

@@ -126,7 +126,7 @@ function test_daemonset() {
 
     kubectl get deployment -n kube-system
     kubectl create -f ./examples/daemonsetsharding
-    kube_state_metrics_up kube-state-metrics-no-node-pods
+    kube_state_metrics_up kube-state-metrics-unscheduled-pods-fetching
     kube_state_metrics_up kube-state-metrics
     kube_state_metrics_up kube-state-metrics-shard
     kubectl apply -f ./tests/e2e/testdata/pods.yaml
@@ -147,11 +147,11 @@ function test_daemonset() {
         exit 1
     fi
 
-    kubectl logs deployment/kube-state-metrics-no-node-pods -n kube-system
+    kubectl logs deployment/kube-state-metrics-unscheduled-pods-fetching -n kube-system
     sleep 2
     kubectl get pods -A --field-selector spec.nodeName=""
     sleep 2
-    pendingpod2="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-no-node-pods:http-metrics/proxy/metrics"  | grep "pendingpod2" | grep -c "kube_pod_info" )"
+    pendingpod2="$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics-unscheduled-pods-fetching:http-metrics/proxy/metrics"  | grep "pendingpod2" | grep -c "kube_pod_info" )"
     if [ "${pendingpod2}" != "${expected_num_pod}" ]; then
         echo "metric kube_pod_info for pendingpod2 doesn't show up only once, got ${runningpod1} times"
         exit 1

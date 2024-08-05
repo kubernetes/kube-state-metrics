@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -40,7 +39,6 @@ import (
 var config *rest.Config
 var currentKubeClient clientset.Interface
 var currentDiscoveryClient *discovery.DiscoveryClient
-var currentDynamicClient *dynamic.DynamicClient
 
 // CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
 func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
@@ -118,22 +116,6 @@ func CreateDiscoveryClient(apiserver string, kubeconfig string) (*discovery.Disc
 	}
 	currentDiscoveryClient, err = discovery.NewDiscoveryClientForConfig(config)
 	return currentDiscoveryClient, err
-}
-
-// CreateDynamicClient creates a Kubernetes dynamic client.
-func CreateDynamicClient(apiserver string, kubeconfig string) (*dynamic.DynamicClient, error) {
-	if currentDynamicClient != nil {
-		return currentDynamicClient, nil
-	}
-	var err error
-	if config == nil {
-		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-	currentDynamicClient, err = dynamic.NewForConfig(config)
-	return currentDynamicClient, err
 }
 
 // GVRFromType returns the GroupVersionResource for a given type.

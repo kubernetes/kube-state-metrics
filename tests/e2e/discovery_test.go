@@ -263,5 +263,20 @@ spec:
               path: [metadata]
               labelsFromPath:
                 name: [name]
+    - groupVersionKind:
+        group: ""
+        version: v1
+        kind: Node
+      metricNamePrefix: demo
+      metrics:
+        - name: timestamp
+          help: "example custom metric from non-custom resource"
+          each:
+            type: Gauge
+            gauge:
+              path: [metadata]
+              labelsFromPath:
+                node: [name]
+              valueFrom: [creationTimestamp]
 `
 }

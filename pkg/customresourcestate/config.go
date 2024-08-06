@@ -204,7 +204,11 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 			if err != nil {
 				return nil, fmt.Errorf("failed to create metrics factory for %s: %w", resource.GroupVersionKind, err)
 			}
-			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			gvr, err := util.GVRFromType(factory.Name(), factory.ExpectedType())
+			if err != nil {
+				klog.ErrorS(err, "invalid type")
+			}
+			gvrString := gvr.String()
 			if _, ok := factoriesIndex[gvrString]; ok {
 				klog.InfoS("reloaded factory", "GVR", gvrString)
 			}

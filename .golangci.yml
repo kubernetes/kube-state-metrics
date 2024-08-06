@@ -17,6 +17,7 @@ linters:
     - revive
     - staticcheck
     - unconvert
+    - unused
 
 linters-settings:
   goimports:

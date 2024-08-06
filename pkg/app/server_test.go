@@ -39,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
+	mfake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -67,6 +68,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	)
 
 	kubeClient := fake.NewSimpleClientset()
+	metadataOnlyKubeClient := mfake.NewSimpleMetadataClient(mfake.NewTestScheme())
 
 	if err := injectFixtures(kubeClient, fixtureMultiplier); err != nil {
 		b.Errorf("error injecting resources: %v", err)
@@ -86,10 +88,12 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 		b.Fatal(err)
 	}
 	builder.WithKubeClient(kubeClient)
+	builder.WithMetadataOnlyKubeClient(metadataOnlyKubeClient)
 	builder.WithSharding(0, 1)
 	builder.WithContext(ctx)
 	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
+	builder.WithGenerateMetadataOnlyStoresFunc(builder.DefaultGenerateMetadataOnlyStoresFunc())
 
 	allowDenyListFilter, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -147,6 +151,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	t.Parallel()
 
 	kubeClient := fake.NewSimpleClientset()
+	metadataOnlyKubeClient := mfake.NewSimpleMetadataClient(mfake.NewTestScheme())
 
 	err := pod(kubeClient, 0)
 	if err != nil {
@@ -163,8 +168,10 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	builder.WithKubeClient(kubeClient)
+	builder.WithMetadataOnlyKubeClient(metadataOnlyKubeClient)
 	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
+	builder.WithGenerateMetadataOnlyStoresFunc(builder.DefaultGenerateMetadataOnlyStoresFunc())
 
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -442,6 +449,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	t.Parallel()
 
 	kubeClient := fake.NewSimpleClientset()
+	metadataOnlyKubeClient := mfake.NewSimpleMetadataClient(mfake.NewTestScheme())
 
 	for i := 0; i < 10; i++ {
 		err := pod(kubeClient, i)
@@ -465,10 +473,12 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	unshardedBuilder.WithKubeClient(kubeClient)
+	unshardedBuilder.WithMetadataOnlyKubeClient(metadataOnlyKubeClient)
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
 	unshardedBuilder.WithFamilyGeneratorFilter(l)
 	unshardedBuilder.WithAllowLabels(map[string][]string{})
 	unshardedBuilder.WithGenerateStoresFunc(unshardedBuilder.DefaultGenerateStoresFunc())
+	unshardedBuilder.WithGenerateMetadataOnlyStoresFunc(unshardedBuilder.DefaultGenerateMetadataOnlyStoresFunc())
 
 	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
 	unshardedHandler.ConfigureSharding(ctx, 0, 1)
@@ -481,10 +491,13 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	shardedBuilder1.WithKubeClient(kubeClient)
+	shardedBuilder1.WithMetadataOnlyKubeClient(metadataOnlyKubeClient)
+
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder1.WithFamilyGeneratorFilter(l)
 	shardedBuilder1.WithAllowLabels(map[string][]string{})
 	shardedBuilder1.WithGenerateStoresFunc(shardedBuilder1.DefaultGenerateStoresFunc())
+	shardedBuilder1.WithGenerateMetadataOnlyStoresFunc(shardedBuilder1.DefaultGenerateMetadataOnlyStoresFunc())
 
 	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
 	shardedHandler1.ConfigureSharding(ctx, 0, 2)
@@ -497,10 +510,12 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	shardedBuilder2.WithKubeClient(kubeClient)
+	shardedBuilder2.WithMetadataOnlyKubeClient(metadataOnlyKubeClient)
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder2.WithFamilyGeneratorFilter(l)
 	shardedBuilder2.WithAllowLabels(map[string][]string{})
 	shardedBuilder2.WithGenerateStoresFunc(shardedBuilder2.DefaultGenerateStoresFunc())
+	shardedBuilder2.WithGenerateMetadataOnlyStoresFunc(shardedBuilder2.DefaultGenerateMetadataOnlyStoresFunc())
 
 	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
 	shardedHandler2.ConfigureSharding(ctx, 1, 2)
@@ -612,6 +627,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 // We use custom resource object samplev1alpha1.Foo in kubernetes/sample-controller as an example.
 func TestCustomResourceExtension(t *testing.T) {
 	kubeClient := fake.NewSimpleClientset()
+	metadataOnlyKubeClient := mfake.NewSimpleMetadataClient(mfake.NewTestScheme())
 	factories := []customresource.RegistryFactory{new(fooFactory)}
 	resources := options.DefaultResources.AsSlice()
 	customResourceClients := make(map[string]interface{}, len(factories))
@@ -638,9 +654,11 @@ func TestCustomResourceExtension(t *testing.T) {
 	}
 
 	builder.WithKubeClient(kubeClient)
+	builder.WithMetadataOnlyKubeClient(metadataOnlyKubeClient)
 	builder.WithCustomResourceClients(customResourceClients)
 	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
+	builder.WithGenerateMetadataOnlyStoresFunc(builder.DefaultGenerateMetadataOnlyStoresFunc())
 	builder.WithGenerateCustomResourceStoresFunc(builder.DefaultGenerateCustomResourceStoresFunc())
 
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})

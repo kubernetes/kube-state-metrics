@@ -38,7 +38,9 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
@@ -66,12 +68,14 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
 	kubeClient                    clientset.Interface
+	metadataOnlyKubeClient        metadata.Interface
+	customResourceClients         map[string]interface{}
 	ctx                           context.Context
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
-	customResourceClients         map[string]interface{}
 	listWatchMetrics              *watch.ListWatchMetrics
 	shardingMetrics               *sharding.Metrics
 	buildStoresFunc               ksmtypes.BuildStoresFunc
+	buildMetadataOnlyStoresFunc   ksmtypes.BuildMetadataOnlyStoresFunc
 	buildCustomResourceStoresFunc ksmtypes.BuildCustomResourceStoresFunc
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
@@ -155,6 +159,11 @@ func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.kubeClient = c
 }
 
+// WithMetadataOnlyKubeClient sets the metadataOnlyKubeClient property of a Builder.
+func (b *Builder) WithMetadataOnlyKubeClient(c metadata.Interface) {
+	b.metadataOnlyKubeClient = c
+}
+
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
 func (b *Builder) WithCustomResourceClients(cs map[string]interface{}) {
 	b.customResourceClients = cs
@@ -176,6 +185,11 @@ func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
 	b.buildStoresFunc = f
 }
 
+// WithGenerateMetadataOnlyStoresFunc configures a custom generate custom resource store function
+func (b *Builder) WithGenerateMetadataOnlyStoresFunc(f ksmtypes.BuildMetadataOnlyStoresFunc) {
+	b.buildMetadataOnlyStoresFunc = f
+}
+
 // WithGenerateCustomResourceStoresFunc configures a custom generate custom resource store function
 func (b *Builder) WithGenerateCustomResourceStoresFunc(f ksmtypes.BuildCustomResourceStoresFunc) {
 	b.buildCustomResourceStoresFunc = f
@@ -184,6 +198,11 @@ func (b *Builder) WithGenerateCustomResourceStoresFunc(f ksmtypes.BuildCustomRes
 // DefaultGenerateStoresFunc returns default buildStores function
 func (b *Builder) DefaultGenerateStoresFunc() ksmtypes.BuildStoresFunc {
 	return b.buildStores
+}
+
+// DefaultGenerateMetadataOnlyStoresFunc returns default buildStores function
+func (b *Builder) DefaultGenerateMetadataOnlyStoresFunc() ksmtypes.BuildMetadataOnlyStoresFunc {
+	return b.buildMetadataOnlyStores
 }
 
 // DefaultGenerateCustomResourceStoresFunc returns default buildCustomResourceStores function
@@ -360,7 +379,7 @@ func availableResources() []string {
 }
 
 func (b *Builder) buildConfigMapStores() []cache.Store {
-	return b.buildStoresFunc(configMapMetricFamilies(b.allowAnnotationsList["configmaps"], b.allowLabelsList["configmaps"]), &v1.ConfigMap{}, createConfigMapListWatch, b.useAPIServerCache)
+	return b.buildMetadataOnlyStoresFunc(configMapMetricFamilies(b.allowAnnotationsList["configmaps"], b.allowLabelsList["configmaps"]), &metav1.PartialObjectMetadata{}, createConfigMapListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildCronJobStores() []cache.Store {
@@ -517,7 +536,8 @@ func (b *Builder) buildStores(
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
-		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+		kubeClient := b.kubeClient
+		listWatcher := listWatchFunc(kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		return []cache.Store{store}
 	}
@@ -532,6 +552,46 @@ func (b *Builder) buildStores(
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
+		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
+		stores = append(stores, store)
+	}
+
+	return stores
+}
+
+func (b *Builder) buildMetadataOnlyStores(
+	metricFamilies []generator.FamilyGenerator,
+	expectedType interface{},
+	listWatchFunc func(kubeClient metadata.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	useAPIServerCache bool,
+) []cache.Store {
+	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
+	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
+	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
+
+	if b.namespaces.IsAllNamespaces() {
+		store := metricsstore.NewMetricsStore(
+			familyHeaders,
+			composedMetricGenFuncs,
+		)
+		if b.fieldSelectorFilter != "" {
+			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
+		}
+		listWatcher := listWatchFunc(b.metadataOnlyKubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
+		return []cache.Store{store}
+	}
+
+	stores := make([]cache.Store, 0, len(b.namespaces))
+	for _, ns := range b.namespaces {
+		store := metricsstore.NewMetricsStore(
+			familyHeaders,
+			composedMetricGenFuncs,
+		)
+		if b.fieldSelectorFilter != "" {
+			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
+		}
+		listWatcher := listWatchFunc(b.metadataOnlyKubeClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		stores = append(stores, store)
 	}

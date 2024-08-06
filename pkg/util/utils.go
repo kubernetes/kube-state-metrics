@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
@@ -38,6 +39,7 @@ import (
 
 var config *rest.Config
 var currentKubeClient clientset.Interface
+var currentMetadataOnlyKubeClient metadata.Interface
 var currentDiscoveryClient *discovery.DiscoveryClient
 
 // CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
@@ -76,6 +78,34 @@ func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	klog.InfoS("Communication with server successful")
 
 	currentKubeClient = kubeClient
+	return kubeClient, nil
+}
+
+// CreateMetadataOnlyKubeClient creates a Kubernetes clientset and a custom resource clientset.
+func CreateMetadataOnlyKubeClient(apiserver string, kubeconfig string) (metadata.Interface, error) {
+	if currentMetadataOnlyKubeClient != nil {
+		return currentMetadataOnlyKubeClient, nil
+	}
+
+	var err error
+
+	if config == nil {
+		var err error
+		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+	config.UserAgent = fmt.Sprintf("%s/%s (%s/%s) kubernetes/%s", "kube-state-metrics (metadataonly)", version.Version, runtime.GOOS, runtime.GOARCH, version.Revision)
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf;as=PartialObjectMetadataList;g=meta.k8s.io;v=v1,application/json;as=PartialObjectMetadataList;g=meta.k8s.io;v=v1,application/json,application/vnd.kubernetes.protobuf;as=PartialObjectMetadata;g=meta.k8s.io;v=v1,application/json;as=PartialObjectMetadata;g=meta.k8s.io;v=v1"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
+
+	kubeClient, err := metadata.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	currentMetadataOnlyKubeClient = kubeClient
 	return kubeClient, nil
 }
 

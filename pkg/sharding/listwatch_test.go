@@ -25,7 +25,7 @@ import (
 )
 
 func TestSharding(t *testing.T) {
-	cm := &v1.ConfigMap{
+	cm := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "configmap1",
 			Namespace: "ns1",

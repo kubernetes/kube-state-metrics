@@ -21,6 +21,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 
 	internalstore "k8s.io/kube-state-metrics/v2/internal/store"
@@ -84,6 +85,11 @@ func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.internal.WithKubeClient(c)
 }
 
+// WithMetadataOnlyKubeClient sets the metadataOnlyKubeClient property of a Builder.
+func (b *Builder) WithMetadataOnlyKubeClient(c metadata.Interface) {
+	b.internal.WithMetadataOnlyKubeClient(c)
+}
+
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
 func (b *Builder) WithCustomResourceClients(cs map[string]interface{}) {
 	b.internal.WithCustomResourceClients(cs)
@@ -118,6 +124,16 @@ func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
 // DefaultGenerateStoresFunc returns default buildStore function
 func (b *Builder) DefaultGenerateStoresFunc() ksmtypes.BuildStoresFunc {
 	return b.internal.DefaultGenerateStoresFunc()
+}
+
+// WithGenerateMetadataOnlyStoresFunc configures a custom generate metadataonly store function
+func (b *Builder) WithGenerateMetadataOnlyStoresFunc(f ksmtypes.BuildMetadataOnlyStoresFunc) {
+	b.internal.WithGenerateMetadataOnlyStoresFunc(f)
+}
+
+// DefaultGenerateMetadataOnlyStoresFunc returns default buildMetadataOnlyStore function
+func (b *Builder) DefaultGenerateMetadataOnlyStoresFunc() ksmtypes.BuildMetadataOnlyStoresFunc {
+	return b.internal.DefaultGenerateMetadataOnlyStoresFunc()
 }
 
 // DefaultGenerateCustomResourceStoresFunc returns default buildStores function

@@ -19,7 +19,6 @@ package store
 import (
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -37,7 +36,7 @@ func TestConfigMapStore(t *testing.T) {
 			AllowLabelsList: []string{
 				"app",
 			},
-			Obj: &v1.ConfigMap{
+			Obj: &metav1.PartialObjectMetadata{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "configmap1",
 					Namespace:       "ns1",
@@ -73,7 +72,7 @@ func TestConfigMapStore(t *testing.T) {
 			},
 		},
 		{
-			Obj: &v1.ConfigMap{
+			Obj: &metav1.PartialObjectMetadata{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "configmap2",
 					Namespace:         "ns2",

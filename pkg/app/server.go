@@ -255,6 +255,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	storeBuilder.WithUsingAPIServerCache(opts.UseAPIServerCache)
 	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc())
+	storeBuilder.WithGenerateMetadataOnlyStoresFunc(storeBuilder.DefaultGenerateMetadataOnlyStoresFunc())
 	proc.StartReaper()
 
 	storeBuilder.WithUtilOptions(opts)
@@ -263,6 +264,12 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
 	storeBuilder.WithKubeClient(kubeClient)
+
+	metadataOnlyKubeClient, err := util.CreateMetadataOnlyKubeClient(opts.Apiserver, opts.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create metadata-only client: %v", err)
+	}
+	storeBuilder.WithMetadataOnlyKubeClient(metadataOnlyKubeClient)
 
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {

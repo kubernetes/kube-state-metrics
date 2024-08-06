@@ -23,6 +23,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
@@ -38,6 +39,7 @@ type BuilderInterface interface {
 	WithFieldSelectorFilter(fieldSelectors string)
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
+	WithMetadataOnlyKubeClient(c metadata.Interface)
 	WithKubeClient(c clientset.Interface)
 	WithCustomResourceClients(cs map[string]interface{})
 	WithUsingAPIServerCache(u bool)
@@ -46,6 +48,8 @@ type BuilderInterface interface {
 	WithAllowLabels(l map[string][]string) error
 	WithGenerateStoresFunc(f BuildStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc
+	WithGenerateMetadataOnlyStoresFunc(f BuildMetadataOnlyStoresFunc)
+	DefaultGenerateMetadataOnlyStoresFunc() BuildMetadataOnlyStoresFunc
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc
 	WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory)
 	Build() metricsstore.MetricsWriterList
@@ -57,6 +61,13 @@ type BuilderInterface interface {
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	useAPIServerCache bool,
+) []cache.Store
+
+// BuildMetadataOnlyStoresFunc function signature that is used to return a list of cache.Store
+type BuildMetadataOnlyStoresFunc func(metricFamilies []generator.FamilyGenerator,
+	expectedType interface{},
+	listWatchFunc func(kubeClient metadata.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool,
 ) []cache.Store
 

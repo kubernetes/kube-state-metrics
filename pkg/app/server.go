@@ -35,6 +35,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/oklog/run"
@@ -200,25 +201,25 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	}
 
-	resources := make([]string, len(factories))
+	resources := sets.New[string]()
 
-	for i, factory := range factories {
-		resources[i] = factory.Name()
+	for _, factory := range factories {
+		resources.Insert(factory.Name())
 	}
 
 	switch {
 	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:
-		resources = append(resources, options.DefaultResources.AsSlice()...)
+		resources.Insert(options.DefaultResources.AsSlice()...)
 		klog.InfoS("Used default resources")
 	case opts.CustomResourcesOnly:
 		// enable custom resource only, these resources will be populated later on
 		klog.InfoS("Used CRD resources only")
 	default:
-		resources = append(resources, opts.Resources.AsSlice()...)
+		resources.Insert(opts.Resources.AsSlice()...)
 		klog.InfoS("Used resources", "resources", resources)
 	}
 
-	if err := storeBuilder.WithEnabledResources(resources); err != nil {
+	if err := storeBuilder.WithEnabledResources(resources.UnsortedList()); err != nil {
 		return fmt.Errorf("failed to set up resources: %v", err)
 	}
 

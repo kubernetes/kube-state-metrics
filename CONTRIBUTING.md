@@ -44,6 +44,12 @@ Here's a list of types that we use:
 * [Kubernetes Contributor Guide](http://git.k8s.io/community/contributors/guide) - Main contributor documentation, or you can just jump directly to the [contributing section](http://git.k8s.io/community/contributors/guide#contributing)
 * [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet/README.md) - Common resources for existing developers
 
+### Change a metric
+
+If a metric is marked as STABLE:
+- can not be changed: change metric names, rename metric labels and change metric type
+- can be changed: add a new label
+
 ## Mentorship
 
 * [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!

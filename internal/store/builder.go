@@ -65,24 +65,24 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
-	kubeClient            clientset.Interface
-	customResourceClients map[string]interface{}
-	namespaces            options.NamespaceList
-	// namespaceFilter is inside fieldSelectorFilter
-	fieldSelectorFilter           string
+	kubeClient                    clientset.Interface
 	ctx                           context.Context
-	enabledResources              []string
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
+	customResourceClients         map[string]interface{}
 	listWatchMetrics              *watch.ListWatchMetrics
 	shardingMetrics               *sharding.Metrics
-	shard                         int32
-	totalShards                   int
 	buildStoresFunc               ksmtypes.BuildStoresFunc
 	buildCustomResourceStoresFunc ksmtypes.BuildCustomResourceStoresFunc
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
-	useAPIServerCache             bool
 	utilOptions                   *options.Options
+	// namespaceFilter is inside fieldSelectorFilter
+	fieldSelectorFilter string
+	namespaces          options.NamespaceList
+	enabledResources    []string
+	totalShards         int
+	shard               int32
+	useAPIServerCache   bool
 }
 
 // NewBuilder returns a new builder.

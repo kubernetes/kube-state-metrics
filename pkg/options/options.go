@@ -40,43 +40,45 @@ var (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	AnnotationsAllowList     LabelsAllowList `yaml:"annotations_allow_list"`
-	Apiserver                string          `yaml:"apiserver"`
-	AutoGoMemlimit           bool            `yaml:"auto-gomemlimit"`
-	AutoGoMemlimitRatio      float64         `yaml:"auto-gomemlimit-ratio"`
-	CustomResourceConfig     string          `yaml:"custom_resource_config"`
-	CustomResourceConfigFile string          `yaml:"custom_resource_config_file"`
-	CustomResourcesOnly      bool            `yaml:"custom_resources_only"`
-	EnableGZIPEncoding       bool            `yaml:"enable_gzip_encoding"`
-	Help                     bool            `yaml:"help"`
-	Host                     string          `yaml:"host"`
-	Kubeconfig               string          `yaml:"kubeconfig"`
-	LabelsAllowList          LabelsAllowList `yaml:"labels_allow_list"`
-	MetricAllowlist          MetricSet       `yaml:"metric_allowlist"`
-	MetricDenylist           MetricSet       `yaml:"metric_denylist"`
-	MetricOptInList          MetricSet       `yaml:"metric_opt_in_list"`
-	Namespace                string          `yaml:"namespace"`
-	Namespaces               NamespaceList   `yaml:"namespaces"`
-	NamespacesDenylist       NamespaceList   `yaml:"namespaces_denylist"`
-	Node                     NodeType        `yaml:"node"`
-	TrackUnscheduledPods     bool            `yaml:"track_unscheduled_pods"`
-	Pod                      string          `yaml:"pod"`
-	Port                     int             `yaml:"port"`
-	Resources                ResourceSet     `yaml:"resources"`
-	Shard                    int32           `yaml:"shard"`
-	TLSConfig                string          `yaml:"tls_config"`
-	TelemetryHost            string          `yaml:"telemetry_host"`
-	TelemetryPort            int             `yaml:"telemetry_port"`
-	TotalShards              int             `yaml:"total_shards"`
-	UseAPIServerCache        bool            `yaml:"use_api_server_cache"`
-	ServerReadTimeout        time.Duration   `yaml:"server_read_timeout"`
-	ServerWriteTimeout       time.Duration   `yaml:"server_write_timeout"`
-	ServerIdleTimeout        time.Duration   `yaml:"server_idle_timeout"`
-	ServerReadHeaderTimeout  time.Duration   `yaml:"server_read_header_timeout"`
+	AnnotationsAllowList LabelsAllowList `yaml:"annotations_allow_list"`
+	LabelsAllowList      LabelsAllowList `yaml:"labels_allow_list"`
+	MetricAllowlist      MetricSet       `yaml:"metric_allowlist"`
+	MetricDenylist       MetricSet       `yaml:"metric_denylist"`
+	MetricOptInList      MetricSet       `yaml:"metric_opt_in_list"`
+	Resources            ResourceSet     `yaml:"resources"`
+
+	cmd                      *cobra.Command
+	Apiserver                string   `yaml:"apiserver"`
+	CustomResourceConfig     string   `yaml:"custom_resource_config"`
+	CustomResourceConfigFile string   `yaml:"custom_resource_config_file"`
+	Host                     string   `yaml:"host"`
+	Kubeconfig               string   `yaml:"kubeconfig"`
+	Namespace                string   `yaml:"namespace"`
+	Node                     NodeType `yaml:"node"`
+	Pod                      string   `yaml:"pod"`
+	TLSConfig                string   `yaml:"tls_config"`
+	TelemetryHost            string   `yaml:"telemetry_host"`
 
 	Config string
 
-	cmd *cobra.Command
+	Namespaces              NamespaceList `yaml:"namespaces"`
+	NamespacesDenylist      NamespaceList `yaml:"namespaces_denylist"`
+	AutoGoMemlimitRatio     float64       `yaml:"auto-gomemlimit-ratio"`
+	Port                    int           `yaml:"port"`
+	TelemetryPort           int           `yaml:"telemetry_port"`
+	TotalShards             int           `yaml:"total_shards"`
+	ServerReadTimeout       time.Duration `yaml:"server_read_timeout"`
+	ServerWriteTimeout      time.Duration `yaml:"server_write_timeout"`
+	ServerIdleTimeout       time.Duration `yaml:"server_idle_timeout"`
+	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
+
+	Shard                int32 `yaml:"shard"`
+	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
+	CustomResourcesOnly  bool  `yaml:"custom_resources_only"`
+	EnableGZIPEncoding   bool  `yaml:"enable_gzip_encoding"`
+	Help                 bool  `yaml:"help"`
+	TrackUnscheduledPods bool  `yaml:"track_unscheduled_pods"`
+	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
 }
 
 // GetConfigFile is the getter for --config value.

@@ -37,18 +37,18 @@ type kindPlural struct {
 
 // CRDiscoverer provides a cache of the collected GVKs, along with helper utilities.
 type CRDiscoverer struct {
-	// m is a mutex to protect the cache.
-	m sync.RWMutex
-	// Map is a cache of the collected GVKs.
-	Map map[string]map[string][]kindPlural
-	// ShouldUpdate is a flag that indicates whether the cache was updated.
-	WasUpdated bool
 	// CRDsAddEventsCounter tracks the number of times that the CRD informer triggered the "add" event.
 	CRDsAddEventsCounter prometheus.Counter
 	// CRDsDeleteEventsCounter tracks the number of times that the CRD informer triggered the "remove" event.
 	CRDsDeleteEventsCounter prometheus.Counter
 	// CRDsCacheCountGauge tracks the net amount of CRDs affecting the cache at this point.
 	CRDsCacheCountGauge prometheus.Gauge
+	// Map is a cache of the collected GVKs.
+	Map map[string]map[string][]kindPlural
+	// m is a mutex to protect the cache.
+	m sync.RWMutex
+	// ShouldUpdate is a flag that indicates whether the cache was updated.
+	WasUpdated bool
 }
 
 // SafeRead executes the given function while holding a read lock.

@@ -44,18 +44,18 @@ import (
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
 // /metrics endpoint. It allows concurrent reconfiguration at runtime.
 type MetricsHandler struct {
-	opts               *options.Options
-	kubeClient         kubernetes.Interface
-	storeBuilder       ksmtypes.BuilderInterface
-	enableGZIPEncoding bool
+	kubeClient   kubernetes.Interface
+	storeBuilder ksmtypes.BuilderInterface
+	opts         *options.Options
 
 	cancel func()
 
 	// mtx protects metricsWriters, curShard, and curTotalShards
-	mtx            *sync.RWMutex
-	metricsWriters metricsstore.MetricsWriterList
-	curShard       int32
-	curTotalShards int
+	mtx                *sync.RWMutex
+	metricsWriters     metricsstore.MetricsWriterList
+	curTotalShards     int
+	curShard           int32
+	enableGZIPEncoding bool
 }
 
 // New creates and returns a new MetricsHandler with the given options.

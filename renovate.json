@@ -1,0 +1,9 @@
+{
+  "extends": [
+    "github>konflux-ci/mintmaker//config/renovate/renovate.json"
+  ],
+  "schedule": ["on friday"],
+  "updateNotScheduled": false,
+  "autoApprove": true,
+  "updatePinnedDependencies": false
+}

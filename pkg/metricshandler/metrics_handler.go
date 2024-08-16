@@ -132,14 +132,6 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 				return
 			}
 
-			m.mtx.RLock()
-			shardingUnchanged := m.curShard == shard && m.curTotalShards == totalShards
-			m.mtx.RUnlock()
-
-			if shardingUnchanged {
-				return
-			}
-
 			m.ConfigureSharding(ctx, shard, totalShards)
 		},
 		UpdateFunc: func(oldo, curo interface{}) {

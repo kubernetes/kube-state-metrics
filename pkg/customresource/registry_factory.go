@@ -50,7 +50,7 @@ type RegistryFactory interface {
 	//
 	// Example:
 	//
-	// func (f *FooFactory) MetricFamilyGenerators(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	// func (f *FooFactory) MetricFamilyGenerators() []generator.FamilyGenerator {
 	//	return []generator.FamilyGenerator{
 	//		*generator.NewFamilyGeneratorWithStability(
 	//			"kube_foo_spec_replicas",

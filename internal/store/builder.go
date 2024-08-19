@@ -536,8 +536,7 @@ func (b *Builder) buildStores(
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
-		kubeClient := b.kubeClient
-		listWatcher := listWatchFunc(kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache)
 		return []cache.Store{store}
 	}

@@ -7,7 +7,7 @@ require (
 	github.com/campoy/embedmd v1.0.0
 	github.com/google/go-jsonnet v0.20.0
 	github.com/hairyhenderson/gomplate/v3 v3.11.8
-	github.com/jsonnet-bundler/jsonnet-bundler v0.5.1
+	github.com/jsonnet-bundler/jsonnet-bundler v0.6.0
 	golang.org/x/perf v0.0.0-20240604174448-3b48cf0e0164
 )
 
@@ -51,6 +51,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/docker/libkv v0.2.2-0.20180912205406-458977154600 // indirect
 	github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad // indirect
+	github.com/elliotchance/orderedmap/v2 v2.2.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect

@@ -397,10 +397,16 @@ func (c *compiledStateSet) Values(v interface{}) (result []eachValue, errs []err
 	return c.values(v)
 }
 
+const statusPart = "status"
+
 func (c *compiledStateSet) values(v interface{}) (result []eachValue, errs []error) {
 	comparable := c.ValueFrom.Get(v)
 	value, ok := comparable.(string)
 	if !ok {
+		if len(c.path) > 0 && c.path[0].part == statusPart {
+			klog.V(2).InfoS("Skipping unavailable resource status", "path", c.path)
+			return []eachValue{}, []error{}
+		}
 		return []eachValue{}, []error{fmt.Errorf("%s: expected value for path to be string, got %T", c.path, comparable)}
 	}
 

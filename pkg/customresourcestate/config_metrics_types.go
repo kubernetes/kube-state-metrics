@@ -27,12 +27,12 @@ type MetricMeta struct {
 // MetricGauge targets a Path that may be a single value, array, or object. Arrays and objects will generate a metric per element.
 // Ref: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#gauge
 type MetricGauge struct {
-	MetricMeta `yaml:",inline" json:",inline"`
+	// LabelFromKey adds a label with the given name if Path is an object. The label value will be the object key.
+	LabelFromKey string `yaml:"labelFromKey" json:"labelFromKey"`
+	MetricMeta   `yaml:",inline" json:",inline"`
 
 	// ValueFrom is the path to a numeric field under Path that will be the metric value.
 	ValueFrom []string `yaml:"valueFrom" json:"valueFrom"`
-	// LabelFromKey adds a label with the given name if Path is an object. The label value will be the object key.
-	LabelFromKey string `yaml:"labelFromKey" json:"labelFromKey"`
 	// NilIsZero indicates that if a value is nil it will be treated as zero value.
 	NilIsZero bool `yaml:"nilIsZero" json:"nilIsZero"`
 }
@@ -40,9 +40,9 @@ type MetricGauge struct {
 // MetricInfo is a metric which is used to expose textual information.
 // Ref: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#info
 type MetricInfo struct {
-	MetricMeta `yaml:",inline" json:",inline"`
 	// LabelFromKey adds a label with the given name if Path is an object. The label value will be the object key.
 	LabelFromKey string `yaml:"labelFromKey" json:"labelFromKey"`
+	MetricMeta   `yaml:",inline" json:",inline"`
 }
 
 // MetricStateSet is a metric which represent a series of related boolean values, also called a bitset.

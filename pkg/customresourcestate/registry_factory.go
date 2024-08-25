@@ -124,8 +124,8 @@ type compiledEach compiledMetric
 
 type compiledCommon struct {
 	labelFromPath map[string]valuePath
-	path          valuePath
 	t             metric.Type
+	path          valuePath
 }
 
 func (c compiledCommon) Path() valuePath {
@@ -211,9 +211,9 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 
 type compiledGauge struct {
 	compiledCommon
+	labelFromKey string
 	ValueFrom    valuePath
 	NilIsZero    bool
-	labelFromKey string
 }
 
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
@@ -376,9 +376,9 @@ func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
 
 type compiledStateSet struct {
 	compiledCommon
+	LabelName string
 	ValueFrom valuePath
 	List      []string
-	LabelName string
 }
 
 func (c *compiledStateSet) Values(v interface{}) (result []eachValue, errs []error) {
@@ -495,11 +495,11 @@ func (e eachValue) ToMetric() *metric.Metric {
 }
 
 type compiledFamily struct {
-	Name          string
-	Help          string
 	Each          compiledEach
 	Labels        map[string]string
 	LabelFromPath map[string]valuePath
+	Name          string
+	Help          string
 	ErrorLogV     klog.Level
 }
 
@@ -547,8 +547,8 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 }
 
 type pathOp struct {
-	part string
 	op   func(interface{}) interface{}
+	part string
 }
 
 type valuePath []pathOp

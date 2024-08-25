@@ -30,13 +30,13 @@ import (
 // DeprecatedVersion is defined only if the metric for which this options applies is,
 // in fact, deprecated.
 type FamilyGenerator struct {
+	GenerateFunc      func(obj interface{}) *metric.Family
 	Name              string
 	Help              string
 	Type              metric.Type
-	OptIn             bool
 	DeprecatedVersion string
 	StabilityLevel    basemetrics.StabilityLevel
-	GenerateFunc      func(obj interface{}) *metric.Family
+	OptIn             bool
 }
 
 // NewFamilyGeneratorWithStability creates new FamilyGenerator instances with metric

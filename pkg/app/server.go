@@ -297,14 +297,12 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		opts.EnableGZIPEncoding,
 	)
 	// Run MetricsHandler
-	if config == nil {
-		ctxMetricsHandler, cancel := context.WithCancel(ctx)
-		g.Add(func() error {
-			return m.Run(ctxMetricsHandler)
-		}, func(error) {
-			cancel()
-		})
-	}
+	ctxMetricsHandler, cancel := context.WithCancel(ctx)
+	g.Add(func() error {
+		return m.Run(ctxMetricsHandler)
+	}, func(error) {
+		cancel()
+	})
 
 	tlsConfig := opts.TLSConfig
 

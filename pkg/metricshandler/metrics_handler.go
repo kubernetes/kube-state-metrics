@@ -69,7 +69,16 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 	}
 }
 
-// ConfigureSharding (re-)configures sharding. Re-configuration can be done
+// ReconfigureSharding reconfigures sharding with the current shard and totalShards, and
+// it's a no-op if both values are 0.
+func (m *MetricsHandler) ReconfigureSharding(ctx context.Context) {
+	if m.curShard == 0 && m.curTotalShards == 0 {
+		return
+	}
+	m.ConfigureSharding(ctx, m.curShard, m.curTotalShards)
+}
+
+// ConfigureSharding configures sharding. Configuration can be used mutlitple times and
 // concurrently.
 func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
 	m.mtx.Lock()
@@ -129,6 +138,14 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 			shard, totalShards, err := shardingSettingsFromStatefulSet(ss, m.opts.Pod)
 			if err != nil {
 				klog.ErrorS(err, "Detected sharding settings from StatefulSet")
+				return
+			}
+
+			m.mtx.RLock()
+			shardingUnchanged := m.curShard == shard && m.curTotalShards == totalShards
+			m.mtx.RUnlock()
+
+			if shardingUnchanged {
 				return
 			}
 

@@ -60,7 +60,7 @@ func TestNodeStore(t *testing.T) {
 				# TYPE kube_node_info gauge
 				# TYPE kube_node_labels gauge
 				# TYPE kube_node_spec_unschedulable gauge
-				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-uniqueid",internal_ip="1.2.3.4",system_uuid="6a934e21-5207-4a84-baea-3a952d926c80"} 1
+				kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="deprecated",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-uniqueid",internal_ip="1.2.3.4",system_uuid="6a934e21-5207-4a84-baea-3a952d926c80"} 1
 				kube_node_spec_unschedulable{node="127.0.0.1"} 0
 			`,
 			MetricNames: []string{"kube_node_spec_unschedulable", "kube_node_labels", "kube_node_info"},
@@ -75,7 +75,7 @@ func TestNodeStore(t *testing.T) {
 			Want: `
 				# HELP kube_node_info [STABLE] Information about a cluster node.
 				# TYPE kube_node_info gauge
-				kube_node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="",node="",os_image="",pod_cidr="",provider_id="",internal_ip="",system_uuid=""} 1
+				kube_node_info{container_runtime_version="",kernel_version="",kubelet_version="",kubeproxy_version="deprecated",node="",os_image="",pod_cidr="",provider_id="",internal_ip="",system_uuid=""} 1
 			`,
 			MetricNames: []string{"kube_node_info"},
 		},
@@ -140,7 +140,7 @@ func TestNodeStore(t *testing.T) {
 		# TYPE kube_node_status_allocatable gauge
 		# TYPE kube_node_status_capacity gauge
 		kube_node_created{node="127.0.0.1"} 1.5e+09
-        kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="kubeproxy",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-randomidentifier",internal_ip="1.2.3.4",system_uuid="6a934e21-5207-4a84-baea-3a952d926c80"} 1
+        kube_node_info{container_runtime_version="rkt",kernel_version="kernel",kubelet_version="kubelet",kubeproxy_version="deprecated",node="127.0.0.1",os_image="osimage",pod_cidr="172.24.10.0/24",provider_id="provider://i-randomidentifier",internal_ip="1.2.3.4",system_uuid="6a934e21-5207-4a84-baea-3a952d926c80"} 1
 		kube_node_role{node="127.0.0.1",role="master"} 1
         kube_node_spec_unschedulable{node="127.0.0.1"} 1
         kube_node_status_allocatable{node="127.0.0.1",resource="cpu",unit="core"} 3

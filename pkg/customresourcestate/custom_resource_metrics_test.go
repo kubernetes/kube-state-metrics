@@ -229,7 +229,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v, err := NewCustomResourceMetrics(tt.r)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err.Error())
 			}
 
 			// convert to JSON for easier nil comparison

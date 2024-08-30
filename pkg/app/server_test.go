@@ -861,7 +861,7 @@ func pod(client *fake.Clientset, index int) error {
 
 func foo(client *samplefake.Clientset, index int) error {
 	i := strconv.Itoa(index)
-	desiredReplicas := int32(index)
+	desiredReplicas := int32(index) //nolint:gosec
 
 	foo := samplev1alpha1.Foo{
 		ObjectMeta: metav1.ObjectMeta{

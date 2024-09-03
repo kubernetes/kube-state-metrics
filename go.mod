@@ -13,8 +13,8 @@ require (
 	github.com/oklog/run v1.1.0
 	github.com/prometheus/client_golang v1.20.2
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.57.0
-	github.com/prometheus/exporter-toolkit v0.11.0
+	github.com/prometheus/common v0.58.0
+	github.com/prometheus/exporter-toolkit v0.12.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -61,6 +61,8 @@ require (
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/mdlayher/socket v0.4.1 // indirect
+	github.com/mdlayher/vsock v1.2.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -81,14 +83,14 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.25.0 // indirect
+	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
-	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/term v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/oauth2 v0.22.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/term v0.23.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

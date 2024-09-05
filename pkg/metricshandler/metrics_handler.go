@@ -72,7 +72,10 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 // ReconfigureSharding reconfigures sharding with the current shard and totalShards, and
 // it's a no-op if both values are 0.
 func (m *MetricsHandler) ReconfigureSharding(ctx context.Context) {
-	if m.curShard == 0 && m.curTotalShards == 0 {
+	m.mtx.RLock()
+	hasShardsSet := m.curShard != 0 || m.curTotalShards != 0
+	m.mtx.RUnlock()
+	if !hasShardsSet {
 		return
 	}
 	m.ConfigureSharding(ctx, m.curShard, m.curTotalShards)

@@ -1,6 +1,6 @@
 module k8s.io/kube-state-metrics/v2/tools
 
-go 1.21
+go 1.23.0
 
 require (
 	github.com/brancz/gojsontoyaml v0.1.0

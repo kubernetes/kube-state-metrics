@@ -256,7 +256,7 @@ func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 		return 0, fmt.Errorf("failed to detect shard index for Pod %s of StatefulSet %s, parsed %s: %w", podName, statefulSetName, nominalString, err)
 	}
 
-	return int32(nominal), nil
+	return int32(nominal), nil //nolint:gosec
 }
 
 func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {

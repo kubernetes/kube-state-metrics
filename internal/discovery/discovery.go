@@ -236,7 +236,7 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 			r.WasUpdated = false
 		})
 		// Update metric handler with the new configs.
-		m.ReconfigureSharding(ctx)
+		m.BuildWriters(ctx)
 	}
 	go func() {
 		for range t.C {

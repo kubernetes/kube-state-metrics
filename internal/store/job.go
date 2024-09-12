@@ -219,10 +219,10 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					}
 				}
 
+				reasonKnown := false
 				for _, c := range j.Status.Conditions {
 					condition := c
 					if condition.Type == v1batch.JobFailed {
-						reasonKnown := false
 						for _, reason := range jobFailureReasons {
 							reasonKnown = reasonKnown || failureReason(&condition, reason)
 
@@ -233,15 +233,15 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 								Value:       boolFloat64(failureReason(&condition, reason)),
 							})
 						}
-						// for unknown reasons
-						if !reasonKnown {
-							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"reason"},
-								LabelValues: []string{""},
-								Value:       float64(j.Status.Failed),
-							})
-						}
 					}
+				}
+				// for unknown reasons
+				if !reasonKnown {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"reason"},
+						LabelValues: []string{""},
+						Value:       float64(j.Status.Failed),
+					})
 				}
 
 				return &metric.Family{

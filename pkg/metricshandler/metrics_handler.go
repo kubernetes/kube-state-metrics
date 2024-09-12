@@ -69,8 +69,8 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 	}
 }
 
-// ReconfigureSharding reconfigures sharding with the current shard and totalShards, and
-// it's a no-op if both values are 0.
+// BuildWriters builds the metrics writers, cancelling any previous context and passing a new one on every build.
+// Build can be used mutlitple times and concurrently.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -94,8 +94,9 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	m.curShard = shard
 	m.curTotalShards = totalShards
 	m.storeBuilder.WithSharding(shard, totalShards)
-	m.mtx.Unlock()
 
+	// unlock because BuildWriters will hold a lock again
+	m.mtx.Unlock()
 	m.BuildWriters(ctx)
 }
 

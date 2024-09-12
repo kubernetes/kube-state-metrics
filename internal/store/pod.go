@@ -1349,14 +1349,14 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 			}
 
 			phases := []struct {
-				v bool
 				n string
+				v bool
 			}{
-				{phase == v1.PodPending, string(v1.PodPending)},
-				{phase == v1.PodSucceeded, string(v1.PodSucceeded)},
-				{phase == v1.PodFailed, string(v1.PodFailed)},
-				{phase == v1.PodUnknown, string(v1.PodUnknown)},
-				{phase == v1.PodRunning, string(v1.PodRunning)},
+				{string(v1.PodPending), phase == v1.PodPending},
+				{string(v1.PodSucceeded), phase == v1.PodSucceeded},
+				{string(v1.PodFailed), phase == v1.PodFailed},
+				{string(v1.PodUnknown), phase == v1.PodUnknown},
+				{string(v1.PodRunning), phase == v1.PodRunning},
 			}
 
 			ms := make([]*metric.Metric, len(phases))
@@ -1475,12 +1475,12 @@ func createPodStatusQosClassFamilyGenerator() generator.FamilyGenerator {
 			}
 
 			qosClasses := []struct {
-				v bool
 				n string
+				v bool
 			}{
-				{class == v1.PodQOSBestEffort, string(v1.PodQOSBestEffort)},
-				{class == v1.PodQOSBurstable, string(v1.PodQOSBurstable)},
-				{class == v1.PodQOSGuaranteed, string(v1.PodQOSGuaranteed)},
+				{string(v1.PodQOSBestEffort), class == v1.PodQOSBestEffort},
+				{string(v1.PodQOSBurstable), class == v1.PodQOSBurstable},
+				{string(v1.PodQOSGuaranteed), class == v1.PodQOSGuaranteed},
 			}
 
 			ms := make([]*metric.Metric, len(qosClasses))

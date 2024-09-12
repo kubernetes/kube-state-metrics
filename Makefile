@@ -15,13 +15,13 @@ GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
-PROMETHEUS_VERSION = 2.53.1
-GO_VERSION = 1.22.5
+PROMETHEUS_VERSION = 2.54.1
+GO_VERSION = 1.23.1
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-MARKDOWNLINT_CLI2_VERSION = 0.13.0
+MARKDOWNLINT_CLI2_VERSION = 0.14.0
 
 
 export DOCKER_CLI_EXPERIMENTAL=enabled

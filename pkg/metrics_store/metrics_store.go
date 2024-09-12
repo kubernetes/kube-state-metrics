@@ -29,21 +29,22 @@ import (
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
 // generated based on those objects.
 type MetricsStore struct {
-	// Protects metrics
-	mutex sync.RWMutex
 	// metrics is a map indexed by Kubernetes object id, containing a slice of
 	// metric families, containing a slice of metrics. We need to keep metrics
 	// grouped by metric families in order to zip families with their help text in
 	// MetricsStore.WriteAll().
 	metrics map[types.UID][][]byte
+
+	// generateMetricsFunc generates metrics based on a given Kubernetes object
+	// and returns them grouped by metric family.
+	generateMetricsFunc func(interface{}) []metric.FamilyInterface
 	// headers contains the header (TYPE and HELP) of each metric family. It is
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
 	headers []string
 
-	// generateMetricsFunc generates metrics based on a given Kubernetes object
-	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []metric.FamilyInterface
+	// Protects metrics
+	mutex sync.RWMutex
 }
 
 // NewMetricsStore returns a new MetricsStore

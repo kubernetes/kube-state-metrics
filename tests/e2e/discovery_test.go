@@ -49,15 +49,23 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	crdFile, err := os.CreateTemp("", "crd.yaml")
+	initCrdFile, err := os.CreateTemp("", "crd.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	crFile, err := os.CreateTemp("", "cr.yaml")
+	initCrFile, err := os.CreateTemp("", "cr.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	klog.InfoS("testdata", "crConfigFile", crConfigFile.Name(), "crdFile", crdFile.Name(), "crFile", crFile.Name())
+	newCrdFile, err := os.CreateTemp("", "new-crd.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	newCrFile, err := os.CreateTemp("", "new-cr.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	klog.InfoS("testdata", "crConfigFile", crConfigFile.Name(), "initCrdFile", initCrdFile.Name(), "initCrFile", initCrFile.Name(), "newCrdFile", newCrdFile.Name(), "newCrFile", newCrFile.Name())
 
 	// Delete artefacts.
 	defer func() {
@@ -65,15 +73,23 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to remove CR config: %v", err)
 		}
-		err = os.Remove(crdFile.Name())
+		err = os.Remove(initCrdFile.Name())
 		if err != nil {
-			t.Fatalf("failed to remove CRD manifest: %v", err)
+			t.Fatalf("failed to remove initial CRD manifest: %v", err)
 		}
-		err = os.Remove(crFile.Name())
+		err = os.Remove(initCrFile.Name())
 		if err != nil {
-			t.Fatalf("failed to remove CR manifest: %v", err)
+			t.Fatalf("failed to remove initial CR manifest: %v", err)
 		}
-		klog.InfoS("deleted artefacts", "crConfigFile", crConfigFile.Name(), "crdFile", crdFile.Name(), "crFile", crFile.Name())
+		err = os.Remove(newCrdFile.Name())
+		if err != nil {
+			t.Fatalf("failed to remove new CRD manifest: %v", err)
+		}
+		err = os.Remove(newCrFile.Name())
+		if err != nil {
+			t.Fatalf("failed to remove new CR manifest: %v", err)
+		}
+		klog.InfoS("deleted artefacts", "crConfigFile", crConfigFile.Name(), "initCrdFile", initCrdFile.Name(), "initCrFile", initCrFile.Name(), "newCrdFile", newCrdFile.Name(), "newCrFile", newCrFile.Name())
 	}()
 
 	// Populate options, and parse them.
@@ -114,32 +130,44 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	klog.InfoS("port 8080 up")
 
 	// Create CRD and CR files.
-	crd := getCRD()
-	cr := getCR()
-	err = os.WriteFile(crdFile.Name(), []byte(crd), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to crd file: %v", err)
-	}
-	err = os.WriteFile(crFile.Name(), []byte(cr), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to cr file: %v", err)
-	}
-	klog.InfoS("created CR and CRD manifests")
+	initCr := getCR()
+	initCrd := getCRD()
 
-	// Apply CRD and CR to the cluster.
-	err = exec.Command("kubectl", "apply", "-f", crdFile.Name()).Run() //nolint:gosec
+	newCr := getNewCR()
+	newCrd := getNewCRD()
+	err = os.WriteFile(initCrdFile.Name(), []byte(initCrd), 0600 /* rw------- */)
 	if err != nil {
-		t.Fatalf("failed to apply crd: %v", err)
+		t.Fatalf("cannot write to initial crd file: %v", err)
 	}
-	err = exec.Command("kubectl", "apply", "-f", crFile.Name()).Run() //nolint:gosec
+	err = os.WriteFile(initCrFile.Name(), []byte(initCr), 0600 /* rw------- */)
 	if err != nil {
-		t.Fatalf("failed to apply cr: %v", err)
+		t.Fatalf("cannot write to initial cr file: %v", err)
 	}
-	klog.InfoS("applied CR and CRD manifests")
+	err = os.WriteFile(newCrdFile.Name(), []byte(newCrd), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to new crd file: %v", err)
+	}
+	err = os.WriteFile(newCrFile.Name(), []byte(newCr), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to new cr file: %v", err)
+	}
+	klog.InfoS("created initial and new CR and CRD manifests")
+
+	// Apply initial CRD and CR to the cluster.
+	err = exec.Command("kubectl", "apply", "-f", initCrdFile.Name()).Run() //nolint:gosec
+	if err != nil {
+		t.Fatalf("failed to apply initial crd: %v", err)
+	}
+	err = exec.Command("kubectl", "apply", "-f", initCrFile.Name()).Run() //nolint:gosec
+	if err != nil {
+		t.Fatalf("failed to apply initial cr: %v", err)
+	}
+	klog.InfoS("applied initial CR and CRD manifests")
 
 	// Wait for the metric to be available.
 	ch := make(chan bool, 1)
-	klog.InfoS("waiting for metrics to become available")
+	klog.InfoS("waiting for first metrics to become available")
+	testMetric := `kube_customresource_test_metric{customresource_group="contoso.com",customresource_kind="MyPlatform",customresource_version="v1alpha1",name="test-dotnet-app"}`
 	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, PopulateTimeout, true, func(_ context.Context) (bool, error) {
 		out, err := exec.Command("curl", "localhost:8080/metrics").Output()
 		if err != nil {
@@ -148,9 +176,9 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 		if string(out) == "" {
 			return false, nil
 		}
-		// Note the "{" below. This is to ensure that the metric is not in a comment.
-		if strings.Contains(string(out), "kube_customresource_test_metric{") {
-			klog.InfoS("metrics available", "metric", string(out))
+		// Note: we use count to make sure that only one metrics handler is running
+		if strings.Count(string(out), testMetric) == 1 {
+			// klog.InfoS("metrics available", "metric", string(out))
 			// Signal the process to exit, since we know the metrics are being generated as expected.
 			ch <- true
 			return true, nil
@@ -158,7 +186,58 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 		return false, nil
 	})
 	if err != nil {
-		t.Fatalf("failed while waiting for metrics to be available: %v", err)
+		t.Fatalf("failed while waiting for initial metrics to be available: %v", err)
+	}
+
+	// Wait for process to exit.
+	select {
+	case <-ch:
+		t.Log("initial metrics are available")
+	case <-time.After(PopulateTimeout * 2):
+		t.Fatal("timed out waiting for test to pass, check the logs for more info")
+	}
+
+	// Apply new CRD and CR to the cluster.
+	err = exec.Command("kubectl", "apply", "-f", newCrdFile.Name()).Run() //nolint:gosec
+	if err != nil {
+		t.Fatalf("failed to apply new crd: %v", err)
+	}
+	err = exec.Command("kubectl", "apply", "-f", newCrFile.Name()).Run() //nolint:gosec
+	if err != nil {
+		t.Fatalf("failed to apply new cr: %v", err)
+	}
+	err = exec.Command("kubectl", "delete", "myplatform", "test-dotnet-app").Run() //nolint:gosec
+	if err != nil {
+		t.Fatalf("failed to delete myplatform resource: %v", err)
+	}
+	klog.InfoS("applied new CR and CRD manifests")
+
+	// Wait for the the new metric to be available
+	ch = make(chan bool, 1)
+	klog.InfoS("waiting for new metrics to become available")
+	testUpdateCRDMetric := `kube_customresource_test_update_crd_metric{customresource_group="contoso.com",customresource_kind="Update",customresource_version="v1",name="test-dotnet-app-update"}`
+	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, PopulateTimeout, true, func(_ context.Context) (bool, error) {
+		out, err := exec.Command("curl", "localhost:8080/metrics").Output()
+		if err != nil {
+			return false, err
+		}
+		if string(out) == "" {
+			return false, nil
+		}
+		// Note: we use count to make sure that only one metrics handler is running, and we also want to validate that the
+		// new metric is available and the old one was removed, otherwise, the response could come from the
+		// previous handler before its context was cancelled, or maybe because it failed to be cancelled.
+		if strings.Count(string(out), testUpdateCRDMetric) == 1 && !strings.Contains(string(out), testMetric) {
+			klog.InfoS("metrics available", "metric", string(out))
+			// Signal the process to exit, since we know the metrics are being generated as expected.
+			ch <- true
+			return true, nil
+		}
+		klog.InfoS("metrics available", "metric", string(out))
+		return false, nil
+	})
+	if err != nil {
+		t.Fatalf("failed while waiting for new metrics to be available: %v", err)
 	}
 
 	// Wait for process to exit.
@@ -252,8 +331,8 @@ spec:
   resources:
     - groupVersionKind:
         group: "contoso.com"
-        version: "*"
-        kind: "*"
+        version: "v1alpha1"
+        kind: "MyPlatform"
       metrics:
         - name: "test_metric"
           help: "foo baz"
@@ -263,5 +342,61 @@ spec:
               path: [metadata]
               labelsFromPath:
                 name: [name]
+    - groupVersionKind:
+        group: "contoso.com"
+        version: "v1"
+        kind: "Update"
+      metrics:
+        - name: "test_update_crd_metric"
+          help: "foo baz"
+          each:
+            type: Info
+            info:
+              path: [metadata]
+              labelsFromPath:
+                name: [name]
+`
+}
+
+func getNewCR() string {
+	return `
+apiVersion: contoso.com/v1
+kind: Update
+metadata:
+  name: test-dotnet-app-update
+spec:
+  new: just-added
+`
+}
+
+func getNewCRD() string {
+	return `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: updates.contoso.com
+spec:
+  group: contoso.com
+  names:
+    plural: updates
+    singular: update
+    kind: Update
+    shortNames:
+    - updt
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                new:
+                  type: string
+          required: ["spec"]
 `
 }

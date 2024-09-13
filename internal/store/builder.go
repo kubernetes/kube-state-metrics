@@ -107,18 +107,26 @@ func (b *Builder) WithMetrics(r prometheus.Registerer) {
 
 // WithEnabledResources sets the enabledResources property of a Builder.
 func (b *Builder) WithEnabledResources(r []string) error {
+	enabledResources := map[string]bool{}
+	for _, er := range b.enabledResources {
+		enabledResources[er] = true
+	}
+	var newResources []string
 	for _, resource := range r {
+		// validate that the resource exists and skip those that are already enabled
 		if !resourceExists(resource) {
 			return fmt.Errorf("resource %s does not exist. Available resources: %s", resource, strings.Join(availableResources(), ","))
 		}
+		if _, ok := enabledResources[resource]; !ok {
+			newResources = append(newResources, resource)
+		}
+	}
+	if len(newResources) == 0 {
+		return nil
 	}
 
-	var sortedResources []string
-	sortedResources = append(sortedResources, r...)
-
-	sort.Strings(sortedResources)
-
-	b.enabledResources = append(b.enabledResources, sortedResources...)
+	b.enabledResources = append(b.enabledResources, newResources...)
+	sort.Strings(b.enabledResources)
 	return nil
 }
 

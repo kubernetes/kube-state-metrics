@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -113,12 +113,10 @@ func (b *Builder) WithEnabledResources(r []string) error {
 		}
 	}
 
-	var sortedResources []string
-	sortedResources = append(sortedResources, r...)
+	b.enabledResources = append(b.enabledResources, r...)
+	slices.Sort(b.enabledResources)
+	b.enabledResources = slices.Compact(b.enabledResources)
 
-	sort.Strings(sortedResources)
-
-	b.enabledResources = append(b.enabledResources, sortedResources...)
 	return nil
 }
 

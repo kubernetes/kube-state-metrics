@@ -18,6 +18,7 @@ package store
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -193,6 +194,59 @@ func TestWithAllowAnnotations(t *testing.T) {
 		if !reflect.DeepEqual(resolvedAllowAnnotations, test.Wanted) && !test.err.expectedNotEqual {
 			t.Log("Expected maps to be equal.")
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, resolvedAllowAnnotations)
+		}
+	}
+}
+
+func TestWithEnabledResources(t *testing.T) {
+
+	tests := []struct {
+		Desc             string
+		EnabledResources []string
+		Wanted           []string
+		err              expectedError
+	}{
+		{
+			Desc:             "sorts enabled resources",
+			EnabledResources: []string{"pods", "cronjobs", "deployments"},
+			Wanted: []string{
+				"cronjobs",
+				"deployments",
+				"pods",
+			},
+		},
+		{
+			Desc:             "de-duplicates enabled resources",
+			EnabledResources: []string{"pods", "cronjobs", "deployments", "pods"},
+			Wanted: []string{
+				"cronjobs",
+				"deployments",
+				"pods",
+			},
+		},
+		{
+			Desc:             "error if not exist",
+			EnabledResources: []string{"pods", "cronjobs", "deployments", "foo"},
+			Wanted:           []string{},
+			err: expectedError{
+				expectedResourceError: true,
+			},
+		},
+	}
+	for _, test := range tests {
+		b := NewBuilder()
+
+		// Set the enabled resources.
+		err := b.WithEnabledResources(test.EnabledResources)
+		if err != nil && !test.err.expectedResourceError {
+			t.Log("Did not expect error while setting resources (--resources).")
+			t.Errorf("Test error for Desc: %s. Got Error: %v", test.Desc, err)
+		}
+
+		// Evaluate.
+		if !slices.Equal(b.enabledResources, test.Wanted) && err == nil {
+			t.Log("Expected enabled resources to be equal.")
+			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, b.enabledResources)
 		}
 	}
 }

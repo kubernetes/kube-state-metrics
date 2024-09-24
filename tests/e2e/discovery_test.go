@@ -36,7 +36,110 @@ import (
 // PopulateTimeout is the timeout on populating the cache for the first time.
 const PopulateTimeout = 10 * time.Second
 
+type resourceManager struct {
+	crConfigFile *os.File
+	initCrdFile  *os.File
+	initCrFile   *os.File
+	newCrdFile   *os.File
+	newCrFile    *os.File
+}
+
+func (rm *resourceManager) createConfigAndResourceFiles(t *testing.T) {
+	crConfigFile, err := os.CreateTemp("", "cr-config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm.crConfigFile = crConfigFile
+
+	initCrdFile, err := os.CreateTemp("", "crd.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm.initCrdFile = initCrdFile
+
+	initCrFile, err := os.CreateTemp("", "cr.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm.initCrFile = initCrFile
+
+	newCrdFile, err := os.CreateTemp("", "new-crd.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm.newCrdFile = newCrdFile
+
+	newCrFile, err := os.CreateTemp("", "new-cr.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm.newCrFile = newCrFile
+	klog.InfoS("testdata", "crConfigFile", crConfigFile.Name(), "initCrdFile", initCrdFile.Name(), "initCrFile", initCrFile.Name(), "newCrdFile", newCrdFile.Name(), "newCrFile", newCrFile.Name())
+}
+
+func (rm *resourceManager) removeResourceFiles(t *testing.T) {
+	err := os.Remove(rm.crConfigFile.Name())
+	if err != nil {
+		t.Fatalf("failed to remove CR config: %v", err)
+	}
+	err = os.Remove(rm.initCrdFile.Name())
+	if err != nil {
+		t.Fatalf("failed to remove initial CRD manifest: %v", err)
+	}
+	err = os.Remove(rm.initCrFile.Name())
+	if err != nil {
+		t.Fatalf("failed to remove initial CR manifest: %v", err)
+	}
+	err = os.Remove(rm.newCrdFile.Name())
+	if err != nil {
+		t.Fatalf("failed to remove new CRD manifest: %v", err)
+	}
+	err = os.Remove(rm.newCrFile.Name())
+	if err != nil {
+		t.Fatalf("failed to remove new CR manifest: %v", err)
+	}
+	klog.InfoS("deleted artefacts", "crConfigFile", rm.crConfigFile.Name(), "initCrdFile", rm.initCrdFile.Name(), "initCrFile", rm.initCrFile.Name(), "newCrdFile", rm.newCrdFile.Name(), "newCrFile", rm.newCrFile.Name())
+}
+
+func (rm *resourceManager) writeConfigFile(t *testing.T) {
+	crConfig := getCRConfig()
+	configFile := rm.crConfigFile.Name()
+	err := os.WriteFile(configFile, []byte(crConfig), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to config file: %v", err)
+	}
+	klog.InfoS("populated cr config file", "crConfigFile", configFile)
+}
+
+func (rm *resourceManager) writeResourceFiles(t *testing.T) {
+	initCr := getCR()
+	initCrd := getCRD()
+
+	newCr := getNewCR()
+	newCrd := getNewCRD()
+	err := os.WriteFile(rm.initCrdFile.Name(), []byte(initCrd), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to initial crd file: %v", err)
+	}
+	err = os.WriteFile(rm.initCrFile.Name(), []byte(initCr), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to initial cr file: %v", err)
+	}
+	err = os.WriteFile(rm.newCrdFile.Name(), []byte(newCrd), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to new crd file: %v", err)
+	}
+	err = os.WriteFile(rm.newCrFile.Name(), []byte(newCr), 0600 /* rw------- */)
+	if err != nil {
+		t.Fatalf("cannot write to new cr file: %v", err)
+	}
+	klog.InfoS("created initial and new CR and CRD manifests")
+}
+
 func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
+	rm := &resourceManager{}
+	// Create testdata.
+	rm.createConfigAndResourceFiles(t)
 
 	// Initialise options.
 	opts := options.NewOptions()
@@ -44,56 +147,11 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	opts.AddFlags(cmd)
 	klog.InfoS("options", "options", opts)
 
-	// Create testdata.
-	crConfigFile, err := os.CreateTemp("", "cr-config.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	initCrdFile, err := os.CreateTemp("", "crd.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	initCrFile, err := os.CreateTemp("", "cr.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	newCrdFile, err := os.CreateTemp("", "new-crd.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	newCrFile, err := os.CreateTemp("", "new-cr.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	klog.InfoS("testdata", "crConfigFile", crConfigFile.Name(), "initCrdFile", initCrdFile.Name(), "initCrFile", initCrFile.Name(), "newCrdFile", newCrdFile.Name(), "newCrFile", newCrFile.Name())
-
 	// Delete artefacts.
-	defer func() {
-		err := os.Remove(crConfigFile.Name())
-		if err != nil {
-			t.Fatalf("failed to remove CR config: %v", err)
-		}
-		err = os.Remove(initCrdFile.Name())
-		if err != nil {
-			t.Fatalf("failed to remove initial CRD manifest: %v", err)
-		}
-		err = os.Remove(initCrFile.Name())
-		if err != nil {
-			t.Fatalf("failed to remove initial CR manifest: %v", err)
-		}
-		err = os.Remove(newCrdFile.Name())
-		if err != nil {
-			t.Fatalf("failed to remove new CRD manifest: %v", err)
-		}
-		err = os.Remove(newCrFile.Name())
-		if err != nil {
-			t.Fatalf("failed to remove new CR manifest: %v", err)
-		}
-		klog.InfoS("deleted artefacts", "crConfigFile", crConfigFile.Name(), "initCrdFile", initCrdFile.Name(), "initCrFile", initCrFile.Name(), "newCrdFile", newCrdFile.Name(), "newCrFile", newCrFile.Name())
-	}()
+	defer rm.removeResourceFiles(t)
 
 	// Populate options, and parse them.
-	opts.CustomResourceConfigFile = crConfigFile.Name()
+	opts.CustomResourceConfigFile = rm.crConfigFile.Name()
 	opts.Kubeconfig = os.Getenv("HOME") + "/.kube/config"
 	if err := opts.Parse(); err != nil {
 		t.Fatalf("failed to parse options: %v", err)
@@ -101,19 +159,14 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	klog.InfoS("parsed options", "options", opts)
 
 	// Write to the config file.
-	crConfig := getCRConfig()
-	err = os.WriteFile(opts.CustomResourceConfigFile, []byte(crConfig), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to config file: %v", err)
-	}
-	klog.InfoS("populated cr config file", "crConfigFile", opts.CustomResourceConfigFile)
+	rm.writeConfigFile(t)
 
 	// Make the process asynchronous.
 	go internal.RunKubeStateMetricsWrapper(opts)
 	klog.InfoS("started KSM")
 
 	// Wait for port 8080 to come up.
-	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(_ context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(_ context.Context) (bool, error) {
 		conn, err := net.Dial("tcp", "localhost:8080")
 		if err != nil {
 			return false, nil
@@ -130,35 +183,14 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	klog.InfoS("port 8080 up")
 
 	// Create CRD and CR files.
-	initCr := getCR()
-	initCrd := getCRD()
-
-	newCr := getNewCR()
-	newCrd := getNewCRD()
-	err = os.WriteFile(initCrdFile.Name(), []byte(initCrd), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to initial crd file: %v", err)
-	}
-	err = os.WriteFile(initCrFile.Name(), []byte(initCr), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to initial cr file: %v", err)
-	}
-	err = os.WriteFile(newCrdFile.Name(), []byte(newCrd), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to new crd file: %v", err)
-	}
-	err = os.WriteFile(newCrFile.Name(), []byte(newCr), 0600 /* rw------- */)
-	if err != nil {
-		t.Fatalf("cannot write to new cr file: %v", err)
-	}
-	klog.InfoS("created initial and new CR and CRD manifests")
+	rm.writeResourceFiles(t)
 
 	// Apply initial CRD and CR to the cluster.
-	err = exec.Command("kubectl", "apply", "-f", initCrdFile.Name()).Run() //nolint:gosec
+	err = exec.Command("kubectl", "apply", "-f", rm.initCrdFile.Name()).Run() //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to apply initial crd: %v", err)
 	}
-	err = exec.Command("kubectl", "apply", "-f", initCrFile.Name()).Run() //nolint:gosec
+	err = exec.Command("kubectl", "apply", "-f", rm.initCrFile.Name()).Run() //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to apply initial cr: %v", err)
 	}
@@ -198,11 +230,11 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	}
 
 	// Apply new CRD and CR to the cluster.
-	err = exec.Command("kubectl", "apply", "-f", newCrdFile.Name()).Run() //nolint:gosec
+	err = exec.Command("kubectl", "apply", "-f", rm.newCrdFile.Name()).Run() //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to apply new crd: %v", err)
 	}
-	err = exec.Command("kubectl", "apply", "-f", newCrFile.Name()).Run() //nolint:gosec
+	err = exec.Command("kubectl", "apply", "-f", rm.newCrFile.Name()).Run() //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to apply new cr: %v", err)
 	}

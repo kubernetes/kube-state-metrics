@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 

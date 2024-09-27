@@ -29,6 +29,7 @@ var (
 		"certificatesigningrequests":      struct{}{},
 		"configmaps":                      struct{}{},
 		"cronjobs":                        struct{}{},
+		"csidrivers":                      struct{}{},
 		"daemonsets":                      struct{}{},
 		"deployments":                     struct{}{},
 		"endpoints":                       struct{}{},

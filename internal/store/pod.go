@@ -57,6 +57,8 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodContainerStatusTerminatedReasonFamilyGenerator(),
 		createPodContainerStatusWaitingFamilyGenerator(),
 		createPodContainerStatusWaitingReasonFamilyGenerator(),
+		createPodContainerSecurityContextFamilyGenerator(),
+		createPodContainerVolumeMountFamilyGenerator(),
 		createPodCreatedFamilyGenerator(),
 		createPodDeletionTimestampFamilyGenerator(),
 		createPodInfoFamilyGenerator(),
@@ -96,6 +98,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodNodeSelectorsFamilyGenerator(),
 		createPodServiceAccountFamilyGenerator(),
 		createPodSchedulerNameFamilyGenerator(),
+		createPodSecurityContextFamilyGenerator(),
 	}
 }
 
@@ -156,6 +159,49 @@ func createPodContainerInfoFamilyGenerator() generator.FamilyGenerator {
 						Value:       1,
 					})
 				}
+			}
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodContainerSecurityContextFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_container_security_context",
+		"Information about security context of a container in a pod.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+			labelKeys := []string{"container", "privileged", "container_selinux_user", "container_selinux_role", "container_selinux_type", "container_selinux_level"}
+
+			for _, c := range p.Spec.Containers {
+				sc := c.SecurityContext
+				if sc == nil {
+					// No security context set, report defaults.
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{c.Name, "false", "", "", "", ""},
+						Value:       1,
+					})
+					continue
+				}
+				seLinuxOpts := &v1.SELinuxOptions{}
+				if sc.SELinuxOptions != nil {
+					seLinuxOpts = sc.SELinuxOptions
+				}
+				privileged := "false"
+				if sc.Privileged != nil && *sc.Privileged {
+					privileged = "true"
+				}
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: []string{c.Name, privileged, seLinuxOpts.User, seLinuxOpts.Role, seLinuxOpts.Type, seLinuxOpts.Level},
+					Value:       1,
+				})
 			}
 			return &metric.Family{
 				Metrics: ms,
@@ -1309,6 +1355,32 @@ func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generat
 	)
 }
 
+func createPodContainerVolumeMountFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_container_volume_mount",
+		"Information about volumes mounted into containers in a pod.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+			for _, c := range p.Spec.Containers {
+				for _, mount := range c.VolumeMounts {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"container", "volume"},
+						LabelValues: []string{c.Name, mount.Name},
+						Value:       1,
+					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
 func createPodStartTimeFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_start_time",
@@ -1755,6 +1827,37 @@ func createPodSchedulerNameFamilyGenerator() generator.FamilyGenerator {
 				Value:       1,
 			}
 
+			return &metric.Family{
+				Metrics: []*metric.Metric{&m},
+			}
+		}),
+	)
+}
+
+func createPodSecurityContextFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_security_context",
+		"The security context of a pod.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			m := metric.Metric{
+				// TODO: Add SELinuxChangePolicy from https://github.com/kubernetes/enhancements/pull/4843
+				LabelKeys:   []string{"pod_selinux_user", "pod_selinux_role", "pod_selinux_type", "pod_selinux_level"},
+				LabelValues: []string{"", "", "", ""},
+				Value:       1,
+			}
+
+			if p.Spec.SecurityContext == nil {
+				// No security context specified, use defaults
+				return &metric.Family{
+					Metrics: []*metric.Metric{&m},
+				}
+			}
+			if opts := p.Spec.SecurityContext.SELinuxOptions; opts != nil {
+				m.LabelValues = []string{opts.User, opts.Role, opts.Type, opts.Level}
+			}
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
 			}

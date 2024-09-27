@@ -316,6 +316,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"configmaps":                      func(b *Builder) []cache.Store { return b.buildConfigMapStores() },
 	"clusterrolebindings":             func(b *Builder) []cache.Store { return b.buildClusterRoleBindingStores() },
 	"cronjobs":                        func(b *Builder) []cache.Store { return b.buildCronJobStores() },
+	"csidrivers":                      func(b *Builder) []cache.Store { return b.buildCSIDriverStores() },
 	"daemonsets":                      func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
 	"deployments":                     func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
 	"endpoints":                       func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
@@ -459,6 +460,10 @@ func (b *Builder) buildStatefulSetStores() []cache.Store {
 
 func (b *Builder) buildStorageClassStores() []cache.Store {
 	return b.buildStoresFunc(storageClassMetricFamilies(b.allowAnnotationsList["storageclasses"], b.allowLabelsList["storageclasses"]), &storagev1.StorageClass{}, createStorageClassListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildCSIDriverStores() []cache.Store {
+	return b.buildStoresFunc(csiDriverMetricFamilies(b.allowAnnotationsList["csidrivers"], b.allowLabelsList["csidrivers"]), &storagev1.CSIDriver{}, createCSIDriverListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildPodStores() []cache.Store {

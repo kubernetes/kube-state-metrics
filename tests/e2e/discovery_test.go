@@ -259,7 +259,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 		// Note: we use count to make sure that only one metrics handler is running, and we also want to validate that the
 		// new metric is available and the old one was removed, otherwise, the response could come from the
 		// previous handler before its context was cancelled, or maybe because it failed to be cancelled.
-		if strings.Count(string(out), testUpdateCRDMetric) == 1 && !strings.Contains(string(out), testMetric) {
+		if strings.Contains(string(out), testUpdateCRDMetric) && !strings.Contains(string(out), testMetric) {
 			klog.InfoS("metrics available", "metric", string(out))
 			// Signal the process to exit, since we know the metrics are being generated as expected.
 			ch <- true

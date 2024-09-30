@@ -152,7 +152,7 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 				n.Status.NodeInfo.OSImage,
 				n.Status.NodeInfo.ContainerRuntimeVersion,
 				n.Status.NodeInfo.KubeletVersion,
-				n.Status.NodeInfo.KubeProxyVersion,
+				"deprecated",
 				n.Spec.ProviderID,
 				n.Spec.PodCIDR,
 				n.Status.NodeInfo.SystemUUID,

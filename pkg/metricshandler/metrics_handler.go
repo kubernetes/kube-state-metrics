@@ -70,7 +70,7 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 }
 
 // BuildWriters builds the metrics writers, cancelling any previous context and passing a new one on every build.
-// Build can be used mutlitple times and concurrently.
+// Build can be used multiple times and concurrently.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -83,7 +83,7 @@ func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.metricsWriters = m.storeBuilder.Build()
 }
 
-// ConfigureSharding configures sharding. Configuration can be used mutlitple times and
+// ConfigureSharding configures sharding. Configuration can be used multiple times and
 // concurrently.
 func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
 	m.mtx.Lock()

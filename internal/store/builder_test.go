@@ -238,13 +238,21 @@ func TestWithEnabledResources(t *testing.T) {
 
 		// Set the enabled resources.
 		err := b.WithEnabledResources(test.EnabledResources)
-		if err != nil && !test.err.expectedResourceError {
-			t.Log("Did not expect error while setting resources (--resources).")
-			t.Errorf("Test error for Desc: %s. Got Error: %v", test.Desc, err)
+		if test.err.expectedResourceError {
+			if err == nil {
+				t.Log("Did not expect error while setting resources (--resources).")
+				t.Fatal("Test error for Desc: %s. Got Error: %v", test.Desc, err)
+			} else {
+				return
+			}
+		}
+		if err != nil {
+			t.Log("...")
+			t.Fatal("...", test.Desc, err)
 		}
 
 		// Evaluate.
-		if !slices.Equal(b.enabledResources, test.Wanted) && err == nil {
+		if !slices.Equal(b.enabledResources, test.Wanted) {
 			t.Log("Expected enabled resources to be equal.")
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, b.enabledResources)
 		}

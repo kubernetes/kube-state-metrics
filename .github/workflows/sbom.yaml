@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Fetch source code into GITHUB_WORKSPACE
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       - name: Install Kubernetes BOM
         uses: kubernetes-sigs/release-actions/setup-bom@2f8b9ec22aedc9ce15039b6c7716aa6c2907df1c # v0.2.0

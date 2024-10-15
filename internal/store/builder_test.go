@@ -241,7 +241,7 @@ func TestWithEnabledResources(t *testing.T) {
 		if test.err.expectedResourceError {
 			if err == nil {
 				t.Log("Did not expect error while setting resources (--resources).")
-				t.Fatal("Test error for Desc: %s. Got Error: %v", test.Desc, err)
+				t.Fatalf("Test error for Desc: %s. Got Error: %v", test.Desc, err)
 			} else {
 				return
 			}

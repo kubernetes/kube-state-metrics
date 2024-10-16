@@ -124,47 +124,6 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
-			"kube_endpoint_address_available",
-			"Number of addresses available in endpoint.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"v2.6.0",
-			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
-				var available int
-				for _, s := range e.Subsets {
-					available += len(s.Addresses) * len(s.Ports)
-				}
-
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(available),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_endpoint_address_not_ready",
-			"Number of addresses not ready in endpoint",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"v2.6.0",
-			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
-				var notReady int
-				for _, s := range e.Subsets {
-					notReady += len(s.NotReadyAddresses) * len(s.Ports)
-				}
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(notReady),
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_address",
 			"Information about Endpoint available and non available addresses.",
 			metric.Gauge,

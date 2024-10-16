@@ -32,10 +32,6 @@ func TestEndpointStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_endpoint_annotations gauge
-		# HELP kube_endpoint_address_available (Deprecated since v2.6.0) Number of addresses available in endpoint.
-		# TYPE kube_endpoint_address_available gauge
-		# HELP kube_endpoint_address_not_ready (Deprecated since v2.6.0) Number of addresses not ready in endpoint
-		# TYPE kube_endpoint_address_not_ready gauge
 		# HELP kube_endpoint_created [STABLE] Unix creation timestamp
 		# TYPE kube_endpoint_created gauge
 		# HELP kube_endpoint_info [STABLE] Information about endpoint.
@@ -89,8 +85,6 @@ func TestEndpointStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
 				kube_endpoint_ports{endpoint="test-endpoint",namespace="default",port_name="http",port_protocol="TCP",port_number="8080"} 1
@@ -132,8 +126,6 @@ func TestEndpointStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_endpoint_address_available{endpoint="single-port-endpoint",namespace="default"} 2
-				kube_endpoint_address_not_ready{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_created{endpoint="single-port-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_ports{endpoint="single-port-endpoint",namespace="default",port_name="",port_number="8080",port_protocol="TCP"} 1
@@ -156,10 +148,6 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_endpoint_address_available (Deprecated since v2.6.0) Number of addresses available in endpoint.
-		# TYPE kube_endpoint_address_available gauge
-		# HELP kube_endpoint_address_not_ready (Deprecated since v2.6.0) Number of addresses not ready in endpoint
-		# TYPE kube_endpoint_address_not_ready gauge
 		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_endpoint_annotations gauge
 		# HELP kube_endpoint_created [STABLE] Unix creation timestamp
@@ -218,8 +206,6 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_endpoint_address_available{endpoint="test-endpoint",namespace="default"} 6
-				kube_endpoint_address_not_ready{endpoint="test-endpoint",namespace="default"} 6
 				kube_endpoint_annotations{endpoint="test-endpoint",annotation_app="foobar",namespace="default"} 1
 				kube_endpoint_created{endpoint="test-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="test-endpoint",namespace="default"} 1
@@ -267,8 +253,6 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_endpoint_annotations{endpoint="single-port-endpoint",annotation_app="single-foobar",namespace="default"} 1
-				kube_endpoint_address_available{endpoint="single-port-endpoint",namespace="default"} 2
-				kube_endpoint_address_not_ready{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_created{endpoint="single-port-endpoint",namespace="default"} 1.5e+09
 				kube_endpoint_info{endpoint="single-port-endpoint",namespace="default"} 1
 				kube_endpoint_labels{endpoint="single-port-endpoint",label_app="single-foobar",namespace="default"} 1

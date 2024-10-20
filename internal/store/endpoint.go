@@ -132,19 +132,37 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, s := range e.Subsets {
-					for _, available := range s.Addresses {
-						ms = append(ms, &metric.Metric{
-							LabelValues: []string{available.IP, "true"},
-							LabelKeys:   []string{"ip", "ready"},
-							Value:       1,
-						})
-					}
-					for _, notReadyAddresses := range s.NotReadyAddresses {
-						ms = append(ms, &metric.Metric{
-							LabelValues: []string{notReadyAddresses.IP, "false"},
-							LabelKeys:   []string{"ip", "ready"},
-							Value:       1,
-						})
+					for _, port := range s.Ports {
+						for _, available := range s.Addresses {
+							labelValues := []string{string(port.Protocol), strconv.FormatInt(int64(port.Port), 10)}
+							labelKeys := []string{"port_protocol", "port_number"}
+
+							if port.Name != "" {
+								labelKeys = append(labelKeys, "port_name")
+								labelValues = append(labelValues, port.Name)
+							}
+
+							ms = append(ms, &metric.Metric{
+								LabelValues: append(labelValues, available.IP, "true"),
+								LabelKeys:   append(labelKeys, "ip", "ready"),
+								Value:       1,
+							})
+						}
+						for _, notReadyAddresses := range s.NotReadyAddresses {
+							labelValues := []string{string(port.Protocol), strconv.FormatInt(int64(port.Port), 10)}
+							labelKeys := []string{"port_protocol", "port_number"}
+
+							if port.Name != "" {
+								labelKeys = append(labelKeys, "port_name")
+								labelValues = append(labelValues, port.Name)
+							}
+
+							ms = append(ms, &metric.Metric{
+								LabelValues: append(labelValues, notReadyAddresses.IP, "false"),
+								LabelKeys:   append(labelKeys, "ip", "ready"),
+								Value:       1,
+							})
+						}
 					}
 				}
 				return &metric.Family{
@@ -157,7 +175,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"Information about the Endpoint ports.",
 			metric.Gauge,
 			basemetrics.STABLE,
-			"",
+			"v2.14.0",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, s := range e.Subsets {

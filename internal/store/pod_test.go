@@ -71,6 +71,43 @@ func TestPodStore(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+					Labels: map[string]string{
+						"app": "app1",
+						"env": "env1",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:  "container1",
+							Image: "k8s.gcr.io/hyperkube1_spec",
+						},
+					},
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:        "container1",
+							Image:       "k8s.gcr.io/hyperkube1",
+							ImageID:     "docker://sha256:aaa",
+							ContainerID: "docker://ab123",
+						},
+					},
+				},
+			},
+			Want: `
+			# HELP kube_pod_container_info [STABLE] Information about a container in a pod.
+			# TYPE kube_pod_container_info gauge
+			kube_pod_container_info{container="container1",container_id="docker://ab123",image="k8s.gcr.io/hyperkube1",image_spec="k8s.gcr.io/hyperkube1_spec",image_id="docker://sha256:aaa",namespace="ns1",pod="pod1",uid="uid1",label_app="app1"} 1`,
+			MetricNames:     []string{"kube_pod_container_info"},
+			AllowLabelsList: []string{"app"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod2",
 					Namespace: "ns2",
 					UID:       "uid2",

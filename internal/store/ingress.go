@@ -202,6 +202,28 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_ingress_status",
+			"Ingress status.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, ingress := range i.Status.LoadBalancer.Ingress {
+					for _, port := range ingress.Ports {
+						ms = append(ms, &metric.Metric{
+							LabelKeys:   []string{"hostname", "port", "protocol"},
+							LabelValues: []string{ingress.Hostname, strconv.Itoa(int(port.Port)), string(port.Protocol)},
+							Value:       1,
+						})
+					}
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

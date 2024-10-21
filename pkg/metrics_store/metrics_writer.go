@@ -56,31 +56,35 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		return nil
 	}
 
-	for _, s := range m.stores {
-		s.mutex.RLock()
-		defer func(s *MetricsStore) {
-			s.mutex.RUnlock()
-		}(s)
-	}
-
 	for i, help := range m.stores[0].headers {
 		if help != "" && help != "\n" {
 			help += "\n"
 		}
 
-		if len(m.stores[0].metrics) > 0 {
-			_, err := w.Write([]byte(help))
+		var err error
+		m.stores[0].metrics.Range(func(_ interface{}, _ interface{}) bool {
+			_, err = w.Write([]byte(help))
 			if err != nil {
-				return fmt.Errorf("failed to write help text: %v", err)
+				err = fmt.Errorf("failed to write help text: %v", err)
 			}
+			return false
+		})
+		if err != nil {
+			return err
 		}
 
 		for _, s := range m.stores {
-			for _, metricFamilies := range s.metrics {
-				_, err := w.Write(metricFamilies[i])
+			s.metrics.Range(func(_ interface{}, value interface{}) bool {
+				metricFamilies := value.([][]byte)
+				_, err = w.Write(metricFamilies[i])
 				if err != nil {
-					return fmt.Errorf("failed to write metrics family: %v", err)
+					err = fmt.Errorf("failed to write metrics family: %v", err)
+					return false
 				}
+				return true
+			})
+			if err != nil {
+				return err
 			}
 		}
 	}

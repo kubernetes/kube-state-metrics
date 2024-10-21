@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -33,7 +32,7 @@ type MetricsStore struct {
 	// metric families, containing a slice of metrics. We need to keep metrics
 	// grouped by metric families in order to zip families with their help text in
 	// MetricsStore.WriteAll().
-	metrics map[types.UID][][]byte
+	metrics sync.Map
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
@@ -42,9 +41,6 @@ type MetricsStore struct {
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
 	headers []string
-
-	// Protects metrics
-	mutex sync.RWMutex
 }
 
 // NewMetricsStore returns a new MetricsStore
@@ -52,7 +48,7 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.F
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,
-		metrics:             map[types.UID][][]byte{},
+		metrics:             sync.Map{},
 	}
 }
 
@@ -66,9 +62,6 @@ func (s *MetricsStore) Add(obj interface{}) error {
 		return err
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	families := s.generateMetricsFunc(obj)
 	familyStrings := make([][]byte, len(families))
 
@@ -76,7 +69,7 @@ func (s *MetricsStore) Add(obj interface{}) error {
 		familyStrings[i] = f.ByteSlice()
 	}
 
-	s.metrics[o.GetUID()] = familyStrings
+	s.metrics.Store(o.GetUID(), familyStrings)
 
 	return nil
 }
@@ -95,10 +88,7 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 		return err
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	delete(s.metrics, o.GetUID())
+	s.metrics.Delete(o.GetUID())
 
 	return nil
 }
@@ -126,9 +116,7 @@ func (s *MetricsStore) GetByKey(_ string) (item interface{}, exists bool, err er
 // Replace will delete the contents of the store, using instead the
 // given list.
 func (s *MetricsStore) Replace(list []interface{}, _ string) error {
-	s.mutex.Lock()
-	s.metrics = map[types.UID][][]byte{}
-	s.mutex.Unlock()
+	s.metrics.Clear()
 
 	for _, o := range list {
 		err := s.Add(o)

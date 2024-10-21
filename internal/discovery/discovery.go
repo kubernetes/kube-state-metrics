@@ -17,6 +17,7 @@ package discovery
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -252,8 +253,9 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 					shouldGenerateMetrics = r.WasUpdated
 				})
 				if shouldGenerateMetrics {
+					klog.InfoS("should generate metrics", "goroutine", runtime.NumGoroutine())
 					generateMetrics()
-					klog.InfoS("discovery finished, cache updated")
+					klog.InfoS("discovery finished, cache updated", "goroutine", runtime.NumGoroutine())
 				}
 			}
 		}

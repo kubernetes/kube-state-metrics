@@ -38,7 +38,9 @@ It is a good practice to group those together into an `_info` metric.
 An object can also have a dynamic set of properties, which are usually part of the status field.
 These change during the lifecycle of the object.
 For example a pod can be in different states like "Pending", "Running" etc.
-These should be part of a new metric that includes labels that identify the object as well as the dynamic property.
+These should be part of a "State Set" that includes labels that identify the object as well as the dynamic property.
+
+For example:
 
 ### Linked properties
 

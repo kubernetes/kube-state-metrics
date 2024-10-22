@@ -52,7 +52,7 @@ Some Kubernetes objects have optional fields. In case there is an optional value
 
 ### Timestamps
 
-Timestamps like creation time or modification time should be exposed as a value. The metric should end with `_timestamp_seconds`.
+Timestamps like creation time or modification time should be exposed as a value. The metric should end with `_timestamp_seconds`. The date value is represented in [UNIX epoch seconds](https://en.wikipedia.org/wiki/Unix_time).
 
 ### Cardinality
 

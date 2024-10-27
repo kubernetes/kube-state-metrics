@@ -125,11 +125,10 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 		return nil
 	}
 	apiVersion := expectedType.(*unstructured.Unstructured).Object["apiVersion"].(string)
-	expectedTypeSlice := strings.Split(apiVersion, "/")
-	g := expectedTypeSlice[0]
-	v := expectedTypeSlice[1]
-	if v == "" /* "" group (core) objects */ {
-		v = expectedTypeSlice[0]
+	g, v, found := strings.Cut(apiVersion, "/")
+	if !found {
+		g = "core"
+		v = apiVersion
 	}
 	r := resourceName
 	return &schema.GroupVersionResource{

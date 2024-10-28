@@ -25,7 +25,8 @@ We follow [Prometheus](https://prometheus.io/docs/practices/naming/) best practi
 ### Avoid pre-computation
 
 kube-state-metrics should expose metrics on an individual object level and avoid any sort of pre-computation unless it is required due to for example high cardinality on objects.
-By exposing raw metrics instead of counters, kube-state-metrics allows the user to have full control on how they want to use the metrics.
+We prefer not to add metrics that can be derived from existing raw metrics. For example, we would not want to expose a metric called `kube_pod_total` as it can be computed with `count(kube_pod_info)`.
+This way kube-state-metrics allows the user to have full control on how they want to use the metrics and gives them flexibility to do specific computation.
 
 ### Static object properties
 
@@ -48,7 +49,7 @@ If an object contains a substructure that links multiple properties together (e.
 
 ### Optional properties
 
-Some Kubernetes objects have optional fields. In case there is an optional value, it is better to not expose the label at all instead of exposing a "nil" value or an empty string.
+Some Kubernetes objects have optional fields. In case there is an optional value, the label should still be exposed, ideally as an empty string.
 
 ### Timestamps
 

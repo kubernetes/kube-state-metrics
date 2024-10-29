@@ -131,9 +131,11 @@ type compiledCommon struct {
 func (c compiledCommon) Path() valuePath {
 	return c.path
 }
+
 func (c compiledCommon) LabelFromPath() map[string]valuePath {
 	return c.labelFromPath
 }
+
 func (c compiledCommon) Type() metric.Type {
 	return c.t
 }
@@ -477,6 +479,7 @@ func (e eachValue) DefaultLabels(defaults map[string]string) {
 		}
 	}
 }
+
 func (e eachValue) ToMetric() *metric.Metric {
 	var keys, values []string
 	for k := range e.Labels {
@@ -730,6 +733,9 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 			return 1, nil
 		}
 		if normalized == "false" || normalized == "no" {
+			return 0, nil
+		}
+		if normalized == "unknown" {
 			return 0, nil
 		}
 		// The string contains a RFC3339 timestamp

@@ -18,7 +18,7 @@ Feel encouraged to report these metrics and provide a pull request to improve th
 
 ## General best practices
 
-We follow [Prometheus](https://prometheus.io/docs/practices/naming/) best practices in terms of naming and labeloing.
+We follow [Prometheus](https://prometheus.io/docs/practices/naming/) best practices in terms of naming and labeling.
 
 ## Best practices for kube-state-metrics
 

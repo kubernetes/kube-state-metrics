@@ -121,54 +121,41 @@ func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
 				m := []*metric.Metric{}
 				for _, ep := range e.Endpoints {
-					var (
-						labelKeys,
-						labelValues []string
-					)
+
+					var ready, serving, terminating, hostname, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone string
 
 					if ep.Conditions.Ready != nil {
-						labelKeys = append(labelKeys, "ready")
-						labelValues = append(labelValues, strconv.FormatBool(*ep.Conditions.Ready))
-					}
-					if ep.Conditions.Serving != nil {
-						labelKeys = append(labelKeys, "serving")
-						labelValues = append(labelValues, strconv.FormatBool(*ep.Conditions.Serving))
-					}
-					if ep.Conditions.Terminating != nil {
-						labelKeys = append(labelKeys, "terminating")
-						labelValues = append(labelValues, strconv.FormatBool(*ep.Conditions.Terminating))
+						ready = strconv.FormatBool(*ep.Conditions.Ready)
 					}
 
+					if ep.Conditions.Serving != nil {
+						serving = strconv.FormatBool(*ep.Conditions.Serving)
+					}
+
+					if ep.Conditions.Terminating != nil {
+						serving = strconv.FormatBool(*ep.Conditions.Terminating)
+					}
 					if ep.Hostname != nil {
-						labelKeys = append(labelKeys, "hostname")
-						labelValues = append(labelValues, *ep.Hostname)
+						hostname = *ep.Hostname
 					}
 
 					if ep.TargetRef != nil {
-						if ep.TargetRef.Kind != "" {
-							labelKeys = append(labelKeys, "targetref_kind")
-							labelValues = append(labelValues, ep.TargetRef.Kind)
-						}
-						if ep.TargetRef.Name != "" {
-							labelKeys = append(labelKeys, "targetref_name")
-							labelValues = append(labelValues, ep.TargetRef.Name)
-						}
-						if ep.TargetRef.Namespace != "" {
-							labelKeys = append(labelKeys, "targetref_namespace")
-							labelValues = append(labelValues, ep.TargetRef.Namespace)
-						}
+						targetrefKind = ep.TargetRef.Kind
+						targetrefName = ep.TargetRef.Name
+						targetrefNamespace = ep.TargetRef.Namespace
 					}
 
 					if ep.NodeName != nil {
-						labelKeys = append(labelKeys, "endpoint_nodename")
-						labelValues = append(labelValues, *ep.NodeName)
+						endpointNodename = *ep.NodeName
 					}
 
 					if ep.Zone != nil {
-						labelKeys = append(labelKeys, "endpoint_zone")
-						labelValues = append(labelValues, *ep.Zone)
+						endpointZone = *ep.Zone
 					}
-					labelKeys = append(labelKeys, "address")
+
+					labelKeys := []string{"ready", "serving", "hostname", "terminating", "targetref_kind", "targetref_name", "targetref_namespace", "endpoint_nodename", "endpoint_zone", "address"}
+					labelValues := []string{ready, serving, terminating, hostname, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone}
+
 					for _, address := range ep.Addresses {
 						newlabelValues := make([]string, len(labelValues))
 						copy(newlabelValues, labelValues)

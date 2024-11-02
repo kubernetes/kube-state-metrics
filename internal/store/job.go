@@ -356,6 +356,30 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_job_status_suspended",
+			"The number of pods which reached Phase Suspended.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				ms := []*metric.Metric{}
+				for _, c := range j.Status.Conditions {
+					if c.Type == v1batch.JobSuspended {
+						metrics := addConditionMetrics(c.Status)
+						for _, m := range metrics {
+							metric := m
+							metric.LabelKeys = []string{"condition"}
+							ms = append(ms, metric)
+						}
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_job_owner",
 			"Information about the Job's owner.",
 			metric.Gauge,

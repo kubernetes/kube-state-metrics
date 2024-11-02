@@ -19,7 +19,6 @@ package store
 import (
 	"context"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"math"
 	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
@@ -355,7 +354,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
-							Value: convertFloat64(&val),
+							Value: convertValueToFloat64(&val),
 						})
 					}
 					if isAttachableVolumeResourceName(resourceName) {
@@ -364,7 +363,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
-							Value: convertFloat64(&val),
+							Value: convertValueToFloat64(&val),
 						})
 					}
 					if isExtendedResourceName(resourceName) {
@@ -373,7 +372,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitInteger),
 							},
-							Value: convertFloat64(&val),
+							Value: convertValueToFloat64(&val),
 						})
 					}
 				}
@@ -409,7 +408,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitCore),
 						},
-						Value: convertFloat64(&val),
+						Value: convertValueToFloat64(&val),
 					})
 				case v1.ResourceStorage:
 					fallthrough
@@ -421,7 +420,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitByte),
 						},
-						Value: convertFloat64(&val),
+						Value: convertValueToFloat64(&val),
 					})
 				case v1.ResourcePods:
 					ms = append(ms, &metric.Metric{
@@ -429,7 +428,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 							SanitizeLabelName(string(resourceName)),
 							string(constant.UnitInteger),
 						},
-						Value: convertFloat64(&val),
+						Value: convertValueToFloat64(&val),
 					})
 				default:
 					if isHugePageResourceName(resourceName) {
@@ -438,7 +437,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
-							Value: convertFloat64(&val),
+							Value: convertValueToFloat64(&val),
 						})
 					}
 					if isAttachableVolumeResourceName(resourceName) {
@@ -447,7 +446,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitByte),
 							},
-							Value: convertFloat64(&val),
+							Value: convertValueToFloat64(&val),
 						})
 					}
 					if isExtendedResourceName(resourceName) {
@@ -456,7 +455,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 								SanitizeLabelName(string(resourceName)),
 								string(constant.UnitInteger),
 							},
-							Value: convertFloat64(&val),
+							Value: convertValueToFloat64(&val),
 						})
 					}
 				}
@@ -533,10 +532,8 @@ func createNodeListWatch(kubeClient clientset.Interface, _ string, _ string) cac
 	}
 }
 
-const maxValue = math.MaxInt64 / 1000
-
-func convertFloat64(q *resource.Quantity) float64 {
-	if q.Value() > maxValue {
+func convertValueToFloat64(q *resource.Quantity) float64 {
+	if q.Value() > resource.MaxMilliValue {
 		return float64(q.Value())
 	}
 	return float64(q.MilliValue()) / 1000

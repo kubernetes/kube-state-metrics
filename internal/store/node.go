@@ -18,8 +18,9 @@ package store
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	basemetrics "k8s.io/component-base/metrics"
 

@@ -49,35 +49,35 @@ var (
 					for resource, min := range rawLimitRange.Min {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "min"},
-							Value:       float64(min.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&min),
 						})
 					}
 
 					for resource, max := range rawLimitRange.Max {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "max"},
-							Value:       float64(max.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&max),
 						})
 					}
 
 					for resource, df := range rawLimitRange.Default {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "default"},
-							Value:       float64(df.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&df),
 						})
 					}
 
 					for resource, dfR := range rawLimitRange.DefaultRequest {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "defaultRequest"},
-							Value:       float64(dfR.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&dfR),
 						})
 					}
 
 					for resource, mLR := range rawLimitRange.MaxLimitRequestRatio {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{string(resource), string(rawLimitRange.Type), "maxLimitRequestRatio"},
-							Value:       float64(mLR.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&mLR),
 						})
 					}
 				}

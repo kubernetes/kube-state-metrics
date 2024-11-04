@@ -18,6 +18,7 @@ package store
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"regexp"
 	"sort"
 	"strconv"
@@ -214,4 +215,12 @@ func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
 	}
 
 	return keys, values
+}
+
+// convertValueToFloat64 converts a resource.Quantity to a float64.
+func convertValueToFloat64(q *resource.Quantity) float64 {
+	if q.Value() > resource.MaxMilliValue {
+		return float64(q.Value())
+	}
+	return float64(q.MilliValue()) / 1000
 }

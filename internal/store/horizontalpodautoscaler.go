@@ -217,10 +217,10 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				}
 
 				if metricTarget.Value != nil {
-					metricMap[value] = convertValueToFloat64(metricTarget.Value) / 1000
+					metricMap[value] = convertValueToFloat64(metricTarget.Value)
 				}
 				if metricTarget.AverageValue != nil {
-					metricMap[average] = convertValueToFloat64(metricTarget.AverageValue) / 1000
+					metricMap[average] = convertValueToFloat64(metricTarget.AverageValue)
 				}
 				if metricTarget.AverageUtilization != nil {
 					metricMap[utilization] = float64(*metricTarget.AverageUtilization)

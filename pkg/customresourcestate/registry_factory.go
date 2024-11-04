@@ -727,7 +727,7 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		}
 		return 0, nil
 	case string:
-		// The string contains a boolean as a string
+		// The string is a boolean or `"unknown"` according to https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition
 		normalized := strings.ToLower(value.(string))
 		if normalized == "true" || normalized == "yes" {
 			return 1, nil
@@ -736,7 +736,7 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 			return 0, nil
 		}
 		if normalized == "unknown" {
-			return 0, nil
+			return -1, nil
 		}
 		// The string contains a RFC3339 timestamp
 		if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {

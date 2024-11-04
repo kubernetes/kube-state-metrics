@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/KimMachineGun/automemlimit v0.6.1
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-logr/logr v1.4.2
 	github.com/gobuffalo/flect v1.0.3
 	github.com/google/go-cmp v0.6.0

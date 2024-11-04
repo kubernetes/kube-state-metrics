@@ -18,11 +18,12 @@ package store
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"

@@ -218,7 +218,7 @@ func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
 	return keys, values
 }
 
-// convertValueToFloat64 converts a resource.Quantity to a float64.
+// convertValueToFloat64 converts a resource.Quantity to a float64 and checks for a possible overflow in the value.
 func convertValueToFloat64(q *resource.Quantity) float64 {
 	if q.Value() > resource.MaxMilliValue {
 		return float64(q.Value())

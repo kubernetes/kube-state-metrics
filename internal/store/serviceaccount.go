@@ -56,18 +56,16 @@ func createServiceAccountInfoFamilyGenerator() generator.FamilyGenerator {
 		basemetrics.ALPHA,
 		"",
 		wrapServiceAccountFunc(func(sa *v1.ServiceAccount) *metric.Family {
-			var labelKeys []string
-			var labelValues []string
+			var automountToken string
 
 			if sa.AutomountServiceAccountToken != nil {
-				labelKeys = append(labelKeys, "automount_token")
-				labelValues = append(labelValues, strconv.FormatBool(*sa.AutomountServiceAccountToken))
+				automountToken = strconv.FormatBool(*sa.AutomountServiceAccountToken)
 			}
 
 			return &metric.Family{
 				Metrics: []*metric.Metric{{
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
+					LabelKeys:   []string{"automount_token"},
+					LabelValues: []string{automountToken},
 					Value:       1,
 				}},
 			}

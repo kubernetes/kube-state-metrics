@@ -131,35 +131,25 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 			"",
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
+				labelKeys := []string{"port_protocol", "port_number", "port_name", "ip", "ready"}
+
 				for _, s := range e.Subsets {
 					for _, port := range s.Ports {
 						for _, available := range s.Addresses {
-							labelValues := []string{string(port.Protocol), strconv.FormatInt(int64(port.Port), 10)}
-							labelKeys := []string{"port_protocol", "port_number"}
-
-							if port.Name != "" {
-								labelKeys = append(labelKeys, "port_name")
-								labelValues = append(labelValues, port.Name)
-							}
+							labelValues := []string{string(port.Protocol), strconv.FormatInt(int64(port.Port), 10), port.Name}
 
 							ms = append(ms, &metric.Metric{
 								LabelValues: append(labelValues, available.IP, "true"),
-								LabelKeys:   append(labelKeys, "ip", "ready"),
+								LabelKeys:   labelKeys,
 								Value:       1,
 							})
 						}
 						for _, notReadyAddresses := range s.NotReadyAddresses {
-							labelValues := []string{string(port.Protocol), strconv.FormatInt(int64(port.Port), 10)}
-							labelKeys := []string{"port_protocol", "port_number"}
-
-							if port.Name != "" {
-								labelKeys = append(labelKeys, "port_name")
-								labelValues = append(labelValues, port.Name)
-							}
+							labelValues := []string{string(port.Protocol), strconv.FormatInt(int64(port.Port), 10), port.Name}
 
 							ms = append(ms, &metric.Metric{
 								LabelValues: append(labelValues, notReadyAddresses.IP, "false"),
-								LabelKeys:   append(labelKeys, "ip", "ready"),
+								LabelKeys:   labelKeys,
 								Value:       1,
 							})
 						}

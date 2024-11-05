@@ -2123,9 +2123,10 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_tolerations Information about the pod tolerations
 				# TYPE kube_pod_tolerations gauge
-				kube_pod_tolerations{namespace="ns1",pod="pod1",uid="uid1",key="key1",operator="Equal",value="value1",effect="NoSchedule"} 1
-				kube_pod_tolerations{namespace="ns1",pod="pod1",uid="uid1",key="key2",operator="Exists"} 1
-				kube_pod_tolerations{namespace="ns1",pod="pod1",uid="uid1",key="key3",operator="Equal",value="value3"} 1
+				kube_pod_tolerations{effect="",key="",namespace="ns1",operator="",pod="pod1",toleration_seconds="",uid="uid1",value=""} 1
+				kube_pod_tolerations{effect="",key="key2",namespace="ns1",operator="Exists",pod="pod1",toleration_seconds="",uid="uid1",value=""} 1
+				kube_pod_tolerations{effect="",key="key3",namespace="ns1",operator="Equal",pod="pod1",toleration_seconds="",uid="uid1",value="value3"} 1
+				kube_pod_tolerations{effect="NoSchedule",key="key1",namespace="ns1",operator="Equal",pod="pod1",toleration_seconds="",uid="uid1",value="value1"} 1
 			`,
 			MetricNames: []string{
 				"kube_pod_tolerations",

@@ -74,13 +74,13 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				for res, qty := range r.Status.Hard {
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{string(res), "hard"},
-						Value:       float64(qty.MilliValue()) / 1000,
+						Value:       convertValueToFloat64(&qty),
 					})
 				}
 				for res, qty := range r.Status.Used {
 					ms = append(ms, &metric.Metric{
 						LabelValues: []string{string(res), "used"},
-						Value:       float64(qty.MilliValue()) / 1000,
+						Value:       convertValueToFloat64(&qty),
 					})
 				}
 

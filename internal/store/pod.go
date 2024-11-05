@@ -182,7 +182,7 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -246,7 +246,7 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -749,7 +749,7 @@ func createPodInitContainerResourceLimitsFamilyGenerator() generator.FamilyGener
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -813,7 +813,7 @@ func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGen
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -1122,7 +1122,7 @@ func createPodOverheadCPUCoresFamilyGenerator() generator.FamilyGenerator {
 				for resourceName, val := range p.Spec.Overhead {
 					if resourceName == v1.ResourceCPU {
 						ms = append(ms, &metric.Metric{
-							Value: float64(val.MilliValue()) / 1000,
+							Value: convertValueToFloat64(&val),
 						})
 					}
 				}

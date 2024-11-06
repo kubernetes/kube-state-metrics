@@ -164,7 +164,17 @@ jobs:
 
     - name: Benchmark tests
       run: |
-        make test-benchmark-compare
+        BENCHSTAT_OUTPUT_FILE=result.txt make test-benchmark-compare
+    - run: |
+        echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+        cat result.txt >> "$GITHUB_STEP_SUMMARY"
+        echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+        cat <<EOL >> "$GITHUB_STEP_SUMMARY"
+        <hr />
+        The table shows the median and 95% confidence interval (CI) summaries for each benchmark comparing the HEAD and the BASE, and an A/B comparison under "vs base". The last column shows the statistical p-value with ten runs (n=10).
+        The last row has the Geometric Mean (geomean) for the given rows in the table.
+        Refer to [benchstat's documentation](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat) for more help.
+        EOL
 
   ci-build-kube-state-metrics:
     name: ci-build-kube-state-metrics

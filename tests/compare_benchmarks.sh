@@ -9,7 +9,7 @@ set -u
 [[ "$#" -le 2 ]] || echo "At least one argument required, $# provided."
 
 REF_CURRENT="$(git rev-parse --abbrev-ref HEAD)"
-REF_TO_COMPARE=$1
+REF_TO_COMPARE="${1}"
 
 COUNT=${2:-"1"}
 
@@ -42,4 +42,8 @@ echo ""
 echo "### Result"
 echo "old=${REF_TO_COMPARE} new=${REF_CURRENT}"
 
-benchstat "${RESULT_TO_COMPARE}" "${RESULT_CURRENT}"
+if [[ -z "${BENCHSTAT_OUTPUT_FILE}" ]]; then
+	benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}"
+else
+	benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}" | tee -a "${BENCHSTAT_OUTPUT_FILE}"
+fi

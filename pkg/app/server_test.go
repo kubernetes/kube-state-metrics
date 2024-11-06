@@ -19,6 +19,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net/http/httptest"
@@ -40,6 +41,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 	samplev1alpha1 "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
 	samplefake "k8s.io/sample-controller/pkg/generated/clientset/versioned/fake"
 
@@ -70,6 +72,10 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 		b.Errorf("error injecting resources: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
+	klogFlags.Set("logtostderr", "false")
 	defer cancel()
 	reg := prometheus.NewRegistry()
 

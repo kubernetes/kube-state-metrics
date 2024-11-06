@@ -173,7 +173,7 @@ jobs:
         <hr />
         The table shows the median and 95% confidence interval (CI) summaries for each benchmark comparing the HEAD and the BASE, and an A/B comparison under "vs base". The last column shows the statistical p-value with ten runs (n=10).
         The last row has the Geometric Mean (geomean) for the given rows in the table.
-		Refer to <a href="https://pkg.go.dev/golang.org/x/perf/cmd/benchstat">benchstat's documentation</a> for more help.
+        Refer to <a href="https://pkg.go.dev/golang.org/x/perf/cmd/benchstat">benchstat's documentation</a> for more help.
         EOL
 
   ci-build-kube-state-metrics:

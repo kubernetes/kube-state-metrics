@@ -26,6 +26,7 @@ import (
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
 	v1batch "k8s.io/api/batch/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -365,12 +366,9 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				ms := []*metric.Metric{}
 				for _, c := range j.Status.Conditions {
 					if c.Type == v1batch.JobSuspended {
-						metrics := addConditionMetrics(c.Status)
-						for _, m := range metrics {
-							metric := m
-							metric.LabelKeys = []string{"condition"}
-							ms = append(ms, metric)
-						}
+						ms = append(ms, &metric.Metric{
+							Value: boolFloat64(c.Status == v1.ConditionTrue),
+						})
 					}
 				}
 

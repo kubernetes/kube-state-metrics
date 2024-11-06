@@ -97,8 +97,8 @@ validate-template: generate-template
 # the two.
 test-benchmark-compare:
 	@git fetch
-	./tests/compare_benchmarks.sh main
-	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
+	./tests/compare_benchmarks.sh main 2
+	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH} 2
 
 all: all-container
 

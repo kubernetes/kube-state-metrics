@@ -52,7 +52,6 @@ import (
 	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
-	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
@@ -175,8 +174,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		return err
 	}
 
-	var factories []customresource.RegistryFactory
-
 	if opts.CustomResourceConfigFile != "" {
 		crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
 		if err != nil {
@@ -189,11 +186,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	}
 
-	resources := make([]string, len(factories))
-
-	for i, factory := range factories {
-		resources[i] = factory.Name()
-	}
+	resources := []string{}
 
 	switch {
 	case len(opts.Resources) == 0 && !opts.CustomResourcesOnly:

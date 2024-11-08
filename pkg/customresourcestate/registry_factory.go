@@ -732,11 +732,8 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		if normalized == "true" || normalized == "yes" {
 			return 1, nil
 		}
-		if normalized == "false" || normalized == "no" {
+		if normalized == "false" || normalized == "no" || normalized == "unknown" {
 			return 0, nil
-		}
-		if normalized == "unknown" {
-			return -1, nil
 		}
 		// The string contains a RFC3339 timestamp
 		if t, e := time.Parse(time.RFC3339, value.(string)); e == nil {

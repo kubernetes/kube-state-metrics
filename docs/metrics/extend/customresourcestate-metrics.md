@@ -337,7 +337,7 @@ Supported types are:
 * `nil` is generally mapped to `0.0` if NilIsZero is `true`, otherwise it will throw an error
 * for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
 * for string the following logic applies
-  * `"true"` and `"yes"` are mapped to `1.0` and `"false"` and `"no"` are mapped to `0.0` (all case-insensitive)
+  * `"true"` and `"yes"` are mapped to `1.0`, `"false"`, `"no"` and `"unknown"` are mapped to `0.0` (all case-insensitive)
   * RFC3339 times are parsed to float timestamp  
   * Quantities like "250m" or "512Gi" are parsed to float using <https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go>
   * Percentages ending with a "%" are parsed to float

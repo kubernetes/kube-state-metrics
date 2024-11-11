@@ -66,7 +66,7 @@ func createNodeStatusImagesFamilyGenerator() generator.FamilyGenerator {
 		"kube_node_status_images",
 		"Container Images on the Node",
 		metric.Gauge,
-		basemetrics.STABLE,
+		basemetrics.ALPHA,
 		"",
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}

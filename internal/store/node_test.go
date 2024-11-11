@@ -386,6 +386,33 @@ func TestNodeStore(t *testing.T) {
 				"kube_node_created",
 			},
 		},
+		// verify image metrics
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "127.0.0.1",
+				},
+				Status: v1.NodeStatus{
+					Images: []v1.ContainerImage{
+						{
+							Names:     []string{"registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0"},
+							SizeBytes: 253421,
+						},
+						{
+							Names:     []string{"registry.k8s.io/busybox/busybox@sha256:5d462a2f5f5eae1e9a9a5dd0f8a0b7d5a5d12", "registry.k8s.io/busybox/busybox:v1.28.0"},
+							SizeBytes: 23342213,
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_node_status_images [STABLE] Container Images on the Node
+				# TYPE kube_node_status_images gauge
+				kube_node_status_images{image_digest="",image_name="registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0",image_size_bytes="253421"} 1
+				kube_node_status_images{image_digest="registry.k8s.io/busybox/busybox@sha256:5d462a2f5f5eae1e9a9a5dd0f8a0b7d5a5d12",image_name="registry.k8s.io/busybox/busybox:v1.28.0",image_size_bytes="23342213"} 1
+			`,
+			MetricNames: []string{"kube_node_status_images"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(nodeMetricFamilies(nil, nil))

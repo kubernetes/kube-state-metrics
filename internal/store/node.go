@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
@@ -56,7 +57,41 @@ func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 		createNodeStatusCapacityFamilyGenerator(),
 		createNodeStatusConditionFamilyGenerator(),
 		createNodeStateAddressFamilyGenerator(),
+		createNodeStatusImagesFamilyGenerator(),
 	}
+}
+
+func createNodeStatusImagesFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_node_status_images",
+		"Container Images on the Node",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			ms := []*metric.Metric{}
+			for _, images := range n.Status.Images {
+				imageDigest := ""
+				imageName := ""
+
+				if len(images.Names) == 2{
+					imageDigest = images.Names[0]
+					imageName = images.Names[1]
+				} else if len(images.Names) == 1 {
+					imageName = images.Names[0]
+				}
+
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"image_digest", "image_name", "image_size_bytes"},
+					LabelValues: []string{imageDigest, imageName, strconv.FormatInt(images.SizeBytes, 10)},
+					Value:       1,
+				})
+			}
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
 }
 
 func createNodeDeletionTimestampFamilyGenerator() generator.FamilyGenerator {

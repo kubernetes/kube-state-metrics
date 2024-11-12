@@ -406,7 +406,7 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_node_status_images [STABLE] Container Images on the Node
+				# HELP kube_node_status_images Container Images on the Node
 				# TYPE kube_node_status_images gauge
 				kube_node_status_images{image_digest="",image_name="registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0",image_size_bytes="253421"} 1
 				kube_node_status_images{image_digest="registry.k8s.io/busybox/busybox@sha256:5d462a2f5f5eae1e9a9a5dd0f8a0b7d5a5d12",image_name="registry.k8s.io/busybox/busybox:v1.28.0",image_size_bytes="23342213"} 1

@@ -74,7 +74,7 @@ func createNodeStatusImagesFamilyGenerator() generator.FamilyGenerator {
 				imageDigest := ""
 				imageName := ""
 
-				if len(images.Names) == 2{
+				if len(images.Names) == 2 {
 					imageDigest = images.Names[0]
 					imageName = images.Names[1]
 				} else if len(images.Names) == 1 {

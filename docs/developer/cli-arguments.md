@@ -41,6 +41,8 @@ Flags:
       --add_dir_header                             If true, adds the file directory to the header of the log messages
       --alsologtostderr                            log to standard error as well as files (no effect when -logtostderr=true)
       --apiserver string                           The URL of the apiserver to use as a master
+      --auto-gomemlimit                            Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)
+      --auto-gomemlimit-ratio float                The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental) (default 0.9)
       --config string                              Path to the kube-state-metrics options config file
       --custom-resource-state-config string        Inline Custom Resource State Metrics config YAML (experimental)
       --custom-resource-state-config-file string   Path to a Custom Resource State Metrics config file (experimental)
@@ -67,6 +69,10 @@ Flags:
       --pod-namespace string                       Name of the namespace of the pod specified by --pod. When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice.
       --port int                                   Port to expose metrics on. (default 8080)
       --resources string                           Comma-separated list of Resources to be enabled. Defaults to "certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments"
+      --server-idle-timeout duration               The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients. (default 5m0s)
+      --server-read-header-timeout duration        The maximum duration for reading the header of requests. (default 5s)
+      --server-read-timeout duration               The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients.  (default 1m0s)
+      --server-write-timeout duration              The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients.. (default 1m0s)
       --shard int32                                The instances shard nominal (zero indexed) within the total number of shards. (default 0)
       --skip_headers                               If true, avoid header prefixes in the log messages
       --skip_log_headers                           If true, avoid headers when opening log files (no effect when -logtostderr=true)
@@ -75,6 +81,7 @@ Flags:
       --telemetry-port int                         Port to expose kube-state-metrics self metrics on. (default 8081)
       --tls-config string                          Path to the TLS configuration file
       --total-shards int                           The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
+      --track-unscheduled-pods                     This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of unscheduled pods is fetched from the Kubernetes API Server. This is experimental.
       --use-apiserver-cache                        Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.
   -v, --v Level                                    number for the log level verbosity
       --vmodule moduleSpec                         comma-separated list of pattern=N settings for file-filtered logging

@@ -124,16 +124,18 @@ type compiledEach compiledMetric
 
 type compiledCommon struct {
 	labelFromPath map[string]valuePath
-	path          valuePath
 	t             metric.Type
+	path          valuePath
 }
 
 func (c compiledCommon) Path() valuePath {
 	return c.path
 }
+
 func (c compiledCommon) LabelFromPath() map[string]valuePath {
 	return c.labelFromPath
 }
+
 func (c compiledCommon) Type() metric.Type {
 	return c.t
 }
@@ -211,9 +213,9 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 
 type compiledGauge struct {
 	compiledCommon
+	labelFromKey string
 	ValueFrom    valuePath
 	NilIsZero    bool
-	labelFromKey string
 }
 
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
@@ -376,9 +378,9 @@ func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
 
 type compiledStateSet struct {
 	compiledCommon
+	LabelName string
 	ValueFrom valuePath
 	List      []string
-	LabelName string
 }
 
 func (c *compiledStateSet) Values(v interface{}) (result []eachValue, errs []error) {
@@ -477,6 +479,7 @@ func (e eachValue) DefaultLabels(defaults map[string]string) {
 		}
 	}
 }
+
 func (e eachValue) ToMetric() *metric.Metric {
 	var keys, values []string
 	for k := range e.Labels {
@@ -495,11 +498,11 @@ func (e eachValue) ToMetric() *metric.Metric {
 }
 
 type compiledFamily struct {
-	Name          string
-	Help          string
 	Each          compiledEach
 	Labels        map[string]string
 	LabelFromPath map[string]valuePath
+	Name          string
+	Help          string
 	ErrorLogV     klog.Level
 }
 
@@ -547,8 +550,8 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 }
 
 type pathOp struct {
-	part string
 	op   func(interface{}) interface{}
+	part string
 }
 
 type valuePath []pathOp
@@ -724,12 +727,12 @@ func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
 		}
 		return 0, nil
 	case string:
-		// The string contains a boolean as a string
+		// The string is a boolean or `"unknown"` according to https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition
 		normalized := strings.ToLower(value.(string))
 		if normalized == "true" || normalized == "yes" {
 			return 1, nil
 		}
-		if normalized == "false" || normalized == "no" {
+		if normalized == "false" || normalized == "no" || normalized == "unknown" {
 			return 0, nil
 		}
 		// The string contains a RFC3339 timestamp

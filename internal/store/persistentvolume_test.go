@@ -30,6 +30,7 @@ import (
 
 func TestPersistentVolumeStore(t *testing.T) {
 	iscsiInitiatorName := "iqn.my.test.initiator:112233"
+	volumeMode := v1.PersistentVolumeBlock
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
@@ -742,6 +743,38 @@ func TestPersistentVolumeStore(t *testing.T) {
 					kube_persistentvolume_csi_attributes{persistentvolume="test-pv-available",csi_mounter="rbd",csi_map_options="krbd:rxbounce"} 1
 				`,
 			MetricNames: []string{"kube_persistentvolume_csi_attributes"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-default-volumemode",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					VolumeMode: nil,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_volume_mode Volume Mode information for the PersistentVolume.
+					# TYPE kube_persistentvolume_volume_mode gauge
+					kube_persistentvolume_volume_mode{persistentvolume="test-default-volumemode",volumemode="Filesystem"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_volume_mode"},
+		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-block-volumemode",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					VolumeMode: &volumeMode,
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_volume_mode Volume Mode information for the PersistentVolume.
+					# TYPE kube_persistentvolume_volume_mode gauge
+					kube_persistentvolume_volume_mode{persistentvolume="test-block-volumemode",volumemode="Block"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_volume_mode"},
 		},
 	}
 	for i, c := range cases {

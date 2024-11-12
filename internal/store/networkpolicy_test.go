@@ -29,10 +29,6 @@ func TestNetworkPolicyStore(t *testing.T) {
 	startTime := 1501569018
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 
-	const metadata = `
-		# HELP kube_verticalpodautoscaler_labels Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_verticalpodautoscaler_labels gauge
-		`
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &networkingv1.NetworkPolicy{

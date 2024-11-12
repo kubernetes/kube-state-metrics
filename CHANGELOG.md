@@ -1,3 +1,41 @@
+## v2.14.0 / 2024-11-08
+
+### Note
+
+* This release builds with Golang `v1.23.3`
+* This release builds with `k8s.io/client-go`: `v0.31.2`
+* This release removes `kube_endpoint_address_not_ready` and `kube_endpoint_address_available` which have been deprecated in 2022. Please use `kube_endpoint_address`as a replacement.
+
+* [BUGFIX] Use --track-unscheduled-pods to select unscheduled pods in Daemonset sharding by @CatherineF-dev in <https://github.com/kubernetes/kube-state-metrics/pull/2388>
+* [BUGFIX] Install tools so VERSION gets set by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2456>
+* [BUGFIX] Syntax errors in kube-state-metrics.libsonnet by @jeffmccune in <https://github.com/kubernetes/kube-state-metrics/pull/2454>
+* [BUGFIX] Set kube_job_status_failed metric even when there are no job.Status.Conditions present by @richabanker in <https://github.com/kubernetes/kube-state-metrics/pull/2485>
+* [BUGFIX] de-duplication of custom resource metrics by @bartlettc22 in <https://github.com/kubernetes/kube-state-metrics/pull/2502>
+* [BUGFIX] Configure sharding every time MetricsHandler.Run runs by @wallee94 in <https://github.com/kubernetes/kube-state-metrics/pull/2478>
+* [BUGFIX] Panic in `util.GVRFromType` for core objects by @L3n41c in <https://github.com/kubernetes/kube-state-metrics/pull/2535>
+* [BUGFIX] Big memory value overflow by @leiwingqueen in <https://github.com/kubernetes/kube-state-metrics/pull/2540>
+* [BUGFIX] Expose empty labels by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2539>
+* [BUGFIX] CustomResourceMetrics: Convert status condition Unknown to a valid value by @Haleygo in <https://github.com/kubernetes/kube-state-metrics/pull/2536>
+* [CHANGE] Remove deprecated endpoint address metric by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2527>
+* [FEATURE] Add new metric kube_job_status_suspended by @Indresh2410 in <https://github.com/kubernetes/kube-state-metrics/pull/2542>
+* [FEATURE] Move endpoint ports into address metric by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2503>
+* [ENHANCEMENT] Use concurrent map when storing metrics by @rarruda in <https://github.com/kubernetes/kube-state-metrics/pull/2510>
+
+## v2.13.0 / 2024-07-18
+
+### Note
+
+* This release builds with Golang `v1.22.5`.
+* This release builds with `k8s.io/client-go`: `v0.30.3`.
+* This release adds read and write timeouts for requests. The defaults might have an impact on scrapes that take a long time.
+
+* [BUGFIX]  Pod autosharding: transition from labelselector to fieldselector by @pkoutsovasilis in <https://github.com/kubernetes/kube-state-metrics/pull/2347>
+* [ENHANCEMENT] Add automatic detection of memory limits by @SuperQ in <https://github.com/kubernetes/kube-state-metrics/pull/2447>
+* [FEATURE] Add `readyz` endpoint by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2442>
+* [FEATURE] Add `livez` endpoint by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2418>
+* [FEATURE] Add kube_persistentvolume_volume_mode metric by @ricardoapl in <https://github.com/kubernetes/kube-state-metrics/pull/2370>
+* [FEATURE] Add read and write timeouts by @Pokom in <https://github.com/kubernetes/kube-state-metrics/pull/2412>
+
 ## v2.12.0 / 2024-04-02
 
 ### Note

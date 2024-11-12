@@ -29,17 +29,6 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
-// Mock metricFamily instead of importing /pkg/metric to prevent cyclic
-// dependency.
-type metricFamily struct {
-	value []byte
-}
-
-// Implement FamilyByteSlicer interface.
-func (f *metricFamily) ByteSlice() []byte {
-	return f.value
-}
-
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDs := []string{"a", "b"}
 

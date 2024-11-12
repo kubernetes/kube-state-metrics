@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kube-state-metrics)](https://goreportcard.com/report/github.com/kubernetes/kube-state-metrics)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kubernetes/kube-state-metrics.svg)](https://pkg.go.dev/github.com/kubernetes/kube-state-metrics)
 [![govulncheck](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/kubernetes/kube-state-metrics/actions/workflows/govulncheck.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8696/badge)](https://www.bestpractices.dev/projects/8696)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/kube-state-metrics)
 
 kube-state-metrics (KSM) is a simple service that listens to the Kubernetes API
@@ -59,6 +60,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Helm Chart](#helm-chart)
   * [Development](#development)
   * [Developer Contributions](#developer-contributions)
+  * [Community](#community)
 
 ### Versioning
 
@@ -281,7 +283,7 @@ spec:
               fieldPath: spec.nodeName
 ```
 
-To track metrics for unassigned pods, you need to add an additional deployment and set `--node=""`, as shown in the following example:
+To track metrics for unassigned pods, you need to add an additional deployment and set `--track-unscheduled-pods`, as shown in the following example:
 
 ```
 apiVersion: apps/v1
@@ -294,7 +296,7 @@ spec:
         name: kube-state-metrics
         args:
         - --resources=pods
-        - --node=""
+        - --track-unscheduled-pods
 ```
 
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
@@ -342,6 +344,16 @@ kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-ad
 Note that your GCP identity is case sensitive but `gcloud info` as of Google Cloud SDK 221.0.0 is not. This means that if your IAM member contains capital letters, the above one-liner may not work for you. If you have 403 forbidden responses after running the above command and `kubectl apply -f examples/standard`, check the IAM member associated with your account at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>. If it contains capital letters, you may need to set the --user flag in the command above to the case-sensitive role listed at <https://console.cloud.google.com/iam-admin/iam?project=PROJECT_ID>.
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
+
+#### Healthcheck Endpoints
+
+The following healthcheck endpoints are available (`self` refers to the telemetry port, while `main` refers to the exposition port):
+
+* `/healthz` (exposed on `main`): Returns a 200 status code if the application is running. We recommend to use this for the startup probe.
+* `/livez` (exposed on `main`): Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend to using this for the liveness probe.
+* `/readyz` (exposed on `self`): Returns a 200 status code if the application is ready to accept requests and expose metrics. We recommend using this for the readiness probe.
+
+Note that it is discouraged to use the telemetry metrics endpoint for any probe when proxying the exposition data.
 
 #### Limited privileges environment
 
@@ -396,20 +408,35 @@ Starting from the kube-state-metrics chart `v2.13.3` (kube-state-metrics image `
 
 #### Development
 
-When developing, test a metric dump against your local Kubernetes cluster by
-running:
+When developing, test a metric dump against your local Kubernetes cluster by running:
 
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
- go install
- kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
+```
+go install
+kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
+```
 
 Then curl the metrics endpoint
 
- curl localhost:8080/metrics
+```
+curl localhost:8080/metrics
+```
 
 To run the e2e tests locally see the documentation in [tests/README.md](./tests/README.md).
 
 #### Developer Contributions
 
 When developing, there are certain code patterns to follow to better your contributing experience and likelihood of e2e and other ci tests to pass. To learn more about them, see the documentation in [docs/developer/guide.md](./docs/developer/guide.md).
+
+#### Community
+
+This project is sponsored by [SIG Instrumentation](https://github.com/kubernetes/community/tree/master/sig-instrumentation).
+
+There is also a channel for [#kube-state-metrics](https://kubernetes.slack.com/archives/CJJ529RUY) on Kubernetes' Slack.
+
+You can also join the SIG Instrumentation [mailing list](https://groups.google.com/forum/#!forum/kubernetes-sig-instrumentation).
+This will typically add invites for the following meetings to your calendar, in which topics around kube-state-metrics can be discussed.
+
+* Regular SIG Meeting: [Thursdays at 9:30 PT (Pacific Time)](https://zoom.us/j/5342565819?pwd=RlVsK21NVnR1dmE3SWZQSXhveHZPdz09) (biweekly). [Convert to your timezone](http://www.thetimezoneconverter.com/?t=9:30&tz=PT%20%28Pacific%20Time%29).
+* Regular Triage Meeting: [Thursdays at 9:30 PT (Pacific Time)](https://zoom.us/j/5342565819?pwd=RlVsK21NVnR1dmE3SWZQSXhveHZPdz09) (biweekly - alternating with regular meeting). [Convert to your timezone](http://www.thetimezoneconverter.com/?t=9:30&tz=PT%20%28Pacific%20Time%29).

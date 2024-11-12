@@ -21,16 +21,17 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/prometheus/common/version"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	testUnstructuredMock "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/version"
 
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 )
@@ -38,7 +39,6 @@ import (
 var config *rest.Config
 var currentKubeClient clientset.Interface
 var currentDiscoveryClient *discovery.DiscoveryClient
-var currentDynamicClient *dynamic.DynamicClient
 
 // CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
 func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
@@ -118,22 +118,6 @@ func CreateDiscoveryClient(apiserver string, kubeconfig string) (*discovery.Disc
 	return currentDiscoveryClient, err
 }
 
-// CreateDynamicClient creates a Kubernetes dynamic client.
-func CreateDynamicClient(apiserver string, kubeconfig string) (*dynamic.DynamicClient, error) {
-	if currentDynamicClient != nil {
-		return currentDynamicClient, nil
-	}
-	var err error
-	if config == nil {
-		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-	currentDynamicClient, err = dynamic.NewForConfig(config)
-	return currentDynamicClient, err
-}
-
 // GVRFromType returns the GroupVersionResource for a given type.
 func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVersionResource {
 	if _, ok := expectedType.(*testUnstructuredMock.Foo); ok {
@@ -141,11 +125,10 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 		return nil
 	}
 	apiVersion := expectedType.(*unstructured.Unstructured).Object["apiVersion"].(string)
-	expectedTypeSlice := strings.Split(apiVersion, "/")
-	g := expectedTypeSlice[0]
-	v := expectedTypeSlice[1]
-	if v == "" /* "" group (core) objects */ {
-		v = expectedTypeSlice[0]
+	g, v, found := strings.Cut(apiVersion, "/")
+	if !found {
+		g = "core"
+		v = apiVersion
 	}
 	r := resourceName
 	return &schema.GroupVersionResource{
@@ -153,4 +136,20 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 		Version:  v,
 		Resource: r,
 	}
+}
+
+// GatherAndCount gathers all metrics from the provided Gatherer and counts
+// them. It returns the number of metric children in all gathered metric
+// families together.
+func GatherAndCount(g prometheus.Gatherer) (int, error) {
+	got, err := g.Gather()
+	if err != nil {
+		return 0, fmt.Errorf("gathering metrics failed: %w", err)
+	}
+
+	result := 0
+	for _, mf := range got {
+		result += len(mf.GetMetric())
+	}
+	return result, nil
 }

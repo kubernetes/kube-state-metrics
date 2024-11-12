@@ -6,10 +6,14 @@ set -o pipefail
 # error on unset variables
 set -u
 
-[[ "$#" -eq 1 ]] || echo "One argument required, $# provided."
+[[ "$#" -le 2 ]] || echo "At least one argument required, $# provided."
 
 REF_CURRENT="$(git rev-parse --abbrev-ref HEAD)"
-REF_TO_COMPARE=$1
+REF_TO_COMPARE="${1}"
+
+COUNT=${2:-"1"}
+
+echo "Running benchmarks ${COUNT} time(s)"
 
 RESULT_CURRENT="$(mktemp)-${REF_CURRENT}"
 RESULT_TO_COMPARE="$(mktemp)-${REF_TO_COMPARE}"
@@ -17,7 +21,7 @@ RESULT_TO_COMPARE="$(mktemp)-${REF_TO_COMPARE}"
 echo ""
 echo "### Testing ${REF_CURRENT}"
 
-go test -benchmem -run=NONE -bench=. ./... | tee "${RESULT_CURRENT}"
+go test -benchmem -run=NONE -bench=. -count="${COUNT}" ./... | tee "${RESULT_CURRENT}"
 
 echo ""
 echo "### Done testing ${REF_CURRENT}"
@@ -27,7 +31,7 @@ echo "### Testing ${REF_TO_COMPARE}"
 
 git checkout "${REF_TO_COMPARE}"
 
-go test -benchmem -run=NONE -bench=. ./... | tee "${RESULT_TO_COMPARE}"
+go test -benchmem -run=NONE -bench=. -count="${COUNT}" ./... | tee "${RESULT_TO_COMPARE}"
 
 echo ""
 echo "### Done testing ${REF_TO_COMPARE}"
@@ -38,4 +42,8 @@ echo ""
 echo "### Result"
 echo "old=${REF_TO_COMPARE} new=${REF_CURRENT}"
 
-benchstat "${RESULT_TO_COMPARE}" "${RESULT_CURRENT}"
+if [[ -z "${BENCHSTAT_OUTPUT_FILE}" ]]; then
+	benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}"
+else
+	benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}" | tee -a "${BENCHSTAT_OUTPUT_FILE}"
+fi

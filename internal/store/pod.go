@@ -182,7 +182,7 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -246,7 +246,7 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -749,7 +749,7 @@ func createPodInitContainerResourceLimitsFamilyGenerator() generator.FamilyGener
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -813,7 +813,7 @@ func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGen
 					case v1.ResourceCPU:
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{c.Name, p.Spec.NodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
-							Value:       float64(val.MilliValue()) / 1000,
+							Value:       convertValueToFloat64(&val),
 						})
 					case v1.ResourceStorage:
 						fallthrough
@@ -1122,7 +1122,7 @@ func createPodOverheadCPUCoresFamilyGenerator() generator.FamilyGenerator {
 				for resourceName, val := range p.Spec.Overhead {
 					if resourceName == v1.ResourceCPU {
 						ms = append(ms, &metric.Metric{
-							Value: float64(val.MilliValue()) / 1000,
+							Value: convertValueToFloat64(&val),
 						})
 					}
 				}
@@ -1349,14 +1349,14 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 			}
 
 			phases := []struct {
-				v bool
 				n string
+				v bool
 			}{
-				{phase == v1.PodPending, string(v1.PodPending)},
-				{phase == v1.PodSucceeded, string(v1.PodSucceeded)},
-				{phase == v1.PodFailed, string(v1.PodFailed)},
-				{phase == v1.PodUnknown, string(v1.PodUnknown)},
-				{phase == v1.PodRunning, string(v1.PodRunning)},
+				{string(v1.PodPending), phase == v1.PodPending},
+				{string(v1.PodSucceeded), phase == v1.PodSucceeded},
+				{string(v1.PodFailed), phase == v1.PodFailed},
+				{string(v1.PodUnknown), phase == v1.PodUnknown},
+				{string(v1.PodRunning), phase == v1.PodRunning},
 			}
 
 			ms := make([]*metric.Metric, len(phases))
@@ -1475,12 +1475,12 @@ func createPodStatusQosClassFamilyGenerator() generator.FamilyGenerator {
 			}
 
 			qosClasses := []struct {
-				v bool
 				n string
+				v bool
 			}{
-				{class == v1.PodQOSBestEffort, string(v1.PodQOSBestEffort)},
-				{class == v1.PodQOSBurstable, string(v1.PodQOSBurstable)},
-				{class == v1.PodQOSGuaranteed, string(v1.PodQOSGuaranteed)},
+				{string(v1.PodQOSBestEffort), class == v1.PodQOSBestEffort},
+				{string(v1.PodQOSBurstable), class == v1.PodQOSBurstable},
+				{string(v1.PodQOSGuaranteed), class == v1.PodQOSGuaranteed},
 			}
 
 			ms := make([]*metric.Metric, len(qosClasses))
@@ -1653,41 +1653,26 @@ func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 			var ms []*metric.Metric
 
 			for _, t := range p.Spec.Tolerations {
-				var labelKeys []string
-				var labelValues []string
+				var key, operator, value, effect, tolerationSeconds string
 
-				if t.Key != "" {
-					labelKeys = append(labelKeys, "key")
-					labelValues = append(labelValues, t.Key)
-				}
-
+				key = t.Key
 				if t.Operator != "" {
-					labelKeys = append(labelKeys, "operator")
-					labelValues = append(labelValues, string(t.Operator))
+					operator = string(t.Operator)
 				}
 
-				if t.Value != "" {
-					labelKeys = append(labelKeys, "value")
-					labelValues = append(labelValues, t.Value)
-				}
+				value = t.Value
 
 				if t.Effect != "" {
-					labelKeys = append(labelKeys, "effect")
-					labelValues = append(labelValues, string(t.Effect))
+					effect = string(t.Effect)
 				}
 
 				if t.TolerationSeconds != nil {
-					labelKeys = append(labelKeys, "toleration_seconds")
-					labelValues = append(labelValues, strconv.FormatInt(*t.TolerationSeconds, 10))
-				}
-
-				if len(labelKeys) == 0 {
-					continue
+					tolerationSeconds = strconv.FormatInt(*t.TolerationSeconds, 10)
 				}
 
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   labelKeys,
-					LabelValues: labelValues,
+					LabelKeys:   []string{"key", "operator", "value", "effect", "toleration_seconds"},
+					LabelValues: []string{key, operator, value, effect, tolerationSeconds},
 					Value:       1,
 				})
 			}

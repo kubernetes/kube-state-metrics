@@ -1,5 +1,5 @@
 run:
-  deadline: 10m
+  timeout: 10m
 
 linters:
   disable-all: true
@@ -17,6 +17,7 @@ linters:
     - revive
     - staticcheck
     - unconvert
+    - unused
 
 linters-settings:
   goimports:

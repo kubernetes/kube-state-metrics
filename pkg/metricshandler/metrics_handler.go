@@ -44,18 +44,18 @@ import (
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
 // /metrics endpoint. It allows concurrent reconfiguration at runtime.
 type MetricsHandler struct {
-	opts               *options.Options
-	kubeClient         kubernetes.Interface
-	storeBuilder       ksmtypes.BuilderInterface
-	enableGZIPEncoding bool
+	kubeClient   kubernetes.Interface
+	storeBuilder ksmtypes.BuilderInterface
+	opts         *options.Options
 
 	cancel func()
 
 	// mtx protects metricsWriters, curShard, and curTotalShards
-	mtx            *sync.RWMutex
-	metricsWriters metricsstore.MetricsWriterList
-	curShard       int32
-	curTotalShards int
+	mtx                *sync.RWMutex
+	metricsWriters     metricsstore.MetricsWriterList
+	curTotalShards     int
+	curShard           int32
+	enableGZIPEncoding bool
 }
 
 // New creates and returns a new MetricsHandler with the given options.
@@ -69,24 +69,35 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 	}
 }
 
-// ConfigureSharding (re-)configures sharding. Re-configuration can be done
-// concurrently.
-func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
+// BuildWriters builds the metrics writers, cancelling any previous context and passing a new one on every build.
+// Build can be used multiple times and concurrently.
+func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 
 	if m.cancel != nil {
 		m.cancel()
 	}
+	ctx, m.cancel = context.WithCancel(ctx)
+	m.storeBuilder.WithContext(ctx)
+	m.metricsWriters = m.storeBuilder.Build()
+}
+
+// ConfigureSharding configures sharding. Configuration can be used multiple times and
+// concurrently.
+func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
+	m.mtx.Lock()
+
 	if totalShards != 1 {
 		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
 	}
-	ctx, m.cancel = context.WithCancel(ctx)
-	m.storeBuilder.WithSharding(shard, totalShards)
-	m.storeBuilder.WithContext(ctx)
-	m.metricsWriters = m.storeBuilder.Build()
 	m.curShard = shard
 	m.curTotalShards = totalShards
+	m.storeBuilder.WithSharding(shard, totalShards)
+
+	// unlock because BuildWriters will hold a lock again
+	m.mtx.Unlock()
+	m.BuildWriters(ctx)
 }
 
 // Run configures the MetricsHandler's sharding and if autosharding is enabled
@@ -111,12 +122,12 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	}
 	statefulSetName := ss.Name
 
-	labelSelectorOptions := func(o *metav1.ListOptions) {
-		o.LabelSelector = fields.SelectorFromSet(ss.Labels).String()
+	fieldSelectorOptions := func(o *metav1.ListOptions) {
+		o.FieldSelector = fields.OneTermEqualSelector("metadata.name", statefulSetName).String()
 	}
 
 	i := cache.NewSharedIndexInformer(
-		cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, labelSelectorOptions),
+		cache.NewFilteredListWatchFromClient(m.kubeClient.AppsV1().RESTClient(), "statefulsets", m.opts.Namespace, fieldSelectorOptions),
 		&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	i.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -256,7 +267,7 @@ func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 		return 0, fmt.Errorf("failed to detect shard index for Pod %s of StatefulSet %s, parsed %s: %w", podName, statefulSetName, nominalString, err)
 	}
 
-	return int32(nominal), nil
+	return int32(nominal), nil //nolint:gosec
 }
 
 func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {

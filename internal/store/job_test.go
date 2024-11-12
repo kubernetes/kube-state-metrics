@@ -44,6 +44,7 @@ var (
 
 func TestJobStore(t *testing.T) {
 	var trueValue = true
+	var falseValue = false
 
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
@@ -77,7 +78,10 @@ func TestJobStore(t *testing.T) {
 		# HELP kube_job_status_start_time [STABLE] StartTime represents time when the job was acknowledged by the Job Manager.
 		# TYPE kube_job_status_start_time gauge
 		# HELP kube_job_status_succeeded [STABLE] The number of pods which reached Phase Succeeded.
-		# TYPE kube_job_status_succeeded gauge`
+		# TYPE kube_job_status_succeeded gauge
+		# HELP kube_job_status_suspended The number of pods which reached Phase Suspended.
+		# TYPE kube_job_status_suspended gauge
+		`
 
 	cases := []generateMetricsTestCase{
 		{
@@ -213,6 +217,28 @@ func TestJobStore(t *testing.T) {
 		{
 			Obj: &v1batch.Job{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "FailedJobWithNoConditions",
+					Namespace: "ns1",
+				},
+				Status: v1batch.JobStatus{
+					Failed: 1,
+				},
+				Spec: v1batch.JobSpec{
+					ActiveDeadlineSeconds: &ActiveDeadlineSeconds900,
+				},
+			},
+			Want: metadata + `
+				kube_job_owner{job_name="FailedJobWithNoConditions",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
+				kube_job_info{job_name="FailedJobWithNoConditions",namespace="ns1"} 1
+				kube_job_spec_active_deadline_seconds{job_name="FailedJobWithNoConditions",namespace="ns1"} 900
+				kube_job_status_active{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
+				kube_job_status_failed{job_name="FailedJobWithNoConditions",namespace="ns1",reason=""} 1
+				kube_job_status_succeeded{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
+`,
+		},
+		{
+			Obj: &v1batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:       "SuccessfulJob2NoActiveDeadlineSeconds",
 					Namespace:  "ns1",
 					Generation: 1,
@@ -250,6 +276,74 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
+`,
+		},
+		{
+			Obj: &v1batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "SuspendedNoActiveDeadlineSeconds",
+					Namespace:  "ns1",
+					Generation: 1,
+				},
+				Status: v1batch.JobStatus{
+					Active:    0,
+					Failed:    0,
+					Succeeded: 0,
+					StartTime: &metav1.Time{Time: SuccessfulJob2StartTime},
+					Conditions: []v1batch.JobCondition{
+						{Type: v1batch.JobSuspended, Status: v1.ConditionTrue},
+					},
+				},
+				Spec: v1batch.JobSpec{
+					Suspend:     &trueValue,
+					Parallelism: &Parallelism1,
+					Completions: &Completions1,
+				},
+			},
+			Want: metadata + `
+				kube_job_owner{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
+				kube_job_info{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_spec_completions{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_spec_parallelism{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_status_active{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_failed{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_start_time{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
+				kube_job_status_succeeded{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+                kube_job_status_suspended{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
+`,
+		},
+		{
+			Obj: &v1batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "UnsuspendedNoActiveDeadlineSeconds",
+					Namespace:  "ns1",
+					Generation: 1,
+				},
+				Status: v1batch.JobStatus{
+					Active:    0,
+					Failed:    0,
+					Succeeded: 0,
+					StartTime: &metav1.Time{Time: SuccessfulJob2StartTime},
+					Conditions: []v1batch.JobCondition{
+						{Type: v1batch.JobSuspended, Status: v1.ConditionFalse},
+					},
+				},
+				Spec: v1batch.JobSpec{
+					Suspend:     &falseValue,
+					Parallelism: &Parallelism1,
+					Completions: &Completions1,
+				},
+			},
+			Want: metadata + `
+				kube_job_owner{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
+				kube_job_info{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_spec_completions{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_spec_parallelism{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
+				kube_job_status_active{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_failed{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_start_time{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
+				kube_job_status_succeeded{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+                kube_job_status_suspended{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
 `,
 		},
 	}

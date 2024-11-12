@@ -15,13 +15,13 @@ GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
-PROMETHEUS_VERSION = 2.51.1
-GO_VERSION = 1.22.2
+PROMETHEUS_VERSION = 2.55.1
+GO_VERSION = 1.23.3
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-MARKDOWNLINT_CLI2_VERSION = 0.13.0
+MARKDOWNLINT_CLI2_VERSION = 0.14.0
 
 
 export DOCKER_CLI_EXPERIMENTAL=enabled
@@ -48,7 +48,7 @@ lint: shellcheck licensecheck lint-markdown-format
 
 lint-fix: fix-markdown-format
 	golangci-lint run --fix -v
-	
+
 
 doccheck: generate validate-template
 	@echo "- Checking if the generated documentation is up to date..."
@@ -97,8 +97,8 @@ validate-template: generate-template
 # the two.
 test-benchmark-compare:
 	@git fetch
-	./tests/compare_benchmarks.sh main
-	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH}
+	./tests/compare_benchmarks.sh main 2
+	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH} 2
 
 all: all-container
 

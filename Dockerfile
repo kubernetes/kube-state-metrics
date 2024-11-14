@@ -8,7 +8,7 @@ COPY . /go/src/k8s.io/kube-state-metrics/
 
 RUN make install-tools && make build-local
 
-FROM gcr.io/distroless/static:latest-${GOARCH}
+FROM gcr.io/distroless/static-debian12:latest-${GOARCH}
 COPY --from=builder /go/src/k8s.io/kube-state-metrics/kube-state-metrics /
 
 USER nobody

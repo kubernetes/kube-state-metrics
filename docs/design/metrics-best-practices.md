@@ -31,8 +31,9 @@ This way kube-state-metrics allows the user to have full control on how they wan
 ### Static object properties
 
 An object usually has a stable set of properties that do not change during its lifecycle in Kubernetes.
-This includes properties like name, namespace, uid etc.
+This includes properties like name, namespace, uid etc. that have a 1:1 relationship with the object.
 It is a good practice to group those together into an `_info` metric.
+If there is a 1:n relationship (e.g. a list of ports), it should be in a separate metric to avoid generating too many metrics.
 
 ### Dynamic object properties
 
@@ -40,8 +41,6 @@ An object can also have a dynamic set of properties, which are usually part of t
 These change during the lifecycle of the object.
 For example a pod can be in different states like "Pending", "Running" etc.
 These should be part of a "State Set" that includes labels that identify the object as well as the dynamic property.
-
-For example:
 
 ### Linked properties
 

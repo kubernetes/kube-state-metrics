@@ -2115,6 +2115,12 @@ func TestPodStore(t *testing.T) {
 							Value:    "value3",
 						},
 						{
+							// Duplicate toleration, to ensure that doesn't result in a duplicate metric
+							Key:      "key3",
+							Operator: v1.TolerationOpEqual,
+							Value:    "value3",
+						},
+						{
 							// an empty toleration to ensure that an empty toleration does not result in a metric
 						},
 					},

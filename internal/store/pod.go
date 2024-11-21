@@ -1642,6 +1642,21 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
+// getUniqueTolerations takes an array
+func getUniqueTolerations(tolerations []v1.Toleration) []v1.Toleration {
+	uniqueTolerationsMap := make(map[v1.Toleration]struct{})
+	var uniqueTolerations []v1.Toleration
+
+	for _, toleration := range tolerations {
+		_, exists := uniqueTolerationsMap[toleration]
+		if !exists {
+			uniqueTolerationsMap[toleration] = struct{}{}
+			uniqueTolerations = append(uniqueTolerations, toleration)
+		}
+	}
+	return uniqueTolerations
+}
+
 func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_tolerations",
@@ -1651,8 +1666,9 @@ func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			var ms []*metric.Metric
+			uniqueTolerations := getUniqueTolerations(p.Spec.Tolerations)
 
-			for _, t := range p.Spec.Tolerations {
+			for _, t := range uniqueTolerations {
 				var key, operator, value, effect, tolerationSeconds string
 
 				key = t.Key

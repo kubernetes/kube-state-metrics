@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
+	jobsetclientset "sigs.k8s.io/jobset/client-go/clientset/versioned"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
@@ -39,6 +40,7 @@ import (
 var config *rest.Config
 var currentKubeClient clientset.Interface
 var currentDiscoveryClient *discovery.DiscoveryClient
+var currentJobSetKubeClient jobsetclientset.Interface
 
 // CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
 func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
@@ -77,6 +79,41 @@ func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 
 	currentKubeClient = kubeClient
 	return kubeClient, nil
+}
+
+// CreateJobSetKubeClient creates a Kubernetes clientset for JobSet resource.
+func CreateJobSetKubeClient(apiserver string, kubeconfig string) (jobsetclientset.Interface, error) {
+	if currentJobSetKubeClient != nil {
+		return currentJobSetKubeClient, nil
+	}
+
+	var err error
+
+	if config == nil {
+		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	config.UserAgent = fmt.Sprintf("%s/%s (%s/%s) kubernetes/%s", "kube-state-metrics", version.Version, runtime.GOOS, runtime.GOARCH, version.Revision)
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
+
+	jobSetKubeClient, err := jobsetclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	klog.InfoS("Tested communication with server for jobset")
+	_, err = jobSetKubeClient.Discovery().ServerVersion()
+	if err != nil {
+		return nil, fmt.Errorf("error while trying to communicate with apiserver for jobset: %w", err)
+	}
+	klog.InfoS("Communication with server for jobset successful")
+
+	currentJobSetKubeClient = jobSetKubeClient
+	return jobSetKubeClient, nil
 }
 
 // CreateCustomResourceClients creates a custom resource clientset.

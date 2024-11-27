@@ -21,6 +21,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	clientset "k8s.io/client-go/kubernetes"
+	jobsetclientset "sigs.k8s.io/jobset/client-go/clientset/versioned"
 	"k8s.io/client-go/tools/cache"
 
 	internalstore "k8s.io/kube-state-metrics/v2/internal/store"
@@ -82,6 +83,11 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.internal.WithKubeClient(c)
+}
+
+// WithJobSetKubeClient sets the JobSet kubeClient property of a Builder.
+func (b *Builder) WithJobSetKubeClient(jc jobsetclientset.Interface) {
+	b.internal.WithJobSetKubeClient(jc)
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.

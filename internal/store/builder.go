@@ -38,6 +38,8 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+	jobsetclientset "sigs.k8s.io/jobset/client-go/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -66,6 +68,7 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
 	kubeClient                    clientset.Interface
+	jobSetKubeClient              jobsetclientset.Interface
 	ctx                           context.Context
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
 	customResourceClients         map[string]interface{}
@@ -153,6 +156,11 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.kubeClient = c
+}
+
+// WithJobSetKubeClient sets the jobset kubeClient property of a Builder.
+func (b *Builder) WithJobSetKubeClient(jc jobsetclientset.Interface) {
+	b.jobSetKubeClient = jc
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
@@ -322,6 +330,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"ingresses":                       func(b *Builder) []cache.Store { return b.buildIngressStores() },
 	"ingressclasses":                  func(b *Builder) []cache.Store { return b.buildIngressClassStores() },
 	"jobs":                            func(b *Builder) []cache.Store { return b.buildJobStores() },
+	"jobsets":                         func(b *Builder) []cache.Store { return b.buildJobSetStores() },
 	"leases":                          func(b *Builder) []cache.Store { return b.buildLeasesStores() },
 	"limitranges":                     func(b *Builder) []cache.Store { return b.buildLimitRangeStores() },
 	"mutatingwebhookconfigurations":   func(b *Builder) []cache.Store { return b.buildMutatingWebhookConfigurationStores() },
@@ -497,6 +506,43 @@ func (b *Builder) buildRoleBindingStores() []cache.Store {
 
 func (b *Builder) buildIngressClassStores() []cache.Store {
 	return b.buildStoresFunc(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache)
+}
+
+func (b *Builder) buildJobSetStores() []cache.Store {
+	expectedType := &jobsetv1alpha2.JobSet{}
+	metricFamilies := jobSetMetricFamilies(b.allowAnnotationsList["jobsets"], b.allowLabelsList["jobsets"])
+	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
+	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
+	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
+
+	if b.namespaces.IsAllNamespaces() {
+		store := metricsstore.NewMetricsStore(
+			familyHeaders,
+			composedMetricGenFuncs,
+		)
+		if b.fieldSelectorFilter != "" {
+			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
+		}
+		listWatcher := createJobSetListWatch(b.jobSetKubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+		b.startReflector(expectedType, store, listWatcher, b.useAPIServerCache)
+		return []cache.Store{store}
+	}
+
+	stores := make([]cache.Store, 0, len(b.namespaces))
+	for _, ns := range b.namespaces {
+		store := metricsstore.NewMetricsStore(
+			familyHeaders,
+			composedMetricGenFuncs,
+		)
+		if b.fieldSelectorFilter != "" {
+			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
+		}
+		listWatcher := createJobSetListWatch(b.jobSetKubeClient, ns, b.fieldSelectorFilter)
+		b.startReflector(expectedType, store, listWatcher, b.useAPIServerCache)
+		stores = append(stores, store)
+	}
+
+	return stores
 }
 
 func (b *Builder) buildStores(

@@ -67,6 +67,7 @@ See each file for specific documentation about the exposed metrics:
 * [ClusterRoleBinding Metrics](metrics/cluster/clusterrolebinding-metrics.md)
 * [EndpointSlice Metrics](metrics/service/endpointslice-metrics.md)
 * [IngressClass Metrics](metrics/service/ingressclass-metrics.md)
+* [JobSet Metrics](metrics/workload/jobset-metrics.md)
 * [Role Metrics](metrics/auth/role-metrics.md)
 * [RoleBinding Metrics](metrics/auth/rolebinding-metrics.md)
 * [ServiceAccount Metrics](metrics/auth/serviceaccount-metrics.md)

@@ -257,6 +257,16 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 	storeBuilder.WithKubeClient(kubeClient)
 
+	for _, resource := range resources {
+		if resource == "jobsets" {
+			jobSetKubeClient, err := util.CreateJobSetKubeClient(opts.Apiserver, opts.Kubeconfig)
+			if err != nil {
+				return fmt.Errorf("failed to create jobset client: %v", err)
+			}
+			storeBuilder.WithJobSetKubeClient(jobSetKubeClient)
+		}
+	}
+
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
 		return fmt.Errorf("failed to set up annotations allowlist: %v", err)

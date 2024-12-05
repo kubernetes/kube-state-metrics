@@ -163,6 +163,23 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "fixed version and kind, no matching cache entry",
+			gvkmaps: &CRDiscoverer{
+				Map: map[string]map[string][]kindPlural{
+					"testgroup": {
+						"v1": {
+							kindPlural{
+								Kind:   "TestObject2",
+								Plural: "testobjects2",
+							},
+						},
+					},
+				},
+			},
+			gvk:  schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
+			want: nil,
+		},
 	}
 	for _, tc := range testcases {
 		got, err := tc.gvkmaps.ResolveGVKToGVKPs(tc.gvk)

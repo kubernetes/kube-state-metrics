@@ -127,23 +127,20 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	hasKind := k != "" && k != "*"
 	// No need to resolve, return.
 	if hasVersion && hasKind {
-		var p string
 		for _, el := range r.Map[g][v] {
 			if el.Kind == k {
-				p = el.Plural
-				break
+				return []groupVersionKindPlural{
+					{
+						GroupVersionKind: schema.GroupVersionKind{
+							Group:   g,
+							Version: v,
+							Kind:    k,
+						},
+						Plural: el.Plural,
+					},
+				}, nil
 			}
 		}
-		return []groupVersionKindPlural{
-			{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   g,
-					Version: v,
-					Kind:    k,
-				},
-				Plural: p,
-			},
-		}, nil
 	}
 	if hasVersion && !hasKind {
 		kinds := r.Map[g][v]

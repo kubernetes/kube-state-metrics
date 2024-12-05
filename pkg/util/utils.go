@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
@@ -124,7 +124,11 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 		// testUnstructuredMock.Foo is a mock type for testing
 		return nil
 	}
-	apiVersion := expectedType.(*unstructured.Unstructured).Object["apiVersion"].(string)
+	t, err := meta.TypeAccessor(expectedType)
+	if err != nil {
+		panic(err)
+	}
+	apiVersion := t.GetAPIVersion()
 	g, v, found := strings.Cut(apiVersion, "/")
 	if !found {
 		g = "core"

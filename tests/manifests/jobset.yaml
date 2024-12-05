@@ -1,0 +1,45 @@
+apiVersion: jobset.x-k8s.io/v1alpha2
+kind: JobSet
+metadata:
+  name: jobset
+  namespace: default
+spec:
+  successPolicy:
+    operator: All
+    targetReplicatedJobs:
+    - workers
+  replicatedJobs:
+  - name: leader
+    replicas: 1
+    template:
+      spec:
+        backoffLimit: 0 
+        completions: 1
+        parallelism: 1
+        template:
+          spec:
+            containers:
+            - name: leader
+              image: bash:latest
+              command:
+              - bash
+              - -xc
+              - |
+                sleep 10000
+  - name: workers
+    replicas: 1
+    template:
+      spec:
+        backoffLimit: 0 
+        completions: 2
+        parallelism: 2
+        template:
+          spec:
+            containers:
+            - name: worker
+              image: bash:latest
+              command:
+              - bash
+              - -xc
+              - |
+                sleep 10

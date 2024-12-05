@@ -23,6 +23,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	clientset "k8s.io/client-go/kubernetes"
+	jobsetclientset "sigs.k8s.io/jobset/client-go/clientset/versioned"
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
@@ -39,6 +40,7 @@ type BuilderInterface interface {
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
+	WithJobSetKubeClient(jc jobsetclientset.Interface)
 	WithCustomResourceClients(cs map[string]interface{})
 	WithUsingAPIServerCache(u bool)
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)

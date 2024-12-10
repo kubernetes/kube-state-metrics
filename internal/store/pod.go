@@ -1628,7 +1628,7 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 			for _, c := range p.Status.Conditions {
 				if c.Type == v1.PodScheduled && c.Status == v1.ConditionFalse {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"reason"},
+						LabelKeys:   []string{"message"},
 						LabelValues: []string{c.Message},
 						Value:       1,
 					})

@@ -1691,7 +1691,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_unschedulable [STABLE] Describes the unschedulable status for the pod.
 				# TYPE kube_pod_status_unschedulable gauge
-				kube_pod_status_unschedulable{namespace="ns2",pod="pod2",uid="uid2",reason="0/3 nodes are available: 3 Insufficient cpu."} 1
+				kube_pod_status_unschedulable{namespace="ns2",pod="pod2",uid="uid2",message="0/3 nodes are available: 3 Insufficient cpu."} 1
 			`,
 			MetricNames: []string{"kube_pod_status_unschedulable"},
 		},

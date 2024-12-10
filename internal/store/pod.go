@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
 	"k8s.io/utils/net"
@@ -1627,9 +1628,18 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 
 			for _, c := range p.Status.Conditions {
 				if c.Type == v1.PodScheduled && c.Status == v1.ConditionFalse {
+					category := "UNKNOWN"
+					msg := strings.ToLower(c.Message)
+					switch {
+					case strings.Contains(msg, "insufficient"):
+						category = "RESOURCE"
+					case strings.Contains(msg, "affinity"):
+						category = "AFFINITY"
+					}
+
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"message"},
-						LabelValues: []string{c.Message},
+						LabelKeys:   []string{"category"},
+						LabelValues: []string{category},
 						Value:       1,
 					})
 				}

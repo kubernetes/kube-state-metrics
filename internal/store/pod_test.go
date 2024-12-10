@@ -1691,7 +1691,32 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_unschedulable [STABLE] Describes the unschedulable status for the pod.
 				# TYPE kube_pod_status_unschedulable gauge
-				kube_pod_status_unschedulable{namespace="ns2",pod="pod2",uid="uid2",message="0/3 nodes are available: 3 Insufficient cpu."} 1
+				kube_pod_status_unschedulable{namespace="ns2",pod="pod2",uid="uid2",category="RESOURCE"} 1
+			`,
+			MetricNames: []string{"kube_pod_status_unschedulable"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+					UID:       "uid2",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:    v1.PodScheduled,
+							Status:  v1.ConditionFalse,
+							Reason:  "Unschedulable",
+							Message: "failed due to pod affinity.",
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_unschedulable [STABLE] Describes the unschedulable status for the pod.
+				# TYPE kube_pod_status_unschedulable gauge
+				kube_pod_status_unschedulable{namespace="ns2",pod="pod2",uid="uid2",category="AFFINITY"} 1
 			`,
 			MetricNames: []string{"kube_pod_status_unschedulable"},
 		},

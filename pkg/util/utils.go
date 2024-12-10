@@ -144,7 +144,8 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 	}
 	t, err := meta.TypeAccessor(expectedType)
 	if err != nil {
-		panic(err)
+		klog.ErrorS(err, "Failed to get type accessor", "expectedType", expectedType)
+		return nil
 	}
 	apiVersion := t.GetAPIVersion()
 	g, v, found := strings.Cut(apiVersion, "/")

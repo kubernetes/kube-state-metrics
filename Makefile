@@ -2,7 +2,7 @@ FLAGS =
 TESTENVVAR =
 REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
 TAG_PREFIX = v
-VERSION = $(shell gomplate -d config=./data.yaml --in '{{ (datasource "config").version }}')
+VERSION = $(shell grep '^version:' data.yaml | grep -oE "[0-9]+.[0-9]+.[0-9]+")
 TAG ?= $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell echo $(VERSION) | grep -ohE "[0-9]+.[0-9]+")
 BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))

@@ -37,7 +37,7 @@ var (
 	}
 )
 
-// Type represents the type of the metric. See https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#metric-types.
+// Type represents the type of the metric. See https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#metric-types.
 type Type string
 
 // Supported metric types.

@@ -294,13 +294,13 @@ The above configuration was tested on [this](https://github.com/kubernetes/autos
 
 ### Metric types
 
-The configuration supports three kind of metrics from the [OpenMetrics specification](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md).
+The configuration supports three kind of metrics from the [OpenMetrics specification](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md).
 
 The metric type is specified by the `type` field and its specific configuration at the types specific struct.
 
 #### Gauge
 
-> Gauges are current measurements, such as bytes of memory currently used or the number of items in a queue. For gauges the absolute value is what is of interest to a user. [[0]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#gauge)
+> Gauges are current measurements, such as bytes of memory currently used or the number of items in a queue. For gauges the absolute value is what is of interest to a user. [[0]](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#gauge)
 
 Example:
 
@@ -386,7 +386,7 @@ kube_customresource_foo_status{customresource_group="myteam.io", customresource_
 
 #### StateSet
 
-> StateSets represent a series of related boolean values, also called a bitset. If ENUMs need to be encoded this MAY be done via StateSet. [[1]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#stateset)
+> StateSets represent a series of related boolean values, also called a bitset. If ENUMs need to be encoded this MAY be done via StateSet. [[1]](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#stateset)
 
 ```yaml
 kind: CustomResourceStateMetrics
@@ -420,7 +420,7 @@ kube_customresource_status_phase{customresource_group="myteam.io", customresourc
 
 #### Info
 
-> Info metrics are used to expose textual information which SHOULD NOT change during process lifetime. Common examples are an application's version, revision control commit, and the version of a compiler. [[2]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#info)
+> Info metrics are used to expose textual information which SHOULD NOT change during process lifetime. Common examples are an application's version, revision control commit, and the version of a compiler. [[2]](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#info)
 
 Metrics of type `Info` will always have a value of 1.
 

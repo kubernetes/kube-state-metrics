@@ -1,6 +1,6 @@
 # Command line arguments
 
-kube-state-metrics can be configured through command line arguments.
+kube-state-metrics can be configured through command line arguments and/or a configuration file.
 
 Those arguments can be passed during startup when running locally:
 
@@ -18,6 +18,8 @@ spec:
           - '--kubeconfig=<KUBE-CONFIG>'
           - '--apiserver=<APISERVER>'
 ```
+
+or via the `--config` option pointing to a [config file](#config-file-format).
 
 ## Available options
 
@@ -88,5 +90,83 @@ Flags:
 
 Use "kube-state-metrics [command] --help" for more information about a command.
 ```
+
+## Config file format
+
+The above CLI options may also be set via a YAML-format config-file whose path is supplied as the `--config` argument on the CLI.
+
+The option names are defined in [`type Options` in `pkg/options/options.go`](https://github.com/kubernetes/kube-state-metrics/blob/main/pkg/options/options.go#L42).
+
+A sample configuration might look like:
+
+```yaml
+    auto-gomemlimit: true
+    auto-gomemlimit-ratio: 0.9
+    # Equivalent of --metric-labels-allowlist CLI option. type LabelsAllowList map[string][]string
+    labels_allow_list:
+      "*":
+        # will map to {resourcekind}_labels label label_k8s_kapp_k14s_io_app:
+        - kapp.k14s.io/app
+        - mycompany/some-label
+        - mycompany/anotherlabel
+      # check kube_node_info before adding info here:
+      nodes:
+        - kubernetes.io/os
+        - kubernetes.io/arch
+        - node.kubernetes.io/instance-type
+        - eks.amazonaws.com/nodegroup
+        - eks.amazonaws.com/nodegroup-image
+```
+
+### Using a config file with Kubernetes
+
+On a Kubernetes deployment you will need to:
+
+* add a volume mapping the ConfigMap containing the configuration into the app resource (`Deployment`, `DaemonSet`, etc) for `kube-state-metrics`
+* add a volumeMount exposing the configmap on a path in the workload
+* append an appropriate `--config` argument to the CLI options
+
+If you're using `kube-prometheus`, a `ConfigMap` resource like:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kube-state-metrics-config
+  namespace: monitoring
+data:
+  kube-state-metrics-config.yaml: |-
+    auto-gomemlimit: true
+    # ... options here ...
+```
+
+could be deployed, then a strategic merge patch applied to configure kube-state-metrics to use it:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+        - name: kube-state-metrics
+          args:
+            - --host=127.0.0.1
+            - --port=8081
+            - --telemetry-host=127.0.0.1
+            - --telemetry-port=8082
+            - --config=/etc/kube-state-metrics/kube-state-metrics-config.yaml
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/kube-state-metrics
+      volumes:
+        - name: config-volume
+          configMap:
+            name: kube-state-metrics-config
+```
+
 <!-- markdownlint-enable link-image-reference-definitions -->
 <!-- markdownlint-enable blanks-around-fences -->

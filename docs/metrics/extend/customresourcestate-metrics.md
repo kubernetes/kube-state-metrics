@@ -254,6 +254,73 @@ kube_customresource_ref_info{customresource_group="myteam.io", customresource_ki
 kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="foo_with_extensions"} 1
 ```
 
+#### Same Metrics with Different Labels
+
+```yaml
+  recommendation:
+    containerRecommendations:
+    - containerName: consumer
+      lowerBound:
+        cpu: 100m
+        memory: 262144k
+```
+
+For example in VPA we have above attributes and we want to have a same metrics for both CPU and Memory, you can use below config:
+
+```
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: autoscaling.k8s.io
+        kind: "VerticalPodAutoscaler"
+        version: "v1"
+      labelsFromPath:
+        verticalpodautoscaler: [metadata, name]
+        namespace: [metadata, namespace]
+        target_api_version: [apiVersion]
+        target_kind: [spec, targetRef, kind]
+        target_name: [spec, targetRef, name]
+      metrics:
+        # for memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+          help: "Minimum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [lowerBound, memory]
+        # for CPU
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+          help: "Minimum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [lowerBound, cpu]
+```
+
+Produces the following metrics:
+
+```prometheus
+# HELP kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum memory resources the container can use before the VerticalPodAutoscaler updater evicts it.
+# TYPE kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound gauge
+kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="consumer",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="namespace-example",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="target-name-example",unit="byte",verticalpodautoscaler="vpa-example"} 123456
+# HELP kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it.
+# TYPE kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound gauge
+kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="consumer",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="namespace-example",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="target-name-example",unit="core",verticalpodautoscaler="vpa-example"} 0.1
+```
+
 #### VerticalPodAutoscaler
 
 In v2.9.0 the `vericalpodautoscalers` resource was removed from the list of default resources. In order to generate metrics for `verticalpodautoscalers`, you can use the following Custom Resource State config:

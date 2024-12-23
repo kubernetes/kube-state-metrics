@@ -32,6 +32,7 @@ spec:
           # in YAML files, | allows a multi-line string to be passed as a flag value
           # see https://yaml-multiline.info
           -  |
+              kind: CustomResourceStateMetrics
               spec:
                 resources:
                   - groupVersionKind:
@@ -65,6 +66,7 @@ spec:
           # in YAML files, | allows a multi-line string to be passed as a flag value
           # see https://yaml-multiline.info
           -  |
+              kind: CustomResourceStateMetrics
               spec:
                 resources:
                   - groupVersionKind:

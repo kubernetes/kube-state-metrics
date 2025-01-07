@@ -368,6 +368,7 @@ As an addition for the above configuration, here's the complete `CustomResourceS
 <details>
 
  <summary>VPA CustomResourceStateMetrics</summary>
+
 ```yaml
 kind: CustomResourceStateMetrics
 spec:

@@ -570,7 +570,7 @@ spec:
               valueFrom: [uncappedTarget, cpu]
 ```
 
-<details>
+</details>
 
 ### Metric types
 

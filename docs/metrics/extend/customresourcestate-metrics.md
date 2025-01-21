@@ -412,8 +412,8 @@ spec:
               labelName: "update_mode"
               path: [spec, updatePolicy, updateMode]
               list: ["Auto", "Initial", "Off", "Recreate"]
-        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed
-        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed"
+        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_memory
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_memory"
           help: "Minimum memory resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
             unit: "byte"
@@ -425,8 +425,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [minAllowed, memory]
-        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed
-        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed"
+        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_cpu
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_cpu"
           help: "Minimum cpu resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
             unit: "core"
@@ -438,8 +438,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [minAllowed, cpu]
-        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed
-        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed"
+        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_memory
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_memory"
           help: "Maximum memory resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
             unit: "byte"
@@ -451,8 +451,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [maxAllowed, memory]
-        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed
-        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed"
+        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_cpu
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_cpu"
           help: "Maximum cpu resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
             unit: "core"
@@ -464,8 +464,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [maxAllowed, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory"
           help: "Minimum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
             unit: "byte"
@@ -477,8 +477,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [lowerBound, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu"
           help: "Minimum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
             unit: "core"
@@ -490,8 +490,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [lowerBound, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound"
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory"
           help: "Maximum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
             unit: "byte"
@@ -503,8 +503,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [upperBound, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound"
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu"
           help: "Maximum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
             unit: "core"
@@ -516,8 +516,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [upperBound, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target"
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory"
           help: "Target memory resources the VerticalPodAutoscaler recommends for the container."
           commonLabels:
             unit: "byte"
@@ -529,8 +529,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [target, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target"
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu"
           help: "Target cpu resources the VerticalPodAutoscaler recommends for the container."
           commonLabels:
             unit: "core"
@@ -542,8 +542,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [target, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget"
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory"
           help: "Target memory resources the VerticalPodAutoscaler recommends for the container ignoring bounds."
           commonLabels:
             unit: "byte"
@@ -555,8 +555,8 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [uncappedTarget, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget
-        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget"
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu"
           help: "Target memory resources the VerticalPodAutoscaler recommends for the container ignoring bounds."
           commonLabels:
             unit: "core"

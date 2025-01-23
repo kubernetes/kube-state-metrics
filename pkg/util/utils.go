@@ -97,8 +97,11 @@ func CreateCustomResourceClients(apiserver string, kubeconfig string, factories 
 		if err != nil {
 			return nil, err
 		}
-		gvrString := GVRFromType(f.Name(), f.ExpectedType()).String()
-		customResourceClients[gvrString] = customResourceClient
+		gvr, err := GVRFromType(f.Name(), f.ExpectedType())
+		if err != nil {
+			return nil, err
+		}
+		customResourceClients[gvr.String()] = customResourceClient
 	}
 	return customResourceClients, nil
 }
@@ -137,15 +140,14 @@ func CreateDynamicClient(apiserver string, kubeconfig string) (*dynamic.DynamicC
 }
 
 // GVRFromType returns the GroupVersionResource for a given type.
-func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVersionResource {
+func GVRFromType(resourceName string, expectedType interface{}) (*schema.GroupVersionResource, error) {
 	if _, ok := expectedType.(*testUnstructuredMock.Foo); ok {
 		// testUnstructuredMock.Foo is a mock type for testing
-		return nil
+		return nil, nil
 	}
 	t, err := meta.TypeAccessor(expectedType)
 	if err != nil {
-		klog.ErrorS(err, "Failed to get type accessor", "expectedType", expectedType)
-		return nil
+		return nil, fmt.Errorf("Failed to get type accessor for %T: %w", expectedType, err)
 	}
 	apiVersion := t.GetAPIVersion()
 	g, v, found := strings.Cut(apiVersion, "/")
@@ -158,7 +160,7 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 		Group:    g,
 		Version:  v,
 		Resource: r,
-	}
+	}, nil
 }
 
 // GatherAndCount gathers all metrics from the provided Gatherer and counts

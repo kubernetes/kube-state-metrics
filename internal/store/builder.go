@@ -197,7 +197,10 @@ func (b *Builder) DefaultGenerateCustomResourceStoresFunc() ksmtypes.BuildCustom
 func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory) {
 	for i := range fs {
 		f := fs[i]
-		gvr := util.GVRFromType(f.Name(), f.ExpectedType())
+		gvr, err := util.GVRFromType(f.Name(), f.ExpectedType())
+		if err != nil {
+			klog.ErrorS(err, "Failed to get GVR from type", "resourceName", f.Name(), "expectedType", f.ExpectedType())
+		}
 		var gvrString string
 		if gvr != nil {
 			gvrString = gvr.String()
@@ -553,7 +556,10 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
 
-	gvr := util.GVRFromType(resourceName, expectedType)
+	gvr, err := util.GVRFromType(resourceName, expectedType)
+	if err != nil {
+		klog.ErrorS(err, "Failed to get GVR from type", "resourceName", resourceName, "expectedType", expectedType)
+	}
 	var gvrString string
 	if gvr != nil {
 		gvrString = gvr.String()

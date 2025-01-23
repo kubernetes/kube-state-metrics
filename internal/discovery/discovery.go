@@ -216,7 +216,16 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		// Update the list of enabled custom resources.
 		var enabledCustomResources []string
 		for _, factory := range customFactories {
-			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			gvr, err := util.GVRFromType(factory.Name(), factory.ExpectedType())
+			if err != nil {
+				klog.ErrorS(err, "failed to update custom resource stores")
+			}
+			var gvrString string
+			if gvr != nil {
+				gvrString = gvr.String()
+			} else {
+				gvrString = factory.Name()
+			}
 			enabledCustomResources = append(enabledCustomResources, gvrString)
 		}
 		// Create clients for discovered factories.

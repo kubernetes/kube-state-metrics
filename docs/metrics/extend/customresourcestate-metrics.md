@@ -392,7 +392,7 @@ spec:
             type: Info
             info:
               labelsFromPath:
-                # annotation_*: [metadata, annotations]
+                annotation_*: [metadata, annotations]
                 name: [metadata, name]
         # kube_verticalpodautoscaler_labels
         - name: "verticalpodautoscaler_labels"
@@ -401,7 +401,7 @@ spec:
             type: Info
             info:
               labelsFromPath:
-                # label_*: [metadata, labels]
+                label_*: [metadata, labels]
                 name: [metadata, name]
         # kube_verticalpodautoscaler_spec_updatepolicy_updatemode
         - name: "verticalpodautoscaler_spec_updatepolicy_updatemode"

@@ -101,7 +101,13 @@ func CreateCustomResourceClients(apiserver string, kubeconfig string, factories 
 		if err != nil {
 			return nil, err
 		}
-		customResourceClients[gvr.String()] = customResourceClient
+		var gvrString string
+		if gvr != nil {
+			gvrString = gvr.String()
+		} else {
+			gvrString = f.Name()
+		}
+		customResourceClients[gvrString] = customResourceClient
 	}
 	return customResourceClients, nil
 }

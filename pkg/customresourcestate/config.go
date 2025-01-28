@@ -208,7 +208,12 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 			if err != nil {
 				return nil, fmt.Errorf("failed to create GVR for %s: %w", resource.GroupVersionKind, err)
 			}
-			gvrString := gvr.String()
+			var gvrString string
+			if gvr != nil {
+				gvrString = gvr.String()
+			} else {
+				gvrString = factory.Name()
+			}
 			if _, ok := factoriesIndex[gvrString]; ok {
 				klog.InfoS("reloaded factory", "GVR", gvrString)
 			}

@@ -1,3 +1,14 @@
+## v2.15.0 / 2025-02-03
+
+## Note
+
+* This release builds with Golang `v1.23.5`
+* This release builds with `k8s.io/client-go`: `v0.32.1`
+
+* [BUGFIX]
+* [FEATURE]
+
+
 ## v2.14.0 / 2024-11-08
 
 ### Note

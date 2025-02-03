@@ -1,3 +1,19 @@
+## v2.15.0 / 2025-02-03
+
+## Note
+
+* This release builds with Golang `v1.23.5`
+* This release builds with `k8s.io/client-go`: `v0.32.1`
+
+* [BUGFIX] Fix CR cache for GVK all specified case by @chelseychen in <https://github.com/kubernetes/kube-state-metrics/pull/2567>
+* [BUGFIX] Deduplicate tolerations before creating metric by @RiRa12621 in <https://github.com/kubernetes/kube-state-metrics/pull/2559>
+* [BUGFIX] Make `$VERSION` 3rd-party independant by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2572>
+* [BUGFIX] Fix NoNodePod naming in jsonnet by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2598>
+* [BUGFIX] Panic in `util.GVRFromType` for structured types by @L3n41c in <https://github.com/kubernetes/kube-state-metrics/pull/2553>
+* [FEATURE] Add external traffic policy to kube_service_info by @jahantech in <https://github.com/kubernetes/kube-state-metrics/pull/2584>
+* [FEATURE] Promote kube_statefulset_ordinals_start from ALPHA -> STABLE by @pwschuurman in <https://github.com/kubernetes/kube-state-metrics/pull/2415>
+* [FEATURE] Add timezone to kube_cronjob_info / Make kube_cronjob_next_schedule_time timezone-aware by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2376>
+
 ## v2.14.0 / 2024-11-08
 
 ### Note

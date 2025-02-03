@@ -16,12 +16,12 @@ OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 2.55.1
-GO_VERSION = 1.23.3
+GO_VERSION = 1.23.5
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-MARKDOWNLINT_CLI2_VERSION = 0.15.0
+MARKDOWNLINT_CLI2_VERSION = 0.17.2
 
 
 export DOCKER_CLI_EXPERIMENTAL=enabled

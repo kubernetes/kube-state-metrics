@@ -43,7 +43,7 @@ echo "### Result"
 echo "old=${REF_TO_COMPARE} new=${REF_CURRENT}"
 
 if [[ -z "${BENCHSTAT_OUTPUT_FILE}" ]]; then
-	benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}"
+	go tool golang.org/x/perf/cmd/benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}"
 else
-	benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}" | tee -a "${BENCHSTAT_OUTPUT_FILE}"
+	go tool golang.org/x/perf/cmd/benchstat "${REF_TO_COMPARE}=${RESULT_TO_COMPARE}" "${REF_CURRENT}=${RESULT_CURRENT}" | tee -a "${BENCHSTAT_OUTPUT_FILE}"
 fi

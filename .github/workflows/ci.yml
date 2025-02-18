@@ -20,8 +20,8 @@ env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
-  GO_VERSION: "^1.23"
-  GOLANGCI_LINT_VERSION: "v1.61.0"
+  GO_VERSION: "^1.24"
+  GOLANGCI_LINT_VERSION: "v1.64.6"
 
 jobs:
   ci-go-lint:
@@ -36,10 +36,6 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Setup environment
-      run: |
-        make install-tools
 
     - name: Lint
       run: |
@@ -59,10 +55,6 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
       id: go
 
-    - name: Setup environment
-      run: |
-        make install-tools
-
     - name: Validate generated manifests
       run: |
         make validate-manifests
@@ -79,10 +71,6 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Setup environment
-      run: |
-        make install-tools
 
     - name: Validate go modules
       run: |
@@ -101,10 +89,6 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
       id: go
 
-    - name: Setup environment
-      run: |
-        make install-tools
-
     - name: Check that all metrics are documented and templates have no delta
       run: |
         make doccheck
@@ -121,10 +105,6 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Setup environment
-      run: |
-        make install-tools
 
     - name: Unit tests
       run: |
@@ -158,10 +138,6 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
       id: go
 
-    - name: Setup environment
-      run: |
-        make install-tools
-
     - name: Benchmark tests
       run: |
         BENCHSTAT_OUTPUT_FILE=result.txt make test-benchmark-compare
@@ -189,10 +165,6 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
       id: go
 
-    - name: Setup environment
-      run: |
-        make install-tools
-
     - name: Build
       run: |
         make build
@@ -209,10 +181,6 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
       id: go
-
-    - name: Setup environment
-      run: |
-        make install-tools
 
     - name: End-to-end tests
       run: |

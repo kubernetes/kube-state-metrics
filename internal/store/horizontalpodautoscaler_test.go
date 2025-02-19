@@ -41,7 +41,11 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_horizontalpodautoscaler_metadata_generation [STABLE] The generation observed by the HorizontalPodAutoscaler controller.
 		# HELP kube_horizontalpodautoscaler_spec_max_replicas [STABLE] Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
 		# HELP kube_horizontalpodautoscaler_spec_min_replicas [STABLE] Lower limit for the number of pods that can be set by the autoscaler, default 1.
+		# HELP kube_horizontalpodautoscaler_spec_target_container_metric The container metric specifications used by this autoscaler when calculating the desired replica count.
+		# HELP kube_horizontalpodautoscaler_spec_target_object_metric The object metric specifications used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
+		# HELP kube_horizontalpodautoscaler_status_target_container_metric The current container metric status used by this autoscaler when calculating the desired replica count.
+		# HELP kube_horizontalpodautoscaler_status_target_object_metric The current object metric status used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_target_metric The current metric status used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_condition [STABLE] The condition of this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_current_replicas [STABLE] Current number of replicas of pods managed by this autoscaler.
@@ -52,7 +56,11 @@ func TestHPAStore(t *testing.T) {
 		# TYPE kube_horizontalpodautoscaler_metadata_generation gauge
 		# TYPE kube_horizontalpodautoscaler_spec_max_replicas gauge
 		# TYPE kube_horizontalpodautoscaler_spec_min_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_spec_target_container_metric gauge
+		# TYPE kube_horizontalpodautoscaler_spec_target_object_metric gauge
 		# TYPE kube_horizontalpodautoscaler_spec_target_metric gauge
+		# TYPE kube_horizontalpodautoscaler_status_target_container_metric gauge
+		# TYPE kube_horizontalpodautoscaler_status_target_object_metric gauge
 		# TYPE kube_horizontalpodautoscaler_status_target_metric gauge
 		# TYPE kube_horizontalpodautoscaler_status_condition gauge
 		# TYPE kube_horizontalpodautoscaler_status_current_replicas gauge
@@ -90,6 +98,9 @@ func TestHPAStore(t *testing.T) {
 							Type: autoscaling.ObjectMetricSourceType,
 							Object: &autoscaling.ObjectMetricSource{
 								Metric: autoscaling.MetricIdentifier{
+									Name: "connections",
+								},
+								DescribedObject: autoscaling.CrossVersionObjectReference{
 									Name: "connections",
 								},
 								Target: autoscaling.MetricTarget{
@@ -213,13 +224,9 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 4
 				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
-				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="events",metric_target_type="average",namespace="ns1"} 30
-				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="average",namespace="ns1"} 12
-				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="value",namespace="ns1"} 10
-				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="connections",metric_target_type="average",namespace="ns1"} 0.7
-				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="connections",metric_target_type="value",namespace="ns1"} 0.5
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
+				kube_horizontalpodautoscaler_spec_target_container_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1",container="container1"} 80
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 819200
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="sqs_jobs",metric_target_type="value",namespace="ns1"} 30
@@ -228,6 +235,10 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="average",namespace="ns1"} 2.6335914666e+07
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa1",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 80
+				kube_horizontalpodautoscaler_spec_target_object_metric{full_target_name="",horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="average",namespace="ns1"} 12
+				kube_horizontalpodautoscaler_spec_target_object_metric{full_target_name="",horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="value",namespace="ns1"} 10
+				kube_horizontalpodautoscaler_spec_target_object_metric{full_target_name="connections",horizontalpodautoscaler="hpa1",metric_name="connections",metric_target_type="average",namespace="ns1"} 0.7
+				kube_horizontalpodautoscaler_spec_target_object_metric{full_target_name="connections",horizontalpodautoscaler="hpa1",metric_name="connections",metric_target_type="value",namespace="ns1"} 0.5
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="false"} 0
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="true"} 1
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="unknown"} 0
@@ -240,6 +251,10 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_spec_max_replicas",
 				"kube_horizontalpodautoscaler_spec_min_replicas",
 				"kube_horizontalpodautoscaler_spec_target_metric",
+				"kube_horizontalpodautoscaler_spec_target_container_metric",
+				"kube_horizontalpodautoscaler_spec_target_object_metric",
+				"kube_horizontalpodautoscaler_status_target_container_metric",
+				"kube_horizontalpodautoscaler_status_target_object_metric",
 				"kube_horizontalpodautoscaler_status_target_metric",
 				"kube_horizontalpodautoscaler_status_current_replicas",
 				"kube_horizontalpodautoscaler_status_desired_replicas",
@@ -396,10 +411,10 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 100
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="average",namespace="ns1"} 8.47775744e+08
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 28
-				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.062
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 6
-				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.08
-				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 10
+				kube_horizontalpodautoscaler_status_target_container_metric{container="container1",horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.08
+				kube_horizontalpodautoscaler_status_target_container_metric{container="container1",horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 10
+				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.062
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 0
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="average",namespace="ns1"} 2.9
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 0
@@ -415,6 +430,10 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_spec_max_replicas",
 				"kube_horizontalpodautoscaler_spec_min_replicas",
 				"kube_horizontalpodautoscaler_spec_target_metric",
+				"kube_horizontalpodautoscaler_spec_target_container_metric",
+				"kube_horizontalpodautoscaler_spec_target_object_metric",
+				"kube_horizontalpodautoscaler_status_target_container_metric",
+				"kube_horizontalpodautoscaler_status_target_object_metric",
 				"kube_horizontalpodautoscaler_status_target_metric",
 				"kube_horizontalpodautoscaler_status_current_replicas",
 				"kube_horizontalpodautoscaler_status_desired_replicas",
@@ -440,3 +459,4 @@ func int32ptr(value int32) *int32 {
 func resourcePtr(quantity resource.Quantity) *resource.Quantity {
 	return &quantity
 }
+

@@ -50,7 +50,9 @@ var (
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "horizontalpodautoscaler"}
 
-	targetMetricLabels = []string{"metric_name", "metric_target_type"}
+	targetMetricLabels    = []string{"metric_name", "metric_target_type"}
+	containerMetricLabels = []string{"metric_name", "metric_target_type", "container"}
+	objectMetricLabels    = []string{"metric_name", "metric_target_type", "full_target_name"}
 )
 
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -59,6 +61,10 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createHPAMetaDataGeneration(),
 		createHPASpecMaxReplicas(),
 		createHPASpecMinReplicas(),
+		createHPASpecTargetContainerMetric(),
+		createHPASpecTargetObjectMetric(),
+		createHPAStatusTargetContainerMetric(),
+		createHPAStatusTargetObjectMetric(),
 		createHPASpecTargetMetric(),
 		createHPAStatusTargetMetric(),
 		createHPAStatusCurrentReplicas(),
@@ -180,6 +186,105 @@ func createHPASpecMinReplicas() generator.FamilyGenerator {
 	)
 }
 
+func createHPASpecTargetContainerMetric() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_spec_target_container_metric",
+		"The container metric specifications used by this autoscaler when calculating the desired replica count.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
+			for _, m := range a.Spec.Metrics {
+				var metricName string
+				var metricTarget autoscaling.MetricTarget
+				var containerName string
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
+
+				switch m.Type {
+				case autoscaling.ContainerResourceMetricSourceType:
+					metricName = string(m.ContainerResource.Name)
+					metricTarget = m.ContainerResource.Target
+					containerName = m.ContainerResource.Container
+				default:
+					// Skip unsupported metric type
+					continue
+				}
+
+				if metricTarget.Value != nil {
+					metricMap[value] = convertValueToFloat64(metricTarget.Value)
+				}
+				if metricTarget.AverageValue != nil {
+					metricMap[average] = convertValueToFloat64(metricTarget.AverageValue)
+				}
+				if metricTarget.AverageUtilization != nil {
+					metricMap[utilization] = float64(*metricTarget.AverageUtilization)
+				}
+
+				for metricTypeIndex, metricValue := range metricMap {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   containerMetricLabels,
+						LabelValues: []string{metricName, metricTypeIndex.String(), containerName},
+						Value:       metricValue,
+					})
+				}
+			}
+
+			return &metric.Family{Metrics: ms}
+		}),
+	)
+}
+
+func createHPASpecTargetObjectMetric() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_spec_target_object_metric",
+		"The object metric specifications used by this autoscaler when calculating the desired replica count.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
+			for _, m := range a.Spec.Metrics {
+				var metricName string
+				var metricTarget autoscaling.MetricTarget
+				var fullTargetName string
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
+
+				switch m.Type {
+				case autoscaling.ObjectMetricSourceType:
+					metricName = m.Object.Metric.Name
+					metricTarget = m.Object.Target
+					fullTargetName = m.Object.DescribedObject.Name
+				default:
+					// Skip unsupported metric type
+					continue
+				}
+
+				if metricTarget.Value != nil {
+					metricMap[value] = convertValueToFloat64(metricTarget.Value)
+				}
+				if metricTarget.AverageValue != nil {
+					metricMap[average] = convertValueToFloat64(metricTarget.AverageValue)
+				}
+				if metricTarget.AverageUtilization != nil {
+					metricMap[utilization] = float64(*metricTarget.AverageUtilization)
+				}
+
+				for metricTypeIndex, metricValue := range metricMap {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   objectMetricLabels,
+						LabelValues: []string{metricName, metricTypeIndex.String(), fullTargetName},
+						Value:       metricValue,
+					})
+				}
+			}
+			return &metric.Family{Metrics: ms}
+		}),
+	)
+}
+
 func createHPASpecTargetMetric() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_horizontalpodautoscaler_spec_target_metric",
@@ -196,18 +301,12 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				metricMap := make(map[metricTargetType]float64)
 
 				switch m.Type {
-				case autoscaling.ObjectMetricSourceType:
-					metricName = m.Object.Metric.Name
-					metricTarget = m.Object.Target
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
 					metricTarget = m.Pods.Target
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
 					metricTarget = m.Resource.Target
-				case autoscaling.ContainerResourceMetricSourceType:
-					metricName = string(m.ContainerResource.Name)
-					metricTarget = m.ContainerResource.Target
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					metricTarget = m.External.Target
@@ -239,6 +338,104 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 	)
 }
 
+func createHPAStatusTargetContainerMetric() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_status_target_container_metric",
+		"The current container metric status used by this autoscaler when calculating the desired replica count.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+			for _, m := range a.Status.CurrentMetrics {
+				var metricName string
+				var currentMetric autoscaling.MetricValueStatus
+				var containerName string
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
+
+				switch m.Type {
+				case autoscaling.ContainerResourceMetricSourceType:
+					metricName = string(m.ContainerResource.Name)
+					currentMetric = m.ContainerResource.Current
+					containerName = m.ContainerResource.Container
+				default:
+					// Skip unsupported metric type
+					continue
+				}
+
+				if currentMetric.Value != nil {
+					metricMap[value] = convertValueToFloat64(currentMetric.Value)
+				}
+				if currentMetric.AverageValue != nil {
+					metricMap[average] = convertValueToFloat64(currentMetric.AverageValue)
+				}
+				if currentMetric.AverageUtilization != nil {
+					metricMap[utilization] = float64(*currentMetric.AverageUtilization)
+				}
+
+				for metricTypeIndex, metricValue := range metricMap {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   containerMetricLabels,
+						LabelValues: []string{metricName, metricTypeIndex.String(), containerName},
+						Value:       metricValue,
+					})
+				}
+			}
+			return &metric.Family{Metrics: ms}
+		}),
+	)
+}
+
+func createHPAStatusTargetObjectMetric() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_status_target_object_metric",
+		"The current object metric status used by this autoscaler when calculating the desired replica count.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
+			for _, m := range a.Status.CurrentMetrics {
+				var metricName string
+				var currentMetric autoscaling.MetricValueStatus
+				var fullTargetName string
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
+
+				switch m.Type {
+				case autoscaling.ObjectMetricSourceType:
+					metricName = m.Object.Metric.Name
+					currentMetric = m.Object.Current
+					fullTargetName = m.Object.DescribedObject.Name
+				default:
+					// Skip unsupported metric type
+					continue
+				}
+
+				if currentMetric.Value != nil {
+					metricMap[value] = convertValueToFloat64(currentMetric.Value)
+				}
+				if currentMetric.AverageValue != nil {
+					metricMap[average] = convertValueToFloat64(currentMetric.AverageValue)
+				}
+				if currentMetric.AverageUtilization != nil {
+					metricMap[utilization] = float64(*currentMetric.AverageUtilization)
+				}
+
+				for metricTypeIndex, metricValue := range metricMap {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   objectMetricLabels,
+						LabelValues: []string{metricName, metricTypeIndex.String(), fullTargetName},
+						Value:       metricValue,
+					})
+				}
+			}
+			return &metric.Family{Metrics: ms}
+		}),
+	)
+}
+
 func createHPAStatusTargetMetric() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_horizontalpodautoscaler_status_target_metric",
@@ -255,18 +452,12 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				metricMap := make(map[metricTargetType]float64)
 
 				switch m.Type {
-				case autoscaling.ObjectMetricSourceType:
-					metricName = m.Object.Metric.Name
-					currentMetric = m.Object.Current
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
 					currentMetric = m.Pods.Current
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
 					currentMetric = m.Resource.Current
-				case autoscaling.ContainerResourceMetricSourceType:
-					metricName = string(m.ContainerResource.Name)
-					currentMetric = m.ContainerResource.Current
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					currentMetric = m.External.Current
@@ -413,3 +604,4 @@ func createHPAStatusCondition() generator.FamilyGenerator {
 		}),
 	)
 }
+

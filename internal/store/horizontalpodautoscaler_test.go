@@ -459,4 +459,3 @@ func int32ptr(value int32) *int32 {
 func resourcePtr(quantity resource.Quantity) *resource.Quantity {
 	return &quantity
 }
-

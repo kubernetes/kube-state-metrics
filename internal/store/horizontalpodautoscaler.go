@@ -604,4 +604,3 @@ func createHPAStatusCondition() generator.FamilyGenerator {
 		}),
 	)
 }
-

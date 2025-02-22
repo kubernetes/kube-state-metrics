@@ -313,6 +313,7 @@ func createPersistentVolumeInfo() generator.FamilyGenerator {
 							"local_fs",
 							"host_path",
 							"host_path_type",
+							"reclaim_policy",
 						},
 						LabelValues: []string{
 							p.Spec.StorageClassName,
@@ -334,6 +335,7 @@ func createPersistentVolumeInfo() generator.FamilyGenerator {
 							localFS,
 							hostPath,
 							hostPathType,
+							string(p.Spec.PersistentVolumeReclaimPolicy),
 						},
 						Value: 1,
 					},

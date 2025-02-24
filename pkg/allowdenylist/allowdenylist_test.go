@@ -17,8 +17,9 @@ limitations under the License.
 package allowdenylist
 
 import (
-	"regexp"
 	"testing"
+
+	regexp "github.com/dlclark/regexp2"
 )
 
 func TestNew(t *testing.T) {
@@ -76,7 +77,11 @@ func TestInclude(t *testing.T) {
 			t.Fatal("expected Parse() to not fail")
 		}
 
-		if !allowlist.IsIncluded("item1") {
+		isIncluded, err := allowlist.IsIncluded("item1")
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if !isIncluded {
 			t.Fatal("expected included item to be included")
 		}
 	})
@@ -93,7 +98,11 @@ func TestInclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if !denylist.IsIncluded(item1) {
+		isIncluded, err := denylist.IsIncluded(item1)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if !isIncluded {
 			t.Fatal("expected included item to be included")
 		}
 	})
@@ -109,7 +118,11 @@ func TestInclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if !allowlist.IsIncluded("kube_secret_info") {
+		isIncluded, err := allowlist.IsIncluded("kube_secret_info")
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if !isIncluded {
 			t.Fatal("expected included item to be included")
 		}
 	})
@@ -130,16 +143,32 @@ func TestInclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if denylist.IsExcluded(item1) {
+		isExcluded, err := denylist.IsExcluded(item1)
+		if err != nil {
+			t.Fatal("expected IsExcluded() to not fail")
+		}
+		if isExcluded {
 			t.Fatalf("expected included %s to be included", item1)
 		}
-		if denylist.IsIncluded(item2) {
+		isIncluded, err := denylist.IsIncluded(item2)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatalf("expected included %s to be excluded", item2)
 		}
-		if denylist.IsIncluded(item3) {
+		isIncluded, err = denylist.IsIncluded(item3)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatalf("expected included %s to be excluded", item3)
 		}
-		if denylist.IsExcluded(item4) {
+		isExcluded, err = denylist.IsExcluded(item4)
+		if err != nil {
+			t.Fatal("expected IsExcluded() to not fail")
+		}
+		if isExcluded {
 			t.Fatalf("expected included %s to be included", item4)
 		}
 	})
@@ -159,7 +188,11 @@ func TestExclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if allowlist.IsIncluded(item1) {
+		isIncluded, err := allowlist.IsIncluded(item1)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatal("expected excluded item to be excluded")
 		}
 	})
@@ -176,7 +209,11 @@ func TestExclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if denylist.IsIncluded(item1) {
+		isIncluded, err := denylist.IsIncluded(item1)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatal("expected excluded item to be excluded")
 		}
 	})
@@ -224,7 +261,8 @@ func TestStatus(t *testing.T) {
 		allowlist, _ := New(map[string]struct{}{item1: {}, item2: {}}, map[string]struct{}{})
 		actualStatusString := allowlist.Status()
 		expectedRegexPattern := `^Including the following lists that were on allowlist: (item1|item2), (item2|item1)$`
-		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
+		re := regexp.MustCompile(expectedRegexPattern, regexpDefaultSpec)
+		matched, _ := re.MatchString(actualStatusString)
 		if !matched {
 			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)
 		}
@@ -244,7 +282,8 @@ func TestStatus(t *testing.T) {
 		denylist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}, item2: {}})
 		actualStatusString := denylist.Status()
 		expectedRegexPattern := `^Excluding the following lists that were on denylist: (item1|item2), (item2|item1)$`
-		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
+		re := regexp.MustCompile(expectedRegexPattern, regexpDefaultSpec)
+		matched, _ := re.MatchString(actualStatusString)
 		if !matched {
 			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)
 		}

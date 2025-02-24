@@ -19,11 +19,11 @@ package store
 import (
 	"context"
 
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -43,7 +43,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+			wrapConfigMapFunc(func(c *metav1.PartialObjectMetadata) *metric.Family {
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
@@ -65,7 +65,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+			wrapConfigMapFunc(func(c *metav1.PartialObjectMetadata) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
@@ -87,7 +87,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapConfigMapFunc(func(_ *v1.ConfigMap) *metric.Family {
+			wrapConfigMapFunc(func(_ *metav1.PartialObjectMetadata) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
 						LabelKeys:   []string{},
@@ -103,7 +103,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+			wrapConfigMapFunc(func(c *metav1.PartialObjectMetadata) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !c.CreationTimestamp.IsZero() {
@@ -125,7 +125,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
+			wrapConfigMapFunc(func(c *metav1.PartialObjectMetadata) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(c.ObjectMeta.ResourceVersion),
 				}
@@ -134,22 +134,22 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 	}
 }
 
-func createConfigMapListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createConfigMapListWatch(kubeClient metadata.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ConfigMaps(ns).List(context.TODO(), opts)
+			return kubeClient.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}).Namespace(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ConfigMaps(ns).Watch(context.TODO(), opts)
+			return kubeClient.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}).Namespace(ns).Watch(context.TODO(), opts)
 		},
 	}
 }
 
-func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(interface{}) *metric.Family {
+func wrapConfigMapFunc(f func(*metav1.PartialObjectMetadata) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		configMap := obj.(*v1.ConfigMap)
+		configMap := obj.(*metav1.PartialObjectMetadata)
 
 		metricFamily := f(configMap)
 

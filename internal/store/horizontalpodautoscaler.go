@@ -194,14 +194,22 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				var metricTarget autoscaling.MetricTarget
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
+				// Object|Pods|External metrics can use the same name for mutltiple metrics. Add SelectorLabels to the metric labels
+				selectorLabels := make(map[string]string)
 
 				switch m.Type {
 				case autoscaling.ObjectMetricSourceType:
 					metricName = m.Object.Metric.Name
 					metricTarget = m.Object.Target
+					if m.Object.Metric.Selector != nil {
+						selectorLabels = m.Object.Metric.Selector.MatchLabels
+					}
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
 					metricTarget = m.Pods.Target
+					if m.Pods.Metric.Selector != nil {
+						selectorLabels = m.Pods.Metric.Selector.MatchLabels
+					}
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
 					metricTarget = m.Resource.Target
@@ -211,6 +219,9 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					metricTarget = m.External.Target
+					if m.External.Metric.Selector != nil {
+						selectorLabels = m.External.Metric.Selector.MatchLabels
+					}
 				default:
 					// Skip unsupported metric type
 					continue
@@ -227,9 +238,10 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				}
 
 				for metricTypeIndex, metricValue := range metricMap {
+					selectorLabelKeys, selectorLabelValues := kubeMapToPrometheusLabels("selectorlabel", selectorLabels)
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelKeys:   append(targetMetricLabels, selectorLabelKeys...),
+						LabelValues: append([]string{metricName, metricTypeIndex.String()}, selectorLabelValues...),
 						Value:       metricValue,
 					})
 				}
@@ -253,14 +265,22 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				var currentMetric autoscaling.MetricValueStatus
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
+				// Object|Pods|External metrics can use the same name for mutltiple metrics. Add SelectorLabels to the metric labels
+				selectorLabels := make(map[string]string)
 
 				switch m.Type {
 				case autoscaling.ObjectMetricSourceType:
 					metricName = m.Object.Metric.Name
 					currentMetric = m.Object.Current
+					if m.Object.Metric.Selector != nil {
+						selectorLabels = m.Object.Metric.Selector.MatchLabels
+					}
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
 					currentMetric = m.Pods.Current
+					if m.Pods.Metric.Selector != nil {
+						selectorLabels = m.Pods.Metric.Selector.MatchLabels
+					}
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
 					currentMetric = m.Resource.Current
@@ -270,6 +290,9 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					currentMetric = m.External.Current
+					if m.External.Metric.Selector != nil {
+						selectorLabels = m.External.Metric.Selector.MatchLabels
+					}
 				default:
 					// Skip unsupported metric type
 					continue
@@ -286,9 +309,10 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				}
 
 				for metricTypeIndex, metricValue := range metricMap {
+					selectorLabelKeys, selectorLabelValues := kubeMapToPrometheusLabels("selectorlabel", selectorLabels)
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelKeys:   append(targetMetricLabels, selectorLabelKeys...),
+						LabelValues: append([]string{metricName, metricTypeIndex.String()}, selectorLabelValues...),
 						Value:       metricValue,
 					})
 				}

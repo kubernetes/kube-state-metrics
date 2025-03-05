@@ -27,6 +27,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	basemetrics "k8s.io/component-base/metrics"
 
+	"slices"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -64,8 +66,8 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createHPASpecTargetContainerMetric(),
 		createHPAStatusTargetContainerMetric(),
 		createHPAStatusTargetObjectMetric(),
-		createHPASpecTargetMetric(true),
-		createHPASpecTargetMetric(false),
+		createHPASpecTargetMetric(),
+		createHPASpecTargetObjectMetric(),
 		createHPAStatusTargetMetric(),
 		createHPAStatusCurrentReplicas(),
 		createHPAStatusDesiredReplicas(),
@@ -236,13 +238,14 @@ func createHPASpecTargetContainerMetric() generator.FamilyGenerator {
 	)
 }
 
-func createHPASpecTargetMetric(CollectContainerResourceMetricSourceType bool) generator.FamilyGenerator {
+func createHPASpecTarget(allowedTypes []autoscaling.MetricSourceType) generator.FamilyGenerator {
 	metricName := "kube_horizontalpodautoscaler_spec_target_metric"
 	metricDescription := "The metric specifications used by this autoscaler when calculating the desired replica count."
-	if CollectContainerResourceMetricSourceType {
+	if len(allowedTypes) == 1 && allowedTypes[0] == autoscaling.ObjectMetricSourceType {
 		metricName = "kube_horizontalpodautoscaler_spec_target_object_metric"
 		metricDescription = "The object metric specifications used by this autoscaler when calculating the desired replica count."
 	}
+
 	return *generator.NewFamilyGeneratorWithStability(
 		metricName,
 		metricDescription,
@@ -252,47 +255,36 @@ func createHPASpecTargetMetric(CollectContainerResourceMetricSourceType bool) ge
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
 			for _, m := range a.Spec.Metrics {
+				// Check whether the metric type is allowed.
+				allowed := slices.Contains(allowedTypes, m.Type)
+				if !allowed {
+					continue
+				}
+
 				var metricName string
 				var metricTarget autoscaling.MetricTarget
-				// The variable maps the type of metric to the corresponding value
-				metricMap := make(map[metricTargetType]float64)
-				var fullTargetName string
+				var fullTargetName string // only used for ObjectMetricSourceType
 
 				switch m.Type {
 				case autoscaling.PodsMetricSourceType:
-					if CollectContainerResourceMetricSourceType {
-						// skip this metric if collecting container resource metric source type
-						continue
-					}
 					metricName = m.Pods.Metric.Name
 					metricTarget = m.Pods.Target
 				case autoscaling.ResourceMetricSourceType:
-					if CollectContainerResourceMetricSourceType {
-						// skip this metric if collecting container resource metric source type
-						continue
-					}
 					metricName = string(m.Resource.Name)
 					metricTarget = m.Resource.Target
 				case autoscaling.ExternalMetricSourceType:
-					if CollectContainerResourceMetricSourceType {
-						// skip this metric if collecting container resource metric source type
-						continue
-					}
 					metricName = m.External.Metric.Name
 					metricTarget = m.External.Target
 				case autoscaling.ObjectMetricSourceType:
-					if !CollectContainerResourceMetricSourceType {
-						// skip this metric if not collecting container resource metric source type
-						continue
-					}
 					metricName = m.Object.Metric.Name
 					metricTarget = m.Object.Target
 					fullTargetName = m.Object.DescribedObject.Name
 				default:
-					// Skip unsupported metric type
+					// Skip unsupported metric type.
 					continue
 				}
-
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
 				if metricTarget.Value != nil {
 					metricMap[value] = convertValueToFloat64(metricTarget.Value)
 				}
@@ -304,12 +296,9 @@ func createHPASpecTargetMetric(CollectContainerResourceMetricSourceType bool) ge
 				}
 
 				for metricTypeIndex, metricValue := range metricMap {
-
 					labelValues := []string{metricName, metricTypeIndex.String()}
 					metricLabels := targetMetricLabels
-
-					// use correct labels and values when collecting container resource metrics
-					if m.Type == autoscaling.ObjectMetricSourceType && CollectContainerResourceMetricSourceType {
+					if m.Type == autoscaling.ObjectMetricSourceType {
 						labelValues = append(labelValues, fullTargetName)
 						metricLabels = objectMetricLabels
 					}
@@ -323,6 +312,20 @@ func createHPASpecTargetMetric(CollectContainerResourceMetricSourceType bool) ge
 			return &metric.Family{Metrics: ms}
 		}),
 	)
+}
+
+func createHPASpecTargetObjectMetric() generator.FamilyGenerator {
+	return createHPASpecTarget([]autoscaling.MetricSourceType{
+		autoscaling.ObjectMetricSourceType,
+	})
+}
+
+func createHPASpecTargetMetric() generator.FamilyGenerator {
+	return createHPASpecTarget([]autoscaling.MetricSourceType{
+		autoscaling.PodsMetricSourceType,
+		autoscaling.ResourceMetricSourceType,
+		autoscaling.ExternalMetricSourceType,
+	})
 }
 
 func createHPAStatusTargetContainerMetric() generator.FamilyGenerator {

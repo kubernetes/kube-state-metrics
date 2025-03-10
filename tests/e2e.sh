@@ -250,6 +250,9 @@ echo "check for errors in logs"
 echo "running discovery tests..."
 go test -race -v ./tests/e2e/discovery_test.go
 
+echo "running object limits test..."
+go test -v ./tests/e2e/object-limits_test.go
+
 echo "running hot-reload tests..."
 go test -v ./tests/e2e/hot-reload_test.go
 

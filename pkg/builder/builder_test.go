@@ -67,6 +67,7 @@ func customStore(_ []generator.FamilyGenerator,
 	_ interface{},
 	_ func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	_ bool,
+	_ int64,
 ) []cache.Store {
 	stores := make([]cache.Store, 0, 2)
 	stores = append(stores, newFakeStore(fakeMetricLists[0]))

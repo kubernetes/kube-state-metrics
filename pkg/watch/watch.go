@@ -27,8 +27,9 @@ import (
 
 // ListWatchMetrics stores the pointers of kube_state_metrics_[list|watch]_total metrics.
 type ListWatchMetrics struct {
-	WatchTotal *prometheus.CounterVec
-	ListTotal  *prometheus.CounterVec
+	WatchTotal     *prometheus.CounterVec
+	ListTotal      *prometheus.CounterVec
+	ListLimitTotal *prometheus.GaugeVec
 }
 
 // NewListWatchMetrics takes in a prometheus registry and initializes
@@ -50,6 +51,13 @@ func NewListWatchMetrics(r prometheus.Registerer) *ListWatchMetrics {
 			},
 			[]string{"result", "resource"},
 		),
+		ListLimitTotal: promauto.With(r).NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "kube_state_metrics_list_limit",
+				Help: "Number of resource list limit in kube-state-metrics",
+			},
+			[]string{"resource"},
+		),
 	}
 }
 
@@ -60,15 +68,17 @@ type InstrumentedListerWatcher struct {
 	metrics           *ListWatchMetrics
 	resource          string
 	useAPIServerCache bool
+	limit             int64
 }
 
 // NewInstrumentedListerWatcher returns a new InstrumentedListerWatcher.
-func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool) cache.ListerWatcher {
+func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool, limit int64) cache.ListerWatcher {
 	return &InstrumentedListerWatcher{
 		lw:                lw,
 		metrics:           metrics,
 		resource:          resource,
 		useAPIServerCache: useAPIServerCache,
+		limit:             limit,
 	}
 }
 
@@ -78,6 +88,11 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (runtime.Ob
 
 	if i.useAPIServerCache {
 		options.ResourceVersion = "0"
+	}
+
+	if i.limit != 0 {
+		options.Limit = i.limit
+		i.metrics.ListLimitTotal.WithLabelValues(i.resource).Set(float64(i.limit))
 	}
 
 	res, err := i.lw.List(options)

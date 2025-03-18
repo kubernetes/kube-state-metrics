@@ -6,8 +6,6 @@ VERSION = $(shell grep '^version:' data.yaml | grep -oE "[0-9]+.[0-9]+.[0-9]+")
 TAG ?= $(TAG_PREFIX)$(VERSION)
 LATEST_RELEASE_BRANCH := release-$(shell echo $(VERSION) | grep -ohE "[0-9]+.[0-9]+")
 BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
-DOCKER_CLI ?= docker
-PROMTOOL_CLI ?= promtool
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
 BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -16,13 +14,20 @@ OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 2.55.1
-GO_VERSION = 1.23.5
+GO_VERSION = 1.24.1
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
 MARKDOWNLINT_CLI2_VERSION = 0.17.2
 
+DOCKER_CLI ?= docker
+PROMTOOL_CLI ?= promtool
+GOMPLATE_CLI ?= go tool github.com/hairyhenderson/gomplate/v4/cmd/gomplate 
+GOJSONTOYAML_CLI ?= go tool github.com/brancz/gojsontoyaml
+EMBEDMD_CLI ?= go tool github.com/campoy/embedmd
+JSONNET_CLI ?= go tool github.com/google/go-jsonnet/cmd/jsonnet
+JB_CLI ?= go tool github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
@@ -88,7 +93,7 @@ fix-markdown-format:
 	${DOCKER_CLI} run -v "${PWD}:/workdir" davidanson/markdownlint-cli2:v${MARKDOWNLINT_CLI2_VERSION} --fix --config .markdownlint-cli2.jsonc
 
 generate-template:
-	gomplate -d config=./data.yaml --file README.md.tpl > README.md
+	${GOMPLATE_CLI} -d config=./data.yaml --file README.md.tpl > README.md
 
 validate-template: generate-template
 	git diff --no-ext-diff --quiet --exit-code README.md
@@ -138,7 +143,7 @@ e2e:
 generate: build-local generate-template
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
-	embedmd -w `find . -path ./vendor -prune -o -name "*.md" -print`
+	${EMBEDMD_CLI} -w `find . -path ./vendor -prune -o -name "*.md" -print`
 
 validate-manifests: examples
 	@git diff --exit-code
@@ -147,31 +152,27 @@ mixin: examples/prometheus-alerting-rules/alerts.yaml
 
 examples/prometheus-alerting-rules/alerts.yaml: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/mixin.jsonnet scripts/vendor
 	mkdir -p examples/prometheus-alerting-rules
-	jsonnet -J scripts/vendor scripts/mixin.jsonnet | gojsontoyaml > examples/prometheus-alerting-rules/alerts.yaml
+	${JSONNET_CLI}  -J scripts/vendor scripts/mixin.jsonnet | ${GOJSONTOYAML_CLI} > examples/prometheus-alerting-rules/alerts.yaml
 
 examples: examples/standard examples/autosharding examples/daemonsetsharding mixin
 
 examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor
 	mkdir -p examples/standard
-	jsonnet -J scripts/vendor -m examples/standard --ext-str version="$(VERSION)" scripts/standard.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	${JSONNET_CLI}} -J scripts/vendor -m examples/standard --ext-str version="$(VERSION)" scripts/standard.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/autosharding.jsonnet scripts/vendor
 	mkdir -p examples/autosharding
-	jsonnet -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	${JSONNET_CLI} -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 examples/daemonsetsharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/daemonsetsharding.jsonnet scripts/vendor
 	mkdir -p examples/daemonsetsharding
-	jsonnet -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | gojsontoyaml > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	${JSONETT_CLI} -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json
-	cd scripts && jb install
-
-install-tools:
-	@echo Installing tools from tools.go
-	grep '^\s*_' tools/tools.go | awk '{print $$2}' | xargs -tI % go install -mod=readonly -modfile=tools/go.mod %
+	cd scripts && ${JB_CLI} install
 
 install-promtool:
 	@echo Installing promtool

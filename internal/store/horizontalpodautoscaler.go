@@ -63,12 +63,12 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createHPAMetaDataGeneration(),
 		createHPASpecMaxReplicas(),
 		createHPASpecMinReplicas(),
-		createHPASpecTargetContainerMetric(),
-		createHPAStatusTargetContainerMetric(),
-		createHPAStatusTargetObjectMetric(),
 		createHPASpecTargetMetric(),
+		createHPASpecTargetContainerMetric(),
 		createHPASpecTargetObjectMetric(),
 		createHPAStatusTargetMetric(),
+		createHPAStatusTargetContainerMetric(),
+		createHPAStatusTargetObjectMetric(),
 		createHPAStatusCurrentReplicas(),
 		createHPAStatusDesiredReplicas(),
 		createHPAAnnotations(allowAnnotationsList),
@@ -238,14 +238,7 @@ func createHPASpecTargetContainerMetric() generator.FamilyGenerator {
 	)
 }
 
-func createHPASpecTarget(allowedTypes []autoscaling.MetricSourceType) generator.FamilyGenerator {
-	metricName := "kube_horizontalpodautoscaler_spec_target_metric"
-	metricDescription := "The metric specifications used by this autoscaler when calculating the desired replica count."
-	if len(allowedTypes) == 1 && allowedTypes[0] == autoscaling.ObjectMetricSourceType {
-		metricName = "kube_horizontalpodautoscaler_spec_target_object_metric"
-		metricDescription = "The object metric specifications used by this autoscaler when calculating the desired replica count."
-	}
-
+func createHPASpecTarget(metricName, metricDescription string, allowedTypes []autoscaling.MetricSourceType) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		metricName,
 		metricDescription,
@@ -296,11 +289,11 @@ func createHPASpecTarget(allowedTypes []autoscaling.MetricSourceType) generator.
 				}
 
 				for metricTypeIndex, metricValue := range metricMap {
-					labelValues := []string{metricName, metricTypeIndex.String()}
 					metricLabels := targetMetricLabels
+					labelValues := []string{metricName, metricTypeIndex.String()}
 					if m.Type == autoscaling.ObjectMetricSourceType {
-						labelValues = append(labelValues, fullTargetName)
 						metricLabels = objectMetricLabels
+						labelValues = append(labelValues, fullTargetName)
 					}
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   metricLabels,
@@ -315,17 +308,23 @@ func createHPASpecTarget(allowedTypes []autoscaling.MetricSourceType) generator.
 }
 
 func createHPASpecTargetObjectMetric() generator.FamilyGenerator {
-	return createHPASpecTarget([]autoscaling.MetricSourceType{
-		autoscaling.ObjectMetricSourceType,
-	})
+	return createHPASpecTarget(
+		"kube_horizontalpodautoscaler_spec_target_object_metric",
+		"The object metric specifications used by this autoscaler when calculating the desired replica count.",
+		[]autoscaling.MetricSourceType{
+			autoscaling.ObjectMetricSourceType,
+		})
 }
 
 func createHPASpecTargetMetric() generator.FamilyGenerator {
-	return createHPASpecTarget([]autoscaling.MetricSourceType{
-		autoscaling.PodsMetricSourceType,
-		autoscaling.ResourceMetricSourceType,
-		autoscaling.ExternalMetricSourceType,
-	})
+	return createHPASpecTarget(
+		"kube_horizontalpodautoscaler_spec_target_metric",
+		"The metric specifications used by this autoscaler when calculating the desired replica count.",
+		[]autoscaling.MetricSourceType{
+			autoscaling.PodsMetricSourceType,
+			autoscaling.ResourceMetricSourceType,
+			autoscaling.ExternalMetricSourceType,
+		})
 }
 
 func createHPAStatusTargetContainerMetric() generator.FamilyGenerator {

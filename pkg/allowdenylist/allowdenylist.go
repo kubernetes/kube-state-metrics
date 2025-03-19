@@ -18,13 +18,24 @@ package allowdenylist
 
 import (
 	"errors"
-	"regexp"
 	"strings"
+	"sync"
+	"time"
+
+	regexp "github.com/dlclark/regexp2"
+	"k8s.io/klog/v2"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
-// AllowDenyList encapsulates the logic needed to filter based on a string.
+// Use ECMAScript as the default regexp spec to support lookarounds (#2594).
+var (
+	once                 sync.Once
+	regexpDefaultSpec    regexp.RegexOptions = regexp.ECMAScript
+	regexpDefaultTimeout                     = time.Minute
+)
+
+// AllowDenyList namespaceencapsulates the logic needed to filter based on a string.
 type AllowDenyList struct {
 	list        map[string]struct{}
 	rList       []*regexp.Regexp
@@ -34,6 +45,9 @@ type AllowDenyList struct {
 // New constructs a new AllowDenyList based on a allow- and a
 // denylist. Only one of them can be not empty.
 func New(allow, deny map[string]struct{}) (*AllowDenyList, error) {
+	once.Do(func() {
+		regexp.DefaultMatchTimeout = regexpDefaultTimeout
+	})
 	if len(allow) != 0 && len(deny) != 0 {
 		return nil, errors.New(
 			"allowlist and denylist are both set, they are mutually exclusive, only one of them can be set",
@@ -62,7 +76,7 @@ func New(allow, deny map[string]struct{}) (*AllowDenyList, error) {
 func (l *AllowDenyList) Parse() error {
 	regexes := make([]*regexp.Regexp, 0, len(l.list))
 	for item := range l.list {
-		r, err := regexp.Compile(item)
+		r, err := regexp.Compile(item, regexpDefaultSpec)
 		if err != nil {
 			return err
 		}
@@ -99,25 +113,36 @@ func (l *AllowDenyList) Exclude(items []string) {
 }
 
 // IsIncluded returns if the given item is included.
-func (l *AllowDenyList) IsIncluded(item string) bool {
-	var matched bool
+func (l *AllowDenyList) IsIncluded(item string) (bool, error) {
+	var (
+		matched bool
+		err     error
+	)
 	for _, r := range l.rList {
-		matched = r.MatchString(item)
+		matched, err = r.MatchString(item)
+		if err != nil {
+			return false, err
+		}
 		if matched {
 			break
 		}
 	}
 
 	if l.isAllowList {
-		return matched
+		return matched, nil
 	}
 
-	return !matched
+	return !matched, nil
 }
 
 // IsExcluded returns if the given item is excluded.
-func (l *AllowDenyList) IsExcluded(item string) bool {
-	return !l.IsIncluded(item)
+func (l *AllowDenyList) IsExcluded(item string) (bool, error) {
+	isIncluded, err := l.IsIncluded(item)
+	if err != nil {
+		return false, err
+	}
+
+	return !isIncluded, nil
 }
 
 // Status returns the status of the AllowDenyList that can e.g. be passed into
@@ -137,7 +162,13 @@ func (l *AllowDenyList) Status() string {
 
 // Test returns if the given family generator passes (is included in) the AllowDenyList
 func (l *AllowDenyList) Test(generator generator.FamilyGenerator) bool {
-	return l.IsIncluded(generator.Name)
+	isIncluded, err := l.IsIncluded(generator.Name)
+	if err != nil {
+		klog.ErrorS(err, "Error while processing allow-deny entries for generator", "generator", generator.Name)
+		return false
+	}
+
+	return isIncluded
 }
 
 func copyList(l map[string]struct{}) map[string]struct{} {

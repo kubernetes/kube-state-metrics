@@ -41,6 +41,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Resource group version compatibility](#resource-group-version-compatibility)
   * [Container Image](#container-image)
 * [Metrics Documentation](#metrics-documentation)
+  * [ECMAScript regular expression support for allow and deny lists](#ecmascript-regular-expression-support-for-allow-and-deny-lists)
   * [Conflict resolution in label names](#conflict-resolution-in-label-names)
 * [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 * [Resource recommendation](#resource-recommendation)
@@ -128,6 +129,10 @@ you might want to consider addressing this issue on a different level of the sta
 e.g. by standardizing Kubernetes labels using an
 [Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 that ensures that there are no possible conflicts.
+
+#### ECMAScript regular expression support for allow and deny lists
+
+Starting from [#2616](https://github.com/kubernetes/kube-state-metrics/pull/2616/files), kube-state-metrics supports ECMAScript's `regexp` for allow and deny lists. This was incorporated as a workaround for the limitations of the `regexp` package in Go, which does not support lookarounds due to their non-linear time complexity. Please note that while lookarounds are now supported for allow and deny lists, regular expressions' evaluation time is capped at a minute to prevent performance issues.
 
 ### Kube-state-metrics self metrics
 

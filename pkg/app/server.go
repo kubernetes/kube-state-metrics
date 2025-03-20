@@ -264,6 +264,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
 		return fmt.Errorf("failed to set up labels allowlist: %v", err)
 	}
+	if err := storeBuilder.WithInjectPerSeriesMetadata(opts.InjectPerSeriesMetadata); err != nil {
+		return fmt.Errorf("failed to configure per series metadata injection: %v", err)
+	}
 
 	ksmMetricsRegistry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),

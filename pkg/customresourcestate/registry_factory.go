@@ -90,10 +90,13 @@ func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 	if errorLogV == 0 {
 		errorLogV = resource.ErrorLogV
 	}
+
+	help := fmt.Sprintf("%s for %s/%s/%s", f.Help, resource.GroupVersionKind.Group, resource.GroupVersionKind.Version, resource.GroupVersionKind.Kind)
+
 	return &compiledFamily{
 		Name:          fullName(resource, f),
 		ErrorLogV:     errorLogV,
-		Help:          f.Help,
+		Help:          help,
 		Each:          metric,
 		Labels:        labels.CommonLabels,
 		LabelFromPath: labelsFromPath,

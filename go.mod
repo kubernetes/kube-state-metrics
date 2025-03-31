@@ -1,7 +1,6 @@
 module k8s.io/kube-state-metrics/v2
 
 go 1.24.0
-
 require (
 	github.com/KimMachineGun/automemlimit v0.7.1
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
@@ -17,7 +16,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.14.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.3

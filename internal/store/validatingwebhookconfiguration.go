@@ -78,7 +78,7 @@ var (
 			"",
 			wrapValidatingWebhookConfigurationFunc(func(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(vwc.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(vwc.ResourceVersion),
 				}
 			}),
 		),

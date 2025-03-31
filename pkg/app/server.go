@@ -497,7 +497,7 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 	if file := opts.CustomResourceConfigFile; file != "" {
 		f, err := os.Open(filepath.Clean(file))
 		if err != nil {
-			return nil, fmt.Errorf("Custom Resource State Metrics file could not be opened: %v", err)
+			return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %v", err)
 		}
 		return yaml.NewDecoder(f), nil
 	}

@@ -134,7 +134,7 @@ func createHPAMetaDataGeneration() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
-						Value: float64(a.ObjectMeta.Generation),
+						Value: float64(a.Generation),
 					},
 				},
 			}

@@ -217,7 +217,7 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 						{
 							LabelKeys:   []string{},
 							LabelValues: []string{},
-							Value:       float64(d.ObjectMeta.Generation),
+							Value:       float64(d.Generation),
 						},
 					},
 				}

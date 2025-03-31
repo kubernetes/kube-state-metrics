@@ -75,6 +75,7 @@ type Builder struct {
 	buildCustomResourceStoresFunc ksmtypes.BuildCustomResourceStoresFunc
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
+	injectPerSeriesMetadata       bool
 	utilOptions                   *options.Options
 	// namespaceFilter is inside fieldSelectorFilter
 	fieldSelectorFilter string
@@ -243,6 +244,13 @@ func (b *Builder) allowList(list map[string][]string) (map[string][]string, erro
 		m[resource] = allowedList
 	}
 	return m, nil
+}
+
+// WithAllowAnnotations configures which annotations can be returned for metrics
+func (b *Builder) WithInjectPerSeriesMetadata(inject bool) error {
+	var err error
+	b.injectPerSeriesMetadata = inject
+	return err
 }
 
 // WithAllowAnnotations configures which annotations can be returned for metrics
@@ -463,7 +471,7 @@ func (b *Builder) buildStorageClassStores() []cache.Store {
 }
 
 func (b *Builder) buildPodStores() []cache.Store {
-	return b.buildStoresFunc(podMetricFamilies(b.allowAnnotationsList["pods"], b.allowLabelsList["pods"]), &v1.Pod{}, createPodListWatch, b.useAPIServerCache)
+	return b.buildStoresFunc(podMetricFamilies(b.injectPerSeriesMetadata, b.allowAnnotationsList["pods"], b.allowLabelsList["pods"]), &v1.Pod{}, createPodListWatch, b.useAPIServerCache)
 }
 
 func (b *Builder) buildCsrStores() []cache.Store {

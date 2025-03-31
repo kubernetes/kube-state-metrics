@@ -127,7 +127,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			"",
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(c.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(c.ResourceVersion),
 				}
 			}),
 		),

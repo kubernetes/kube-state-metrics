@@ -62,7 +62,7 @@ func TestAsLibrary(t *testing.T) {
 	}
 	m := w.String()
 
-	if !strings.Contains(m, service.ObjectMeta.Name) {
+	if !strings.Contains(m, service.Name) {
 		t.Fatal("expected string to contain service name")
 	}
 }

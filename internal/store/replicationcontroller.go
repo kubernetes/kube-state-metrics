@@ -166,7 +166,7 @@ var (
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(r.ObjectMeta.Generation),
+							Value: float64(r.Generation),
 						},
 					},
 				}

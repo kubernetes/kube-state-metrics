@@ -257,7 +257,7 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 			}
 
 			for i := range tc.expectKeys {
-				if !(tc.expectKeys[i] == labelKeys[i] && tc.expectValues[i] == labelValues[i]) {
+				if tc.expectKeys[i] != labelKeys[i] || tc.expectValues[i] != labelValues[i] {
 					t.Errorf("Got Prometheus label %q: %q but expected %q: %q", labelKeys[i], labelValues[i], tc.expectKeys[i], tc.expectValues[i])
 				}
 			}

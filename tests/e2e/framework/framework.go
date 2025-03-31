@@ -118,7 +118,7 @@ func (k *KSMClient) IsHealthz() (bool, error) {
 
 func (k *KSMClient) writeMetrics(endpoint *url.URL, w io.Writer) error {
 	if endpoint == nil {
-		return errors.New("Endpoint is nil")
+		return errors.New("endpoint is nil")
 	}
 
 	u := *endpoint
@@ -165,7 +165,7 @@ func (f *Framework) ParseMetrics(metrics func(io.Writer) error) (map[string]*dto
 	buf := &bytes.Buffer{}
 	err := metrics(buf)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get metrics: %w", err)
+		return nil, fmt.Errorf("failed to get metrics: %w", err)
 	}
 
 	parser := &expfmt.TextParser{}

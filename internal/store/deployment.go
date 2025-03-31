@@ -277,7 +277,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(d.ObjectMeta.Generation),
+							Value: float64(d.Generation),
 						},
 					},
 				}

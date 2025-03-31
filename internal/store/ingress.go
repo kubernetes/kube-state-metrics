@@ -140,7 +140,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(i.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(i.ResourceVersion),
 				}
 			}),
 		),

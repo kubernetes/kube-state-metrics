@@ -78,7 +78,7 @@ var (
 			"",
 			wrapMutatingWebhookConfigurationFunc(func(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(mwc.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(mwc.ResourceVersion),
 				}
 			}),
 		),

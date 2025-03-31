@@ -133,7 +133,7 @@ func clusterRoleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []st
 			"",
 			wrapClusterRoleBindingFunc(func(r *rbacv1.ClusterRoleBinding) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(r.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(r.ResourceVersion),
 				}
 			}),
 		),

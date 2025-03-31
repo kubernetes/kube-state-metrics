@@ -273,7 +273,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(j.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(j.ResourceVersion),
 				}
 			}),
 		),
@@ -358,7 +358,7 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("Failed to parse cron job schedule '%s': %w", schedule, err)
+		return time.Time{}, fmt.Errorf("failed to parse cron job schedule '%s': %w", schedule, err)
 	}
 	if !lastScheduleTime.IsZero() {
 		return sched.Next(lastScheduleTime.Time), nil

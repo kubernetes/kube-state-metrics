@@ -42,7 +42,7 @@ func TestSharding(t *testing.T) {
 		totalShards: 2,
 	}
 
-	if !(s1.keep(cm) || s2.keep(cm)) {
+	if !s1.keep(cm) && !s2.keep(cm) {
 		t.Fatal("One shard must pick up the object.")
 	}
 

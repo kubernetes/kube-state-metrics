@@ -208,7 +208,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(s.ObjectMeta.Generation),
+							Value: float64(s.Generation),
 						},
 					},
 				}

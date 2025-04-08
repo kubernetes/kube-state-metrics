@@ -70,7 +70,7 @@ func compileCommon(c MetricMeta) (*compiledCommon, error) {
 }
 
 func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
-	labels := resource.Labels.Merge(f.Labels)
+	labels := resource.Merge(f.Labels)
 
 	if f.Each.Type == metric.Info && !strings.HasSuffix(f.Name, "_info") {
 		klog.InfoS("Info metric does not have _info suffix", "gvk", resource.GroupVersionKind.String(), "name", f.Name)
@@ -652,7 +652,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 							// negative index
 							i += len(s)
 						}
-						if !(0 <= i && i < len(s)) {
+						if i < 0 || i > len(s) {
 							return fmt.Errorf("list index out of range: %s", part)
 						}
 						return s[i]

@@ -47,6 +47,8 @@ type Options struct {
 	MetricOptInList      MetricSet       `yaml:"metric_opt_in_list"`
 	Resources            ResourceSet     `yaml:"resources"`
 
+	InjectPerSeriesMetadata bool `yaml:"inject_per_series_metadata"`
+
 	cmd                      *cobra.Command
 	Apiserver                string   `yaml:"apiserver"`
 	CustomResourceConfig     string   `yaml:"custom_resource_config"`
@@ -164,6 +166,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the labels metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
 	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or *ECMAScript-based* regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.cmd.Flags().Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or *ECMAScript-based* regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.cmd.Flags().BoolVar(&o.InjectPerSeriesMetadata, "inject-per-series-metadata", false, "Propagate labels and annotations from object metadata to all respective metrics rather than simply populating kube_<resource>_labels and kube_<resource>_annotations. Honors metric-annotations-allowlist and metric-labels-allowlist.")
 	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")

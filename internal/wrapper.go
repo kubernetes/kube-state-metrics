@@ -25,8 +25,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/options"

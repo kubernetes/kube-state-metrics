@@ -175,7 +175,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
-	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of Resources to be enabled. Defaults to %q", &DefaultResources))
+	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of resources to be enabled. Defaults to %q", &DefaultResources))
 
 	o.cmd.Flags().DurationVar(&o.ServerReadTimeout, "server-read-timeout", defaultServerReadTimeout, "The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients. ")
 	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")

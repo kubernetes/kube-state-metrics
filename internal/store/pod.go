@@ -1541,15 +1541,12 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			ms := []*metric.Metric{}
 
 			for _, reason := range podStatusReasons {
-				metric := &metric.Metric{}
-				metric.LabelKeys = []string{"reason"}
-				metric.LabelValues = []string{reason}
-				if p.Status.Reason == reason {
-					metric.Value = boolFloat64(true)
-				} else {
-					metric.Value = boolFloat64(false)
+				m := &metric.Metric{
+					LabelKeys:   []string{"reason"},
+					LabelValues: []string{reason},
+					Value:       getPodStatusReasonValue(p, reason),
 				}
-				ms = append(ms, metric)
+				ms = append(ms, m)
 			}
 
 			return &metric.Family{
@@ -1557,6 +1554,23 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			}
 		}),
 	)
+}
+
+func getPodStatusReasonValue(p *v1.Pod, reason string) float64 {
+	if p.Status.Reason == reason {
+		return 1
+	}
+	for _, cond := range p.Status.Conditions {
+		if cond.Reason == reason {
+			return 1
+		}
+	}
+	for _, cs := range p.Status.ContainerStatuses {
+		if cs.State.Terminated != nil && cs.State.Terminated.Reason == reason {
+			return 1
+		}
+	}
+	return 0
 }
 
 func createPodStatusScheduledFamilyGenerator() generator.FamilyGenerator {

@@ -33,11 +33,11 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/oklog/run"

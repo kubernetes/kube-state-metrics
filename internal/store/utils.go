@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -37,6 +38,12 @@ var (
 	matchAllCap        = regexp.MustCompile("([a-z0-9])([A-Z])")
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 )
+
+type MetricConfig struct {
+	InjectPerSeriesMetadata bool
+	AllowAnnotations        []string
+	AllowLabels             []string
+}
 
 func resourceVersionMetric(rv string) []*metric.Metric {
 	v, err := strconv.ParseFloat(rv, 64)
@@ -173,6 +180,17 @@ func isNativeResource(name v1.ResourceName) bool {
 
 func isPrefixedNativeResource(name v1.ResourceName) bool {
 	return strings.Contains(string(name), v1.ResourceDefaultNamespacePrefix)
+}
+
+// convenience wrapper to inject allow-listed labels and annotations to a metric if per-series injection is enabled.
+func injectLabelsAndAnnos(m *metric.Metric, metricConfig *MetricConfig, obj *metav1.ObjectMeta) *metric.Metric {
+	if !metricConfig.InjectPerSeriesMetadata {
+		return m
+	}
+	labelKeys, labelValues := createPrometheusLabelKeysValues("label", obj.Labels, metricConfig.AllowLabels)
+	annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", obj.Annotations, metricConfig.AllowAnnotations)
+	m.LabelKeys, m.LabelValues = mergeKeyValues(m.LabelKeys, m.LabelValues, annotationKeys, annotationValues, labelKeys, labelValues)
+	return m
 }
 
 // createPrometheusLabelKeysValues takes in passed kubernetes annotations/labels

@@ -91,7 +91,7 @@ func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 		errorLogV = resource.ErrorLogV
 	}
 
-	help := fmt.Sprintf("%s for %s/%s/%s", f.Help, resource.GroupVersionKind.Group, resource.GroupVersionKind.Version, resource.GroupVersionKind.Kind)
+	help := fmt.Sprintf("%s for %s", f.Help, resource.GroupVersionKind)
 
 	return &compiledFamily{
 		Name:          fullName(resource, f),

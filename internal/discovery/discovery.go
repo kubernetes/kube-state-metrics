@@ -48,6 +48,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	}, "", 0, nil, nil)
 	informer := factory.Informer()
 	stopper := make(chan struct{})
+
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
@@ -103,6 +104,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	if err != nil {
 		return err
 	}
+
 	// Respect context cancellation.
 	go func() {
 		for range ctx.Done() {
@@ -111,7 +113,15 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 			return
 		}
 	}()
+
+	// Start the informer.
 	go informer.Run(stopper)
+
+	// Wait for the cache to sync.
+	if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
+		return fmt.Errorf("failed to sync informer cache")
+	}
+
 	return nil
 }
 

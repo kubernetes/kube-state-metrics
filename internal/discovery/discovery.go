@@ -64,8 +64,8 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 					},
 					Plural: p,
 				}
-				r.AppendToMap(gotGVKP)
 				r.SafeWrite(func() {
+					r.AppendToMap(gotGVKP)
 					r.WasUpdated = true
 				})
 			}
@@ -89,8 +89,8 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 					},
 					Plural: p,
 				}
-				r.RemoveFromMap(gotGVKP)
 				r.SafeWrite(func() {
+					r.RemoveFromMap(gotGVKP)
 					r.WasUpdated = true
 				})
 			}

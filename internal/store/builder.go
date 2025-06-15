@@ -38,6 +38,7 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -83,6 +84,8 @@ type Builder struct {
 	totalShards         int
 	shard               int32
 	useAPIServerCache   bool
+
+	GVKToReflectorStopChanMap *map[string]chan struct{}
 }
 
 // NewBuilder returns a new builder.
@@ -608,7 +611,11 @@ func (b *Builder) startReflector(
 ) {
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
-	go reflector.Run(b.ctx.Done())
+	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
+		go reflector.Run((*b.GVKToReflectorStopChanMap)[cr.GroupVersionKind().String()])
+	} else {
+		go reflector.Run(b.ctx.Done())
+	}
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

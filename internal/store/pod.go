@@ -40,7 +40,12 @@ var (
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "Shutdown", "UnexpectedAdmissionError"}
 )
 
-func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func podMetricFamilies(injectPerSeriesMetadata bool, allowAnnotationsList []string, allowLabelsList []string) []generator.FamilyGenerator {
+	mc := &MetricConfig{
+		InjectPerSeriesMetadata: injectPerSeriesMetadata,
+		AllowAnnotations:        allowAnnotationsList,
+		AllowLabels:             allowLabelsList,
+	}
 	return []generator.FamilyGenerator{
 		createPodCompletionTimeFamilyGenerator(),
 		createPodContainerInfoFamilyGenerator(),
@@ -82,7 +87,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator(),
 		createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator(),
 		createPodStartTimeFamilyGenerator(),
-		createPodStatusPhaseFamilyGenerator(),
+		createPodStatusPhaseFamilyGenerator(mc),
 		createPodStatusQosClassFamilyGenerator(),
 		createPodStatusReadyFamilyGenerator(),
 		createPodStatusReadyTimeFamilyGenerator(),
@@ -1333,7 +1338,7 @@ func createPodStartTimeFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
+func createPodStatusPhaseFamilyGenerator(mc *MetricConfig) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_status_phase",
 		"The pods current phase.",
@@ -1361,13 +1366,12 @@ func createPodStatusPhaseFamilyGenerator() generator.FamilyGenerator {
 
 			ms := make([]*metric.Metric, len(phases))
 
-			for i, p := range phases {
-				ms[i] = &metric.Metric{
-
+			for i, ph := range phases {
+				ms[i] = injectLabelsAndAnnos(&metric.Metric{
 					LabelKeys:   []string{"phase"},
-					LabelValues: []string{p.n},
-					Value:       boolFloat64(p.v),
-				}
+					LabelValues: []string{ph.n},
+					Value:       boolFloat64(ph.v),
+				}, mc, &p.ObjectMeta)
 			}
 
 			return &metric.Family{

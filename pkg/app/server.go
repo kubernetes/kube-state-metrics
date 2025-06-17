@@ -247,6 +247,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	))
 
 	storeBuilder.WithUsingAPIServerCache(opts.UseAPIServerCache)
+	storeBuilder.WithObjectLimit(opts.ObjectLimit)
 	storeBuilder.WithGenerateStoresFunc(storeBuilder.DefaultGenerateStoresFunc())
 	proc.StartReaper()
 

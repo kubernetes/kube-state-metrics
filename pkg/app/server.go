@@ -35,8 +35,10 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
@@ -318,18 +320,17 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		)
 	}
 
-	telemetryMux := buildTelemetryServer(ksmMetricsRegistry)
+	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, kubeConfig)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
 	telemetryServer := http.Server{
 		Handler:           telemetryMux,
 		ReadHeaderTimeout: 5 * time.Second}
 	telemetryFlags := web.FlagConfig{
 		WebListenAddresses: &[]string{telemetryListenAddress},
-		WebSystemdSocket:   new(bool),
 		WebConfigFile:      &tlsConfig,
 	}
 
-	metricsMux := buildMetricsServer(m, durationVec, kubeClient)
+	metricsMux := buildMetricsServer(m, durationVec, kubeClient, opts.AuthFilter, kubeConfig)
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	metricsServer := http.Server{
 		Handler:           metricsMux,
@@ -340,7 +341,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 	metricsFlags := web.FlagConfig{
 		WebListenAddresses: &[]string{metricsServerListenAddress},
-		WebSystemdSocket:   new(bool),
 		WebConfigFile:      &tlsConfig,
 	}
 
@@ -378,14 +378,33 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	return nil
 }
 
-func buildTelemetryServer(registry prometheus.Gatherer) *http.ServeMux {
+func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	handler := logr.ToSlogHandler(klog.Background())
-	sLogger := slog.NewLogLogger(handler, slog.LevelError)
+	loghandler := logr.ToSlogHandler(klog.Background())
+	sLogger := slog.NewLogLogger(loghandler, slog.LevelError)
 
 	// Add metricsPath
-	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: sLogger}))
+	metricsHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorLog: sLogger})
+
+	// Add Authentication/Authorization via Kubernetes API
+	if authFilter {
+		client, err := rest.HTTPClientFor(kubeConfig)
+		if err != nil {
+			klog.ErrorS(err, "failed to create HTTP client from config")
+		}
+
+		metricsFilter, err := filters.WithAuthenticationAndAuthorization(kubeConfig, client)
+		if err != nil {
+			klog.ErrorS(err, "failed to create auth handler")
+		}
+
+		metricsHandler, err = metricsFilter(klog.Background(), metricsHandler)
+		if err != nil {
+			klog.ErrorS(err, "failed to apply metrics filter")
+		}
+	}
+	mux.Handle(metricsPath, metricsHandler)
 
 	// Add readyzPath
 	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -432,7 +451,7 @@ func handleClusterDelegationForProber(client kubernetes.Interface, probeType str
 	}
 }
 
-func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface) *http.ServeMux {
+func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// TODO: This doesn't belong into serveMetrics
@@ -443,7 +462,29 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	// Add metricsPath
-	mux.Handle(metricsPath, promhttp.InstrumentHandlerDuration(durationObserver, m))
+	metricsHandler := promhttp.InstrumentHandlerDuration(durationObserver, m)
+
+	// Add Authentication/Authorization via Kubernetes API
+	if authFilter {
+		client, err := rest.HTTPClientFor(kubeConfig)
+		if err != nil {
+			klog.ErrorS(err, "failed to create HTTP client from config")
+		}
+
+		metricsFilter, err := filters.WithAuthenticationAndAuthorization(kubeConfig, client)
+		if err != nil {
+			klog.ErrorS(err, "failed to create auth handler")
+		}
+
+		handler, err := metricsFilter(klog.Background(), metricsHandler)
+		if err != nil {
+			klog.ErrorS(err, "failed to apply metrics filter")
+		}
+		metricsHandler = handler.(http.HandlerFunc)
+
+	}
+
+	mux.Handle(metricsPath, metricsHandler)
 
 	// Add livezPath
 	mux.Handle(livezPath, handleClusterDelegationForProber(client, livezPath))

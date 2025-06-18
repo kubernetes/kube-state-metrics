@@ -41,6 +41,7 @@ Flags:
       --add_dir_header                             If true, adds the file directory to the header of the log messages
       --alsologtostderr                            log to standard error as well as files (no effect when -logtostderr=true)
       --apiserver string                           The URL of the apiserver to use as a master
+      --auth-filter                                If true, requires authentication and authorization through Kubernetes API to access metrics endpoints
       --auto-gomemlimit                            Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)
       --auto-gomemlimit-ratio float                The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental) (default 0.9)
       --config string                              Path to the kube-state-metrics options config file

@@ -247,6 +247,9 @@ sleep 33
 klog_err=E$(date +%m%d)
 echo "check for errors in logs"
 
+echo "running authfiler tests.."
+go test -v ./tests/e2e/auth-filter_test.go
+
 echo "running discovery tests..."
 go test -race -v ./tests/e2e/discovery_test.go
 

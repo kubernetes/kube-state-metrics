@@ -296,6 +296,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			CRDsDeleteEventsCounter: crdsDeleteEventsCounter,
 			CRDsCacheCountGauge:     crdsCacheCountGauge,
 		}
+		// storeBuilder starts reflectors for the discovered GVKs, and as such, should close them too.
+		storeBuilder.GVKToReflectorStopChanMap = &discovererInstance.GVKToReflectorStopChanMap
 		// This starts a goroutine that will watch for any new GVKs to extract from CRDs.
 		err = discovererInstance.StartDiscovery(ctx, kubeConfig)
 		if err != nil {

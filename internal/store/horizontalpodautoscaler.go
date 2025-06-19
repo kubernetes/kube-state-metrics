@@ -66,6 +66,8 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createHPAAnnotations(allowAnnotationsList),
 		createHPALabels(allowLabelsList),
 		createHPAStatusCondition(),
+		createHPACreated(),
+		createHPADeletionTimestamp(),
 	}
 }
 
@@ -405,6 +407,52 @@ func createHPAStatusCondition() generator.FamilyGenerator {
 					metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 					ms = append(ms, metric)
 				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createHPACreated() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_created",
+		"Unix creation timestamp",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := []*metric.Metric{}
+
+			if !a.CreationTimestamp.IsZero() {
+				ms = append(ms, &metric.Metric{
+					Value: float64(a.CreationTimestamp.Unix()),
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createHPADeletionTimestamp() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_horizontalpodautoscaler_deletion_timestamp",
+		"Unix deletion timestamp",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := []*metric.Metric{}
+
+			if !a.DeletionTimestamp.IsZero() {
+				ms = append(ms, &metric.Metric{
+					Value: float64(a.DeletionTimestamp.Unix()),
+				})
 			}
 
 			return &metric.Family{

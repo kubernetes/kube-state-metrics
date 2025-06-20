@@ -387,7 +387,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 		}
 	}
 
-	telemetryMux := buildTelemetryServer(reg)
+	telemetryMux := buildTelemetryServer(reg, false, nil)
 
 	req2 := httptest.NewRequest("GET", "http://localhost:8081/metrics", nil)
 

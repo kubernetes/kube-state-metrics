@@ -100,7 +100,6 @@ func TestAuthFilter(t *testing.T) {
 			return false, nil
 		}
 		if strings.Contains(string(out), testMetric) {
-			// klog.InfoS("metrics available", "metric", string(out))
 			klog.InfoS("metrics fetched with bearer token")
 			// Signal the process to exit, since we know the metrics are being generated as expected.
 

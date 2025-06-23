@@ -184,6 +184,25 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !s.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(s.DeletionTimestamp.Unix()),
+					})
+				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

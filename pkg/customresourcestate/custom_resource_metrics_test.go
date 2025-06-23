@@ -83,7 +83,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 				Families: []compiledFamily{
 					{
 						Name: "kube_customresource_test_metrics",
-						Help: "metrics for testing",
+						Help: "metrics for testing for apps/v1/Deployment",
 						Each: &compiledInfo{},
 						Labels: map[string]string{
 							"customresource_group":   "apps",
@@ -146,7 +146,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 				Families: []compiledFamily{
 					{
 						Name: "apps_deployment_test_metrics",
-						Help: "metrics for testing",
+						Help: "metrics for testing for apps/v1/Deployment",
 						Each: &compiledInfo{},
 						Labels: map[string]string{
 							"customresource_group":   "apps",
@@ -208,7 +208,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 				Families: []compiledFamily{
 					{
 						Name: "apps_deployment_test_metrics",
-						Help: "metrics for testing",
+						Help: "metrics for testing for apps/v1/Deployment",
 						Each: &compiledInfo{},
 						Labels: map[string]string{
 							"customresource_group":   "apps",

@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics-unscheduled-pods-fetching
-    app.kubernetes.io/version: 2.15.0
+    app.kubernetes.io/version: 2.16.0
   name: kube-state-metrics-unscheduled-pods-fetching
   namespace: kube-system
 spec:
@@ -17,14 +17,14 @@ spec:
       labels:
         app.kubernetes.io/component: exporter
         app.kubernetes.io/name: kube-state-metrics-unscheduled-pods-fetching
-        app.kubernetes.io/version: 2.15.0
+        app.kubernetes.io/version: 2.16.0
     spec:
       automountServiceAccountToken: true
       containers:
       - args:
         - --resources=pods
         - --track-unscheduled-pods
-        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.15.0
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.16.0
         livenessProbe:
           httpGet:
             path: /livez

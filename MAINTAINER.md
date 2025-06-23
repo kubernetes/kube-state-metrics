@@ -2,7 +2,7 @@
 
 kube-state-metrics is welcoming contributions from the community. If you are interested in intensifying your contributions and becoming a maintainer, this doc describes the necessary steps.
 
-As part of the Kubernetes project, we use the community membership process as described [here](https://github.com/kubernetes/community/blob/master/community-membership.md). We do not adhere strictly to the numbers of contributions and reviews. Still as becoming a maintainer is a trust-based process and we desire positive outcomes for the project, we look for a long-term interest and engagement.
+As part of the Kubernetes project, we rely on the [community membership process](https://github.com/kubernetes/community/blob/master/community-membership.md). We do not adhere strictly to the numbers of contributions and reviews. Still as becoming a maintainer is a trust-based process and we desire positive outcomes for the project, we look for a long-term interest and engagement.
 
 ## Adding a new reviewer
 

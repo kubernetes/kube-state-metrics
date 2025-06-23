@@ -13,13 +13,13 @@ GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
-PROMETHEUS_VERSION = 2.55.1
-GO_VERSION = 1.24.1
+PROMETHEUS_VERSION = 3.4.1
+GO_VERSION = 1.24.4
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-MARKDOWNLINT_CLI2_VERSION = 0.17.2
+MARKDOWNLINT_CLI2_VERSION = 0.18.1
 
 DOCKER_CLI ?= docker
 PROMTOOL_CLI ?= promtool

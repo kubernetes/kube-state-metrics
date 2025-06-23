@@ -168,7 +168,7 @@ examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts
 
 examples/daemonsetsharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/daemonsetsharding.jsonnet scripts/vendor
 	mkdir -p examples/daemonsetsharding
-	${JSONETT_CLI} -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	${JSONNET_CLI} -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json

@@ -99,7 +99,6 @@ func TestAuthFilter(t *testing.T) {
 		if string(out) == "" {
 			return false, nil
 		}
-		// Note: we use count to make sure that only one metrics handler is running
 		if strings.Contains(string(out), testMetric) {
 			// klog.InfoS("metrics available", "metric", string(out))
 			klog.InfoS("metrics fetched with bearer token")

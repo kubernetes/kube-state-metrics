@@ -1,3 +1,18 @@
+## v2.16.0 / 2025-06-23
+
+## Note
+
+* This release builds with Golang `v1.24.4`
+* This release builds with `k8s.io/client-go`: `v0.32.6`
+
+* [FEATURE] Add a `reclaim_policy` label to the `kube_persistentvolume_info` metric by @SuperQ in <https://github.com/kubernetes/kube-state-metrics/pull/2615>
+* [FEATURE] Use dlclark/regexp2 over standard library's package to support lookarounds by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2616>
+* [BUGFIX] Report correct values in `kube_pod_status_reason` metric by @carlosmorenokm1 in <https://github.com/kubernetes/kube-state-metrics/pull/2644>
+* [FEATURE] Add add `pathType` to `kube_ingress_path` by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2670>
+* [FEATURE] Introduce object limits by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2626>
+* [BUGFIX] Close reflectors once their corresponding CRDs are dropped by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2672>
+* [FEATURE] Incorporate `WithAuthenticationAndAuthorization` to support endpoint authn/z by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2686>
+
 ## v2.15.0 / 2025-02-03
 
 ## Note

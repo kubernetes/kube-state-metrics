@@ -80,6 +80,7 @@ type Options struct {
 	TrackUnscheduledPods bool  `yaml:"track_unscheduled_pods"`
 	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
 	ObjectLimit          int64 `yaml:"object_limit"`
+	AuthFilter           bool  `yaml:"auth_filter"`
 }
 
 // GetConfigFile is the getter for --config value.
@@ -150,6 +151,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
 	o.cmd.Flags().StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
+	o.cmd.Flags().BoolVar(&o.AuthFilter, "auth-filter", false, "If true, requires authentication and authorization through Kubernetes API to access metrics endpoints")
 	o.cmd.Flags().BoolVar(&o.AutoGoMemlimit, "auto-gomemlimit", false, "Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)")
 	o.cmd.Flags().Float64Var(&o.AutoGoMemlimitRatio, "auto-gomemlimit-ratio", float64(0.9), "The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")

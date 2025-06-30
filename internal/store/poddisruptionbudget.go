@@ -185,6 +185,26 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_poddisruptionbudget_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !p.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(p.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

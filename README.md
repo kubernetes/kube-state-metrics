@@ -68,9 +68,8 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 #### Kubernetes Version
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
-Kubernetes clusters. The supported Kubernetes cluster version is determined by `client-go`.
-The compatibility matrix for client-go and Kubernetes cluster can be found
-[here](https://github.com/kubernetes/client-go#compatibility-matrix).
+Kubernetes clusters. The supported Kubernetes cluster version is determined by
+[`client-go`](https://github.com/kubernetes/client-go#compatibility-matrix).
 All additional compatibility is only best effort, or happens to still/already be supported.
 
 #### Compatibility matrix
@@ -80,11 +79,11 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.11.0**        | v1.28                        |
 | **v2.12.0**        | v1.29                        |
 | **v2.13.0**        | v1.30                        |
 | **v2.14.0**        | v1.31                        |
 | **v2.15.0**        | v1.32                        |
+| **v2.16.0**        | v1.32                        |
 | **main**           | v1.32                        |
 
 #### Resource group version compatibility
@@ -97,8 +96,8 @@ release.
 
 The latest container image can be found at:
 
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.15.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
-* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.15.0)
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.16.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* [Multi-architecture images](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.16.0)
 
 ### Metrics Documentation
 
@@ -170,7 +169,7 @@ kube_state_metrics_total_shards 1
 ```
 
 `kube_state_metrics_build_info` is used to expose version and other build information. For more usage about the info pattern,
-please check the blog post [here](https://www.robustperception.io/exposing-the-software-version-to-prometheus).
+please check this [blog post](https://www.robustperception.io/exposing-the-software-version-to-prometheus).
 Sharding metrics expose `--shard` and `--total-shards` flags and can be used to validate
 run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/prometheus-alerting-rules).
 

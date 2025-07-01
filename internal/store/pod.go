@@ -92,6 +92,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
+		createPodStatusUnscheduledTimeFamilyGenerator(),
 		createPodTolerationsFamilyGenerator(),
 		createPodNodeSelectorsFamilyGenerator(),
 		createPodServiceAccountFamilyGenerator(),
@@ -1645,6 +1646,33 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       1,
+					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodStatusUnscheduledTimeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_status_unscheduled_time",
+		"Unix timestamp when pod moved into unscheduled status",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, c := range p.Status.Conditions {
+				if c.Type == v1.PodScheduled && c.Status == v1.ConditionFalse {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(c.LastTransitionTime.Unix()),
 					})
 				}
 			}

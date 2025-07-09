@@ -149,6 +149,42 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			hash := md5HashAsMetricValue(configFile)
 			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
 		}
+
+		if opts.EnableConfigFileOverwrite {
+			// If the config file is set, we will overwrite the opts with the config file.
+			// This is only needed for types that are a slice of structs because the default behaviour of yaml.Unmarshal is to append instead of overwrite
+			config := options.NewOptions()
+			err = yaml.Unmarshal(configFile, &config)
+			if err == nil {
+				if len(config.Resources) > 0 {
+					opts.Resources = options.ResourceSet{}
+					for resource := range config.Resources {
+						opts.Resources[resource] = struct{}{}
+					}
+				}
+
+				if len(config.MetricAllowlist) > 0 {
+					opts.MetricAllowlist = options.MetricSet{}
+					for metric := range config.MetricAllowlist {
+						opts.MetricAllowlist[metric] = struct{}{}
+					}
+				}
+
+				if len(config.MetricDenylist) > 0 {
+					opts.MetricDenylist = options.MetricSet{}
+					for metric := range config.MetricDenylist {
+						opts.MetricDenylist[metric] = struct{}{}
+					}
+				}
+
+				if len(config.MetricOptInList) > 0 {
+					opts.MetricOptInList = options.MetricSet{}
+					for metric := range config.MetricOptInList {
+						opts.MetricOptInList[metric] = struct{}{}
+					}
+				}
+			}
+		}
 	}
 
 	if opts.AutoGoMemlimit {

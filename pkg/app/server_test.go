@@ -981,3 +981,96 @@ func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fiel
 		},
 	}
 }
+func TestConfigureResourcesAndMetrics(t *testing.T) {
+	// Prepare a config file in YAML format
+	configYAML := `
+"resources":
+  "pod": {}
+  "service": {}
+"metric_allowlist":
+  "kube_pod_info": {}
+"metric_denylist":
+  "kube_pod_labels": {}
+"metric_opt_in_list":
+  "kube_pod_status_phase": {}
+"labels_allow_list":
+  "labelX": 
+    - foo 
+    - bar
+"annotations_allow_list":
+  "annotationY": 
+     - baz
+`
+	opts := options.NewOptions()
+	// Set some initial values to be overwritten
+	opts.Resources = options.ResourceSet{"oldresource": {}}
+	opts.MetricAllowlist = options.MetricSet{"oldallow": {}}
+	opts.MetricDenylist = options.MetricSet{"olddeny": {}}
+	opts.MetricOptInList = options.MetricSet{"oldoptin": {}}
+	opts.LabelsAllowList = options.LabelsAllowList{"oldlabel": {"oldvalue"}}
+	opts.AnnotationsAllowList = options.LabelsAllowList{"oldannotation": {"oldvalue"}}
+
+	newOpts := configureResourcesAndMetrics(opts, []byte(configYAML))
+
+	// Check resources
+	expectedResources := []string{"pod", "service"}
+	for _, r := range expectedResources {
+		if _, ok := newOpts.Resources[r]; !ok {
+			t.Errorf("expected resource %q in opts.Resources", r)
+		}
+	}
+	if _, ok := newOpts.Resources["oldresource"]; ok {
+		t.Errorf("expected oldresource to be overwritten")
+	}
+
+	// Check metric allowlist
+	if _, ok := newOpts.MetricAllowlist["kube_pod_info"]; !ok {
+		t.Errorf("expected kube_pod_info in MetricAllowlist")
+	}
+	if _, ok := newOpts.MetricAllowlist["oldallow"]; ok {
+		t.Errorf("expected oldallow to be overwritten")
+	}
+
+	// Check metric denylist
+	if _, ok := newOpts.MetricDenylist["kube_pod_labels"]; !ok {
+		t.Errorf("expected kube_pod_labels in MetricDenylist")
+	}
+	if _, ok := newOpts.MetricDenylist["olddeny"]; ok {
+		t.Errorf("expected olddeny to be overwritten")
+	}
+
+	// Check metric opt-in list
+	if _, ok := newOpts.MetricOptInList["kube_pod_status_phase"]; !ok {
+		t.Errorf("expected kube_pod_status_phase in MetricOptInList")
+	}
+	if _, ok := newOpts.MetricOptInList["oldoptin"]; ok {
+		t.Errorf("expected oldoptin to be overwritten")
+	}
+
+	// Check labels allow list
+	if vals, ok := newOpts.LabelsAllowList["labelX"]; !ok || len(vals) != 2 || vals[0] != "foo" || vals[1] != "bar" {
+		t.Errorf("expected labelX with values [foo bar], got %v", vals)
+	}
+	if vals, ok := newOpts.LabelsAllowList["oldlabel"]; ok {
+		t.Errorf("expected oldlabel to be overwritten, got %v", vals)
+	}
+
+	// Check annotations allow list
+	if vals, ok := newOpts.AnnotationsAllowList["annotationY"]; !ok || len(vals) != 1 || vals[0] != "baz" {
+		t.Errorf("expected annotationY with value [baz], got %v", vals)
+	}
+	if vals, ok := newOpts.AnnotationsAllowList["oldannotation"]; ok {
+		t.Errorf("expected oldannotation to be overwritten, got %v", vals)
+	}
+
+}
+
+func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
+	opts := options.NewOptions()
+	invalidYAML := []byte("invalid: [unclosed")
+	// Should not panic or overwrite opts
+	result := configureResourcesAndMetrics(opts, invalidYAML)
+	if result != opts {
+		t.Errorf("expected opts to be returned unchanged on invalid YAML")
+	}
+}

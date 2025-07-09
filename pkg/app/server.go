@@ -149,6 +149,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			hash := md5HashAsMetricValue(configFile)
 			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
 		}
+		opts = configureResourcesAndMetrics(opts, configFile)
 	}
 
 	if opts.AutoGoMemlimit {
@@ -264,9 +265,12 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
 		return fmt.Errorf("failed to set up annotations allowlist: %v", err)
 	}
+	klog.InfoS("Using annotations allowlist", "annotationsAllowList", opts.AnnotationsAllowList)
+
 	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
 		return fmt.Errorf("failed to set up labels allowlist: %v", err)
 	}
+	klog.InfoS("Using labels allowlist", "labelsAllowList", opts.LabelsAllowList)
 
 	ksmMetricsRegistry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
@@ -376,6 +380,59 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	klog.InfoS("Exited")
 	return nil
+}
+
+func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {
+	// If the config file is set, we will overwrite the opts with the config file.
+	// This is only needed for maps because the default behaviour of yaml.Unmarshal is to append keys (and overwrite any conflicting ones).
+	config := options.NewOptions()
+	err := yaml.Unmarshal(configFile, &config)
+	if err == nil {
+		if len(config.Resources) > 0 {
+			opts.Resources = options.ResourceSet{}
+			for resource := range config.Resources {
+				opts.Resources[resource] = struct{}{}
+			}
+		}
+
+		if len(config.MetricAllowlist) > 0 {
+			opts.MetricAllowlist = options.MetricSet{}
+			for metric := range config.MetricAllowlist {
+				opts.MetricAllowlist[metric] = struct{}{}
+			}
+		}
+
+		if len(config.MetricDenylist) > 0 {
+			opts.MetricDenylist = options.MetricSet{}
+			for metric := range config.MetricDenylist {
+				opts.MetricDenylist[metric] = struct{}{}
+			}
+		}
+
+		if len(config.MetricOptInList) > 0 {
+			opts.MetricOptInList = options.MetricSet{}
+			for metric := range config.MetricOptInList {
+				opts.MetricOptInList[metric] = struct{}{}
+			}
+		}
+
+		if len(config.LabelsAllowList) > 0 {
+			opts.LabelsAllowList = options.LabelsAllowList{}
+			for label, value := range config.LabelsAllowList {
+				opts.LabelsAllowList[label] = value
+			}
+		}
+
+		if len(config.AnnotationsAllowList) > 0 {
+			opts.AnnotationsAllowList = options.LabelsAllowList{}
+			for annotation, value := range config.AnnotationsAllowList {
+				opts.AnnotationsAllowList[annotation] = value
+			}
+		}
+	} else {
+		klog.ErrorS(err, "failed to unmarshal configFile")
+	}
+	return opts
 }
 
 func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {

@@ -59,8 +59,7 @@ type Options struct {
 	TLSConfig                string   `yaml:"tls_config"`
 	TelemetryHost            string   `yaml:"telemetry_host"`
 
-	Config                    string
-	EnableConfigFileOverwrite bool `yaml:"enable_config_file_overwrite"`
+	Config string
 
 	Namespaces              NamespaceList `yaml:"namespaces"`
 	NamespacesDenylist      NamespaceList `yaml:"namespaces_denylist"`
@@ -164,7 +163,6 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.cmd.Flags().StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().StringVar(&o.Config, "config", "", "Path to the kube-state-metrics options config file")
-	o.cmd.Flags().BoolVar(&o.EnableConfigFileOverwrite, "enable-config-file-overwrite", false, "If true, the config file will overwrite the command line flags. This is useful for overwriting the command line flags with a config file, e.g. in a container environment where the command line flags are not easily accessible.")
 	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
 	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
 	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the labels metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")

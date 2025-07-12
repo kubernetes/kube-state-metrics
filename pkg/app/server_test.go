@@ -259,6 +259,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_status_scheduled [STABLE] Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time [STABLE] Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable [STABLE] Describes the unschedulable status for the pod.
+# HELP kube_pod_status_unscheduled_time Unix timestamp when pod moved into unscheduled status
 # HELP kube_pod_tolerations Information about the pod tolerations
 # TYPE kube_pod_annotations gauge
 # TYPE kube_pod_completion_time gauge
@@ -312,6 +313,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
+# TYPE kube_pod_status_unscheduled_time gauge
 # TYPE kube_pod_tolerations gauge
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",image_spec="k8s.gcr.io/hyperkube2_spec",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",image_spec="k8s.gcr.io/hyperkube3_spec",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1

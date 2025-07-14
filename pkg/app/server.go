@@ -125,29 +125,33 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	})
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
-
 	got := options.GetConfigFile(*opts)
 	if got != "" {
-		configFile, err := os.ReadFile(filepath.Clean(got))
-		if err != nil {
-			return fmt.Errorf("failed to read opts config file: %v", err)
-		}
-		// NOTE: Config value will override default values of intersecting options.
-		err = yaml.Unmarshal(configFile, opts)
-		if err != nil {
-			// DO NOT end the process.
-			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
-			klog.ErrorS(err, "failed to unmarshal opts config file")
-			// Wait for the next reload.
-			klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
-			klog.InfoS("waiting for config to be fixed")
-			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
-			<-ctx.Done()
+		if _, err := os.Stat(filepath.Clean(got)); os.IsNotExist(err) {
+			klog.InfoS("config file does not exist, ignoring", "file", got)
 		} else {
-			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
-			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
-			hash := md5HashAsMetricValue(configFile)
-			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+			configFile, err := os.ReadFile(filepath.Clean(got))
+			if err != nil {
+				return fmt.Errorf("failed to read opts config file: %v", err)
+			}
+			// NOTE: Config value will override default values of intersecting options.
+			err = yaml.Unmarshal(configFile, opts)
+
+			if err != nil {
+				// DO NOT end the process.
+				// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
+				klog.ErrorS(err, "failed to unmarshal opts config file")
+				// Wait for the next reload.
+				klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
+				klog.InfoS("waiting for config to be fixed")
+				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
+				<-ctx.Done()
+			} else {
+				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
+				configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
+				hash := md5HashAsMetricValue(configFile)
+				configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+			}
 		}
 	}
 

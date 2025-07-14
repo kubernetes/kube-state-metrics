@@ -43,17 +43,23 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	if file := options.GetConfigFile(*opts); file != "" {
 		cfgViper := viper.New()
 		cfgViper.SetConfigType("yaml")
 		cfgViper.SetConfigFile(file)
-		if err := cfgViper.ReadInConfig(); err != nil {
+		var err error
+		if err = cfgViper.ReadInConfig(); err != nil {
 			if errors.Is(err, viper.ConfigFileNotFoundError{}) {
-				klog.ErrorS(err, "Options configuration file not found", "file", file)
+				klog.InfoS("Options configuration file not found at startup", "file", file)
+			} else if _, err = os.Stat(filepath.Clean(file)); os.IsNotExist(err) {
+				// TODO: Remove this check once viper.ConfigFileNotFoundError is working as expected, see this issue -
+				// https://github.com/spf13/viper/issues/1783
+				klog.InfoS("Options configuration file not found at startup", "file", file)
 			} else {
 				klog.ErrorS(err, "Error reading options configuration file", "file", file)
+				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		cfgViper.OnConfigChange(func(e fsnotify.Event) {
 			klog.InfoS("Changes detected", "name", e.Name)
@@ -65,13 +71,15 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		})
 		cfgViper.WatchConfig()
 
-		// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
-		configFile, err := os.ReadFile(filepath.Clean(file))
-		if err != nil {
-			klog.ErrorS(err, "failed to read options configuration file", "file", file)
-		}
+		if err == nil {
+			// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
+			configFile, err := os.ReadFile(filepath.Clean(file))
+			if err != nil {
+				klog.ErrorS(err, "failed to read options configuration file", "file", file)
+			}
 
-		yaml.Unmarshal(configFile, opts)
+			yaml.Unmarshal(configFile, opts)
+		}
 	}
 	if opts.CustomResourceConfigFile != "" {
 		crcViper := viper.New()

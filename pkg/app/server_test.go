@@ -981,3 +981,70 @@ func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fiel
 		},
 	}
 }
+func TestConfigureResourcesAndMetrics(t *testing.T) {
+	// Prepare a config file in YAML format
+	configYAML := `
+resources:
+  pod: {}
+  service: {}
+metricAllowlist:
+  kube_pod_info: {}
+metricDenylist:
+  kube_pod_labels: {}
+metricOptInList:
+  kube_pod_status_phase: {}
+`
+	opts := options.NewOptions()
+	// Set some initial values to be overwritten
+	opts.Resources = options.ResourceSet{"oldresource": {}}
+	opts.MetricAllowlist = options.MetricSet{"oldallow": {}}
+	opts.MetricDenylist = options.MetricSet{"olddeny": {}}
+	opts.MetricOptInList = options.MetricSet{"oldoptin": {}}
+
+	newOpts := configureResourcesAndMetrics(opts, []byte(configYAML))
+
+	// Check resources
+	expectedResources := []string{"pod", "service"}
+	for _, r := range expectedResources {
+		if _, ok := newOpts.Resources[r]; !ok {
+			t.Errorf("expected resource %q in opts.Resources", r)
+		}
+	}
+	if _, ok := newOpts.Resources["oldresource"]; ok {
+		t.Errorf("expected oldresource to be overwritten")
+	}
+
+	// Check metric allowlist
+	if _, ok := newOpts.MetricAllowlist["kube_pod_info"]; !ok {
+		t.Errorf("expected kube_pod_info in MetricAllowlist")
+	}
+	if _, ok := newOpts.MetricAllowlist["oldallow"]; ok {
+		t.Errorf("expected oldallow to be overwritten")
+	}
+
+	// Check metric denylist
+	if _, ok := newOpts.MetricDenylist["kube_pod_labels"]; !ok {
+		t.Errorf("expected kube_pod_labels in MetricDenylist")
+	}
+	if _, ok := newOpts.MetricDenylist["olddeny"]; ok {
+		t.Errorf("expected olddeny to be overwritten")
+	}
+
+	// Check metric opt-in list
+	if _, ok := newOpts.MetricOptInList["kube_pod_status_phase"]; !ok {
+		t.Errorf("expected kube_pod_status_phase in MetricOptInList")
+	}
+	if _, ok := newOpts.MetricOptInList["oldoptin"]; ok {
+		t.Errorf("expected oldoptin to be overwritten")
+	}
+}
+
+func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
+	opts := options.NewOptions()
+	invalidYAML := []byte("invalid: [unclosed")
+	// Should not panic or overwrite opts
+	result := configureResourcesAndMetrics(opts, invalidYAML)
+	if result != opts {
+		t.Errorf("expected opts to be returned unchanged on invalid YAML")
+	}
+}

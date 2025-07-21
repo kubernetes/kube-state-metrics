@@ -264,9 +264,13 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
 		return fmt.Errorf("failed to set up annotations allowlist: %v", err)
+	} else {
+		klog.InfoS("Using annotations allowlist", "annotationsAllowList", opts.AnnotationsAllowList)
 	}
 	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
 		return fmt.Errorf("failed to set up labels allowlist: %v", err)
+	} else {
+		klog.InfoS("Using labels allowlist", "labelsAllowList", opts.LabelsAllowList)
 	}
 
 	ksmMetricsRegistry.MustRegister(
@@ -381,7 +385,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {
 	// If the config file is set, we will overwrite the opts with the config file.
-	// This is only needed for types that are a slice of structs because the default behaviour of yaml.Unmarshal is to append instead of overwrite
+	// This is only needed for maps because the default behaviour of yaml.Unmarshal is to append keys (and overwrite any conflicting ones).
 	config := options.NewOptions()
 	err := yaml.Unmarshal(configFile, &config)
 	if err == nil {
@@ -410,6 +414,20 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 			opts.MetricOptInList = options.MetricSet{}
 			for metric := range config.MetricOptInList {
 				opts.MetricOptInList[metric] = struct{}{}
+			}
+		}
+
+		if len(config.LabelsAllowList) > 0 {
+			opts.LabelsAllowList = options.LabelsAllowList{}
+			for label, value := range config.LabelsAllowList {
+				opts.LabelsAllowList[label] = value
+			}
+		}
+
+		if len(config.AnnotationsAllowList) > 0 {
+			opts.AnnotationsAllowList = options.LabelsAllowList{}
+			for annotation, value := range config.AnnotationsAllowList {
+				opts.AnnotationsAllowList[annotation] = value
 			}
 		}
 	} else {

@@ -985,12 +985,16 @@ func TestConfigureResourcesAndMetrics(t *testing.T) {
 resources:
   pod: {}
   service: {}
-metricAllowlist:
+metric_allowlist:
   kube_pod_info: {}
-metricDenylist:
+metric_denylist:
   kube_pod_labels: {}
-metricOptInList:
+metric_opt_in_list:
   kube_pod_status_phase: {}
+labels_allow_list:
+	labelX: ["foo", "bar"]
+annotations_allow_list:
+	annotationY: ["baz"]
 `
 	opts := options.NewOptions()
 	// Set some initial values to be overwritten
@@ -998,6 +1002,8 @@ metricOptInList:
 	opts.MetricAllowlist = options.MetricSet{"oldallow": {}}
 	opts.MetricDenylist = options.MetricSet{"olddeny": {}}
 	opts.MetricOptInList = options.MetricSet{"oldoptin": {}}
+	opts.LabelsAllowList = options.LabelsAllowList{"oldlabel": {"oldvalue"}}
+	opts.AnnotationsAllowList = options.LabelsAllowList{"oldannotation": {"oldvalue"}
 
 	newOpts := configureResourcesAndMetrics(opts, []byte(configYAML))
 
@@ -1035,6 +1041,25 @@ metricOptInList:
 	if _, ok := newOpts.MetricOptInList["oldoptin"]; ok {
 		t.Errorf("expected oldoptin to be overwritten")
 	}
+
+	// Check labels allow list
+	if vals, ok := newOpts.LabelsAllowList["labelX"]; !ok || len
+(vals) != 2 || vals[0] != "foo" || vals[1] != "bar" {
+		t.Errorf("expected labelX with values [foo bar], got %v", vals)
+	}
+	if vals, ok := newOpts.LabelsAllowList["oldlabel"]; ok {
+		t.Errorf("expected oldlabel to be overwritten, got %v", vals)
+	}
+	
+	// Check annotations allow list
+	if vals, ok := newOpts.AnnotationsAllowList["annotationY"]; !ok || len
+(vals) != 1 || vals[0] != "baz" {
+		t.Errorf("expected annotationY with value [baz], got %v", vals)
+	}
+	if vals, ok := newOpts.AnnotationsAllowList["oldannotation"]; ok {
+		t.Errorf("expected oldannotation to be overwritten, got %v", vals)
+	}
+
 }
 
 func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {

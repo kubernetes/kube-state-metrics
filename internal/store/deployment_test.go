@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -57,6 +58,8 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_status_replicas gauge
 		# HELP kube_deployment_status_replicas_ready [STABLE] The number of ready replicas per deployment.
 		# TYPE kube_deployment_status_replicas_ready gauge
+	    # HELP kube_deployment_status_replicas_terminating The number of terminating replicas per deployment.
+        # TYPE kube_deployment_status_replicas_terminating gauge
 		# HELP kube_deployment_status_replicas_available [STABLE] The number of available replicas per deployment.
 		# TYPE kube_deployment_status_replicas_available gauge
 		# HELP kube_deployment_status_replicas_unavailable [STABLE] The number of unavailable replicas per deployment.
@@ -96,6 +99,7 @@ func TestDeploymentStore(t *testing.T) {
 					AvailableReplicas:   10,
 					UnavailableReplicas: 5,
 					UpdatedReplicas:     2,
+					TerminatingReplicas: ptr.To[int32](3),
 					ObservedGeneration:  111,
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionTrue},
@@ -126,6 +130,7 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
         kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
         kube_deployment_status_replicas_ready{deployment="depl1",namespace="ns1"} 10
+        kube_deployment_status_replicas_terminating{deployment="depl1",namespace="ns1"} 3
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="true"} 1
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="true"} 1
         kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="false"} 0
@@ -150,6 +155,7 @@ func TestDeploymentStore(t *testing.T) {
 					AvailableReplicas:   5,
 					UnavailableReplicas: 0,
 					UpdatedReplicas:     1,
+					TerminatingReplicas: nil,
 					ObservedGeneration:  1111,
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse},

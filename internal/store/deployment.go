@@ -161,6 +161,26 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_status_terminating_replicas",
+			"The number of terminating replicas per deployment.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(r *v1.Deployment) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if r.Status.TerminatingReplicas != nil {
+					ms = append(ms, &metric.Metric{
+						Value: float64(*r.Status.TerminatingReplicas),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_status_observed_generation",
 			"The generation observed by the deployment controller.",
 			metric.Gauge,

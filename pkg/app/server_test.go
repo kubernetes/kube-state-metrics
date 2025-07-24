@@ -1003,7 +1003,7 @@ annotations_allow_list:
 	opts.MetricDenylist = options.MetricSet{"olddeny": {}}
 	opts.MetricOptInList = options.MetricSet{"oldoptin": {}}
 	opts.LabelsAllowList = options.LabelsAllowList{"oldlabel": {"oldvalue"}}
-	opts.AnnotationsAllowList = options.LabelsAllowList{"oldannotation": {"oldvalue"}
+	opts.AnnotationsAllowList = options.LabelsAllowList{"oldannotation": {"oldvalue"}}
 
 	newOpts := configureResourcesAndMetrics(opts, []byte(configYAML))
 
@@ -1050,7 +1050,7 @@ annotations_allow_list:
 	if vals, ok := newOpts.LabelsAllowList["oldlabel"]; ok {
 		t.Errorf("expected oldlabel to be overwritten, got %v", vals)
 	}
-	
+
 	// Check annotations allow list
 	if vals, ok := newOpts.AnnotationsAllowList["annotationY"]; !ok || len
 (vals) != 1 || vals[0] != "baz" {

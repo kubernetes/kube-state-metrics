@@ -113,6 +113,26 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_replicaset_status_terminating_replicas",
+			"The number of terminating replicas per ReplicaSet.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapReplicaSetFunc(func(r *v1.ReplicaSet) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if r.Status.TerminatingReplicas != nil {
+					ms = append(ms, &metric.Metric{
+						Value: float64(*r.Status.TerminatingReplicas),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_replicaset_status_observed_generation",
 			"The generation observed by the ReplicaSet controller.",
 			metric.Gauge,

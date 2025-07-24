@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -43,11 +44,13 @@ func TestReplicaSetStore(t *testing.T) {
 		# HELP kube_replicaset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
 		# TYPE kube_replicaset_metadata_generation gauge
 		# HELP kube_replicaset_status_replicas [STABLE] The number of replicas per ReplicaSet.
+        # HELP kube_replicaset_status_terminating_replicas The number of terminating replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_replicas gauge
 		# HELP kube_replicaset_status_fully_labeled_replicas [STABLE] The number of fully labeled replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_fully_labeled_replicas gauge
 		# HELP kube_replicaset_status_ready_replicas [STABLE] The number of ready replicas per ReplicaSet.
 		# TYPE kube_replicaset_status_ready_replicas gauge
+        # TYPE kube_replicaset_status_terminating_replicas gauge
 		# HELP kube_replicaset_status_observed_generation [STABLE] The generation observed by the ReplicaSet controller.
 		# TYPE kube_replicaset_status_observed_generation gauge
 		# HELP kube_replicaset_spec_replicas [STABLE] Number of desired pods for a ReplicaSet.
@@ -80,6 +83,7 @@ func TestReplicaSetStore(t *testing.T) {
 					Replicas:             5,
 					FullyLabeledReplicas: 10,
 					ReadyReplicas:        5,
+					TerminatingReplicas:  ptr.To[int32](3),
 					ObservedGeneration:   1,
 				},
 				Spec: v1.ReplicaSetSpec{
@@ -93,6 +97,7 @@ func TestReplicaSetStore(t *testing.T) {
 				kube_replicaset_status_observed_generation{namespace="ns1",replicaset="rs1"} 1
 				kube_replicaset_status_fully_labeled_replicas{namespace="ns1",replicaset="rs1"} 10
 				kube_replicaset_status_ready_replicas{namespace="ns1",replicaset="rs1"} 5
+                kube_replicaset_status_terminating_replicas{namespace="ns1",replicaset="rs1"} 3
 				kube_replicaset_spec_replicas{namespace="ns1",replicaset="rs1"} 5
 				kube_replicaset_owner{namespace="ns1",owner_is_controller="true",owner_kind="Deployment",owner_name="dp-name",replicaset="rs1"} 1
 `,
@@ -112,6 +117,7 @@ func TestReplicaSetStore(t *testing.T) {
 					Replicas:             0,
 					FullyLabeledReplicas: 5,
 					ReadyReplicas:        0,
+					TerminatingReplicas:  nil,
 					ObservedGeneration:   5,
 				},
 				Spec: v1.ReplicaSetSpec{

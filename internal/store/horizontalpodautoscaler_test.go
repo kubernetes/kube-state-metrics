@@ -18,6 +18,7 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	autoscaling "k8s.io/api/autoscaling/v2"
 	v1 "k8s.io/api/core/v1"
@@ -46,6 +47,8 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_horizontalpodautoscaler_status_condition [STABLE] The condition of this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_current_replicas [STABLE] Current number of replicas of pods managed by this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_desired_replicas [STABLE] Desired number of replicas of pods managed by this autoscaler.
+		# HELP kube_horizontalpodautoscaler_created Unix creation timestamp
+		# HELP kube_horizontalpodautoscaler_deletion_timestamp Unix deletion timestamp
 		# TYPE kube_horizontalpodautoscaler_info gauge
 		# TYPE kube_horizontalpodautoscaler_annotations gauge
 		# TYPE kube_horizontalpodautoscaler_labels gauge
@@ -57,15 +60,19 @@ func TestHPAStore(t *testing.T) {
 		# TYPE kube_horizontalpodautoscaler_status_condition gauge
 		# TYPE kube_horizontalpodautoscaler_status_current_replicas gauge
 		# TYPE kube_horizontalpodautoscaler_status_desired_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_created gauge
+		# TYPE kube_horizontalpodautoscaler_deletion_timestamp gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
 			// Verify populating base metric.
 			Obj: &autoscaling.HorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
-					Generation: 2,
-					Name:       "hpa1",
-					Namespace:  "ns1",
+					Generation:        2,
+					Name:              "hpa1",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+					Namespace:         "ns1",
 					Labels: map[string]string{
 						"app": "foobar",
 					},
@@ -233,6 +240,8 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa1",namespace="ns1",status="unknown"} 0
 				kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_created{horizontalpodautoscaler="hpa1",namespace="ns1"} 1.5e+09
+				kube_horizontalpodautoscaler_deletion_timestamp{horizontalpodautoscaler="hpa1",namespace="ns1"} 1.8e+09
 			`,
 			MetricNames: []string{
 				"kube_horizontalpodautoscaler_info",
@@ -246,6 +255,8 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_status_condition",
 				"kube_horizontalpodautoscaler_annotations",
 				"kube_horizontalpodautoscaler_labels",
+				"kube_horizontalpodautoscaler_created",
+				"kube_horizontalpodautoscaler_deletion_timestamp",
 			},
 		},
 		{
@@ -255,9 +266,11 @@ func TestHPAStore(t *testing.T) {
 			},
 			Obj: &autoscaling.HorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
-					Generation: 2,
-					Name:       "hpa2",
-					Namespace:  "ns1",
+					Generation:        2,
+					Name:              "hpa2",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+					Namespace:         "ns1",
 					Labels: map[string]string{
 						"app": "foobar",
 					},
@@ -408,6 +421,8 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa2",namespace="ns1",status="unknown"} 0
 				kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa2",namespace="ns1"} 2
+				kube_horizontalpodautoscaler_created{horizontalpodautoscaler="hpa2",namespace="ns1"} 1.5e+09
+				kube_horizontalpodautoscaler_deletion_timestamp{horizontalpodautoscaler="hpa2",namespace="ns1"} 1.8e+09
 			`,
 			MetricNames: []string{
 				"kube_horizontalpodautoscaler_info",
@@ -421,6 +436,8 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_status_condition",
 				"kube_horizontalpodautoscaler_annotation",
 				"kube_horizontalpodautoscaler_labels",
+				"kube_horizontalpodautoscaler_created",
+				"kube_horizontalpodautoscaler_deletion_timestamp",
 			},
 		},
 	}

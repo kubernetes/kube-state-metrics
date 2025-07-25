@@ -264,14 +264,13 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
 		return fmt.Errorf("failed to set up annotations allowlist: %v", err)
-	} else {
-		klog.InfoS("Using annotations allowlist", "annotationsAllowList", opts.AnnotationsAllowList)
 	}
+	klog.InfoS("Using annotations allowlist", "annotationsAllowList", opts.AnnotationsAllowList)
+
 	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
 		return fmt.Errorf("failed to set up labels allowlist: %v", err)
-	} else {
-		klog.InfoS("Using labels allowlist", "labelsAllowList", opts.LabelsAllowList)
 	}
+	klog.InfoS("Using labels allowlist", "labelsAllowList", opts.LabelsAllowList)
 
 	ksmMetricsRegistry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),

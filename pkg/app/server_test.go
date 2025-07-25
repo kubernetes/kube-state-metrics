@@ -982,19 +982,22 @@ func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fiel
 func TestConfigureResourcesAndMetrics(t *testing.T) {
 	// Prepare a config file in YAML format
 	configYAML := `
-resources:
-  pod: {}
-  service: {}
-metric_allowlist:
-  kube_pod_info: {}
-metric_denylist:
-  kube_pod_labels: {}
-metric_opt_in_list:
-  kube_pod_status_phase: {}
-labels_allow_list:
-	labelX: ["foo", "bar"]
-annotations_allow_list:
-	annotationY: ["baz"]
+"resources":
+  "pod": {}
+  "service": {}
+"metric_allowlist":
+  "kube_pod_info": {}
+"metric_denylist":
+  "kube_pod_labels": {}
+"metric_opt_in_list":
+  "kube_pod_status_phase": {}
+"labels_allow_list":
+  "labelX": 
+    - foo 
+    - bar
+"annotations_allow_list":
+  "annotationY": 
+     - baz
 `
 	opts := options.NewOptions()
 	// Set some initial values to be overwritten

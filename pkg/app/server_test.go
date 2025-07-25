@@ -1043,8 +1043,7 @@ annotations_allow_list:
 	}
 
 	// Check labels allow list
-	if vals, ok := newOpts.LabelsAllowList["labelX"]; !ok || len
-(vals) != 2 || vals[0] != "foo" || vals[1] != "bar" {
+	if vals, ok := newOpts.LabelsAllowList["labelX"]; !ok || len(vals) != 2 || vals[0] != "foo" || vals[1] != "bar" {
 		t.Errorf("expected labelX with values [foo bar], got %v", vals)
 	}
 	if vals, ok := newOpts.LabelsAllowList["oldlabel"]; ok {
@@ -1052,8 +1051,7 @@ annotations_allow_list:
 	}
 
 	// Check annotations allow list
-	if vals, ok := newOpts.AnnotationsAllowList["annotationY"]; !ok || len
-(vals) != 1 || vals[0] != "baz" {
+	if vals, ok := newOpts.AnnotationsAllowList["annotationY"]; !ok || len(vals) != 1 || vals[0] != "baz" {
 		t.Errorf("expected annotationY with value [baz], got %v", vals)
 	}
 	if vals, ok := newOpts.AnnotationsAllowList["oldannotation"]; ok {

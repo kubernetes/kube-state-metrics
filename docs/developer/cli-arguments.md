@@ -44,7 +44,7 @@ Flags:
       --auth-filter                                If true, requires authentication and authorization through Kubernetes API to access metrics endpoints
       --auto-gomemlimit                            Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)
       --auto-gomemlimit-ratio float                The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental) (default 0.9)
-      --config string                              Path to the kube-state-metrics options config file
+      --config string                              Path to the kube-state-metrics options config file, which is a YAML file that contains the options to be used by kube-state-metrics. If this flag is set, the values in the yaml file override the command line flags for options.
       --custom-resource-state-config string        Inline Custom Resource State Metrics config YAML (experimental)
       --custom-resource-state-config-file string   Path to a Custom Resource State Metrics config file (experimental)
       --custom-resource-state-only                 Only provide Custom Resource State metrics (experimental)

@@ -45,8 +45,10 @@ Flags:
       --auto-gomemlimit                            Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)
       --auto-gomemlimit-ratio float                The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental) (default 0.9)
       --config string                              Path to the kube-state-metrics options config file
+      --continue-without-config                    If true, kube-state-metrics continues to run even if the config file specified by --config is not present. This is useful for scenarios where config file is not provided at startup but is provided later ex - via configmap. Kube-state-metrics will not exit with an error if the config file is not found, instead watches and reloads when it is created
       --custom-resource-state-config string        Inline Custom Resource State Metrics config YAML (experimental)
       --custom-resource-state-config-file string   Path to a Custom Resource State Metrics config file (experimental)
+      --continue-without-cr-config-file            If true, kube-state-metrics continues to run even if the config file specified by --custom-resource-state-config-file is not present. This is useful for scenarios where config file is not provided at startup but is provided later ex - via configmap. Kube-state-metrics will not exit with an error if the custom-resource-state-config file is not found, instead watches and reloads when it is created
       --custom-resource-state-only                 Only provide Custom Resource State metrics (experimental)
       --enable-gzip-encoding                       Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.
   -h, --help                                       Print Help text

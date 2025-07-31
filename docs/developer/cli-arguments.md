@@ -124,7 +124,7 @@ kube-state-metrics \
   --namespaces-denylist="default,kube-system"
 ```
 
-## Config-file support
+### Config-file support
 
 You can provide a YAML config file using the `--config` flag instead of (or in addition to) command-line flags. Any flags passed on the command line will override values in the config file.
 
@@ -144,11 +144,11 @@ Run with config file:
 kube-state-metrics --config=config.yaml --port=8085
 ```
 
-## Mutual-exclusion of allowlists and denylists
+### Mutual-exclusion of allowlists and denylists
 
 For metrics, annotations, and labels, allowlists and denylists cannot be used together. If both are specified, the allowlist takes precedence and the denylist is ignored.
 
-## Kubernetes Deployment example
+### Kubernetes Deployment example
 
 You can embed any of the flags in a Deployment manifest under `args:`:
 
@@ -163,7 +163,7 @@ spec:
             - "--server-idle-timeout=2m"
 ```
 
-## Experimental flags
+### Experimental flags
 
 The following flags are experimental and subject to change:
 
@@ -172,7 +172,7 @@ The following flags are experimental and subject to change:
 * `--shard`, `--total-shards`
 * `--track-unscheduled-pods`
 
-## Custom Resource State metrics
+### Custom Resource State metrics
 
 You can enable custom resource state metrics using:
 
@@ -190,7 +190,7 @@ resources:
       - Running
 ```
 
-## Auth-filter example
+### Auth-filter example
 
 Protect the metrics endpoint with Kubernetes RBAC by enabling the auth filter and providing a kubeconfig:
 

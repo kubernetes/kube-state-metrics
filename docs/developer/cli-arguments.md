@@ -24,6 +24,7 @@ spec:
 <!-- markdownlint-disable blanks-around-fences -->
 <!-- markdownlint-disable link-image-reference-definitions -->
 [embedmd]:# (../../help.txt)
+
 ```txt
 $ kube-state-metrics -h
 kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects.
@@ -90,8 +91,6 @@ Flags:
 
 Use "kube-state-metrics [command] --help" for more information about a command.
 ```
-<!-- markdownlint-enable link-image-reference-definitions -->
-<!-- markdownlint-enable blanks-around-fences -->
 
 ## Examples
 
@@ -124,10 +123,13 @@ kube-state-metrics \
   --metric-labels-allowlist="namespaces=[kubernetes.io/team],pods=[owner]" \
   --namespaces-denylist="default,kube-system"
 ```
+
 ## Config-file support
+
 You can provide a YAML config file using the `--config` flag instead of (or in addition to) command-line flags. Any flags passed on the command line will override values in the config file.
 
 Example `config.yaml`:
+
 ```yaml
 port: 9090
 serverIdleTimeout: "2m"
@@ -137,15 +139,19 @@ metricAllowlist:
 ```
 
 Run with config file:
+
 ```bash
 kube-state-metrics --config=config.yaml --port=8085
 ```
 
 ## Mutual-exclusion of allowlists and denylists
+
 For metrics, annotations, and labels, allowlists and denylists cannot be used together. If both are specified, the allowlist takes precedence and the denylist is ignored.
 
 ## Kubernetes Deployment example
+
 You can embed any of the flags in a Deployment manifest under `args:`:
+
 ```yaml
 spec:
   template:
@@ -155,21 +161,27 @@ spec:
           args:
             - "--metric-allowlist=kube_pod_info,kube_node_*"
             - "--server-idle-timeout=2m"
-``` 
+```
 
 ## Experimental flags
+
 The following flags are experimental and subject to change:
-- `--auto-gomemlimit`, `--auto-gomemlimit-ratio`
-- `--auth-filter`
-- `--shard`, `--total-shards`
-- `--track-unscheduled-pods`
+
+* `--auto-gomemlimit`, `--auto-gomemlimit-ratio`
+* `--auth-filter`
+* `--shard`, `--total-shards`
+* `--track-unscheduled-pods`
 
 ## Custom Resource State metrics
+
 You can enable custom resource state metrics using:
+
 ```bash
 kube-state-metrics --custom-resource-state-config-file=crs-config.yaml
 ```
+
 Example `crs-config.yaml`:
+
 ```yaml
 resources:
   pods:
@@ -179,8 +191,12 @@ resources:
 ```
 
 ## Auth-filter example
+
 Protect the metrics endpoint with Kubernetes RBAC by enabling the auth filter and providing a kubeconfig:
+
 ```bash
 kube-state-metrics --auth-filter --kubeconfig=/etc/kubernetes/kubeconfig
 ```
+
 Ensure the service account used has a Role or ClusterRole granting `get` on `metrics.k8s.io` in the desired namespace.
+

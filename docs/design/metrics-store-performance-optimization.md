@@ -58,7 +58,7 @@ properties in memory via the Kubernetes client-go cache, use a map, addressable
 by the Kubernetes object uuid, containing all time series of that object as a
 single multi-line string.
 
-```
+```go
 var cache = map[uuid][]byte{}
 ```
 
@@ -76,7 +76,7 @@ On a scrape request on the /metrics endpoint, kube-state-metrics iterates over
 the cache map and concatenates all time series string blobs into a single
 string, which is finally passed on as a response.
 
-```
+```text
        +---------------+ +-----------+                 +---------------+         +-------------------+
        | pod_reflector | | pod_store |                 | pod_collector |         | metrics_endpoint  |
        +---------------+ +-----------+                 +---------------+         +-------------------+
@@ -116,7 +116,7 @@ string, which is finally passed on as a response.
 
 Build via [text-diagram](http://weidagang.github.io/text-diagram/)
 
-```
+```text
 object pod_reflector pod_store pod_collector metrics_endpoint
 
 note left of pod_reflector: new pod p1

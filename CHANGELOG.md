@@ -1,6 +1,8 @@
+# Changelog
+
 ## v2.16.0 / 2025-06-23
 
-## Note
+**Note:**
 
 * This release builds with Golang `v1.24.4`
 * This release builds with `k8s.io/client-go`: `v0.32.6`
@@ -15,7 +17,7 @@
 
 ## v2.15.0 / 2025-02-03
 
-## Note
+**Note:**
 
 * This release builds with Golang `v1.23.5`
 * This release builds with `k8s.io/client-go`: `v0.32.1`
@@ -31,7 +33,7 @@
 
 ## v2.14.0 / 2024-11-08
 
-### Note
+**Note:**
 
 * This release builds with Golang `v1.23.3`
 * This release builds with `k8s.io/client-go`: `v0.31.2`
@@ -54,7 +56,7 @@
 
 ## v2.13.0 / 2024-07-18
 
-### Note
+**Note:**
 
 * This release builds with Golang `v1.22.5`.
 * This release builds with `k8s.io/client-go`: `v0.30.3`.
@@ -69,7 +71,7 @@
 
 ## v2.12.0 / 2024-04-02
 
-### Note
+**Note:**
 
 * This release addresses a critical issue where scraping the exposition data for certain types caused metrics-backends to crash: <https://github.com/kubernetes/kube-state-metrics/issues/2248>.
 * This release builds with `k8s.io/client-go`: `v0.29.3`.
@@ -80,7 +82,7 @@
 
 ## v2.11.0 / 2024-03-04
 
-### Note
+**Note:**
 
 This release builds with Golang `v1.21.8`.
 
@@ -97,7 +99,7 @@ This release builds with Golang `v1.21.8`.
 
 ## v2.10.1 / 2023-10-09
 
-### Note
+**Note:**
 
 * This release addresses a regression introduced in [#2105](https://github.com/kubernetes/kube-state-metrics/pull/2105).
 
@@ -106,7 +108,7 @@ This release builds with Golang `v1.21.8`.
 
 ## v2.10.0 / 2023-08-31
 
-### Note
+**Note:**
 
 * Label and annotation metrics aren't exposed by default anymore to reduce the memory usage of the default configuration of kube-state-metrics. Before this change, they used to only include the name and namespace of the objects which is not relevant to users not opting in these metrics.
 
@@ -139,7 +141,7 @@ This release does not incorporate any user-facing changes. Re-running release pr
 
 The changes mentioned below are only the user-facing ones. For a list of the complete set of changes, refer the changelog associated with the release tag.
 
-### Note
+**Note:**
 
 * The deprecated experimental VerticalPodAutoscaler metrics are no longer supported, and have been removed. We recommend to use CustomResourceState metrics to gather metrics from custom resources like the Vertical Pod Autoscaler.
 * #2004 regulated label names to adhere with [OTel-Prometheus standards](https://github.com/open-telemetry/opentelemetry-specification/blob/8946dfc6a2302f78b0224fcc3f4dfb816a7bb1f4/specification/compatibility/prometheus_and_openmetrics.md?plain=1#L224-L229), so existing label names that do not follow the same may be replaced by the ones that do. Please refer to the PR for more details.

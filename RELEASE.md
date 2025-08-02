@@ -24,7 +24,7 @@ Maintaining the release branches for older minor releases happens on a best effo
     * Only include user relevant changes
     * Entries in the [`CHANGELOG.md`](CHANGELOG.md) are meant to be in this order:
 
-    ```
+    ```text
     [CHANGE]
     [FEATURE]
     [ENHANCEMENT]

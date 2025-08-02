@@ -9,7 +9,7 @@ To add new statements to publish data about a vulnerability,
 download [vexctl](https://github.com/openvex/vexctl)
 and append new statements using `vexctl add`. For example:
 
-```
+```bash
 vexctl add --in-place main.openvex.json pkg:oci/test CVE-2014-1234567 fixed
 ```
 

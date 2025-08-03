@@ -53,6 +53,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Horizontal sharding](#horizontal-sharding)
     * [Automated sharding](#automated-sharding)
   * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
+* [High Availability](#high-availability)
 * [Setup](#setup)
   * [Building the Docker container](#building-the-docker-container)
 * [Usage](#usage)
@@ -303,6 +304,12 @@ spec:
 ```
 
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
+
+### High Availability
+
+For high availability, run multiple kube-state-metrics replicas with anti-affinity rules to prevent single points of failure. Configure 2 replicas, anti-affinity rules on hostname, rolling update strategy with `maxUnavailable: 1`, and a PodDisruptionBudget with `minAvailable: 1`.
+
+When using multiple replicas, Prometheus will scrape all instances resulting in duplicate metrics with different instance labels. Handle deduplication in queries using `avg without(instance) (metric_name)`. Brief inconsistencies may occur during state transitions but resolve quickly as replicas sync with the API server.
 
 ### Setup
 

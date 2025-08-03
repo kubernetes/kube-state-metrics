@@ -189,14 +189,3 @@ resources:
       - Pending
       - Running
 ```
-
-### Auth-filter example
-
-Protect the metrics endpoint with Kubernetes RBAC by enabling the auth filter and providing a kubeconfig:
-
-```bash
-kube-state-metrics --auth-filter --kubeconfig=/etc/kubernetes/kubeconfig
-```
-
-Ensure the service account used has a Role or ClusterRole granting `get` on `metrics.k8s.io` in the desired namespace.
-

@@ -144,7 +144,7 @@ at the logs of kube-state-metrics.
 
 Example of the above mentioned metrics:
 
-```
+```prometheus
 kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
 kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
 kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
@@ -152,7 +152,7 @@ kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
 
 kube-state-metrics also exposes some http request metrics, examples of those are:
 
-```
+```prometheus
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="2.5"} 30
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="5"} 30
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="10"} 30
@@ -163,7 +163,7 @@ http_request_duration_seconds_count{handler="metrics",method="get"} 30
 
 kube-state-metrics also exposes build and configuration metrics:
 
-```
+```prometheus
 kube_state_metrics_build_info{branch="main",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
 kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
 kube_state_metrics_total_shards 1
@@ -176,7 +176,7 @@ run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/p
 
 kube-state-metrics also exposes metrics about it config file and the Custom Resource State config file:
 
-```
+```prometheus
 kube_state_metrics_config_hash{filename="crs.yml",type="customresourceconfig"} 2.38272279311849e+14
 kube_state_metrics_config_hash{filename="config.yml",type="config"} 2.65285922340846e+14
 kube_state_metrics_last_config_reload_success_timestamp_seconds{filename="crs.yml",type="customresourceconfig"} 1.6704882592037103e+09
@@ -203,7 +203,7 @@ Note that if CPU limits are set too low, kube-state-metrics' internal queues wil
 
 In a 100 node cluster scaling test the latency numbers were as follows:
 
-```
+```text
 "Perc50": 259615384 ns,
 "Perc90": 475000000 ns,
 "Perc99": 906666666 ns.
@@ -267,7 +267,7 @@ Each kube-state-metrics pod uses FieldSelector (spec.nodeName) to watch/list pod
 
 A daemonset kube-state-metrics example:
 
-```
+```yaml
 apiVersion: apps/v1
 kind: DaemonSet
 spec:
@@ -289,7 +289,7 @@ spec:
 
 To track metrics for unassigned pods, you need to add an additional deployment and set `--track-unscheduled-pods`, as shown in the following example:
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 spec:
@@ -309,8 +309,8 @@ Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 
 Install this project to your `$GOPATH` using `go get`:
 
-```
-go get k8s.io/kube-state-metrics
+```bash
+go get k8s.io/kube-state-metrics/v2
 ```
 
 #### Building the Docker container
@@ -318,7 +318,7 @@ go get k8s.io/kube-state-metrics
 Simply run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
 
-```
+```bash
 make container
 ```
 
@@ -341,7 +341,7 @@ To have Prometheus discover kube-state-metrics instances it is advised to create
 
 **Note:** Google Kubernetes Engine (GKE) Users - GKE has strict role permissions that will prevent the kube-state-metrics roles and role bindings from being created. To work around this, you can give your GCP identity the cluster-admin role by running the following one-liner:
 
-```
+```bash
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info --format='value(config.account)')
 ```
 
@@ -416,14 +416,14 @@ When developing, test a metric dump against your local Kubernetes cluster by run
 
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
-```
+```bash
 go install
 kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
 ```
 
 Then curl the metrics endpoint
 
-```
+```bash
 curl localhost:8080/metrics
 ```
 

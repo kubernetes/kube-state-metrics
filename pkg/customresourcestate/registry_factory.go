@@ -652,7 +652,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 							// negative index
 							i += len(s)
 						}
-						if i < 0 || i > len(s) {
+						if i < 0 || i >= len(s) {
 							return fmt.Errorf("list index out of range: %s", part)
 						}
 						return s[i]

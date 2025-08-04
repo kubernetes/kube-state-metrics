@@ -41,6 +41,14 @@ var (
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 )
 
+var (
+	allowedDeploymentReasons = map[string]struct{}{
+		"MinimumReplicasAvailable": {},
+		"NewReplicaSetAvailable":   {},
+		"FailedCreate":             {},
+	}
+)
+
 func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -174,8 +182,13 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
-						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+						reason := c.Reason
+						if _, ok := allowedDeploymentReasons[reason]; !ok {
+							reason = ""
+						}
+
+						metric.LabelKeys = []string{"reason", "condition", "status"}
+						metric.LabelValues = append([]string{reason, string(c.Type)}, metric.LabelValues...)
 						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}

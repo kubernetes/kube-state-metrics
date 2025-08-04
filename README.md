@@ -309,7 +309,7 @@ Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 Install this project to your `$GOPATH` using `go get`:
 
 ```bash
-go get k8s.io/kube-state-metrics
+go get k8s.io/kube-state-metrics/v2
 ```
 
 #### Building the Docker container

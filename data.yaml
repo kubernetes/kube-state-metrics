@@ -16,4 +16,4 @@ compat:
   - version: "v2.16.0"
     kubernetes: "1.32"
   - version: "main"
-    kubernetes: "1.32"
+    kubernetes: "1.33"

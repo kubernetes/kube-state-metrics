@@ -269,7 +269,7 @@ kube_customresource_ref_info{customresource_group="myteam.io", customresource_ki
 
 For example in VPA we have above attributes and we want to have a same metrics for both CPU and Memory, you can use below config:
 
-```
+```yaml
 kind: CustomResourceStateMetrics
 spec:
   resources:

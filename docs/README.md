@@ -79,13 +79,13 @@ can be used to extend single metrics output.
 This example adds `label_release` to the set of default labels of the `kube_pod_status_ready` metric
 and allows you select or group the metrics by Helm release label:
 
-```
+```promql
 kube_pod_status_ready * on (namespace, pod) group_left(label_release) kube_pod_labels
 ```
 
 Another useful example would be to query the memory usage of pods by its `phase`, such as `Running`:
 
-```
+```promql
 sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod, node)
   * on (namespace, pod) group_left() (sum(kube_pod_status_phase{phase="Running"}) by (pod, namespace) == 1)
 ```
@@ -108,7 +108,7 @@ The clients scraping the endpoint, need to use a token which can be provided by 
 
 A ClusterRole providing access like this:
 
-```
+```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -122,7 +122,7 @@ rules:
 
 and a matching ClusterRoleBinding
 
-```
+```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -139,7 +139,7 @@ subjects:
 
 Your client can then use either this ServiceAccount to gather metrics or you can create a token, that can be used to fetch data like this:
 
-```
+```bash
 TOKEN=$(kubectl create token YOUR_SERVICE_ACCOUNT -n NAMESPACE_OF_THE_SERVICE_ACCOUNT)
 curl -H "Authorization: Bearer $TOKEN" KUBE_STATE_METRICS_URL:8080/metrics
 ```

@@ -24,7 +24,18 @@ linters:
         text: 'G104:'
       - linters:
           - revive
-        text: 'package-comments:'
+        text: 'package-comments:|var-naming:'
+      # This needs to stay as long as we support exposing v1.endpoints metrics
+      - linters:
+          - staticcheck
+        text: 'SA1019: v1.Endpoint'
+        path: 'internal/store/endpoint.*.go|internal/store/builder.go'
+      # TODO: Use functions with context https://github.com/kubernetes/kube-state-metrics/issues/2721
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*List|Watch'
+        path: 'pkg/sharding/listwatch.go|pkg/watch/watch.go'
+
     paths:
       - third_party$
       - builtin$

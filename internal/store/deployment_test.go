@@ -212,12 +212,12 @@ func TestDeploymentStore(t *testing.T) {
 		kube_deployment_metadata_generation{deployment="depl3",namespace="ns3"} 0
 		kube_deployment_spec_paused{deployment="depl3",namespace="ns3"} 0
 		kube_deployment_spec_replicas{deployment="depl3",namespace="ns3"} 1
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Available",status="true"} 0
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Available",status="false"} 1
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Available",status="unknown"} 0
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Progressing",status="true"} 1
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Progressing",status="false"} 0
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Progressing",status="unknown"} 0
+		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Available",status="true"} 0
+		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Available",status="false"} 1
+		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Available",status="unknown"} 0
+		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Progressing",status="true"} 1
+		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Progressing",status="false"} 0
+		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Progressing",status="unknown"} 0
 		kube_deployment_status_observed_generation{deployment="depl3",namespace="ns3"} 0
 		kube_deployment_status_replicas_available{deployment="depl3",namespace="ns3"} 0
 		kube_deployment_status_replicas_ready{deployment="depl3",namespace="ns3"} 0

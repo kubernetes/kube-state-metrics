@@ -144,11 +144,11 @@ func createRoleBindingListWatch(kubeClient clientset.Interface, ns string, field
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().RoleBindings(ns).List(context.TODO(), opts)
+			return kubeClient.RbacV1().RoleBindings(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().RoleBindings(ns).Watch(context.TODO(), opts)
+			return kubeClient.RbacV1().RoleBindings(ns).Watch(ctx, opts)
 		},
 	}
 }

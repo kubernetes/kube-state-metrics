@@ -133,11 +133,11 @@ func createLimitRangeListWatch(kubeClient clientset.Interface, ns string, fieldS
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().LimitRanges(ns).List(context.TODO(), opts)
+			return kubeClient.CoreV1().LimitRanges(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().LimitRanges(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().LimitRanges(ns).Watch(ctx, opts)
 		},
 	}
 }

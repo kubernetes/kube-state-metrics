@@ -64,7 +64,7 @@ type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 type BuildCustomResourceStoresFunc func(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
+	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcherWithContext,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 

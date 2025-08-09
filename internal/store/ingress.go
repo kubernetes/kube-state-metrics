@@ -227,11 +227,11 @@ func createIngressListWatch(kubeClient clientset.Interface, ns string, fieldSele
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().Ingresses(ns).List(context.TODO(), opts)
+			return kubeClient.NetworkingV1().Ingresses(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().Ingresses(ns).Watch(context.TODO(), opts)
+			return kubeClient.NetworkingV1().Ingresses(ns).Watch(ctx, opts)
 		},
 	}
 }

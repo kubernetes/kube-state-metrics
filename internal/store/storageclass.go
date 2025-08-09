@@ -149,10 +149,10 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(i
 func createStorageClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcherWithContext {
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1().StorageClasses().List(context.TODO(), opts)
+			return kubeClient.StorageV1().StorageClasses().List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1().StorageClasses().Watch(context.TODO(), opts)
+			return kubeClient.StorageV1().StorageClasses().Watch(ctx, opts)
 		},
 	}
 }

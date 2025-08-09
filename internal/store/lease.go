@@ -120,11 +120,11 @@ func createLeaseListWatch(kubeClient clientset.Interface, ns string, fieldSelect
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoordinationV1().Leases(ns).List(context.TODO(), opts)
+			return kubeClient.CoordinationV1().Leases(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoordinationV1().Leases(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoordinationV1().Leases(ns).Watch(ctx, opts)
 		},
 	}
 }

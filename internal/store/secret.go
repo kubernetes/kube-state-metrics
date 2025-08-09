@@ -222,11 +222,11 @@ func createSecretListWatch(kubeClient clientset.Interface, ns string, fieldSelec
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().Secrets(ns).List(context.TODO(), opts)
+			return kubeClient.CoreV1().Secrets(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().Secrets(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().Secrets(ns).Watch(ctx, opts)
 		},
 	}
 }

@@ -156,10 +156,10 @@ func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(
 func createCSRListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcherWithContext {
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(), opts)
+			return kubeClient.CertificatesV1().CertificateSigningRequests().List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CertificatesV1().CertificateSigningRequests().Watch(context.TODO(), opts)
+			return kubeClient.CertificatesV1().CertificateSigningRequests().Watch(ctx, opts)
 		},
 	}
 }

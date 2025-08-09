@@ -288,11 +288,11 @@ func createDaemonSetListWatch(kubeClient clientset.Interface, ns string, fieldSe
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AppsV1().DaemonSets(ns).List(context.TODO(), opts)
+			return kubeClient.AppsV1().DaemonSets(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AppsV1().DaemonSets(ns).Watch(context.TODO(), opts)
+			return kubeClient.AppsV1().DaemonSets(ns).Watch(ctx, opts)
 		},
 	}
 }

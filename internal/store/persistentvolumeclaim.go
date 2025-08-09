@@ -286,11 +286,11 @@ func createPersistentVolumeClaimListWatch(kubeClient clientset.Interface, ns str
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(context.TODO(), opts)
+			return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().PersistentVolumeClaims(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().PersistentVolumeClaims(ns).Watch(ctx, opts)
 		},
 	}
 }

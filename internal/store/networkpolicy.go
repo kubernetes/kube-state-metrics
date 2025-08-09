@@ -160,11 +160,11 @@ func createNetworkPolicyListWatch(kubeClient clientset.Interface, ns string, fie
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().NetworkPolicies(ns).List(context.TODO(), opts)
+			return kubeClient.NetworkingV1().NetworkPolicies(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().NetworkPolicies(ns).Watch(context.TODO(), opts)
+			return kubeClient.NetworkingV1().NetworkPolicies(ns).Watch(ctx, opts)
 		},
 	}
 }

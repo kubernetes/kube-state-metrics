@@ -87,11 +87,11 @@ func createHPAListWatch(kubeClient clientset.Interface, ns string, fieldSelector
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).List(context.TODO(), opts)
+			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Watch(context.TODO(), opts)
+			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Watch(ctx, opts)
 		},
 	}
 }

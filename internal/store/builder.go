@@ -558,13 +558,15 @@ func (b *Builder) buildStores(
 func (b *Builder) buildCustomResourceStores(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
+	listWatchWithContextFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcherWithContext,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
 
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
+
+	var listerWatcher func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher
 
 	gvr, err := util.GVRFromType(resourceName, expectedType)
 	if err != nil {
@@ -590,7 +592,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
-		listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
+		listWatcher := listerWatcher(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
 		return []cache.Store{store}
 	}
@@ -602,7 +604,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			composedMetricGenFuncs,
 		)
 		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
-		listWatcher := listWatchFunc(customResourceClient, ns, b.fieldSelectorFilter)
+		listWatcher := listerWatcher(customResourceClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
 		stores = append(stores, store)
 	}

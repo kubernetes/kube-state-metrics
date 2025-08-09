@@ -114,10 +114,10 @@ var (
 func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcherWithContext {
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(context.TODO(), opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Watch(context.TODO(), opts)
+			return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Watch(ctx, opts)
 		},
 	}
 }

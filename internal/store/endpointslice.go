@@ -259,11 +259,11 @@ func createEndpointSliceListWatch(kubeClient clientset.Interface, ns string, fie
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.DiscoveryV1().EndpointSlices(ns).List(context.TODO(), opts)
+			return kubeClient.DiscoveryV1().EndpointSlices(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.DiscoveryV1().EndpointSlices(ns).Watch(context.TODO(), opts)
+			return kubeClient.DiscoveryV1().EndpointSlices(ns).Watch(ctx, opts)
 		},
 	}
 }

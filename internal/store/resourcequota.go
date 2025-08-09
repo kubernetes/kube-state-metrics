@@ -158,11 +158,11 @@ func createResourceQuotaListWatch(kubeClient clientset.Interface, ns string, fie
 	return &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ResourceQuotas(ns).List(context.TODO(), opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).List(ctx, opts)
 		},
 		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().ResourceQuotas(ns).Watch(ctx, opts)
 		},
 	}
 }

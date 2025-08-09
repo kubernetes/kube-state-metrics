@@ -226,13 +226,13 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Fam
 	}
 }
 
-func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createReplicationControllerListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcherWithContext {
 	return &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().ReplicationControllers(ns).List(context.TODO(), opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
 			return kubeClient.CoreV1().ReplicationControllers(ns).Watch(context.TODO(), opts)
 		},

@@ -516,12 +516,13 @@ func (b *Builder) buildIngressClassStores() []cache.Store {
 func (b *Builder) buildStores(
 	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	listWatchWithContextFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcherWithContext,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
+	var listerWatcher func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher
 
 	if b.namespaces.IsAllNamespaces() {
 		store := metricsstore.NewMetricsStore(
@@ -531,7 +532,7 @@ func (b *Builder) buildStores(
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
-		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+		listWatcher := listerWatcher(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
 		return []cache.Store{store}
 	}
@@ -545,7 +546,7 @@ func (b *Builder) buildStores(
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
-		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
+		listWatcher := listerWatcher(b.kubeClient, ns, b.fieldSelectorFilter)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
 		stores = append(stores, store)
 	}

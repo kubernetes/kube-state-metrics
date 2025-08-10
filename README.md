@@ -196,7 +196,7 @@ As a general rule, you should allocate:
 * 250MiB memory
 * 0.1 cores
 
-Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation or CPU throttling, try increasing the CPU limits.
+Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation or CPU throttling, try increasing the CPU limits to avoid performance issues.
 
 ### Latency
 
@@ -348,12 +348,12 @@ Note that your GCP identity is case sensitive but `gcloud info` as of Google Clo
 
 After running the above, if you see `Clusterrolebinding "cluster-admin-binding" created`, then you are able to continue with the setup of this service.
 
-#### Healthcheck Endpoints
+#### Health check Endpoints
 
-The following healthcheck endpoints are available (`self` refers to the telemetry port, while `main` refers to the exposition port):
+The following health check endpoints are available (`self` refers to the telemetry port, while `main` refers to the exposition port):
 
 * `/healthz` (exposed on `main`): Returns a 200 status code if the application is running. We recommend to use this for the startup probe.
-* `/livez` (exposed on `main`): Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend to using this for the liveness probe.
+* `/livez` (exposed on `main`): Returns a 200 status code if the application is not affected by an outage of the Kubernetes API Server. We recommend using this for the liveness probe.
 * `/readyz` (exposed on `self`): Returns a 200 status code if the application is ready to accept requests and expose metrics. We recommend using this for the readiness probe.
 
 Note that it is discouraged to use the telemetry metrics endpoint for any probe when proxying the exposition data.
@@ -372,7 +372,7 @@ metadata:
   namespace: your-namespace-where-kube-state-metrics-will-deployed
 ```
 
-* give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the NS you want your serviceaccount to access*)
+* give it `view` privileges on specific namespaces (using roleBinding) (*note: you can add this roleBinding to all the namespaces you want your serviceaccount to access*)
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1

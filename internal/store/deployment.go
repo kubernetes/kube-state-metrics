@@ -183,8 +183,10 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 						metric := m
 
 						reason := c.Reason
-						if _, ok := allowedDeploymentReasons[reason]; !ok {
-							reason = "unknown"
+						if reason != "" {
+							if _, ok := allowedDeploymentReasons[reason]; !ok {
+								reason = "unknown"
+							}
 						}
 
 						metric.LabelKeys = []string{"reason", "condition", "status"}

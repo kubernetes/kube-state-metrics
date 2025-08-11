@@ -156,6 +156,7 @@ func TestDeploymentStore(t *testing.T) {
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse, Reason: "MinimumReplicasAvailable"},
 						{Type: v1.DeploymentProgressing, Status: corev1.ConditionFalse, Reason: "NewReplicaSetAvailable"},
 						{Type: v1.DeploymentReplicaFailure, Status: corev1.ConditionTrue, Reason: "FailedCreate"},
+						{Type: v1.DeploymentProgressing, Status: corev1.ConditionTrue},
 					},
 				},
 				Spec: v1.DeploymentSpec{
@@ -190,7 +191,9 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",reason="MinimumReplicasAvailable",condition="Available",status="unknown"} 0
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",reason="NewReplicaSetAvailable",condition="Progressing",status="unknown"} 0
         kube_deployment_status_condition{deployment="depl2",namespace="ns2",reason="FailedCreate",condition="ReplicaFailure",status="unknown"} 0
-`,
+        kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="",status="false"} 0
+        kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="",status="true"} 1
+        kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="",status="unknown"} 0`,
 		},
 		{
 			Obj: &v1.Deployment{
@@ -201,7 +204,6 @@ func TestDeploymentStore(t *testing.T) {
 				Status: v1.DeploymentStatus{
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse, Reason: "ThisReasonIsNotAllowed"},
-						{Type: v1.DeploymentProgressing, Status: corev1.ConditionTrue},
 					},
 				},
 				Spec: v1.DeploymentSpec{
@@ -215,9 +217,6 @@ func TestDeploymentStore(t *testing.T) {
 		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Available",status="true"} 0
 		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Available",status="false"} 1
 		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="unknown",condition="Available",status="unknown"} 0
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Progressing",status="true"} 1
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Progressing",status="false"} 0
-		kube_deployment_status_condition{deployment="depl3",namespace="ns3",reason="",condition="Progressing",status="unknown"} 0
 		kube_deployment_status_observed_generation{deployment="depl3",namespace="ns3"} 0
 		kube_deployment_status_replicas{deployment="depl3",namespace="ns3"} 0
 		kube_deployment_status_replicas_available{deployment="depl3",namespace="ns3"} 0

@@ -327,6 +327,86 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_spec_pod_affinity_required_rules",
+			"Number of required pod affinity rules in the deployment's pod template.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				count := 0
+				if d.Spec.Template.Spec.Affinity != nil && d.Spec.Template.Spec.Affinity.PodAffinity != nil {
+					count = len(d.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(count),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_spec_pod_affinity_preferred_rules",
+			"Number of preferred pod affinity rules in the deployment's pod template.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				count := 0
+				if d.Spec.Template.Spec.Affinity != nil && d.Spec.Template.Spec.Affinity.PodAffinity != nil {
+					count = len(d.Spec.Template.Spec.Affinity.PodAffinity.PreferredDuringSchedulingIgnoredDuringExecution)
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(count),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_spec_pod_anti_affinity_required_rules",
+			"Number of required pod anti-affinity rules in the deployment's pod template.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				count := 0
+				if d.Spec.Template.Spec.Affinity != nil && d.Spec.Template.Spec.Affinity.PodAntiAffinity != nil {
+					count = len(d.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(count),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_spec_pod_anti_affinity_preferred_rules",
+			"Number of preferred pod anti-affinity rules in the deployment's pod template.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				count := 0
+				if d.Spec.Template.Spec.Affinity != nil && d.Spec.Template.Spec.Affinity.PodAntiAffinity != nil {
+					count = len(d.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution)
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(count),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_metadata_generation",
 			"Sequence number representing a specific generation of the desired state.",
 			metric.Gauge,

@@ -163,8 +163,6 @@ pod_collector -> metrics_endpoint: concat(metrics)
   of saving unstructured strings inside the cache map, one can structure them,
   using pointers to deduplicate e.g. metric names.
 
-* ...
-
 * Kube-state-metrics does not make use of all properties of all Kubernetes
   objects. Instead of unmarshalling unused properties, their json struct tags or
   their Protobuf representation could be removed.

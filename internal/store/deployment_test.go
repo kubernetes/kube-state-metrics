@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,51 +29,52 @@ import (
 )
 
 var (
-	depl1Replicas int32 = 200
-	depl2Replicas int32 = 5
-
-	depl1MaxUnavailable = intstr.FromInt(10)
-	depl2MaxUnavailable = intstr.FromString("25%")
-
-	depl1MaxSurge = intstr.FromInt(10)
-	depl2MaxSurge = intstr.FromString("20%")
+	depl1Replicas       int32 = 200
+	depl2Replicas       int32 = 5
+	depl1MaxUnavailable       = intstr.FromInt(10)
+	depl2MaxUnavailable       = intstr.FromString("25%")
+	depl1MaxSurge             = intstr.FromInt(10)
+	depl2MaxSurge             = intstr.FromString("20%")
 )
 
 func TestDeploymentStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_deployment_annotations gauge
-		# HELP kube_deployment_created [STABLE] Unix creation timestamp
-		# TYPE kube_deployment_created gauge
-		# HELP kube_deployment_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
-		# TYPE kube_deployment_metadata_generation gauge
-		# HELP kube_deployment_spec_paused [STABLE] Whether the deployment is paused and will not be processed by the deployment controller.
-		# TYPE kube_deployment_spec_paused gauge
-		# HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
-		# TYPE kube_deployment_spec_replicas gauge
-		# HELP kube_deployment_status_replicas [STABLE] The number of replicas per deployment.
-		# TYPE kube_deployment_status_replicas gauge
-		# HELP kube_deployment_status_replicas_ready [STABLE] The number of ready replicas per deployment.
-		# TYPE kube_deployment_status_replicas_ready gauge
-		# HELP kube_deployment_status_replicas_available [STABLE] The number of available replicas per deployment.
-		# TYPE kube_deployment_status_replicas_available gauge
-		# HELP kube_deployment_status_replicas_unavailable [STABLE] The number of unavailable replicas per deployment.
-		# TYPE kube_deployment_status_replicas_unavailable gauge
-		# HELP kube_deployment_status_replicas_updated [STABLE] The number of updated replicas per deployment.
-		# TYPE kube_deployment_status_replicas_updated gauge
-		# HELP kube_deployment_status_observed_generation [STABLE] The generation observed by the deployment controller.
-		# TYPE kube_deployment_status_observed_generation gauge
-		# HELP kube_deployment_status_condition [STABLE] The current status conditions of a deployment.
-		# TYPE kube_deployment_status_condition gauge
-		# HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable [STABLE] Maximum number of unavailable replicas during a rolling update of a deployment.
-		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
-		# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
-		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
-		# HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_deployment_labels gauge
-	`
+# HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
+# TYPE kube_deployment_annotations gauge
+# HELP kube_deployment_created [STABLE] Unix creation timestamp
+# TYPE kube_deployment_created gauge
+# HELP kube_deployment_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
+# TYPE kube_deployment_metadata_generation gauge
+# HELP kube_deployment_spec_paused [STABLE] Whether the deployment is paused and will not be processed by the deployment controller.
+# TYPE kube_deployment_spec_paused gauge
+# HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
+# TYPE kube_deployment_spec_replicas gauge
+# HELP kube_deployment_status_replicas [STABLE] The number of replicas per deployment.
+# TYPE kube_deployment_status_replicas gauge
+# HELP kube_deployment_status_replicas_ready [STABLE] The number of ready replicas per deployment.
+# TYPE kube_deployment_status_replicas_ready gauge
+# HELP kube_deployment_status_replicas_available [STABLE] The number of available replicas per deployment.
+# TYPE kube_deployment_status_replicas_available gauge
+# HELP kube_deployment_status_replicas_unavailable [STABLE] The number of unavailable replicas per deployment.
+# TYPE kube_deployment_status_replicas_unavailable gauge
+# HELP kube_deployment_status_replicas_updated [STABLE] The number of updated replicas per deployment.
+# TYPE kube_deployment_status_replicas_updated gauge
+# HELP kube_deployment_status_observed_generation [STABLE] The generation observed by the deployment controller.
+# TYPE kube_deployment_status_observed_generation gauge
+# HELP kube_deployment_status_condition [STABLE] The current status conditions of a deployment.
+# TYPE kube_deployment_status_condition gauge
+# HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable [STABLE] Maximum number of unavailable replicas during a rolling update of a deployment.
+# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
+# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
+# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+# HELP kube_deployment_spec_topology_spread_constraints [STABLE] Number of topology spread constraints in the deployment's pod template.
+# TYPE kube_deployment_spec_topology_spread_constraints gauge
+# HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+# TYPE kube_deployment_labels gauge
+`
+
 	cases := []generateMetricsTestCase{
 		{
 			AllowAnnotationsList: []string{"company.io/team"},
@@ -110,28 +111,45 @@ func TestDeploymentStore(t *testing.T) {
 							MaxSurge:       &depl1MaxSurge,
 						},
 					},
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
+								{
+									MaxSkew:           1,
+									TopologyKey:       "kubernetes.io/zone",
+									WhenUnsatisfiable: corev1.DoNotSchedule,
+								},
+								{
+									MaxSkew:           1,
+									TopologyKey:       "kubernetes.io/hostname",
+									WhenUnsatisfiable: corev1.ScheduleAnyway,
+								},
+							},
+						},
+					},
 				},
 			},
 			Want: metadata + `
-        kube_deployment_annotations{annotation_company_io_team="my-brilliant-team",deployment="depl1",namespace="ns1"} 1
-        kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
-        kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
-        kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
-        kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
-        kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_status_observed_generation{deployment="depl1",namespace="ns1"} 111
-        kube_deployment_status_replicas_available{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
-        kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
-        kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
-        kube_deployment_status_replicas_ready{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="true"} 1
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="true"} 1
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="false"} 0
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="false"} 0
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="unknown"} 0
-        kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="unknown"} 0
+kube_deployment_annotations{annotation_company_io_team="my-brilliant-team",deployment="depl1",namespace="ns1"} 1
+kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
+kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
+kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
+kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
+kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
+kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
+kube_deployment_spec_topology_spread_constraints{deployment="depl1",namespace="ns1"} 2
+kube_deployment_status_observed_generation{deployment="depl1",namespace="ns1"} 111
+kube_deployment_status_replicas_available{deployment="depl1",namespace="ns1"} 10
+kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
+kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
+kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
+kube_deployment_status_replicas_ready{deployment="depl1",namespace="ns1"} 10
+kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="true"} 1
+kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="true"} 1
+kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="false"} 0
+kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="false"} 0
+kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Available",status="unknown"} 0
+kube_deployment_status_condition{deployment="depl1",namespace="ns1",condition="Progressing",status="unknown"} 0
 `,
 		},
 		{
@@ -166,29 +184,35 @@ func TestDeploymentStore(t *testing.T) {
 							MaxSurge:       &depl2MaxSurge,
 						},
 					},
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+						},
+					},
 				},
 			},
 			Want: metadata + `
-        kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
-        kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
-        kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_status_observed_generation{deployment="depl2",namespace="ns2"} 1111
-        kube_deployment_status_replicas_available{deployment="depl2",namespace="ns2"} 5
-        kube_deployment_status_replicas_unavailable{deployment="depl2",namespace="ns2"} 0
-        kube_deployment_status_replicas_updated{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_status_replicas{deployment="depl2",namespace="ns2"} 10
-        kube_deployment_status_replicas_ready{deployment="depl2",namespace="ns2"} 5
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="true"} 0
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="true"} 0
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="true"} 1
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="false"} 1
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="false"} 1
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="false"} 0
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="unknown"} 0
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="unknown"} 0
-        kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="unknown"} 0
+kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
+kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
+kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
+kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl2",namespace="ns2"} 1
+kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl2",namespace="ns2"} 1
+kube_deployment_spec_topology_spread_constraints{deployment="depl2",namespace="ns2"} 0
+kube_deployment_status_observed_generation{deployment="depl2",namespace="ns2"} 1111
+kube_deployment_status_replicas_available{deployment="depl2",namespace="ns2"} 5
+kube_deployment_status_replicas_unavailable{deployment="depl2",namespace="ns2"} 0
+kube_deployment_status_replicas_updated{deployment="depl2",namespace="ns2"} 1
+kube_deployment_status_replicas{deployment="depl2",namespace="ns2"} 10
+kube_deployment_status_replicas_ready{deployment="depl2",namespace="ns2"} 5
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="true"} 0
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="true"} 0
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="true"} 1
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="false"} 1
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="false"} 1
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="false"} 0
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Available",status="unknown"} 0
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="Progressing",status="unknown"} 0
+kube_deployment_status_condition{deployment="depl2",namespace="ns2",condition="ReplicaFailure",status="unknown"} 0
 `,
 		},
 	}

@@ -268,6 +268,22 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_spec_topology_spread_constraints",
+			"Number of topology spread constraints in the deployment's pod template.",
+			metric.Gauge,
+			basemetrics.STABLE,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(len(d.Spec.Template.Spec.TopologySpreadConstraints)),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_metadata_generation",
 			"Sequence number representing a specific generation of the desired state.",
 			metric.Gauge,

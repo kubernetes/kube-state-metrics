@@ -41,12 +41,19 @@ var (
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 )
 
+// Reasons copied from kubernetes/pkg/controller/deployment/deployment_utils.go.
 var (
 	allowedDeploymentReasons = map[string]struct{}{
-		"MinimumReplicasAvailable": {},
-		"NewReplicaSetAvailable":   {},
-		"FailedCreate":             {},
-		"":                         {},
+		"ReplicaSetUpdated":          {},
+		"ReplicaSetCreateError":      {},
+		"NewReplicaSetCreated":       {},
+		"FoundNewReplicaSet":         {},
+		"NewReplicaSetAvailable":     {},
+		"ProgressDeadlineExceeded":   {},
+		"DeploymentPaused":           {},
+		"DeploymentResumed":          {},
+		"MinimumReplicasAvailable":   {},
+		"MinimumReplicasUnavailable": {},
 	}
 )
 

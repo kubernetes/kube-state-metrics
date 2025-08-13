@@ -1,7 +1,7 @@
 # The purpose of this config is to keep all versions in a single file and make them machine accessible
 
 # Marks the latest release
-version: "2.16.0"
+version: "2.17.0"
 
 # List at max 5 releases here + the main branch
 compat:

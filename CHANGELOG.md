@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.17.0 / 2025-08-15
+
+* This release builds with Go `v1.24.6`
+* This release builds with `k8s.io/client-go`: `v0.33.4`
+* This release is the last release that has endpoint metrics enabled by default. In the next release we will enable endpointslices metrics and disable endpoint metrics by default, since the endpoint resources are deprecated. You can still alter this behaviour in kube-state-metrics' config.
+
+* [FEATURE] Add new metric for pod unscheduled time tracking by @yshngg in <https://github.com/kubernetes/kube-state-metrics/pull/2699>
+* [BUGFIX] Fix index out of range by @taraspos in <https://github.com/kubernetes/kube-state-metrics/pull/2716>
+* [BUGFIX] Config file overrides apply to some fields but not other by @rashmichandrashekar in <https://github.com/kubernetes/kube-state-metrics/pull/2705>
+
 ## v2.16.0 / 2025-06-23
 
 **Note:**

@@ -220,7 +220,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	m.metricsWriters = metricsstore.SanitizeHeaders(string(contentType), m.metricsWriters)
+	m.metricsWriters = metricsstore.SanitizeHeaders(contentType, m.metricsWriters)
 	for _, w := range m.metricsWriters {
 		err := w.WriteAll(writer)
 		if err != nil {

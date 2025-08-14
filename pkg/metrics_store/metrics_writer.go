@@ -92,7 +92,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 }
 
 // SanitizeHeaders sanitizes the headers of the given MetricsWriterList.
-func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWriterList {
+func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) MetricsWriterList {
 	var lastHeader string
 	for _, writer := range writers {
 		if len(writer.stores) > 0 {
@@ -104,8 +104,9 @@ func SanitizeHeaders(contentType string, writers MetricsWriterList) MetricsWrite
 				// Skip this step if we encounter a repeated header, as it will be removed.
 				if header != lastHeader && strings.HasPrefix(header, "# HELP") {
 
-					// If the requested content type was proto-based (such as FmtProtoDelim, FmtProtoText, or FmtProtoCompact), replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' protobuf machinery.
-					if strings.HasPrefix(contentType, expfmt.ProtoType) {
+					// If the requested content type is text/plain, replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' plain text machinery.
+					// When Prometheus requests proto-based formats, this branch is also used because any requested format that is not OpenMetrics falls back to text/plain in metrics_handler.go
+					if contentType.FormatType() == expfmt.TypeTextPlain {
 						infoTypeString := string(metric.Info)
 						stateSetTypeString := string(metric.StateSet)
 						if strings.HasSuffix(header, infoTypeString) {

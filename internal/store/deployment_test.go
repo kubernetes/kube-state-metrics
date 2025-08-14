@@ -42,41 +42,41 @@ func TestDeploymentStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
-		# HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
-		# TYPE kube_deployment_annotations gauge
-		# HELP kube_deployment_created [STABLE] Unix creation timestamp
-		# TYPE kube_deployment_created gauge
-		# HELP kube_deployment_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
-		# TYPE kube_deployment_metadata_generation gauge
-		# HELP kube_deployment_spec_paused [STABLE] Whether the deployment is paused and will not be processed by the deployment controller.
-		# TYPE kube_deployment_spec_paused gauge
-		# HELP kube_deployment_spec_affinity Pod affinity and anti-affinity rules defined in the deployment's pod template specification.
-		# TYPE kube_deployment_spec_affinity gauge
-		# HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
-		# TYPE kube_deployment_spec_replicas gauge
-		# HELP kube_deployment_status_replicas [STABLE] The number of replicas per deployment.
-		# TYPE kube_deployment_status_replicas gauge
-		# HELP kube_deployment_status_replicas_ready [STABLE] The number of ready replicas per deployment.
-		# TYPE kube_deployment_status_replicas_ready gauge
-		# HELP kube_deployment_status_replicas_available [STABLE] The number of available replicas per deployment.
-		# TYPE kube_deployment_status_replicas_available gauge
-		# HELP kube_deployment_status_replicas_unavailable [STABLE] The number of unavailable replicas per deployment.
-		# TYPE kube_deployment_status_replicas_unavailable gauge
-		# HELP kube_deployment_status_replicas_updated [STABLE] The number of updated replicas per deployment.
-		# TYPE kube_deployment_status_replicas_updated gauge
-		# HELP kube_deployment_status_observed_generation [STABLE] The generation observed by the deployment controller.
-		# TYPE kube_deployment_status_observed_generation gauge
-		# HELP kube_deployment_status_condition [STABLE] The current status conditions of a deployment.
-		# TYPE kube_deployment_status_condition gauge
-		# HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable [STABLE] Maximum number of unavailable replicas during a rolling update of a deployment.
-		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
-		# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
-		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
-		# HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
-		# TYPE kube_deployment_labels gauge
-		# HELP kube_deployment_deletion_timestamp Unix deletion timestamp
-		# TYPE kube_deployment_deletion_timestamp gauge
-	`
+        # HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
+        # TYPE kube_deployment_annotations gauge
+        # HELP kube_deployment_created [STABLE] Unix creation timestamp
+        # TYPE kube_deployment_created gauge
+        # HELP kube_deployment_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state.
+        # TYPE kube_deployment_metadata_generation gauge
+        # HELP kube_deployment_spec_paused [STABLE] Whether the deployment is paused and will not be processed by the deployment controller.
+        # TYPE kube_deployment_spec_paused gauge
+        # HELP kube_deployment_spec_affinity Pod affinity and anti-affinity rules defined in the deployment's pod template specification.
+        # TYPE kube_deployment_spec_affinity gauge
+        # HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
+        # TYPE kube_deployment_spec_replicas gauge
+        # HELP kube_deployment_status_replicas [STABLE] The number of replicas per deployment.
+        # TYPE kube_deployment_status_replicas gauge
+        # HELP kube_deployment_status_replicas_ready [STABLE] The number of ready replicas per deployment.
+        # TYPE kube_deployment_status_replicas_ready gauge
+        # HELP kube_deployment_status_replicas_available [STABLE] The number of available replicas per deployment.
+        # TYPE kube_deployment_status_replicas_available gauge
+        # HELP kube_deployment_status_replicas_unavailable [STABLE] The number of unavailable replicas per deployment.
+        # TYPE kube_deployment_status_replicas_unavailable gauge
+        # HELP kube_deployment_status_replicas_updated [STABLE] The number of updated replicas per deployment.
+        # TYPE kube_deployment_status_replicas_updated gauge
+        # HELP kube_deployment_status_observed_generation [STABLE] The generation observed by the deployment controller.
+        # TYPE kube_deployment_status_observed_generation gauge
+        # HELP kube_deployment_status_condition [STABLE] The current status conditions of a deployment.
+        # TYPE kube_deployment_status_condition gauge
+        # HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable [STABLE] Maximum number of unavailable replicas during a rolling update of a deployment.
+        # TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
+        # HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
+        # TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+        # HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+        # TYPE kube_deployment_labels gauge
+        # HELP kube_deployment_deletion_timestamp Unix deletion timestamp
+        # TYPE kube_deployment_deletion_timestamp gauge
+    `
 
 	cases := []generateMetricsTestCase{
 		{

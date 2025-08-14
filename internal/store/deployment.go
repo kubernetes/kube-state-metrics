@@ -54,6 +54,7 @@ var (
 		"DeploymentResumed":          {},
 		"MinimumReplicasAvailable":   {},
 		"MinimumReplicasUnavailable": {},
+		"":                           {},
 	}
 )
 

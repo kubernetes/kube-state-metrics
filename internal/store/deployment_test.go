@@ -201,6 +201,7 @@ func TestDeploymentStore(t *testing.T) {
 				Status: v1.DeploymentStatus{
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse, Reason: "ThisReasonIsNotAllowed"},
+						{Type: v1.DeploymentProgressing, Status: corev1.ConditionTrue},
 					},
 				},
 				Spec: v1.DeploymentSpec{
@@ -220,6 +221,9 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_replicas_ready{deployment="depl3",namespace="ns3"} 0
         kube_deployment_status_replicas_unavailable{deployment="depl3",namespace="ns3"} 0
         kube_deployment_status_replicas_updated{deployment="depl3",namespace="ns3"} 0
+	    kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="false"} 0
+        kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="true"} 1
+        kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="unknown"} 0
 `,
 		},
 	}

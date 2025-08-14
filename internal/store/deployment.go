@@ -41,6 +41,23 @@ var (
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 )
 
+// Reasons copied from kubernetes/pkg/controller/deployment/deployment_utils.go.
+var (
+	allowedDeploymentReasons = map[string]struct{}{
+		"ReplicaSetUpdated":          {},
+		"ReplicaSetCreateError":      {},
+		"NewReplicaSetCreated":       {},
+		"FoundNewReplicaSet":         {},
+		"NewReplicaSetAvailable":     {},
+		"ProgressDeadlineExceeded":   {},
+		"DeploymentPaused":           {},
+		"DeploymentResumed":          {},
+		"MinimumReplicasAvailable":   {},
+		"MinimumReplicasUnavailable": {},
+		"":                           {},
+	}
+)
+
 func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -174,8 +191,13 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
-						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+						reason := c.Reason
+						if _, ok := allowedDeploymentReasons[reason]; !ok {
+							reason = "unknown"
+						}
+
+						metric.LabelKeys = []string{"reason", "condition", "status"}
+						metric.LabelValues = append([]string{reason, string(c.Type)}, metric.LabelValues...)
 						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}

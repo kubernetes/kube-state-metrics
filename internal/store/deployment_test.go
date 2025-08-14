@@ -55,14 +55,8 @@ func TestDeploymentStore(t *testing.T) {
         # TYPE kube_deployment_metadata_generation gauge
         # HELP kube_deployment_spec_paused [STABLE] Whether the deployment is paused and will not be processed by the deployment controller.
         # TYPE kube_deployment_spec_paused gauge
-        # HELP kube_deployment_spec_pod_affinity_preferred_rules Number of preferred pod affinity rules in the deployment's pod template.
-        # TYPE kube_deployment_spec_pod_affinity_preferred_rules gauge
-        # HELP kube_deployment_spec_pod_affinity_required_rules Number of required pod affinity rules in the deployment's pod template.
-        # TYPE kube_deployment_spec_pod_affinity_required_rules gauge
-        # HELP kube_deployment_spec_pod_anti_affinity_preferred_rules Number of preferred pod anti-affinity rules in the deployment's pod template.
-        # TYPE kube_deployment_spec_pod_anti_affinity_preferred_rules gauge
-        # HELP kube_deployment_spec_pod_anti_affinity_required_rules Number of required pod anti-affinity rules in the deployment's pod template.
-        # TYPE kube_deployment_spec_pod_anti_affinity_required_rules gauge
+        # HELP kube_deployment_spec_affinity Pod affinity and anti-affinity rules defined in the deployment's pod template specification.
+        # TYPE kube_deployment_spec_affinity gauge
         # HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
         # TYPE kube_deployment_spec_replicas gauge
         # HELP kube_deployment_status_replicas [STABLE] The number of replicas per deployment.
@@ -133,10 +127,6 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_owner{deployment="depl1",namespace="ns1",owner_kind="",owner_name=""} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
         kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
-        kube_deployment_spec_pod_affinity_preferred_rules{deployment="depl1",namespace="ns1"} 0
-        kube_deployment_spec_pod_affinity_required_rules{deployment="depl1",namespace="ns1"} 0
-        kube_deployment_spec_pod_anti_affinity_preferred_rules{deployment="depl1",namespace="ns1"} 0
-        kube_deployment_spec_pod_anti_affinity_required_rules{deployment="depl1",namespace="ns1"} 0
         kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
         kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
         kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
@@ -212,10 +202,9 @@ func TestDeploymentStore(t *testing.T) {
 			Want: metadata + `
         kube_deployment_metadata_generation{deployment="depl-with-affinity",namespace="ns1"} 1
         kube_deployment_spec_paused{deployment="depl-with-affinity",namespace="ns1"} 0
-        kube_deployment_spec_pod_affinity_preferred_rules{deployment="depl-with-affinity",namespace="ns1"} 1
-        kube_deployment_spec_pod_affinity_required_rules{deployment="depl-with-affinity",namespace="ns1"} 1
-        kube_deployment_spec_pod_anti_affinity_preferred_rules{deployment="depl-with-affinity",namespace="ns1"} 0
-        kube_deployment_spec_pod_anti_affinity_required_rules{deployment="depl-with-affinity",namespace="ns1"} 1
+        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podaffinity",type="requiredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/zone",label_selector="app=cache"} 1
+        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podaffinity",type="preferredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/hostname",label_selector="app=web"} 1
+        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podantiaffinity",type="requiredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/hostname",label_selector="app=depl-with-affinity"} 1
         kube_deployment_spec_replicas{deployment="depl-with-affinity",namespace="ns1"} 3
         kube_deployment_status_observed_generation{deployment="depl-with-affinity",namespace="ns1"} 1
         kube_deployment_status_replicas_available{deployment="depl-with-affinity",namespace="ns1"} 3
@@ -252,10 +241,6 @@ func TestDeploymentStore(t *testing.T) {
 			Want: metadata + `
         kube_deployment_metadata_generation{deployment="depl-no-affinity",namespace="ns1"} 1
         kube_deployment_spec_paused{deployment="depl-no-affinity",namespace="ns1"} 0
-        kube_deployment_spec_pod_affinity_preferred_rules{deployment="depl-no-affinity",namespace="ns1"} 0
-        kube_deployment_spec_pod_affinity_required_rules{deployment="depl-no-affinity",namespace="ns1"} 0
-        kube_deployment_spec_pod_anti_affinity_preferred_rules{deployment="depl-no-affinity",namespace="ns1"} 0
-        kube_deployment_spec_pod_anti_affinity_required_rules{deployment="depl-no-affinity",namespace="ns1"} 0
         kube_deployment_spec_replicas{deployment="depl-no-affinity",namespace="ns1"} 2
         kube_deployment_status_observed_generation{deployment="depl-no-affinity",namespace="ns1"} 1
         kube_deployment_status_replicas_available{deployment="depl-no-affinity",namespace="ns1"} 2
@@ -303,10 +288,6 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
         kube_deployment_owner{deployment="depl2",namespace="ns2",owner_kind="",owner_name=""} 1
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_spec_pod_affinity_preferred_rules{deployment="depl2",namespace="ns2"} 0
-        kube_deployment_spec_pod_affinity_required_rules{deployment="depl2",namespace="ns2"} 0
-        kube_deployment_spec_pod_anti_affinity_preferred_rules{deployment="depl2",namespace="ns2"} 0
-        kube_deployment_spec_pod_anti_affinity_required_rules{deployment="depl2",namespace="ns2"} 0
         kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
         kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl2",namespace="ns2"} 1
         kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl2",namespace="ns2"} 1

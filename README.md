@@ -307,9 +307,47 @@ Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 
 ### High Availability
 
-For high availability, run multiple kube-state-metrics replicas to prevent a single point of failure. A standard setup uses at least 2 replicas, pod anti-affinity rules to ensure they run on different nodes, and a PodDisruptionBudget (PDB) with `minAvailable: 1` to protect against voluntary disruptions.
+Multiple replicas increase the load on the Kubernetes API as a trade-off. Most likely you don't need HA if you scrape every 30s and you can tolerate a few missing scrapes (which usually is the case).
 
-When scraping the individual pods directly in an HA setup, Prometheus will ingest duplicate metrics distinguished only by the instance label. This requires you to deduplicate the data in your queries, for example, by using `max without(instance) (your_metric)`. The correct aggregation function (max, sum, avg, etc.) is important and depends on the metric type, as using the wrong one can produce incorrect values for timestamps or during brief state transitions.
+For high availability, run multiple kube-state-metrics replicas to prevent a single point of failure. A common setup uses at least 2 replicas, pod anti-affinity rules to ensure they run on different nodes, and a PodDisruptionBudget (PDB) with `minAvailable: 1` to protect against voluntary disruptions.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+spec:
+  replicas: 2
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: kube-state-metrics
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: kube-state-metrics
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.0
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kube-state-metrics-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: kube-state-metrics
+```
+
+Most users will scrape at the service level via a ServiceMonitor / Prometheus-Operator or similar. When scraping the individual pods directly in an HA setup, Prometheus will ingest duplicate metrics distinguished only by the instance label. This requires you to deduplicate the data in your queries, for example, by using `max without(instance) (your_metric)`. The correct aggregation function (max, sum, avg, etc.) is important and depends on the metric type, as using the wrong one can produce incorrect values for timestamps or during brief state transitions.
 
 ### Setup
 

@@ -32,6 +32,7 @@ var (
 	depl1Replicas int32 = 200
 	depl2Replicas int32 = 5
 	depl3Replicas int32 = 1
+	depl4Replicas int32 = 10
 
 	depl1MaxUnavailable = intstr.FromInt(10)
 	depl2MaxUnavailable = intstr.FromString("25%")
@@ -74,6 +75,8 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
 		# HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
+		# HELP kube_deployment_deletion_timestamp Unix deletion timestamp
+		# TYPE kube_deployment_deletion_timestamp gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -226,8 +229,30 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="unknown"} 0
 `,
 		},
+		{
+			Obj: &v1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "deployment-terminating",
+					Namespace:         "ns4",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1600000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+					Labels: map[string]string{
+						"app": "example4",
+					},
+					Generation: 22,
+				},
+				Spec: v1.DeploymentSpec{
+					Paused:   true,
+					Replicas: &depl4Replicas,
+				},
+			},
+			Want: `
+			    # HELP kube_deployment_deletion_timestamp Unix deletion timestamp
+			    # TYPE kube_deployment_deletion_timestamp gauge
+					kube_deployment_deletion_timestamp{deployment="deployment-terminating",namespace="ns4"} 1.8e+09`,
+			MetricNames: []string{"kube_deployment_deletion_timestamp"},
+		},
 	}
-
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies(c.AllowAnnotationsList, nil))
 		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies(c.AllowAnnotationsList, nil))

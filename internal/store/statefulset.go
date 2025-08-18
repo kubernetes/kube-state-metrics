@@ -321,6 +321,26 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_statefulset_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !s.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(s.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

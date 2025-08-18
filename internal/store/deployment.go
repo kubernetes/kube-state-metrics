@@ -306,6 +306,26 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !d.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(d.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			descDeploymentAnnotationsName,
 			descDeploymentAnnotationsHelp,
 			metric.Gauge,

@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -268,21 +269,41 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
-			"kube_deployment_spec_topology_spread_constraints",
-			"Number of topology spread constraints in the deployment's pod template.",
+			"kube_deployment_spec_topology_spread_constraint",
+			"Explicit details of each topology spread constraint in the deployment's pod template.",
 			metric.Gauge,
-			basemetrics.STABLE,
+			basemetrics.ALPHA,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(len(d.Spec.Template.Spec.TopologySpreadConstraints)),
+				ms := []*metric.Metric{}
+				for _, constraint := range d.Spec.Template.Spec.TopologySpreadConstraints {
+					labelSelectorStr, err := metav1.LabelSelectorAsSelector(constraint.LabelSelector)
+					if err != nil {
+						// Skip invalid label selectors
+						continue
+					}
+
+					minDomainsStr := "1" // default value when nil
+					if constraint.MinDomains != nil {
+						minDomainsStr = strconv.Itoa(int(*constraint.MinDomains))
+					}
+
+					ms = append(ms, &metric.Metric{
+						LabelKeys: []string{"topology_key", "max_skew", "when_unsatisfiable", "min_domains", "label_selector"},
+						LabelValues: []string{
+							constraint.TopologyKey,
+							strconv.Itoa(int(constraint.MaxSkew)),
+							string(constraint.WhenUnsatisfiable),
+							minDomainsStr,
+							labelSelectorStr.String(),
 						},
-					},
+						Value: 1,
+					})
 				}
+				return &metric.Family{Metrics: ms}
 			}),
 		),
+
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_metadata_generation",
 			"Sequence number representing a specific generation of the desired state.",

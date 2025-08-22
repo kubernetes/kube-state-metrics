@@ -61,6 +61,8 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"k8s.io/kube-state-metrics/v2/pkg/util"
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
+
+	"k8s.io/kube-state-metrics/v2/pkg/resourcestate"
 )
 
 const (
@@ -69,6 +71,19 @@ const (
 	livezPath   = "/livez"
 	readyzPath  = "/readyz"
 )
+
+type dropDefaultsFilter struct {
+	overridden map[string]struct{}
+}
+
+func (d dropDefaultsFilter) Test(fg generator.FamilyGenerator) bool {
+	for res := range d.overridden {
+		if strings.HasPrefix(fg.Name, "kube_"+res+"_") {
+			return false
+		}
+	}
+	return true
+}
 
 // RunKubeStateMetricsWrapper runs KSM with context cancellation.
 func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) error {
@@ -268,6 +283,52 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
 	storeBuilder.WithKubeClient(kubeClient)
+	storeBuilder.WithGenerateCustomResourceStoresFunc(storeBuilder.DefaultGenerateCustomResourceStoresFunc())
+
+	if opts.ResourceMetricsConfigFile != "" {
+		cfg, err := resourcestate.LoadConfig(opts.ResourceMetricsConfigFile)
+		if err != nil {
+			return fmt.Errorf("failed to load ResourceMetricsConfig: %w", err)
+		}
+
+		factories, err := resourcestate.BuildFactoriesFromConfig(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to compile ResourceMetricsConfig: %w", err)
+		}
+
+		crClients := make(map[string]interface{})
+		for _, f := range factories {
+			klog.InfoS("Processing factory", "factoryName", f.Name())
+
+			// Use only util.GVRFromType since that's what the builder expects
+			utilGVR, err := util.GVRFromType(f.Name(), f.ExpectedType())
+			if err != nil {
+				klog.ErrorS(err, "Failed to get GVR from type", "resourceName", f.Name())
+				continue
+			}
+
+			gvrString := utilGVR.String()
+			crClients[gvrString] = kubeClient
+			klog.InfoS("Registering CR client", "factoryName", f.Name(), "gvrKey", gvrString)
+		}
+
+		klog.InfoS("Total registered clients", "count", len(crClients))
+
+		storeBuilder.WithCustomResourceClients(crClients)
+		storeBuilder.WithCustomResourceStoreFactories(factories...)
+
+		if opts.DisableDefaultCoreMetrics {
+			overridden := map[string]struct{}{}
+			for _, f := range factories {
+				overridden[f.Name()] = struct{}{}
+			}
+			storeBuilder.WithFamilyGeneratorFilter(generator.NewCompositeFamilyGeneratorFilter(
+				allowDenyList,
+				optInMetricFamilyFilter,
+				dropDefaultsFilter{overridden: overridden},
+			))
+		}
+	}
 
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {

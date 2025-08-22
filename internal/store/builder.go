@@ -215,10 +215,29 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 		} else {
 			gvrString = f.Name()
 		}
-		if _, ok := availableStores[gvrString]; ok {
+
+		key := gvrString
+		if _, ok := availableStores[f.Name()]; ok {
+			key = f.Name()
+			klog.InfoS("Overriding core resource store with custom factory", "resource", key)
+		} else if _, ok := availableStores[gvrString]; ok {
 			klog.InfoS("Updating store", "GVR", gvrString)
 		}
-		availableStores[gvrString] = func(b *Builder) []cache.Store {
+
+		availableStores[key] = func(b *Builder) []cache.Store {
+			klog.InfoS("Building custom resource store", "gvrString", gvrString, "clientExists", b.customResourceClients[gvrString] != nil)
+			client := b.customResourceClients[gvrString]
+			klog.InfoS("About to call buildCustomResourceStoresFunc",
+				"factoryName", f.Name(),
+				"clientIsNil", client == nil,
+				"expectedType", f.ExpectedType(),
+				"metricsCount", len(f.MetricFamilyGenerators()),
+			)
+
+			// Test ListWatch before calling buildCustomResourceStoresFunc
+			lw := f.ListWatch(client, "", "")
+			klog.InfoS("ListWatch result", "isNil", lw == nil)
+
 			return b.buildCustomResourceStoresFunc(
 				f.Name(),
 				f.MetricFamilyGenerators(),

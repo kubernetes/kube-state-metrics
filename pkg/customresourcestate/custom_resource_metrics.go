@@ -33,6 +33,9 @@ import (
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
+// CompiledFamily is an exported alias of the internal compiled family.
+type CompiledFamily = compiledFamily
+
 // customResourceMetrics is an implementation of the customresource.RegistryFactory
 // interface which provides metrics for custom resources defined in a configuration file.
 type customResourceMetrics struct {
@@ -43,6 +46,16 @@ type customResourceMetrics struct {
 }
 
 var _ customresource.RegistryFactory = &customResourceMetrics{}
+
+// Compile exposes the internal compile(resource) to other packages.
+func Compile(r Resource) ([]CompiledFamily, error) {
+	return compile(r)
+}
+
+// FamGen exposes the internal famGen to other packages.
+func FamGen(f CompiledFamily) generator.FamilyGenerator {
+	return famGen(f)
+}
 
 // NewCustomResourceMetrics creates a customresource.RegistryFactory from a configuration object.
 func NewCustomResourceMetrics(resource Resource) (customresource.RegistryFactory, error) {

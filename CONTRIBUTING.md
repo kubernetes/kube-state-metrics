@@ -38,6 +38,34 @@ Here's a list of types that we use:
 | chore | Other changes that don't modify src or test files |
 | revert | Reverts a previous commit |
 
+### Local Testing
+
+We recommend you to do local testing on your changes before pushing.
+
+You need to first validate your modules:
+
+```shell
+make validate-modules
+```
+
+Then, lint check:
+
+```shell
+make lint
+```
+
+For unit tests:
+
+```shell
+make test-unit
+```
+
+And for E2E test:
+
+```shell
+make e2e
+```
+
 ### Further Information
 
 * [Contributor License Agreement](https://git.k8s.io/community/CLA.md) Kubernetes projects require that you sign a Contributor License Agreement (CLA) before we can accept your pull requests

@@ -23,7 +23,7 @@ spec:
       containers:
       - args:
         - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
-        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.16.0
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics-amd64:v2.16.0
         livenessProbe:
           httpGet:
             path: /livez

@@ -24,7 +24,7 @@ spec:
       - args:
         - --resources=pods
         - --track-unscheduled-pods
-        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.16.0
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics-amd64:v2.16.0
         livenessProbe:
           httpGet:
             path: /livez

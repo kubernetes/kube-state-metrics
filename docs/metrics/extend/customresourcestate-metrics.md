@@ -325,14 +325,9 @@ kube_customresource_verticalpodautoscaler_status_recommendation_containerrecomme
 
 #### VerticalPodAutoscaler
 
-In v2.9.0 the `vericalpodautoscalers` resource was removed from the list of default resources. In order to generate metrics for `verticalpodautoscalers`, you can use the following Custom Resource State config:
+In v2.9.0 the `verticalpodautoscalers` resource was removed from the list of default resources. In order to generate Memory / CPU recommendation metrics for `verticalpodautoscalers`, you can use the following Custom Resource State config:
 
 ```yaml
-# Using --resource=verticalpodautoscalers, we get the following output:
-# HELP kube_verticalpodautoscaler_annotations Kubernetes annotations converted to Prometheus labels.
-# TYPE kube_verticalpodautoscaler_annotations gauge
-# kube_verticalpodautoscaler_annotations{namespace="default",verticalpodautoscaler="hamster-vpa",target_api_version="apps/v1",target_kind="Deployment",target_name="hamster"} 1
-# A similar result can be achieved by specifying the following in --custom-resource-state-config:
 kind: CustomResourceStateMetrics
 spec:
   resources:
@@ -347,19 +342,49 @@ spec:
         target_kind: [spec, targetRef, kind]
         target_name: [spec, targetRef, name]
       metrics:
-        - name: "annotations"
-          help: "Kubernetes annotations converted to Prometheus labels."
+        - name: "vpa_containerrecommendations_target_memory"
+          help: "VPA container recommendations for memory (in bytes)."
           each:
             type: Gauge
             gauge:
-              path: [metadata, annotations]
-# This will output the following metric:
-# HELP kube_customresource_autoscaling_annotations Kubernetes annotations converted to Prometheus labels.
-# TYPE kube_customresource_autoscaling_annotations gauge
-# kube_customresource_autoscaling_annotations{customresource_group="autoscaling.k8s.io", customresource_kind="VerticalPodAutoscaler", customresource_version="v1", namespace="default",target_api_version="autoscaling.k8s.io/v1",target_kind="Deployment",target_name="hamster",verticalpodautoscaler="hamster-vpa"} 123
+              path: [status, recommendation, containerRecommendations]
+              valueFrom: [target, memory]
+              labelsFromPath:
+                container: [containerName]
+        - name: "vpa_containerrecommendations_target_cpu"
+          help: "VPA container recommendations for cpu (in cores)."
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              valueFrom: [target, cpu]
+              labelsFromPath:
+                container: [containerName]
 ```
 
-The above configuration was tested on [this](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml) VPA configuration, with an added annotation (`foo: 123`).
+The above configuration was tested on [this](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml) VPA configuration, outputting the following metrics:
+
+```
+# HELP kube_customresource_vpa_containerrecommendations_target_memory VPA container recommendations for memory (in bytes).
+kube_customresource_vpa_containerrecommendations_target_memory{container="hamster",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="default",target_api_version="autoscaling.k8s.io/v1",target_kind="Deployment",target_name="hamster",verticalpodautoscaler="hamster-vpa"} 1.048576e+08
+
+# HELP kube_customresource_vpa_containerrecommendations_target_cpu VPA container recommendations for cpu (in cores).
+kube_customresource_vpa_containerrecommendations_target_cpu{container="hamster",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="default",target_api_version="autoscaling.k8s.io/v1",target_kind="Deployment",target_name="hamster",verticalpodautoscaler="hamster-vpa"} 0.1
+```
+
+In RBAC-enabled clusters and to ensure that the VPA Metrics will be captured seamlessly, make sure that the Cluster Role / Role assigned to the Kube State Metrics has permissions to `list` & `watch` VPA resources (as well as `customresourcedefinitions`) e.g.:
+
+```yaml
+- verbs:
+    - list
+    - watch
+  apiGroups:
+    - autoscaling.k8s.io
+    - apiextensions.k8s.io
+  resources:
+    - verticalpodautoscalers
+    - customresourcedefinitions
+```
 
 #### All VerticalPodAutoscaler Metrics
 

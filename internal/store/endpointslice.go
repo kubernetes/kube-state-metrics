@@ -40,205 +40,232 @@ var (
 
 func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_endpointslice_info",
-			"Information about endpointslice.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
+		createEndpointsSliceInfo(),
+		createEndpointsSliceCreated(),
+		createEndpointsSliceHints(),
+		createEndpointsSliceEndpoints(),
+		createEndpointSlicePorts(),
+		createEndpointsSliceAnnotations(allowAnnotationsList),
+		createEndpointsSliceLabels(allowLabelsList),
+	}
+}
 
-				m := metric.Metric{
-					LabelKeys:   []string{"addresstype"},
-					LabelValues: []string{string(s.AddressType)},
-					Value:       1,
-				}
-				return &metric.Family{Metrics: []*metric.Metric{&m}}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_endpointslice_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
-				ms := []*metric.Metric{}
-				if !s.CreationTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						Value: float64(s.CreationTimestamp.Unix()),
-					})
-				}
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_endpointslice_endpoints_hints",
-			"Topology routing hints attached to endpoints",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
-				m := []*metric.Metric{}
-				for _, ep := range e.Endpoints {
-					// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
-					// If there is no hint, skip this metric
-					if ep.Hints != nil && len(ep.Hints.ForZones) > 0 {
-						var (
-							labelKeys,
-							labelValues []string
-						)
+func createEndpointsSliceInfo() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_endpointslice_info",
+		"Information about endpointslice.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
 
-						// Per Docs.
-						// This must contain at least one address but no more than
-						// 100. These are all assumed to be fungible and clients may choose to only
-						// use the first element. Refer to: https://issue.k8s.io/106267
-						labelKeys = append(labelKeys, "address")
-						labelValues = append(labelValues, ep.Addresses[0])
+			m := metric.Metric{
+				LabelKeys:   []string{"addresstype"},
+				LabelValues: []string{string(s.AddressType)},
+				Value:       1,
+			}
+			return &metric.Family{Metrics: []*metric.Metric{&m}}
+		}),
+	)
+}
 
-						for _, zone := range ep.Hints.ForZones {
-							m = append(m, &metric.Metric{
-								LabelKeys:   append(labelKeys, "for_zone"),
-								LabelValues: append(labelValues, zone.Name),
-								Value:       1,
-							})
-						}
-					}
-				}
-				return &metric.Family{
-					Metrics: m,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_endpointslice_endpoints",
-			"Endpoints attached to the endpointslice.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
-				m := []*metric.Metric{}
-				for _, ep := range e.Endpoints {
+func createEndpointsSliceCreated() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_endpointslice_created",
+		"Unix creation timestamp",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
+			ms := []*metric.Metric{}
+			if !s.CreationTimestamp.IsZero() {
+				ms = append(ms, &metric.Metric{
+					Value: float64(s.CreationTimestamp.Unix()),
+				})
+			}
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
 
-					var ready, serving, terminating, hostname, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone string
+func createEndpointsSliceHints() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_endpointslice_endpoints_hints",
+		"Topology routing hints attached to endpoints",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
+			m := []*metric.Metric{}
+			for _, ep := range e.Endpoints {
+				// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
+				// If there is no hint, skip this metric
+				if ep.Hints != nil && len(ep.Hints.ForZones) > 0 {
+					var (
+						labelKeys,
+						labelValues []string
+					)
 
-					if ep.Conditions.Ready != nil {
-						ready = strconv.FormatBool(*ep.Conditions.Ready)
-					}
+					// Per Docs.
+					// This must contain at least one address but no more than
+					// 100. These are all assumed to be fungible and clients may choose to only
+					// use the first element. Refer to: https://issue.k8s.io/106267
+					labelKeys = append(labelKeys, "address")
+					labelValues = append(labelValues, ep.Addresses[0])
 
-					if ep.Conditions.Serving != nil {
-						serving = strconv.FormatBool(*ep.Conditions.Serving)
-					}
-
-					if ep.Conditions.Terminating != nil {
-						serving = strconv.FormatBool(*ep.Conditions.Terminating)
-					}
-					if ep.Hostname != nil {
-						hostname = *ep.Hostname
-					}
-
-					if ep.TargetRef != nil {
-						targetrefKind = ep.TargetRef.Kind
-						targetrefName = ep.TargetRef.Name
-						targetrefNamespace = ep.TargetRef.Namespace
-					}
-
-					if ep.NodeName != nil {
-						endpointNodename = *ep.NodeName
-					}
-
-					if ep.Zone != nil {
-						endpointZone = *ep.Zone
-					}
-
-					labelKeys := []string{"ready", "serving", "hostname", "terminating", "targetref_kind", "targetref_name", "targetref_namespace", "endpoint_nodename", "endpoint_zone", "address"}
-					labelValues := []string{ready, serving, terminating, hostname, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone}
-
-					for _, address := range ep.Addresses {
-						newlabelValues := make([]string, len(labelValues))
-						copy(newlabelValues, labelValues)
-						newlabelValues = append(newlabelValues, address)
-
+					for _, zone := range ep.Hints.ForZones {
 						m = append(m, &metric.Metric{
-							LabelKeys:   labelKeys,
-							LabelValues: newlabelValues,
+							LabelKeys:   append(labelKeys, "for_zone"),
+							LabelValues: append(labelValues, zone.Name),
 							Value:       1,
 						})
 					}
 				}
-				return &metric.Family{
-					Metrics: m,
-				}
-			}),
-		),
+			}
+			return &metric.Family{
+				Metrics: m,
+			}
+		}),
+	)
+}
 
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_endpointslice_ports",
-			"Ports attached to the endpointslice.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
-				m := []*metric.Metric{}
-				for _, port := range e.Ports {
+func createEndpointsSliceEndpoints() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_endpointslice_endpoints",
+		"Endpoints attached to the endpointslice.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
+			m := []*metric.Metric{}
+			for _, ep := range e.Endpoints {
+
+				var ready, serving, terminating, hostname, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone string
+
+				if ep.Conditions.Ready != nil {
+					ready = strconv.FormatBool(*ep.Conditions.Ready)
+				}
+
+				if ep.Conditions.Serving != nil {
+					serving = strconv.FormatBool(*ep.Conditions.Serving)
+				}
+
+				if ep.Conditions.Terminating != nil {
+					serving = strconv.FormatBool(*ep.Conditions.Terminating)
+				}
+				if ep.Hostname != nil {
+					hostname = *ep.Hostname
+				}
+
+				if ep.TargetRef != nil {
+					targetrefKind = ep.TargetRef.Kind
+					targetrefName = ep.TargetRef.Name
+					targetrefNamespace = ep.TargetRef.Namespace
+				}
+
+				if ep.NodeName != nil {
+					endpointNodename = *ep.NodeName
+				}
+
+				if ep.Zone != nil {
+					endpointZone = *ep.Zone
+				}
+
+				labelKeys := []string{"ready", "serving", "hostname", "terminating", "targetref_kind", "targetref_name", "targetref_namespace", "endpoint_nodename", "endpoint_zone", "address"}
+				labelValues := []string{ready, serving, terminating, hostname, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone}
+
+				for _, address := range ep.Addresses {
+					newlabelValues := make([]string, len(labelValues))
+					copy(newlabelValues, labelValues)
+					newlabelValues = append(newlabelValues, address)
+
 					m = append(m, &metric.Metric{
-						LabelValues: []string{*port.Name, string(*port.Protocol), strconv.FormatInt(int64(*port.Port), 10)},
-						LabelKeys:   []string{"port_name", "port_protocol", "port_number"},
+						LabelKeys:   labelKeys,
+						LabelValues: newlabelValues,
 						Value:       1,
 					})
 				}
-				return &metric.Family{
-					Metrics: m,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descEndpointSliceAnnotationsName,
-			descEndpointSliceAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
-				if len(allowAnnotationsList) == 0 {
-					return &metric.Family{}
-				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
+			}
+			return &metric.Family{
+				Metrics: m,
+			}
+		}),
+	)
+}
+
+func createEndpointSlicePorts() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_endpointslice_ports",
+		"Ports attached to the endpointslice.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
+			m := []*metric.Metric{}
+			for _, port := range e.Ports {
+				m = append(m, &metric.Metric{
+					LabelValues: []string{*port.Name, string(*port.Protocol), strconv.FormatInt(int64(*port.Port), 10)},
+					LabelKeys:   []string{"port_name", "port_protocol", "port_number"},
+					Value:       1,
+				})
+			}
+			return &metric.Family{
+				Metrics: m,
+			}
+		}),
+	)
+}
+
+func createEndpointsSliceAnnotations(allowAnnotationsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		descEndpointSliceAnnotationsName,
+		descEndpointSliceAnnotationsHelp,
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
+			if len(allowAnnotationsList) == 0 {
+				return &metric.Family{}
+			}
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   annotationKeys,
+						LabelValues: annotationValues,
+						Value:       1,
 					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descEndpointSliceLabelsName,
-			descEndpointSliceLabelsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
-				if len(allowLabelsList) == 0 {
-					return &metric.Family{}
-				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
+				},
+			}
+		}),
+	)
+}
+
+func createEndpointsSliceLabels(allowLabelsList []string) generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		descEndpointSliceLabelsName,
+		descEndpointSliceLabelsHelp,
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
+			if len(allowLabelsList) == 0 {
+				return &metric.Family{}
+			}
+			labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   labelKeys,
+						LabelValues: labelValues,
+						Value:       1,
 					},
-				}
-			}),
-		),
-	}
+				},
+			}
+		}),
+	)
 }
 
 func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) func(interface{}) *metric.Family {

@@ -176,7 +176,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"kube_cronjob_status_last_successful_time",
 			"LastSuccessfulTime keeps information of when was the last time the job was completed successfully.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			basemetrics.STABLE,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}

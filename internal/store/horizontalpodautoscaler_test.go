@@ -44,24 +44,24 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_horizontalpodautoscaler_spec_min_replicas [STABLE] Lower limit for the number of pods that can be set by the autoscaler, default 1.
 		# HELP kube_horizontalpodautoscaler_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_target_metric The current metric status used by this autoscaler when calculating the desired replica count.
-		# HELP kube_horizontalpodautoscaler_status_condition [STABLE] The condition of this autoscaler.
-		# HELP kube_horizontalpodautoscaler_status_current_replicas [STABLE] Current number of replicas of pods managed by this autoscaler.
-		# HELP kube_horizontalpodautoscaler_status_desired_replicas [STABLE] Desired number of replicas of pods managed by this autoscaler.
-		# HELP kube_horizontalpodautoscaler_created Unix creation timestamp
-		# HELP kube_horizontalpodautoscaler_deletion_timestamp Unix deletion timestamp
-		# TYPE kube_horizontalpodautoscaler_info gauge
-		# TYPE kube_horizontalpodautoscaler_annotations gauge
-		# TYPE kube_horizontalpodautoscaler_labels gauge
-		# TYPE kube_horizontalpodautoscaler_metadata_generation gauge
-		# TYPE kube_horizontalpodautoscaler_spec_max_replicas gauge
-		# TYPE kube_horizontalpodautoscaler_spec_min_replicas gauge
-		# TYPE kube_horizontalpodautoscaler_spec_target_metric gauge
-		# TYPE kube_horizontalpodautoscaler_status_target_metric gauge
-		# TYPE kube_horizontalpodautoscaler_status_condition gauge
-		# TYPE kube_horizontalpodautoscaler_status_current_replicas gauge
-		# TYPE kube_horizontalpodautoscaler_status_desired_replicas gauge
-		# TYPE kube_horizontalpodautoscaler_created gauge
-		# TYPE kube_horizontalpodautoscaler_deletion_timestamp gauge
+				# HELP kube_horizontalpodautoscaler_status_condition [STABLE] The condition of this autoscaler.
+				# HELP kube_horizontalpodautoscaler_status_current_replicas [STABLE] Current number of replicas of pods managed by this autoscaler.
+				# HELP kube_horizontalpodautoscaler_status_desired_replicas [STABLE] Desired number of replicas of pods managed by this autoscaler.
+				# HELP kube_horizontalpodautoscaler_created Unix creation timestamp
+				# HELP kube_horizontalpodautoscaler_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_horizontalpodautoscaler_info gauge
+				# TYPE kube_horizontalpodautoscaler_annotations gauge
+				# TYPE kube_horizontalpodautoscaler_labels gauge
+				# TYPE kube_horizontalpodautoscaler_metadata_generation gauge
+				# TYPE kube_horizontalpodautoscaler_spec_max_replicas gauge
+				# TYPE kube_horizontalpodautoscaler_spec_min_replicas gauge
+				# TYPE kube_horizontalpodautoscaler_spec_target_metric gauge
+				# TYPE kube_horizontalpodautoscaler_status_target_metric gauge
+				# TYPE kube_horizontalpodautoscaler_status_condition gauge
+				# TYPE kube_horizontalpodautoscaler_status_current_replicas gauge
+				# TYPE kube_horizontalpodautoscaler_status_desired_replicas gauge
+				# TYPE kube_horizontalpodautoscaler_created gauge
+				# TYPE kube_horizontalpodautoscaler_deletion_timestamp gauge
 	`
 	cases := []generateMetricsTestCase{
 		{

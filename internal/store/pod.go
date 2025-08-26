@@ -170,7 +170,7 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 		"kube_pod_container_resource_limits",
 		"The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		basemetrics.BETA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -234,7 +234,7 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 		"kube_pod_container_resource_requests",
 		"The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		basemetrics.BETA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}

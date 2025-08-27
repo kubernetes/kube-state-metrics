@@ -30,6 +30,7 @@ var (
 	statefulSet1Replicas int32 = 3
 	statefulSet2Replicas int32 = 6
 	statefulSet3Replicas int32 = 9
+	statefulSet6Replicas int32 = 1
 
 	statefulSet1ObservedGeneration int64 = 1
 	statefulSet2ObservedGeneration int64 = 2
@@ -65,7 +66,7 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
-				# HELP kube_statefulset_ordinals_start Start ordinal of the StatefulSet.
+				# HELP kube_statefulset_ordinals_start [STABLE] Start ordinal of the StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_observed_generation [STABLE] The generation observed by the StatefulSet controller.
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
@@ -364,7 +365,7 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
 				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
-				# HELP kube_statefulset_ordinals_start Start ordinal of the StatefulSet.
+				# HELP kube_statefulset_ordinals_start [STABLE] Start ordinal of the StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_available The number of available replicas per StatefulSet.
@@ -408,6 +409,35 @@ func TestStatefulSetStore(t *testing.T) {
 				"kube_statefulset_status_update_revision",
 				"kube_statefulset_status_current_revision",
 				"kube_statefulset_persistentvolumeclaim_retention_policy",
+			},
+		},
+		{
+			Obj: &v1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "statefulset6",
+					Namespace:         "ns6",
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+					Labels: map[string]string{
+						"app": "example6",
+					},
+					Generation: 1,
+				},
+				Spec: v1.StatefulSetSpec{
+					Replicas:    &statefulSet6Replicas,
+					ServiceName: "statefulset6service",
+				},
+				Status: v1.StatefulSetStatus{
+					ObservedGeneration: 0,
+					Replicas:           1,
+				},
+			},
+			Want: `
+				# HELP kube_statefulset_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_statefulset_deletion_timestamp gauge
+				kube_statefulset_deletion_timestamp{statefulset="statefulset6",namespace="ns6"} 1.8e+09
+ 			`,
+			MetricNames: []string{
+				"kube_statefulset_deletion_timestamp",
 			},
 		},
 	}

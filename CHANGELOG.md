@@ -1,6 +1,39 @@
+# Changelog
+
+## v2.16.0 / 2025-06-23
+
+**Note:**
+
+* This release builds with Golang `v1.24.4`
+* This release builds with `k8s.io/client-go`: `v0.32.6`
+
+* [FEATURE] Add a `reclaim_policy` label to the `kube_persistentvolume_info` metric by @SuperQ in <https://github.com/kubernetes/kube-state-metrics/pull/2615>
+* [FEATURE] Use dlclark/regexp2 over standard library's package to support lookarounds by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2616>
+* [BUGFIX] Report correct values in `kube_pod_status_reason` metric by @carlosmorenokm1 in <https://github.com/kubernetes/kube-state-metrics/pull/2644>
+* [FEATURE] Add add `pathType` to `kube_ingress_path` by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2670>
+* [FEATURE] Introduce object limits by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2626>
+* [BUGFIX] Close reflectors once their corresponding CRDs are dropped by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2672>
+* [FEATURE] Incorporate `WithAuthenticationAndAuthorization` to support endpoint authn/z by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2686>
+
+## v2.15.0 / 2025-02-03
+
+**Note:**
+
+* This release builds with Golang `v1.23.5`
+* This release builds with `k8s.io/client-go`: `v0.32.1`
+
+* [BUGFIX] Fix CR cache for GVK all specified case by @chelseychen in <https://github.com/kubernetes/kube-state-metrics/pull/2567>
+* [BUGFIX] Deduplicate tolerations before creating metric by @RiRa12621 in <https://github.com/kubernetes/kube-state-metrics/pull/2559>
+* [BUGFIX] Make `$VERSION` 3rd-party independant by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2572>
+* [BUGFIX] Fix NoNodePod naming in jsonnet by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2598>
+* [BUGFIX] Panic in `util.GVRFromType` for structured types by @L3n41c in <https://github.com/kubernetes/kube-state-metrics/pull/2553>
+* [FEATURE] Add external traffic policy to kube_service_info by @jahantech in <https://github.com/kubernetes/kube-state-metrics/pull/2584>
+* [FEATURE] Promote kube_statefulset_ordinals_start from ALPHA -> STABLE by @pwschuurman in <https://github.com/kubernetes/kube-state-metrics/pull/2415>
+* [FEATURE] Add timezone to kube_cronjob_info / Make kube_cronjob_next_schedule_time timezone-aware by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2376>
+
 ## v2.14.0 / 2024-11-08
 
-### Note
+**Note:**
 
 * This release builds with Golang `v1.23.3`
 * This release builds with `k8s.io/client-go`: `v0.31.2`
@@ -23,7 +56,7 @@
 
 ## v2.13.0 / 2024-07-18
 
-### Note
+**Note:**
 
 * This release builds with Golang `v1.22.5`.
 * This release builds with `k8s.io/client-go`: `v0.30.3`.
@@ -38,7 +71,7 @@
 
 ## v2.12.0 / 2024-04-02
 
-### Note
+**Note:**
 
 * This release addresses a critical issue where scraping the exposition data for certain types caused metrics-backends to crash: <https://github.com/kubernetes/kube-state-metrics/issues/2248>.
 * This release builds with `k8s.io/client-go`: `v0.29.3`.
@@ -49,7 +82,7 @@
 
 ## v2.11.0 / 2024-03-04
 
-### Note
+**Note:**
 
 This release builds with Golang `v1.21.8`.
 
@@ -66,7 +99,7 @@ This release builds with Golang `v1.21.8`.
 
 ## v2.10.1 / 2023-10-09
 
-### Note
+**Note:**
 
 * This release addresses a regression introduced in [#2105](https://github.com/kubernetes/kube-state-metrics/pull/2105).
 
@@ -75,7 +108,7 @@ This release builds with Golang `v1.21.8`.
 
 ## v2.10.0 / 2023-08-31
 
-### Note
+**Note:**
 
 * Label and annotation metrics aren't exposed by default anymore to reduce the memory usage of the default configuration of kube-state-metrics. Before this change, they used to only include the name and namespace of the objects which is not relevant to users not opting in these metrics.
 
@@ -108,7 +141,7 @@ This release does not incorporate any user-facing changes. Re-running release pr
 
 The changes mentioned below are only the user-facing ones. For a list of the complete set of changes, refer the changelog associated with the release tag.
 
-### Note
+**Note:**
 
 * The deprecated experimental VerticalPodAutoscaler metrics are no longer supported, and have been removed. We recommend to use CustomResourceState metrics to gather metrics from custom resources like the Vertical Pod Autoscaler.
 * #2004 regulated label names to adhere with [OTel-Prometheus standards](https://github.com/open-telemetry/opentelemetry-specification/blob/8946dfc6a2302f78b0224fcc3f4dfb816a7bb1f4/specification/compatibility/prometheus_and_openmetrics.md?plain=1#L224-L229), so existing label names that do not follow the same may be replaced by the ones that do. Please refer to the PR for more details.

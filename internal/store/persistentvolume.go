@@ -243,50 +243,50 @@ func createPersistentVolumeInfo() generator.FamilyGenerator {
 			)
 
 			switch {
-			case p.Spec.PersistentVolumeSource.GCEPersistentDisk != nil:
-				gcePDDiskName = p.Spec.PersistentVolumeSource.GCEPersistentDisk.PDName
-			case p.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil:
-				ebsVolumeID = p.Spec.PersistentVolumeSource.AWSElasticBlockStore.VolumeID
-			case p.Spec.PersistentVolumeSource.AzureDisk != nil:
-				azureDiskName = p.Spec.PersistentVolumeSource.AzureDisk.DiskName
-			case p.Spec.PersistentVolumeSource.FC != nil:
-				if p.Spec.PersistentVolumeSource.FC.Lun != nil {
-					fcLun = strconv.FormatInt(int64(*p.Spec.PersistentVolumeSource.FC.Lun), 10)
+			case p.Spec.GCEPersistentDisk != nil:
+				gcePDDiskName = p.Spec.GCEPersistentDisk.PDName
+			case p.Spec.AWSElasticBlockStore != nil:
+				ebsVolumeID = p.Spec.AWSElasticBlockStore.VolumeID
+			case p.Spec.AzureDisk != nil:
+				azureDiskName = p.Spec.AzureDisk.DiskName
+			case p.Spec.FC != nil:
+				if p.Spec.FC.Lun != nil {
+					fcLun = strconv.FormatInt(int64(*p.Spec.FC.Lun), 10)
 				}
-				for _, wwn := range p.Spec.PersistentVolumeSource.FC.TargetWWNs {
+				for _, wwn := range p.Spec.FC.TargetWWNs {
 					if len(fcTargetWWNs) != 0 {
 						fcTargetWWNs += ","
 					}
 					fcTargetWWNs += wwn
 				}
-				for _, wwid := range p.Spec.PersistentVolumeSource.FC.WWIDs {
+				for _, wwid := range p.Spec.FC.WWIDs {
 					if len(fcWWIDs) != 0 {
 						fcWWIDs += ","
 					}
 					fcWWIDs += wwid
 				}
-			case p.Spec.PersistentVolumeSource.ISCSI != nil:
-				iscsiTargetPortal = p.Spec.PersistentVolumeSource.ISCSI.TargetPortal
-				iscsiIQN = p.Spec.PersistentVolumeSource.ISCSI.IQN
-				iscsiLun = strconv.FormatInt(int64(p.Spec.PersistentVolumeSource.ISCSI.Lun), 10)
-				if p.Spec.PersistentVolumeSource.ISCSI.InitiatorName != nil {
-					iscsiInitiatorName = *p.Spec.PersistentVolumeSource.ISCSI.InitiatorName
+			case p.Spec.ISCSI != nil:
+				iscsiTargetPortal = p.Spec.ISCSI.TargetPortal
+				iscsiIQN = p.Spec.ISCSI.IQN
+				iscsiLun = strconv.FormatInt(int64(p.Spec.ISCSI.Lun), 10)
+				if p.Spec.ISCSI.InitiatorName != nil {
+					iscsiInitiatorName = *p.Spec.ISCSI.InitiatorName
 				}
-			case p.Spec.PersistentVolumeSource.NFS != nil:
-				nfsServer = p.Spec.PersistentVolumeSource.NFS.Server
-				nfsPath = p.Spec.PersistentVolumeSource.NFS.Path
-			case p.Spec.PersistentVolumeSource.CSI != nil:
-				csiDriver = p.Spec.PersistentVolumeSource.CSI.Driver
-				csiVolumeHandle = p.Spec.PersistentVolumeSource.CSI.VolumeHandle
-			case p.Spec.PersistentVolumeSource.Local != nil:
-				localPath = p.Spec.PersistentVolumeSource.Local.Path
-				if p.Spec.PersistentVolumeSource.Local.FSType != nil {
-					localFS = *p.Spec.PersistentVolumeSource.Local.FSType
+			case p.Spec.NFS != nil:
+				nfsServer = p.Spec.NFS.Server
+				nfsPath = p.Spec.NFS.Path
+			case p.Spec.CSI != nil:
+				csiDriver = p.Spec.CSI.Driver
+				csiVolumeHandle = p.Spec.CSI.VolumeHandle
+			case p.Spec.Local != nil:
+				localPath = p.Spec.Local.Path
+				if p.Spec.Local.FSType != nil {
+					localFS = *p.Spec.Local.FSType
 				}
-			case p.Spec.PersistentVolumeSource.HostPath != nil:
-				hostPath = p.Spec.PersistentVolumeSource.HostPath.Path
-				if p.Spec.PersistentVolumeSource.HostPath.Type != nil {
-					hostPathType = string(*p.Spec.PersistentVolumeSource.HostPath.Type)
+			case p.Spec.HostPath != nil:
+				hostPath = p.Spec.HostPath.Path
+				if p.Spec.HostPath.Type != nil {
+					hostPathType = string(*p.Spec.HostPath.Type)
 				}
 			}
 
@@ -313,6 +313,7 @@ func createPersistentVolumeInfo() generator.FamilyGenerator {
 							"local_fs",
 							"host_path",
 							"host_path_type",
+							"reclaim_policy",
 						},
 						LabelValues: []string{
 							p.Spec.StorageClassName,
@@ -334,6 +335,7 @@ func createPersistentVolumeInfo() generator.FamilyGenerator {
 							localFS,
 							hostPath,
 							hostPathType,
+							string(p.Spec.PersistentVolumeReclaimPolicy),
 						},
 						Value: 1,
 					},
@@ -428,11 +430,12 @@ func createPersistentVolumeCSIAttributes() generator.FamilyGenerator {
 			}
 
 			var csiMounter, csiMapOptions string
-			for k, v := range p.Spec.PersistentVolumeSource.CSI.VolumeAttributes {
+			for k, v := range p.Spec.CSI.VolumeAttributes {
 				// storage attributes handled by external CEPH CSI driver
-				if k == "mapOptions" {
+				switch k {
+				case "mapOptions":
 					csiMapOptions = v
-				} else if k == "mounter" {
+				case "mounter":
 					csiMounter = v
 				}
 			}

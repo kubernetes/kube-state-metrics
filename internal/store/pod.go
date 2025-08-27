@@ -92,6 +92,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
+		createPodStatusUnscheduledTimeFamilyGenerator(),
 		createPodTolerationsFamilyGenerator(),
 		createPodNodeSelectorsFamilyGenerator(),
 		createPodServiceAccountFamilyGenerator(),
@@ -1541,15 +1542,12 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			ms := []*metric.Metric{}
 
 			for _, reason := range podStatusReasons {
-				metric := &metric.Metric{}
-				metric.LabelKeys = []string{"reason"}
-				metric.LabelValues = []string{reason}
-				if p.Status.Reason == reason {
-					metric.Value = boolFloat64(true)
-				} else {
-					metric.Value = boolFloat64(false)
+				m := &metric.Metric{
+					LabelKeys:   []string{"reason"},
+					LabelValues: []string{reason},
+					Value:       getPodStatusReasonValue(p, reason),
 				}
-				ms = append(ms, metric)
+				ms = append(ms, m)
 			}
 
 			return &metric.Family{
@@ -1557,6 +1555,23 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			}
 		}),
 	)
+}
+
+func getPodStatusReasonValue(p *v1.Pod, reason string) float64 {
+	if p.Status.Reason == reason {
+		return 1
+	}
+	for _, cond := range p.Status.Conditions {
+		if cond.Reason == reason {
+			return 1
+		}
+	}
+	for _, cs := range p.Status.ContainerStatuses {
+		if cs.State.Terminated != nil && cs.State.Terminated.Reason == reason {
+			return 1
+		}
+	}
+	return 0
 }
 
 func createPodStatusScheduledFamilyGenerator() generator.FamilyGenerator {
@@ -1642,6 +1657,48 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
+func createPodStatusUnscheduledTimeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_status_unscheduled_time",
+		"Unix timestamp when pod moved into unscheduled status",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, c := range p.Status.Conditions {
+				if c.Type == v1.PodScheduled && c.Status == v1.ConditionFalse {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(c.LastTransitionTime.Unix()),
+					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+// getUniqueTolerations takes an array
+func getUniqueTolerations(tolerations []v1.Toleration) []v1.Toleration {
+	uniqueTolerationsMap := make(map[v1.Toleration]struct{})
+	var uniqueTolerations []v1.Toleration
+
+	for _, toleration := range tolerations {
+		_, exists := uniqueTolerationsMap[toleration]
+		if !exists {
+			uniqueTolerationsMap[toleration] = struct{}{}
+			uniqueTolerations = append(uniqueTolerations, toleration)
+		}
+	}
+	return uniqueTolerations
+}
+
 func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_tolerations",
@@ -1651,8 +1708,9 @@ func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			var ms []*metric.Metric
+			uniqueTolerations := getUniqueTolerations(p.Spec.Tolerations)
 
-			for _, t := range p.Spec.Tolerations {
+			for _, t := range uniqueTolerations {
 				var key, operator, value, effect, tolerationSeconds string
 
 				key = t.Key

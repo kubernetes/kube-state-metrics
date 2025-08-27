@@ -133,7 +133,7 @@ func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"",
 			wrapRoleBindingFunc(func(r *rbacv1.RoleBinding) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(r.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(r.ResourceVersion),
 				}
 			}),
 		),

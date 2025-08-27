@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 //go:embed example_config.yaml

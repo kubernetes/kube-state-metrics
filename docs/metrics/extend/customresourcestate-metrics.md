@@ -32,6 +32,7 @@ spec:
           # in YAML files, | allows a multi-line string to be passed as a flag value
           # see https://yaml-multiline.info
           -  |
+              kind: CustomResourceStateMetrics
               spec:
                 resources:
                   - groupVersionKind:
@@ -65,6 +66,7 @@ spec:
           # in YAML files, | allows a multi-line string to be passed as a flag value
           # see https://yaml-multiline.info
           -  |
+              kind: CustomResourceStateMetrics
               spec:
                 resources:
                   - groupVersionKind:
@@ -254,6 +256,73 @@ kube_customresource_ref_info{customresource_group="myteam.io", customresource_ki
 kube_customresource_ref_info{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="foo",ref="foo_with_extensions"} 1
 ```
 
+#### Same Metrics with Different Labels
+
+```yaml
+  recommendation:
+    containerRecommendations:
+    - containerName: consumer
+      lowerBound:
+        cpu: 100m
+        memory: 262144k
+```
+
+For example in VPA we have above attributes and we want to have a same metrics for both CPU and Memory, you can use below config:
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: autoscaling.k8s.io
+        kind: "VerticalPodAutoscaler"
+        version: "v1"
+      labelsFromPath:
+        verticalpodautoscaler: [metadata, name]
+        namespace: [metadata, namespace]
+        target_api_version: [apiVersion]
+        target_kind: [spec, targetRef, kind]
+        target_name: [spec, targetRef, name]
+      metrics:
+        # for memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+          help: "Minimum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [lowerBound, memory]
+        # for CPU
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+          help: "Minimum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [lowerBound, cpu]
+```
+
+Produces the following metrics:
+
+```prometheus
+# HELP kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum memory resources the container can use before the VerticalPodAutoscaler updater evicts it.
+# TYPE kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound gauge
+kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="consumer",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="namespace-example",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="target-name-example",unit="byte",verticalpodautoscaler="vpa-example"} 123456
+# HELP kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound Minimum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it.
+# TYPE kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound gauge
+kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{container="consumer",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="namespace-example",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="target-name-example",unit="core",verticalpodautoscaler="vpa-example"} 0.1
+```
+
 #### VerticalPodAutoscaler
 
 In v2.9.0 the `vericalpodautoscalers` resource was removed from the list of default resources. In order to generate metrics for `verticalpodautoscalers`, you can use the following Custom Resource State config:
@@ -292,15 +361,226 @@ spec:
 
 The above configuration was tested on [this](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml) VPA configuration, with an added annotation (`foo: 123`).
 
+#### All VerticalPodAutoscaler Metrics
+
+As an addition for the above configuration, here's the complete `CustomResourceStateMetrics` spec to re-enable all of the VPA metrics which are removed from the list of the default resources:
+
+<details>
+
+ <summary>VPA CustomResourceStateMetrics</summary>
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: autoscaling.k8s.io
+        kind: "VerticalPodAutoscaler"
+        version: "v1"
+      labelsFromPath:
+        namespace: [metadata, namespace]
+        target_api_version: [spec, targetRef, apiVersion]
+        target_kind: [spec, targetRef, kind]
+        target_name: [spec, targetRef, name]
+        verticalpodautoscaler: [metadata, name]
+      metricNamePrefix: "kube"
+      metrics:
+        # kube_verticalpodautoscaler_annotations
+        - name: "verticalpodautoscaler_annotations"
+          help: "Kubernetes annotations converted to Prometheus labels."
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                annotation_*: [metadata, annotations]
+                name: [metadata, name]
+        # kube_verticalpodautoscaler_labels
+        - name: "verticalpodautoscaler_labels"
+          help: "Kubernetes labels converted to Prometheus labels."
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                label_*: [metadata, labels]
+                name: [metadata, name]
+        # kube_verticalpodautoscaler_spec_updatepolicy_updatemode
+        - name: "verticalpodautoscaler_spec_updatepolicy_updatemode"
+          help: "Update mode of the VerticalPodAutoscaler."
+          each:
+            type: StateSet
+            stateSet:
+              labelName: "update_mode"
+              path: [spec, updatePolicy, updateMode]
+              list: ["Auto", "Initial", "Off", "Recreate"]
+        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_memory
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_memory"
+          help: "Minimum memory resources the VerticalPodAutoscaler can set for containers matching the name."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, resourcePolicy, containerPolicies]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [minAllowed, memory]
+        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_cpu
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_cpu"
+          help: "Minimum cpu resources the VerticalPodAutoscaler can set for containers matching the name."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, resourcePolicy, containerPolicies]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [minAllowed, cpu]
+        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_memory
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_memory"
+          help: "Maximum memory resources the VerticalPodAutoscaler can set for containers matching the name."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, resourcePolicy, containerPolicies]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [maxAllowed, memory]
+        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_cpu
+        - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_cpu"
+          help: "Maximum cpu resources the VerticalPodAutoscaler can set for containers matching the name."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, resourcePolicy, containerPolicies]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [maxAllowed, cpu]
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory"
+          help: "Minimum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [lowerBound, memory]
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu"
+          help: "Minimum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [lowerBound, cpu]
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory"
+          help: "Maximum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [upperBound, memory]
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu"
+          help: "Maximum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [upperBound, cpu]
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory"
+          help: "Target memory resources the VerticalPodAutoscaler recommends for the container."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [target, memory]
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu"
+          help: "Target cpu resources the VerticalPodAutoscaler recommends for the container."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [target, cpu]
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory"
+          help: "Target memory resources the VerticalPodAutoscaler recommends for the container ignoring bounds."
+          commonLabels:
+            unit: "byte"
+            resource: "memory"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [uncappedTarget, memory]
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu
+        - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu"
+          help: "Target memory resources the VerticalPodAutoscaler recommends for the container ignoring bounds."
+          commonLabels:
+            unit: "core"
+            resource: "cpu"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, recommendation, containerRecommendations]
+              labelsFromPath:
+                container: [containerName]
+              valueFrom: [uncappedTarget, cpu]
+```
+
+</details>
+
 ### Metric types
 
-The configuration supports three kind of metrics from the [OpenMetrics specification](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md).
+The configuration supports three kind of metrics from the [OpenMetrics specification](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md).
 
 The metric type is specified by the `type` field and its specific configuration at the types specific struct.
 
 #### Gauge
 
-> Gauges are current measurements, such as bytes of memory currently used or the number of items in a queue. For gauges the absolute value is what is of interest to a user. [[0]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#gauge)
+> Gauges are current measurements, such as bytes of memory currently used or the number of items in a queue. For gauges the absolute value is what is of interest to a user. [[0]](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#gauge)
 
 Example:
 
@@ -386,7 +666,7 @@ kube_customresource_foo_status{customresource_group="myteam.io", customresource_
 
 #### StateSet
 
-> StateSets represent a series of related boolean values, also called a bitset. If ENUMs need to be encoded this MAY be done via StateSet. [[1]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#stateset)
+> StateSets represent a series of related boolean values, also called a bitset. If ENUMs need to be encoded this MAY be done via StateSet. [[1]](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#stateset)
 
 ```yaml
 kind: CustomResourceStateMetrics
@@ -420,7 +700,7 @@ kube_customresource_status_phase{customresource_group="myteam.io", customresourc
 
 #### Info
 
-> Info metrics are used to expose textual information which SHOULD NOT change during process lifetime. Common examples are an application's version, revision control commit, and the version of a compiler. [[2]](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#info)
+> Info metrics are used to expose textual information which SHOULD NOT change during process lifetime. Common examples are an application's version, revision control commit, and the version of a compiler. [[2]](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#info)
 
 Metrics of type `Info` will always have a value of 1.
 

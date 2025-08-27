@@ -50,7 +50,7 @@ func TestResourceSetSet(t *testing.T) {
 	for _, test := range tests {
 		cs := &ResourceSet{}
 		gotError := cs.Set(test.Value)
-		if !(((gotError == nil && !test.WantedError) || (gotError != nil && test.WantedError)) && reflect.DeepEqual(*cs, test.Wanted)) {
+		if ((gotError != nil || test.WantedError) && (gotError == nil || !test.WantedError)) || !reflect.DeepEqual(*cs, test.Wanted) {
 			t.Errorf("Test error for Desc: %s. Want: %+v. Got: %+v. Wanted Error: %v, Got Error: %v", test.Desc, test.Wanted, *cs, test.WantedError, gotError)
 		}
 	}

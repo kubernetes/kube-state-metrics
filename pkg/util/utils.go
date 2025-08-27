@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
@@ -95,7 +95,16 @@ func CreateCustomResourceClients(apiserver string, kubeconfig string, factories 
 		if err != nil {
 			return nil, err
 		}
-		gvrString := GVRFromType(f.Name(), f.ExpectedType()).String()
+		gvr, err := GVRFromType(f.Name(), f.ExpectedType())
+		if err != nil {
+			return nil, err
+		}
+		var gvrString string
+		if gvr != nil {
+			gvrString = gvr.String()
+		} else {
+			gvrString = f.Name()
+		}
 		customResourceClients[gvrString] = customResourceClient
 	}
 	return customResourceClients, nil
@@ -119,12 +128,16 @@ func CreateDiscoveryClient(apiserver string, kubeconfig string) (*discovery.Disc
 }
 
 // GVRFromType returns the GroupVersionResource for a given type.
-func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVersionResource {
+func GVRFromType(resourceName string, expectedType interface{}) (*schema.GroupVersionResource, error) {
 	if _, ok := expectedType.(*testUnstructuredMock.Foo); ok {
 		// testUnstructuredMock.Foo is a mock type for testing
-		return nil
+		return nil, nil
 	}
-	apiVersion := expectedType.(*unstructured.Unstructured).Object["apiVersion"].(string)
+	t, err := meta.TypeAccessor(expectedType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get type accessor for %T: %w", expectedType, err)
+	}
+	apiVersion := t.GetAPIVersion()
 	g, v, found := strings.Cut(apiVersion, "/")
 	if !found {
 		g = "core"
@@ -135,7 +148,7 @@ func GVRFromType(resourceName string, expectedType interface{}) *schema.GroupVer
 		Group:    g,
 		Version:  v,
 		Resource: r,
-	}
+	}, nil
 }
 
 // GatherAndCount gathers all metrics from the provided Gatherer and counts

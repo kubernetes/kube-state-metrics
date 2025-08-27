@@ -57,7 +57,7 @@ type BuilderInterface interface {
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
-	useAPIServerCache bool,
+	useAPIServerCache bool, limit int64,
 ) []cache.Store
 
 // BuildCustomResourceStoresFunc function signature that is used to return a list of custom resource cache.Store
@@ -65,7 +65,7 @@ type BuildCustomResourceStoresFunc func(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
-	useAPIServerCache bool,
+	useAPIServerCache bool, limit int64,
 ) []cache.Store
 
 // AllowDenyLister interface for AllowDeny lister that can allow or exclude metrics by there names

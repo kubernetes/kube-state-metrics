@@ -2115,6 +2115,12 @@ func TestPodStore(t *testing.T) {
 							Value:    "value3",
 						},
 						{
+							// Duplicate toleration, to ensure that doesn't result in a duplicate metric
+							Key:      "key3",
+							Operator: v1.TolerationOpEqual,
+							Value:    "value3",
+						},
+						{
 							// an empty toleration to ensure that an empty toleration does not result in a metric
 						},
 					},
@@ -2276,11 +2282,93 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 54
+	expectedFamilies := 55
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {
 			b.Fatalf("expected %d but got %v", expectedFamilies, len(families))
 		}
+	}
+}
+
+func TestGetPodStatusReasonValue(t *testing.T) {
+	reason := "TestReason"
+
+	tests := []struct {
+		name string
+		pod  *v1.Pod
+		want float64
+	}{
+		{
+			name: "matches Status.Reason",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Reason: "TestReason",
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "matches condition Reason",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Reason: "TestReason",
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "matches container terminated Reason",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason: "TestReason",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "no match returns 0",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Reason: "OtherReason",
+					Conditions: []v1.PodCondition{
+						{
+							Reason: "NotTestReason",
+						},
+					},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason: "AnotherReason",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getPodStatusReasonValue(tt.pod, reason)
+			if got != tt.want {
+				t.Errorf("getPodStatusReasonValue() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

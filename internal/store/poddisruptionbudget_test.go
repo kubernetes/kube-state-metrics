@@ -48,6 +48,8 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	# TYPE kube_poddisruptionbudget_status_expected_pods gauge
 	# HELP kube_poddisruptionbudget_status_observed_generation [STABLE] Most recent generation observed when updating this PDB status
 	# TYPE kube_poddisruptionbudget_status_observed_generation gauge
+	# HELP kube_poddisruptionbudget_deletion_timestamp Unix deletion timestamp
+	# TYPE kube_poddisruptionbudget_deletion_timestamp gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -126,6 +128,28 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 			MetricNames: []string{
 				"kube_poddisruptionbudget_annotations",
 				"kube_poddisruptionbudget_labels",
+			},
+		},
+		{
+			Obj: &policyv1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pdb3",
+					Namespace:         "ns3",
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+					Generation:        14,
+				},
+				Status: policyv1.PodDisruptionBudgetStatus{
+					CurrentHealthy: 8,
+					DesiredHealthy: 9,
+				},
+			},
+			Want: `
+				# HELP kube_poddisruptionbudget_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_poddisruptionbudget_deletion_timestamp gauge
+				kube_poddisruptionbudget_deletion_timestamp{namespace="ns3",poddisruptionbudget="pdb3"} 1.8e+09
+			`,
+			MetricNames: []string{
+				"kube_poddisruptionbudget_deletion_timestamp",
 			},
 		},
 	}

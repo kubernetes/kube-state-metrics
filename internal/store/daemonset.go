@@ -217,9 +217,29 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 						{
 							LabelKeys:   []string{},
 							LabelValues: []string{},
-							Value:       float64(d.ObjectMeta.Generation),
+							Value:       float64(d.Generation),
 						},
 					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_daemonset_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !d.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(d.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

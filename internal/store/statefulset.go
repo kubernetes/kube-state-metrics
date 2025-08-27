@@ -182,7 +182,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_statefulset_ordinals_start",
 			"Start ordinal of the StatefulSet.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				ms := []*metric.Metric{}
@@ -208,7 +208,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(s.ObjectMeta.Generation),
+							Value: float64(s.Generation),
 						},
 					},
 				}
@@ -318,6 +318,26 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 							Value:       1,
 						},
 					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_statefulset_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !s.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(s.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

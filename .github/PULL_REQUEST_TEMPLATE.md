@@ -5,9 +5,10 @@
 4. If the PR is unfinished, see how to mark it: https://git.k8s.io/community/contributors/guide/pull-requests.md#marking-unfinished-pull-requests
 -->
 
-**What this PR does / why we need it**:
+<!-- markdownlint-disable-next-line MD041 -->
+**What this PR does / why we need it:**
 
-**How does this change affect the cardinality of KSM**: *(increases, decreases or does not change cardinality)*
+**How does this change affect the cardinality of KSM:** *(increases, decreases or does not change cardinality)*
 
-**Which issue(s) this PR fixes** *(optional, in `fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close the issue(s) when PR gets merged)*:
+**Which issue(s) this PR fixes:** *(optional, in `fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close the issue(s) when PR gets merged)*
 Fixes #

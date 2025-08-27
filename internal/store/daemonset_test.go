@@ -228,6 +228,34 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_status_updated_number_scheduled",
 			},
 		},
+		{
+			Obj: &v1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ds4",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+					Namespace:         "ns4",
+					Labels: map[string]string{
+						"app": "example4",
+					},
+					Generation: 14,
+				},
+				Status: v1.DaemonSetStatus{
+					CurrentNumberScheduled: 10,
+					NumberMisscheduled:     5,
+					DesiredNumberScheduled: 0,
+					NumberReady:            0,
+				},
+			},
+			Want: `
+				# HELP kube_daemonset_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_daemonset_deletion_timestamp gauge
+				kube_daemonset_deletion_timestamp{daemonset="ds4",namespace="ns4"} 1.8e+09
+`,
+			MetricNames: []string{
+				"kube_daemonset_deletion_timestamp",
+			},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

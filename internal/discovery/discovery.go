@@ -64,8 +64,8 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 					},
 					Plural: p,
 				}
-				r.AppendToMap(gotGVKP)
 				r.SafeWrite(func() {
+					r.AppendToMap(gotGVKP)
 					r.WasUpdated = true
 				})
 			}
@@ -89,8 +89,8 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 					},
 					Plural: p,
 				}
-				r.RemoveFromMap(gotGVKP)
 				r.SafeWrite(func() {
+					r.RemoveFromMap(gotGVKP)
 					r.WasUpdated = true
 				})
 			}
@@ -127,23 +127,20 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	hasKind := k != "" && k != "*"
 	// No need to resolve, return.
 	if hasVersion && hasKind {
-		var p string
 		for _, el := range r.Map[g][v] {
 			if el.Kind == k {
-				p = el.Plural
-				break
+				return []groupVersionKindPlural{
+					{
+						GroupVersionKind: schema.GroupVersionKind{
+							Group:   g,
+							Version: v,
+							Kind:    k,
+						},
+						Plural: el.Plural,
+					},
+				}, nil
 			}
 		}
-		return []groupVersionKindPlural{
-			{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   g,
-					Version: v,
-					Kind:    k,
-				},
-				Plural: p,
-			},
-		}, nil
 	}
 	if hasVersion && !hasKind {
 		kinds := r.Map[g][v]
@@ -212,7 +209,16 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		// Update the list of enabled custom resources.
 		var enabledCustomResources []string
 		for _, factory := range customFactories {
-			gvrString := util.GVRFromType(factory.Name(), factory.ExpectedType()).String()
+			gvr, err := util.GVRFromType(factory.Name(), factory.ExpectedType())
+			if err != nil {
+				klog.ErrorS(err, "failed to update custom resource stores")
+			}
+			var gvrString string
+			if gvr != nil {
+				gvrString = gvr.String()
+			} else {
+				gvrString = factory.Name()
+			}
 			enabledCustomResources = append(enabledCustomResources, gvrString)
 		}
 		// Create clients for discovered factories.

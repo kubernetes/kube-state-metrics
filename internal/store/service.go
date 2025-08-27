@@ -49,8 +49,8 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"",
 			wrapSvcFunc(func(s *v1.Service) *metric.Family {
 				m := metric.Metric{
-					LabelKeys:   []string{"cluster_ip", "external_name", "load_balancer_ip"},
-					LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP},
+					LabelKeys:   []string{"cluster_ip", "external_name", "load_balancer_ip", "external_traffic_policy"},
+					LabelValues: []string{s.Spec.ClusterIP, s.Spec.ExternalName, s.Spec.LoadBalancerIP, string(s.Spec.ExternalTrafficPolicy)},
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
@@ -179,6 +179,25 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 					}
 				}
 
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !s.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(s.DeletionTimestamp.Unix()),
+					})
+				}
 				return &metric.Family{
 					Metrics: ms,
 				}

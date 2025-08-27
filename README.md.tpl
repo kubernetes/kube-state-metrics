@@ -308,7 +308,7 @@ Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 
 ### High Availability
 
-Multiple replicas increase the load on the Kubernetes API as a trade-off. Most likely you don't need HA if you scrape every 30s and you can tolerate a few missing scrapes (which usually is the case).
+Kube-state-metrics is a stateless service that reads from the Kubernetes API server. Be aware that multiple replicas increase the load on the Kubernetes API. Therefore, in most cases a single replica is also an option since most users scrape with a 30s interval. If you have the need for a higher scrape frequency or you have other constraints that require multiple replica, you can increase the availablity of kube-state-metrics in the following way:
 
 For high availability, run multiple kube-state-metrics replicas to prevent a single point of failure. A common setup uses at least 2 replicas, pod anti-affinity rules to ensure they run on different nodes, and a PodDisruptionBudget (PDB) with `minAvailable: 1` to protect against voluntary disruptions.
 

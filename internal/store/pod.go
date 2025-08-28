@@ -864,9 +864,9 @@ func createPodInitContainerResourceRequestsFamilyGenerator() generator.FamilyGen
 func createPodInitContainerStateStartedFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_state_started",
-		"Start time in unix timestamp for an_init_pod container.",
+		"Start time in unix timestamp for an init container inside the pod.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		basemetrics.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -922,7 +922,7 @@ func createPodInitContainerStatusLastTerminatedReasonFamilyGenerator() generator
 func createPodInitContainerStatusLastTerminatedTimestampFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_init_container_status_last_terminated_timestamp",
-		"Last terminated time for a pod init container in unix timestamp.",
+		"Last terminated time for an init container inside a pod in unix timestamp.",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",

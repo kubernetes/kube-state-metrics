@@ -33,80 +33,13 @@ import (
 )
 
 var (
-	descCSRAnnotationsName     = "kube_certificatesigningrequest_annotations"
-	descCSRAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
-	descCSRLabelsName          = "kube_certificatesigningrequest_labels"
-	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest", "signer_name"}
 )
 
 func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			descCSRAnnotationsName,
-			descCSRAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
-				if len(allowAnnotationsList) == 0 {
-					return &metric.Family{}
-				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descCSRLabelsName,
-			descCSRLabelsHelp,
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
-				if len(allowLabelsList) == 0 {
-					return &metric.Family{}
-				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_certificatesigningrequest_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
-				ms := []*metric.Metric{}
-				if !csr.CreationTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
-						LabelValues: []string{},
-						Value:       float64(csr.CreationTimestamp.Unix()),
-					})
-				}
+	metadataFamilies := createMetadataMetricFamiliesGenerator(allowAnnotationsList, allowLabelsList, descCSRLabelsDefaultLabels, "kube_certificatesigningrequest", wrapMetadataFunc)
 
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
+	return append(metadataFamilies,
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_certificatesigningrequest_condition",
 			"The number of each certificatesigningrequest condition",
@@ -137,7 +70,7 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-	}
+	)
 }
 
 func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(interface{}) *metric.Family {

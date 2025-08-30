@@ -44,6 +44,8 @@ func TestServiceStore(t *testing.T) {
 		# TYPE kube_service_spec_external_ip gauge
 		# HELP kube_service_status_load_balancer_ingress [STABLE] Service load balancer ingress status
 		# TYPE kube_service_status_load_balancer_ingress gauge
+		# HELP kube_service_deletion_timestamp Unix deletion timestamp
+		# TYPE kube_service_deletion_timestamp gauge
 	`
 	cases := []generateMetricsTestCase{
 		{
@@ -258,6 +260,32 @@ func TestServiceStore(t *testing.T) {
 				kube_service_info{cluster_ip="1.2.3.12",external_name="",external_traffic_policy="Local",load_balancer_ip="1.2.3.13",namespace="default",service="test-service8",uid="uid8"} 1
 				kube_service_spec_type{namespace="default",service="test-service8",uid="uid8",type="LoadBalancer"} 1
 			`,
+		},
+		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service9",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+					Namespace:         "default",
+					UID:               "uid9",
+					Labels: map[string]string{
+						"app": "example9",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					ClusterIP: "1.2.3.4",
+					Type:      v1.ServiceTypeClusterIP,
+				},
+			},
+			Want: `
+				# HELP kube_service_deletion_timestamp Unix deletion timestamp
+				# TYPE kube_service_deletion_timestamp gauge
+				kube_service_deletion_timestamp{namespace="default",service="test-service9",uid="uid9"} 1.8e+09
+			`,
+			MetricNames: []string{
+				"kube_service_deletion_timestamp",
+			},
 		},
 	}
 	for i, c := range cases {

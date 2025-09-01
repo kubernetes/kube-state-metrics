@@ -101,9 +101,15 @@ validate-template: generate-template
 # Runs benchmark tests on the current git ref and the last release and compares
 # the two.
 test-benchmark-compare:
-	@git fetch
-	./tests/compare_benchmarks.sh main 2
-	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH} 2
+	$(MAKE) test-benchmark-compare-main test-benchmark-compare-release
+	
+test-benchmark-compare-main:
+	@git fetch origin main
+	./tests/compare_benchmarks.sh main 6
+
+test-benchmark-compare-release:
+	@git fetch origin ${LATEST_RELEASE_BRANCH}
+	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH} 6
 
 all: all-container
 

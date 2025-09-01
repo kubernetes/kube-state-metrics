@@ -1,0 +1,4 @@
+=== RUN   TestDeploymentStore
+--- PASS: TestDeploymentStore (0.00s)
+PASS
+ok  	k8s.io/kube-state-metrics/v2/internal/store	(cached)

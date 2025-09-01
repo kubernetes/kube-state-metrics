@@ -276,6 +276,46 @@ func TestSanitizeHeaders(t *testing.T) {
 		expectedHeaders []string
 	}{
 		{
+			name:        "OpenMetricsText unique headers",
+			contentType: expfmt.NewFormat(expfmt.TypeOpenMetrics),
+			headers: []string{
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+			expectedHeaders: []string{
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+		},
+		{
+			name:        "OpenMetricsText consecutive duplicate headers",
+			contentType: expfmt.NewFormat(expfmt.TypeOpenMetrics),
+			headers: []string{
+				"",
+				"",
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+			expectedHeaders: []string{
+				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo info",
+				"# HELP foo foo_help\n# TYPE foo stateset",
+				"# HELP foo foo_help\n# TYPE foo counter",
+			},
+		},
+		{
 			name:        "text-format unique headers",
 			contentType: expfmt.NewFormat(expfmt.TypeTextPlain),
 			headers: []string{
@@ -287,52 +327,12 @@ func TestSanitizeHeaders(t *testing.T) {
 			},
 			expectedHeaders: []string{
 				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo info",
-				"# HELP foo foo_help\n# TYPE foo stateset",
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 		},
 		{
 			name:        "text-format consecutive duplicate headers",
 			contentType: expfmt.NewFormat(expfmt.TypeTextPlain),
-			headers: []string{
-				"",
-				"",
-				"",
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo info",
-				"# HELP foo foo_help\n# TYPE foo info",
-				"# HELP foo foo_help\n# TYPE foo stateset",
-				"# HELP foo foo_help\n# TYPE foo stateset",
-				"# HELP foo foo_help\n# TYPE foo counter",
-				"# HELP foo foo_help\n# TYPE foo counter",
-			},
-			expectedHeaders: []string{
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo info",
-				"# HELP foo foo_help\n# TYPE foo stateset",
-				"# HELP foo foo_help\n# TYPE foo counter",
-			},
-		},
-		{
-			name:        "proto-format unique headers",
-			contentType: expfmt.NewFormat(expfmt.TypeProtoText), // Prometheus ProtoFmt is the only proto-based format we check for.
-			headers: []string{
-				"",
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo info",
-				"# HELP foo foo_help\n# TYPE foo stateset",
-				"# HELP foo foo_help\n# TYPE foo counter",
-			},
-			expectedHeaders: []string{
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo counter",
-			},
-		},
-		{
-			name:        "proto-format consecutive duplicate headers",
-			contentType: expfmt.NewFormat(expfmt.TypeProtoText), // Prometheus ProtoFmt is the only proto-based format we check for.
 			headers: []string{
 				"",
 				"",
@@ -356,7 +356,7 @@ func TestSanitizeHeaders(t *testing.T) {
 	for _, testcase := range testcases {
 		writer := NewMetricsWriter(NewMetricsStore(testcase.headers, nil))
 		t.Run(testcase.name, func(t *testing.T) {
-			SanitizeHeaders(string(testcase.contentType), MetricsWriterList{writer})
+			SanitizeHeaders(testcase.contentType, MetricsWriterList{writer})
 			if !reflect.DeepEqual(testcase.expectedHeaders, writer.stores[0].headers) {
 				t.Fatalf("(-want, +got):\n%s", cmp.Diff(testcase.expectedHeaders, writer.stores[0].headers))
 			}
@@ -404,7 +404,7 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 		writer := NewMetricsWriter(NewMetricsStore(headers, nil))
 		b.Run(benchmark.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				SanitizeHeaders(string(benchmark.contentType), MetricsWriterList{writer})
+				SanitizeHeaders(benchmark.contentType, MetricsWriterList{writer})
 			}
 		})
 	}

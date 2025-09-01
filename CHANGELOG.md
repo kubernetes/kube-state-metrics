@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.17.0 / 2025-09-01
+
+* This release builds with Go `v1.24.6`
+* This release builds with `k8s.io/client-go`: `v0.33.4`
+* This release is the last release that has endpoint metrics enabled by default. In the next release we will enable endpointslices metrics and disable endpoint metrics by default, since the endpoint resources are deprecated. You can still alter this behaviour in kube-state-metrics' config.
+
+* [FEATURE] Add new metric for pod unscheduled time tracking by @yshngg in <https://github.com/kubernetes/kube-state-metrics/pull/2699>
+* [BUGFIX] Fix index out of range by @taraspos in <https://github.com/kubernetes/kube-state-metrics/pull/2716>
+* [BUGFIX] Config file overrides apply to some fields but not other by @rashmichandrashekar in <https://github.com/kubernetes/kube-state-metrics/pull/2705>
+* [BUGFIX] Fix logic for plain text fallback format by @timonegk in <https://github.com/kubernetes/kube-state-metrics/pull/2730>
+* [FEATURE] Include reason label to `kube_deployment_status_condition` by @Rishab87 in <https://github.com/kubernetes/kube-state-metrics/pull/2719>
+* [FEATURE] Continue running kube-state-metrics when config file doesnt exist at startup by @rashmichandrashekar in <https://github.com/kubernetes/kube-state-metrics/pull/2703>
+* [FEATURE] Introduce deletion timestamp metric for daemonset, statefulset, deployment, service and pdb by @IgorIgnatevBolt in <https://github.com/kubernetes/kube-state-metrics/pull/2678>
+* [FEATURE] Add HorizontalPodAutoscaler created and deletionTimestamp info into metrics by @IgorIgnatevBolt in <https://github.com/kubernetes/kube-state-metrics/pull/2675>
+
 ## v2.16.0 / 2025-06-23
 
 **Note:**

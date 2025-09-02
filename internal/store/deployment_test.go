@@ -70,8 +70,8 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
 		# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
-    # HELP kube_deployment_spec_topology_spread_constraint Explicit details of each topology spread constraint in the deployment pod template.
-    # TYPE kube_deployment_spec_topology_spread_constraint gauge
+        # HELP kube_deployment_spec_topology_spread_constraint Explicit details of each topology spread constraint in the deployment's pod template.
+        # TYPE kube_deployment_spec_topology_spread_constraint gauge
 		# HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
 		# HELP kube_deployment_deletion_timestamp Unix deletion timestamp

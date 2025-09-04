@@ -1,0 +1,31 @@
+kind: ResourceMetricsConfig
+spec:
+  resources:
+    - groupVersionKind:
+        group: ""
+        version: "v1"
+        kind: "Pod"
+      resourceName: "pods"
+      metricNamePrefix: "kube_pod"
+      metrics:
+        - name: "phase"
+          help: "Pod phase"
+          each:
+            type: stateset  
+            stateSet:
+              labelName: "phase"
+              path: ["status","phase"]
+              list: ["Pending","Running","Succeeded","Failed","Unknown"]
+    - groupVersionKind:
+        group: "apps"
+        version: "v1"
+        kind: "Deployment"
+      resourceName: "deployments"
+      metricNamePrefix: "kube_deployment"
+      metrics:
+        - name: "spec_replicas"
+          help: "Desired replicas"
+          each:
+            type: gauge
+            gauge:
+              path: ["spec","replicas"]

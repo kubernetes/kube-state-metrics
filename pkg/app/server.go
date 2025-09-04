@@ -63,6 +63,10 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/util/proc"
 )
 
+// ClientGoVersion is the version for the client-go library used by KSM. This
+// value is set at build time using go build flags.
+var ClientGoVersion = "unknown"
+
 const (
 	metricsPath = "/metrics"
 	healthzPath = "/healthz"
@@ -86,6 +90,16 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) erro
 func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.MustRegister(versionCollector.NewCollector("kube_state_metrics"))
+
+	clientGoVersion := promauto.With(ksmMetricsRegistry).NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "kube_state_metrics_client_go_info",
+			Help: "An info metric for the client-go version used by kube-state-metrics",
+		},
+		[]string{"version"},
+	)
+	clientGoVersion.WithLabelValues(ClientGoVersion).Set(1)
+
 	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:        "http_request_duration_seconds",

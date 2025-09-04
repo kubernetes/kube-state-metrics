@@ -20,10 +20,12 @@ MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
 MARKDOWNLINT_CLI2_VERSION = 0.18.1
+CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
+KSM_MODULE = $(shell go list -m)
 
 DOCKER_CLI ?= docker
 PROMTOOL_CLI ?= promtool
-GOMPLATE_CLI ?= go tool github.com/hairyhenderson/gomplate/v4/cmd/gomplate 
+GOMPLATE_CLI ?= go tool github.com/hairyhenderson/gomplate/v4/cmd/gomplate
 GOJSONTOYAML_CLI ?= go tool github.com/brancz/gojsontoyaml
 EMBEDMD_CLI ?= go tool github.com/campoy/embedmd
 JSONNET_CLI ?= go tool github.com/google/go-jsonnet/cmd/jsonnet
@@ -69,7 +71,7 @@ doccheck: generate validate-template
 	@echo OK
 
 build-local:
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE}" -o kube-state-metrics
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${KSM_MODULE}/pkg/app.ClientGoVersion=${CLIENT_GO_VERSION}" -o kube-state-metrics
 
 build: kube-state-metrics
 

@@ -36,51 +36,9 @@ var (
 )
 
 func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_configmap_annotations",
-			"Kubernetes annotations converted to Prometheus labels.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
-				if len(allowAnnotationsList) == 0 {
-					return &metric.Family{}
-				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", c.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_configmap_labels",
-			"Kubernetes labels converted to Prometheus labels.",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
-				if len(allowLabelsList) == 0 {
-					return &metric.Family{}
-				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", c.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
+	metadataFamilies := createMetadataMetricFamiliesGenerator(allowAnnotationsList, allowLabelsList, descConfigMapLabelsDefaultLabels, "kube_configmap", wrapMetadataFunc)
+
+	return append(metadataFamilies,
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_configmap_info",
 			"Information about configmap.",
@@ -98,28 +56,6 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
-			"kube_configmap_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if !c.CreationTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
-						LabelValues: []string{},
-						Value:       float64(c.CreationTimestamp.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
 			"kube_configmap_metadata_resource_version",
 			"Resource version representing a specific version of the configmap.",
 			metric.Gauge,
@@ -131,7 +67,7 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-	}
+	)
 }
 
 func createConfigMapListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {

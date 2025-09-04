@@ -1,12 +1,9 @@
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
+	http://www.apache.org/licenses/LICENSE-2.0
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -73,6 +70,8 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
 		# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+        # HELP kube_deployment_spec_topology_spread_constraint Explicit details of each topology spread constraint in the deployment's pod template.
+        # TYPE kube_deployment_spec_topology_spread_constraint gauge
 		# HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
 		# HELP kube_deployment_deletion_timestamp Unix deletion timestamp
@@ -114,28 +113,56 @@ func TestDeploymentStore(t *testing.T) {
 							MaxSurge:       &depl1MaxSurge,
 						},
 					},
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
+								{
+									MaxSkew:           1,
+									TopologyKey:       "kubernetes.io/zone",
+									WhenUnsatisfiable: corev1.DoNotSchedule,
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"app": "example1",
+										},
+									},
+								},
+								{
+									MaxSkew:           1,
+									TopologyKey:       "kubernetes.io/hostname",
+									WhenUnsatisfiable: corev1.ScheduleAnyway,
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"app": "example1",
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			Want: metadata + `
-        kube_deployment_annotations{annotation_company_io_team="my-brilliant-team",deployment="depl1",namespace="ns1"} 1
-        kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
-        kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
-        kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
-        kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
-        kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_status_observed_generation{deployment="depl1",namespace="ns1"} 111
-        kube_deployment_status_replicas_available{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
-        kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
-        kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
-        kube_deployment_status_replicas_ready{deployment="depl1",namespace="ns1"} 10
-        kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="true"} 1
-        kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="false"} 0
-        kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="unknown"} 0
-        kube_deployment_status_condition{condition="Progressing",deployment="depl1",namespace="ns1",reason="NewReplicaSetAvailable",status="true"} 1
-        kube_deployment_status_condition{condition="Progressing",deployment="depl1",namespace="ns1",reason="NewReplicaSetAvailable",status="false"} 0
-        kube_deployment_status_condition{condition="Progressing",deployment="depl1",namespace="ns1",reason="NewReplicaSetAvailable",status="unknown"} 0
+kube_deployment_annotations{annotation_company_io_team="my-brilliant-team",deployment="depl1",namespace="ns1"} 1
+kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
+kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
+kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
+kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
+kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
+kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
+kube_deployment_spec_topology_spread_constraint{deployment="depl1",namespace="ns1",topology_key="kubernetes.io/zone",max_skew="1",when_unsatisfiable="DoNotSchedule",min_domains="1",label_selector="app=example1"} 1
+kube_deployment_spec_topology_spread_constraint{deployment="depl1",namespace="ns1",topology_key="kubernetes.io/hostname",max_skew="1",when_unsatisfiable="ScheduleAnyway",min_domains="1",label_selector="app=example1"} 1
+kube_deployment_status_observed_generation{deployment="depl1",namespace="ns1"} 111
+kube_deployment_status_replicas_available{deployment="depl1",namespace="ns1"} 10
+kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
+kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
+kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
+kube_deployment_status_replicas_ready{deployment="depl1",namespace="ns1"} 10
+kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="true"} 1
+kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="false"} 0
+kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="unknown"} 0
+kube_deployment_status_condition{condition="Progressing",deployment="depl1",namespace="ns1",reason="NewReplicaSetAvailable",status="true"} 1
+kube_deployment_status_condition{condition="Progressing",deployment="depl1",namespace="ns1",reason="NewReplicaSetAvailable",status="false"} 0
+kube_deployment_status_condition{condition="Progressing",deployment="depl1",namespace="ns1",reason="NewReplicaSetAvailable",status="unknown"} 0
 `,
 		},
 		{
@@ -170,29 +197,34 @@ func TestDeploymentStore(t *testing.T) {
 							MaxSurge:       &depl2MaxSurge,
 						},
 					},
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+						},
+					},
 				},
 			},
 			Want: metadata + `
-        kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
-        kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
-        kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_status_observed_generation{deployment="depl2",namespace="ns2"} 1111
-        kube_deployment_status_replicas_available{deployment="depl2",namespace="ns2"} 5
-        kube_deployment_status_replicas_unavailable{deployment="depl2",namespace="ns2"} 0
-        kube_deployment_status_replicas_updated{deployment="depl2",namespace="ns2"} 1
-        kube_deployment_status_replicas{deployment="depl2",namespace="ns2"} 10
-        kube_deployment_status_replicas_ready{deployment="depl2",namespace="ns2"} 5
-        kube_deployment_status_condition{condition="Available",deployment="depl2",namespace="ns2",reason="MinimumReplicasUnavailable",status="true"} 0
-        kube_deployment_status_condition{condition="Available",deployment="depl2",namespace="ns2",reason="MinimumReplicasUnavailable",status="false"} 1
-        kube_deployment_status_condition{condition="Available",deployment="depl2",namespace="ns2",reason="MinimumReplicasUnavailable",status="unknown"} 0
-        kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="ProgressDeadlineExceeded",status="true"} 0
-        kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="ProgressDeadlineExceeded",status="false"} 1
-        kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="ProgressDeadlineExceeded",status="unknown"} 0
-        kube_deployment_status_condition{condition="ReplicaFailure",deployment="depl2",namespace="ns2",reason="ReplicaSetCreateError",status="true"} 1
-        kube_deployment_status_condition{condition="ReplicaFailure",deployment="depl2",namespace="ns2",reason="ReplicaSetCreateError",status="false"} 0
-        kube_deployment_status_condition{condition="ReplicaFailure",deployment="depl2",namespace="ns2",reason="ReplicaSetCreateError",status="unknown"} 0
+kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
+kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
+kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
+kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl2",namespace="ns2"} 1
+kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl2",namespace="ns2"} 1
+kube_deployment_status_observed_generation{deployment="depl2",namespace="ns2"} 1111
+kube_deployment_status_replicas_available{deployment="depl2",namespace="ns2"} 5
+kube_deployment_status_replicas_unavailable{deployment="depl2",namespace="ns2"} 0
+kube_deployment_status_replicas_updated{deployment="depl2",namespace="ns2"} 1
+kube_deployment_status_replicas{deployment="depl2",namespace="ns2"} 10
+kube_deployment_status_replicas_ready{deployment="depl2",namespace="ns2"} 5
+kube_deployment_status_condition{condition="Available",deployment="depl2",namespace="ns2",reason="MinimumReplicasUnavailable",status="true"} 0
+kube_deployment_status_condition{condition="Available",deployment="depl2",namespace="ns2",reason="MinimumReplicasUnavailable",status="false"} 1
+kube_deployment_status_condition{condition="Available",deployment="depl2",namespace="ns2",reason="MinimumReplicasUnavailable",status="unknown"} 0
+kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="ProgressDeadlineExceeded",status="true"} 0
+kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="ProgressDeadlineExceeded",status="false"} 1
+kube_deployment_status_condition{condition="Progressing",deployment="depl2",namespace="ns2",reason="ProgressDeadlineExceeded",status="unknown"} 0
+kube_deployment_status_condition{condition="ReplicaFailure",deployment="depl2",namespace="ns2",reason="ReplicaSetCreateError",status="true"} 1
+kube_deployment_status_condition{condition="ReplicaFailure",deployment="depl2",namespace="ns2",reason="ReplicaSetCreateError",status="false"} 0
+kube_deployment_status_condition{condition="ReplicaFailure",deployment="depl2",namespace="ns2",reason="ReplicaSetCreateError",status="unknown"} 0
 `,
 		},
 		{
@@ -212,21 +244,21 @@ func TestDeploymentStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-        kube_deployment_metadata_generation{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_spec_paused{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_spec_replicas{deployment="depl3",namespace="ns3"} 1
-        kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="true"} 0
-        kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="false"} 1
-        kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="unknown"} 0
-        kube_deployment_status_observed_generation{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_available{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_ready{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_unavailable{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_updated{deployment="depl3",namespace="ns3"} 0
-	    kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="false"} 0
-        kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="true"} 1
-        kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="unknown"} 0
+kube_deployment_metadata_generation{deployment="depl3",namespace="ns3"} 0
+kube_deployment_spec_paused{deployment="depl3",namespace="ns3"} 0
+kube_deployment_spec_replicas{deployment="depl3",namespace="ns3"} 1
+kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="true"} 0
+kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="false"} 1
+kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="unknown"} 0
+kube_deployment_status_observed_generation{deployment="depl3",namespace="ns3"} 0
+kube_deployment_status_replicas{deployment="depl3",namespace="ns3"} 0
+kube_deployment_status_replicas_available{deployment="depl3",namespace="ns3"} 0
+kube_deployment_status_replicas_ready{deployment="depl3",namespace="ns3"} 0
+kube_deployment_status_replicas_unavailable{deployment="depl3",namespace="ns3"} 0
+kube_deployment_status_replicas_updated{deployment="depl3",namespace="ns3"} 0
+kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="false"} 0
+kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="true"} 1
+kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="unknown"} 0
 `,
 		},
 		{
@@ -257,7 +289,7 @@ func TestDeploymentStore(t *testing.T) {
 		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies(c.AllowAnnotationsList, nil))
 		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies(c.AllowAnnotationsList, nil))
 		if err := c.run(); err != nil {
-			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
+			t.Errorf("unexpected collecting result in %vth run:\\n%s", i, err)
 		}
 	}
 }

@@ -1761,8 +1761,8 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_pod_container_resource_limits The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
-				# HELP kube_pod_container_resource_requests The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
+				# HELP kube_pod_container_resource_limits [STABLE] The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
+				# HELP kube_pod_container_resource_requests [STABLE] The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
 				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
 				# HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
 				# HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.

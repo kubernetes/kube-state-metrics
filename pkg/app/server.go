@@ -488,6 +488,7 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 		Name:        "kube-state-metrics",
 		Description: "Self-metrics for kube-state-metrics",
 		Version:     version.Info(),
+		Profiling:   "false",
 		Links: []web.LandingLinks{
 			{
 				Address: metricsPath,

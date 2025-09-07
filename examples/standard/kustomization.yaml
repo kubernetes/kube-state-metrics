@@ -3,8 +3,8 @@ kind: Kustomization
 namespace: kube-system
 
 resources:
-  - cluster-role.yaml
-  - cluster-role-binding.yaml
-  - service-account.yaml
-  - deployment.yaml
-  - service.yaml
+- cluster-role.yaml
+- cluster-role-binding.yaml
+- service-account.yaml
+- deployment.yaml
+- service.yaml

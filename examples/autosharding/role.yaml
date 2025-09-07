@@ -8,17 +8,17 @@ metadata:
   name: kube-state-metrics
   namespace: kube-system
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - get
-  - apiGroups:
-      - apps
-    resourceNames:
-      - kube-state-metrics
-    resources:
-      - statefulsets
-    verbs:
-      - get
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+- apiGroups:
+  - apps
+  resourceNames:
+  - kube-state-metrics
+  resources:
+  - statefulsets
+  verbs:
+  - get  

@@ -1,0 +1,181 @@
+name: Pre-Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      new_version:
+        description: 'The new release version (e.g., v2.10.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  
+env:
+  GO_VERSION: "^1.24"
+  GOLANGCI_LINT_VERSION: "v2.4.0"
+  E2E_SETUP_KIND: yes
+  E2E_SETUP_KUBECTL: yes
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.new_version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version format is incorrect. It must be in the format 'vX.Y.Z'."
+            exit 1
+          fi
+          echo "Version format is valid."
+      - name: Checkout into the corresponding release branch
+        uses: actions/checkout@v4
+      - name: Checkout to release branch
+        run: |
+          git checkout -b prep-${{ inputs.new_version }}
+          MAJOR_MINOR_VERSION=$(echo "${{ inputs.new_version }}" | sed 's/^v//' | cut -d. -f1,2)
+          if git show-ref --verify --quiet refs/remotes/origin/release-$MAJOR_MINOR_VERSION; then
+            echo "Release branch release-$MAJOR_MINOR_VERSION already exists, switching to it"
+            git checkout -b release-$MAJOR_MINOR_VERSION origin/release-$MAJOR_MINOR_VERSION
+          else
+            echo "Creating new release branch release-$MAJOR_MINOR_VERSION"
+            git checkout -b release-$MAJOR_MINOR_VERSION
+            git push origin release-$MAJOR_MINOR_VERSION
+          fi          
+          git checkout prep-${{ inputs.new_version }}
+      - name: Set up the go@${{ env.GO_VERSION }} environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Update the VERSION manifest
+        run: echo "${{ inputs.new_version }}" | sed 's/^v//' > VERSION
+      - name: Update data.yaml
+        run: ./scripts/update-data-yaml.sh "${{ inputs.new_version }}"
+      - name: Update the compatibility matrix (README.md)
+        run: make generate
+      - name: Move unreleased to released in CHANGELOG.md
+        run: ./scripts/generate-release-date.sh "${{ inputs.new_version }}"
+      - name: make lint-fix
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+          sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+          make lint-fix
+      - name: Generate manifests
+        run: |
+            make clean || true
+            VERSION="${{ inputs.new_version }}" make examples
+      - name: Update the remote and commit the changes
+        run: |
+          git config --local user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --local user.name "${{ github.actor }}"
+          git add .
+          git commit -m "chore: Cut ${{ inputs.new_version }}"
+          git push origin prep-${{ inputs.new_version }}
+      - name: Validate docs
+        run: make doccheck
+      - name: Validate manifests
+        run: make validate-manifests
+      - name: Validate go modules
+        run: make validate-modules
+      - name: Run rule tests
+        run: PROMTOOL_CLI=./promtool make install-promtool test-rules
+      - name: Run unit tests
+        run: make test-unit
+      - name: Run end-to-end tests
+        run: |
+          make e2e
+          find examples -name "*.yaml" -type f -exec sed -i 's|kube-state-metrics-amd64|kube-state-metrics|g; s|kube-state-metrics-arm64|kube-state-metrics|g' {} \;
+      - name: Run benchmark tests
+        run: |
+          BENCHSTAT_OUTPUT_FILE=result.txt ./tests/compare_benchmarks.sh main 2
+      - name: Post results to job summary
+        run: |
+          echo "### Benchmark Comparison Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          cat result.txt >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: Create a pull request
+        run: |
+          # Extract major.minor version for branch naming
+          MAJOR_MINOR_VERSION=$(echo "${{ inputs.new_version }}" | sed 's/^v//' | cut -d. -f1,2)
+          
+          # Get the most recent tag for changelog generation
+          PREV_TAG=$(git tag --sort=-version:refname | head -n1 || echo "")
+          
+          # Determine date range for PR search
+          if [[ -n "$PREV_TAG" ]]; then
+            PREV_TAG_DATE="$(git show -s --format=%cI "$PREV_TAG" 2>/dev/null || true)"
+            RANGE="${PREV_TAG}..HEAD"
+          else
+            PREV_TAG_DATE="1970-01-01T00:00:00Z"
+            PREV_REF="$(git rev-list --max-parents=0 HEAD)"
+            RANGE="${PREV_REF}..HEAD"
+          fi
+          
+          # Format dates for PR search
+          PREV_DATE_SHORT="$(date -d "$PREV_TAG_DATE" +%Y-%m-%d 2>/dev/null || echo "1970-01-01")"
+          TAG_DATE_SHORT="$(date -u +%Y-%m-%d)"
+          
+          # Extract changelog section for this version
+          CHANGELOG_SECTION=$(awk '/^## '"${{ inputs.new_version }}"'/{flag=1; next} /^## /{if(flag) exit} flag' CHANGELOG.md | \
+                              grep -E '^\s*\*\s*\[' | \
+                              sed 's/^/    /' || \
+                              echo "    No user-facing changes found for this version.")
+          
+          # Get merged PRs in the date range
+          PR_LINES="$(gh pr list \
+                        --state merged \
+                        --search "merged:${PREV_DATE_SHORT}..${TAG_DATE_SHORT}" \
+                        --json number,title,author \
+                        --limit 1000 \
+                        --template '{{range .}}{{.number}}|{{.title}}|{{.author.login}}{{"\n"}}{{end}}')" || true
+          
+          # Build full changelog from merged PRs
+          FULL_CHANGELOG_LINES=()
+          if [[ -n "$PR_LINES" ]]; then
+            while IFS= read -r line; do
+              if [[ -n "$line" ]]; then
+                prnum="${line%%|*}"
+                rest="${line#*|}"
+                title="${rest%%|*}"
+                login="${rest##*|}"
+                FULL_CHANGELOG_LINES+=("    - ${title} by @${login} in #${prnum}")
+              fi
+            done <<< "$PR_LINES"
+          fi
+          
+          # Format full changelog text
+          FULL_CHANGELOG_TEXT=""
+          if [[ ${#FULL_CHANGELOG_LINES[@]} -gt 0 ]]; then
+            printf -v FULL_CHANGELOG_TEXT "%s\n" "${FULL_CHANGELOG_LINES[@]}"
+          else
+            FULL_CHANGELOG_TEXT="    (no merged PRs found in this release)"
+          fi
+          
+          # Create PR body file to avoid quote issues
+          cat > pr_body.txt << EOF
+          This PR was automatically created by the release workflow.
+
+          ## Changelog
+
+          $CHANGELOG_SECTION
+
+          ## Full Changelog
+
+          $FULL_CHANGELOG_TEXT
+          EOF
+
+          # Create the pull request
+          gh pr create \
+            --title "chore: Cut ${{ inputs.new_version }}" \
+            --body-file pr_body.txt \
+            --base release-$MAJOR_MINOR_VERSION \
+            --head prep-${{ inputs.new_version }} \
+            --reviewer @sig-instrumentation-approvers \
+            --assignee @sig-instrumentation-leads
+          
+          # Clean up temporary file
+          rm pr_body.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -23,6 +23,8 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -45,6 +47,63 @@ var (
 func TestJobStore(t *testing.T) {
 	var trueValue = true
 	var falseValue = false
+
+	// Create the pod fixtures for ready pod test
+	readyPod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ready-pod",
+			Namespace: "ns1",
+			Labels: map[string]string{
+				"job-name": "job-with-ready-pods",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				Kind: "Job",
+				Name: "job-with-ready-pods",
+				UID:  "job-123",
+			}},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
+	}
+
+	// Create an unready pod fixture
+	notReadyPod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "not-ready-pod",
+			Namespace: "ns1",
+			Labels: map[string]string{
+				"job-name": "job-with-ready-pods",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				Kind: "Job",
+				Name: "job-with-ready-pods",
+				UID:  "job-123",
+			}},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionFalse,
+				},
+			},
+		},
+	}
+
+	// Create a fake pod lister that we'll use for testing
+	podIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	podIndexer.Add(readyPod)
+	podIndexer.Add(notReadyPod)
+	podLister := corelisters.NewPodLister(podIndexer)
+	GlobalPodLister = podLister
 
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
@@ -81,6 +140,8 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_succeeded gauge
 		# HELP kube_job_status_suspended The number of pods which reached Phase Suspended.
 		# TYPE kube_job_status_suspended gauge
+		# HELP kube_job_status_ready The number of ready pods that belong to this Job.
+		# TYPE kube_job_status_ready gauge
 		`
 
 	cases := []generateMetricsTestCase{
@@ -124,6 +185,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_spec_parallelism{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_status_active{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_status_failed{job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_status_ready{job_name="RunningJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="RunningJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="RunningJob1",namespace="ns1"} 0
 `,
@@ -166,6 +228,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_active{job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_status_completion_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495803607e+09
 				kube_job_status_failed{job_name="SuccessfulJob1",namespace="ns1"} 0
+				kube_job_status_ready{job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob1",namespace="ns1"} 1
 `,
@@ -210,6 +273,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded"} 1
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="DeadlineExceeded"} 0
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="Evicted"} 0
+				kube_job_status_ready{job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
 `,
@@ -233,6 +297,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_spec_active_deadline_seconds{job_name="FailedJobWithNoConditions",namespace="ns1"} 900
 				kube_job_status_active{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
 				kube_job_status_failed{job_name="FailedJobWithNoConditions",namespace="ns1",reason=""} 1
+				kube_job_status_ready{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
 				kube_job_status_succeeded{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
 `,
 		},
@@ -274,6 +339,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_active{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_completion_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495804207e+09
 				kube_job_status_failed{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_ready{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 `,
@@ -307,6 +373,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_spec_parallelism{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_status_active{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_failed{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_ready{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
                 kube_job_status_suspended{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
@@ -344,6 +411,35 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_start_time{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
                 kube_job_status_suspended{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+                kube_job_status_ready{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+`,
+		},
+		// Test cases for ready pods metric
+		{
+			Obj: &v1batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "job-with-ready-pods",
+					Namespace: "ns1",
+					UID:       "job-123",
+				},
+				Spec: v1batch.JobSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"job-name": "job-with-ready-pods",
+						},
+					},
+				},
+				Status: v1batch.JobStatus{
+					Active: 2,
+				},
+			},
+			Want: metadata + `
+				kube_job_owner{job_name="job-with-ready-pods",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
+				kube_job_info{job_name="job-with-ready-pods",namespace="ns1"} 1
+				kube_job_status_active{job_name="job-with-ready-pods",namespace="ns1"} 2
+				kube_job_status_failed{job_name="job-with-ready-pods",namespace="ns1"} 0
+				kube_job_status_succeeded{job_name="job-with-ready-pods",namespace="ns1"} 0
+				kube_job_status_ready{job_name="job-with-ready-pods",namespace="ns1"} 1
 `,
 		},
 	}

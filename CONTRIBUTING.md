@@ -60,7 +60,7 @@ For unit tests:
 make test-unit
 ```
 
-And for E2E test:
+And for end-to-end integration tests:
 
 ```shell
 make e2e

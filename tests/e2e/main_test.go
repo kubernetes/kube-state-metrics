@@ -264,6 +264,7 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 	}
 	nonResources := map[string]bool{
 		"builder":   true,
+		"metadata":  true,
 		"utils":     true,
 		"testutils": true,
 	}

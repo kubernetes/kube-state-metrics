@@ -28,6 +28,7 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 )
 
 const (
@@ -168,6 +169,6 @@ func (f *Framework) ParseMetrics(metrics func(io.Writer) error) (map[string]*dto
 		return nil, fmt.Errorf("failed to get metrics: %w", err)
 	}
 
-	parser := &expfmt.TextParser{}
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	return parser.TextToMetricFamilies(buf)
 }

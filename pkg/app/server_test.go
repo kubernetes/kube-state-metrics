@@ -213,6 +213,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_resource_limits The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
 # HELP kube_pod_container_resource_requests The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
 # HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
+# HELP kube_pod_container_status_resource_limits The currently applied resource limits of a container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
+# HELP kube_pod_container_status_resource_requests The currently applied resource requests of a container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
 # HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 # HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container in unix timestamp.
@@ -229,6 +231,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_init_container_info [STABLE] Information about an init container in a pod.
 # HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
 # HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
+# HELP kube_pod_init_container_status_resource_limits The currently applied resource limits of an init container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
+# HELP kube_pod_init_container_status_resource_requests The currently applied resource requests of an init container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
 # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
 # HELP kube_pod_init_container_status_ready [STABLE] Describes whether the init containers readiness check succeeded.
 # HELP kube_pod_init_container_status_restarts_total [STABLE] The number of restarts for the init container.
@@ -267,6 +271,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_container_resource_limits gauge
 # TYPE kube_pod_container_resource_requests gauge
 # TYPE kube_pod_container_state_started gauge
+# TYPE kube_pod_container_status_resource_limits gauge
+# TYPE kube_pod_container_status_resource_requests gauge
 # TYPE kube_pod_container_status_last_terminated_exitcode gauge
 # TYPE kube_pod_container_status_last_terminated_reason gauge
 # TYPE kube_pod_container_status_last_terminated_timestamp gauge
@@ -283,6 +289,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_init_container_info gauge
 # TYPE kube_pod_init_container_resource_limits gauge
 # TYPE kube_pod_init_container_resource_requests gauge
+# TYPE kube_pod_init_container_status_resource_limits gauge
+# TYPE kube_pod_init_container_status_resource_requests gauge
 # TYPE kube_pod_init_container_status_last_terminated_reason gauge
 # TYPE kube_pod_init_container_status_ready gauge
 # TYPE kube_pod_init_container_status_restarts_total counter

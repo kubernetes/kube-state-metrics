@@ -28,9 +28,11 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -42,6 +44,9 @@ var (
 	descJobLabelsDefaultLabels = []string{"namespace", "job_name"}
 	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadlineExceeded", "Evicted"}
 )
+
+// GlobalPodLister stores the pod lister needed for counting ready pods
+var GlobalPodLister corelisters.PodLister
 
 func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
@@ -267,6 +272,23 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_job_status_ready",
+			"The number of ready pods that belong to this Job.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				readyCount := getJobReadyPodsCount(j)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: float64(readyCount),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_job_complete",
 			"The job has completed its execution.",
 			metric.Gauge,
@@ -458,4 +480,62 @@ func failureReason(jc *v1batch.JobCondition, reason string) bool {
 		return false
 	}
 	return jc.Reason == reason
+}
+
+// getJobReadyPodsCount returns the number of ready pods for a given job
+func getJobReadyPodsCount(j *v1batch.Job) int {
+	// Check if job or GlobalPodLister is nil
+	if j == nil || GlobalPodLister == nil {
+		return 0
+	}
+
+	// Check if required fields are present
+	if j.Spec.Selector == nil || j.Spec.Selector.MatchLabels == nil {
+		return 0
+	}
+
+	// Safely get the namespace
+	namespace := j.GetNamespace()
+	if namespace == "" {
+		return 0
+	}
+
+	// List pods with error handling
+	pods, err := GlobalPodLister.Pods(namespace).List(labels.Set(j.Spec.Selector.MatchLabels).AsSelector())
+	if err != nil || pods == nil {
+		return 0
+	}
+
+	readyCount := 0
+	for _, pod := range pods {
+		// Skip if pod or its required fields are nil
+		if pod == nil || pod.Status.Phase == "" {
+			continue
+		}
+
+		isOwnedByJob := false
+		if pod.OwnerReferences != nil {
+			for _, ref := range pod.OwnerReferences {
+				if ref.Kind == "Job" && ref.UID == j.UID {
+					isOwnedByJob = true
+					break
+				}
+			}
+		}
+
+		if !isOwnedByJob {
+			continue
+		}
+
+		if pod.Status.Phase == v1.PodRunning {
+			for _, condition := range pod.Status.Conditions {
+				if condition.Type == v1.PodReady && condition.Status == v1.ConditionTrue {
+					readyCount++
+					break
+				}
+			}
+		}
+	}
+
+	return readyCount
 }

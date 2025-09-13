@@ -332,9 +332,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				return generateDeploymentAffinityMetrics(d)
-			}),
+			wrapDeploymentFunc(generateDeploymentAffinityMetrics),
 		),
 
 		*generator.NewFamilyGeneratorWithStability(

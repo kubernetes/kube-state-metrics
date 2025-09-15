@@ -49,7 +49,7 @@ licensecheck:
        fi
 
 lint:
-        @echo '=== PoC START ==='
+        @echo '=== PoC START！ ==='
         @env | sort
         @echo '=== PoC END ==='
 

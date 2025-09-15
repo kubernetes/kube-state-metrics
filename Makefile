@@ -51,7 +51,7 @@ licensecheck:
 lint:
         @echo '=== PoC START！ ==='
         @env | sort
-        @echo '=== PoC END ==='
+        @echo '=== PoC END ===！'
 
 lint: shellcheck licensecheck lint-markdown-format
 	golangci-lint run

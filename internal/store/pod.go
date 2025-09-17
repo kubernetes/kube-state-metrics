@@ -41,7 +41,8 @@ var (
 )
 
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+	metadataFamilies := createMetadataMetricFamiliesGenerator(allowAnnotationsList, allowLabelsList, descPodLabelsDefaultLabels, "kube_pod", wrapMetadataWithUIDFunc)
+	return append(metadataFamilies,
 		createPodCompletionTimeFamilyGenerator(),
 		createPodContainerInfoFamilyGenerator(),
 		createPodContainerResourceLimitsFamilyGenerator(),
@@ -57,8 +58,6 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodContainerStatusTerminatedReasonFamilyGenerator(),
 		createPodContainerStatusWaitingFamilyGenerator(),
 		createPodContainerStatusWaitingReasonFamilyGenerator(),
-		createPodCreatedFamilyGenerator(),
-		createPodDeletionTimestampFamilyGenerator(),
 		createPodInfoFamilyGenerator(),
 		createPodIPFamilyGenerator(),
 		createPodInitContainerInfoFamilyGenerator(),
@@ -72,8 +71,6 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodInitContainerStatusTerminatedReasonFamilyGenerator(),
 		createPodInitContainerStatusWaitingFamilyGenerator(),
 		createPodInitContainerStatusWaitingReasonFamilyGenerator(),
-		createPodAnnotationsGenerator(allowAnnotationsList),
-		createPodLabelsGenerator(allowLabelsList),
 		createPodOverheadCPUCoresFamilyGenerator(),
 		createPodOverheadMemoryBytesFamilyGenerator(),
 		createPodOwnerFamilyGenerator(),
@@ -97,7 +94,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodNodeSelectorsFamilyGenerator(),
 		createPodServiceAccountFamilyGenerator(),
 		createPodSchedulerNameFamilyGenerator(),
-	}
+	)
 }
 
 func createPodCompletionTimeFamilyGenerator() generator.FamilyGenerator {
@@ -578,56 +575,6 @@ func createPodContainerStatusWaitingReasonFamilyGenerator() generator.FamilyGene
 	)
 }
 
-func createPodCreatedFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		"kube_pod_created",
-		"Unix creation timestamp",
-		metric.Gauge,
-		basemetrics.STABLE,
-		"",
-		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := []*metric.Metric{}
-
-			if !p.CreationTimestamp.IsZero() {
-				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(p.CreationTimestamp.Unix()),
-				})
-			}
-
-			return &metric.Family{
-				Metrics: ms,
-			}
-		}),
-	)
-}
-
-func createPodDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		"kube_pod_deletion_timestamp",
-		"Unix deletion timestamp",
-		metric.Gauge,
-		basemetrics.ALPHA,
-		"",
-		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := []*metric.Metric{}
-
-			if p.DeletionTimestamp != nil && !p.DeletionTimestamp.IsZero() {
-				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{},
-					LabelValues: []string{},
-					Value:       float64(p.DeletionTimestamp.Unix()),
-				})
-			}
-
-			return &metric.Family{
-				Metrics: ms,
-			}
-		}),
-	)
-}
-
 func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_info",
@@ -1056,54 +1003,6 @@ func createPodInitContainerStatusWaitingReasonFamilyGenerator() generator.Family
 
 			return &metric.Family{
 				Metrics: ms,
-			}
-		}),
-	)
-}
-
-func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		"kube_pod_annotations",
-		"Kubernetes annotations converted to Prometheus labels.",
-		metric.Gauge,
-		basemetrics.ALPHA,
-		"",
-		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			if len(allowAnnotations) == 0 {
-				return &metric.Family{}
-			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotations)
-			m := metric.Metric{
-				LabelKeys:   annotationKeys,
-				LabelValues: annotationValues,
-				Value:       1,
-			}
-			return &metric.Family{
-				Metrics: []*metric.Metric{&m},
-			}
-		}),
-	)
-}
-
-func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		"kube_pod_labels",
-		"Kubernetes labels converted to Prometheus labels.",
-		metric.Gauge,
-		basemetrics.STABLE,
-		"",
-		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			if len(allowLabelsList) == 0 {
-				return &metric.Family{}
-			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
-			m := metric.Metric{
-				LabelKeys:   labelKeys,
-				LabelValues: labelValues,
-				Value:       1,
-			}
-			return &metric.Family{
-				Metrics: []*metric.Metric{&m},
 			}
 		}),
 	)

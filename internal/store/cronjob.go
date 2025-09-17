@@ -36,59 +36,13 @@ import (
 )
 
 var (
-	descCronJobAnnotationsName     = "kube_cronjob_annotations" //nolint:gosec
-	descCronJobAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
-	descCronJobLabelsName          = "kube_cronjob_labels"
-	descCronJobLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
 )
 
 func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			descCronJobAnnotationsName,
-			descCronJobAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
-				if len(allowAnnotationsList) == 0 {
-					return &metric.Family{}
-				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", j.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descCronJobLabelsName,
-			descCronJobLabelsHelp,
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
-				if len(allowLabelsList) == 0 {
-					return &metric.Family{}
-				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", j.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
+	metadataFamilies := createMetadataMetricFamiliesGenerator(allowAnnotationsList, allowLabelsList, descCronJobLabelsDefaultLabels, "kube_cronjob", wrapMetadataFunc)
+
+	return append(metadataFamilies,
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_cronjob_info",
 			"Info about cronjob.",
@@ -108,27 +62,6 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 							Value:       1,
 						},
 					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_cronjob_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
-				ms := []*metric.Metric{}
-				if !j.CreationTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
-						LabelValues: []string{},
-						Value:       float64(j.CreationTimestamp.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
 				}
 			}),
 		),
@@ -321,7 +254,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-	}
+	)
 }
 
 func wrapCronJobFunc(f func(*batchv1.CronJob) *metric.Family) func(interface{}) *metric.Family {

@@ -44,17 +44,15 @@ func (m metricTargetType) String() string {
 }
 
 var (
-	descHorizontalPodAutoscalerAnnotationsName     = "kube_horizontalpodautoscaler_annotations"
-	descHorizontalPodAutoscalerAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
-	descHorizontalPodAutoscalerLabelsName          = "kube_horizontalpodautoscaler_labels"
-	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "horizontalpodautoscaler"}
 
 	targetMetricLabels = []string{"metric_name", "metric_target_type"}
 )
 
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
+	metadataFamilies := createMetadataMetricFamiliesGenerator(allowAnnotationsList, allowLabelsList, descHorizontalPodAutoscalerLabelsDefaultLabels, "kube_horizontalpodautoscaler", wrapMetadataFunc)
+
+	return append(metadataFamilies,
 		createHPAInfo(),
 		createHPAMetaDataGeneration(),
 		createHPASpecMaxReplicas(),
@@ -63,12 +61,8 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createHPAStatusTargetMetric(),
 		createHPAStatusCurrentReplicas(),
 		createHPAStatusDesiredReplicas(),
-		createHPAAnnotations(allowAnnotationsList),
-		createHPALabels(allowLabelsList),
 		createHPAStatusCondition(),
-		createHPACreated(),
-		createHPADeletionTimestamp(),
-	}
+	)
 }
 
 func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(interface{}) *metric.Family {
@@ -338,56 +332,6 @@ func createHPAStatusDesiredReplicas() generator.FamilyGenerator {
 	)
 }
 
-func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		descHorizontalPodAutoscalerAnnotationsName,
-		descHorizontalPodAutoscalerAnnotationsHelp,
-		metric.Gauge,
-		basemetrics.ALPHA,
-		"",
-		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			if len(allowAnnotationsList) == 0 {
-				return &metric.Family{}
-			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   annotationKeys,
-						LabelValues: annotationValues,
-						Value:       1,
-					},
-				},
-			}
-		}),
-	)
-}
-
-func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		descHorizontalPodAutoscalerLabelsName,
-		descHorizontalPodAutoscalerLabelsHelp,
-		metric.Gauge,
-		basemetrics.STABLE,
-		"",
-		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			if len(allowLabelsList) == 0 {
-				return &metric.Family{}
-			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
-			return &metric.Family{
-				Metrics: []*metric.Metric{
-					{
-						LabelKeys:   labelKeys,
-						LabelValues: labelValues,
-						Value:       1,
-					},
-				},
-			}
-		}),
-	)
-}
-
 func createHPAStatusCondition() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_horizontalpodautoscaler_status_condition",
@@ -407,52 +351,6 @@ func createHPAStatusCondition() generator.FamilyGenerator {
 					metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 					ms = append(ms, metric)
 				}
-			}
-
-			return &metric.Family{
-				Metrics: ms,
-			}
-		}),
-	)
-}
-
-func createHPACreated() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		"kube_horizontalpodautoscaler_created",
-		"Unix creation timestamp",
-		metric.Gauge,
-		basemetrics.ALPHA,
-		"",
-		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			ms := []*metric.Metric{}
-
-			if !a.CreationTimestamp.IsZero() {
-				ms = append(ms, &metric.Metric{
-					Value: float64(a.CreationTimestamp.Unix()),
-				})
-			}
-
-			return &metric.Family{
-				Metrics: ms,
-			}
-		}),
-	)
-}
-
-func createHPADeletionTimestamp() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
-		"kube_horizontalpodautoscaler_deletion_timestamp",
-		"Unix deletion timestamp",
-		metric.Gauge,
-		basemetrics.ALPHA,
-		"",
-		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
-			ms := []*metric.Metric{}
-
-			if !a.DeletionTimestamp.IsZero() {
-				ms = append(ms, &metric.Metric{
-					Value: float64(a.DeletionTimestamp.Unix()),
-				})
 			}
 
 			return &metric.Family{

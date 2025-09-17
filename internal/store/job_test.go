@@ -45,6 +45,7 @@ var (
 func TestJobStore(t *testing.T) {
 	var trueValue = true
 	var falseValue = false
+	var readyValue int32 = 1
 
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
@@ -81,6 +82,8 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_succeeded gauge
 		# HELP kube_job_status_suspended The number of pods which reached Phase Suspended.
 		# TYPE kube_job_status_suspended gauge
+		# HELP kube_job_status_ready The number of ready pods that belong to this Job.
+		# TYPE kube_job_status_ready gauge
 		`
 
 	cases := []generateMetricsTestCase{
@@ -124,6 +127,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_spec_parallelism{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_status_active{job_name="RunningJob1",namespace="ns1"} 1
 				kube_job_status_failed{job_name="RunningJob1",namespace="ns1"} 0
+				kube_job_status_ready{job_name="RunningJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="RunningJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="RunningJob1",namespace="ns1"} 0
 `,
@@ -166,6 +170,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_active{job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_status_completion_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495803607e+09
 				kube_job_status_failed{job_name="SuccessfulJob1",namespace="ns1"} 0
+				kube_job_status_ready{job_name="SuccessfulJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob1",namespace="ns1"} 1.495800007e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob1",namespace="ns1"} 1
 `,
@@ -210,6 +215,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded"} 1
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="DeadlineExceeded"} 0
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="Evicted"} 0
+				kube_job_status_ready{job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
 `,
@@ -233,6 +239,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_spec_active_deadline_seconds{job_name="FailedJobWithNoConditions",namespace="ns1"} 900
 				kube_job_status_active{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
 				kube_job_status_failed{job_name="FailedJobWithNoConditions",namespace="ns1",reason=""} 1
+				kube_job_status_ready{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
 				kube_job_status_succeeded{job_name="FailedJobWithNoConditions",namespace="ns1"} 0
 `,
 		},
@@ -274,6 +281,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_active{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_completion_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495804207e+09
 				kube_job_status_failed{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_ready{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuccessfulJob2NoActiveDeadlineSeconds",namespace="ns1"} 1
 `,
@@ -307,6 +315,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_spec_parallelism{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
 				kube_job_status_active{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_failed{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+				kube_job_status_ready{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
                 kube_job_status_suspended{job_name="SuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1
@@ -344,6 +353,29 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_start_time{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 1.495800607e+09
 				kube_job_status_succeeded{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
                 kube_job_status_suspended{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+                kube_job_status_ready{job_name="UnsuspendedNoActiveDeadlineSeconds",namespace="ns1"} 0
+`,
+		},
+		// Test cases for ready pods metric
+		{
+			Obj: &v1batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "job-with-ready-pods",
+					Namespace: "ns1",
+					UID:       "job-123",
+				},
+				Status: v1batch.JobStatus{
+					Active: 2,
+					Ready:  &readyValue,
+				},
+			},
+			Want: metadata + `
+				kube_job_owner{job_name="job-with-ready-pods",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
+				kube_job_info{job_name="job-with-ready-pods",namespace="ns1"} 1
+				kube_job_status_active{job_name="job-with-ready-pods",namespace="ns1"} 2
+				kube_job_status_failed{job_name="job-with-ready-pods",namespace="ns1"} 0
+				kube_job_status_succeeded{job_name="job-with-ready-pods",namespace="ns1"} 0
+				kube_job_status_ready{job_name="job-with-ready-pods",namespace="ns1"} 1
 `,
 		},
 	}

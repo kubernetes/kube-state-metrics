@@ -56,7 +56,7 @@ type BuilderInterface interface {
 // BuildStoresFunc function signature that is used to return a list of cache.Store
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	listWatchWithContextFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcherWithContext,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 
@@ -64,7 +64,7 @@ type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 type BuildCustomResourceStoresFunc func(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
-	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
+	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcherWithContext,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 

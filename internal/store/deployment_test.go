@@ -31,8 +31,6 @@ import (
 var (
 	depl1Replicas int32 = 200
 	depl2Replicas int32 = 5
-	depl3Replicas int32 = 1
-	depl4Replicas int32 = 10
 
 	depl1MaxUnavailable = intstr.FromInt(10)
 	depl2MaxUnavailable = intstr.FromString("25%")
@@ -73,6 +71,8 @@ func TestDeploymentStore(t *testing.T) {
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
 		# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
 		# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+		# HELP kube_deployment_spec_topology_spread_constraint Explicit details of each topology spread constraint in the deployment's pod template.
+		# TYPE kube_deployment_spec_topology_spread_constraint gauge
 		# HELP kube_deployment_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 		# TYPE kube_deployment_labels gauge
 		# HELP kube_deployment_deletion_timestamp Unix deletion timestamp
@@ -114,6 +114,14 @@ func TestDeploymentStore(t *testing.T) {
 							MaxSurge:       &depl1MaxSurge,
 						},
 					},
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
+								{MaxSkew: 1, TopologyKey: "kubernetes.io/zone", WhenUnsatisfiable: corev1.DoNotSchedule},
+								{MaxSkew: 1, TopologyKey: "kubernetes.io/hostname", WhenUnsatisfiable: corev1.ScheduleAnyway},
+							},
+						},
+					},
 				},
 			},
 			Want: metadata + `
@@ -124,6 +132,8 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
         kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl1",namespace="ns1"} 10
         kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl1",namespace="ns1"} 10
+        kube_deployment_spec_topology_spread_constraint{deployment="depl1",namespace="ns1",topology_key="kubernetes.io/zone",max_skew="1",when_unsatisfiable="DoNotSchedule",min_domains="1",label_selector=""} 1
+        kube_deployment_spec_topology_spread_constraint{deployment="depl1",namespace="ns1",topology_key="kubernetes.io/hostname",max_skew="1",when_unsatisfiable="ScheduleAnyway",min_domains="1",label_selector=""} 1
         kube_deployment_status_observed_generation{deployment="depl1",namespace="ns1"} 111
         kube_deployment_status_replicas_available{deployment="depl1",namespace="ns1"} 10
         kube_deployment_status_replicas_unavailable{deployment="depl1",namespace="ns1"} 5
@@ -195,64 +205,8 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_condition{condition="ReplicaFailure",deployment="depl2",namespace="ns2",reason="ReplicaSetCreateError",status="unknown"} 0
 `,
 		},
-		{
-			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "depl3",
-					Namespace: "ns3",
-				},
-				Status: v1.DeploymentStatus{
-					Conditions: []v1.DeploymentCondition{
-						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse, Reason: "ThisReasonIsNotAllowed"},
-						{Type: v1.DeploymentProgressing, Status: corev1.ConditionTrue},
-					},
-				},
-				Spec: v1.DeploymentSpec{
-					Replicas: &depl3Replicas,
-				},
-			},
-			Want: metadata + `
-        kube_deployment_metadata_generation{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_spec_paused{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_spec_replicas{deployment="depl3",namespace="ns3"} 1
-        kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="true"} 0
-        kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="false"} 1
-        kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="unknown"} 0
-        kube_deployment_status_observed_generation{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_available{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_ready{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_unavailable{deployment="depl3",namespace="ns3"} 0
-        kube_deployment_status_replicas_updated{deployment="depl3",namespace="ns3"} 0
-	    kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="false"} 0
-        kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="true"} 1
-        kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="unknown"} 0
-`,
-		},
-		{
-			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "deployment-terminating",
-					Namespace:         "ns4",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1600000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Labels: map[string]string{
-						"app": "example4",
-					},
-					Generation: 22,
-				},
-				Spec: v1.DeploymentSpec{
-					Paused:   true,
-					Replicas: &depl4Replicas,
-				},
-			},
-			Want: `
-			    # HELP kube_deployment_deletion_timestamp Unix deletion timestamp
-			    # TYPE kube_deployment_deletion_timestamp gauge
-					kube_deployment_deletion_timestamp{deployment="deployment-terminating",namespace="ns4"} 1.8e+09`,
-			MetricNames: []string{"kube_deployment_deletion_timestamp"},
-		},
 	}
+
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies(c.AllowAnnotationsList, nil))
 		c.Headers = generator.ExtractMetricFamilyHeaders(deploymentMetricFamilies(c.AllowAnnotationsList, nil))

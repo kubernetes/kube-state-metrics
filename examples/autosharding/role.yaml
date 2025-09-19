@@ -21,4 +21,4 @@ rules:
   resources:
   - statefulsets
   verbs:
-  - get
+  - get  

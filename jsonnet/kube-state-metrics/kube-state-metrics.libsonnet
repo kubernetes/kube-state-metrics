@@ -192,7 +192,7 @@
       },
       livenessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 'http-metrics',
-        path: '/livez',
+        path: '/healthz',
       } },
       readinessProbe: { timeoutSeconds: 5, initialDelaySeconds: 5, httpGet: {
         port: 'telemetry',

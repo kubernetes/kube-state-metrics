@@ -267,6 +267,26 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_job_status_ready",
+			"The number of ready pods that belong to this Job.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+				value := float64(0)
+				if j.Status.Ready != nil {
+					value = float64(*j.Status.Ready)
+				}
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							Value: value,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_job_complete",
 			"The job has completed its execution.",
 			metric.Gauge,

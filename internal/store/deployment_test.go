@@ -30,15 +30,11 @@ import (
 
 var (
 	depl1Replicas int32 = 200
-	depl2Replicas int32 = 5 
-	depl3Replicas int32 = 1 
 	depl4Replicas int32 = 10
 
 	depl1MaxUnavailable = intstr.FromInt(10)
-	depl2MaxUnavailable = intstr.FromString("25%")
 
 	depl1MaxSurge = intstr.FromInt(10)
-	depl2MaxSurge = intstr.FromString("20%") 
 )
 
 func TestDeploymentStore(t *testing.T) {

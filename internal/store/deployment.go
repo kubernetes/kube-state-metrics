@@ -25,45 +25,41 @@ limitations under the License.
 package store
 
 import (
+	"context"
 
-"context"
+	"strconv"
 
-"strconv"
+	basemetrics "k8s.io/component-base/metrics"
 
-basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 
-"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
-generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	v1 "k8s.io/api/apps/v1"
 
-v1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
-"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
-"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/watch"
 
-"k8s.io/apimachinery/pkg/watch"
+	clientset "k8s.io/client-go/kubernetes"
 
-clientset "k8s.io/client-go/kubernetes"
-
-"k8s.io/client-go/tools/cache"
-
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
+	descDeploymentAnnotationsName = "kube_deployment_annotations"
 
-descDeploymentAnnotationsName = "kube_deployment_annotations"
+	descDeploymentAnnotationsHelp = "Kubernetes annotations converted to Prometheus labels."
 
-descDeploymentAnnotationsHelp = "Kubernetes annotations converted to Prometheus labels."
+	descDeploymentLabelsName = "kube_deployment_labels"
 
-descDeploymentLabelsName = "kube_deployment_labels"
+	descDeploymentLabelsHelp = "Kubernetes labels converted to Prometheus labels."
 
-descDeploymentLabelsHelp = "Kubernetes labels converted to Prometheus labels."
-
-descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
-
+	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 )
 
 // Reasons copied from kubernetes/pkg/controller/deployment/deployment_utils.go.
@@ -85,679 +81,613 @@ var (
 
 func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 
-return []generator.FamilyGenerator{
+	return []generator.FamilyGenerator{
 
-*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithStability(
 
-"kube_deployment_created",
+			"kube_deployment_created",
 
-"Unix creation timestamp",
+			"Unix creation timestamp",
 
-metric.Gauge,
+			metric.Gauge,
 
-basemetrics.STABLE,
+			basemetrics.STABLE,
 
-"",
+			"",
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-ms := []*metric.Metric{}
+				ms := []*metric.Metric{}
 
-if !d.CreationTimestamp.IsZero() {
+				if !d.CreationTimestamp.IsZero() {
 
-ms = append(ms, &metric.Metric{
+					ms = append(ms, &metric.Metric{
 
-Value: float64(d.CreationTimestamp.Unix()),
+						Value: float64(d.CreationTimestamp.Unix()),
+					})
 
-})
+				}
 
-}
+				return &metric.Family{
 
-return &metric.Family{
+					Metrics: ms,
+				}
 
-Metrics: ms,
+			}),
+		),
 
-}
+		*generator.NewFamilyGeneratorWithStability(
 
-}),
+			"kube_deployment_status_replicas",
 
-),
+			"The number of replicas per deployment.",
 
-*generator.NewFamilyGeneratorWithStability(
+			metric.Gauge,
 
-"kube_deployment_status_replicas",
+			basemetrics.STABLE,
 
-"The number of replicas per deployment.",
+			"",
 
-metric.Gauge,
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-basemetrics.STABLE,
+				return &metric.Family{
 
-"",
+					Metrics: []*metric.Metric{
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+						{
 
-return &metric.Family{
+							Value: float64(d.Status.Replicas),
+						},
+					},
+				}
 
-Metrics: []*metric.Metric{
+			}),
+		),
 
-{
+		*generator.NewFamilyGeneratorWithStability(
 
-Value: float64(d.Status.Replicas),
+			"kube_deployment_status_replicas_ready",
 
-},
+			"The number of ready replicas per deployment.",
 
-},
+			metric.Gauge,
 
-}
+			basemetrics.STABLE,
 
-}),
+			"",
 
-),
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-*generator.NewFamilyGeneratorWithStability(
+				return &metric.Family{
 
-"kube_deployment_status_replicas_ready",
+					Metrics: []*metric.Metric{
 
-"The number of ready replicas per deployment.",
+						{
 
-metric.Gauge,
+							Value: float64(d.Status.ReadyReplicas),
+						},
+					},
+				}
 
-basemetrics.STABLE,
+			}),
+		),
 
-"",
+		*generator.NewFamilyGeneratorWithStability(
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+			"kube_deployment_status_replicas_available",
 
-return &metric.Family{
+			"The number of available replicas per deployment.",
 
-Metrics: []*metric.Metric{
+			metric.Gauge,
 
-{
+			basemetrics.STABLE,
 
-Value: float64(d.Status.ReadyReplicas),
+			"",
 
-},
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-},
+				return &metric.Family{
 
-}
+					Metrics: []*metric.Metric{
 
-}),
+						{
 
-),
+							Value: float64(d.Status.AvailableReplicas),
+						},
+					},
+				}
 
-*generator.NewFamilyGeneratorWithStability(
+			}),
+		),
 
-"kube_deployment_status_replicas_available",
+		*generator.NewFamilyGeneratorWithStability(
 
-"The number of available replicas per deployment.",
+			"kube_deployment_status_replicas_unavailable",
 
-metric.Gauge,
+			"The number of unavailable replicas per deployment.",
 
-basemetrics.STABLE,
+			metric.Gauge,
 
-"",
+			basemetrics.STABLE,
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+			"",
 
-return &metric.Family{
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-Metrics: []*metric.Metric{
+				return &metric.Family{
 
-{
+					Metrics: []*metric.Metric{
 
-Value: float64(d.Status.AvailableReplicas),
+						{
 
-},
+							Value: float64(d.Status.UnavailableReplicas),
+						},
+					},
+				}
 
-},
+			}),
+		),
 
-}
+		*generator.NewFamilyGeneratorWithStability(
 
-}),
+			"kube_deployment_status_replicas_updated",
 
-),
+			"The number of updated replicas per deployment.",
 
-*generator.NewFamilyGeneratorWithStability(
+			metric.Gauge,
 
-"kube_deployment_status_replicas_unavailable",
+			basemetrics.STABLE,
 
-"The number of unavailable replicas per deployment.",
+			"",
 
-metric.Gauge,
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-basemetrics.STABLE,
+				return &metric.Family{
 
-"",
+					Metrics: []*metric.Metric{
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+						{
 
-return &metric.Family{
+							Value: float64(d.Status.UpdatedReplicas),
+						},
+					},
+				}
 
-Metrics: []*metric.Metric{
+			}),
+		),
 
-{
+		*generator.NewFamilyGeneratorWithStability(
 
-Value: float64(d.Status.UnavailableReplicas),
+			"kube_deployment_status_observed_generation",
 
-},
+			"The generation observed by the deployment controller.",
 
-},
+			metric.Gauge,
 
-}
+			basemetrics.STABLE,
 
-}),
+			"",
 
-),
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-*generator.NewFamilyGeneratorWithStability(
+				return &metric.Family{
 
-"kube_deployment_status_replicas_updated",
+					Metrics: []*metric.Metric{
 
-"The number of updated replicas per deployment.",
+						{
 
-metric.Gauge,
+							Value: float64(d.Status.ObservedGeneration),
+						},
+					},
+				}
 
-basemetrics.STABLE,
+			}),
+		),
 
-"",
+		*generator.NewFamilyGeneratorWithStability(
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+			"kube_deployment_status_condition",
 
-return &metric.Family{
+			"The current status conditions of a deployment.",
 
-Metrics: []*metric.Metric{
+			metric.Gauge,
 
-{
+			basemetrics.STABLE,
 
-Value: float64(d.Status.UpdatedReplicas),
+			"",
 
-},
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-},
+				ms := make([]*metric.Metric, len(d.Status.Conditions)*len(conditionStatuses))
 
-}
+				for i, c := range d.Status.Conditions {
 
-}),
+					conditionMetrics := addConditionMetrics(c.Status)
 
-),
+					for j, m := range conditionMetrics {
 
-*generator.NewFamilyGeneratorWithStability(
+						metric := m
 
-"kube_deployment_status_observed_generation",
+						reason := c.Reason
+						if _, ok := allowedDeploymentReasons[reason]; !ok {
+							reason = "unknown"
+						}
 
-"The generation observed by the deployment controller.",
+						metric.LabelKeys = []string{"reason", "condition", "status"}
 
-metric.Gauge,
+						metric.LabelValues = append([]string{reason, string(c.Type)}, metric.LabelValues...)
 
-basemetrics.STABLE,
+						ms[i*len(conditionStatuses)+j] = metric
 
-"",
+					}
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				}
 
-return &metric.Family{
+				return &metric.Family{
 
-Metrics: []*metric.Metric{
+					Metrics: ms,
+				}
 
-{
+			}),
+		),
 
-Value: float64(d.Status.ObservedGeneration),
+		*generator.NewFamilyGeneratorWithStability(
 
-},
+			"kube_deployment_spec_replicas",
 
-},
+			"Number of desired pods for a deployment.",
 
-}
+			metric.Gauge,
 
-}),
+			basemetrics.STABLE,
 
-),
+			"",
 
-*generator.NewFamilyGeneratorWithStability(
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-"kube_deployment_status_condition",
+				return &metric.Family{
 
-"The current status conditions of a deployment.",
+					Metrics: []*metric.Metric{
 
-metric.Gauge,
+						{
 
-basemetrics.STABLE,
+							Value: float64(*d.Spec.Replicas),
+						},
+					},
+				}
 
-"",
+			}),
+		),
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+		*generator.NewFamilyGeneratorWithStability(
 
-ms := make([]*metric.Metric, len(d.Status.Conditions)*len(conditionStatuses))
+			"kube_deployment_spec_paused",
 
-for i, c := range d.Status.Conditions {
+			"Whether the deployment is paused and will not be processed by the deployment controller.",
 
-conditionMetrics := addConditionMetrics(c.Status)
+			metric.Gauge,
 
-for j, m := range conditionMetrics {
+			basemetrics.STABLE,
 
-metric := m
+			"",
 
-reason := c.Reason
-if _, ok := allowedDeploymentReasons[reason]; !ok {
-	reason = "unknown"
-}
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-metric.LabelKeys = []string{"reason", "condition", "status"}
+				return &metric.Family{
 
-metric.LabelValues = append([]string{reason, string(c.Type)}, metric.LabelValues...)
+					Metrics: []*metric.Metric{
 
-ms[i*len(conditionStatuses)+j] = metric
+						{
 
-}
+							Value: boolFloat64(d.Spec.Paused),
+						},
+					},
+				}
 
-}
+			}),
+		),
 
-return &metric.Family{
+		*generator.NewFamilyGeneratorWithStability(
 
-Metrics: ms,
+			"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
 
-}
+			"Maximum number of unavailable replicas during a rolling update of a deployment.",
 
-}),
+			metric.Gauge,
 
-),
+			basemetrics.STABLE,
 
-*generator.NewFamilyGeneratorWithStability(
+			"",
 
-"kube_deployment_spec_replicas",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-"Number of desired pods for a deployment.",
+				if d.Spec.Strategy.RollingUpdate == nil {
 
-metric.Gauge,
+					return &metric.Family{}
 
-basemetrics.STABLE,
+				}
 
-"",
+				maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				if err != nil {
 
-return &metric.Family{
+					panic(err)
 
-Metrics: []*metric.Metric{
+				}
 
-{
+				return &metric.Family{
 
-Value: float64(*d.Spec.Replicas),
+					Metrics: []*metric.Metric{
 
-},
+						{
 
-},
+							Value: float64(maxUnavailable),
+						},
+					},
+				}
 
-}
+			}),
+		),
 
-}),
+		*generator.NewFamilyGeneratorWithStability(
 
-),
+			"kube_deployment_spec_strategy_rollingupdate_max_surge",
 
-*generator.NewFamilyGeneratorWithStability(
+			"Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
 
-"kube_deployment_spec_paused",
+			metric.Gauge,
 
-"Whether the deployment is paused and will not be processed by the deployment controller.",
+			basemetrics.STABLE,
 
-metric.Gauge,
+			"",
 
-basemetrics.STABLE,
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-"",
+				if d.Spec.Strategy.RollingUpdate == nil {
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+					return &metric.Family{}
 
-return &metric.Family{
+				}
 
-Metrics: []*metric.Metric{
+				maxSurge, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
 
-{
+				if err != nil {
 
-Value: boolFloat64(d.Spec.Paused),
+					panic(err)
 
-},
+				}
 
-},
+				return &metric.Family{
 
-}
+					Metrics: []*metric.Metric{
 
-}),
+						{
 
-),
+							Value: float64(maxSurge),
+						},
+					},
+				}
 
-*generator.NewFamilyGeneratorWithStability(
+			}),
+		),
 
-"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+		*generator.NewFamilyGeneratorWithStability(
 
-"Maximum number of unavailable replicas during a rolling update of a deployment.",
+			"kube_deployment_spec_topology_spread_constraint",
 
-metric.Gauge,
+			"Explicit details of each topology spread constraint in the deployment's pod template.",
 
-basemetrics.STABLE,
+			metric.Gauge,
 
-"",
+			basemetrics.ALPHA,
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+			"",
 
-if d.Spec.Strategy.RollingUpdate == nil {
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-return &metric.Family{}
+				ms := []*metric.Metric{}
+				for _, constraint := range d.Spec.Template.Spec.TopologySpreadConstraints {
+					labelSelectorStr, err := metav1.LabelSelectorAsSelector(constraint.LabelSelector)
+					if err != nil {
+						// Skip invalid label selectors
+						continue
+					}
+					minDomainsStr := "1"
+					if constraint.MinDomains != nil {
+						minDomainsStr = strconv.Itoa(int(*constraint.MinDomains))
+					}
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"topology_key", "max_skew", "when_unsatisfiable", "min_domains", "label_selector"},
+						LabelValues: []string{constraint.TopologyKey, strconv.Itoa(int(constraint.MaxSkew)), string(constraint.WhenUnsatisfiable), minDomainsStr, labelSelectorStr.String()},
+						Value:       1,
+					})
+				}
+				return &metric.Family{Metrics: ms}
 
-}
+			}),
+		),
 
-maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
+		*generator.NewFamilyGeneratorWithStability(
 
-if err != nil {
+			"kube_deployment_metadata_generation",
 
-panic(err)
+			"Sequence number representing a specific generation of the desired state.",
 
-}
+			metric.Gauge,
 
-return &metric.Family{
+			basemetrics.STABLE,
 
-Metrics: []*metric.Metric{
+			"",
 
-{
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-Value: float64(maxUnavailable),
+				return &metric.Family{
 
-},
+					Metrics: []*metric.Metric{
 
-},
+						{
 
-}
+							Value: float64(d.Generation),
+						},
+					},
+				}
 
-}),
+			}),
+		),
 
-),
+		*generator.NewFamilyGeneratorWithStability(
 
-*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_deletion_timestamp",
 
-"kube_deployment_spec_strategy_rollingupdate_max_surge",
+			"Unix deletion timestamp",
 
-"Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.",
+			metric.Gauge,
 
-metric.Gauge,
+			basemetrics.ALPHA,
 
-basemetrics.STABLE,
+			"",
 
-"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				ms := []*metric.Metric{}
 
-if d.Spec.Strategy.RollingUpdate == nil {
+				if !d.DeletionTimestamp.IsZero() {
 
-return &metric.Family{}
+					ms = append(ms, &metric.Metric{
 
-}
+						Value: float64(d.DeletionTimestamp.Unix()),
+					})
 
-maxSurge, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
+				}
 
-if err != nil {
+				return &metric.Family{
 
-panic(err)
+					Metrics: ms,
+				}
 
-}
+			}),
+		),
 
-return &metric.Family{
+		*generator.NewFamilyGeneratorWithStability(
 
-Metrics: []*metric.Metric{
+			descDeploymentAnnotationsName,
 
-{
+			descDeploymentAnnotationsHelp,
 
-Value: float64(maxSurge),
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
 
-},
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
 
-},
+				if len(allowAnnotationsList) == 0 {
 
-}
+					return &metric.Family{}
 
-}),
+				}
 
-),
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
 
-*generator.NewFamilyGeneratorWithStability(
+				return &metric.Family{
 
-"kube_deployment_spec_topology_spread_constraint",
+					Metrics: []*metric.Metric{
 
-"Explicit details of each topology spread constraint in the deployment's pod template.",
+						{
 
-metric.Gauge,
+							LabelKeys: annotationKeys,
 
-basemetrics.ALPHA,
+							LabelValues: annotationValues,
 
-"",
+							Value: 1,
+						},
+					},
+				}
 
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+			}),
+		),
 
-ms := []*metric.Metric{}
-for _, constraint := range d.Spec.Template.Spec.TopologySpreadConstraints {
-	labelSelectorStr, err := metav1.LabelSelectorAsSelector(constraint.LabelSelector)
-	if err != nil {
-		// Skip invalid label selectors
-		continue
+		*generator.NewFamilyGeneratorWithStability(
+
+			descDeploymentLabelsName,
+
+			descDeploymentLabelsHelp,
+
+			metric.Gauge,
+
+			basemetrics.STABLE,
+
+			"",
+
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+
+				if len(allowLabelsList) == 0 {
+
+					return &metric.Family{}
+
+				}
+
+				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
+
+				return &metric.Family{
+
+					Metrics: []*metric.Metric{
+
+						{
+
+							LabelKeys: labelKeys,
+
+							LabelValues: labelValues,
+
+							Value: 1,
+						},
+					},
+				}
+
+			}),
+		),
 	}
-	minDomainsStr := "1"
-	if constraint.MinDomains != nil {
-		minDomainsStr = strconv.Itoa(int(*constraint.MinDomains))
-	}
-	ms = append(ms, &metric.Metric{
-		LabelKeys:   []string{"topology_key", "max_skew", "when_unsatisfiable", "min_domains", "label_selector"},
-		LabelValues: []string{constraint.TopologyKey, strconv.Itoa(int(constraint.MaxSkew)), string(constraint.WhenUnsatisfiable), minDomainsStr, labelSelectorStr.String()},
-		Value:       1,
-	})
-}
-return &metric.Family{Metrics: ms}
-
-}),
-
-),
-
-*generator.NewFamilyGeneratorWithStability(
-
-"kube_deployment_metadata_generation",
-
-"Sequence number representing a specific generation of the desired state.",
-
-metric.Gauge,
-
-basemetrics.STABLE,
-
-"",
-
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-
-return &metric.Family{
-
-Metrics: []*metric.Metric{
-
-{
-
-Value: float64(d.Generation),
-
-},
-
-},
-
-}
-
-}),
-
-),
-
-*generator.NewFamilyGeneratorWithStability(
-
-"kube_deployment_deletion_timestamp",
-
-"Unix deletion timestamp",
-
-metric.Gauge,
-
-basemetrics.ALPHA,
-
-"",
-
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-
-ms := []*metric.Metric{}
-
-if !d.DeletionTimestamp.IsZero() {
-
-ms = append(ms, &metric.Metric{
-
-Value: float64(d.DeletionTimestamp.Unix()),
-
-})
-
-}
-
-return &metric.Family{
-
-Metrics: ms,
-
-}
-
-}),
-
-),
-
-*generator.NewFamilyGeneratorWithStability(
-
-
-descDeploymentAnnotationsName,
-
-
-descDeploymentAnnotationsHelp,
-
-
-metric.Gauge,
-basemetrics.ALPHA,
-"",
-
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-
-if len(allowAnnotationsList) == 0 {
-
-return &metric.Family{}
-
-}
-
-annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
-
-return &metric.Family{
-
-Metrics: []*metric.Metric{
-
-{
-
-LabelKeys: annotationKeys,
-
-LabelValues: annotationValues,
-
-Value: 1,
-
-},
-
-},
-
-}
-
-}),
-
-),
-
-*generator.NewFamilyGeneratorWithStability(
-
-descDeploymentLabelsName,
-
-descDeploymentLabelsHelp,
-
-metric.Gauge,
-
-basemetrics.STABLE,
-
-"",
-
-wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-
-if len(allowLabelsList) == 0 {
-
-return &metric.Family{}
-
-}
-
-labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
-
-return &metric.Family{
-
-Metrics: []*metric.Metric{
-
-{
-
-LabelKeys: labelKeys,
-
-LabelValues: labelValues,
-
-Value: 1,
-
-},
-
-},
-
-}
-
-}),
-
-),
-
-}
 
 }
 
 func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(interface{}) *metric.Family {
 
-return func(obj interface{}) *metric.Family {
+	return func(obj interface{}) *metric.Family {
 
-deployment := obj.(*v1.Deployment)
+		deployment := obj.(*v1.Deployment)
 
-metricFamily := f(deployment)
+		metricFamily := f(deployment)
 
-for _, m := range metricFamily.Metrics {
+		for _, m := range metricFamily.Metrics {
 
-m.LabelKeys, m.LabelValues = mergeKeyValues(descDeploymentLabelsDefaultLabels, []string{deployment.Namespace, deployment.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descDeploymentLabelsDefaultLabels, []string{deployment.Namespace, deployment.Name}, m.LabelKeys, m.LabelValues)
 
-}
+		}
 
-return metricFamily
+		return metricFamily
 
-}
+	}
 
 }
 
 func createDeploymentListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
 
-return &cache.ListWatch{
+	return &cache.ListWatch{
 
-ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 
-opts.FieldSelector = fieldSelector
+			opts.FieldSelector = fieldSelector
 
-return kubeClient.AppsV1().Deployments(ns).List(context.TODO(), opts)
+			return kubeClient.AppsV1().Deployments(ns).List(context.TODO(), opts)
 
-},
+		},
 
-WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 
-opts.FieldSelector = fieldSelector
+			opts.FieldSelector = fieldSelector
 
-return kubeClient.AppsV1().Deployments(ns).Watch(context.TODO(), opts)
+			return kubeClient.AppsV1().Deployments(ns).Watch(context.TODO(), opts)
 
-},
-
-}
+		},
+	}
 
 }

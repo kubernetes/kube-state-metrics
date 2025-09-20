@@ -198,9 +198,9 @@ func TestDeploymentStore(t *testing.T) {
 			Want: metadata + `
         kube_deployment_metadata_generation{deployment="depl-with-affinity",namespace="ns1"} 1
         kube_deployment_spec_paused{deployment="depl-with-affinity",namespace="ns1"} 0
-        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podaffinity",type="requiredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/zone",label_selector="app=cache"} 1
-        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podaffinity",type="preferredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/hostname",label_selector="app=web"} 1
-        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podantiaffinity",type="requiredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/hostname",label_selector="app=depl-with-affinity"} 1
+        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podaffinity",type="requiredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/zone",label_selector="app=cache",namespace_selector="",namespaces=""} 1
+        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podaffinity",type="preferredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/hostname",label_selector="app=web",namespace_selector="",namespaces=""} 1
+        kube_deployment_spec_affinity{deployment="depl-with-affinity",namespace="ns1",affinity="podantiaffinity",type="requiredDuringSchedulingIgnoredDuringExecution",topology_key="kubernetes.io/hostname",label_selector="app=depl-with-affinity",namespace_selector="",namespaces=""} 1
         kube_deployment_spec_replicas{deployment="depl-with-affinity",namespace="ns1"} 3
         kube_deployment_status_observed_generation{deployment="depl-with-affinity",namespace="ns1"} 1
         kube_deployment_status_replicas_available{deployment="depl-with-affinity",namespace="ns1"} 3

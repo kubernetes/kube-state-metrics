@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -419,9 +420,11 @@ func generateDeploymentAffinityMetrics(d *v1.Deployment) *metric.Family {
 		// Required affinity rules
 		for _, rule := range d.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
 			labelSelector := formatLabelSelector(rule.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.NamespaceSelector)
+			namespaces := strings.Join(rule.Namespaces, ",")
 			metrics = append(metrics, &metric.Metric{
-				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector"},
-				LabelValues: []string{"podaffinity", "requiredDuringSchedulingIgnoredDuringExecution", rule.TopologyKey, labelSelector},
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podaffinity", "requiredDuringSchedulingIgnoredDuringExecution", rule.TopologyKey, labelSelector, namespaceSelector, namespaces},
 				Value:       1,
 			})
 		}
@@ -429,9 +432,11 @@ func generateDeploymentAffinityMetrics(d *v1.Deployment) *metric.Family {
 		// Preferred affinity rules
 		for _, rule := range d.Spec.Template.Spec.Affinity.PodAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
 			labelSelector := formatLabelSelector(rule.PodAffinityTerm.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.PodAffinityTerm.NamespaceSelector)
+			namespaces := strings.Join(rule.PodAffinityTerm.Namespaces, ",")
 			metrics = append(metrics, &metric.Metric{
-				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector"},
-				LabelValues: []string{"podaffinity", "preferredDuringSchedulingIgnoredDuringExecution", rule.PodAffinityTerm.TopologyKey, labelSelector},
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podaffinity", "preferredDuringSchedulingIgnoredDuringExecution", rule.PodAffinityTerm.TopologyKey, labelSelector, namespaceSelector, namespaces},
 				Value:       1,
 			})
 		}
@@ -442,9 +447,11 @@ func generateDeploymentAffinityMetrics(d *v1.Deployment) *metric.Family {
 		// Required anti-affinity rules
 		for _, rule := range d.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
 			labelSelector := formatLabelSelector(rule.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.NamespaceSelector)
+			namespaces := strings.Join(rule.Namespaces, ",")
 			metrics = append(metrics, &metric.Metric{
-				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector"},
-				LabelValues: []string{"podantiaffinity", "requiredDuringSchedulingIgnoredDuringExecution", rule.TopologyKey, labelSelector},
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podantiaffinity", "requiredDuringSchedulingIgnoredDuringExecution", rule.TopologyKey, labelSelector, namespaceSelector, namespaces},
 				Value:       1,
 			})
 		}
@@ -452,9 +459,11 @@ func generateDeploymentAffinityMetrics(d *v1.Deployment) *metric.Family {
 		// Preferred anti-affinity rules
 		for _, rule := range d.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
 			labelSelector := formatLabelSelector(rule.PodAffinityTerm.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.PodAffinityTerm.NamespaceSelector)
+			namespaces := strings.Join(rule.PodAffinityTerm.Namespaces, ",")
 			metrics = append(metrics, &metric.Metric{
-				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector"},
-				LabelValues: []string{"podantiaffinity", "preferredDuringSchedulingIgnoredDuringExecution", rule.PodAffinityTerm.TopologyKey, labelSelector},
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podantiaffinity", "preferredDuringSchedulingIgnoredDuringExecution", rule.PodAffinityTerm.TopologyKey, labelSelector, namespaceSelector, namespaces},
 				Value:       1,
 			})
 		}
@@ -468,6 +477,5 @@ func formatLabelSelector(selector *metav1.LabelSelector) string {
 	if selector == nil {
 		return ""
 	}
-	// Use Kubernetes helper function as suggested by @mrueg
 	return metav1.FormatLabelSelector(selector)
 }

@@ -61,6 +61,43 @@ var (
 func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_owner",
+			"Information about the Deployment's owner.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				labelKeys := []string{"owner_kind", "owner_name"}
+
+				owners := d.GetOwnerReferences()
+				if len(owners) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
+								LabelKeys:   labelKeys,
+								LabelValues: []string{"", ""},
+								Value:       1,
+							},
+						},
+					}
+				}
+
+				ms := make([]*metric.Metric, len(owners))
+
+				for i, owner := range owners {
+					ms[i] = &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{owner.Kind, owner.Name},
+						Value:       1,
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_created",
 			"Unix creation timestamp",
 			metric.Gauge,

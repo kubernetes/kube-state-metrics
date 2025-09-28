@@ -35,11 +35,6 @@
 kube_statefulset_replicas - kube_statefulset_status_replicas_available
 ```
 
-**StatefulSet readiness:**
-```promql
-# StatefulSets with all replicas ready
-kube_statefulset_status_replicas_ready == kube_statefulset_replicas
-```
 
 ### Troubleshooting Queries
 

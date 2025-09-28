@@ -82,7 +82,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_statefulset_status_replicas_available",
 			"The number of available replicas per StatefulSet.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				return &metric.Family{

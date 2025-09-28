@@ -6,7 +6,7 @@
 | kube_statefulset_status_replicas                        | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | STABLE       |
 | kube_statefulset_status_replicas_current                | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | STABLE       |
 | kube_statefulset_status_replicas_ready                  | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | STABLE       |
-| kube_statefulset_status_replicas_available              | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | EXPERIMENTAL |
+| kube_statefulset_status_replicas_available              | Gauge       | The number of available replicas per StatefulSet.                                                                                      | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | STABLE       |
 | kube_statefulset_status_replicas_updated                | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | STABLE       |
 | kube_statefulset_status_observed_generation             | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | STABLE       |
 | kube_statefulset_replicas                               | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | STABLE       |
@@ -18,3 +18,99 @@
 | kube_statefulset_status_current_revision                | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt; <br> `revision`=&lt;statefulset-current-revision&gt;                                                                          | STABLE       |
 | kube_statefulset_status_update_revision                 | Gauge       |                                                                                                                                         | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt; <br> `revision`=&lt;statefulset-update-revision&gt;                                                                           | STABLE       |
 | kube_statefulset_deletion_timestamp                     | Gauge       | Unix deletion timestamp                                                                                                                 | `statefulset`=&lt;statefulset-name&gt; <br> `namespace`=&lt;statefulset-namespace&gt;                                                                                                                               | EXPERIMENTAL |
+
+## Common PromQL Queries
+
+### StatefulSet Health Monitoring
+
+**Check StatefulSet rollout status:**
+```promql
+# Percentage of updated replicas
+(kube_statefulset_status_replicas_updated / kube_statefulset_replicas) * 100
+```
+
+**Monitor unavailable replicas:**
+```promql
+# Number of unavailable replicas
+kube_statefulset_replicas - kube_statefulset_status_replicas_available
+```
+
+**StatefulSet readiness:**
+```promql
+# StatefulSets with all replicas ready
+kube_statefulset_status_replicas_ready == kube_statefulset_replicas
+```
+
+### Troubleshooting Queries
+
+**Find StatefulSets with outdated replicas:**
+```promql
+# StatefulSets with replicas not yet updated
+kube_statefulset_status_replicas_current != kube_statefulset_status_replicas_updated
+```
+
+**StatefulSets stuck during rollout:**
+```promql
+# StatefulSets where observed generation is behind metadata generation
+kube_statefulset_status_observed_generation < kube_statefulset_metadata_generation
+```
+
+**StatefulSets with scaling issues:**
+```promql
+# StatefulSets where current replicas don't match desired
+kube_statefulset_status_replicas_current != kube_statefulset_replicas
+```
+
+## Major Alerting Rules
+
+### Critical Alerts
+
+**StatefulSet is completely down:**
+```yaml
+- alert: StatefulSetDown
+  expr: kube_statefulset_status_replicas_available == 0 and kube_statefulset_replicas > 0
+  for: 5m
+  labels:
+    severity: critical
+  annotations:
+    summary: "StatefulSet {{ $labels.statefulset }} is completely down"
+    description: "StatefulSet {{ $labels.statefulset }} in namespace {{ $labels.namespace }} has no available replicas despite having {{ $labels.replicas }} desired replicas."
+```
+
+**StatefulSet rollout stuck:**
+```yaml
+- alert: StatefulSetRolloutStuck
+  expr: kube_statefulset_status_observed_generation < kube_statefulset_metadata_generation
+  for: 15m
+  labels:
+    severity: critical
+  annotations:
+    summary: "StatefulSet {{ $labels.statefulset }} rollout is stuck"
+    description: "StatefulSet {{ $labels.statefulset }} in namespace {{ $labels.namespace }} has been stuck rolling out for more than 15 minutes."
+```
+
+### Warning Alerts
+
+**StatefulSet has unavailable replicas:**
+```yaml
+- alert: StatefulSetReplicasUnavailable
+  expr: (kube_statefulset_replicas - kube_statefulset_status_replicas_available) > 0
+  for: 5m
+  labels:
+    severity: warning
+  annotations:
+    summary: "StatefulSet {{ $labels.statefulset }} has unavailable replicas"
+    description: "StatefulSet {{ $labels.statefulset }} in namespace {{ $labels.namespace }} has {{ $value }} unavailable replicas."
+```
+
+**StatefulSet replica count mismatch:**
+```yaml
+- alert: StatefulSetReplicasMismatch
+  expr: kube_statefulset_status_replicas_current != kube_statefulset_replicas
+  for: 10m
+  labels:
+    severity: warning
+  annotations:
+    summary: "StatefulSet {{ $labels.statefulset }} replica count mismatch"
+    description: "StatefulSet {{ $labels.statefulset }} in namespace {{ $labels.namespace }} has {{ $labels.status_replicas_current }} current replicas but {{ $labels.replicas }} are desired."
+```

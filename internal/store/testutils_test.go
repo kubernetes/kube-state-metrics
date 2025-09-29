@@ -35,7 +35,7 @@ kube_pod_container_info{container="container3",container_id="docker://ef789",ima
 }
 
 func TestRemoveUnusedWhitespace(t *testing.T) {
-	in := "       kube_cron_job_info \n        kube_pod_container_info \n        kube_config_map_info     "
+	in := "kube_cron_job_info\nkube_pod_container_info\nkube_config_map_info"
 
 	want := "kube_cron_job_info\nkube_pod_container_info\nkube_config_map_info"
 

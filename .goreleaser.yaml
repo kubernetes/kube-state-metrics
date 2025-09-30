@@ -1,0 +1,77 @@
+version: 2
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: "Features"
+      regexp: "(?i)(feat|feature|\\[feature\\]|\\[feat\\]|\\bFEATURE\\b)"
+      order: 1
+    - title: "Bug Fixes"  
+      regexp: "(?i)(fix|bugfix|\\[bugfix\\]|\\[BUGFIX\\]|\\bBUGFIX\\b)"
+      order: 2
+    - title: "Documentation"
+      regexp: "(?i)(docs?|documentation|\\[docs?\\])"
+      order: 3
+    - title: "Dependencies"
+      regexp: "(?i)(build\\(deps\\)|bump|dependencies)"
+      order: 4
+    - title: "Maintenance"
+      regexp: "(?i)(chore|refactor|\\[chore\\])"
+      order: 5
+    - title: "Other Changes"
+      regexp: ".*"
+      order: 99
+
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - 'merge conflict'
+      - 'Merge branch'
+      - 'Merge pull request'
+
+release:
+  github:
+    owner: kubernetes     
+    name: kube-state-metrics      
+
+  prerelease: "true"
+
+  header: |
+    ## {{ .Tag }} / {{ .Now.Format "2006-01-02" }}
+    
+    {{- if index .Env "GO_VERSION" }}
+    ## Note
+    - This release builds with Go `{{ index .Env "GO_VERSION" }}`
+    {{- end }}
+
+    {{- if index .Env "K8S_CLIENT_VERSION" }}
+    - This release builds with `k8s.io/client-go`: `{{ index .Env "K8S_CLIENT_VERSION" }}`
+    {{- end }}
+
+    {{- if index .Env "GITHUB_ACTOR" }}
+    - Release coordinator: @{{ index .Env "GITHUB_ACTOR" }}
+    {{- end }}
+
+  footer: |
+    **Full Changelog**: {{ .GitURL }}/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+  mode: replace
+  
+  # If set, will create a release discussion in the category specified.
+  # Warning: do not use categories in the 'Announcement' format.
+  # Check https://github.com/goreleaser/goreleaser/issues/2304 for more info.
+  # Default: ''.
+  discussion_category_name: Releases

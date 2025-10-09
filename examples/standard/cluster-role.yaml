@@ -125,4 +125,4 @@ rules:
   - roles
   verbs:
   - list
-  - watch
+  - watch  

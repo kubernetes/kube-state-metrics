@@ -32,37 +32,13 @@ import (
 )
 
 var (
-	descDaemonSetAnnotationsName     = "kube_daemonset_annotations"
-	descDaemonSetAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
-	descDaemonSetLabelsName          = "kube_daemonset_labels"
-	descDaemonSetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 )
 
 func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_daemonset_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				ms := []*metric.Metric{}
+	metadataFamilies := createMetadataMetricFamiliesGenerator(allowAnnotationsList, allowLabelsList, descDaemonSetLabelsDefaultLabels, "kube_daemonset", wrapMetadataFunc)
 
-				if !d.CreationTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
-						LabelValues: []string{},
-						Value:       float64(d.CreationTimestamp.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
+	return append(metadataFamilies,
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_daemonset_status_current_number_scheduled",
 			"The number of nodes running at least one daemon pod and are supposed to.",
@@ -223,71 +199,7 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_daemonset_deletion_timestamp",
-			"Unix deletion timestamp",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if !d.DeletionTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						Value: float64(d.DeletionTimestamp.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descDaemonSetAnnotationsName,
-			descDaemonSetAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				if len(allowAnnotationsList) == 0 {
-					return &metric.Family{}
-				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descDaemonSetLabelsName,
-			descDaemonSetLabelsHelp,
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
-				if len(allowLabelsList) == 0 {
-					return &metric.Family{}
-				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-	}
+	)
 }
 
 func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(interface{}) *metric.Family {

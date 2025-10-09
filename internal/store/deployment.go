@@ -34,10 +34,6 @@ import (
 )
 
 var (
-	descDeploymentAnnotationsName     = "kube_deployment_annotations"
-	descDeploymentAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
-	descDeploymentLabelsName          = "kube_deployment_labels"
-	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 )
 
@@ -59,27 +55,9 @@ var (
 )
 
 func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
-	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_deployment_created",
-			"Unix creation timestamp",
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				ms := []*metric.Metric{}
+	metadataFamilies := createMetadataMetricFamiliesGenerator(allowAnnotationsList, allowLabelsList, descDeploymentLabelsDefaultLabels, "kube_deployment", wrapMetadataFunc)
 
-				if !d.CreationTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						Value: float64(d.CreationTimestamp.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
+	return append(metadataFamilies,
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_status_replicas",
 			"The number of replicas per deployment.",
@@ -305,71 +283,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_deployment_deletion_timestamp",
-			"Unix deletion timestamp",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if !d.DeletionTimestamp.IsZero() {
-					ms = append(ms, &metric.Metric{
-						Value: float64(d.DeletionTimestamp.Unix()),
-					})
-				}
-
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descDeploymentAnnotationsName,
-			descDeploymentAnnotationsHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				if len(allowAnnotationsList) == 0 {
-					return &metric.Family{}
-				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   annotationKeys,
-							LabelValues: annotationValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descDeploymentLabelsName,
-			descDeploymentLabelsHelp,
-			metric.Gauge,
-			basemetrics.STABLE,
-			"",
-			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				if len(allowLabelsList) == 0 {
-					return &metric.Family{}
-				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   labelKeys,
-							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-	}
+	)
 }
 
 func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(interface{}) *metric.Family {

@@ -45,6 +45,8 @@ func TestDeploymentStore(t *testing.T) {
 	// Fixed metadata on type and help text. We prepend this to every expected
 	// output so we only have to modify a single place when doing adjustments.
 	const metadata = `
+		# HELP kube_deployment_owner Information about the Deployment's owner.
+		# TYPE kube_deployment_owner gauge
 		# HELP kube_deployment_annotations Kubernetes annotations converted to Prometheus labels.
 		# TYPE kube_deployment_annotations gauge
 		# HELP kube_deployment_created [STABLE] Unix creation timestamp
@@ -119,6 +121,7 @@ func TestDeploymentStore(t *testing.T) {
 			Want: metadata + `
         kube_deployment_annotations{annotation_company_io_team="my-brilliant-team",deployment="depl1",namespace="ns1"} 1
         kube_deployment_created{deployment="depl1",namespace="ns1"} 1.5e+09
+        kube_deployment_owner{deployment="depl1",namespace="ns1",owner_kind="",owner_name=""} 1
         kube_deployment_metadata_generation{deployment="depl1",namespace="ns1"} 21
         kube_deployment_spec_paused{deployment="depl1",namespace="ns1"} 0
         kube_deployment_spec_replicas{deployment="depl1",namespace="ns1"} 200
@@ -174,6 +177,7 @@ func TestDeploymentStore(t *testing.T) {
 			},
 			Want: metadata + `
         kube_deployment_metadata_generation{deployment="depl2",namespace="ns2"} 14
+        kube_deployment_owner{deployment="depl2",namespace="ns2",owner_kind="",owner_name=""} 1
         kube_deployment_spec_paused{deployment="depl2",namespace="ns2"} 1
         kube_deployment_spec_replicas{deployment="depl2",namespace="ns2"} 5
         kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl2",namespace="ns2"} 1
@@ -213,6 +217,7 @@ func TestDeploymentStore(t *testing.T) {
 			},
 			Want: metadata + `
         kube_deployment_metadata_generation{deployment="depl3",namespace="ns3"} 0
+        kube_deployment_owner{deployment="depl3",namespace="ns3",owner_kind="",owner_name=""} 1
         kube_deployment_spec_paused{deployment="depl3",namespace="ns3"} 0
         kube_deployment_spec_replicas{deployment="depl3",namespace="ns3"} 1
         kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="true"} 0
@@ -251,6 +256,59 @@ func TestDeploymentStore(t *testing.T) {
 			    # TYPE kube_deployment_deletion_timestamp gauge
 					kube_deployment_deletion_timestamp{deployment="deployment-terminating",namespace="ns4"} 1.8e+09`,
 			MetricNames: []string{"kube_deployment_deletion_timestamp"},
+		},
+		{
+			Obj: &v1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deployment-with-owner",
+					Namespace: "ns5",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind:       "Application",
+							Name:       "my-app",
+							Controller: &[]bool{true}[0],
+						},
+					},
+				},
+				Spec: v1.DeploymentSpec{
+					Replicas: &depl1Replicas,
+				},
+			},
+			Want: metadata + `
+				kube_deployment_owner{deployment="deployment-with-owner",namespace="ns5",owner_kind="Application",owner_name="my-app"} 1
+				kube_deployment_metadata_generation{deployment="deployment-with-owner",namespace="ns5"} 0
+				kube_deployment_spec_paused{deployment="deployment-with-owner",namespace="ns5"} 0
+				kube_deployment_spec_replicas{deployment="deployment-with-owner",namespace="ns5"} 200
+				kube_deployment_status_observed_generation{deployment="deployment-with-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas{deployment="deployment-with-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_available{deployment="deployment-with-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_ready{deployment="deployment-with-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_unavailable{deployment="deployment-with-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_updated{deployment="deployment-with-owner",namespace="ns5"} 0
+			`,
+		},
+		{
+			Obj: &v1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deployment-without-owner",
+					Namespace: "ns5",
+				},
+				Spec: v1.DeploymentSpec{
+					Replicas: &depl1Replicas,
+				},
+			},
+			Want: metadata + `
+				kube_deployment_owner{deployment="deployment-without-owner",namespace="ns5",owner_kind="",owner_name=""} 1
+				kube_deployment_metadata_generation{deployment="deployment-without-owner",namespace="ns5"} 0
+				kube_deployment_spec_paused{deployment="deployment-without-owner",namespace="ns5"} 0
+				kube_deployment_spec_replicas{deployment="deployment-without-owner",namespace="ns5"} 200
+				kube_deployment_status_observed_generation{deployment="deployment-without-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas{deployment="deployment-without-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_available{deployment="deployment-without-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_ready{deployment="deployment-without-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_unavailable{deployment="deployment-without-owner",namespace="ns5"} 0
+				kube_deployment_status_replicas_updated{deployment="deployment-without-owner",namespace="ns5"} 0
+			`,
 		},
 	}
 	for i, c := range cases {

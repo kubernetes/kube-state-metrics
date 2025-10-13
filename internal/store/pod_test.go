@@ -2178,6 +2178,104 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_scheduler",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod_with_container_status_resources",
+					Namespace: "ns1",
+					UID:       "uid_csr",
+				},
+				Spec: v1.PodSpec{
+					NodeName: "node1",
+					InitContainers: []v1.Container{
+						{
+							Name: "init-container1",
+						},
+					},
+					Containers: []v1.Container{
+						{
+							Name: "container1",
+						},
+						{
+							Name: "container2",
+						},
+					},
+				},
+				Status: v1.PodStatus{
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "init-container1",
+							Resources: &v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("100m"),
+									v1.ResourceMemory: resource.MustParse("64Mi"),
+								},
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("200m"),
+									v1.ResourceMemory: resource.MustParse("128Mi"),
+								},
+							},
+						},
+					},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "container1",
+							Resources: &v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("150m"),
+									v1.ResourceMemory: resource.MustParse("75Mi"),
+								},
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("250m"),
+									v1.ResourceMemory: resource.MustParse("125Mi"),
+								},
+							},
+						},
+						{
+							Name: "container2",
+							Resources: &v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("200m"),
+									v1.ResourceMemory: resource.MustParse("100Mi"),
+								},
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("400m"),
+									v1.ResourceMemory: resource.MustParse("200Mi"),
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_container_status_resource_limits The currently applied resource limits of a container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
+				# HELP kube_pod_container_status_resource_requests The currently applied resource requests of a container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
+				# HELP kube_pod_init_container_status_resource_limits The currently applied resource limits of an init container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
+				# HELP kube_pod_init_container_status_resource_requests The currently applied resource requests of an init container as reported by the container runtime. This represents the active cgroup configuration and may differ from the pod specification during in-place resource updates.
+				# TYPE kube_pod_container_status_resource_limits gauge
+				# TYPE kube_pod_container_status_resource_requests gauge
+				# TYPE kube_pod_init_container_status_resource_limits gauge
+				# TYPE kube_pod_init_container_status_resource_requests gauge
+				kube_pod_container_status_resource_limits{container="container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="cpu",uid="uid_csr",unit="core"} 0.25
+				kube_pod_container_status_resource_limits{container="container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="memory",uid="uid_csr",unit="byte"} 1.31072e+08
+				kube_pod_container_status_resource_limits{container="container2",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="cpu",uid="uid_csr",unit="core"} 0.4
+				kube_pod_container_status_resource_limits{container="container2",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="memory",uid="uid_csr",unit="byte"} 2.097152e+08
+				kube_pod_container_status_resource_requests{container="container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="cpu",uid="uid_csr",unit="core"} 0.15
+				kube_pod_container_status_resource_requests{container="container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="memory",uid="uid_csr",unit="byte"} 7.86432e+07
+				kube_pod_container_status_resource_requests{container="container2",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="cpu",uid="uid_csr",unit="core"} 0.2
+				kube_pod_container_status_resource_requests{container="container2",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="memory",uid="uid_csr",unit="byte"} 1.048576e+08
+				kube_pod_init_container_status_resource_limits{container="init-container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="cpu",uid="uid_csr",unit="core"} 0.2
+				kube_pod_init_container_status_resource_limits{container="init-container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="memory",uid="uid_csr",unit="byte"} 1.34217728e+08
+				kube_pod_init_container_status_resource_requests{container="init-container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="cpu",uid="uid_csr",unit="core"} 0.1
+				kube_pod_init_container_status_resource_requests{container="init-container1",namespace="ns1",node="node1",pod="pod_with_container_status_resources",resource="memory",uid="uid_csr",unit="byte"} 6.7108864e+07
+			`,
+			MetricNames: []string{
+				"kube_pod_container_status_resource_limits",
+				"kube_pod_container_status_resource_requests",
+				"kube_pod_init_container_status_resource_limits",
+				"kube_pod_init_container_status_resource_requests",
+			},
+		},
 	}
 
 	for i, c := range cases {

@@ -510,7 +510,7 @@ func createNodeStatusConditionFamilyGenerator() generator.FamilyGenerator {
 
 func createNodeVolumeCountGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
-		"kube_node_volumes_attached_count",
+		"kube_node_volumes_attached",
 		"Number of volumes attached to the node",
 		metric.Gauge,
 		basemetrics.STABLE,
@@ -529,7 +529,7 @@ func createNodeVolumeCountGenerator() generator.FamilyGenerator {
 
 func createNodeVolumeInUseGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
-		"kube_node_volumes_in_use_count",
+		"kube_node_volumes_in_use",
 		"Number of volumes in use on the node",
 		metric.Gauge,
 		basemetrics.STABLE,

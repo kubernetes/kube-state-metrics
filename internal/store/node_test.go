@@ -399,11 +399,11 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_node_volumes_attached_count [STABLE] Number of volumes attached to the node
-				# TYPE kube_node_volumes_attached_count gauge
-				kube_node_volumes_attached_count{node="127.0.0.1"} 2
+				# HELP kube_node_volumes_attached [STABLE] Number of volumes attached to the node
+				# TYPE kube_node_volumes_attached gauge
+				kube_node_volumes_attached{node="127.0.0.1"} 2
 			`,
-			MetricNames: []string{"kube_node_volumes_attached_count"},
+			MetricNames: []string{"kube_node_volumes_attached"},
 		},
 		{
 			Obj: &v1.Node{
@@ -417,11 +417,11 @@ func TestNodeStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_node_volumes_in_use_count [STABLE] Number of volumes in use on the node
-				# TYPE kube_node_volumes_in_use_count gauge
-				kube_node_volumes_in_use_count{node="127.0.0.1"} 1
+				# HELP kube_node_volumes_in_use [STABLE] Number of volumes in use on the node
+				# TYPE kube_node_volumes_in_use gauge
+				kube_node_volumes_in_use{node="127.0.0.1"} 1
 			`,
-			MetricNames: []string{"kube_node_volumes_in_use_count"},
+			MetricNames: []string{"kube_node_volumes_in_use"},
 		},
 	}
 	for i, c := range cases {

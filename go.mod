@@ -13,7 +13,7 @@ require (
 	github.com/oklog/run v1.2.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.67.1
+	github.com/prometheus/common v0.67.2
 	github.com/prometheus/exporter-toolkit v0.15.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.1
@@ -226,8 +226,8 @@ require (
 	gocloud.dev v0.41.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
-	golang.org/x/net v0.45.0 // indirect
-	golang.org/x/oauth2 v0.31.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/perf v0.0.0-20250909190841-7e13e04d9366 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect

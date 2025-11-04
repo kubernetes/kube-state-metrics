@@ -89,16 +89,9 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) erro
 // which implements customresource.RegistryFactory and pass all factories into this function.
 func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	ksmMetricsRegistry := prometheus.NewRegistry()
-	ksmMetricsRegistry.MustRegister(versionCollector.NewCollector("kube_state_metrics"))
-
-	clientGoVersion := promauto.With(ksmMetricsRegistry).NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "kube_state_metrics_client_go_info",
-			Help: "An info metric for the client-go version used by kube-state-metrics",
-		},
-		[]string{"version"},
-	)
-	clientGoVersion.WithLabelValues(ClientGoVersion).Set(1)
+	ksmMetricsRegistry.MustRegister(versionCollector.NewCollector("kube_state_metrics", versionCollector.WithExtraConstLabels(
+		prometheus.Labels{"client_go_version": ClientGoVersion},
+	)))
 
 	durationVec := promauto.With(ksmMetricsRegistry).NewHistogramVec(
 		prometheus.HistogramOpts{

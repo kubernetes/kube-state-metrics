@@ -623,6 +623,106 @@ Supported types are:
   * Percentages ending with a "%" are parsed to float
   * finally the string is parsed to float using <https://pkg.go.dev/strconv#ParseFloat> which should support all common number formats. If that fails an error is yielded
 
+##### Value Type Specification
+
+By default, kube-state-metrics automatically detects and converts values using the logic described above. However, you can **explicitly specify the value type** for more predictable parsing, especially for duration strings that would otherwise fail float parsing.
+
+###### Available Value Types
+
+The `valueType` field in gauge configuration accepts the following values:
+
+* `duration` - Explicitly parse Go duration strings (e.g., "1h", "30m", "1h30m45s") and convert them to seconds
+* `quantity` - Explicitly parse Kubernetes resource quantities (e.g., "250m", "5Gi") 
+* (empty/omitted) - Use automatic type detection (default behavior)
+
+###### Duration Value Type
+
+The `duration` value type is particularly useful for custom resources that store time values as Go duration strings, such as cert-manager Certificates.
+
+**Example: cert-manager Certificate Duration**
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: cert-manager.io
+        version: v1
+        kind: Certificate
+      labelsFromPath:
+        name: [metadata, name]
+        namespace: [metadata, namespace]
+      metrics:
+        - name: "certificate_duration_seconds"
+          help: "Certificate validity duration in seconds"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, duration]
+              valueType: duration  # Explicitly parse as duration
+
+        - name: "certificate_renew_before_seconds"
+          help: "Time before expiration when certificate should be renewed"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, renewBefore]
+              valueType: duration  # Explicitly parse as duration
+```
+
+**Supported Duration Formats**
+
+The `duration` value type uses Go's `time.ParseDuration` format and supports:
+
+* Hours: `"1h"`, `"24h"`, `"2160h"` (90 days)
+* Minutes: `"30m"`, `"90m"`
+* Seconds: `"45s"`
+* Milliseconds: `"500ms"`
+* Microseconds: `"100us"`, `"1000µs"`
+* Nanoseconds: `"1000ns"`
+* Combined: `"1h30m45s"`, `"2h15m30s"`
+
+All durations are converted to **seconds as float64** for Prometheus compatibility.
+
+**Example Metrics Output**
+
+For a cert-manager Certificate with `spec.duration: "2160h"` and `spec.renewBefore: "720h"`:
+
+```prometheus
+kube_customresource_certificate_duration_seconds{customresource_group="cert-manager.io", customresource_kind="Certificate", customresource_version="v1", name="example-cert", namespace="default"} 7776000
+kube_customresource_certificate_renew_before_seconds{customresource_group="cert-manager.io", customresource_kind="Certificate", customresource_version="v1", name="example-cert", namespace="default"} 2592000
+```
+
+**When to Use valueType**
+
+Use `valueType: duration` when:
+* The resource field contains Go duration strings (e.g., "72h", "30m")
+* Auto-detection fails because the string isn't recognized as a number
+* You want explicit, predictable parsing behavior
+
+Use `valueType: quantity` when:
+* You want to ensure Kubernetes quantity parsing (even if auto-detection would work)
+* You want to make the parsing behavior explicit in configuration
+
+###### valueType with valueFrom
+
+The `valueType` field works with both direct `path` and `valueFrom` configurations:
+
+```yaml
+# Direct path
+gauge:
+  path: [spec, duration]
+  valueType: duration
+
+# With valueFrom (nested extraction)
+gauge:
+  path: [spec]
+  valueFrom: [duration]
+  valueType: duration
+  labelsFromPath:
+    name: [name]
+```
+
 ##### Example for status conditions on Kubernetes Controllers
 
 ```yaml

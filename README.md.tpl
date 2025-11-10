@@ -53,6 +53,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Horizontal sharding](#horizontal-sharding)
     * [Automated sharding](#automated-sharding)
   * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
+* [High Availability](#high-availability)
 * [Setup](#setup)
   * [Building the Docker container](#building-the-docker-container)
 * [Usage](#usage)
@@ -304,6 +305,50 @@ spec:
 ```
 
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
+
+### High Availability
+
+Kube-state-metrics is a stateless service that reads from the Kubernetes API server. Be aware that multiple replicas increase the load on the Kubernetes API. Therefore, in most cases a single replica is also an option since most users scrape with a 30s interval. If you have the need for a higher scrape frequency or you have other constraints that require multiple replica, you can increase the availablity of kube-state-metrics in the following way:
+
+For high availability, run multiple kube-state-metrics replicas to prevent a single point of failure. A common setup uses at least 2 replicas, pod anti-affinity rules to ensure they run on different nodes, and a PodDisruptionBudget (PDB) with `minAvailable: 1` to protect against voluntary disruptions.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+spec:
+  replicas: 2
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: kube-state-metrics
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: kube-state-metrics
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.0
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kube-state-metrics-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: kube-state-metrics
+```
+
+If metrics get scraped at the service level via a ServiceMonitor (Prometheus-Operator) or similar, metrics won't need to be deduplicated in a HA setup.
 
 ### Setup
 

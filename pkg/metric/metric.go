@@ -17,6 +17,7 @@ limitations under the License.
 package metric
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"strconv"
@@ -64,7 +65,7 @@ type Metric struct {
 	Value       float64
 }
 
-func (m *Metric) Write(s *strings.Builder) {
+func (m *Metric) Write(s *bytes.Buffer) {
 	if len(m.LabelKeys) != len(m.LabelValues) {
 		panic(fmt.Sprintf(
 			"expected labelKeys %q to be of same length as labelValues %q",
@@ -78,7 +79,7 @@ func (m *Metric) Write(s *strings.Builder) {
 	s.WriteByte('\n')
 }
 
-func labelsToString(m *strings.Builder, keys, values []string) {
+func labelsToString(m *bytes.Buffer, keys, values []string) {
 	if len(keys) > 0 {
 		var separator byte = '{'
 
@@ -102,7 +103,7 @@ var (
 // escapeString replaces '\' by '\\', new line character by '\n', and '"' by
 // '\"'.
 // Taken from github.com/prometheus/common/expfmt/text_create.go.
-func escapeString(m *strings.Builder, v string) {
+func escapeString(m *bytes.Buffer, v string) {
 	escapeWithDoubleQuote.WriteString(m, v)
 }
 
@@ -110,7 +111,7 @@ func escapeString(m *strings.Builder, v string) {
 // a few common cases for increased efficiency. For non-hardcoded cases, it uses
 // strconv.AppendFloat to avoid allocations, similar to writeInt.
 // Taken from github.com/prometheus/common/expfmt/text_create.go.
-func writeFloat(w *strings.Builder, f float64) {
+func writeFloat(w *bytes.Buffer, f float64) {
 	switch {
 	case f == 1:
 		w.WriteByte('1')

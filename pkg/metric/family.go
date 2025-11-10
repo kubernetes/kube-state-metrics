@@ -17,7 +17,7 @@ limitations under the License.
 package metric
 
 import (
-	"strings"
+	"bytes"
 )
 
 // FamilyInterface interface for a family
@@ -40,11 +40,11 @@ func (f Family) Inspect(inspect func(Family)) {
 
 // ByteSlice returns the given Family in its string representation.
 func (f Family) ByteSlice() []byte {
-	b := strings.Builder{}
+	b := bytes.Buffer{}
 	for _, m := range f.Metrics {
 		b.WriteString(f.Name)
 		m.Write(&b)
 	}
 
-	return []byte(b.String())
+	return b.Bytes()
 }

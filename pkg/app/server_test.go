@@ -627,9 +627,6 @@ func TestCustomResourceExtension(t *testing.T) {
 		customResourceClients[f.Name()] = customResourceClient
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder()
 	builder.WithCustomResourceStoreFactories(factories...)
@@ -659,7 +656,7 @@ func TestCustomResourceExtension(t *testing.T) {
 	})
 
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
-	handler.ConfigureSharding(ctx, 0, 1)
+	handler.ConfigureSharding(builder.ctx, 0, 1)
 
 	// Wait for caches to fill
 	time.Sleep(time.Second)
@@ -968,14 +965,14 @@ func (f *fooFactory) ExpectedType() interface{} {
 	return &samplev1alpha1.Foo{}
 }
 
-func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher {
+func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcherWithContext {
 	client := customResourceClient.(*samplefake.Clientset)
 	return &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
 			return client.SamplecontrollerV1alpha1().Foos(ns).List(context.Background(), opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
 			return client.SamplecontrollerV1alpha1().Foos(ns).Watch(context.Background(), opts)
 		},

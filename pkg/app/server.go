@@ -513,8 +513,10 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 
 func handleClusterDelegationForProber(client kubernetes.Interface, probeType string) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		got := client.CoreV1().RESTClient().Get().AbsPath(probeType).Do(context.Background())
+		var statusCode int
+		got := client.CoreV1().RESTClient().Get().AbsPath(probeType).Do(context.Background()).StatusCode(&statusCode)
 		if got.Error() != nil {
+			klog.Warningf("Failed to contact API server for %s: got %d", probeType, statusCode)
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
 			return

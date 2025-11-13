@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -78,7 +79,7 @@ func TestDeploymentStore(t *testing.T) {
         # HELP kube_deployment_deletion_timestamp Unix deletion timestamp
         # TYPE kube_deployment_deletion_timestamp gauge
     `
-
+  
 	cases := []generateMetricsTestCase{
 		{
 			AllowAnnotationsList: []string{"company.io/team"},
@@ -101,6 +102,7 @@ func TestDeploymentStore(t *testing.T) {
 					AvailableReplicas:   10,
 					UnavailableReplicas: 5,
 					UpdatedReplicas:     2,
+					TerminatingReplicas: ptr.To[int32](3),
 					ObservedGeneration:  111,
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionTrue, Reason: "MinimumReplicasAvailable"},
@@ -132,6 +134,7 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_replicas_updated{deployment="depl1",namespace="ns1"} 2
         kube_deployment_status_replicas{deployment="depl1",namespace="ns1"} 15
         kube_deployment_status_replicas_ready{deployment="depl1",namespace="ns1"} 10
+        kube_deployment_status_terminating_replicas{deployment="depl1",namespace="ns1"} 3
         kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="true"} 1
         kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="false"} 0
         kube_deployment_status_condition{condition="Available",deployment="depl1",namespace="ns1",reason="MinimumReplicasAvailable",status="unknown"} 0
@@ -262,6 +265,7 @@ func TestDeploymentStore(t *testing.T) {
 					AvailableReplicas:   5,
 					UnavailableReplicas: 0,
 					UpdatedReplicas:     1,
+					TerminatingReplicas: nil,
 					ObservedGeneration:  1111,
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse, Reason: "MinimumReplicasUnavailable"},

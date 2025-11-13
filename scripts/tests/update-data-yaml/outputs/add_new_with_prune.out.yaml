@@ -1,0 +1,19 @@
+# This configuration tracks the last five releases, and acts as the source of truth for those entries in the README.
+#
+# This marks the latest release.
+version: "2.18.0"
+
+# List KSM-to-K8s version mapping for the last five releases here, and the default branch.
+compat:
+  - version: "v2.14.0"
+    kubernetes: "1.31"
+  - version: "v2.15.0"
+    kubernetes: "1.32"
+  - version: "v2.16.0"
+    kubernetes: "1.32"
+  - version: "v2.17.0"
+    kubernetes: "1.33"
+  - version: "v2.18.0"
+    kubernetes: "1.33"
+  - version: "main"
+    kubernetes: "1.33"

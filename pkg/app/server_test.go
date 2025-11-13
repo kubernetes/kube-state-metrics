@@ -210,8 +210,8 @@ func TestFullScrapeCycle(t *testing.T) {
 	expected := `# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
 # HELP kube_pod_completion_time [STABLE] Completion time in unix timestamp for a pod.
 # HELP kube_pod_container_info [STABLE] Information about a container in a pod.
-# HELP kube_pod_container_resource_limits The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
-# HELP kube_pod_container_resource_requests The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
+# HELP kube_pod_container_resource_limits [STABLE] The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
+# HELP kube_pod_container_resource_requests [STABLE] The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
 # HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
 # HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.

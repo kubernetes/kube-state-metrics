@@ -131,7 +131,7 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"",
 			wrapClusterRoleFunc(func(r *rbacv1.ClusterRole) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(r.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(r.ResourceVersion),
 				}
 			}),
 		),

@@ -1761,8 +1761,8 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_pod_container_resource_limits The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
-				# HELP kube_pod_container_resource_requests The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
+				# HELP kube_pod_container_resource_limits [STABLE] The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
+				# HELP kube_pod_container_resource_requests [STABLE] The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
 				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
 				# HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
 				# HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
@@ -2282,11 +2282,93 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 54
+	expectedFamilies := 55
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {
 			b.Fatalf("expected %d but got %v", expectedFamilies, len(families))
 		}
+	}
+}
+
+func TestGetPodStatusReasonValue(t *testing.T) {
+	reason := "TestReason"
+
+	tests := []struct {
+		name string
+		pod  *v1.Pod
+		want float64
+	}{
+		{
+			name: "matches Status.Reason",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Reason: "TestReason",
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "matches condition Reason",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Reason: "TestReason",
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "matches container terminated Reason",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason: "TestReason",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "no match returns 0",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Reason: "OtherReason",
+					Conditions: []v1.PodCondition{
+						{
+							Reason: "NotTestReason",
+						},
+					},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason: "AnotherReason",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getPodStatusReasonValue(tt.pod, reason)
+			if got != tt.want {
+				t.Errorf("getPodStatusReasonValue() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

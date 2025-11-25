@@ -140,7 +140,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			"",
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(i.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(i.ResourceVersion),
 				}
 			}),
 		),
@@ -155,10 +155,14 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				for _, rule := range i.Spec.Rules {
 					if rule.HTTP != nil {
 						for _, path := range rule.HTTP.Paths {
+							pathType := ""
+							if path.PathType != nil {
+								pathType = string(*path.PathType)
+							}
 							if path.Backend.Service != nil {
 								ms = append(ms, &metric.Metric{
-									LabelKeys:   []string{"host", "path", "service_name", "service_port"},
-									LabelValues: []string{rule.Host, path.Path, path.Backend.Service.Name, strconv.Itoa(int(path.Backend.Service.Port.Number))},
+									LabelKeys:   []string{"host", "path", "path_type", "service_name", "service_port"},
+									LabelValues: []string{rule.Host, path.Path, pathType, path.Backend.Service.Name, strconv.Itoa(int(path.Backend.Service.Port.Number))},
 									Value:       1,
 								})
 							} else {
@@ -167,8 +171,8 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 									apiGroup = *path.Backend.Resource.APIGroup
 								}
 								ms = append(ms, &metric.Metric{
-									LabelKeys:   []string{"host", "path", "resource_api_group", "resource_kind", "resource_name"},
-									LabelValues: []string{rule.Host, path.Path, apiGroup, path.Backend.Resource.Kind, path.Backend.Resource.Name},
+									LabelKeys:   []string{"host", "path", "path_type", "resource_api_group", "resource_kind", "resource_name"},
+									LabelValues: []string{rule.Host, path.Path, pathType, apiGroup, path.Backend.Resource.Kind, path.Backend.Resource.Name},
 									Value:       1,
 								})
 							}

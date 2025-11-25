@@ -92,6 +92,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
+		createPodStatusUnscheduledTimeFamilyGenerator(),
 		createPodTolerationsFamilyGenerator(),
 		createPodNodeSelectorsFamilyGenerator(),
 		createPodServiceAccountFamilyGenerator(),
@@ -169,7 +170,7 @@ func createPodContainerResourceLimitsFamilyGenerator() generator.FamilyGenerator
 		"kube_pod_container_resource_limits",
 		"The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		basemetrics.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -233,7 +234,7 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 		"kube_pod_container_resource_requests",
 		"The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.",
 		metric.Gauge,
-		basemetrics.ALPHA,
+		basemetrics.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := []*metric.Metric{}
@@ -1541,15 +1542,12 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			ms := []*metric.Metric{}
 
 			for _, reason := range podStatusReasons {
-				metric := &metric.Metric{}
-				metric.LabelKeys = []string{"reason"}
-				metric.LabelValues = []string{reason}
-				if p.Status.Reason == reason {
-					metric.Value = boolFloat64(true)
-				} else {
-					metric.Value = boolFloat64(false)
+				m := &metric.Metric{
+					LabelKeys:   []string{"reason"},
+					LabelValues: []string{reason},
+					Value:       getPodStatusReasonValue(p, reason),
 				}
-				ms = append(ms, metric)
+				ms = append(ms, m)
 			}
 
 			return &metric.Family{
@@ -1557,6 +1555,23 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			}
 		}),
 	)
+}
+
+func getPodStatusReasonValue(p *v1.Pod, reason string) float64 {
+	if p.Status.Reason == reason {
+		return 1
+	}
+	for _, cond := range p.Status.Conditions {
+		if cond.Reason == reason {
+			return 1
+		}
+	}
+	for _, cs := range p.Status.ContainerStatuses {
+		if cs.State.Terminated != nil && cs.State.Terminated.Reason == reason {
+			return 1
+		}
+	}
+	return 0
 }
 
 func createPodStatusScheduledFamilyGenerator() generator.FamilyGenerator {
@@ -1631,6 +1646,33 @@ func createPodStatusUnschedulableFamilyGenerator() generator.FamilyGenerator {
 						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       1,
+					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodStatusUnscheduledTimeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_status_unscheduled_time",
+		"Unix timestamp when pod moved into unscheduled status",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, c := range p.Status.Conditions {
+				if c.Type == v1.PodScheduled && c.Status == v1.ConditionFalse {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       float64(c.LastTransitionTime.Unix()),
 					})
 				}
 			}

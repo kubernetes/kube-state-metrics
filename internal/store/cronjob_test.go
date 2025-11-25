@@ -317,7 +317,7 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_status_active [STABLE] Active holds pointers to currently running jobs.
                 # HELP kube_cronjob_metadata_resource_version [STABLE] Resource version representing a specific version of the cronjob.
 				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
-				# HELP kube_cronjob_status_last_successful_time LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
+				# HELP kube_cronjob_status_last_successful_time [STABLE] LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_labels gauge
@@ -376,7 +376,7 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_status_active [STABLE] Active holds pointers to currently running jobs.
                 # HELP kube_cronjob_metadata_resource_version [STABLE] Resource version representing a specific version of the cronjob.
 				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
-				# HELP kube_cronjob_status_last_successful_time LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
+				# HELP kube_cronjob_status_last_successful_time [STABLE] LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge
 				# TYPE kube_cronjob_labels gauge
@@ -436,7 +436,7 @@ func TestCronJobStore(t *testing.T) {
 				# HELP kube_cronjob_spec_successful_job_history_limit Successful job history limit tells the controller how many completed jobs should be preserved.
 				# HELP kube_cronjob_spec_suspend [STABLE] Suspend flag tells the controller to suspend subsequent executions.
 				# HELP kube_cronjob_status_active [STABLE] Active holds pointers to currently running jobs.
-				# HELP kube_cronjob_status_last_successful_time LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
+				# HELP kube_cronjob_status_last_successful_time [STABLE] LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
                 # HELP kube_cronjob_metadata_resource_version [STABLE] Resource version representing a specific version of the cronjob.
 				# TYPE kube_cronjob_created gauge
 				# TYPE kube_cronjob_info gauge

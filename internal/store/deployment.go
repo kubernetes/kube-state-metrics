@@ -41,8 +41,62 @@ var (
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
 )
 
+// Reasons copied from kubernetes/pkg/controller/deployment/deployment_utils.go.
+var (
+	allowedDeploymentReasons = map[string]struct{}{
+		"ReplicaSetUpdated":          {},
+		"ReplicaSetCreateError":      {},
+		"NewReplicaSetCreated":       {},
+		"FoundNewReplicaSet":         {},
+		"NewReplicaSetAvailable":     {},
+		"ProgressDeadlineExceeded":   {},
+		"DeploymentPaused":           {},
+		"DeploymentResumed":          {},
+		"MinimumReplicasAvailable":   {},
+		"MinimumReplicasUnavailable": {},
+		"":                           {},
+	}
+)
+
 func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_owner",
+			"Information about the Deployment's owner.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				labelKeys := []string{"owner_kind", "owner_name"}
+
+				owners := d.GetOwnerReferences()
+				if len(owners) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{
+							{
+								LabelKeys:   labelKeys,
+								LabelValues: []string{"", ""},
+								Value:       1,
+							},
+						},
+					}
+				}
+
+				ms := make([]*metric.Metric, len(owners))
+
+				for i, owner := range owners {
+					ms[i] = &metric.Metric{
+						LabelKeys:   labelKeys,
+						LabelValues: []string{owner.Kind, owner.Name},
+						Value:       1,
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_created",
 			"Unix creation timestamp",
@@ -144,6 +198,26 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_status_terminating_replicas",
+			"The number of terminating replicas per deployment.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(r *v1.Deployment) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if r.Status.TerminatingReplicas != nil {
+					ms = append(ms, &metric.Metric{
+						Value: float64(*r.Status.TerminatingReplicas),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_status_observed_generation",
 			"The generation observed by the deployment controller.",
 			metric.Gauge,
@@ -174,8 +248,13 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
-						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
+						reason := c.Reason
+						if _, ok := allowedDeploymentReasons[reason]; !ok {
+							reason = "unknown"
+						}
+
+						metric.LabelKeys = []string{"reason", "condition", "status"}
+						metric.LabelValues = append([]string{reason, string(c.Type)}, metric.LabelValues...)
 						ms[i*len(conditionStatuses)+j] = metric
 					}
 				}
@@ -277,9 +356,29 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(d.ObjectMeta.Generation),
+							Value: float64(d.Generation),
 						},
 					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_deletion_timestamp",
+			"Unix deletion timestamp",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if !d.DeletionTimestamp.IsZero() {
+					ms = append(ms, &metric.Metric{
+						Value: float64(d.DeletionTimestamp.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
 				}
 			}),
 		),

@@ -210,8 +210,8 @@ func TestFullScrapeCycle(t *testing.T) {
 	expected := `# HELP kube_pod_annotations Kubernetes annotations converted to Prometheus labels.
 # HELP kube_pod_completion_time [STABLE] Completion time in unix timestamp for a pod.
 # HELP kube_pod_container_info [STABLE] Information about a container in a pod.
-# HELP kube_pod_container_resource_limits The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
-# HELP kube_pod_container_resource_requests The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
+# HELP kube_pod_container_resource_limits [STABLE] The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
+# HELP kube_pod_container_resource_requests [STABLE] The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
 # HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
 # HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
@@ -259,6 +259,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_status_scheduled [STABLE] Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time [STABLE] Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable [STABLE] Describes the unschedulable status for the pod.
+# HELP kube_pod_status_unscheduled_time Unix timestamp when pod moved into unscheduled status
 # HELP kube_pod_tolerations Information about the pod tolerations
 # TYPE kube_pod_annotations gauge
 # TYPE kube_pod_completion_time gauge
@@ -312,6 +313,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
+# TYPE kube_pod_status_unscheduled_time gauge
 # TYPE kube_pod_tolerations gauge
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con1",image_spec="k8s.gcr.io/hyperkube2_spec",image="k8s.gcr.io/hyperkube2",image_id="docker://sha256:bbb",container_id="docker://cd456"} 1
 kube_pod_container_info{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2",image_spec="k8s.gcr.io/hyperkube3_spec",image="k8s.gcr.io/hyperkube3",image_id="docker://sha256:ccc",container_id="docker://ef789"} 1
@@ -387,7 +389,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 		}
 	}
 
-	telemetryMux := buildTelemetryServer(reg)
+	telemetryMux := buildTelemetryServer(reg, false, nil)
 
 	req2 := httptest.NewRequest("GET", "http://localhost:8081/metrics", nil)
 
@@ -977,5 +979,98 @@ func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fiel
 			opts.FieldSelector = fieldSelector
 			return client.SamplecontrollerV1alpha1().Foos(ns).Watch(context.Background(), opts)
 		},
+	}
+}
+func TestConfigureResourcesAndMetrics(t *testing.T) {
+	// Prepare a config file in YAML format
+	configYAML := `
+"resources":
+  "pod": {}
+  "service": {}
+"metric_allowlist":
+  "kube_pod_info": {}
+"metric_denylist":
+  "kube_pod_labels": {}
+"metric_opt_in_list":
+  "kube_pod_status_phase": {}
+"labels_allow_list":
+  "labelX": 
+    - foo 
+    - bar
+"annotations_allow_list":
+  "annotationY": 
+     - baz
+`
+	opts := options.NewOptions()
+	// Set some initial values to be overwritten
+	opts.Resources = options.ResourceSet{"oldresource": {}}
+	opts.MetricAllowlist = options.MetricSet{"oldallow": {}}
+	opts.MetricDenylist = options.MetricSet{"olddeny": {}}
+	opts.MetricOptInList = options.MetricSet{"oldoptin": {}}
+	opts.LabelsAllowList = options.LabelsAllowList{"oldlabel": {"oldvalue"}}
+	opts.AnnotationsAllowList = options.LabelsAllowList{"oldannotation": {"oldvalue"}}
+
+	newOpts := configureResourcesAndMetrics(opts, []byte(configYAML))
+
+	// Check resources
+	expectedResources := []string{"pod", "service"}
+	for _, r := range expectedResources {
+		if _, ok := newOpts.Resources[r]; !ok {
+			t.Errorf("expected resource %q in opts.Resources", r)
+		}
+	}
+	if _, ok := newOpts.Resources["oldresource"]; ok {
+		t.Errorf("expected oldresource to be overwritten")
+	}
+
+	// Check metric allowlist
+	if _, ok := newOpts.MetricAllowlist["kube_pod_info"]; !ok {
+		t.Errorf("expected kube_pod_info in MetricAllowlist")
+	}
+	if _, ok := newOpts.MetricAllowlist["oldallow"]; ok {
+		t.Errorf("expected oldallow to be overwritten")
+	}
+
+	// Check metric denylist
+	if _, ok := newOpts.MetricDenylist["kube_pod_labels"]; !ok {
+		t.Errorf("expected kube_pod_labels in MetricDenylist")
+	}
+	if _, ok := newOpts.MetricDenylist["olddeny"]; ok {
+		t.Errorf("expected olddeny to be overwritten")
+	}
+
+	// Check metric opt-in list
+	if _, ok := newOpts.MetricOptInList["kube_pod_status_phase"]; !ok {
+		t.Errorf("expected kube_pod_status_phase in MetricOptInList")
+	}
+	if _, ok := newOpts.MetricOptInList["oldoptin"]; ok {
+		t.Errorf("expected oldoptin to be overwritten")
+	}
+
+	// Check labels allow list
+	if vals, ok := newOpts.LabelsAllowList["labelX"]; !ok || len(vals) != 2 || vals[0] != "foo" || vals[1] != "bar" {
+		t.Errorf("expected labelX with values [foo bar], got %v", vals)
+	}
+	if vals, ok := newOpts.LabelsAllowList["oldlabel"]; ok {
+		t.Errorf("expected oldlabel to be overwritten, got %v", vals)
+	}
+
+	// Check annotations allow list
+	if vals, ok := newOpts.AnnotationsAllowList["annotationY"]; !ok || len(vals) != 1 || vals[0] != "baz" {
+		t.Errorf("expected annotationY with value [baz], got %v", vals)
+	}
+	if vals, ok := newOpts.AnnotationsAllowList["oldannotation"]; ok {
+		t.Errorf("expected oldannotation to be overwritten, got %v", vals)
+	}
+
+}
+
+func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
+	opts := options.NewOptions()
+	invalidYAML := []byte("invalid: [unclosed")
+	// Should not panic or overwrite opts
+	result := configureResourcesAndMetrics(opts, invalidYAML)
+	if result != opts {
+		t.Errorf("expected opts to be returned unchanged on invalid YAML")
 	}
 }

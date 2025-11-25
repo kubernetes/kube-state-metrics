@@ -150,7 +150,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			"",
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
-					Metrics: resourceVersionMetric(s.ObjectMeta.ResourceVersion),
+					Metrics: resourceVersionMetric(s.ResourceVersion),
 				}
 			}),
 		),

@@ -47,19 +47,21 @@ type Options struct {
 	MetricOptInList      MetricSet       `yaml:"metric_opt_in_list"`
 	Resources            ResourceSet     `yaml:"resources"`
 
-	cmd                      *cobra.Command
-	Apiserver                string   `yaml:"apiserver"`
-	CustomResourceConfig     string   `yaml:"custom_resource_config"`
-	CustomResourceConfigFile string   `yaml:"custom_resource_config_file"`
-	Host                     string   `yaml:"host"`
-	Kubeconfig               string   `yaml:"kubeconfig"`
-	Namespace                string   `yaml:"namespace"`
-	Node                     NodeType `yaml:"node"`
-	Pod                      string   `yaml:"pod"`
-	TLSConfig                string   `yaml:"tls_config"`
-	TelemetryHost            string   `yaml:"telemetry_host"`
+	cmd                                     *cobra.Command
+	Apiserver                               string   `yaml:"apiserver"`
+	CustomResourceConfig                    string   `yaml:"custom_resource_config"`
+	CustomResourceConfigFile                string   `yaml:"custom_resource_state_config_file"`
+	ContinueWithoutCustomResourceConfigFile bool     `yaml:"continue_without_custom_resource_state_config_file"`
+	Host                                    string   `yaml:"host"`
+	Kubeconfig                              string   `yaml:"kubeconfig"`
+	Namespace                               string   `yaml:"namespace"`
+	Node                                    NodeType `yaml:"node"`
+	Pod                                     string   `yaml:"pod"`
+	TLSConfig                               string   `yaml:"tls_config"`
+	TelemetryHost                           string   `yaml:"telemetry_host"`
 
-	Config string
+	Config                string
+	ContinueWithoutConfig bool `yaml:"continue_without_config"`
 
 	Namespaces              NamespaceList `yaml:"namespaces"`
 	NamespacesDenylist      NamespaceList `yaml:"namespaces_denylist"`
@@ -79,6 +81,8 @@ type Options struct {
 	Help                 bool  `yaml:"help"`
 	TrackUnscheduledPods bool  `yaml:"track_unscheduled_pods"`
 	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
+	ObjectLimit          int64 `yaml:"object_limit"`
+	AuthFilter           bool  `yaml:"auth_filter"`
 }
 
 // GetConfigFile is the getter for --config value.
@@ -143,27 +147,31 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().BoolVar(&o.TrackUnscheduledPods, "track-unscheduled-pods", false, "This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of unscheduled pods is fetched from the Kubernetes API Server. This is experimental.")
 	o.cmd.Flags().BoolVarP(&o.Help, "help", "h", false, "Print Help text")
 	o.cmd.Flags().BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
+	o.cmd.Flags().Int64Var(&o.ObjectLimit, "object-limit", 0, "The total number of objects to list per resource from the API Server. (experimental)")
 	o.cmd.Flags().Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
 	o.cmd.Flags().IntVar(&o.Port, "port", 8080, `Port to expose metrics on.`)
 	o.cmd.Flags().IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
 	o.cmd.Flags().StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
+	o.cmd.Flags().BoolVar(&o.AuthFilter, "auth-filter", false, "If true, requires authentication and authorization through Kubernetes API to access metrics endpoints")
 	o.cmd.Flags().BoolVar(&o.AutoGoMemlimit, "auto-gomemlimit", false, "Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)")
 	o.cmd.Flags().Float64Var(&o.AutoGoMemlimitRatio, "auto-gomemlimit-ratio", float64(0.9), "The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
+	o.cmd.Flags().BoolVar(&o.ContinueWithoutCustomResourceConfigFile, "continue-without-custom-resource-state-config-file", false, "If true, Kube-state-metrics continues to run even if the config file specified by --custom-resource-state-config-file is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the custom-resource-state-config file is not found, instead watches and reloads when it is created.")
 	o.cmd.Flags().StringVar(&o.Host, "host", "::", `Host to expose metrics on.`)
 	o.cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	o.cmd.Flags().StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)
 	o.cmd.Flags().StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
 	o.cmd.Flags().StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.cmd.Flags().StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
-	o.cmd.Flags().StringVar(&o.Config, "config", "", "Path to the kube-state-metrics options config file")
+	o.cmd.Flags().StringVar(&o.Config, "config", "", "Path to the kube-state-metrics options config YAML file. If this flag is set, the flags defined in the file override the command line flags.")
+	o.cmd.Flags().BoolVar(&o.ContinueWithoutConfig, "continue-without-config", false, "If true, kube-state-metrics continues to run even if the config file specified by --config is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the config file is not found, instead watches and reloads when it is created.")
 	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
 	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
 	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the labels metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
-	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
-	o.cmd.Flags().Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or *ECMAScript-based* regex patterns. The allowlist and denylist are mutually exclusive.")
+	o.cmd.Flags().Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or *ECMAScript-based* regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
@@ -200,6 +208,10 @@ func (o *Options) Validate() error {
 
 	if o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
 		return fmt.Errorf("value for --auto-gomemlimit-ratio=%f must be greater than 0 and less than or equal to 1", o.AutoGoMemlimitRatio)
+	}
+
+	if o.ObjectLimit < 0 {
+		return fmt.Errorf("value for --object-limit=%d must be equal or greater than 0", o.ObjectLimit)
 	}
 
 	return nil

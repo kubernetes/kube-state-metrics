@@ -41,6 +41,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Resource group version compatibility](#resource-group-version-compatibility)
   * [Container Image](#container-image)
 * [Metrics Documentation](#metrics-documentation)
+  * [ECMAScript regular expression support for allow and deny lists](#ecmascript-regular-expression-support-for-allow-and-deny-lists)
   * [Conflict resolution in label names](#conflict-resolution-in-label-names)
 * [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
 * [Resource recommendation](#resource-recommendation)
@@ -67,9 +68,8 @@ are deleted they are no longer visible on the `/metrics` endpoint.
 #### Kubernetes Version
 
 kube-state-metrics uses [`client-go`](https://github.com/kubernetes/client-go) to talk with
-Kubernetes clusters. The supported Kubernetes cluster version is determined by `client-go`.
-The compatibility matrix for client-go and Kubernetes cluster can be found
-[here](https://github.com/kubernetes/client-go#compatibility-matrix).
+Kubernetes clusters. The supported Kubernetes cluster version is determined by
+[`client-go`](https://github.com/kubernetes/client-go#compatibility-matrix).
 All additional compatibility is only best effort, or happens to still/already be supported.
 
 #### Compatibility matrix
@@ -79,12 +79,12 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.11.0**        | v1.28                        |
-| **v2.12.0**        | v1.29                        |
 | **v2.13.0**        | v1.30                        |
 | **v2.14.0**        | v1.31                        |
 | **v2.15.0**        | v1.32                        |
-| **main**           | v1.32                        |
+| **v2.16.0**        | v1.32                        |
+| **v2.17.0**        | v1.33                        |
+| **main**           | v1.34                        |
 
 #### Resource group version compatibility
 
@@ -96,8 +96,8 @@ release.
 
 The latest container image can be found at:
 
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.15.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
-* View all multi-architecture images at [here](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.15.0)
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.17.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* [Multi-architecture images](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.17.0)
 
 ### Metrics Documentation
 
@@ -129,6 +129,10 @@ e.g. by standardizing Kubernetes labels using an
 [Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 that ensures that there are no possible conflicts.
 
+#### ECMAScript regular expression support for allow and deny lists
+
+Starting from [#2616](https://github.com/kubernetes/kube-state-metrics/pull/2616/files), kube-state-metrics supports ECMAScript's `regexp` for allow and deny lists. This was incorporated as a workaround for the limitations of the `regexp` package in Go, which does not support lookarounds due to their non-linear time complexity. Please note that while lookarounds are now supported for allow and deny lists, regular expressions' evaluation time is capped at a minute to prevent performance issues.
+
 ### Kube-state-metrics self metrics
 
 kube-state-metrics exposes its own general process metrics under `--telemetry-host` and `--telemetry-port` (default 8081).
@@ -139,7 +143,7 @@ at the logs of kube-state-metrics.
 
 Example of the above mentioned metrics:
 
-```
+```prometheus
 kube_state_metrics_list_total{resource="*v1.Node",result="success"} 1
 kube_state_metrics_list_total{resource="*v1.Node",result="error"} 52
 kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
@@ -147,7 +151,7 @@ kube_state_metrics_watch_total{resource="*v1beta1.Ingress",result="success"} 1
 
 kube-state-metrics also exposes some http request metrics, examples of those are:
 
-```
+```prometheus
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="2.5"} 30
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="5"} 30
 http_request_duration_seconds_bucket{handler="metrics",method="get",le="10"} 30
@@ -158,20 +162,20 @@ http_request_duration_seconds_count{handler="metrics",method="get"} 30
 
 kube-state-metrics also exposes build and configuration metrics:
 
-```
+```prometheus
 kube_state_metrics_build_info{branch="main",goversion="go1.15.3",revision="6c9d775d",version="v2.0.0-beta"} 1
 kube_state_metrics_shard_ordinal{shard_ordinal="0"} 0
 kube_state_metrics_total_shards 1
 ```
 
 `kube_state_metrics_build_info` is used to expose version and other build information. For more usage about the info pattern,
-please check the blog post [here](https://www.robustperception.io/exposing-the-software-version-to-prometheus).
+please check this [blog post](https://www.robustperception.io/exposing-the-software-version-to-prometheus).
 Sharding metrics expose `--shard` and `--total-shards` flags and can be used to validate
 run-time configuration, see [`/examples/prometheus-alerting-rules`](./examples/prometheus-alerting-rules).
 
 kube-state-metrics also exposes metrics about it config file and the Custom Resource State config file:
 
-```
+```prometheus
 kube_state_metrics_config_hash{filename="crs.yml",type="customresourceconfig"} 2.38272279311849e+14
 kube_state_metrics_config_hash{filename="config.yml",type="config"} 2.65285922340846e+14
 kube_state_metrics_last_config_reload_success_timestamp_seconds{filename="crs.yml",type="customresourceconfig"} 1.6704882592037103e+09
@@ -198,7 +202,7 @@ Note that if CPU limits are set too low, kube-state-metrics' internal queues wil
 
 In a 100 node cluster scaling test the latency numbers were as follows:
 
-```
+```text
 "Perc50": 259615384 ns,
 "Perc90": 475000000 ns,
 "Perc99": 906666666 ns.
@@ -262,7 +266,7 @@ Each kube-state-metrics pod uses FieldSelector (spec.nodeName) to watch/list pod
 
 A daemonset kube-state-metrics example:
 
-```
+```yaml
 apiVersion: apps/v1
 kind: DaemonSet
 spec:
@@ -284,7 +288,7 @@ spec:
 
 To track metrics for unassigned pods, you need to add an additional deployment and set `--track-unscheduled-pods`, as shown in the following example:
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 spec:
@@ -304,8 +308,8 @@ Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
 
 Install this project to your `$GOPATH` using `go get`:
 
-```
-go get k8s.io/kube-state-metrics
+```bash
+go get k8s.io/kube-state-metrics/v2
 ```
 
 #### Building the Docker container
@@ -313,7 +317,7 @@ go get k8s.io/kube-state-metrics
 Simply run the following command in this root folder, which will create a
 self-contained, statically-linked binary and build a Docker image:
 
-```
+```bash
 make container
 ```
 
@@ -336,7 +340,7 @@ To have Prometheus discover kube-state-metrics instances it is advised to create
 
 **Note:** Google Kubernetes Engine (GKE) Users - GKE has strict role permissions that will prevent the kube-state-metrics roles and role bindings from being created. To work around this, you can give your GCP identity the cluster-admin role by running the following one-liner:
 
-```
+```bash
 kubectl create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud info --format='value(config.account)')
 ```
 
@@ -411,14 +415,14 @@ When developing, test a metric dump against your local Kubernetes cluster by run
 
 > Users can override the apiserver address in KUBE-CONFIG file with `--apiserver` command line.
 
-```
+```bash
 go install
 kube-state-metrics --port=8080 --telemetry-port=8081 --kubeconfig=<KUBE-CONFIG> --apiserver=<APISERVER>
 ```
 
 Then curl the metrics endpoint
 
-```
+```bash
 curl localhost:8080/metrics
 ```
 

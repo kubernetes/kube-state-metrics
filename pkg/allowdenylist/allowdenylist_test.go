@@ -17,8 +17,12 @@ limitations under the License.
 package allowdenylist
 
 import (
-	"regexp"
+	"fmt"
+	"strings"
 	"testing"
+	"time"
+
+	regexp "github.com/dlclark/regexp2"
 )
 
 func TestNew(t *testing.T) {
@@ -76,7 +80,11 @@ func TestInclude(t *testing.T) {
 			t.Fatal("expected Parse() to not fail")
 		}
 
-		if !allowlist.IsIncluded("item1") {
+		isIncluded, err := allowlist.IsIncluded("item1")
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if !isIncluded {
 			t.Fatal("expected included item to be included")
 		}
 	})
@@ -93,7 +101,11 @@ func TestInclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if !denylist.IsIncluded(item1) {
+		isIncluded, err := denylist.IsIncluded(item1)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if !isIncluded {
 			t.Fatal("expected included item to be included")
 		}
 	})
@@ -103,13 +115,17 @@ func TestInclude(t *testing.T) {
 			t.Fatal("expected New() to not fail")
 		}
 
-		allowlist.Include([]string{"kube_.*_info"})
+		allowlist.Include([]string{"kube_(?=secret).*_info"})
 		err = allowlist.Parse()
 		if err != nil {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if !allowlist.IsIncluded("kube_secret_info") {
+		isIncluded, err := allowlist.IsIncluded("kube_secret_info")
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if !isIncluded {
 			t.Fatal("expected included item to be included")
 		}
 	})
@@ -124,22 +140,38 @@ func TestInclude(t *testing.T) {
 			t.Fatal("expected New() to not fail")
 		}
 
-		denylist.Exclude([]string{"kube_node_.*_cores", "kube_pod_.*_bytes"})
+		denylist.Exclude([]string{"kube_(?=node.*cores|pod.*bytes)"})
 		err = denylist.Parse()
 		if err != nil {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if denylist.IsExcluded(item1) {
+		isExcluded, err := denylist.IsExcluded(item1)
+		if err != nil {
+			t.Fatal("expected IsExcluded() to not fail")
+		}
+		if isExcluded {
 			t.Fatalf("expected included %s to be included", item1)
 		}
-		if denylist.IsIncluded(item2) {
+		isIncluded, err := denylist.IsIncluded(item2)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatalf("expected included %s to be excluded", item2)
 		}
-		if denylist.IsIncluded(item3) {
+		isIncluded, err = denylist.IsIncluded(item3)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatalf("expected included %s to be excluded", item3)
 		}
-		if denylist.IsExcluded(item4) {
+		isExcluded, err = denylist.IsExcluded(item4)
+		if err != nil {
+			t.Fatal("expected IsExcluded() to not fail")
+		}
+		if isExcluded {
 			t.Fatalf("expected included %s to be included", item4)
 		}
 	})
@@ -159,7 +191,11 @@ func TestExclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if allowlist.IsIncluded(item1) {
+		isIncluded, err := allowlist.IsIncluded(item1)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatal("expected excluded item to be excluded")
 		}
 	})
@@ -176,7 +212,11 @@ func TestExclude(t *testing.T) {
 			t.Fatalf("expected Parse() to not fail, but got error : %v", err)
 		}
 
-		if denylist.IsIncluded(item1) {
+		isIncluded, err := denylist.IsIncluded(item1)
+		if err != nil {
+			t.Fatal("expected IsIncluded() to not fail")
+		}
+		if isIncluded {
 			t.Fatal("expected excluded item to be excluded")
 		}
 	})
@@ -224,7 +264,8 @@ func TestStatus(t *testing.T) {
 		allowlist, _ := New(map[string]struct{}{item1: {}, item2: {}}, map[string]struct{}{})
 		actualStatusString := allowlist.Status()
 		expectedRegexPattern := `^Including the following lists that were on allowlist: (item1|item2), (item2|item1)$`
-		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
+		re := regexp.MustCompile(expectedRegexPattern, regexpDefaultSpec)
+		matched, _ := re.MatchString(actualStatusString)
 		if !matched {
 			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)
 		}
@@ -244,9 +285,38 @@ func TestStatus(t *testing.T) {
 		denylist, _ := New(map[string]struct{}{}, map[string]struct{}{item1: {}, item2: {}})
 		actualStatusString := denylist.Status()
 		expectedRegexPattern := `^Excluding the following lists that were on denylist: (item1|item2), (item2|item1)$`
-		matched, _ := regexp.MatchString(expectedRegexPattern, actualStatusString)
+		re := regexp.MustCompile(expectedRegexPattern, regexpDefaultSpec)
+		matched, _ := re.MatchString(actualStatusString)
 		if !matched {
 			t.Errorf("expected status %q but got %q", expectedRegexPattern, actualStatusString)
+		}
+	})
+}
+
+func TestCatastrophicBacktrackTimeout(t *testing.T) {
+	r, err := regexp.Compile("(.+)*\\?", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var exp = "Lorem ipsum dolor sit amet, consectetur adipiscing elit"
+	exp = strings.Repeat(exp, 2^10)
+
+	timeout := regexpDefaultTimeout
+	t.Logf("regexp.DefaultMatchTimeout set to: %v", timeout)
+	buffer := 500 * time.Millisecond
+	t.Run(fmt.Sprint(timeout), func(t *testing.T) {
+		r.MatchTimeout = timeout
+		start := time.Now()
+		_, err = r.FindStringMatch(exp)
+		if err != nil && !strings.HasPrefix(err.Error(), "match timeout") {
+			t.Fatal(err)
+		}
+		if err == nil {
+			t.Fatal("expected catastrophic backtracking error")
+		}
+		elapsed := time.Since(start)
+		if elapsed > timeout+buffer {
+			t.Fatalf("timeout %v exceeded: %v", timeout, elapsed)
 		}
 	})
 }

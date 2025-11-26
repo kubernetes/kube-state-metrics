@@ -278,7 +278,8 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 		}
 	case []interface{}:
 		for i, it := range iter {
-			// test si it est un []interface{} si oui boucle dessus
+			// Check if it is a [][]interface{} if yes loop over it
+			// Else process normally
 			if nestedIter, ok := it.([]interface{}); ok {
 				for j, nestedIt := range nestedIter {
 					value, err := c.value(nestedIt)

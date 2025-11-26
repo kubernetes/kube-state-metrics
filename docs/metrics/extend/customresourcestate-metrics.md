@@ -26,12 +26,12 @@ spec:
   template:
     spec:
       containers:
-      - name: kube-state-metrics
-        args:
-          - --custom-resource-state-config
-          # in YAML files, | allows a multi-line string to be passed as a flag value
-          # see https://yaml-multiline.info
-          -  |
+        - name: kube-state-metrics
+          args:
+            - --custom-resource-state-config
+            # in YAML files, | allows a multi-line string to be passed as a flag value
+            # see https://yaml-multiline.info
+            -  |
               kind: CustomResourceStateMetrics
               spec:
                 resources:
@@ -60,12 +60,12 @@ spec:
   template:
     spec:
       containers:
-      - name: kube-state-metrics
-        args:
-          - --custom-resource-state-config
-          # in YAML files, | allows a multi-line string to be passed as a flag value
-          # see https://yaml-multiline.info
-          -  |
+        - name: kube-state-metrics
+          args:
+            - --custom-resource-state-config
+            # in YAML files, | allows a multi-line string to be passed as a flag value
+            # see https://yaml-multiline.info
+            -  |
               kind: CustomResourceStateMetrics
               spec:
                 resources:
@@ -79,7 +79,7 @@ spec:
                         each:
                           type: Gauge
                           ...
-          - --custom-resource-state-only=true
+            - --custom-resource-state-only=true
 ```
 
 NOTE: The `customresource_group`, `customresource_version`, and `customresource_kind` common labels are reserved, and will be overwritten by the values from the `groupVersionKind` field.
@@ -96,42 +96,42 @@ The examples in this section will use the following custom resource:
 kind: Foo
 apiVersion: myteam.io/vl
 metadata:
-    annotations:
-        bar: baz
-        qux: quxx
-    labels:
-        foo: bar
-    name: foo
+  annotations:
+    bar: baz
+    qux: quxx
+  labels:
+    foo: bar
+  name: foo
 spec:
-    version: v1.2.3
-    order:
-        - id: 1
-          value: true
-        - id: 3
-          value: false
-    replicas: 1
-    refs:
-        - my_other_foo
-        - foo_2
-        - foo_with_extensions
+  version: v1.2.3
+  order:
+    - id: 1
+      value: true
+    - id: 3
+      value: false
+  replicas: 1
+  refs:
+    - my_other_foo
+    - foo_2
+    - foo_with_extensions
 status:
-    phase: Pending
-    active:
-        type-a: 1
-        type-b: 3
-    conditions:
-        - name: a
-          value: 45
-        - name: b
-          value: 66
-    sub:
-        type-a:
-            active: 1
-            ready: 2
-        type-b:
-            active: 3
-            ready: 4
-    uptime: 43.21
+  phase: Pending
+  active:
+    type-a: 1
+    type-b: 3
+  conditions:
+    - name: a
+      value: 45
+    - name: b
+      value: 66
+  sub:
+    type-a:
+      active: 1
+      ready: 2
+    type-b:
+      active: 3
+      ready: 4
+  uptime: 43.21
 ```
 
 #### Single Values
@@ -203,7 +203,7 @@ spec:
             # a prefix before the asterisk will be used as a label prefix
             "lorem_*": [metadata, annotations]
             "**": [metadata, annotations]
-            
+
             # or specific fields may be copied. these fields will always override values from *s
             name: [metadata, name]
             foo: [metadata, labels, foo]
@@ -261,10 +261,10 @@ kube_customresource_ref_info{customresource_group="myteam.io", customresource_ki
 ```yaml
   recommendation:
     containerRecommendations:
-    - containerName: consumer
-      lowerBound:
-        cpu: 100m
-        memory: 262144k
+      - containerName: consumer
+        lowerBound:
+          cpu: 100m
+          memory: 262144k
 ```
 
 For example in VPA we have above attributes and we want to have a same metrics for both CPU and Memory, you can use below config:
@@ -618,7 +618,7 @@ Supported types are:
 * for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
 * for string the following logic applies
   * `"true"` and `"yes"` are mapped to `1.0`, `"false"`, `"no"` and `"unknown"` are mapped to `0.0` (all case-insensitive)
-  * RFC3339 times are parsed to float timestamp  
+  * RFC3339 times are parsed to float timestamp
   * Quantities like "250m" or "512Gi" are parsed to float using <https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go>
   * Percentages ending with a "%" are parsed to float
   * finally the string is parsed to float using <https://pkg.go.dev/strconv#ParseFloat> which should support all common number formats. If that fails an error is yielded
@@ -629,27 +629,27 @@ Supported types are:
 kind: CustomResourceStateMetrics
 spec:
   resources:
-  - groupVersionKind:
-      group: myteam.io
-      kind: "Foo"
-      version: "v1"
-    labelsFromPath:
-      name:
-      - metadata
-      - name
-      namespace:
-      - metadata
-      - namespace
-    metrics:
-    - name: "foo_status"
-      help: "status condition "
-      each:
-        type: Gauge
-        gauge:
-          path: [status, conditions]
-          labelsFromPath:
-            type: ["type"]
-          valueFrom: ["status"]
+    - groupVersionKind:
+        group: myteam.io
+        kind: "Foo"
+        version: "v1"
+      labelsFromPath:
+        name:
+          - metadata
+          - name
+        namespace:
+          - metadata
+          - namespace
+      metrics:
+        - name: "foo_status"
+          help: "status condition "
+          each:
+            type: Gauge
+            gauge:
+              path: [status, conditions]
+              labelsFromPath:
+                type: ["type"]
+              valueFrom: ["status"]
 ```
 
 This will work for kubernetes controller CRs which expose status conditions according to the kubernetes api (<https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition>):
@@ -811,6 +811,58 @@ Examples:
 
 # For generally matching against a field in an object schema, use the following syntax:
 [metadata, "name=foo"] # if v, ok := metadata[name]; ok && v == "foo" { return v; } else { /* ignore */ }
+
+# Fanning out over every element of an array using the wildcard "[*]".
+# Each "[*]" segment iterates the current array and continues the walk per element.
+[status, parents, "[*]", parentRef, name]   # collects parentRef.name from every parents[] entry
+```
+
+#### Nested arrays with `[*]` (Gauge only)
+
+When a `Gauge`'s `valueFrom` path contains `[*]`, kube-state-metrics fans the
+gauge out into one metric per element of the wildcarded array. Sibling
+`labelsFromPath` paths that also contain `[*]` (over the same array) are paired
+positionally by index; label paths without `[*]` are broadcast as constants
+across all emitted rows. This makes it possible to expose per-element metrics
+from doubly-nested structures (e.g. Gateway API `HTTPRoute.status.parents[].conditions[]`,
+[#2368](https://github.com/kubernetes/kube-state-metrics/issues/2368)).
+
+```yaml
+- name: "parent_conditions"
+  help: "Parent conditions of an HTTPRoute-like resource"
+  each:
+    type: Gauge
+    gauge:
+      path: [status, parents]
+      labelsFromPath:
+        reason:     [conditions, "[*]", reason]   # fans out with valueFrom
+        parentName: [parentRef, name]             # constant per parent
+      valueFrom:    [conditions, "[*]", status]   # drives row count
+```
+
+Given a custom resource like:
+
+```yaml
+status:
+  parents:
+    - parentRef: {name: baz-1}
+      conditions:
+        - {type: Ready,  status: "True",  reason: AsExpected}
+        - {type: Synced, status: "False", reason: SyncError}
+    - parentRef: {name: grault-1}
+      conditions:
+        - {type: Ready,  status: "False", reason: NotReady}
+    - parentRef: {name: fred-1}
+      conditions: []
+```
+
+the configuration above produces three metrics (parents whose inner array is
+empty produce no rows):
+
+```prometheus
+kube_customresource_parent_conditions{parentName="baz-1",    reason="AsExpected"} 1
+kube_customresource_parent_conditions{parentName="baz-1",    reason="SyncError"}  0
+kube_customresource_parent_conditions{parentName="grault-1", reason="NotReady"}   0
 ```
 
 ### Wildcard matching of version and kind fields

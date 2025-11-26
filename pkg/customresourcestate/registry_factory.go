@@ -279,6 +279,14 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 		}
 	case []interface{}:
 		for i, it := range iter {
+			if c.ValueFrom.hasWildcard() {
+				evs, fanErrs := c.fanout(it)
+				for _, e := range fanErrs {
+					onError(fmt.Errorf("[%d]: %w", i, e))
+				}
+				result = append(result, evs...)
+				continue
+			}
 			value, err := c.value(it)
 			if err != nil {
 				onError(fmt.Errorf("[%d]: %w", i, err))
@@ -444,6 +452,48 @@ func less(a, b map[string]string) bool {
 	return len(aKeys) < len(bKeys)
 }
 
+// fanout expands a single iteration context `it` into N eachValues by walking
+// `ValueFrom` and any `[*]`-containing label paths in parallel. Label paths
+// without `[*]` are broadcast as constants across all rows. Driven by the
+// length of `ValueFrom.GetAll(it)`.
+func (c *compiledGauge) fanout(it interface{}) ([]eachValue, []error) {
+	valueVals := c.ValueFrom.GetAll(it)
+	labelVals := make(map[string][]interface{}, len(c.LabelFromPath()))
+	for k, lp := range c.LabelFromPath() {
+		labelVals[k] = lp.GetAll(it)
+	}
+	var (
+		res  []eachValue
+		errs []error
+	)
+	for i, raw := range valueVals {
+		if raw == nil && !c.NilIsZero {
+			continue
+		}
+		f, err := toFloat64(raw, c.NilIsZero)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", c.ValueFrom, err))
+			continue
+		}
+		labels := map[string]string{}
+		for k, lvs := range labelVals {
+			var v interface{}
+			switch {
+			case i < len(lvs):
+				v = lvs[i]
+			case len(lvs) > 0:
+				v = lvs[0]
+			}
+			if v == nil {
+				continue
+			}
+			labels[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
+		}
+		res = append(res, eachValue{Value: f, Labels: labels})
+	}
+	return res, errs
+}
+
 func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 	labels := make(map[string]string)
 	got := c.ValueFrom.Get(it)
@@ -566,6 +616,45 @@ func (p valuePath) Get(obj interface{}) interface{} {
 	return obj
 }
 
+// hasWildcard reports whether the path contains a `[*]` fan-out marker.
+func (p valuePath) hasWildcard() bool {
+	for _, op := range p {
+		if op.part == "[*]" {
+			return true
+		}
+	}
+	return false
+}
+
+// GetAll walks the path like Get, but fans the walk out across `[*]` markers
+// when the current node is a []interface{}. For paths without `[*]`, it
+// returns a single-element slice containing what Get would return, so callers
+// can treat fan-out and single-value paths uniformly.
+func (p valuePath) GetAll(obj interface{}) []interface{} {
+	return getAll(p, obj)
+}
+
+func getAll(p valuePath, obj interface{}) []interface{} {
+	for i, op := range p {
+		if obj == nil {
+			return []interface{}{nil}
+		}
+		if op.part == "[*]" {
+			arr, ok := obj.([]interface{})
+			if !ok {
+				return []interface{}{nil}
+			}
+			var out []interface{}
+			for _, el := range arr {
+				out = append(out, getAll(p[i+1:], el)...)
+			}
+			return out
+		}
+		obj = op.op(obj)
+	}
+	return []interface{}{obj}
+}
+
 func (p valuePath) String() string {
 	var b strings.Builder
 	b.WriteRune('[')
@@ -582,6 +671,17 @@ func (p valuePath) String() string {
 func compilePath(path []string) (out valuePath, _ error) {
 	for i := range path {
 		part := path[i]
+		if part == "[*]" {
+			// array fan-out marker. The op is identity; the fan-out itself is
+			// performed by valuePath.GetAll when it encounters this part.
+			// Keeping the op as identity preserves backward compatibility for
+			// callers that still use Get (single-value) on such a path.
+			out = append(out, pathOp{
+				part: part,
+				op:   func(m interface{}) interface{} { return m },
+			})
+			continue
+		}
 		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
 			// list lookup: [key=value]
 			eq := strings.SplitN(part[1:len(part)-1], "=", 2)

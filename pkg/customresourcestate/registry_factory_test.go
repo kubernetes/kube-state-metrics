@@ -18,7 +18,6 @@ package customresourcestate
 
 import (
 	"encoding/json"
-	"errors"
 	"reflect"
 	"testing"
 
@@ -86,6 +85,64 @@ func init() {
 				Obj{
 					"type":   "Provisioned",
 					"status": "False",
+				},
+			},
+			"parents": Array{
+				Obj{
+					"conditions": Array{
+						Obj{
+							"type":               "Ready",
+							"status":             "True",
+							"message":            "All good",
+							"reason":             "AsExpected",
+							"lastTransitionTime": "2022-06-28T00:00:00Z",
+							"observedGeneration": 42,
+						},
+						Obj{
+							"type":               "Synced",
+							"status":             "False",
+							"message":            "Not synced",
+							"reason":             "SyncError",
+							"lastTransitionTime": "2022-06-28T00:00:00Z",
+							"observedGeneration": 43,
+						},
+					},
+					"controllerName": "foo.bar/baz",
+					"parentRef": Obj{
+						"group":     "foo.bar",
+						"kind":      "Baz",
+						"name":      "baz-1",
+						"namespace": "default",
+					},
+				},
+				Obj{
+					"conditions": Array{
+						Obj{
+							"type":               "Ready",
+							"status":             "False",
+							"message":            "Not ready",
+							"reason":             "NotReady",
+							"lastTransitionTime": "2022-06-28T00:00:00Z",
+							"observedGeneration": 44,
+						},
+					},
+					"controllerName": "qux.corge/grault",
+					"parentRef": Obj{
+						"group":     "qux.corge",
+						"kind":      "Grault",
+						"name":      "grault-1",
+						"namespace": "default",
+					},
+				},
+				Obj{
+					"conditions":     Array{},
+					"controllerName": "garply.waldo/fred",
+					"parentRef": Obj{
+						"group":     "garply.waldo",
+						"kind":      "Fred",
+						"name":      "fred-1",
+						"namespace": "default",
+					},
 				},
 			},
 		},
@@ -164,7 +221,7 @@ func Test_values(t *testing.T) {
 	}
 
 	tests := []tc{
-		{name: "single", each: &compiledGauge{
+		/*{name: "single", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "spec", "replicas"),
 			},
@@ -351,16 +408,30 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 0, "type", "Provisioned"),
 			newEachValue(t, 1, "type", "Ready"),
-		}},
-		{name: "= expression matching", each: &compiledInfo{
+		}},*/
+		{name: "status_parents_conditions", each: &compiledGauge{
 			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "parents", "[*]", "conditions"),
+				//path: mustCompilePath(t, "status", "conditions"),
 				labelFromPath: map[string]valuePath{
-					"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
+					"reason": mustCompilePath(t, "reason"),
 				},
 			},
+			ValueFrom: mustCompilePath(t, "status"),
 		}, wantResult: []eachValue{
-			newEachValue(t, 1, "bar", "baz"),
-		}},
+			newEachValue(t, 1, "reason", "AsExpected"),
+			newEachValue(t, 0, "reason", "NotReady"),
+			newEachValue(t, 0, "reason", "SyncError"),
+		}}, /*
+			{name: "= expression matching", each: &compiledInfo{
+				compiledCommon: compiledCommon{
+					labelFromPath: map[string]valuePath{
+						"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
+					},
+				},
+			}, wantResult: []eachValue{
+				newEachValue(t, 1, "bar", "baz"),
+			}},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -222,7 +222,6 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 	onError := func(err error) {
 		errs = append(errs, fmt.Errorf("%s: %v", c.Path(), err))
 	}
-
 	switch iter := v.(type) {
 	case map[string]interface{}:
 		for key, it := range iter {
@@ -279,16 +278,33 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 		}
 	case []interface{}:
 		for i, it := range iter {
-			value, err := c.value(it)
-			if err != nil {
-				onError(fmt.Errorf("[%d]: %w", i, err))
-				continue
+			// test si it est un []interface{} si oui boucle dessus
+			if nestedIter, ok := it.([]interface{}); ok {
+				for j, nestedIt := range nestedIter {
+					value, err := c.value(nestedIt)
+
+					if err != nil {
+						onError(fmt.Errorf("[%d]: %w", j, err))
+						continue
+					}
+					if value == nil {
+						continue
+					}
+					addPathLabels(nestedIt, c.LabelFromPath(), value.Labels)
+					result = append(result, *value)
+				}
+			} else {
+				value, err := c.value(it)
+				if err != nil {
+					onError(fmt.Errorf("[%d]: %w", i, err))
+					continue
+				}
+				if value == nil {
+					continue
+				}
+				addPathLabels(it, c.LabelFromPath(), value.Labels)
+				result = append(result, *value)
 			}
-			if value == nil {
-				continue
-			}
-			addPathLabels(it, c.LabelFromPath(), value.Labels)
-			result = append(result, *value)
 		}
 	default:
 		value, err := c.value(v)
@@ -561,7 +577,26 @@ func (p valuePath) Get(obj interface{}) interface{} {
 		if obj == nil {
 			return nil
 		}
-		obj = op.op(obj)
+
+		if slice, ok := obj.([]interface{}); ok && op.part == "[*]" {
+			// wildcard: garder tous les éléments
+			var all []interface{}
+			for _, el := range slice {
+				all = append(all, el)
+			}
+			obj = all
+
+		} else if slice, ok := obj.([]interface{}); ok && op.part != "[*]" {
+			var all []interface{}
+			for _, el := range slice {
+				all = append(all, op.op(el))
+			}
+			obj = all
+		} else {
+			obj = op.op(obj)
+		}
+
+		//obj = op.op(obj)
 	}
 	return obj
 }
@@ -582,7 +617,23 @@ func (p valuePath) String() string {
 func compilePath(path []string) (out valuePath, _ error) {
 	for i := range path {
 		part := path[i]
+
+		if part == "[*]" {
+			// wildcard: retourner tous les éléments d'un array
+			out = append(out, pathOp{
+				part: part,
+				op: func(m interface{}) interface{} {
+					if s, ok := m.([]interface{}); ok {
+						return s
+					}
+					return nil
+				},
+			})
+			continue
+		}
+
 		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
+
 			// list lookup: [key=value]
 			eq := strings.SplitN(part[1:len(part)-1], "=", 2)
 			if len(eq) != 2 {
@@ -627,7 +678,9 @@ func compilePath(path []string) (out valuePath, _ error) {
 		} else {
 			out = append(out, pathOp{
 				part: part,
+				// Function qui sera utilisé dans le Get pour descendre dans l'arborescence (op.op(obj))
 				op: func(m interface{}) interface{} {
+					// On cherche du clé valeur dans une map
 					if mp, ok := m.(map[string]interface{}); ok {
 						kv := strings.Split(part, "=")
 						if len(kv) == 2 /* k=v */ {
@@ -640,6 +693,8 @@ func compilePath(path []string) (out valuePath, _ error) {
 							}
 						}
 						return mp[part]
+						// On va checher un index dans une liste
+						// ex: [0], [1], ... -> on pourrait ici faire le boulot si *
 					} else if s, ok := m.([]interface{}); ok {
 						i, err := strconv.Atoi(part)
 						if err != nil {

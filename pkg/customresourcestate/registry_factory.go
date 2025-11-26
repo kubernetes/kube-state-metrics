@@ -578,25 +578,24 @@ func (p valuePath) Get(obj interface{}) interface{} {
 			return nil
 		}
 
-		if slice, ok := obj.([]interface{}); ok && op.part == "[*]" {
-			// wildcard: garder tous les éléments
+		if slice, ok := obj.([]interface{}); ok {
 			var all []interface{}
 			for _, el := range slice {
+				// non-wildcard: apply operation
+				// wildcard: keep all elements
+				if op.part != "[*]" {
+					el = op.op(el)
+				}
+
 				all = append(all, el)
 			}
+
 			obj = all
 
-		} else if slice, ok := obj.([]interface{}); ok && op.part != "[*]" {
-			var all []interface{}
-			for _, el := range slice {
-				all = append(all, op.op(el))
-			}
-			obj = all
 		} else {
 			obj = op.op(obj)
 		}
 
-		//obj = op.op(obj)
 	}
 	return obj
 }

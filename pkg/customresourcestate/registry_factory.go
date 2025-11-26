@@ -617,21 +617,22 @@ func compilePath(path []string) (out valuePath, _ error) {
 	for i := range path {
 		part := path[i]
 
-		if part == "[*]" {
-			// wildcard: retourner tous les éléments d'un array
-			out = append(out, pathOp{
-				part: part,
-				op: func(m interface{}) interface{} {
-					if s, ok := m.([]interface{}); ok {
-						return s
-					}
-					return nil
-				},
-			})
-			continue
-		}
-
 		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
+
+			// Wildcard with filter: [*]
+			if part == "[*]" {
+				// function to return all elements in a list
+				out = append(out, pathOp{
+					part: part,
+					op: func(m interface{}) interface{} {
+						if s, ok := m.([]interface{}); ok {
+							return s
+						}
+						return nil
+					},
+				})
+				continue
+			}
 
 			// list lookup: [key=value]
 			eq := strings.SplitN(part[1:len(part)-1], "=", 2)
@@ -677,9 +678,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 		} else {
 			out = append(out, pathOp{
 				part: part,
-				// Function qui sera utilisé dans le Get pour descendre dans l'arborescence (op.op(obj))
 				op: func(m interface{}) interface{} {
-					// On cherche du clé valeur dans une map
 					if mp, ok := m.(map[string]interface{}); ok {
 						kv := strings.Split(part, "=")
 						if len(kv) == 2 /* k=v */ {
@@ -692,8 +691,6 @@ func compilePath(path []string) (out valuePath, _ error) {
 							}
 						}
 						return mp[part]
-						// On va checher un index dans une liste
-						// ex: [0], [1], ... -> on pourrait ici faire le boulot si *
 					} else if s, ok := m.([]interface{}); ok {
 						i, err := strconv.Atoi(part)
 						if err != nil {

@@ -578,25 +578,7 @@ func (p valuePath) Get(obj interface{}) interface{} {
 		if obj == nil {
 			return nil
 		}
-
-		if slice, ok := obj.([]interface{}); ok {
-			var all []interface{}
-			for _, el := range slice {
-				// non-wildcard: apply operation
-				// wildcard: keep all elements
-				if op.part != "[*]" {
-					el = op.op(el)
-				}
-
-				all = append(all, el)
-			}
-
-			obj = all
-
-		} else {
-			obj = op.op(obj)
-		}
-
+		obj = op.op(obj)
 	}
 	return obj
 }
@@ -693,21 +675,31 @@ func compilePath(path []string) (out valuePath, _ error) {
 						}
 						return mp[part]
 					} else if s, ok := m.([]interface{}); ok {
+						// case part is an integer index
 						i, err := strconv.Atoi(part)
-						if err != nil {
-							// This means we are here: [ <string>, <int>, ... ] (eg., [ "foo", "0", ... ], i.e., <path>.foo[0]...
-							//                           ^
-							// Skip over.
-							return nil
+						if err == nil {
+							if i < 0 {
+								// negative index
+								i += len(s)
+							}
+							if i < 0 || i >= len(s) {
+								return fmt.Errorf("list index out of range: %s", part)
+							}
+							return s[i]
 						}
-						if i < 0 {
-							// negative index
-							i += len(s)
+
+						// case we have a list and the part is an index
+						var result []interface{}
+						for _, el := range s {
+							if m, ok := el.(map[string]interface{}); ok {
+								if v, ok := m[part]; ok {
+									result = append(result, v)
+								}
+							} else {
+								continue
+							}
 						}
-						if i < 0 || i >= len(s) {
-							return fmt.Errorf("list index out of range: %s", part)
-						}
-						return s[i]
+						return result
 					}
 					return nil
 				},

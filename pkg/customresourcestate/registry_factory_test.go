@@ -18,6 +18,7 @@ package customresourcestate
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -221,7 +222,7 @@ func Test_values(t *testing.T) {
 	}
 
 	tests := []tc{
-		/*{name: "single", each: &compiledGauge{
+		{name: "single", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "spec", "replicas"),
 			},
@@ -408,7 +409,7 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 0, "type", "Provisioned"),
 			newEachValue(t, 1, "type", "Ready"),
-		}},*/
+		}},
 		{name: "status_parents_conditions", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "parents", "[*]", "conditions"),
@@ -422,16 +423,16 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 1, "reason", "AsExpected"),
 			newEachValue(t, 0, "reason", "NotReady"),
 			newEachValue(t, 0, "reason", "SyncError"),
-		}}, /*
-			{name: "= expression matching", each: &compiledInfo{
-				compiledCommon: compiledCommon{
-					labelFromPath: map[string]valuePath{
-						"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
-					},
+		}},
+		{name: "= expression matching", each: &compiledInfo{
+			compiledCommon: compiledCommon{
+				labelFromPath: map[string]valuePath{
+					"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
 				},
-			}, wantResult: []eachValue{
-				newEachValue(t, 1, "bar", "baz"),
-			}},*/
+			},
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "bar", "baz"),
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

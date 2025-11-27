@@ -515,6 +515,9 @@ func handleClusterDelegationForProber(client kubernetes.Interface, probeType str
 	return func(w http.ResponseWriter, _ *http.Request) {
 		got := client.CoreV1().RESTClient().Get().AbsPath(probeType).Do(context.Background())
 		if got.Error() != nil {
+			var statusCode int
+			got.StatusCode(&statusCode)
+			klog.Warningf("Failed to contact API server for %s: got %d", probeType, statusCode)
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
 			return

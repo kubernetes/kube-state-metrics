@@ -222,6 +222,7 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 	onError := func(err error) {
 		errs = append(errs, fmt.Errorf("%s: %v", c.Path(), err))
 	}
+
 	switch iter := v.(type) {
 	case map[string]interface{}:
 		for key, it := range iter {

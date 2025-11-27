@@ -413,7 +413,6 @@ func Test_values(t *testing.T) {
 		{name: "status_parents_conditions", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "parents", "[*]", "conditions"),
-				//path: mustCompilePath(t, "status", "conditions"),
 				labelFromPath: map[string]valuePath{
 					"reason": mustCompilePath(t, "reason"),
 				},

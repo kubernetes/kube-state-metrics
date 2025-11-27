@@ -51,7 +51,7 @@ spec:
           each:
             type: Gauge
             gauge:
-              path: [ status, other, *, detail ]
+              path: [ status, other, '[*]', detail ]
           errorLogV: 5
 
         - name: "info"

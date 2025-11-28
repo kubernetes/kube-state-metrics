@@ -279,16 +279,34 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 		}
 	case []interface{}:
 		for i, it := range iter {
-			value, err := c.value(it)
-			if err != nil {
-				onError(fmt.Errorf("[%d]: %w", i, err))
-				continue
+			// Check if it is a [][]interface{} if yes loop over it
+			// Else process normally
+			if nestedIter, ok := it.([]interface{}); ok {
+				for j, nestedIt := range nestedIter {
+					value, err := c.value(nestedIt)
+
+					if err != nil {
+						onError(fmt.Errorf("[%d]: %w", j, err))
+						continue
+					}
+					if value == nil {
+						continue
+					}
+					addPathLabels(nestedIt, c.LabelFromPath(), value.Labels)
+					result = append(result, *value)
+				}
+			} else {
+				value, err := c.value(it)
+				if err != nil {
+					onError(fmt.Errorf("[%d]: %w", i, err))
+					continue
+				}
+				if value == nil {
+					continue
+				}
+				addPathLabels(it, c.LabelFromPath(), value.Labels)
+				result = append(result, *value)
 			}
-			if value == nil {
-				continue
-			}
-			addPathLabels(it, c.LabelFromPath(), value.Labels)
-			result = append(result, *value)
 		}
 	default:
 		value, err := c.value(v)
@@ -582,7 +600,24 @@ func (p valuePath) String() string {
 func compilePath(path []string) (out valuePath, _ error) {
 	for i := range path {
 		part := path[i]
+
 		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
+
+			// Wildcard with filter: [*]
+			if part == "[*]" {
+				// function to return all elements in a list
+				out = append(out, pathOp{
+					part: part,
+					op: func(m interface{}) interface{} {
+						if s, ok := m.([]interface{}); ok {
+							return s
+						}
+						return nil
+					},
+				})
+				continue
+			}
+
 			// list lookup: [key=value]
 			eq := strings.SplitN(part[1:len(part)-1], "=", 2)
 			if len(eq) != 2 {
@@ -641,21 +676,31 @@ func compilePath(path []string) (out valuePath, _ error) {
 						}
 						return mp[part]
 					} else if s, ok := m.([]interface{}); ok {
+						// case part is an integer index
 						i, err := strconv.Atoi(part)
-						if err != nil {
-							// This means we are here: [ <string>, <int>, ... ] (eg., [ "foo", "0", ... ], i.e., <path>.foo[0]...
-							//                           ^
-							// Skip over.
-							return nil
+						if err == nil {
+							if i < 0 {
+								// negative index
+								i += len(s)
+							}
+							if i < 0 || i >= len(s) {
+								return fmt.Errorf("list index out of range: %s", part)
+							}
+							return s[i]
 						}
-						if i < 0 {
-							// negative index
-							i += len(s)
+
+						// case we have a list and the part is an index
+						var result []interface{}
+						for _, el := range s {
+							if m, ok := el.(map[string]interface{}); ok {
+								if v, ok := m[part]; ok {
+									result = append(result, v)
+								}
+							} else {
+								continue
+							}
 						}
-						if i < 0 || i >= len(s) {
-							return fmt.Errorf("list index out of range: %s", part)
-						}
-						return s[i]
+						return result
 					}
 					return nil
 				},

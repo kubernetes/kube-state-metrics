@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -44,6 +45,8 @@ func TestServiceStore(t *testing.T) {
 		# TYPE kube_service_spec_external_ip gauge
 		# HELP kube_service_status_load_balancer_ingress [STABLE] Service load balancer ingress status
 		# TYPE kube_service_status_load_balancer_ingress gauge
+		# HELP kube_service_ports Metric providing details about the ports exposed by services.
+		# TYPE kube_service_ports gauge	
 		# HELP kube_service_deletion_timestamp Unix deletion timestamp
 		# TYPE kube_service_deletion_timestamp gauge
 	`
@@ -70,11 +73,13 @@ func TestServiceStore(t *testing.T) {
 				# HELP kube_service_info [STABLE] Information about service.
 				# HELP kube_service_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_service_spec_type [STABLE] Type about service.
+				# HELP kube_service_ports Metric providing details about the ports exposed by services.
 				# TYPE kube_service_annotations gauge
 				# TYPE kube_service_created gauge
 				# TYPE kube_service_info gauge
 				# TYPE kube_service_labels gauge
 				# TYPE kube_service_spec_type gauge
+				# TYPE kube_service_ports gauge	
 				kube_service_created{namespace="default",service="test-service1",uid="uid1"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.4",external_name="",external_traffic_policy="",load_balancer_ip="",namespace="default",service="test-service1",uid="uid1"} 1
 				kube_service_spec_type{namespace="default",service="test-service1",type="ClusterIP",uid="uid1"} 1
@@ -85,6 +90,7 @@ func TestServiceStore(t *testing.T) {
 				"kube_service_info",
 				"kube_service_labels",
 				"kube_service_spec_type",
+				"kube_service_ports",
 			},
 		},
 		{
@@ -259,6 +265,35 @@ func TestServiceStore(t *testing.T) {
 				kube_service_created{namespace="default",service="test-service8",uid="uid8"} 1.5e+09
 				kube_service_info{cluster_ip="1.2.3.12",external_name="",external_traffic_policy="Local",load_balancer_ip="1.2.3.13",namespace="default",service="test-service8",uid="uid8"} 1
 				kube_service_spec_type{namespace="default",service="test-service8",uid="uid8",type="LoadBalancer"} 1
+			`,
+		},
+
+		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service9",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					UID:               "uid9",
+					Labels: map[string]string{
+						"app": "example9",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					ClusterIP:             "1.2.3.14",
+					LoadBalancerIP:        "1.2.3.15",
+					Type:                  v1.ServiceTypeLoadBalancer,
+					ExternalTrafficPolicy: "Local",
+					Ports: []v1.ServicePort{
+						{Port: 80, Protocol: v1.ProtocolTCP, TargetPort: intstr.FromInt(8080), Name: "http", NodePort: 65000, AppProtocol: func(s string) *string { return &s }("grpc")},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_service_created{namespace="default",service="test-service9",uid="uid9"} 1.5e+09
+				kube_service_info{cluster_ip="1.2.3.14",external_name="",external_traffic_policy="Local",load_balancer_ip="1.2.3.15",namespace="default",service="test-service9",uid="uid9"} 1
+				kube_service_spec_type{namespace="default",service="test-service9",uid="uid9",type="LoadBalancer"} 1
+				kube_service_ports{namespace="default",port_app_protocol="grpc",port_name="http",port_node_number="65000",port_number="80",port_protocol="TCP",port_target="8080",service="test-service9",uid="uid9"} 1
 			`,
 		},
 		{

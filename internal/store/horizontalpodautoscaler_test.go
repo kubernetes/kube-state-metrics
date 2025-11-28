@@ -47,7 +47,6 @@ func TestHPAStore(t *testing.T) {
 		# HELP kube_horizontalpodautoscaler_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_target_container_metric The current container metric status used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_target_object_metric The current object metric status used by this autoscaler when calculating the desired replica count.
-		# HELP kube_horizontalpodautoscaler_status_target_metric The current metric status used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_target_metric [STABLE] The current metric status used by this autoscaler when calculating the desired replica count.
 		# HELP kube_horizontalpodautoscaler_status_condition [STABLE] The condition of this autoscaler.
 		# HELP kube_horizontalpodautoscaler_status_current_replicas [STABLE] Current number of replicas of pods managed by this autoscaler.

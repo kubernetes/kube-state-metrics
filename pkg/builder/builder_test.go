@@ -65,7 +65,7 @@ func TestBuilderWithCustomStore(t *testing.T) {
 
 func customStore(_ []generator.FamilyGenerator,
 	_ interface{},
-	_ func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	_ func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcherWithContext,
 	_ bool,
 	_ int64,
 ) []cache.Store {

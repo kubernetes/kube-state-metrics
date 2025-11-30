@@ -8,6 +8,7 @@ Any contribution to improving this documentation or adding sample usages will be
 
 * [Metrics Stages](#metrics-stages)
 * [Exposed Metrics](#exposed-metrics)
+* [PromQL Queries](#promql-queries)
 * [Join Metrics](#join-metrics)
 * [CLI arguments](#cli-arguments)
 
@@ -70,6 +71,12 @@ See each file for specific documentation about the exposed metrics:
 * [Role Metrics](metrics/auth/role-metrics.md)
 * [RoleBinding Metrics](metrics/auth/rolebinding-metrics.md)
 * [ServiceAccount Metrics](metrics/auth/serviceaccount-metrics.md)
+
+## PromQL Queries
+
+For practical PromQL query examples and alerting rules:
+
+* [StatefulSet Queries & Alerts](queries/statefulset-monitoring.md)
 
 ## Join Metrics
 

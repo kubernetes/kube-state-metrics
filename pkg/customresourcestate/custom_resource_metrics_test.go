@@ -39,7 +39,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 			// https://github.com/kubernetes/kube-state-metrics/issues/1886
 			name: "cr metric with dynamic metric type",
 			r: Resource{
-				GroupVersionKind: GroupVersionKind{
+				GroupVersionKind: schema.GroupVersionKind{
 					Group:   "apps",
 					Version: "v1",
 					Kind:    "Deployment",
@@ -83,7 +83,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 				Families: []compiledFamily{
 					{
 						Name: "kube_customresource_test_metrics",
-						Help: "metrics for testing for apps_v1_Deployment",
+						Help: "metrics for testing for apps/v1, Kind=Deployment",
 						Each: &compiledInfo{},
 						Labels: map[string]string{
 							"customresource_group":   "apps",
@@ -101,7 +101,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 		{
 			name: "cr metric with custom prefix",
 			r: Resource{
-				GroupVersionKind: GroupVersionKind{
+				GroupVersionKind: schema.GroupVersionKind{
 					Group:   "apps",
 					Version: "v1",
 					Kind:    "Deployment",
@@ -146,7 +146,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 				Families: []compiledFamily{
 					{
 						Name: "apps_deployment_test_metrics",
-						Help: "metrics for testing for apps_v1_Deployment",
+						Help: "metrics for testing for apps/v1, Kind=Deployment",
 						Each: &compiledInfo{},
 						Labels: map[string]string{
 							"customresource_group":   "apps",
@@ -164,7 +164,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 		{
 			name: "cr metric with custom prefix - expect error",
 			r: Resource{
-				GroupVersionKind: GroupVersionKind{
+				GroupVersionKind: schema.GroupVersionKind{
 					Group:   "apps",
 					Version: "v1",
 					Kind:    "Deployment",
@@ -208,7 +208,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 				Families: []compiledFamily{
 					{
 						Name: "apps_deployment_test_metrics",
-						Help: "metrics for testing for apps_v1_Deployment",
+						Help: "metrics for testing for apps/v1, Kind=Deployment",
 						Each: &compiledInfo{},
 						Labels: map[string]string{
 							"customresource_group":   "apps",

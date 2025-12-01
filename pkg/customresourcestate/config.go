@@ -59,7 +59,7 @@ type Resource struct {
 	MetricNamePrefix *string `yaml:"metricNamePrefix" json:"metricNamePrefix"`
 
 	// GroupVersionKind of the custom resource to be monitored.
-	GroupVersionKind GroupVersionKind `yaml:"groupVersionKind" json:"groupVersionKind"`
+	GroupVersionKind schema.GroupVersionKind `yaml:"groupVersionKind" json:"groupVersionKind"`
 
 	// ResourcePlural sets the plural name of the resource. Defaults to the plural version of the Kind according to flect.Pluralize.
 	ResourcePlural string `yaml:"resourcePlural" json:"resourcePlural"`
@@ -87,17 +87,6 @@ func (r Resource) GetResourceName() string {
 	}
 	// kubebuilder default:
 	return strings.ToLower(flect.Pluralize(r.GroupVersionKind.Kind))
-}
-
-// GroupVersionKind is the Kubernetes group, version, and kind of a resource.
-type GroupVersionKind struct {
-	Group   string `yaml:"group" json:"group"`
-	Version string `yaml:"version" json:"version"`
-	Kind    string `yaml:"kind" json:"kind"`
-}
-
-func (gvk GroupVersionKind) String() string {
-	return fmt.Sprintf("%s_%s_%s", gvk.Group, gvk.Version, gvk.Kind)
 }
 
 // Labels is common configuration of labels to add to metrics.
@@ -194,7 +183,7 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 			}
 			for _, resolved /* GVKP */ := range resolvedSet {
 				// Set their G** attributes to various resolutions of the GVK.
-				resource.GroupVersionKind = GroupVersionKind(resolved.GroupVersionKind)
+				resource.GroupVersionKind = schema.GroupVersionKind(resolved.GroupVersionKind)
 				// Set the plural name of the resource based on the extracted value from the same field in the CRD schema.
 				resource.ResourcePlural = resolved.Plural
 				resolvedGVKPs = append(resolvedGVKPs, resource)

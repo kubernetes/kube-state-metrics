@@ -780,6 +780,26 @@ func TestPersistentVolumeStore(t *testing.T) {
 				`,
 			MetricNames: []string{"kube_persistentvolume_volume_mode"},
 		},
+		{
+			Obj: &v1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pv-access-modes",
+				},
+				Spec: v1.PersistentVolumeSpec{
+					AccessModes: []v1.PersistentVolumeAccessMode{
+						v1.ReadWriteOnce,
+						v1.ReadOnlyMany,
+					},
+				},
+			},
+			Want: `
+					# HELP kube_persistentvolume_access_mode [STABLE] The access mode(s) specified by the persistent volume.
+					# TYPE kube_persistentvolume_access_mode gauge
+					kube_persistentvolume_access_mode{persistentvolume="test-pv-access-modes",access_mode="ReadWriteOnce"} 1
+					kube_persistentvolume_access_mode{persistentvolume="test-pv-access-modes",access_mode="ReadOnlyMany"} 1
+				`,
+			MetricNames: []string{"kube_persistentvolume_access_mode"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

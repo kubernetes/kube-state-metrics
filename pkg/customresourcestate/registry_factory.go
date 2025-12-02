@@ -295,18 +295,19 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 					addPathLabels(nestedIt, c.LabelFromPath(), value.Labels)
 					result = append(result, *value)
 				}
-			} else {
-				value, err := c.value(it)
-				if err != nil {
-					onError(fmt.Errorf("[%d]: %w", i, err))
-					continue
-				}
-				if value == nil {
-					continue
-				}
-				addPathLabels(it, c.LabelFromPath(), value.Labels)
-				result = append(result, *value)
+				continue
 			}
+
+			value, err := c.value(it)
+			if err != nil {
+				onError(fmt.Errorf("[%d]: %w", i, err))
+				continue
+			}
+			if value == nil {
+				continue
+			}
+			addPathLabels(it, c.LabelFromPath(), value.Labels)
+			result = append(result, *value)
 		}
 	default:
 		value, err := c.value(v)

@@ -177,13 +177,13 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 		// resolvedGVKPs will have the final list of GVKs, in addition to the resolved G** resources.
 		var resolvedGVKPs []Resource
 		for _, resource := range resources /* G** */ {
-			resolvedSet /* GVKPs */, err := discovererInstance.ResolveGVKToGVKPs(schema.GroupVersionKind(resource.GroupVersionKind))
+			resolvedSet /* GVKPs */, err := discovererInstance.ResolveGVKToGVKPs(resource.GroupVersionKind)
 			if err != nil {
 				klog.ErrorS(err, "failed to resolve GVK", "gvk", resource.GroupVersionKind)
 			}
 			for _, resolved /* GVKP */ := range resolvedSet {
 				// Set their G** attributes to various resolutions of the GVK.
-				resource.GroupVersionKind = schema.GroupVersionKind(resolved.GroupVersionKind)
+				resource.GroupVersionKind = resolved.GroupVersionKind
 				// Set the plural name of the resource based on the extracted value from the same field in the CRD schema.
 				resource.ResourcePlural = resolved.Plural
 				resolvedGVKPs = append(resolvedGVKPs, resource)

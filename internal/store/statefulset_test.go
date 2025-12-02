@@ -64,13 +64,13 @@ func TestStatefulSetStore(t *testing.T) {
 				# HELP kube_statefulset_created [STABLE] Unix creation timestamp
 				# HELP kube_statefulset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
-				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
+				# HELP kube_statefulset_persistentvolumeclaim_retention_policy [STABLE] Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_ordinals_start [STABLE] Start ordinal of the StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_observed_generation [STABLE] The generation observed by the StatefulSet controller.
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
-				# HELP kube_statefulset_status_replicas_available The number of available replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_available [STABLE] The number of available replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_current [STABLE] The number of current replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_ready [STABLE] The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated [STABLE] The number of updated replicas per StatefulSet.
@@ -146,12 +146,12 @@ func TestStatefulSetStore(t *testing.T) {
 			Want: `
 				# HELP kube_statefulset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
-				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
+				# HELP kube_statefulset_persistentvolumeclaim_retention_policy [STABLE] Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_observed_generation [STABLE] The generation observed by the StatefulSet controller.
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
-				# HELP kube_statefulset_status_replicas_available The number of available replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_available [STABLE] The number of available replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_current [STABLE] The number of current replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_ready [STABLE] The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated [STABLE] The number of updated replicas per StatefulSet.
@@ -218,11 +218,11 @@ func TestStatefulSetStore(t *testing.T) {
 			Want: `
 				# HELP kube_statefulset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
-				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
+				# HELP kube_statefulset_persistentvolumeclaim_retention_policy [STABLE] Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
-				# HELP kube_statefulset_status_replicas_available The number of available replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_available [STABLE] The number of available replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_current [STABLE] The number of current replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_ready [STABLE] The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated [STABLE] The number of updated replicas per StatefulSet.
@@ -290,11 +290,11 @@ func TestStatefulSetStore(t *testing.T) {
 			Want: `
 				# HELP kube_statefulset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
-				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
+				# HELP kube_statefulset_persistentvolumeclaim_retention_policy [STABLE] Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
-				# HELP kube_statefulset_status_replicas_available The number of available replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_available [STABLE] The number of available replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_current [STABLE] The number of current replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_ready [STABLE] The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated [STABLE] The number of updated replicas per StatefulSet.
@@ -363,12 +363,12 @@ func TestStatefulSetStore(t *testing.T) {
 			Want: `
 				# HELP kube_statefulset_labels [STABLE] Kubernetes labels converted to Prometheus labels.
 				# HELP kube_statefulset_metadata_generation [STABLE] Sequence number representing a specific generation of the desired state for the StatefulSet.
-				# HELP kube_statefulset_persistentvolumeclaim_retention_policy Count of retention policy for StatefulSet template PVCs
+				# HELP kube_statefulset_persistentvolumeclaim_retention_policy [STABLE] Count of retention policy for StatefulSet template PVCs
 				# HELP kube_statefulset_replicas [STABLE] Number of desired pods for a StatefulSet.
 				# HELP kube_statefulset_ordinals_start [STABLE] Start ordinal of the StatefulSet.
 				# HELP kube_statefulset_status_current_revision [STABLE] Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
 				# HELP kube_statefulset_status_replicas [STABLE] The number of replicas per StatefulSet.
-				# HELP kube_statefulset_status_replicas_available The number of available replicas per StatefulSet.
+				# HELP kube_statefulset_status_replicas_available [STABLE] The number of available replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_current [STABLE] The number of current replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_ready [STABLE] The number of ready replicas per StatefulSet.
 				# HELP kube_statefulset_status_replicas_updated [STABLE] The number of updated replicas per StatefulSet.
@@ -432,7 +432,7 @@ func TestStatefulSetStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_statefulset_deletion_timestamp Unix deletion timestamp
+				# HELP kube_statefulset_deletion_timestamp [STABLE] Unix deletion timestamp
 				# TYPE kube_statefulset_deletion_timestamp gauge
 				kube_statefulset_deletion_timestamp{statefulset="statefulset6",namespace="ns6"} 1.8e+09
  			`,

@@ -82,7 +82,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_statefulset_status_replicas_available",
 			"The number of available replicas per StatefulSet.",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				return &metric.Family{
@@ -218,7 +218,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_statefulset_persistentvolumeclaim_retention_policy",
 			"Count of retention policy for StatefulSet template PVCs",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			basemetrics.STABLE,
 
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
@@ -245,7 +245,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			descStatefulSetAnnotationsName,
 			descStatefulSetAnnotationsHelp,
 			metric.Gauge,
-			basemetrics.ALPHA,
+			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				if len(allowAnnotationsList) == 0 {
@@ -325,7 +325,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			"kube_statefulset_deletion_timestamp",
 			"Unix deletion timestamp",
 			metric.Gauge,
-			basemetrics.ALPHA,
+			basemetrics.STABLE,
 			"",
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				ms := []*metric.Metric{}

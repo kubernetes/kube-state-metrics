@@ -17,6 +17,7 @@ limitations under the License.
 package metric
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -70,11 +71,11 @@ func BenchmarkMetricWrite(b *testing.B) {
 	for _, test := range tests {
 		b.Run(test.testName, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				builder := strings.Builder{}
+				builder := bytes.Buffer{}
 
 				test.metric.Write(&builder)
 
-				s := builder.String()
+				s := builder.Bytes()
 
 				// Ensuring that the string is actually build, not optimized
 				// away by compilation.

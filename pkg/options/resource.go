@@ -31,7 +31,7 @@ var (
 		"cronjobs":                        struct{}{},
 		"daemonsets":                      struct{}{},
 		"deployments":                     struct{}{},
-		"endpoints":                       struct{}{},
+		"endpointslices":                  struct{}{},
 		"horizontalpodautoscalers":        struct{}{},
 		"ingresses":                       struct{}{},
 		"jobs":                            struct{}{},

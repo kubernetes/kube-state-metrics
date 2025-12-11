@@ -258,7 +258,6 @@ func createHPASpecTarget(metricName, metricDescription string, allowedTypes []au
 
 				var metricName string
 				var metricTarget autoscaling.MetricTarget
-				var fullTargetName string // only used for ObjectMetricSourceType
 
 				switch m.Type {
 				case autoscaling.PodsMetricSourceType:
@@ -270,10 +269,8 @@ func createHPASpecTarget(metricName, metricDescription string, allowedTypes []au
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					metricTarget = m.External.Target
-				case autoscaling.ObjectMetricSourceType:
-					metricName = m.Object.Metric.Name
-					metricTarget = m.Object.Target
-					fullTargetName = m.Object.DescribedObject.Name
+				// Handled in createHPASpecTargetObjectMetric
+				// case autoscaling.ObjectMetricSourceType:
 				default:
 					// Skip unsupported metric type.
 					continue
@@ -293,10 +290,6 @@ func createHPASpecTarget(metricName, metricDescription string, allowedTypes []au
 				for metricTypeIndex, metricValue := range metricMap {
 					metricLabels := targetMetricLabels
 					labelValues := []string{metricName, metricTypeIndex.String()}
-					if m.Type == autoscaling.ObjectMetricSourceType {
-						metricLabels = objectMetricLabels
-						labelValues = append(labelValues, fullTargetName)
-					}
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   metricLabels,
 						LabelValues: labelValues,
@@ -310,12 +303,52 @@ func createHPASpecTarget(metricName, metricDescription string, allowedTypes []au
 }
 
 func createHPASpecTargetObjectMetric() generator.FamilyGenerator {
-	return createHPASpecTarget(
+	//	autoscaling.ObjectMetricSourceType,
+	return *generator.NewFamilyGeneratorWithStability(
 		"kube_horizontalpodautoscaler_spec_target_object_metric",
 		"The object metric specifications used by this autoscaler when calculating the desired replica count.",
-		[]autoscaling.MetricSourceType{
-			autoscaling.ObjectMetricSourceType,
-		})
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(a.Spec.Metrics))
+			for _, m := range a.Spec.Metrics {
+				if m.Type != autoscaling.ObjectMetricSourceType {
+					continue
+				}
+				var metricName string
+				var metricTarget autoscaling.MetricTarget
+				var fullTargetName string
+
+				metricName = m.Object.Metric.Name
+				metricTarget = m.Object.Target
+				fullTargetName = m.Object.DescribedObject.Name
+				// The variable maps the type of metric to the corresponding value
+				metricMap := make(map[metricTargetType]float64)
+				if metricTarget.Value != nil {
+					metricMap[value] = convertValueToFloat64(metricTarget.Value)
+				}
+				if metricTarget.AverageValue != nil {
+					metricMap[average] = convertValueToFloat64(metricTarget.AverageValue)
+				}
+				if metricTarget.AverageUtilization != nil {
+					metricMap[utilization] = float64(*metricTarget.AverageUtilization)
+				}
+
+				for metricTypeIndex, metricValue := range metricMap {
+					labelValues := []string{metricName, metricTypeIndex.String()}
+					metricLabels := objectMetricLabels
+					labelValues = append(labelValues, fullTargetName)
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   metricLabels,
+						LabelValues: labelValues,
+						Value:       metricValue,
+					})
+				}
+			}
+			return &metric.Family{Metrics: ms}
+		}),
+	)
 }
 
 func createHPASpecTargetMetric() generator.FamilyGenerator {

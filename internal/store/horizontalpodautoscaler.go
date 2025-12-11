@@ -303,7 +303,6 @@ func createHPASpecTarget(metricName, metricDescription string, allowedTypes []au
 }
 
 func createHPASpecTargetObjectMetric() generator.FamilyGenerator {
-	//	autoscaling.ObjectMetricSourceType,
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_horizontalpodautoscaler_spec_target_object_metric",
 		"The object metric specifications used by this autoscaler when calculating the desired replica count.",

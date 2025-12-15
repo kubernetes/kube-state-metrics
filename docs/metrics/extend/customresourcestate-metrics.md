@@ -639,7 +639,7 @@ The `valueType` field in gauge configuration accepts the following values:
 
 The `duration` value type is particularly useful for custom resources that store time values as Go duration strings, such as cert-manager Certificates.
 
-**Example: cert-manager Certificate Duration**
+###### Example: cert-manager Certificate Duration
 
 ```yaml
 kind: CustomResourceStateMetrics
@@ -670,7 +670,7 @@ spec:
               valueType: duration  # Explicitly parse as duration
 ```
 
-**Supported Duration Formats**
+###### Supported Duration Formats
 
 The `duration` value type uses Go's `time.ParseDuration` format and supports:
 
@@ -684,7 +684,7 @@ The `duration` value type uses Go's `time.ParseDuration` format and supports:
 
 All durations are converted to **seconds as float64** for Prometheus compatibility.
 
-**Example Metrics Output**
+###### Example Metrics Output
 
 For a cert-manager Certificate with `spec.duration: "2160h"` and `spec.renewBefore: "720h"`:
 
@@ -693,14 +693,16 @@ kube_customresource_certificate_duration_seconds{customresource_group="cert-mana
 kube_customresource_certificate_renew_before_seconds{customresource_group="cert-manager.io", customresource_kind="Certificate", customresource_version="v1", name="example-cert", namespace="default"} 2592000
 ```
 
-**When to Use valueType**
+###### When to Use valueType
 
 Use `valueType: duration` when:
+
 * The resource field contains Go duration strings (e.g., "72h", "30m")
 * Auto-detection fails because the string isn't recognized as a number
 * You want explicit, predictable parsing behavior
 
 Use `valueType: quantity` when:
+
 * You want to ensure Kubernetes quantity parsing (even if auto-detection would work)
 * You want to make the parsing behavior explicit in configuration
 

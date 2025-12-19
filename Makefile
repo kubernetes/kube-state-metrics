@@ -26,7 +26,7 @@ KSM_MODULE = $(shell go list -m)
 DOCKER_CLI ?= docker
 PROMTOOL_CLI ?= promtool
 GOMPLATE_CLI ?= go tool github.com/hairyhenderson/gomplate/v4/cmd/gomplate
-GOJSONTOYAML_CLI ?= go tool github.com/brancz/gojsontoyaml
+GOJQ_CLI ?= go tool github.com/itchyny/gojq/cmd/gojq
 EMBEDMD_CLI ?= go tool github.com/campoy/embedmd
 JSONNET_CLI ?= go tool github.com/google/go-jsonnet/cmd/jsonnet
 JB_CLI ?= go tool github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
@@ -160,23 +160,23 @@ mixin: examples/prometheus-alerting-rules/alerts.yaml
 
 examples/prometheus-alerting-rules/alerts.yaml: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/mixin.jsonnet scripts/vendor
 	mkdir -p examples/prometheus-alerting-rules
-	${JSONNET_CLI}  -J scripts/vendor scripts/mixin.jsonnet | ${GOJSONTOYAML_CLI} > examples/prometheus-alerting-rules/alerts.yaml
+	${JSONNET_CLI}  -J scripts/vendor scripts/mixin.jsonnet | ${GOJQ_CLI} --yaml-output > examples/prometheus-alerting-rules/alerts.yaml
 
 examples: examples/standard examples/autosharding examples/daemonsetsharding mixin
 
 examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor
 	mkdir -p examples/standard
-	${JSONNET_CLI} -J scripts/vendor -m examples/standard --ext-str version="$(VERSION)" scripts/standard.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	${JSONNET_CLI} -J scripts/vendor -m examples/standard --ext-str version="$(VERSION)" scripts/standard.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJQ_CLI} --yaml-output > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/autosharding.jsonnet scripts/vendor
 	mkdir -p examples/autosharding
-	${JSONNET_CLI} -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	${JSONNET_CLI} -J scripts/vendor -m examples/autosharding --ext-str version="$(VERSION)" scripts/autosharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJQ_CLI} --yaml-output > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 examples/daemonsetsharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/daemonsetsharding.jsonnet scripts/vendor
 	mkdir -p examples/daemonsetsharding
-	${JSONNET_CLI} -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJSONTOYAML_CLI} > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	${JSONNET_CLI} -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJQ_CLI} --yaml-output > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json

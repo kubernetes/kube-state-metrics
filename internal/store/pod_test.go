@@ -2372,34 +2372,55 @@ func TestGetPodStatusReasonValue(t *testing.T) {
 		})
 	}
 }
-func TestKubePodTolerations_DeduplicatesDuplicateEntries(t *testing.T) {
+func TestKubePodTolerations_DeduplicatesDuplicateEntries_WithTolerationSeconds(t *testing.T) {
+	seconds1 := int64(3600)
+	seconds2 := int64(3600)
+	seconds3 := int64(1800)
+	secondsKey2 := int64(0)
+
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dup-tolerations-pod",
+			Name:      "dup-tolerations-pod-ts",
 			Namespace: "default",
-			UID:       "testuid",
+			UID:       "testuid-ts",
 		},
 		Spec: v1.PodSpec{
 			Tolerations: []v1.Toleration{
 				{
-					Key:      "key1",
-					Operator: v1.TolerationOpEqual,
-					Value:    "value1",
-					Effect:   v1.TaintEffectNoSchedule,
+					Key:               "key1",
+					Operator:          v1.TolerationOpEqual,
+					Value:             "value1",
+					Effect:            v1.TaintEffectNoSchedule,
+					TolerationSeconds: &seconds1,
 				},
 				{
-					Key:      "key1",
-					Operator: v1.TolerationOpEqual,
-					Value:    "value1",
-					Effect:   v1.TaintEffectNoSchedule,
+					Key:               "key1",
+					Operator:          v1.TolerationOpEqual,
+					Value:             "value1",
+					Effect:            v1.TaintEffectNoSchedule,
+					TolerationSeconds: &seconds2, // same value as first, different pointer
+				},
+				{
+					Key:               "key1",
+					Operator:          v1.TolerationOpEqual,
+					Value:             "value1",
+					Effect:            v1.TaintEffectNoSchedule,
+					TolerationSeconds: &seconds3, // different value
+				},
+				{
+					Key:               "key2",
+					Operator:          v1.TolerationOpExists,
+					TolerationSeconds: &secondsKey2, // "0"
+				},
+				{
+					Key:               "key2",
+					Operator:          v1.TolerationOpExists,
+					TolerationSeconds: &secondsKey2, // duplicate of above by identity
 				},
 				{
 					Key:      "key2",
 					Operator: v1.TolerationOpExists,
-				},
-				{
-					Key:      "key2",
-					Operator: v1.TolerationOpExists,
+					// TolerationSeconds nil -> distinct from "0"
 				},
 			},
 		},
@@ -2415,6 +2436,7 @@ func TestKubePodTolerations_DeduplicatesDuplicateEntries(t *testing.T) {
 		key, operator, value, effect, tolerationSeconds string
 	}
 	metricsSeen := make(map[metricKey]struct{})
+
 	for _, m := range fam.Metrics {
 		lbls := map[string]string{}
 		for i, k := range m.LabelKeys {
@@ -2433,8 +2455,8 @@ func TestKubePodTolerations_DeduplicatesDuplicateEntries(t *testing.T) {
 		metricsSeen[km] = struct{}{}
 	}
 
-	wantMetricCount := 2 // Only two unique tolerations expected
-	if len(metricsSeen) != wantMetricCount {
-		t.Errorf("expected %d unique toleration metrics, got %d", wantMetricCount, len(metricsSeen))
+	wantMetricCount := 4 // key1@3600, key1@1800, key2@0, key2@nil
+	if got := len(metricsSeen); got != wantMetricCount {
+		t.Errorf("expected %d unique toleration metrics, got %d", wantMetricCount, got)
 	}
 }

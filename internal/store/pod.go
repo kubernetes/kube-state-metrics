@@ -1686,8 +1686,7 @@ func createPodStatusUnscheduledTimeFamilyGenerator() generator.FamilyGenerator {
 
 // getUniqueTolerations takes an array
 // getUniqueTolerations returns a deduplicated slice of tolerations based on a stable identity key.
-// Since v1.Toleration contains pointer fields which may affect comparison,
-// we use a string key based on the essential identity fields.
+// v1.Toleration contains a pointer field (TolerationSeconds), so we avoid relying on direct struct comparison.
 func getUniqueTolerations(tolerations []v1.Toleration) []v1.Toleration {
 	type tolerationKey struct {
 		Key      string
@@ -1698,7 +1697,7 @@ func getUniqueTolerations(tolerations []v1.Toleration) []v1.Toleration {
 	}
 
 	uniqueTolerationsMap := make(map[tolerationKey]struct{})
-	var uniqueTolerations []v1.Toleration
+	uniqueTolerations := make([]v1.Toleration, 0)
 
 	for _, t := range tolerations {
 		var seconds string

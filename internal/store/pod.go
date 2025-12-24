@@ -1708,25 +1708,30 @@ func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			var ms []*metric.Metric
-			uniqueTolerations := getUniqueTolerations(p.Spec.Tolerations)
+			seen := make(map[string]struct{})
 
-			for _, t := range uniqueTolerations {
+			for _, t := range p.Spec.Tolerations {
 				var key, operator, value, effect, tolerationSeconds string
 
 				key = t.Key
 				if t.Operator != "" {
 					operator = string(t.Operator)
 				}
-
 				value = t.Value
-
 				if t.Effect != "" {
 					effect = string(t.Effect)
 				}
-
 				if t.TolerationSeconds != nil {
 					tolerationSeconds = strconv.FormatInt(*t.TolerationSeconds, 10)
 				}
+
+				// Build a stable identity key:
+				identityKey := key + "|" + operator + "|" + value + "|" + effect + "|" + tolerationSeconds
+
+				if _, exists := seen[identityKey]; exists {
+					continue
+				}
+				seen[identityKey] = struct{}{}
 
 				ms = append(ms, &metric.Metric{
 					LabelKeys:   []string{"key", "operator", "value", "effect", "toleration_seconds"},

@@ -1685,15 +1685,36 @@ func createPodStatusUnscheduledTimeFamilyGenerator() generator.FamilyGenerator {
 }
 
 // getUniqueTolerations takes an array
+// getUniqueTolerations returns a deduplicated slice of tolerations based on a stable identity key.
+// Since v1.Toleration contains pointer fields which may affect comparison,
+// we use a string key based on the essential identity fields.
 func getUniqueTolerations(tolerations []v1.Toleration) []v1.Toleration {
-	uniqueTolerationsMap := make(map[v1.Toleration]struct{})
+	type tolerationKey struct {
+		Key      string
+		Operator string
+		Value    string
+		Effect   string
+		Seconds  string
+	}
+
+	uniqueTolerationsMap := make(map[tolerationKey]struct{})
 	var uniqueTolerations []v1.Toleration
 
-	for _, toleration := range tolerations {
-		_, exists := uniqueTolerationsMap[toleration]
-		if !exists {
-			uniqueTolerationsMap[toleration] = struct{}{}
-			uniqueTolerations = append(uniqueTolerations, toleration)
+	for _, t := range tolerations {
+		var seconds string
+		if t.TolerationSeconds != nil {
+			seconds = strconv.FormatInt(*t.TolerationSeconds, 10)
+		}
+		key := tolerationKey{
+			Key:      t.Key,
+			Operator: string(t.Operator),
+			Value:    t.Value,
+			Effect:   string(t.Effect),
+			Seconds:  seconds,
+		}
+		if _, exists := uniqueTolerationsMap[key]; !exists {
+			uniqueTolerationsMap[key] = struct{}{}
+			uniqueTolerations = append(uniqueTolerations, t)
 		}
 	}
 	return uniqueTolerations
@@ -1708,30 +1729,25 @@ func createPodTolerationsFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			var ms []*metric.Metric
-			seen := make(map[string]struct{})
+			uniqueTolerations := getUniqueTolerations(p.Spec.Tolerations)
 
-			for _, t := range p.Spec.Tolerations {
+			for _, t := range uniqueTolerations {
 				var key, operator, value, effect, tolerationSeconds string
 
 				key = t.Key
 				if t.Operator != "" {
 					operator = string(t.Operator)
 				}
+
 				value = t.Value
+
 				if t.Effect != "" {
 					effect = string(t.Effect)
 				}
+
 				if t.TolerationSeconds != nil {
 					tolerationSeconds = strconv.FormatInt(*t.TolerationSeconds, 10)
 				}
-
-				// Build a stable identity key:
-				identityKey := key + "|" + operator + "|" + value + "|" + effect + "|" + tolerationSeconds
-
-				if _, exists := seen[identityKey]; exists {
-					continue
-				}
-				seen[identityKey] = struct{}{}
 
 				ms = append(ms, &metric.Metric{
 					LabelKeys:   []string{"key", "operator", "value", "effect", "toleration_seconds"},

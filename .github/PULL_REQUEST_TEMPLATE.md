@@ -8,7 +8,7 @@
 <!-- markdownlint-disable-next-line MD041 -->
 **What this PR does / why we need it:**
 
-If you are adding a new metric, provide the use case of that metric.
+<!-- If you are adding a new metric, provide the use case of that metric. -->
 
 **How does this change affect the cardinality of KSM:** *(increases, decreases or does not change cardinality)*
 

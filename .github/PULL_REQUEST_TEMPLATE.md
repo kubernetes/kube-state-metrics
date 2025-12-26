@@ -14,3 +14,10 @@
 
 **Which issue(s) this PR fixes:** *(optional, in `fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close the issue(s) when PR gets merged)*
 Fixes #
+
+<!-- In case of the change being user-facing, an entry should be appended to the latest unreleased section in CHANGELOG.md.
+    The expected format is as follows:
+    * [ENHANCEMENT/CHANGE/BUGFIX/FEATURE]: <PR TITLE> by @PR_AUTHOR in https://github.com/kubernetes/kube-state-metrics/pull/<PR NUMBER> (avoid using #<PR NUMBER> for inter-VCS compatibility), for instance:
+    * [ENHANCEMENT]: Add support for Windows by @k8s-ci-robot in https://github.com/kubernetes/kube-state-metrics/pull/1234
+-->
+* [ ] I have added a CHANGELOG entry for this change.

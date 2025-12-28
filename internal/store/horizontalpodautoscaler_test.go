@@ -220,7 +220,7 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
 				kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 4
 				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa1",namespace="ns1"} 2
-				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
+				kube_horizontalpodautoscaler_spec_target_metric{container="container1",horizontalpodautoscaler="hpa1",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 80
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="events",metric_target_type="average",namespace="ns1"} 30
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="average",namespace="ns1"} 12
 				kube_horizontalpodautoscaler_spec_target_metric{horizontalpodautoscaler="hpa1",metric_name="hits",metric_target_type="value",namespace="ns1"} 10
@@ -411,8 +411,8 @@ func TestHPAStore(t *testing.T) {
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="memory",metric_target_type="utilization",namespace="ns1"} 28
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.062
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 6
-				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.08
-				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 10
+				kube_horizontalpodautoscaler_status_target_metric{container="container1",horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="average",namespace="ns1"} 0.08
+				kube_horizontalpodautoscaler_status_target_metric{container="container1",horizontalpodautoscaler="hpa2",metric_name="cpu",metric_target_type="utilization",namespace="ns1"} 10
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="value",namespace="ns1"} 0
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_requests_per_second",metric_target_type="average",namespace="ns1"} 2.9
 				kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler="hpa2",metric_name="traefik_backend_errors_per_second",metric_target_type="value",namespace="ns1"} 0
@@ -438,6 +438,144 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_labels",
 				"kube_horizontalpodautoscaler_created",
 				"kube_horizontalpodautoscaler_deletion_timestamp",
+			},
+		},
+
+		{
+			// Test case for multiple ContainerResource metrics with same resource name
+			Obj: &autoscaling.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Generation:        1,
+					Name:              "hpa-container-resource",
+					Namespace:         "default",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				},
+				Spec: autoscaling.HorizontalPodAutoscalerSpec{
+					MaxReplicas: 10,
+					MinReplicas: int32ptr(1),
+					Metrics: []autoscaling.MetricSpec{
+						{
+							Type: autoscaling.ContainerResourceMetricSourceType,
+							ContainerResource: &autoscaling.ContainerResourceMetricSource{
+								Name:      "cpu",
+								Container: "main",
+								Target: autoscaling.MetricTarget{
+									AverageUtilization: int32ptr(40),
+								},
+							},
+						},
+						{
+							Type: autoscaling.ContainerResourceMetricSourceType,
+							ContainerResource: &autoscaling.ContainerResourceMetricSource{
+								Name:      "cpu",
+								Container: "sidecar",
+								Target: autoscaling.MetricTarget{
+									AverageUtilization: int32ptr(90),
+								},
+							},
+						},
+						{
+							Type: autoscaling.ContainerResourceMetricSourceType,
+							ContainerResource: &autoscaling.ContainerResourceMetricSource{
+								Name:      "memory",
+								Container: "main",
+								Target: autoscaling.MetricTarget{
+									AverageUtilization: int32ptr(70),
+								},
+							},
+						},
+					},
+					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
+						APIVersion: "apps/v1",
+						Kind:       "Deployment",
+						Name:       "test-app",
+					},
+				},
+				Status: autoscaling.HorizontalPodAutoscalerStatus{
+					CurrentReplicas: 2,
+					DesiredReplicas: 3,
+					Conditions: []autoscaling.HorizontalPodAutoscalerCondition{
+						{
+							Type:   autoscaling.AbleToScale,
+							Status: v1.ConditionTrue,
+						},
+					},
+					CurrentMetrics: []autoscaling.MetricStatus{
+						{
+							Type: autoscaling.ContainerResourceMetricSourceType,
+							ContainerResource: &autoscaling.ContainerResourceMetricStatus{
+								Name:      "cpu",
+								Container: "main",
+								Current: autoscaling.MetricValueStatus{
+									AverageUtilization: int32ptr(24),
+									AverageValue:       resourcePtr(resource.MustParse("1442m")),
+								},
+							},
+						},
+						{
+							Type: autoscaling.ContainerResourceMetricSourceType,
+							ContainerResource: &autoscaling.ContainerResourceMetricStatus{
+								Name:      "cpu",
+								Container: "sidecar",
+								Current: autoscaling.MetricValueStatus{
+									AverageUtilization: int32ptr(69),
+									AverageValue:       resourcePtr(resource.MustParse("836m")),
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+		# HELP kube_horizontalpodautoscaler_info Information about this autoscaler.
+		# HELP kube_horizontalpodautoscaler_metadata_generation [STABLE] The generation observed by the HorizontalPodAutoscaler controller.
+		# HELP kube_horizontalpodautoscaler_spec_max_replicas [STABLE] Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
+		# HELP kube_horizontalpodautoscaler_spec_min_replicas [STABLE] Lower limit for the number of pods that can be set by the autoscaler, default 1.
+		# HELP kube_horizontalpodautoscaler_spec_target_metric The metric specifications used by this autoscaler when calculating the desired replica count.
+		# HELP kube_horizontalpodautoscaler_status_target_metric [STABLE] The current metric status used by this autoscaler when calculating the desired replica count.
+		# HELP kube_horizontalpodautoscaler_status_condition [STABLE] The condition of this autoscaler.
+		# HELP kube_horizontalpodautoscaler_status_current_replicas [STABLE] Current number of replicas of pods managed by this autoscaler.
+		# HELP kube_horizontalpodautoscaler_status_desired_replicas [STABLE] Desired number of replicas of pods managed by this autoscaler.
+		# HELP kube_horizontalpodautoscaler_created Unix creation timestamp
+		# TYPE kube_horizontalpodautoscaler_info gauge
+		# TYPE kube_horizontalpodautoscaler_metadata_generation gauge
+		# TYPE kube_horizontalpodautoscaler_spec_max_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_spec_min_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_spec_target_metric gauge
+		# TYPE kube_horizontalpodautoscaler_status_target_metric gauge
+		# TYPE kube_horizontalpodautoscaler_status_condition gauge
+		# TYPE kube_horizontalpodautoscaler_status_current_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_status_desired_replicas gauge
+		# TYPE kube_horizontalpodautoscaler_created gauge
+		kube_horizontalpodautoscaler_info{horizontalpodautoscaler="hpa-container-resource",namespace="default",scaletargetref_api_version="apps/v1",scaletargetref_kind="Deployment",scaletargetref_name="test-app"} 1
+		kube_horizontalpodautoscaler_metadata_generation{horizontalpodautoscaler="hpa-container-resource",namespace="default"} 1
+		kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="hpa-container-resource",namespace="default"} 10
+		kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa-container-resource",namespace="default"} 1
+		kube_horizontalpodautoscaler_spec_target_metric{container="main",horizontalpodautoscaler="hpa-container-resource",metric_name="cpu",metric_target_type="utilization",namespace="default"} 40
+		kube_horizontalpodautoscaler_spec_target_metric{container="main",horizontalpodautoscaler="hpa-container-resource",metric_name="memory",metric_target_type="utilization",namespace="default"} 70
+		kube_horizontalpodautoscaler_spec_target_metric{container="sidecar",horizontalpodautoscaler="hpa-container-resource",metric_name="cpu",metric_target_type="utilization",namespace="default"} 90
+		kube_horizontalpodautoscaler_status_target_metric{container="main",horizontalpodautoscaler="hpa-container-resource",metric_name="cpu",metric_target_type="average",namespace="default"} 1.442
+		kube_horizontalpodautoscaler_status_target_metric{container="main",horizontalpodautoscaler="hpa-container-resource",metric_name="cpu",metric_target_type="utilization",namespace="default"} 24
+		kube_horizontalpodautoscaler_status_target_metric{container="sidecar",horizontalpodautoscaler="hpa-container-resource",metric_name="cpu",metric_target_type="average",namespace="default"} 0.836
+		kube_horizontalpodautoscaler_status_target_metric{container="sidecar",horizontalpodautoscaler="hpa-container-resource",metric_name="cpu",metric_target_type="utilization",namespace="default"} 69
+		kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa-container-resource",namespace="default",status="false"} 0
+		kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa-container-resource",namespace="default",status="true"} 1
+		kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",horizontalpodautoscaler="hpa-container-resource",namespace="default",status="unknown"} 0
+		kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="hpa-container-resource",namespace="default"} 2
+		kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler="hpa-container-resource",namespace="default"} 3
+		kube_horizontalpodautoscaler_created{horizontalpodautoscaler="hpa-container-resource",namespace="default"} 1.5e+09
+	`,
+			MetricNames: []string{
+				"kube_horizontalpodautoscaler_info",
+				"kube_horizontalpodautoscaler_metadata_generation",
+				"kube_horizontalpodautoscaler_spec_max_replicas",
+				"kube_horizontalpodautoscaler_spec_min_replicas",
+				"kube_horizontalpodautoscaler_spec_target_metric",
+				"kube_horizontalpodautoscaler_status_target_metric",
+				"kube_horizontalpodautoscaler_status_current_replicas",
+				"kube_horizontalpodautoscaler_status_desired_replicas",
+				"kube_horizontalpodautoscaler_status_condition",
+				"kube_horizontalpodautoscaler_created",
 			},
 		},
 	}

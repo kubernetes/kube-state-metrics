@@ -1684,7 +1684,8 @@ func createPodStatusUnscheduledTimeFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-// getUniqueTolerations takes an array
+// getUniqueTolerations takes a v1.Toleration array and returns a deduplicated slice of tolerations based on a stable identity key.
+// v1.Toleration contains a pointer field (TolerationSeconds), so we avoid relying on direct struct comparison.
 // getUniqueTolerations returns a deduplicated slice of tolerations based on a stable identity key.
 // v1.Toleration contains a pointer field (TolerationSeconds), so we avoid relying on direct struct comparison.
 func getUniqueTolerations(tolerations []v1.Toleration) []v1.Toleration {

@@ -1,0 +1,7 @@
+apiVersion: example.com/v1
+kind: Application
+metadata:
+  name: test-app-stable
+spec:
+  appName: myapp-stable
+  replicas: 5

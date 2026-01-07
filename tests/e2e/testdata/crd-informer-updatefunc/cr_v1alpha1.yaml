@@ -1,0 +1,7 @@
+apiVersion: example.com/v1alpha1
+kind: Application
+metadata:
+  name: test-app-alpha
+spec:
+  appName: myapp-alpha
+  replicas: 3

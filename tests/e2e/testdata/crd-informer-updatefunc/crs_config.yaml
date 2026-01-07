@@ -1,0 +1,16 @@
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: "example.com"
+        version: "*"
+        kind: "Application"
+      metrics:
+        - name: "test_metric_info"
+          help: "helpless"
+          each:
+            type: Info
+            info:
+              path: [metadata]
+              labelsFromPath:
+                name: [name]

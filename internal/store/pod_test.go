@@ -2372,3 +2372,91 @@ func TestGetPodStatusReasonValue(t *testing.T) {
 		})
 	}
 }
+func TestKubePodTolerations_DeduplicatesDuplicateEntries_WithTolerationSeconds(t *testing.T) {
+	seconds1 := int64(3600)
+	seconds2 := int64(3600)
+	seconds3 := int64(1800)
+	secondsKey2 := int64(0)
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dup-tolerations-pod-ts",
+			Namespace: "default",
+			UID:       "testuid-ts",
+		},
+		Spec: v1.PodSpec{
+			Tolerations: []v1.Toleration{
+				{
+					Key:               "key1",
+					Operator:          v1.TolerationOpEqual,
+					Value:             "value1",
+					Effect:            v1.TaintEffectNoSchedule,
+					TolerationSeconds: &seconds1,
+				},
+				{
+					Key:               "key1",
+					Operator:          v1.TolerationOpEqual,
+					Value:             "value1",
+					Effect:            v1.TaintEffectNoSchedule,
+					TolerationSeconds: &seconds2, // same value as first, different pointer
+				},
+				{
+					Key:               "key1",
+					Operator:          v1.TolerationOpEqual,
+					Value:             "value1",
+					Effect:            v1.TaintEffectNoSchedule,
+					TolerationSeconds: &seconds3, // different value
+				},
+				{
+					Key:               "key2",
+					Operator:          v1.TolerationOpExists,
+					TolerationSeconds: &secondsKey2, // "0"
+				},
+				{
+					Key:               "key2",
+					Operator:          v1.TolerationOpExists,
+					TolerationSeconds: &secondsKey2, // duplicate of above by identity
+				},
+				{
+					Key:      "key2",
+					Operator: v1.TolerationOpExists,
+					// TolerationSeconds nil -> distinct from "0"
+				},
+			},
+		},
+	}
+
+	gen := createPodTolerationsFamilyGenerator()
+	fam := gen.Generate(pod)
+	if fam == nil {
+		t.Fatalf("expected non-nil metric family")
+	}
+
+	type metricKey struct {
+		key, operator, value, effect, tolerationSeconds string
+	}
+	metricsSeen := make(map[metricKey]struct{})
+
+	for _, m := range fam.Metrics {
+		lbls := map[string]string{}
+		for i, k := range m.LabelKeys {
+			lbls[k] = m.LabelValues[i]
+		}
+		km := metricKey{
+			key:               lbls["key"],
+			operator:          lbls["operator"],
+			value:             lbls["value"],
+			effect:            lbls["effect"],
+			tolerationSeconds: lbls["toleration_seconds"],
+		}
+		if _, exists := metricsSeen[km]; exists {
+			t.Errorf("duplicate toleration metric found: %+v", km)
+		}
+		metricsSeen[km] = struct{}{}
+	}
+
+	wantMetricCount := 4 // key1@3600, key1@1800, key2@0, key2@nil
+	if got := len(metricsSeen); got != wantMetricCount {
+		t.Errorf("expected %d unique toleration metrics, got %d", wantMetricCount, got)
+	}
+}

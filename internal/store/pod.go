@@ -1684,16 +1684,37 @@ func createPodStatusUnscheduledTimeFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-// getUniqueTolerations takes an array
+// getUniqueTolerations takes a v1.Toleration array and returns a deduplicated slice of tolerations based on a stable identity key.
+// v1.Toleration contains a pointer field (TolerationSeconds), so we avoid relying on direct struct comparison.
+// getUniqueTolerations returns a deduplicated slice of tolerations based on a stable identity key.
+// v1.Toleration contains a pointer field (TolerationSeconds), so we avoid relying on direct struct comparison.
 func getUniqueTolerations(tolerations []v1.Toleration) []v1.Toleration {
-	uniqueTolerationsMap := make(map[v1.Toleration]struct{})
-	var uniqueTolerations []v1.Toleration
+	type tolerationKey struct {
+		Key      string
+		Operator string
+		Value    string
+		Effect   string
+		Seconds  string
+	}
 
-	for _, toleration := range tolerations {
-		_, exists := uniqueTolerationsMap[toleration]
-		if !exists {
-			uniqueTolerationsMap[toleration] = struct{}{}
-			uniqueTolerations = append(uniqueTolerations, toleration)
+	uniqueTolerationsMap := make(map[tolerationKey]struct{})
+	uniqueTolerations := make([]v1.Toleration, 0)
+
+	for _, t := range tolerations {
+		var seconds string
+		if t.TolerationSeconds != nil {
+			seconds = strconv.FormatInt(*t.TolerationSeconds, 10)
+		}
+		key := tolerationKey{
+			Key:      t.Key,
+			Operator: string(t.Operator),
+			Value:    t.Value,
+			Effect:   string(t.Effect),
+			Seconds:  seconds,
+		}
+		if _, exists := uniqueTolerationsMap[key]; !exists {
+			uniqueTolerationsMap[key] = struct{}{}
+			uniqueTolerations = append(uniqueTolerations, t)
 		}
 	}
 	return uniqueTolerations

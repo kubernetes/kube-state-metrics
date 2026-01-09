@@ -33,9 +33,6 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
-// PopulateTimeout is the timeout on populating the cache for the first time.
-const PopulateTimeout = 10 * time.Second
-
 type resourceManager struct {
 	crConfigFile *os.File
 	initCrdFile  *os.File
@@ -137,6 +134,9 @@ func (rm *resourceManager) writeResourceFiles(t *testing.T) {
 }
 
 func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
+	// populateTimeout is the timeout on populating the cache for the first time.
+	const populateTimeout = 10 * time.Second
+
 	rm := &resourceManager{}
 	// Create testdata.
 	rm.createConfigAndResourceFiles(t)
@@ -200,7 +200,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	ch := make(chan bool, 1)
 	klog.InfoS("waiting for first metrics to become available")
 	testMetric := `kube_customresource_test_metric{customresource_group="contoso.com",customresource_kind="MyPlatform",customresource_version="v1alpha1",name="test-dotnet-app"}`
-	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, PopulateTimeout, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, populateTimeout, true, func(_ context.Context) (bool, error) {
 		out, err := exec.Command("curl", "localhost:8080/metrics").Output()
 		if err != nil {
 			return false, err
@@ -225,7 +225,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	select {
 	case <-ch:
 		t.Log("initial metrics are available")
-	case <-time.After(PopulateTimeout * 2):
+	case <-time.After(populateTimeout * 2):
 		t.Fatal("timed out waiting for test to pass, check the logs for more info")
 	}
 
@@ -248,7 +248,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	ch = make(chan bool, 1)
 	klog.InfoS("waiting for new metrics to become available")
 	testUpdateCRDMetric := `kube_customresource_test_update_crd_metric{customresource_group="contoso.com",customresource_kind="Update",customresource_version="v1",name="test-dotnet-app-update"}`
-	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, PopulateTimeout, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), discovery.Interval, populateTimeout, true, func(_ context.Context) (bool, error) {
 		out, err := exec.Command("curl", "localhost:8080/metrics").Output()
 		if err != nil {
 			return false, err
@@ -276,7 +276,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	select {
 	case <-ch:
 		t.Log("test passed successfully")
-	case <-time.After(PopulateTimeout * 2):
+	case <-time.After(populateTimeout * 2):
 		t.Fatal("timed out waiting for test to pass, check the logs for more info")
 	}
 }

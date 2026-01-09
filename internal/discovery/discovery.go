@@ -48,52 +48,55 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	}, "", 0, nil, nil)
 	informer := factory.Informer()
 	stopper := make(chan struct{})
+	extractGVKPs := func(obj interface{}) []groupVersionKindPlural {
+		objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
+		var gvkps []groupVersionKindPlural
+		for _, version := range objSpec["versions"].([]interface{}) {
+			g := objSpec["group"].(string)
+			v := version.(map[string]interface{})["name"].(string)
+			k := objSpec["names"].(map[string]interface{})["kind"].(string)
+			p := objSpec["names"].(map[string]interface{})["plural"].(string)
+			gvkps = append(gvkps, groupVersionKindPlural{
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   g,
+					Version: v,
+					Kind:    k,
+				},
+				Plural: p,
+			})
+		}
+		return gvkps
+	}
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
-			for _, version := range objSpec["versions"].([]interface{}) {
-				g := objSpec["group"].(string)
-				v := version.(map[string]interface{})["name"].(string)
-				k := objSpec["names"].(map[string]interface{})["kind"].(string)
-				p := objSpec["names"].(map[string]interface{})["plural"].(string)
-				gotGVKP := groupVersionKindPlural{
-					GroupVersionKind: schema.GroupVersionKind{
-						Group:   g,
-						Version: v,
-						Kind:    k,
-					},
-					Plural: p,
-				}
-				r.SafeWrite(func() {
-					r.AppendToMap(gotGVKP)
-					r.WasUpdated = true
-				})
-			}
+			gvkps := extractGVKPs(obj)
+			r.SafeWrite(func() {
+				r.AppendToMap(gvkps...)
+				r.WasUpdated = true
+			})
 			r.SafeWrite(func() {
 				r.CRDsAddEventsCounter.Inc()
 				r.CRDsCacheCountGauge.Inc()
 			})
 		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldGVKPs := extractGVKPs(oldObj)
+			newGVKPs := extractGVKPs(newObj)
+			r.SafeWrite(func() {
+				r.RemoveFromMap(oldGVKPs...)
+				r.AppendToMap(newGVKPs...)
+				r.WasUpdated = true
+			})
+			r.SafeWrite(func() {
+				r.CRDsUpdateEventsCounter.Inc()
+			})
+		},
 		DeleteFunc: func(obj interface{}) {
-			objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
-			for _, version := range objSpec["versions"].([]interface{}) {
-				g := objSpec["group"].(string)
-				v := version.(map[string]interface{})["name"].(string)
-				k := objSpec["names"].(map[string]interface{})["kind"].(string)
-				p := objSpec["names"].(map[string]interface{})["plural"].(string)
-				gotGVKP := groupVersionKindPlural{
-					GroupVersionKind: schema.GroupVersionKind{
-						Group:   g,
-						Version: v,
-						Kind:    k,
-					},
-					Plural: p,
-				}
-				r.SafeWrite(func() {
-					r.RemoveFromMap(gotGVKP)
-					r.WasUpdated = true
-				})
-			}
+			gvkps := extractGVKPs(obj)
+			r.SafeWrite(func() {
+				r.RemoveFromMap(gvkps...)
+				r.WasUpdated = true
+			})
 			r.SafeWrite(func() {
 				r.CRDsDeleteEventsCounter.Inc()
 				r.CRDsCacheCountGauge.Dec()

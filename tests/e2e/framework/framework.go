@@ -172,3 +172,32 @@ func (f *Framework) ParseMetrics(metrics func(io.Writer) error) (map[string]*dto
 	parser := expfmt.NewTextParser(model.UTF8Validation)
 	return parser.TextToMetricFamilies(buf)
 }
+
+// HasMetricWithLabels checks if a metric with specific labels exists.
+func (f *Framework) HasMetricWithLabels(metricName string, labels map[string]string) (bool, error) {
+	metricFamilies, err := f.ParseMetrics(f.KsmClient.Metrics)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse metrics: %w", err)
+	}
+
+	family, ok := metricFamilies[metricName]
+	if !ok {
+		return false, nil
+	}
+
+	for _, metric := range family.Metric {
+		matchCount := 0
+		for _, label := range metric.Label {
+			if expectedValue, exists := labels[label.GetName()]; exists {
+				if label.GetValue() == expectedValue {
+					matchCount++
+				}
+			}
+		}
+		if matchCount == len(labels) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}

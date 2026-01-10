@@ -50,7 +50,8 @@ var (
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "horizontalpodautoscaler"}
 
-	targetMetricLabels = []string{"metric_name", "metric_target_type"}
+	targetMetricLabels          = []string{"metric_name", "metric_target_type"}
+	containerMetricTargetLabels = []string{"metric_name", "metric_target_type", "container"}
 )
 
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -194,6 +195,8 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 			for _, m := range a.Spec.Metrics {
 				var metricName string
 				var metricTarget autoscaling.MetricTarget
+				var labelKeys []string
+				var labelValues []string
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
 
@@ -201,18 +204,28 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				case autoscaling.ObjectMetricSourceType:
 					metricName = m.Object.Metric.Name
 					metricTarget = m.Object.Target
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
 					metricTarget = m.Pods.Target
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
 					metricTarget = m.Resource.Target
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				case autoscaling.ContainerResourceMetricSourceType:
 					metricName = string(m.ContainerResource.Name)
 					metricTarget = m.ContainerResource.Target
+					labelKeys = containerMetricTargetLabels
+					labelValues = []string{metricName, "", string(m.ContainerResource.Container)}
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					metricTarget = m.External.Target
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				default:
 					// Skip unsupported metric type
 					continue
@@ -229,9 +242,14 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				}
 
 				for metricTypeIndex, metricValue := range metricMap {
+					// Clone labelValues and update metric_target_type
+					currentLabelValues := make([]string, len(labelValues))
+					copy(currentLabelValues, labelValues)
+					currentLabelValues[1] = metricTypeIndex.String()
+
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelKeys:   labelKeys,
+						LabelValues: currentLabelValues,
 						Value:       metricValue,
 					})
 				}
@@ -253,6 +271,8 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 			for _, m := range a.Status.CurrentMetrics {
 				var metricName string
 				var currentMetric autoscaling.MetricValueStatus
+				var labelKeys []string
+				var labelValues []string
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
 
@@ -260,18 +280,28 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				case autoscaling.ObjectMetricSourceType:
 					metricName = m.Object.Metric.Name
 					currentMetric = m.Object.Current
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				case autoscaling.PodsMetricSourceType:
 					metricName = m.Pods.Metric.Name
 					currentMetric = m.Pods.Current
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				case autoscaling.ResourceMetricSourceType:
 					metricName = string(m.Resource.Name)
 					currentMetric = m.Resource.Current
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				case autoscaling.ContainerResourceMetricSourceType:
 					metricName = string(m.ContainerResource.Name)
 					currentMetric = m.ContainerResource.Current
+					labelKeys = containerMetricTargetLabels
+					labelValues = []string{metricName, "", string(m.ContainerResource.Container)}
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					currentMetric = m.External.Current
+					labelKeys = targetMetricLabels
+					labelValues = []string{metricName, ""}
 				default:
 					// Skip unsupported metric type
 					continue
@@ -288,9 +318,14 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				}
 
 				for metricTypeIndex, metricValue := range metricMap {
+					// Clone labelValues and update metric_target_type
+					currentLabelValues := make([]string, len(labelValues))
+					copy(currentLabelValues, labelValues)
+					currentLabelValues[1] = metricTypeIndex.String()
+
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelKeys:   labelKeys,
+						LabelValues: currentLabelValues,
 						Value:       metricValue,
 					})
 				}

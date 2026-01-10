@@ -114,5 +114,5 @@ type RegistryFactory interface {
 	//		},
 	//	}
 	// }
-	ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher
+	ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcherWithContext
 }

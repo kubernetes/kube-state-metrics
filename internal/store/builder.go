@@ -286,7 +286,7 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 		if ok {
 			stores := cacheStoresToMetricStores(constructor(b))
 			activeStoreNames = append(activeStoreNames, c)
-			metricsWriters = append(metricsWriters, metricsstore.NewMetricsWriter(stores...))
+			metricsWriters = append(metricsWriters, metricsstore.NewMetricsWriter(c, stores...))
 		}
 	}
 

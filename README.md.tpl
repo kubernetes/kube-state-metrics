@@ -44,15 +44,15 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [ECMAScript regular expression support for allow and deny lists](#ecmascript-regular-expression-support-for-allow-and-deny-lists)
   * [Conflict resolution in label names](#conflict-resolution-in-label-names)
 * [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
-* [Resource recommendation](#resource-recommendation)
-* [Latency](#latency)
-* [A note on costing](#a-note-on-costing)
 * [kube-state-metrics vs. metrics-server](#kube-state-metrics-vs-metrics-server)
 * [Scaling kube-state-metrics](#scaling-kube-state-metrics)
   * [Resource recommendation](#resource-recommendation)
+  * [Latency](#latency)
+  * [A note on costing](#a-note-on-costing)
   * [Horizontal sharding](#horizontal-sharding)
     * [Automated sharding](#automated-sharding)
   * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
+  * [Resource filtering](#resource-filtering)
 * [Setup](#setup)
   * [Building the Docker container](#building-the-docker-container)
 * [Usage](#usage)
@@ -185,34 +185,6 @@ kube_state_metrics_last_config_reload_successful{filename="crs.yml",type="custom
 kube_state_metrics_last_config_reload_successful{filename="config.yml",type="config"} 1
 ```
 
-### Scaling kube-state-metrics
-
-#### Resource recommendation
-
-Resource usage for kube-state-metrics changes with the Kubernetes objects (Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
-To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
-
-As a general rule, you should allocate:
-
-* 250MiB memory
-* 0.1 cores
-
-Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation or CPU throttling, try increasing the CPU limits.
-
-### Latency
-
-In a 100 node cluster scaling test the latency numbers were as follows:
-
-```text
-"Perc50": 259615384 ns,
-"Perc90": 475000000 ns,
-"Perc99": 906666666 ns.
-```
-
-### A note on costing
-
-By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/developer/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
-
 ### kube-state-metrics vs. metrics-server
 
 The [metrics-server](https://github.com/kubernetes-incubator/metrics-server)
@@ -236,7 +208,35 @@ metrics-server it too is not responsible for exporting its metrics anywhere.
 Having kube-state-metrics as a separate project also enables access to these
 metrics from monitoring systems such as Prometheus.
 
-### Horizontal sharding
+### Scaling kube-state-metrics
+
+#### Resource recommendation
+
+Resource usage for kube-state-metrics changes with the Kubernetes objects (Pods/Nodes/Deployments/Secrets etc.) size of the cluster.
+To some extent, the Kubernetes objects in a cluster are in direct proportion to the node number of the cluster.
+
+As a general rule, you should allocate:
+
+* 250MiB memory
+* 0.1 cores
+
+Note that if CPU limits are set too low, kube-state-metrics' internal queues will not be able to be worked off quickly enough, resulting in increased memory consumption as the queue length grows. If you experience problems resulting from high memory allocation or CPU throttling, try increasing the CPU limits.
+
+#### Latency
+
+In a 100 node cluster scaling test the latency numbers were as follows:
+
+```text
+"Perc50": 259615384 ns,
+"Perc90": 475000000 ns,
+"Perc99": 906666666 ns.
+```
+
+#### A note on costing
+
+By default, kube-state-metrics exposes several metrics for events across your cluster. If you have a large number of frequently-updating resources on your cluster, you may find that a lot of data is ingested into these metrics. This can incur high costs on some cloud providers. Please take a moment to [configure what metrics you'd like to expose](docs/developer/cli-arguments.md), as well as consult the documentation for your Kubernetes environment in order to avoid unexpectedly high costs.
+
+#### Horizontal sharding
 
 In order to shard kube-state-metrics horizontally, some automated sharding capabilities have been implemented. It is configured with the following flags:
 
@@ -277,7 +277,7 @@ spec:
       - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:IMAGE_TAG
         name: kube-state-metrics
         args:
-        - --resource=pods
+        - --resources=pods
         - --node=$(NODE_NAME)
         env:
         - name: NODE_NAME
@@ -304,6 +304,23 @@ spec:
 ```
 
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
+
+#### Resource Filtering
+
+The `/metrics` endpoint supports filtering by resource type using the `resources` query parameter. This allows you to scrape only the metrics for specific Kubernetes resources, which can be useful for reducing the amount of data scraped or for creating separate scraping jobs for different resource types.
+
+Example:
+`curl 'http://localhost:8080/metrics?resources=pods,secrets'`
+
+Multiple resources can be specified as a comma-separated list, or by providing the `resources` parameter multiple times.
+
+You can also exclude specific resources using the `exclude_resources` query parameter. This is useful if you want to scrape all metrics except for a few specific ones.
+
+Example:
+`curl 'http://localhost:8080/metrics?exclude_resources=pods'`
+
+If both `resources` and `exclude_resources` are provided, the `resources` parameter acts as an allowlist, and `exclude_resources` acts as a denylist, filtering out any resources specified in the `exclude_resources` parameter from the allowed resources.
+The exclude_resources takes precedence here and you can only filter on resources that are enabled in kube-state-metrics.
 
 ### Setup
 

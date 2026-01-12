@@ -70,7 +70,7 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	}
 
 	w := strings.Builder{}
-	mw := NewMetricsWriter(ms)
+	mw := NewMetricsWriter("test", ms)
 	err := mw.WriteAll(&w)
 	if err != nil {
 		t.Fatalf("failed to write metrics: %v", err)

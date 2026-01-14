@@ -37,13 +37,15 @@ type MetricsWriterList []*MetricsWriter
 // metrics with the same name coming from different stores end up grouped together.
 // It also ensures that the metric headers are only written out once.
 type MetricsWriter struct {
-	stores []*MetricsStore
+	stores       []*MetricsStore
+	ResourceName string
 }
 
 // NewMetricsWriter creates a new MetricsWriter.
-func NewMetricsWriter(stores ...*MetricsStore) *MetricsWriter {
+func NewMetricsWriter(resourceName string, stores ...*MetricsStore) *MetricsWriter {
 	return &MetricsWriter{
-		stores: stores,
+		stores:       stores,
+		ResourceName: resourceName,
 	}
 }
 

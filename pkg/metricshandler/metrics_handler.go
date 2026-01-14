@@ -221,7 +221,21 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m.metricsWriters = metricsstore.SanitizeHeaders(contentType, m.metricsWriters)
+
+	requestedResources := parseResources(r.URL.Query()["resources"])
+	excludedResources := parseResources(r.URL.Query()["exclude_resources"])
+
 	for _, w := range m.metricsWriters {
+		if requestedResources != nil {
+			if _, ok := requestedResources[w.ResourceName]; !ok {
+				continue
+			}
+		}
+		if excludedResources != nil {
+			if _, ok := excludedResources[w.ResourceName]; ok {
+				continue
+			}
+		}
 		err := w.WriteAll(writer)
 		if err != nil {
 			klog.ErrorS(err, "Failed to write metrics")
@@ -243,6 +257,22 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			klog.ErrorS(err, "Failed to close the writer")
 		}
 	}
+}
+
+func parseResources(params []string) map[string]struct{} {
+	if params == nil {
+		return nil
+	}
+	resMap := make(map[string]struct{})
+	for _, p := range params {
+		for _, res := range strings.Split(p, ",") {
+			res = strings.TrimSpace(res)
+			if res != "" {
+				resMap[res] = struct{}{}
+			}
+		}
+	}
+	return resMap
 }
 
 func shardingSettingsFromStatefulSet(ss *appsv1.StatefulSet, podName string) (nominal int32, totalReplicas int, err error) {

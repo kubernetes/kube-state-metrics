@@ -173,6 +173,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			ValueFrom:      valueFromPath,
 			NilIsZero:      m.Gauge.NilIsZero,
 			labelFromKey:   m.Gauge.LabelFromKey,
+			valueType:      m.Gauge.ValueType,
 		}, nil
 	case metric.Info:
 		if m.Info == nil {
@@ -216,6 +217,7 @@ type compiledGauge struct {
 	labelFromKey string
 	ValueFrom    valuePath
 	NilIsZero    bool
+	valueType    ValueType
 }
 
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
@@ -241,7 +243,21 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				len(sValueFrom) > 2 {
 				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
 				if key == extractedValueFrom {
-					gotFloat, err := toFloat64(it, c.NilIsZero)
+					// Check if explicit valueType is specified
+					var gotFloat float64
+					var err error
+
+					switch c.valueType {
+					case ValueTypeDuration:
+						gotFloat, err = parseDurationValue(it)
+					case ValueTypeQuantity:
+						gotFloat, err = toFloat64(it, c.NilIsZero)
+					case ValueTypeDefault:
+						gotFloat, err = toFloat64(it, c.NilIsZero)
+					default:
+						err = fmt.Errorf("unknown valueType: %s", c.valueType)
+					}
+
 					if err != nil {
 						onError(fmt.Errorf("[%s]: %w", key, err))
 						continue
@@ -462,7 +478,23 @@ func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 		// Don't error if there was not a type-casting issue (`toFloat64`).
 		return nil, nil
 	}
-	value, err := toFloat64(got, c.NilIsZero)
+
+	// Check if explicit valueType is specified
+	var value float64
+	var err error
+	switch c.valueType {
+	case ValueTypeDuration:
+		value, err = parseDurationValue(got)
+	case ValueTypeQuantity:
+		// Use existing quantity parsing from toFloat64
+		value, err = toFloat64(got, c.NilIsZero)
+	case ValueTypeDefault:
+		// Fall through to auto-detection (existing logic)
+		value, err = toFloat64(got, c.NilIsZero)
+	default:
+		return nil, fmt.Errorf("unknown valueType: %s", c.valueType)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", c.ValueFrom, err)
 	}
@@ -708,6 +740,35 @@ func scrapeValuesFor(e compiledEach, obj map[string]interface{}) ([]eachValue, [
 		return less(result[i].Labels, result[j].Labels)
 	})
 	return result, errs
+}
+
+// parseDurationValue converts a duration string to seconds as float64.
+// It uses time.ParseDuration to parse strings like "1h", "30m", "1h30m45s".
+// The result is converted to seconds for Prometheus compatibility.
+func parseDurationValue(value interface{}) (float64, error) {
+	var durationStr string
+
+	switch v := value.(type) {
+	case string:
+		durationStr = v
+	case nil:
+		return 0, fmt.Errorf("nil value cannot be parsed as duration")
+	default:
+		return 0, fmt.Errorf("value must be a string for duration parsing, got %T", value)
+	}
+
+	// Handle empty string
+	if durationStr == "" {
+		return 0, fmt.Errorf("empty string cannot be parsed as duration")
+	}
+
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse duration '%s': %w", durationStr, err)
+	}
+
+	// Convert to seconds as float64 for Prometheus compatibility
+	return duration.Seconds(), nil
 }
 
 // toFloat64 converts the value to a float64 which is the value type for any metric.

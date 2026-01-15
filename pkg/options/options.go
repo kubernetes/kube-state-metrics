@@ -83,6 +83,9 @@ type Options struct {
 	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
 	ObjectLimit          int64 `yaml:"object_limit"`
 	AuthFilter           bool  `yaml:"auth_filter"`
+
+	ResourceMetricsConfigFile string
+	DisableDefaultCoreMetrics bool
 }
 
 // GetConfigFile is the getter for --config value.
@@ -159,6 +162,8 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
 	o.cmd.Flags().BoolVar(&o.ContinueWithoutCustomResourceConfigFile, "continue-without-custom-resource-state-config-file", false, "If true, Kube-state-metrics continues to run even if the config file specified by --custom-resource-state-config-file is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the custom-resource-state-config file is not found, instead watches and reloads when it is created.")
+	o.cmd.Flags().StringVar(&o.ResourceMetricsConfigFile, "resource-metrics-config-file", "", "Path to ResourceMetricsConfig YAML for core resources")
+	o.cmd.Flags().BoolVar(&o.DisableDefaultCoreMetrics, "disable-default-core-metrics", false, "Disable built-in core metric families; only config-defined ones will be used")
 	o.cmd.Flags().StringVar(&o.Host, "host", "::", `Host to expose metrics on.`)
 	o.cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	o.cmd.Flags().StringVar(&o.Namespace, "pod-namespace", "", "Name of the namespace of the pod specified by --pod. "+autoshardingNotice)

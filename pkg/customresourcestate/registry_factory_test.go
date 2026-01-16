@@ -423,6 +423,20 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 0, "reason", "NotReady"),
 			newEachValue(t, 0, "reason", "SyncError"),
 		}},
+		{name: "status_parents_conditions_included", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "parents"),
+				labelFromPath: map[string]valuePath{
+					"reason":     mustCompilePath(t, "conditions", "[*]", "reason"),
+					"parentName": mustCompilePath(t, "parentRef", "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "conditions", "[*]", "status"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "parentName", "baz-1", "reason", "AsExpected"),
+			newEachValue(t, 0, "parentName", "baz-1", "reason", "SyncError"),
+			newEachValue(t, 0, "parentName", "grault-1", "reason", "NotReady"),
+		}},
 		{name: "= expression matching", each: &compiledInfo{
 			compiledCommon: compiledCommon{
 				labelFromPath: map[string]valuePath{

@@ -298,6 +298,23 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				continue
 			}
 
+			if values, ok := c.ValueFrom.Get(it).([]interface{}); ok {
+				for idx, v := range values {
+					val, err := toFloat64(v, c.NilIsZero)
+					if err != nil {
+						onError(fmt.Errorf("[%d][%d]: %w", i, idx, err))
+						continue
+					}
+					ev := eachValue{
+						Labels: make(map[string]string),
+						Value:  val,
+					}
+					addPathLabelsByIndex(it, c.LabelFromPath(), ev.Labels, idx)
+					result = append(result, ev)
+				}
+				continue
+			}
+
 			value, err := c.value(it)
 			if err != nil {
 				onError(fmt.Errorf("[%d]: %w", i, err))
@@ -535,6 +552,10 @@ func (f compiledFamily) BaseLabels(obj map[string]interface{}) map[string]string
 }
 
 func addPathLabels(obj interface{}, labels map[string]valuePath, result map[string]string) {
+	addPathLabelsByIndex(obj, labels, result, -1)
+}
+
+func addPathLabelsByIndex(obj interface{}, labels map[string]valuePath, result map[string]string, index int) {
 	// *prefixed is a special case, it means copy an object
 	// always do that first so other labels can override
 	var stars []string
@@ -546,6 +567,14 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 	sort.Strings(stars)
 	for _, star := range stars {
 		m := labels[star].Get(obj)
+		if s, ok := m.([]interface{}); ok && index != -1 {
+			if index < len(s) {
+				m = s[index]
+			} else {
+				continue
+			}
+		}
+
 		if kv, ok := m.(map[string]interface{}); ok {
 			for k, v := range kv {
 				if strings.HasSuffix(star, "*") {
@@ -560,6 +589,13 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 			continue
 		}
 		value := v.Get(obj)
+		if s, ok := value.([]interface{}); ok && index != -1 {
+			if index < len(s) {
+				value = s[index]
+			} else {
+				continue
+			}
+		}
 		// skip label if value is nil
 		if value == nil {
 			continue
@@ -679,13 +715,14 @@ func compilePath(path []string) (out valuePath, _ error) {
 					} else if s, ok := m.([]interface{}); ok {
 						// case part is an integer index
 						i, err := strconv.Atoi(part)
+						err2 := fmt.Errorf("list index out of range: %s", part)
 						if err == nil {
 							if i < 0 {
 								// negative index
 								i += len(s)
 							}
 							if i < 0 || i >= len(s) {
-								return fmt.Errorf("list index out of range: %s", part)
+								return err2
 							}
 							return s[i]
 						}

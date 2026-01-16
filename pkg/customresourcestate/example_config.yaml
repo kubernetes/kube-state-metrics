@@ -54,6 +54,18 @@ spec:
               path: [ status, other, '[*]', detail ]
           errorLogV: 5
 
+        - name: "other_count_array_deep_multiple"
+          each:
+            type: Gauge
+            gauge:
+              path: [ status ]
+              labelsFromPath:
+                bar: [ other, '[*]', detail ]
+                foo: [ foo, bar ]
+              valueFrom: [ other, '[*]', count ]
+
+          errorLogV: 5
+
         - name: "info"
           each:
             type: Info

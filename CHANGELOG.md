@@ -1,5 +1,31 @@
 # Changelog
 
+## v2.18.0 / 2026-01-11
+
+NOTE: This release addresses a regression that caused a panic when new versions were added to existing `CustomResourceDefinition`s. See the post-mortem analysis in <https://github.com/kubernetes/kube-state-metrics/pull/2838> for more details.
+NOTE: `endpointslices` are now part of the default resources exposed as metrics. `endpoints` is deprecated and needs to be manually activated through the `--resources` flag. See <https://github.com/kubernetes/kube-state-metrics/pull/2659> for more details.
+
+* This release builds with Go `v1.25.6`
+* This release builds with `k8s.io/client-go`: `v0.34.3`
+
+* [CHANGE] Replace endpoints with endpointslices as default resource by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2659>
+* [BUGFIX] Fix regression: React on WATCH updates for CRD informer by @rexagod in <https://github.com/kubernetes/kube-state-metrics/pull/2838>
+* [BUGFIX] Deduplicate tolerations when generating `kube_pod_tolerations` by @bhope in <https://github.com/kubernetes/kube-state-metrics/pull/2835>
+* [FEATURE] Allow filtering resources via URL parameters by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2844>
+* [FEATURE] Add `kube_job_status_ready` metric by @nmn3m in <https://github.com/kubernetes/kube-state-metrics/pull/2771>
+* [FEATURE] Add `kube_deployment_owner` metric by @nmn3m in <https://github.com/kubernetes/kube-state-metrics/pull/2782>
+* [FEATURE] Add `kube_deployment_status_replicas_terminating` and `kube_replicaset_status_terminating_replicas` metrics by @atiratree in <https://github.com/kubernetes/kube-state-metrics/pull/2708>
+* [FEATURE] Promote CronJob, HPA, and Pod metrics from BETA to STABLE by @nmn3m in <https://github.com/kubernetes/kube-state-metrics/pull/2798>
+* [FEATURE] Promote StatefulSet metrics to STABLE by @yasicar in <https://github.com/kubernetes/kube-state-metrics/pull/2783>
+* [FEATURE] Add info metric for client-go version by @fpetkovski in <https://github.com/kubernetes/kube-state-metrics/pull/2739>
+* [FEATURE] Warn on probe failing by @mickael-carl in <https://github.com/kubernetes/kube-state-metrics/pull/2808>
+* [ENHANCEMENT] Add `failed` condition to `kube_certificatesigningrequest_condition` by @ksmiley in <https://github.com/kubernetes/kube-state-metrics/pull/2841>
+* [ENHANCEMENT] Reduce allocations when creating metric families by @fpetkovski in <https://github.com/kubernetes/kube-state-metrics/pull/2807>
+* [ENHANCEMENT] Bump to kubernetes 1.34 by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2785>
+* [ENHANCEMENT] Bump exporter-toolkit by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2770>
+* [ENHANCEMENT] Replace gojsontoyaml with gojq by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2660>
+* [ENHANCEMENT] Split benchmarks by @mrueg in <https://github.com/kubernetes/kube-state-metrics/pull/2759>
+
 ## v2.17.0 / 2025-09-01
 
 * This release builds with Go `v1.24.6`

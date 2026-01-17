@@ -13,13 +13,13 @@ GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
-PROMETHEUS_VERSION = 3.5.0
-GO_VERSION = 1.24.6
+PROMETHEUS_VERSION = 3.9.1
+GO_VERSION = 1.25.5
 IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-MARKDOWNLINT_CLI2_VERSION = 0.18.1
+MARKDOWNLINT_CLI2_VERSION = 0.20.0
 CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
 KSM_MODULE = $(shell go list -m)
 

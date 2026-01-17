@@ -55,7 +55,7 @@ func TestAsLibrary(t *testing.T) {
 	time.Sleep(time.Second)
 
 	w := strings.Builder{}
-	mw := metricsstore.NewMetricsWriter(c)
+	mw := metricsstore.NewMetricsWriter("test", c)
 	err = mw.WriteAll(&w)
 	if err != nil {
 		t.Fatalf("failed to write metrics: %v", err)

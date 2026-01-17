@@ -168,12 +168,16 @@ func createCSRListWatch(kubeClient clientset.Interface, _ string, _ string) cach
 func addCSRConditionMetrics(cs certv1.CertificateSigningRequestStatus) []*metric.Metric {
 	cApproved := 0
 	cDenied := 0
+	cFailed := 0
 	for _, s := range cs.Conditions {
 		if s.Type == certv1.CertificateApproved {
 			cApproved++
 		}
 		if s.Type == certv1.CertificateDenied {
 			cDenied++
+		}
+		if s.Type == certv1.CertificateFailed {
+			cFailed++
 		}
 	}
 
@@ -186,6 +190,11 @@ func addCSRConditionMetrics(cs certv1.CertificateSigningRequestStatus) []*metric
 		{
 			LabelValues: []string{"denied"},
 			Value:       float64(cDenied),
+			LabelKeys:   []string{"condition"},
+		},
+		{
+			LabelValues: []string{"failed"},
+			Value:       float64(cFailed),
 			LabelKeys:   []string{"condition"},
 		},
 	}

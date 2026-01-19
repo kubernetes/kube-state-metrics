@@ -32,7 +32,7 @@ type MetricsStore struct {
 	// metric families, containing a slice of metrics. We need to keep metrics
 	// grouped by metric families in order to zip families with their help text in
 	// MetricsStore.WriteAll().
-	metrics sync.Map
+	metrics *sync.Map
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
@@ -48,7 +48,7 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.F
 	return &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,
-		metrics:             sync.Map{},
+		metrics:             &sync.Map{},
 	}
 }
 

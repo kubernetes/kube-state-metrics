@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"unsafe"
 
 	"github.com/prometheus/common/expfmt"
 
@@ -60,7 +59,12 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 	}
 
 	for i, help := range m.stores[0].headers {
-		if help != "" && help != "\n" {
+		// Skip empty headers (set by SanitizeHeaders for duplicates)
+		if help == "" {
+			continue
+		}
+
+		if help != "\n" {
 			help += "\n"
 		}
 
@@ -94,13 +98,6 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 	return nil
 }
 
-// shareMetricsMap shares the metrics map of the given MetricsStore
-func shareMetricsMap(dst, src *MetricsStore) {
-	srcPtr := unsafe.Pointer(src)
-	dstPtr := unsafe.Pointer(dst)
-	*(*MetricsStore)(dstPtr) = *(*MetricsStore)(srcPtr)
-}
-
 // SanitizeHeaders sanitizes the headers of the given MetricsWriterList.
 func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) MetricsWriterList {
 	clonedWriters := make(MetricsWriterList, 0, len(writers))
@@ -109,17 +106,18 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 		for _, store := range writer.stores {
 			clonedHeaders := make([]string, len(store.headers))
 			copy(clonedHeaders, store.headers)
-
-			clonedStore := &MetricsStore{}
-			shareMetricsMap(clonedStore, store)
-			clonedStore.headers = clonedHeaders
+			clonedStore := &MetricsStore{
+				headers: clonedHeaders,
+			}
+			// Share the metrics backing storage by sharing the pointer.
+			clonedStore.metrics = store.metrics
 			clonedStores = append(clonedStores, clonedStore)
 		}
 		clonedWriters = append(clonedWriters, &MetricsWriter{stores: clonedStores, ResourceName: writer.ResourceName})
 	}
 
-	var lastHeader string
 	for _, writer := range clonedWriters {
+		var lastHeader string
 		if len(writer.stores) > 0 {
 			for i := 0; i < len(writer.stores[0].headers); {
 				header := writer.stores[0].headers[i]
@@ -146,10 +144,10 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 				}
 
 				// Nullify duplicate headers after the sanitization to not miss out on any new candidates.
+				// Set to empty string instead of deleting to preserve slice length alignment with metricFamilies.
 				if header == lastHeader {
-					writer.stores[0].headers = append(writer.stores[0].headers[:i], writer.stores[0].headers[i+1:]...)
-
-					// Do not increment the index, as the next header is now at the current index.
+					writer.stores[0].headers[i] = ""
+					i++
 					continue
 				}
 

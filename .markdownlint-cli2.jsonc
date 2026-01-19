@@ -2,6 +2,9 @@
   "globs": [
     "**/*.md"
   ],
+  "ignores": [
+    "vendor/**"
+  ],
   // ToDo: Following rules can't be fixed automatically. They should be enabled when fixed.
   "config": {
     "MD004": {
@@ -14,6 +17,7 @@
         "summary",
         "br"
       ]
-    }
+    },
+    "MD060": false // Allow table column misalignments
   }
 }

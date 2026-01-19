@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unsafe"
 
 	"github.com/prometheus/common/expfmt"
 
@@ -93,6 +94,13 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 	return nil
 }
 
+// shareMetricsMap shares the metrics map of the given MetricsStore
+func shareMetricsMap(dst, src *MetricsStore) {
+	srcPtr := unsafe.Pointer(src)
+	dstPtr := unsafe.Pointer(dst)
+	*(*MetricsStore)(dstPtr) = *(*MetricsStore)(srcPtr)
+}
+
 // SanitizeHeaders sanitizes the headers of the given MetricsWriterList.
 func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) MetricsWriterList {
 	clonedWriters := make(MetricsWriterList, 0, len(writers))
@@ -102,11 +110,9 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 			clonedHeaders := make([]string, len(store.headers))
 			copy(clonedHeaders, store.headers)
 
-			clonedStore := &MetricsStore{
-				headers:             clonedHeaders,
-				metrics:             store.metrics,
-				generateMetricsFunc: store.generateMetricsFunc,
-			}
+			clonedStore := &MetricsStore{}
+			shareMetricsMap(clonedStore, store)
+			clonedStore.headers = clonedHeaders
 			clonedStores = append(clonedStores, clonedStore)
 		}
 		clonedWriters = append(clonedWriters, &MetricsWriter{stores: clonedStores, ResourceName: writer.ResourceName})

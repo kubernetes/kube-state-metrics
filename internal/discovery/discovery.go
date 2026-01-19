@@ -17,10 +17,12 @@ package discovery
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8sdiscovery "k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/rest"
@@ -37,17 +39,84 @@ import (
 // Interval is the time interval between two cache sync checks.
 const Interval = 3 * time.Second
 
+type gvkExtractor func(obj interface{}) []groupVersionKindPlural
+
 // StartDiscovery starts the discovery process, fetching all the objects that can be listed from the apiserver, every `Interval` seconds.
 // resolveGVK needs to be called after StartDiscovery to generate factories.
 func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) error {
+	err := r.startCRDDiscovery(ctx, config)
+	if err != nil {
+		return err
+	}
+	err = r.startAPIServiceDiscovery(ctx, config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *CRDiscoverer) runInformer(ctx context.Context, informer cache.SharedIndexInformer, gvkExtractor gvkExtractor) error {
+	stopper := make(chan struct{})
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			gvkps := gvkExtractor(obj)
+			r.SafeWrite(func() {
+				r.AppendToMap(gvkps...)
+				r.WasUpdated = true
+			})
+			r.SafeWrite(func() {
+				r.CRDsAddEventsCounter.Inc()
+				r.CRDsCacheCountGauge.Inc()
+			})
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldGVKPs := gvkExtractor(oldObj)
+			newGVKPs := gvkExtractor(newObj)
+			r.SafeWrite(func() {
+				r.RemoveFromMap(oldGVKPs...)
+				r.AppendToMap(newGVKPs...)
+				r.WasUpdated = true
+			})
+			r.SafeWrite(func() {
+				r.CRDsUpdateEventsCounter.Inc()
+			})
+		},
+		DeleteFunc: func(obj interface{}) {
+			gvkps := gvkExtractor(obj)
+			r.SafeWrite(func() {
+				r.RemoveFromMap(gvkps...)
+				r.WasUpdated = true
+			})
+			r.SafeWrite(func() {
+				r.CRDsDeleteEventsCounter.Inc()
+				r.CRDsCacheCountGauge.Dec()
+			})
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Respect context cancellation.
+	go func() {
+		for range ctx.Done() {
+			klog.InfoS("context cancelled, stopping discovery")
+			close(stopper)
+			return
+		}
+	}()
+	go informer.Run(stopper)
+	return nil
+}
+
+func (r *CRDiscoverer) startCRDDiscovery(ctx context.Context, config *rest.Config) error {
 	client := dynamic.NewForConfigOrDie(config)
 	factory := dynamicinformer.NewFilteredDynamicInformer(client, schema.GroupVersionResource{
 		Group:    "apiextensions.k8s.io",
 		Version:  "v1",
 		Resource: "customresourcedefinitions",
 	}, "", 0, nil, nil)
-	informer := factory.Informer()
-	stopper := make(chan struct{})
+
 	extractGVKPs := func(obj interface{}) []groupVersionKindPlural {
 		objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
 		var gvkps []groupVersionKindPlural
@@ -67,55 +136,55 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 		}
 		return gvkps
 	}
-	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			gvkps := extractGVKPs(obj)
-			r.SafeWrite(func() {
-				r.AppendToMap(gvkps...)
-				r.WasUpdated = true
-			})
-			r.SafeWrite(func() {
-				r.CRDsAddEventsCounter.Inc()
-				r.CRDsCacheCountGauge.Inc()
-			})
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			oldGVKPs := extractGVKPs(oldObj)
-			newGVKPs := extractGVKPs(newObj)
-			r.SafeWrite(func() {
-				r.RemoveFromMap(oldGVKPs...)
-				r.AppendToMap(newGVKPs...)
-				r.WasUpdated = true
-			})
-			r.SafeWrite(func() {
-				r.CRDsUpdateEventsCounter.Inc()
-			})
-		},
-		DeleteFunc: func(obj interface{}) {
-			gvkps := extractGVKPs(obj)
-			r.SafeWrite(func() {
-				r.RemoveFromMap(gvkps...)
-				r.WasUpdated = true
-			})
-			r.SafeWrite(func() {
-				r.CRDsDeleteEventsCounter.Inc()
-				r.CRDsCacheCountGauge.Dec()
-			})
-		},
-	})
-	if err != nil {
-		return err
-	}
-	// Respect context cancellation.
-	go func() {
-		for range ctx.Done() {
-			klog.InfoS("context cancelled, stopping discovery")
-			close(stopper)
-			return
+
+	return r.runInformer(ctx, factory.Informer(), extractGVKPs)
+}
+
+func (r *CRDiscoverer) startAPIServiceDiscovery(ctx context.Context, config *rest.Config) error {
+	client := dynamic.NewForConfigOrDie(config)
+	factory := dynamicinformer.NewFilteredDynamicInformer(client, schema.GroupVersionResource{
+		Group:    "apiregistration.k8s.io",
+		Version:  "v1",
+		Resource: "apiservices",
+	}, "", 0, nil, nil)
+
+	discoveryClient := k8sdiscovery.NewDiscoveryClientForConfigOrDie(config)
+
+	processAPIService := func(obj interface{}) []groupVersionKindPlural {
+		serviceSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
+		if svc, ok := serviceSpec["service"]; !ok || svc == nil {
+			return nil
 		}
-	}()
-	go informer.Run(stopper)
-	return nil
+
+		group := serviceSpec["group"].(string)
+		version := serviceSpec["version"].(string)
+
+		resourceList, err := discoveryClient.ServerResourcesForGroupVersion(fmt.Sprintf("%s/%s", group, version))
+		if err != nil {
+			klog.ErrorS(err, "failed to fetch server resources for group version", "groupVersion", fmt.Sprintf("%s/%s", group, version))
+			return nil
+		}
+
+		var gvkps []groupVersionKindPlural
+		for _, resource := range resourceList.APIResources {
+			// Skip subresources
+			if strings.Contains(resource.Name, "/") {
+				continue
+			}
+
+			gvkps = append(gvkps, groupVersionKindPlural{
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   group,
+					Version: version,
+					Kind:    resource.Kind,
+				},
+				Plural: resource.Name,
+			})
+		}
+		return gvkps
+	}
+
+	return r.runInformer(ctx, factory.Informer(), processAPIService)
 }
 
 // ResolveGVKToGVKPs resolves the variable VKs to a GVK list, based on the current cache.

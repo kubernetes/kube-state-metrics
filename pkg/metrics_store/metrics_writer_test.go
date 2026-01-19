@@ -354,13 +354,60 @@ func TestSanitizeHeaders(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		writer := NewMetricsWriter("test", NewMetricsStore(testcase.headers, nil))
+		originalStore := NewMetricsStore(testcase.headers, nil)
+		writer := NewMetricsWriter("test", originalStore)
 		t.Run(testcase.name, func(t *testing.T) {
-			SanitizeHeaders(testcase.contentType, MetricsWriterList{writer})
-			if !reflect.DeepEqual(testcase.expectedHeaders, writer.stores[0].headers) {
-				t.Fatalf("(-want, +got):\n%s", cmp.Diff(testcase.expectedHeaders, writer.stores[0].headers))
+			sanitizedWriters := SanitizeHeaders(testcase.contentType, MetricsWriterList{writer})
+			if !reflect.DeepEqual(testcase.expectedHeaders, sanitizedWriters[0].stores[0].headers) {
+				t.Fatalf("(-want, +got):\n%s", cmp.Diff(testcase.expectedHeaders, sanitizedWriters[0].stores[0].headers))
+			}
+			if !reflect.DeepEqual(testcase.headers, originalStore.headers) {
+				t.Fatalf("Original headers were mutated. Expected: %v, Got: %v", testcase.headers, originalStore.headers)
 			}
 		})
+	}
+}
+
+func TestSanitizeHeadersImmutability(t *testing.T) {
+	originalHeaders := []string{
+		"# HELP foo_info foo_help\n# TYPE foo_info info",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset stateset",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge",
+	}
+
+	store := NewMetricsStore(originalHeaders, nil)
+	writer := NewMetricsWriter("test", store)
+
+	textPlainContentType := expfmt.NewFormat(expfmt.TypeTextPlain)
+	sanitizedWriters1 := SanitizeHeaders(textPlainContentType, MetricsWriterList{writer})
+
+	if !reflect.DeepEqual(originalHeaders, store.headers) {
+		t.Fatalf("Original headers were mutated after first request. Expected: %v, Got: %v", originalHeaders, store.headers)
+	}
+
+	expectedTextHeaders := []string{
+		"# HELP foo_info foo_help\n# TYPE foo_info gauge",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset gauge",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge",
+	}
+	if !reflect.DeepEqual(expectedTextHeaders, sanitizedWriters1[0].stores[0].headers) {
+		t.Fatalf("First request headers mismatch. (-want, +got):\n%s", cmp.Diff(expectedTextHeaders, sanitizedWriters1[0].stores[0].headers))
+	}
+
+	openMetricsContentType := expfmt.NewFormat(expfmt.TypeOpenMetrics)
+	sanitizedWriters2 := SanitizeHeaders(openMetricsContentType, MetricsWriterList{writer})
+
+	if !reflect.DeepEqual(originalHeaders, store.headers) {
+		t.Fatalf("Original headers were mutated after second request. Expected: %v, Got: %v", originalHeaders, store.headers)
+	}
+
+	expectedOpenMetricsHeaders := []string{
+		"# HELP foo_info foo_help\n# TYPE foo_info info",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset stateset",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge",
+	}
+	if !reflect.DeepEqual(expectedOpenMetricsHeaders, sanitizedWriters2[0].stores[0].headers) {
+		t.Fatalf("Second request headers mismatch. Expected OpenMetrics to preserve info/stateset. (-want, +got):\n%s", cmp.Diff(expectedOpenMetricsHeaders, sanitizedWriters2[0].stores[0].headers))
 	}
 }
 

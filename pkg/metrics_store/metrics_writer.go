@@ -95,8 +95,25 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 
 // SanitizeHeaders sanitizes the headers of the given MetricsWriterList.
 func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) MetricsWriterList {
-	var lastHeader string
+	clonedWriters := make(MetricsWriterList, 0, len(writers))
 	for _, writer := range writers {
+		clonedStores := make([]*MetricsStore, 0, len(writer.stores))
+		for _, store := range writer.stores {
+			clonedHeaders := make([]string, len(store.headers))
+			copy(clonedHeaders, store.headers)
+
+			clonedStore := &MetricsStore{
+				headers:             clonedHeaders,
+				metrics:             store.metrics,
+				generateMetricsFunc: store.generateMetricsFunc,
+			}
+			clonedStores = append(clonedStores, clonedStore)
+		}
+		clonedWriters = append(clonedWriters, &MetricsWriter{stores: clonedStores, ResourceName: writer.ResourceName})
+	}
+
+	var lastHeader string
+	for _, writer := range clonedWriters {
 		if len(writer.stores) > 0 {
 			for i := 0; i < len(writer.stores[0].headers); {
 				header := writer.stores[0].headers[i]
@@ -139,5 +156,5 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 		}
 	}
 
-	return writers
+	return clonedWriters
 }

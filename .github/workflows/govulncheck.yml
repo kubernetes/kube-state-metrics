@@ -5,9 +5,6 @@ on:
     # Run every Monday
     - cron: '0 0 * * 1'
 
-env:
-  GO_VERSION: "^1.24"
-
 permissions:
   contents: read
 
@@ -20,7 +17,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: '.go-version'
       - name: Install govulncheck binary
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest

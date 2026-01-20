@@ -10,17 +10,24 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type crdGVKExtractor struct{}
+type crdExtractor struct{}
 
-func (e *crdGVKExtractor) ExtractGVKs(obj interface{}) []groupVersionKindPlural {
+// SourceID returns a unique identifier for the CRD.
+func (e *crdExtractor) SourceID(obj interface{}) string {
+	u := obj.(*unstructured.Unstructured)
+	return "crd:" + u.GetName()
+}
+
+// ExtractGVKs extracts GVK information from a CRD object.
+func (e *crdExtractor) ExtractGVKs(obj interface{}) []*DiscoveredResource {
 	objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
-	var gvkps []groupVersionKindPlural
+	var resources []*DiscoveredResource
 	for _, version := range objSpec["versions"].([]interface{}) {
 		g := objSpec["group"].(string)
 		v := version.(map[string]interface{})["name"].(string)
 		k := objSpec["names"].(map[string]interface{})["kind"].(string)
 		p := objSpec["names"].(map[string]interface{})["plural"].(string)
-		gvkps = append(gvkps, groupVersionKindPlural{
+		resources = append(resources, &DiscoveredResource{
 			GroupVersionKind: schema.GroupVersionKind{
 				Group:   g,
 				Version: v,
@@ -29,7 +36,7 @@ func (e *crdGVKExtractor) ExtractGVKs(obj interface{}) []groupVersionKindPlural 
 			Plural: p,
 		})
 	}
-	return gvkps
+	return resources
 }
 
 func isAPIServiceReady(obj interface{}) bool {
@@ -50,11 +57,19 @@ func isAPIServiceReady(obj interface{}) bool {
 	return false
 }
 
-type apiServiceGVKExtractor struct {
+type apiServiceExtractor struct {
 	discoveryClient *k8sdiscovery.DiscoveryClient
 }
 
-func (e *apiServiceGVKExtractor) ExtractGVKs(obj interface{}) []groupVersionKindPlural {
+// SourceID returns a unique identifier for the APIService.
+func (e *apiServiceExtractor) SourceID(obj interface{}) string {
+	u := obj.(*unstructured.Unstructured)
+	return "apiservice:" + u.GetName()
+}
+
+// ExtractGVKs extracts GVK information from an APIService object.
+// Returns nil if the APIService is not ready (signals "skip update").
+func (e *apiServiceExtractor) ExtractGVKs(obj interface{}) []*DiscoveredResource {
 	serviceSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
 	group, _, err := unstructured.NestedString(serviceSpec, "group")
 	if err != nil {
@@ -67,31 +82,34 @@ func (e *apiServiceGVKExtractor) ExtractGVKs(obj interface{}) []groupVersionKind
 		return nil
 	}
 
-	// check if APIService has a service defined - i.e. not local
+	// Check if APIService has a service defined - i.e. not local
 	if svc, ok := serviceSpec["service"]; !ok || svc == nil {
 		klog.V(5).InfoS("skipping local APIService", "group", group, "version", version)
-		return nil
+		// Return empty slice to clear any existing resources for this source
+		return []*DiscoveredResource{}
 	}
 
 	if !isAPIServiceReady(obj) {
-		klog.V(5).InfoS("skipping non-ready APIService", "group", group, "version", version)
-		return nil
+		klog.InfoS("skipping non-ready APIService", "group", group, "version", version)
+		// Return empty slice to remove resources for non-ready APIService
+		return []*DiscoveredResource{}
 	}
 
 	resourceList, err := e.discoveryClient.ServerResourcesForGroupVersion(fmt.Sprintf("%s/%s", group, version))
 	if err != nil {
 		klog.ErrorS(err, "failed to fetch server resources for group version", "groupVersion", fmt.Sprintf("%s/%s", group, version))
+		// Return nil to skip resources update
 		return nil
 	}
 
-	var gvkps []groupVersionKindPlural
+	var resources []*DiscoveredResource
 	for _, resource := range resourceList.APIResources {
 		// Skip subresources
 		if strings.Contains(resource.Name, "/") {
 			continue
 		}
 
-		gvkps = append(gvkps, groupVersionKindPlural{
+		resources = append(resources, &DiscoveredResource{
 			GroupVersionKind: schema.GroupVersionKind{
 				Group:   group,
 				Version: version,
@@ -100,5 +118,6 @@ func (e *apiServiceGVKExtractor) ExtractGVKs(obj interface{}) []groupVersionKind
 			Plural: resource.Name,
 		})
 	}
-	return gvkps
+
+	return resources
 }

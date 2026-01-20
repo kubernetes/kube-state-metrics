@@ -86,7 +86,7 @@ type Builder struct {
 	useAPIServerCache   bool
 	objectLimit         int64
 
-	GVKToReflectorStopChanMap *map[string]chan struct{}
+	GVKStopChanProvider ksmtypes.StopChanProvider
 }
 
 // NewBuilder returns a new builder.
@@ -621,7 +621,16 @@ func (b *Builder) startReflector(
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
-		go reflector.Run((*b.GVKToReflectorStopChanMap)[cr.GroupVersionKind().String()])
+		if b.GVKStopChanProvider == nil {
+			klog.ErrorS(nil, "StopChanProvider is nil, cannot start reflector for custom resource", "gvk", cr.GroupVersionKind())
+			return
+		}
+		stopChan, ok := b.GVKStopChanProvider.GetStopChan(cr.GroupVersionKind())
+		if !ok {
+			klog.ErrorS(nil, "no stop channel found for GVK", "gvk", cr.GroupVersionKind())
+			return
+		}
+		go reflector.Run(stopChan)
 	} else {
 		go reflector.Run(b.ctx.Done())
 	}

@@ -25,6 +25,7 @@ import (
 // newTestCRDiscoverer creates a CRDiscoverer with no-op metrics for testing.
 func newTestCRDiscoverer() *CRDiscoverer {
 	return NewCRDiscoverer(
+		prometheus.NewCounter(prometheus.CounterOpts{Name: "test_add"}),
 		prometheus.NewCounter(prometheus.CounterOpts{Name: "test_update"}),
 		prometheus.NewCounter(prometheus.CounterOpts{Name: "test_delete"}),
 		prometheus.NewGauge(prometheus.GaugeOpts{Name: "test_count"}),

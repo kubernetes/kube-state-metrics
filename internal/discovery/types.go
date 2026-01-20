@@ -54,7 +54,9 @@ type CRDiscoverer struct {
 	wasUpdated bool
 
 	// Metrics for discovery events.
-	// UpdateEvents counts add and update operations (any source mutation).
+	// AddEvents counts add operations.
+	AddEvents prometheus.Counter
+	// UpdateEvents counts update operations.
 	UpdateEvents prometheus.Counter
 	// DeleteEvents counts source deletions.
 	DeleteEvents prometheus.Counter
@@ -64,12 +66,14 @@ type CRDiscoverer struct {
 
 // NewCRDiscoverer creates a new CRDiscoverer instance.
 func NewCRDiscoverer(
+	addEvents prometheus.Counter,
 	updateEvents prometheus.Counter,
 	deleteEvents prometheus.Counter,
 	cacheCount prometheus.Gauge,
 ) *CRDiscoverer {
 	return &CRDiscoverer{
 		resourcesBySource: make(map[string][]*DiscoveredResource),
+		AddEvents:         addEvents,
 		UpdateEvents:      updateEvents,
 		DeleteEvents:      deleteEvents,
 		CacheCount:        cacheCount,
@@ -86,6 +90,8 @@ func (r *CRDiscoverer) UpdateSource(sourceID string, resources []*DiscoveredReso
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	_, existing := r.resourcesBySource[sourceID]
 
 	// Close stop channels for old resources
 	if oldResources, ok := r.resourcesBySource[sourceID]; ok {
@@ -109,7 +115,12 @@ func (r *CRDiscoverer) UpdateSource(sourceID string, resources []*DiscoveredReso
 
 	r.wasUpdated = true
 
-	r.UpdateEvents.Inc()
+	if !existing {
+		r.AddEvents.Inc()
+	} else {
+		r.UpdateEvents.Inc()
+	}
+
 	r.updateCacheCountLocked()
 }
 

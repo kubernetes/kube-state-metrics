@@ -35,6 +35,10 @@ type kindPlural struct {
 	Plural string
 }
 
+type gvkExtractor interface {
+	ExtractGVKs(obj interface{}) []groupVersionKindPlural
+}
+
 // CRDiscoverer provides a cache of the collected GVKs, along with helper utilities.
 type CRDiscoverer struct {
 	// CRDsAddEventsCounter tracks the number of times that the CRD informer triggered the "add" event.

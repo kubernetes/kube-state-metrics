@@ -118,6 +118,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		}, []string{"type", "filename"})
 
 	// Register self-metrics to track the state of the cache.
+	crsAddEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
+		Name: "kube_state_metrics_custom_resource_state_add_events_total",
+		Help: "Number of times that the Custom Resource discovery triggered the add event.",
+	})
 	crsUpdateEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
 		Name: "kube_state_metrics_custom_resource_state_update_events_total",
 		Help: "Number of times that the Custom Resource discovery triggered the update event.",
@@ -313,6 +317,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	// A nil CRS config implies that we need to hold off on all CRS operations.
 	if config != nil {
 		discovererInstance := discovery.NewCRDiscoverer(
+			crsAddEventsCounter,
 			crsUpdateEventsCounter,
 			crsDeleteEventsCounter,
 			crsCacheCountGauge,

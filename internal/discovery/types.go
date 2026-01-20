@@ -62,6 +62,7 @@ type CRDiscoverer struct {
 	CacheCount prometheus.Gauge
 }
 
+// NewCRDiscoverer creates a new CRDiscoverer instance.
 func NewCRDiscoverer(
 	updateEvents prometheus.Counter,
 	deleteEvents prometheus.Counter,
@@ -172,13 +173,13 @@ func (r *CRDiscoverer) Resolve(gvk schema.GroupVersionKind) ([]DiscoveredResourc
 	var results []DiscoveredResource
 	for _, resources := range r.resourcesBySource {
 		for _, res := range resources {
-			if res.GroupVersionKind.Group != g {
+			if res.Group != g {
 				continue
 			}
-			if hasVersion && res.GroupVersionKind.Version != v {
+			if hasVersion && res.Version != v {
 				continue
 			}
-			if hasKind && res.GroupVersionKind.Kind != k {
+			if hasKind && res.Kind != k {
 				continue
 			}
 			results = append(results, DiscoveredResource{

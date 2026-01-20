@@ -58,7 +58,7 @@ func (r *CRDiscoverer) runInformer(ctx context.Context, informer cache.SharedInd
 			resources := extractor.ExtractGVKs(obj)
 			r.UpdateSource(sourceID, resources)
 		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
+		UpdateFunc: func(_, newObj interface{}) {
 			sourceID := extractor.SourceID(newObj)
 			resources := extractor.ExtractGVKs(newObj)
 			r.UpdateSource(sourceID, resources)

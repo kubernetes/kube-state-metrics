@@ -116,46 +116,69 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 		clonedWriters = append(clonedWriters, &MetricsWriter{stores: clonedStores, ResourceName: writer.ResourceName})
 	}
 
+	// Deduplicate by metric name across all writers to handle non-consecutive duplicates during CRS reload.
+	seenHELP := make(map[string]struct{})
+	seenTYPE := make(map[string]struct{})
 	for _, writer := range clonedWriters {
-		var lastHeader string
 		if len(writer.stores) > 0 {
-			for i := 0; i < len(writer.stores[0].headers); {
+			for i := 0; i < len(writer.stores[0].headers); i++ {
 				header := writer.stores[0].headers[i]
+				lines := strings.Split(header, "\n")
+				shouldRemove := false
+				modifiedLines := make([]string, 0, len(lines))
 
-				// Removes duplicate headers from the given MetricsWriterList for the same family (generated through CRS).
-				// These are expected to be consecutive since G** resolution generates groups of similar metrics with same headers before moving onto the next G** spec in the CRS configuration.
-				// Skip this step if we encounter a repeated header, as it will be removed.
-				if header != lastHeader && strings.HasPrefix(header, "# HELP") {
-
-					// If the requested content type is text/plain, replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' plain text machinery.
-					// When Prometheus requests proto-based formats, this branch is also used because any requested format that is not OpenMetrics falls back to text/plain in metrics_handler.go
-					if contentType.FormatType() == expfmt.TypeTextPlain {
-						infoTypeString := string(metric.Info)
-						stateSetTypeString := string(metric.StateSet)
-						if strings.HasSuffix(header, infoTypeString) {
-							header = header[:len(header)-len(infoTypeString)] + string(metric.Gauge)
-							writer.stores[0].headers[i] = header
+				for _, line := range lines {
+					if strings.HasPrefix(line, "# HELP ") {
+						fields := strings.Fields(line)
+						if len(fields) >= 3 {
+							metricName := fields[2]
+							if _, seen := seenHELP[metricName]; seen {
+								shouldRemove = true
+								break
+							} else {
+								seenHELP[metricName] = struct{}{}
+								modifiedLines = append(modifiedLines, line)
+							}
+						} else {
+							modifiedLines = append(modifiedLines, line)
 						}
-						if strings.HasSuffix(header, stateSetTypeString) {
-							header = header[:len(header)-len(stateSetTypeString)] + string(metric.Gauge)
-							writer.stores[0].headers[i] = header
+					} else if strings.HasPrefix(line, "# TYPE ") {
+						if shouldRemove {
+							break
 						}
+						fields := strings.Fields(line)
+						if len(fields) >= 3 {
+							metricName := fields[2]
+							modifiedLine := line
+							if contentType.FormatType() == expfmt.TypeTextPlain {
+								infoTypeString := string(metric.Info)
+								stateSetTypeString := string(metric.StateSet)
+								if strings.HasSuffix(line, infoTypeString) {
+									modifiedLine = line[:len(line)-len(infoTypeString)] + string(metric.Gauge)
+								} else if strings.HasSuffix(line, stateSetTypeString) {
+									modifiedLine = line[:len(line)-len(stateSetTypeString)] + string(metric.Gauge)
+								}
+							}
+							if _, seen := seenTYPE[metricName]; seen {
+								shouldRemove = true
+								break
+							} else {
+								seenTYPE[metricName] = struct{}{}
+								modifiedLines = append(modifiedLines, modifiedLine)
+							}
+						} else {
+							modifiedLines = append(modifiedLines, line)
+						}
+					} else {
+						modifiedLines = append(modifiedLines, line)
 					}
 				}
 
-				// Nullify duplicate headers after the sanitization to not miss out on any new candidates.
-				// Set to empty string instead of deleting to preserve slice length alignment with metricFamilies.
-				if header == lastHeader {
+				if shouldRemove {
 					writer.stores[0].headers[i] = ""
-					i++
-					continue
+				} else if len(modifiedLines) > 0 {
+					writer.stores[0].headers[i] = strings.Join(modifiedLines, "\n")
 				}
-
-				// Update the last header.
-				lastHeader = header
-
-				// Move to the next header.
-				i++
 			}
 		}
 	}

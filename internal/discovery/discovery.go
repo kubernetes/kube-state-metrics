@@ -17,10 +17,8 @@ package discovery
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8sdiscovery "k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -38,8 +36,6 @@ import (
 
 // Interval is the time interval between two cache sync checks.
 const Interval = 3 * time.Second
-
-type gvkExtractor func(obj interface{}) []groupVersionKindPlural
 
 // StartDiscovery starts the discovery process, fetching all the objects that can be listed from the apiserver, every `Interval` seconds.
 // resolveGVK needs to be called after StartDiscovery to generate factories.
@@ -59,7 +55,7 @@ func (r *CRDiscoverer) runInformer(ctx context.Context, informer cache.SharedInd
 	stopper := make(chan struct{})
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			gvkps := gvkExtractor(obj)
+			gvkps := gvkExtractor.ExtractGVKs(obj)
 			r.SafeWrite(func() {
 				r.AppendToMap(gvkps...)
 				r.WasUpdated = true
@@ -70,8 +66,8 @@ func (r *CRDiscoverer) runInformer(ctx context.Context, informer cache.SharedInd
 			})
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			oldGVKPs := gvkExtractor(oldObj)
-			newGVKPs := gvkExtractor(newObj)
+			oldGVKPs := gvkExtractor.ExtractGVKs(oldObj)
+			newGVKPs := gvkExtractor.ExtractGVKs(newObj)
 			r.SafeWrite(func() {
 				r.RemoveFromMap(oldGVKPs...)
 				r.AppendToMap(newGVKPs...)
@@ -82,7 +78,7 @@ func (r *CRDiscoverer) runInformer(ctx context.Context, informer cache.SharedInd
 			})
 		},
 		DeleteFunc: func(obj interface{}) {
-			gvkps := gvkExtractor(obj)
+			gvkps := gvkExtractor.ExtractGVKs(obj)
 			r.SafeWrite(func() {
 				r.RemoveFromMap(gvkps...)
 				r.WasUpdated = true
@@ -117,27 +113,9 @@ func (r *CRDiscoverer) startCRDDiscovery(ctx context.Context, config *rest.Confi
 		Resource: "customresourcedefinitions",
 	}, "", 0, nil, nil)
 
-	extractGVKPs := func(obj interface{}) []groupVersionKindPlural {
-		objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
-		var gvkps []groupVersionKindPlural
-		for _, version := range objSpec["versions"].([]interface{}) {
-			g := objSpec["group"].(string)
-			v := version.(map[string]interface{})["name"].(string)
-			k := objSpec["names"].(map[string]interface{})["kind"].(string)
-			p := objSpec["names"].(map[string]interface{})["plural"].(string)
-			gvkps = append(gvkps, groupVersionKindPlural{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   g,
-					Version: v,
-					Kind:    k,
-				},
-				Plural: p,
-			})
-		}
-		return gvkps
-	}
+	gvkExtractor := &crdGVKExtractor{}
 
-	return r.runInformer(ctx, factory.Informer(), extractGVKPs)
+	return r.runInformer(ctx, factory.Informer(), gvkExtractor)
 }
 
 func (r *CRDiscoverer) startAPIServiceDiscovery(ctx context.Context, config *rest.Config) error {
@@ -149,42 +127,11 @@ func (r *CRDiscoverer) startAPIServiceDiscovery(ctx context.Context, config *res
 	}, "", 0, nil, nil)
 
 	discoveryClient := k8sdiscovery.NewDiscoveryClientForConfigOrDie(config)
-
-	processAPIService := func(obj interface{}) []groupVersionKindPlural {
-		serviceSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
-		if svc, ok := serviceSpec["service"]; !ok || svc == nil {
-			return nil
-		}
-
-		group := serviceSpec["group"].(string)
-		version := serviceSpec["version"].(string)
-
-		resourceList, err := discoveryClient.ServerResourcesForGroupVersion(fmt.Sprintf("%s/%s", group, version))
-		if err != nil {
-			klog.ErrorS(err, "failed to fetch server resources for group version", "groupVersion", fmt.Sprintf("%s/%s", group, version))
-			return nil
-		}
-
-		var gvkps []groupVersionKindPlural
-		for _, resource := range resourceList.APIResources {
-			// Skip subresources
-			if strings.Contains(resource.Name, "/") {
-				continue
-			}
-
-			gvkps = append(gvkps, groupVersionKindPlural{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   group,
-					Version: version,
-					Kind:    resource.Kind,
-				},
-				Plural: resource.Name,
-			})
-		}
-		return gvkps
+	gvkExtractor := &apiServiceGVKExtractor{
+		discoveryClient: discoveryClient,
 	}
 
-	return r.runInformer(ctx, factory.Informer(), processAPIService)
+	return r.runInformer(ctx, factory.Informer(), gvkExtractor)
 }
 
 // ResolveGVKToGVKPs resolves the variable VKs to a GVK list, based on the current cache.

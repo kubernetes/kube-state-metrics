@@ -128,21 +128,21 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 				modifiedLines := make([]string, 0, len(lines))
 
 				for _, line := range lines {
-					if strings.HasPrefix(line, "# HELP ") {
+					switch {
+					case strings.HasPrefix(line, "# HELP "):
 						fields := strings.Fields(line)
 						if len(fields) >= 3 {
 							metricName := fields[2]
 							if _, seen := seenHELP[metricName]; seen {
 								shouldRemove = true
 								break
-							} else {
-								seenHELP[metricName] = struct{}{}
-								modifiedLines = append(modifiedLines, line)
 							}
+							seenHELP[metricName] = struct{}{}
+							modifiedLines = append(modifiedLines, line)
 						} else {
 							modifiedLines = append(modifiedLines, line)
 						}
-					} else if strings.HasPrefix(line, "# TYPE ") {
+					case strings.HasPrefix(line, "# TYPE "):
 						if shouldRemove {
 							break
 						}
@@ -162,14 +162,13 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 							if _, seen := seenTYPE[metricName]; seen {
 								shouldRemove = true
 								break
-							} else {
-								seenTYPE[metricName] = struct{}{}
-								modifiedLines = append(modifiedLines, modifiedLine)
 							}
+							seenTYPE[metricName] = struct{}{}
+							modifiedLines = append(modifiedLines, modifiedLine)
 						} else {
 							modifiedLines = append(modifiedLines, line)
 						}
-					} else {
+					default:
 						modifiedLines = append(modifiedLines, line)
 					}
 				}

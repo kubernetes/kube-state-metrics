@@ -32,12 +32,15 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
@@ -226,21 +229,17 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		return fmt.Errorf("failed to set up resources: %v", err)
 	}
 
-	namespaces := opts.Namespaces.GetNamespaces()
-	nsFieldSelector := namespaces.GetExcludeNSFieldSelector(opts.NamespacesDenylist)
-	var nodeFieldSelector string
+	kubeClient, err := util.CreateKubeClient(opts.Apiserver, opts.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %v", err)
+	}
+
 	if opts.TrackUnscheduledPods {
-		nodeFieldSelector = "spec.nodeName="
+		storeBuilder.WithFieldSelectorFilter("spec.nodeName=")
 		klog.InfoS("Using spec.nodeName= to select unscheduable pods without node")
 	} else {
-		nodeFieldSelector = opts.Node.GetNodeFieldSelector()
+		storeBuilder.WithFieldSelectorFilter(opts.Node.GetNodeFieldSelector())
 	}
-	merged, err := storeBuilder.MergeFieldSelectors([]string{nsFieldSelector, nodeFieldSelector})
-	if err != nil {
-		return err
-	}
-	storeBuilder.WithNamespaces(namespaces)
-	storeBuilder.WithFieldSelectorFilter(merged)
 
 	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
 	if err != nil {
@@ -274,10 +273,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	proc.StartReaper()
 
 	storeBuilder.WithUtilOptions(opts)
-	kubeClient, err := util.CreateKubeClient(opts.Apiserver, opts.Kubeconfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client: %v", err)
-	}
 	storeBuilder.WithKubeClient(kubeClient)
 
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
@@ -313,6 +308,34 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	})
 
 	tlsConfig := opts.TLSConfig
+
+	ctxNamespaceDiscoverer, cancelNamespaceDiscoverer := context.WithCancel(ctx)
+
+	namespaceDiscoverer, err := configureNamespaceDiscovery(
+		ctxNamespaceDiscoverer,
+		opts,
+		storeBuilder,
+		kubeClient,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to setup namespace discovery")
+	}
+
+	// This means no dynamic namespace discovery is required and thus no polling for new namespaces.
+	if namespaceDiscoverer != nil {
+		g.Add(func() error {
+			notifyChan := namespaceDiscoverer.PollForCacheUpdates(ctxNamespaceDiscoverer, 3*time.Second)
+
+			for namespaces := range notifyChan {
+				storeBuilder.WithNamespaces(namespaces)
+				m.BuildWriters(ctxNamespaceDiscoverer)
+			}
+
+			return nil
+		}, func(error) {
+			cancelNamespaceDiscoverer()
+		})
+	}
 
 	// A nil CRS config implies that we need to hold off on all CRS operations.
 	if config != nil {
@@ -400,6 +423,69 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	klog.InfoS("Exited")
 	return nil
+}
+
+// configureNamespaceDiscovery will decide to either register namespaces dynamically or statically.
+func configureNamespaceDiscovery(
+	ctx context.Context,
+	opts *options.Options,
+	container ksmtypes.NamespaceContainer,
+	kubeClient kubernetes.Interface,
+) (*discovery.NamespaceDiscoverer, error) {
+	isAllNamespaces := len(opts.Namespaces) == 0 || opts.Namespaces.IsAllNamespaces()
+	isLabelSelectorUsed := len(opts.NamespaceLabelSelector) > 0
+	isDenylistUsed := len(opts.NamespacesDenylist) > 0
+
+	if isLabelSelectorUsed || (isAllNamespaces && isDenylistUsed) {
+		var discoveryOpts []discovery.Opt
+
+		if isDenylistUsed {
+			namespaceExcludeSelectors := make([]fields.Selector, len(opts.NamespacesDenylist))
+			for i, ns := range opts.NamespacesDenylist {
+				selector := fields.OneTermNotEqualSelector("metadata.name", ns)
+				namespaceExcludeSelectors[i] = selector
+			}
+			discoveryOpts = append(discoveryOpts, discovery.WithFieldSelector(fields.AndSelectors(namespaceExcludeSelectors...).String()))
+		}
+		if isLabelSelectorUsed {
+			discoveryOpts = append(discoveryOpts, discovery.WithLabelSelector(opts.NamespaceLabelSelector))
+		}
+
+		discoverer := discovery.NewNamespaceDiscoverer(discoveryOpts...)
+		namespaces, err := discoverer.Start(ctx, kubeClient)
+		if err != nil {
+			return nil, err
+		}
+
+		container.WithNamespaces(namespaces)
+		return &discoverer, nil
+	}
+
+	if !isAllNamespaces && isDenylistUsed {
+		// TODO: refactor this to be more idiomic to go
+		var namespaces []string
+		for _, namespace := range opts.Namespaces {
+			var denied bool
+			for _, compare := range opts.NamespacesDenylist {
+				if namespace == compare {
+					denied = true
+					break
+				}
+			}
+			if !denied {
+				namespaces = append(namespaces, namespace)
+			}
+		}
+		container.WithNamespaces(namespaces)
+		return nil, nil
+	}
+
+	if isAllNamespaces {
+		container.WithNamespaces([]string{metav1.NamespaceAll})
+	} else {
+		container.WithNamespaces(opts.Namespaces)
+	}
+	return nil, nil
 }
 
 func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {

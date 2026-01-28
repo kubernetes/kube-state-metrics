@@ -16,12 +16,65 @@ limitations under the License.
 
 package customresourcestate
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // MetricMeta are variables which may used for any metric type.
 type MetricMeta struct {
 	// LabelsFromPath adds additional labels where the value of the label is taken from a field under Path.
 	LabelsFromPath map[string][]string `yaml:"labelsFromPath" json:"labelsFromPath"`
 	// Path is the path to to generate metric(s) for.
 	Path []string `yaml:"path" json:"path"`
+}
+
+// ValueFrom defines how to derive a value from a path.
+// Either PathValueFrom (for path-based extraction) or CelExpr (for CEL expressions) can be set, but not both.
+type ValueFrom struct {
+	// PathValueFrom specifies the path-based value extraction.
+	PathValueFrom []string `yaml:"pathValueFrom,omitempty" json:"pathValueFrom,omitempty"`
+	// CelExpr is a CEL expression to extract/compute the value.
+	CelExpr string `yaml:"celExpr,omitempty" json:"celExpr,omitempty"`
+}
+
+// unmarshallValueFrom unmarshalls ValueFrom from either:
+// 1. A string slice mapped to PathValueFrom
+// 2. A struct with PathValueFrom or CelExpr field set.
+func (vf *ValueFrom) unmarshallValueFrom(unmarshal func(interface{}) error) error {
+	// Try to unmarshal as a string slice (path format)
+	var stringSlice []string
+	if err := unmarshal(&stringSlice); err == nil {
+		vf.PathValueFrom = stringSlice
+		vf.CelExpr = ""
+		return nil
+	}
+
+	type valueFromAlias ValueFrom
+	var valueFromStruct valueFromAlias
+	if err := unmarshal(&valueFromStruct); err != nil {
+		return err
+	}
+
+	// Ensure fields are mutually exclusive
+	if len(valueFromStruct.PathValueFrom) > 0 && valueFromStruct.CelExpr != "" {
+		return fmt.Errorf("cannot specify both pathValueFrom and celExpr")
+	}
+
+	*vf = ValueFrom(valueFromStruct)
+	return nil
+}
+
+// UnmarshalJSON unmarshalls ValueFrom either from a string slice or from a full struct.
+func (vf *ValueFrom) UnmarshalJSON(data []byte) error {
+	return vf.unmarshallValueFrom(func(v interface{}) error {
+		return json.Unmarshal(data, v)
+	})
+}
+
+// UnmarshalYAML unmarshalls ValueFrom either from a string slice or from a full struct.
+func (vf *ValueFrom) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return vf.unmarshallValueFrom(unmarshal)
 }
 
 // MetricGauge targets a Path that may be a single value, array, or object. Arrays and objects will generate a metric per element.
@@ -31,8 +84,8 @@ type MetricGauge struct {
 	LabelFromKey string `yaml:"labelFromKey" json:"labelFromKey"`
 	MetricMeta   `yaml:",inline" json:",inline"`
 
-	// ValueFrom is the path to a numeric field under Path that will be the metric value.
-	ValueFrom []string `yaml:"valueFrom" json:"valueFrom"`
+	// ValueFrom is the subpath or function to derive the value from.
+	ValueFrom ValueFrom `yaml:"valueFrom" json:"valueFrom"`
 	// NilIsZero indicates that if a value is nil it will be treated as zero value.
 	NilIsZero bool `yaml:"nilIsZero" json:"nilIsZero"`
 }
@@ -55,5 +108,5 @@ type MetricStateSet struct {
 	// LabelName is the key of the label which is used for each entry in List to expose the value.
 	LabelName string `yaml:"labelName" json:"labelName"`
 	// ValueFrom is the subpath to compare the list to.
-	ValueFrom []string `yaml:"valueFrom" json:"valueFrom"`
+	ValueFrom ValueFrom `yaml:"valueFrom" json:"valueFrom"`
 }

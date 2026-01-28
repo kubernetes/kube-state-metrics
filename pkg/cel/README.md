@@ -1,0 +1,42 @@
+# CEL Extensions
+
+CEL extension library for kube-state-metrics.
+
+## Package Structure
+
+- `pkg/cel/` - Type definitions (CELResult)
+- `pkg/cel/library/` - CEL library implementation
+
+## CELResult Type
+
+`CELResult(value, labels)` wraps a metric value with additional labels.
+
+```cel
+CELResult(100.0, {})
+CELResult(42, {'severity': 'high'})
+CELResult(double(value) * 10.0, {'multiplied': 'true'})
+```
+
+Fields:
+- `Val` - metric value (converted to float64 by extractor)
+- `AdditionalLabels` - labels to merge with common labels
+
+## Usage
+
+```go
+import (
+    "github.com/google/cel-go/cel"
+    "k8s.io/kube-state-metrics/v2/pkg/cel/library"
+)
+
+env, err := cel.NewEnv(
+    library.KSM(),
+    cel.Variable("value", cel.DynType),
+)
+```
+
+## Extending
+
+Add new functions to `ksmLibraryDecls` in [library/library.go](library/library.go).
+
+New types go in this package with ref.Val implementation, then register in library's `Types()` method.

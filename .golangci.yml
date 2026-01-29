@@ -19,6 +19,11 @@ linters:
       - linters:
           - promlinter
         path: _test\.go
+      # TODO(mrueg): Wait for https://github.com/kubernetes/kubernetes/pull/136537 to be released
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*NewSimpleClientset'
+        path: _test\.go
       - linters:
           - gosec
         text: 'G104:'

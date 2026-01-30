@@ -28,10 +28,9 @@ import (
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
 // generated based on those objects.
 type MetricsStore struct {
-	// metrics is a map indexed by Kubernetes object id, containing a slice of
-	// metric families, containing a slice of metrics. We need to keep metrics
-	// grouped by metric families in order to zip families with their help text in
-	// MetricsStore.WriteAll().
+	// metrics points to a sync.Map indexed by Kubernetes object id, containing a slice of
+	// metric families, containing a slice of metrics. It's a pointer so cloned stores can
+	// safely share the same backing storage without copying or mutating it.
 	metrics *sync.Map
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object

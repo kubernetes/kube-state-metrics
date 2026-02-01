@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
+	"github.com/google/cel-go/common/types/ref"
 
 	ksmcel "k8s.io/kube-state-metrics/v2/pkg/cel"
 	"k8s.io/kube-state-metrics/v2/pkg/cel/library"
@@ -79,36 +80,82 @@ func (s *celValueExtractor) extractValues(v interface{}) (result []eachValue, er
 		errs = append(errs, fmt.Errorf("%s: %v", s.path, err))
 	}
 
-	value, err := s.extractValue(v)
+	values, err := s.extractValue(v)
 	if err != nil {
 		onError(err)
 		return
 	}
-	if value == nil {
+	if values == nil {
 		return
 	}
 
-	labels := make(map[string]string)
-	addPathLabels(v, s.labelFromPath, labels)
-	// Apply AdditionalLabels last to avoid overwriting
-	for k, v := range value.Labels {
-		labels[k] = v
-	}
-	value.Labels = labels
+	for _, value := range values {
 
-	result = append(result, *value)
+		labels := make(map[string]string)
+		addPathLabels(v, s.labelFromPath, labels)
+		// Apply AdditionalLabels last to avoid overwriting
+		for k, v := range value.Labels {
+			labels[k] = v
+		}
+		value.Labels = labels
+
+		result = append(result, value)
+	}
 
 	return result, errs
 }
 
-func (s *celValueExtractor) extractValue(v interface{}) (*eachValue, error) {
+func (s *celValueExtractor) extractValue(v interface{}) ([]eachValue, error) {
 	celRes, err := s.evaluateCEL(v)
 	if err != nil {
 		return nil, err
 	}
 
-	// Handle different return types from CEL expression
-	switch v := celRes.(type) {
+	switch celRes.Type() {
+	case nil:
+		// Handle nil values
+		if s.nilIsZero {
+			return []eachValue{
+				{
+					Labels: make(map[string]string),
+					Value:  0,
+				},
+			}, nil
+		}
+		return nil, nil
+
+	case types.ListType:
+		// returned a list of values e.g. via `map` function
+		list := celRes.Value().([]ref.Val)
+		eachValues := make([]eachValue, 0, len(list))
+		for _, elem := range list {
+			ev, err := s.processVal(elem)
+			if err != nil {
+				return nil, err
+			}
+			if ev == nil {
+				continue
+			}
+			eachValues = append(eachValues, *ev)
+		}
+
+		return eachValues, nil
+
+	default:
+		ev, err := s.processVal(celRes)
+		if err != nil {
+			return nil, err
+		}
+		if ev == nil {
+			return nil, nil
+		}
+		return []eachValue{*ev}, nil
+	}
+}
+
+func (s *celValueExtractor) processVal(val ref.Val) (*eachValue, error) {
+	unwrapped := val.Value()
+	switch v := unwrapped.(type) {
 	case nil:
 		// Handle nil values
 		if s.nilIsZero {
@@ -130,10 +177,9 @@ func (s *celValueExtractor) extractValue(v interface{}) (*eachValue, error) {
 			Labels: v.AdditionalLabels,
 			Value:  value,
 		}, nil
-
 	default:
 		// Value returned directly
-		value, err := toFloat64(celRes, s.nilIsZero)
+		value, err := toFloat64(v, s.nilIsZero)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +192,7 @@ func (s *celValueExtractor) extractValue(v interface{}) (*eachValue, error) {
 }
 
 // evaluateCEL evaluates the CEL expression with the given context.
-func (s *celValueExtractor) evaluateCEL(value interface{}) (interface{}, error) {
+func (s *celValueExtractor) evaluateCEL(value interface{}) (ref.Val, error) {
 	// Prepare input vars
 	vars := map[string]interface{}{
 		"value": value,
@@ -162,5 +208,5 @@ func (s *celValueExtractor) evaluateCEL(value interface{}) (interface{}, error) 
 		return nil, fmt.Errorf("CEL expression returned error: %v", result)
 	}
 
-	return result.Value(), nil
+	return result, nil
 }

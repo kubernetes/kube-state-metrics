@@ -34,11 +34,13 @@ func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 	discoverer := NewNamespaceDiscoverer()
 	discoverer.Start(context.TODO(), client)
 
-	// There should be no namespaces at start time
-	assert.Empty(t, discoverer.namespaces)
+	discoverer.safeRead(func() {
+		// There should be no namespaces at start time
+		assert.Empty(t, discoverer.namespaces)
 
-	// There should be no need to rebuild metrics at this time
-	assert.False(t, discoverer.shouldRebuildMetrics)
+		// There should be no need to rebuild metrics at this time
+		assert.False(t, discoverer.shouldRebuildMetrics)
+	})
 
 	client.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -48,23 +50,27 @@ func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	// Should now contain the namespace added above.
-	assert.Equal(t, map[string]struct{}{
-		"default": struct{}{},
-	}, discoverer.namespaces)
+	discoverer.safeRead(func() {
+		// Should now contain the namespace added above.
+		assert.Equal(t, map[string]struct{}{
+			"default": struct{}{},
+		}, discoverer.namespaces)
 
-	// Should warrant the rebuilding of metrics to add the namespace from the store
-	assert.True(t, discoverer.shouldRebuildMetrics)
+		// Should warrant the rebuilding of metrics to add the namespace from the store
+		assert.True(t, discoverer.shouldRebuildMetrics)
+	})
 
 	client.CoreV1().Namespaces().Delete(context.TODO(), "default", metav1.DeleteOptions{})
 
 	time.Sleep(10 * time.Millisecond)
 
-	// Should not contain the namespace deleted above.
-	assert.Empty(t, discoverer.namespaces)
+	discoverer.safeRead(func() {
+		// Should not contain the namespace deleted above.
+		assert.Empty(t, discoverer.namespaces)
 
-	// Should warrant the rebuilding of metrics to remove the namespace from the store
-	assert.True(t, discoverer.shouldRebuildMetrics)
+		// Should warrant the rebuilding of metrics to remove the namespace from the store
+		assert.True(t, discoverer.shouldRebuildMetrics)
+	})
 }
 
 func Test_NamespaceDiscoverer_Start_Concurrent(t *testing.T) {

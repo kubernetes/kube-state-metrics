@@ -17,6 +17,8 @@ limitations under the License.
 package library
 
 import (
+	"fmt"
+
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
@@ -93,11 +95,10 @@ func withLabelsConstructor(val, labels ref.Val) ref.Val {
 		for it.HasNext() == types.True {
 			key := it.Next()
 			value := labelsMap.Get(key)
-			if keyStr, ok := key.(types.String); ok {
-				if valStr, ok := value.(types.String); ok {
-					result.AdditionalLabels[string(keyStr)] = string(valStr)
-				}
-			}
+
+			keyStr := fmt.Sprintf("%v", key.Value())
+			valueStr := fmt.Sprintf("%v", value.Value())
+			result.AdditionalLabels[keyStr] = valueStr
 		}
 	}
 

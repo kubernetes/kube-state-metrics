@@ -25,38 +25,38 @@ import (
 	"github.com/google/cel-go/common/types/ref"
 )
 
-// CELResult represents the result of a CEL expression evaluation with additional labels.
-type CELResult struct {
+// WithLabels represents a metric value with additional labels.
+type WithLabels struct {
 	Val              interface{}
 	AdditionalLabels map[string]string
 }
 
 var (
-	CELResultObjectType = cel.ObjectType("kubestatemetrics.CELResult")
+	WithLabelsObjectType = cel.ObjectType("kubestatemetrics.WithLabels")
 )
 
 // ConvertToNative implements ref.Val.ConvertToNative.
-func (r *CELResult) ConvertToNative(typeDesc reflect.Type) (interface{}, error) {
+func (r *WithLabels) ConvertToNative(typeDesc reflect.Type) (interface{}, error) {
 	if reflect.TypeOf(r).AssignableTo(typeDesc) {
 		return r, nil
 	}
-	return nil, fmt.Errorf("type conversion error from 'CELResult' to '%v'", typeDesc)
+	return nil, fmt.Errorf("type conversion error from 'WithLabels' to '%v'", typeDesc)
 }
 
 // ConvertToType implements ref.Val.ConvertToType.
-func (r *CELResult) ConvertToType(typeVal ref.Type) ref.Val {
+func (r *WithLabels) ConvertToType(typeVal ref.Type) ref.Val {
 	switch typeVal {
-	case CELResultObjectType:
+	case WithLabelsObjectType:
 		return r
 	case types.TypeType:
-		return CELResultObjectType
+		return WithLabelsObjectType
 	}
-	return types.NewErr("type conversion error from '%s' to '%s'", CELResultObjectType, typeVal)
+	return types.NewErr("type conversion error from '%s' to '%s'", WithLabelsObjectType, typeVal)
 }
 
 // Equal implements ref.Val.Equal.
-func (r *CELResult) Equal(other ref.Val) ref.Val {
-	otherResult, ok := other.(*CELResult)
+func (r *WithLabels) Equal(other ref.Val) ref.Val {
+	otherResult, ok := other.(*WithLabels)
 	if !ok {
 		return types.False
 	}
@@ -80,11 +80,11 @@ func (r *CELResult) Equal(other ref.Val) ref.Val {
 }
 
 // Type implements ref.Val.Type.
-func (r *CELResult) Type() ref.Type {
-	return CELResultObjectType
+func (r *WithLabels) Type() ref.Type {
+	return WithLabelsObjectType
 }
 
 // Value implements ref.Val.Value.
-func (r *CELResult) Value() interface{} {
+func (r *WithLabels) Value() interface{} {
 	return r
 }

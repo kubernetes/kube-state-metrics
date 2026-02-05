@@ -143,14 +143,14 @@ celExpr: "value * 2"
 			name: "struct with celExpr multiline",
 			yaml: `
 celExpr: |
-  CELResult(
+  WithLabels(
     double(value),
     {'status': 'ok'}
   )
 `,
 			want: ValueFrom{
 				PathValueFrom: nil,
-				CelExpr:       "CELResult(\n  double(value),\n  {'status': 'ok'}\n)\n",
+				CelExpr:       "WithLabels(\n  double(value),\n  {'status': 'ok'}\n)\n",
 			},
 		},
 		{

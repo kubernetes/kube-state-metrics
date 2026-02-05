@@ -23,9 +23,9 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
-// Test_CEL_Custom_CELResult_Type tests the custom CELResult type that allows
+// Test_CEL_Custom_WithLabels_Type tests the custom WithLabels type that allows
 // CEL expressions to return both a value and additional labels.
-func Test_CEL_Custom_CELResult_Type(t *testing.T) {
+func Test_CEL_Custom_WithLabels_Type(t *testing.T) {
 	tests := []struct {
 		name       string
 		expr       string
@@ -34,36 +34,36 @@ func Test_CEL_Custom_CELResult_Type(t *testing.T) {
 		wantLabels map[string]string
 	}{
 		{
-			name:       "CELResult with value only",
-			expr:       "CELResult(100.0, {})",
+			name:       "WithLabels with value only",
+			expr:       "WithLabels(100.0, {})",
 			value:      nil,
 			wantValue:  100.0,
 			wantLabels: map[string]string{},
 		},
 		{
-			name:       "CELResult with int value is converted to float",
-			expr:       "CELResult(42, {})",
+			name:       "WithLabels with int value is converted to float",
+			expr:       "WithLabels(42, {})",
 			value:      nil,
 			wantValue:  42.0,
 			wantLabels: map[string]string{},
 		},
 		{
-			name:       "CELResult with additional labels",
-			expr:       "CELResult(42.0, {'severity': 'high', 'component': 'api'})",
+			name:       "WithLabels with additional labels",
+			expr:       "WithLabels(42.0, {'severity': 'high', 'component': 'api'})",
 			value:      nil,
 			wantValue:  42.0,
 			wantLabels: map[string]string{"severity": "high", "component": "api"},
 		},
 		{
-			name:       "CELResult with computed value and labels",
-			expr:       "CELResult(double(value) * 10.0, {'multiplied': 'true'})",
+			name:       "WithLabels with computed value and labels",
+			expr:       "WithLabels(double(value) * 10.0, {'multiplied': 'true'})",
 			value:      5.0,
 			wantValue:  50.0,
 			wantLabels: map[string]string{"multiplied": "true"},
 		},
 		{
-			name:       "CELResult with conditional logic",
-			expr:       "value > 10 ? CELResult(1.0, {'status': 'high'}) : CELResult(0.0, {'status': 'low'})",
+			name:       "WithLabels with conditional logic",
+			expr:       "value > 10 ? WithLabels(1.0, {'status': 'high'}) : WithLabels(0.0, {'status': 'low'})",
 			value:      15.0,
 			wantValue:  1.0,
 			wantLabels: map[string]string{"status": "high"},
@@ -85,7 +85,7 @@ func Test_CEL_Custom_CELResult_Type(t *testing.T) {
 }
 
 // Test_CEL_Value_Type_Conversions tests that CEL expressions can return
-// numeric values directly (without CELResult wrapper) and they're properly converted to float64.
+// numeric values directly (without WithLabels wrapper) and they're properly converted to float64.
 func Test_CEL_Value_Type_Conversions(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -168,20 +168,20 @@ func Test_CEL_With_Real_CR_Data(t *testing.T) {
 			want: []eachValue{{Value: 1.0, Labels: map[string]string{}}},
 		},
 		{
-			name: "CELResult with labels from expression",
+			name: "WithLabels with labels from expression",
 			metric: Metric{
 				Type: metric.Gauge,
 				Gauge: &MetricGauge{
 					MetricMeta: MetricMeta{
 						Path: []string{"spec", "replicas"},
 					},
-					ValueFrom: ValueFrom{CelExpr: "CELResult(double(value), {'scaled': value > 1 ? 'yes' : 'no'})"},
+					ValueFrom: ValueFrom{CelExpr: "WithLabels(double(value), {'scaled': value > 1 ? 'yes' : 'no'})"},
 				},
 			},
 			want: []eachValue{{Value: 1.0, Labels: map[string]string{"scaled": "no"}}},
 		},
 		{
-			name: "CELResult combined with LabelsFromPath",
+			name: "WithLabels combined with LabelsFromPath",
 			metric: Metric{
 				Type: metric.Gauge,
 				Gauge: &MetricGauge{
@@ -191,7 +191,7 @@ func Test_CEL_With_Real_CR_Data(t *testing.T) {
 							"name": {"name"},
 						},
 					},
-					ValueFrom: ValueFrom{CelExpr: "CELResult(1.0, {'source': 'cel'})"},
+					ValueFrom: ValueFrom{CelExpr: "WithLabels(1.0, {'source': 'cel'})"},
 				},
 			},
 			want: []eachValue{{Value: 1.0, Labels: map[string]string{"name": "foo", "source": "cel"}}},
@@ -213,7 +213,7 @@ func Test_CEL_With_Real_CR_Data(t *testing.T) {
 	}
 }
 
-// Test_CEL_Label_Precedence tests that CELResult's AdditionalLabels
+// Test_CEL_Label_Precedence tests that WithLabels's AdditionalLabels
 // take precedence over labelsFromPath when there are conflicts.
 func Test_CEL_Label_Precedence(t *testing.T) {
 	tests := []struct {
@@ -222,7 +222,7 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 		want   []eachValue
 	}{
 		{
-			name: "CELResult labels override labelsFromPath",
+			name: "WithLabels labels override labelsFromPath",
 			metric: Metric{
 				Type: metric.Gauge,
 				Gauge: &MetricGauge{
@@ -233,20 +233,20 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 							"status": {"labels", "status"}, // This would be "bar" from CR
 						},
 					},
-					ValueFrom: ValueFrom{CelExpr: "CELResult(1.0, {'status': 'overridden', 'extra': 'label'})"},
+					ValueFrom: ValueFrom{CelExpr: "WithLabels(1.0, {'status': 'overridden', 'extra': 'label'})"},
 				},
 			},
 			want: []eachValue{{
 				Value: 1.0,
 				Labels: map[string]string{
 					"name":   "foo",        // From labelsFromPath
-					"status": "overridden", // From CELResult (overrides labelsFromPath)
-					"extra":  "label",      // From CELResult
+					"status": "overridden", // From WithLabels (overrides labelsFromPath)
+					"extra":  "label",      // From WithLabels
 				},
 			}},
 		},
 		{
-			name: "CELResult labels merge with labelsFromPath when no conflicts",
+			name: "WithLabels labels merge with labelsFromPath when no conflicts",
 			metric: Metric{
 				Type: metric.Gauge,
 				Gauge: &MetricGauge{
@@ -256,19 +256,19 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 							"version": {"version"},
 						},
 					},
-					ValueFrom: ValueFrom{CelExpr: "CELResult(double(value.replicas), {'dynamic': 'value'})"},
+					ValueFrom: ValueFrom{CelExpr: "WithLabels(double(value.replicas), {'dynamic': 'value'})"},
 				},
 			},
 			want: []eachValue{{
 				Value: 1.0,
 				Labels: map[string]string{
 					"version": "v0.0.0", // From labelsFromPath
-					"dynamic": "value",  // From CELResult
+					"dynamic": "value",  // From WithLabels
 				},
 			}},
 		},
 		{
-			name: "CELResult with empty labels doesn't affect labelsFromPath",
+			name: "WithLabels with empty labels doesn't affect labelsFromPath",
 			metric: Metric{
 				Type: metric.Gauge,
 				Gauge: &MetricGauge{
@@ -278,7 +278,7 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 							"name": {"name"},
 						},
 					},
-					ValueFrom: ValueFrom{CelExpr: "CELResult(1.0, {})"},
+					ValueFrom: ValueFrom{CelExpr: "WithLabels(1.0, {})"},
 				},
 			},
 			want: []eachValue{{
@@ -289,7 +289,7 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 			}},
 		},
 		{
-			name: "direct value (no CELResult) uses only labelsFromPath",
+			name: "direct value (no WithLabels) uses only labelsFromPath",
 			metric: Metric{
 				Type: metric.Gauge,
 				Gauge: &MetricGauge{
@@ -310,7 +310,7 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 			}},
 		},
 		{
-			name: "CELResult can override multiple labelsFromPath labels",
+			name: "WithLabels can override multiple labelsFromPath labels",
 			metric: Metric{
 				Type: metric.Gauge,
 				Gauge: &MetricGauge{
@@ -321,14 +321,14 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 							"replicas": {"replicas"},
 						},
 					},
-					ValueFrom: ValueFrom{CelExpr: "CELResult(100.0, {'version': 'cel-override', 'replicas': 'cel-override'})"},
+					ValueFrom: ValueFrom{CelExpr: "WithLabels(100.0, {'version': 'cel-override', 'replicas': 'cel-override'})"},
 				},
 			},
 			want: []eachValue{{
 				Value: 100.0,
 				Labels: map[string]string{
-					"version":  "cel-override", // Overridden by CELResult
-					"replicas": "cel-override", // Overridden by CELResult
+					"version":  "cel-override", // Overridden by WithLabels
+					"replicas": "cel-override", // Overridden by WithLabels
 				},
 			}},
 		},

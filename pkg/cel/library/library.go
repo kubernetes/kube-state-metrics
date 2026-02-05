@@ -102,6 +102,5 @@ func withLabelsConstructor(val, labels ref.Val) ref.Val {
 		}
 	}
 
-	// WithLabels implements ref.Val, so we can return it directly
 	return result
 }

@@ -220,9 +220,9 @@ customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo"
 lorem_bar="baz",lorem_qux="quxx",} 4
 ```
 
-#### CEL Expression Example
+#### CEL Expressions Quick Start
 
-Using CEL expressions to compute derived metrics:
+CEL (Common Expression Language) expressions provide a powerful way to transform and compute metrics from your custom resources. Here's a quick example:
 
 ```yaml
 kind: CustomResourceStateMetrics
@@ -235,7 +235,7 @@ spec:
       labelsFromPath:
         name: [metadata, name]
       metrics:
-        # Calculate utilization percentage
+        # Calculate a percentage
         - name: "resource_utilization_percent"
           help: "Resource utilization as a percentage"
           each:
@@ -245,9 +245,9 @@ spec:
               valueFrom:
                 celExpr: "(double(value.used) / double(value.total)) * 100.0"
         
-        # Conditional metric based on state
+        # Conditional metric
         - name: "is_healthy"
-          help: "Whether the resource is healthy (1 = healthy, 0 = unhealthy)"
+          help: "Whether the resource is healthy"
           each:
             type: Gauge
             gauge:
@@ -255,19 +255,9 @@ spec:
               valueFrom:
                 celExpr: "value == 'Running' ? 1.0 : 0.0"
         
-        # Complex calculation with multiple fields
-        - name: "total_weight"
-          help: "Total weighted score"
-          each:
-            type: Gauge
-            gauge:
-              path: [status, metrics]
-              valueFrom:
-                celExpr: "(double(value.cpu) * 2.0) + (double(value.memory) / 1024.0)"
-
-        # Return value with additional labels using WithLabels
+        # Return value with dynamic labels
         - name: "capacity_status"
-          help: "Capacity percentage with status label"
+          help: "Capacity with dynamic status label"
           each:
             type: Gauge
             gauge:
@@ -280,7 +270,7 @@ spec:
                   )
 ```
 
-Given a custom resource like:
+Given this custom resource:
 
 ```yaml
 kind: Foo
@@ -293,19 +283,17 @@ status:
     total: 100
     warning: 80
   state: "Running"
-  metrics:
-    cpu: 4
-    memory: 8192
 ```
 
-This produces metrics:
+You get these metrics:
 
 ```prometheus
 kube_customresource_resource_utilization_percent{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="example-foo"} 75.0
 kube_customresource_is_healthy{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="example-foo"} 1.0
-kube_customresource_total_weight{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="example-foo"} 16.0
 kube_customresource_capacity_status{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1", name="example-foo", status="ok"} 75.0
 ```
+
+For detailed documentation, examples, and migration guides, see the [CEL Expressions section](#cel-expressions) in the Gauge metric type documentation below.
 
 #### Non-map Arrays
 
@@ -712,105 +700,251 @@ Supported types are:
 
 ##### CEL Expressions
 
-In addition to extracting values from simple paths, you can use [CEL (Common Expression Language)](https://github.com/google/cel-spec) expressions to compute metric values dynamically. This provides powerful capabilities for transforming, calculating, and deriving values from your custom resources.
+CEL (Common Expression Language) expressions offer a powerful alternative to path-based value extraction, enabling transformations, calculations, iterations over collections, and dynamic label generation. CEL is also used in various other parts of the Kubernetes Ecosystem.
 
-**Using CEL Expressions:**
+**Basic Syntax:**
 
-Instead of using the path-based `valueFrom` array syntax, you can specify a CEL expression within the `valueFrom` object:
+Use `celExpr` within the `valueFrom` object. The `value` variable contains the data at the specified `path`:
 
 ```yaml
-kind: CustomResourceStateMetrics
-spec:
-  resources:
-    - groupVersionKind:
-        group: myteam.io
-        kind: "Foo"
-        version: "v1"
-      metrics:
-        - name: "calculated_metric"
-          help: "A calculated metric using CEL"
-          each:
-            type: Gauge
-            gauge:
-              path: [status, replicas]
-              valueFrom:
-                celExpr: "value * 2"  # Double the value
+gauge:
+  path: [status, replicas]
+  valueFrom:
+    celExpr: "double(value) * 2.0"
 ```
 
-**Available Variables in CEL Context:**
-
-When writing CEL expressions, you have access to:
-- `value` - The value at the resolved path (after `path` is evaluated)
-
-**CEL Expression Examples:**
+**Simple Transformations:**
 
 ```yaml
-# Example 1: Calculate percentage
 gauge:
-  path: [status, metrics]
+  path: [status, count]
   valueFrom:
-    celExpr: "(double(value.used) / double(value.total)) * 100.0"
+    celExpr: "double(value) * 2.0"
 
-# Example 2: Conditional value
 gauge:
   path: [status, state]
   valueFrom:
     celExpr: "value == 'active' ? 1.0 : 0.0"
 
-# Example 3: Type conversion with default
+gauge:
+  path: [status, resources]
+  valueFrom:
+    celExpr: "(double(value.used) / double(value.total)) * 100.0"
+
 gauge:
   path: [spec, config]
   valueFrom:
     celExpr: "has(value.timeout) ? double(value.timeout) : 30.0"
 
-# Example 4: Complex calculation
 gauge:
-  path: [status, resources]
+  path: [metadata]
+  labelsFromPath:
+    name: ["name"]
+    namespace: ["namespace"]
   valueFrom:
-    celExpr: "double(value.cpu) + (double(value.memory) / 1024.0)"
+    celExpr: "1.0"
 ```
 
-**Returning Values with Additional Labels (WithLabels):**
+**The `WithLabels` Function:**
 
-CEL expressions can return a special `WithLabels` type to include additional labels along with the metric value. This is useful when you want to extract labels dynamically based on the CEL computation:
+Return both a metric value and additional labels:
+
+```yaml
+WithLabels(metricValue, labelMap)
+```
+
+Examples:
 
 ```yaml
 gauge:
-  path: [status, metrics]
+  path: [status, uptime]
+  valueFrom:
+    celExpr: "WithLabels(double(value), {'unit': 'seconds'})"
+
+gauge:
+  path: [status, resources]
   valueFrom:
     celExpr: |
       WithLabels(
         double(value.used) / double(value.total) * 100.0,
         {'threshold': value.used > value.warning ? 'high' : 'normal'}
       )
+
+gauge:
+  path: [spec, replicas]
+  valueFrom:
+    celExpr: "WithLabels(double(value), {'scaled': value > 1 ? 'yes' : 'no'})"
 ```
 
-The `WithLabels(value, labels)` function takes two arguments:
-- `value`: The value for the metric - values will be converted to float
-- `labels`: A map of additional label names to label values (map[string]string)
+**Label Precedence:**
 
-**Label Precedence (highest to lowest):**
-1. `AdditionalLabels` from `WithLabels` 
-2. `labelsFromPath` configured in the metric
-3. `commonLabels` configured at resource or metric level
-4. Standard `customresource_group`, `customresource_version`, `customresource_kind` labels 
+When labels come from multiple sources, they're merged with this precedence (highest to lowest):
 
-**Backwards Compatibility:**
+1. `AdditionalLabels` from `WithLabels()`
+2. `labelsFromPath`
+3. `commonLabels`
+4. Standard labels: `customresource_group`, `customresource_version`, `customresource_kind`
 
-The path-based `valueFrom` syntax using path arrays is still fully supported:
+**Migrating from Path-Based Extraction:**
+
+**Iterating over objects:**
+
+```yaml
+# Path-based
+gauge:
+  path: [status, active]
+  labelFromKey: "type"
+
+# CEL
+gauge:
+  path: [status, active]
+  valueFrom:
+    celExpr: "value.map(k, WithLabels(value[k], {'type': k}))"
+```
+
+**Iterating over arrays with label extraction:**
+
+```yaml
+# Path-based
+gauge:
+  path: [status, conditions]
+  labelsFromPath:
+    type: ["type"]
+  valueFrom: ["status"]
+
+# CEL
+gauge:
+  path: [status, conditions]
+  valueFrom:
+    celExpr: "value.map(c, WithLabels(c.status, {'type': c.type}))"
+```
+
+**Deep object navigation:**
+
+```yaml
+# Path-based
+gauge:
+  path: [status, sub]
+  labelsFromPath:
+    active: ["active"]
+  valueFrom: ["ready"]
+  labelFromKey: "type"
+
+# CEL
+gauge:
+  path: [status, sub]
+  valueFrom:
+    celExpr: "value.map(k, WithLabels(value[k].ready, {'type': k, 'active': value[k].active}))"
+```
+
+**Accessing nested fields:**
+
+```yaml
+# Path-based
+gauge:
+  path: [metadata]
+  valueFrom: ["creationTimestamp"]
+
+# CEL (dot notation)
+gauge:
+  path: [metadata]
+  valueFrom:
+    celExpr: "value.creationTimestamp"
+```
+
+**Complex Data Structures:**
+
+```yaml
+gauge:
+  path: [status, services]
+  valueFrom:
+    celExpr: "value.map(name, WithLabels(value[name].requestCount, {'service': name}))"
+
+gauge:
+  path: [status, pods]
+  valueFrom:
+    celExpr: "double(value.filter(p, p.ready).size())"
+
+gauge:
+  path: [status, replicas]
+  valueFrom:
+    celExpr: "value.map(r, WithLabels(r.count, {'zone': r.zone, 'ready': string(r.ready)}))"
+```
+
+**Combining CEL with `labelsFromPath`:**
+
+Labels from both sources are merged (with CEL's `WithLabels` taking precedence):
+
+```yaml
+gauge:
+  path: [metadata]
+  labelsFromPath:
+    name: ["name"]
+    namespace: ["namespace"]
+  valueFrom:
+    celExpr: "WithLabels(1.0, {'source': 'cel', 'name': 'override'})"
+```
+
+Result: `name="override"` (from CEL), `namespace="..."` (from labelsFromPath), `source="cel"` (from CEL).
+
+**Important:** When CEL returns multiple values (e.g., `.map()`), `labelsFromPath` evaluates against the original value at `path`, not each returned element. Use `WithLabels` for per-element labels:
 
 ```yaml
 gauge:
   path: [status, conditions]
-  valueFrom: [status]  # Path-based array syntax - still works
-  # Or explicitly:
+  labelsFromPath:
+    name: ["name"]
+  valueFrom:
+    celExpr: "value.map(c, WithLabels(c.status, {'type': c.type}))"
+```
+
+**Allowed Return Types:**
+
+CEL expressions can return values that will be converted to float64 metric values using the same type conversion rules described in [Type conversion and special handling](#type-conversion-and-special-handling). Supported return types:
+
+- **Single value**: Any value convertible to float64 (e.g., `42`, `true`, `"123"`, `"2024-01-01T00:00:00Z"`, `"250m"`, `"50%"`) - produces a single metric
+- **List of values**: An array/list of values convertible to float64 (e.g., `[1, 2, 3]`, `["true", "false"]`) - produces multiple metrics, one for each element
+- **WithLabels result**: The result of calling `WithLabels(metricValue, labelMap)` where `metricValue` is any value convertible to float64 - produces a single metric with additional labels
+- **List of WithLabels results**: An array/list of `WithLabels` results (e.g., `value.map(k, WithLabels(value[k], {'key': k}))`) - produces multiple metrics, each with their own labels
+
+Values are converted using the same logic as path-based extraction: booleans, integers, strings (including dates, quantities, percentages), and other types are automatically converted to float64. See the type conversion section above for details.
+
+**Available CEL Functions:**
+
+CEL provides many built-in functions:
+
+- **Type conversions**: `double()`, `int()`, `string()`, `bool()`
+- **String operations**: `size()`, `contains()`, `startsWith()`, `endsWith()`
+- **Collections**: `map()`, `filter()`, `all()`, `exists()`, `size()`
+- **Conditionals**: `condition ? trueValue : falseValue`
+- **Field checks**: `has(value.field)`
+- **Arithmetic**: `+`, `-`, `*`, `/`, `%`
+- **Comparisons**: `==`, `!=`, `<`, `>`, `<=`, `>=`
+
+See the [CEL language definition](https://github.com/google/cel-spec) for complete documentation.
+
+**Backwards Compatibility:**
+
+Path-based `valueFrom` is still fully supported:
+
+```yaml
+gauge:
+  path: [status, conditions]
+  valueFrom: [status]
+
+gauge:
+  path: [status, conditions]
   valueFrom:
     pathValueFrom: [status]
 ```
 
-**Note:** You cannot specify both `celExpr` and `pathValueFrom` in the same `valueFrom` configuration.
+**Note:** You cannot use both `celExpr` and `pathValueFrom` in the same `valueFrom` configuration.
+
+---
 
 ##### Example for status conditions on Kubernetes Controllers
+
+This example demonstrates using Gauge metrics to track Kubernetes controller status conditions:
 
 ```yaml
 kind: CustomResourceStateMetrics

@@ -25,7 +25,10 @@ import (
 	"github.com/google/cel-go/common/types/ref"
 )
 
+var _ ref.Val = &WithLabels{}
+
 // WithLabels represents a metric value with additional labels.
+// Implements ref.Val.
 type WithLabels struct {
 	Val              interface{}
 	AdditionalLabels map[string]string
@@ -35,7 +38,6 @@ var (
 	WithLabelsObjectType = cel.ObjectType("kubestatemetrics.WithLabels")
 )
 
-// ConvertToNative implements ref.Val.ConvertToNative.
 func (r *WithLabels) ConvertToNative(typeDesc reflect.Type) (interface{}, error) {
 	if reflect.TypeOf(r).AssignableTo(typeDesc) {
 		return r, nil
@@ -43,7 +45,6 @@ func (r *WithLabels) ConvertToNative(typeDesc reflect.Type) (interface{}, error)
 	return nil, fmt.Errorf("type conversion error from 'WithLabels' to '%v'", typeDesc)
 }
 
-// ConvertToType implements ref.Val.ConvertToType.
 func (r *WithLabels) ConvertToType(typeVal ref.Type) ref.Val {
 	switch typeVal {
 	case WithLabelsObjectType:
@@ -54,14 +55,12 @@ func (r *WithLabels) ConvertToType(typeVal ref.Type) ref.Val {
 	return types.NewErr("type conversion error from '%s' to '%s'", WithLabelsObjectType, typeVal)
 }
 
-// Equal implements ref.Val.Equal.
 func (r *WithLabels) Equal(other ref.Val) ref.Val {
 	otherResult, ok := other.(*WithLabels)
 	if !ok {
 		return types.False
 	}
 
-	// Simple equality check for values
 	if !reflect.DeepEqual(r.Val, otherResult.Val) {
 		return types.False
 	}
@@ -79,12 +78,10 @@ func (r *WithLabels) Equal(other ref.Val) ref.Val {
 	return types.True
 }
 
-// Type implements ref.Val.Type.
 func (r *WithLabels) Type() ref.Type {
 	return WithLabelsObjectType
 }
 
-// Value implements ref.Val.Value.
 func (r *WithLabels) Value() interface{} {
 	return r
 }

@@ -337,3 +337,34 @@ func mustCompilePath(t *testing.T, path ...string) valuePath {
 	}
 	return out
 }
+
+func Test_newCompiledMetric_Errors(t *testing.T) {
+	tests := []struct {
+		name        string
+		metric      Metric
+		wantErrText string
+	}{
+		{
+			name: "labelFromKey with CEL expression",
+			metric: Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "active"},
+					},
+					ValueFrom:    ValueFrom{CelExpr: "value * 2"},
+					LabelFromKey: "type",
+				},
+			},
+			wantErrText: "labelFromKey cannot be used with celExpr, consider using WithLabels(value, labels) CEL function instead",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := newCompiledMetric(tt.metric)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErrText)
+		})
+	}
+}

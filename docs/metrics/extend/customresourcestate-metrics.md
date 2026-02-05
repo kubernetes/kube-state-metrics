@@ -265,7 +265,7 @@ spec:
               valueFrom:
                 celExpr: "(double(value.cpu) * 2.0) + (double(value.memory) / 1024.0)"
 
-        # Return value with additional labels using CELResult
+        # Return value with additional labels using WithLabels
         - name: "capacity_status"
           help: "Capacity percentage with status label"
           each:
@@ -274,7 +274,7 @@ spec:
               path: [status, resources]
               valueFrom:
                 celExpr: |
-                  CELResult(
+                  WithLabels(
                     double(value.used) / double(value.total) * 100.0,
                     {'status': value.used > value.warning ? 'warning' : 'ok'}
                   )
@@ -770,27 +770,27 @@ gauge:
     celExpr: "double(value.cpu) + (double(value.memory) / 1024.0)"
 ```
 
-**Returning Values with Additional Labels (CELResult):**
+**Returning Values with Additional Labels (WithLabels):**
 
-CEL expressions can return a special `CELResult` type to include additional labels along with the metric value. This is useful when you want to extract labels dynamically based on the CEL computation:
+CEL expressions can return a special `WithLabels` type to include additional labels along with the metric value. This is useful when you want to extract labels dynamically based on the CEL computation:
 
 ```yaml
 gauge:
   path: [status, metrics]
   valueFrom:
     celExpr: |
-      CELResult(
+      WithLabels(
         double(value.used) / double(value.total) * 100.0,
         {'threshold': value.used > value.warning ? 'high' : 'normal'}
       )
 ```
 
-The `CELResult(value, labels)` function takes two arguments:
+The `WithLabels(value, labels)` function takes two arguments:
 - `value`: The value for the metric - values will be converted to float
 - `labels`: A map of additional label names to label values (map[string]string)
 
 **Label Precedence (highest to lowest):**
-1. `AdditionalLabels` from `CELResult` 
+1. `AdditionalLabels` from `WithLabels` 
 2. `labelsFromPath` configured in the metric
 3. `commonLabels` configured at resource or metric level
 4. Standard `customresource_group`, `customresource_version`, `customresource_kind` labels 

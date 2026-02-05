@@ -42,7 +42,7 @@ type celValueExtractor struct {
 //
 // The CEL expression can return either:
 // - A value directly.
-// - A CELResult created via CELResult(value, labels) to return a value with additional labels.
+// - A WithLabels created via WithLabels(value, labels) to return a value with additional labels.
 func newCELValueExtractor(expr string, path valuePath, labelFromPath map[string]valuePath, nilIsZero bool) (*celValueExtractor, error) {
 	if expr == "" {
 		return nil, fmt.Errorf("CEL expression cannot be empty")
@@ -166,8 +166,8 @@ func (s *celValueExtractor) processVal(val ref.Val) (*eachValue, error) {
 		}
 		return nil, nil
 
-	case *ksmcel.CELResult:
-		// Value returned as CELResult
+	case *ksmcel.WithLabels:
+		// Value returned as WithLabels
 		value, err := toFloat64(v.Val, s.nilIsZero)
 		if err != nil {
 			return nil, err

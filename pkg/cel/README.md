@@ -4,17 +4,17 @@ CEL extension library for kube-state-metrics.
 
 ## Package Structure
 
-- `pkg/cel/` - Type definitions (CELResult)
+- `pkg/cel/` - Type definitions (WithLabels)
 - `pkg/cel/library/` - CEL library implementation
 
-## CELResult Type
+## WithLabels Type
 
-`CELResult(value, labels)` wraps a metric value with additional labels.
+`WithLabels(value, labels)` wraps a metric value with additional labels.
 
 ```cel
-CELResult(100.0, {})
-CELResult(42, {'severity': 'high'})
-CELResult(double(value) * 10.0, {'multiplied': 'true'})
+WithLabels(100.0, {})
+WithLabels(42, {'severity': 'high'})
+WithLabels(double(value) * 10.0, {'multiplied': 'true'})
 ```
 
 Fields:

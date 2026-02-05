@@ -30,7 +30,7 @@ type MetricMeta struct {
 }
 
 // ValueFrom defines how to derive a value from a path.
-// Either PathValueFrom (for path-based extraction) or CelExpr (for CEL expressions) can be set, but not both.
+// Either PathValueFrom or CelExpr can be set, but not both.
 type ValueFrom struct {
 	// PathValueFrom specifies the path-based value extraction.
 	PathValueFrom []string `yaml:"pathValueFrom,omitempty" json:"pathValueFrom,omitempty"`
@@ -38,11 +38,8 @@ type ValueFrom struct {
 	CelExpr string `yaml:"celExpr,omitempty" json:"celExpr,omitempty"`
 }
 
-// unmarshallValueFrom unmarshalls ValueFrom from either:
-// 1. A string slice mapped to PathValueFrom
-// 2. A struct with PathValueFrom or CelExpr field set.
+// unmarshallValueFrom unmarshalls ValueFrom from either a string slice or struct.
 func (vf *ValueFrom) unmarshallValueFrom(unmarshal func(interface{}) error) error {
-	// Try to unmarshal as a string slice (path format)
 	var stringSlice []string
 	if err := unmarshal(&stringSlice); err == nil {
 		vf.PathValueFrom = stringSlice

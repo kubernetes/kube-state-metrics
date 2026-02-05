@@ -196,7 +196,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		if err != nil {
 			return nil, fmt.Errorf("each.stateSet: %w", err)
 		}
-		// TODO: migrate to new valuePath structure
+		// TODO: migrate to new ValueFrom struct and support CEL-based StateSet as well
 		valueFromPath, err := compilePath(m.StateSet.ValueFrom.PathValueFrom)
 		if err != nil {
 			return nil, fmt.Errorf("each.stateSet.valueFrom: %w", err)
@@ -210,13 +210,6 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 	default:
 		return nil, fmt.Errorf("unknown metric type %s", m.Type)
 	}
-}
-
-// valueExtractor defines how values are extracted from objects.
-type valueExtractor interface {
-	// extractValues extracts metric values from the given object at the path.
-	// Returns the eachValues and any errors encountered.
-	extractValues(obj interface{}) ([]eachValue, []error)
 }
 
 type compiledGauge struct {
@@ -445,11 +438,6 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 		}
 		result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", value)
 	}
-}
-
-type valuer interface {
-	Get(obj interface{}) interface{}
-	String() string
 }
 
 type pathOp struct {

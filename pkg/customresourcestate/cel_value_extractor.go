@@ -27,13 +27,20 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/cel/library"
 )
 
+var _ valueExtractor = &celValueExtractor{}
+
 // celValueExtractor implements CEL-based value extraction.
 type celValueExtractor struct {
-	program       cel.Program
-	expr          string
-	path          valuePath
+	// program is the compiled CEL program ready for evaluation.
+	program cel.Program
+	// expr is the original CEL expression string, used for error reporting.
+	expr string
+	// path is the user-defined path configuration, used for error reporting.
+	path valuePath
+	// labelFromPath maps label names to their respective value paths for extraction.
 	labelFromPath map[string]valuePath
-	nilIsZero     bool
+	// nilIsZero indicates whether nil values should be treated as zero.
+	nilIsZero bool
 }
 
 // newCELValueExtractor creates a new CEL-based value extractor by compiling the given expression.
@@ -41,8 +48,8 @@ type celValueExtractor struct {
 // - value: the value at the resolved path (any type)
 //
 // The CEL expression can return either:
-// - A value directly.
-// - A WithLabels created via WithLabels(value, labels) to return a value with additional labels.
+// - A (list of) values directly.
+// - A (list of) WithLabels created via WithLabels(value, labels) to return a value with additional labels.
 func newCELValueExtractor(expr string, path valuePath, labelFromPath map[string]valuePath, nilIsZero bool) (*celValueExtractor, error) {
 	if expr == "" {
 		return nil, fmt.Errorf("CEL expression cannot be empty")
@@ -93,7 +100,7 @@ func (s *celValueExtractor) extractValues(v interface{}) (result []eachValue, er
 
 		labels := make(map[string]string)
 		addPathLabels(v, s.labelFromPath, labels)
-		// Apply AdditionalLabels last to avoid overwriting
+		// Apply AdditionalLabels last so they are not overwritten
 		for k, v := range value.Labels {
 			labels[k] = v
 		}
@@ -113,7 +120,7 @@ func (s *celValueExtractor) extractValue(v interface{}) ([]eachValue, error) {
 
 	switch celRes.Type() {
 	case nil:
-		// Handle nil values
+		// Handle nil values - not sure if this is explicitly needed as CEL should return some type
 		if s.nilIsZero {
 			return []eachValue{
 				{
@@ -142,6 +149,7 @@ func (s *celValueExtractor) extractValue(v interface{}) ([]eachValue, error) {
 		return eachValues, nil
 
 	default:
+		// returned a single value
 		ev, err := s.processVal(celRes)
 		if err != nil {
 			return nil, err
@@ -204,8 +212,12 @@ func (s *celValueExtractor) evaluateCEL(value interface{}) (ref.Val, error) {
 		return nil, fmt.Errorf("failed to evaluate CEL expression %q: %w", s.expr, err)
 	}
 
-	if types.IsUnknown(result) || types.IsError(result) {
+	if types.IsError(result) {
 		return nil, fmt.Errorf("CEL expression returned error: %v", result)
+	}
+
+	if types.IsUnknown(result) {
+		return nil, fmt.Errorf("CEL expression returned unknown value: %v", result)
 	}
 
 	return result, nil

@@ -21,13 +21,20 @@ import (
 	"strings"
 )
 
+var _ valueExtractor = &pathValueExtractor{}
+
 // pathValueExtractor implements path-based value extraction.
 type pathValueExtractor struct {
-	valueFrom     valuePath            // The path to the value to extract
-	path          valuePath            // The path of compiledCommon
-	labelFromPath map[string]valuePath // Labels to extract from paths
-	nilIsZero     bool                 // Whether nil should be treated as zero
-	labelFromKey  string               // Label name for map keys
+	// valueFrom is the path to the value to extract.
+	valueFrom valuePath
+	// path is the user-defined path configuration, used for error reporting.
+	path valuePath
+	// labelFromPath maps label names to their respective value paths for extraction.
+	labelFromPath map[string]valuePath
+	// nilIsZero indicates whether nil values should be treated as zero.
+	nilIsZero bool
+	// labelFromKey is the label name to use for map keys when iterating over maps.
+	labelFromKey string
 }
 
 func (s *pathValueExtractor) extractValues(v interface{}) (result []eachValue, errs []error) {

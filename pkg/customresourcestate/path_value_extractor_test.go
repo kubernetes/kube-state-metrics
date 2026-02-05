@@ -33,7 +33,7 @@ func mustCompileMetric(t *testing.T, m Metric) compiledMetric {
 	return compiled
 }
 
-func Test_values(t *testing.T) {
+func Test_extractValues(t *testing.T) {
 	type tc struct {
 		name       string
 		each       compiledEach
@@ -42,269 +42,378 @@ func Test_values(t *testing.T) {
 	}
 
 	tests := []tc{
-		{name: "single", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"spec", "replicas"},
-				},
-			},
-		}), wantResult: []eachValue{newEachValue(t, 1)}},
-		{name: "obj", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "active"},
-				},
-				LabelFromKey: "type",
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1, "type", "type-a"),
-			newEachValue(t, 3, "type", "type-b"),
-		}},
-		{name: "deep obj", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "sub"},
-					LabelsFromPath: map[string][]string{
-						"active": {"active"},
+		{
+			name: "single",
+			each: mustCompileMetric(t,
+				Metric{
+					Type: metric.Gauge,
+					Gauge: &MetricGauge{
+						MetricMeta: MetricMeta{
+							Path: []string{"spec", "replicas"},
+						},
 					},
 				},
-				LabelFromKey: "type",
-				ValueFrom:    ValueFrom{PathValueFrom: []string{"ready"}},
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 2, "type", "type-a", "active", "1"),
-			newEachValue(t, 4, "type", "type-b", "active", "3"),
-		}},
-		{name: "path-relative valueFrom value", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"metadata"},
-					LabelsFromPath: map[string][]string{
-						"name": {"name"},
-					},
-				},
-				ValueFrom: ValueFrom{PathValueFrom: []string{"creationTimestamp"}},
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1.6563744e+09, "name", "foo"),
-		}},
-		{name: "non-existent path", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"foo"},
-					LabelsFromPath: map[string][]string{
-						"name": {"name"},
-					},
-				},
-				ValueFrom: ValueFrom{PathValueFrom: []string{"creationTimestamp"}},
-			},
-		}), wantResult: nil, wantErrors: []error{
-			errors.New("[foo]: got nil while resolving path"),
-		}},
-		{name: "exist path but valueFrom path is non-existent single", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"spec", "replicas"},
-				},
-				ValueFrom: ValueFrom{PathValueFrom: []string{"non-existent"}},
-			},
-		}), wantResult: nil, wantErrors: nil,
+			),
+			wantResult: []eachValue{newEachValue(t, 1)},
 		},
-		{name: "exist path but valueFrom path non-existent array", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "condition_values"},
-					LabelsFromPath: map[string][]string{
-						"name": {"name"},
+
+		{
+			name: "obj",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "active"},
 					},
+					LabelFromKey: "type",
 				},
-				ValueFrom: ValueFrom{PathValueFrom: []string{"non-existent"}},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1, "type", "type-a"),
+				newEachValue(t, 3, "type", "type-b"),
 			},
-		}), wantResult: nil, wantErrors: nil,
 		},
-		{name: "array", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "condition_values"},
-					LabelsFromPath: map[string][]string{
-						"name": {"name"},
+
+		{
+			name: "deep obj",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "sub"},
+						LabelsFromPath: map[string][]string{
+							"active": {"active"},
+						},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"ready"}},
+					LabelFromKey: "type",
+				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 2, "type", "type-a", "active", "1"),
+				newEachValue(t, 4, "type", "type-b", "active", "3"),
+			},
+		},
+
+		{
+			name: "path-relative valueFrom value",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"metadata"},
+						LabelsFromPath: map[string][]string{
+							"name": []string{"name"},
+						},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"creationTimestamp"}},
+				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1.6563744e+09, "name", "foo"),
+			},
+		},
+
+		{
+			name: "non-existent path",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"foo"},
+						LabelsFromPath: map[string][]string{
+							"name": {"name"},
+						},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"creationTimestamp"}},
+				},
+			}),
+			wantResult: nil, wantErrors: []error{
+				errors.New("[foo]: got nil while resolving path"),
+			},
+		},
+
+		{
+			name: "exist path but valueFrom path is non-existent single",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"spec", "replicas"},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"non-existent"}},
+				},
+			}),
+			wantResult: nil, wantErrors: nil,
+		},
+
+		{
+			name: "exist path but valueFrom path non-existent array",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "condition_values"},
+						LabelsFromPath: map[string][]string{
+							"name": []string{"name"},
+						},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"non-existent"}},
+				},
+			}),
+			wantResult: nil, wantErrors: nil,
+		},
+
+		{
+			name: "array",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "condition_values"},
+						LabelsFromPath: map[string][]string{
+							"name": []string{"name"},
+						},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"value"}},
+				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 45, "name", "a"),
+				newEachValue(t, 66, "name", "b"),
+			},
+		},
+
+		{
+			name: "timestamp",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"metadata", "creationTimestamp"},
 					},
 				},
-				ValueFrom: ValueFrom{PathValueFrom: []string{"value"}},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1656374400),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 45, "name", "a"),
-			newEachValue(t, 66, "name", "b"),
-		}},
-		{name: "timestamp", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"metadata", "creationTimestamp"},
-				},
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1656374400),
-		}},
-		{name: "quantity_milli", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "quantity_milli"},
-				},
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 0.25),
-		}},
-		{name: "quantity_binarySI", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "quantity_binarySI"},
-				},
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 5.36870912e+09),
-		}},
-		{name: "percentage", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "percentage"},
-				},
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 0.28),
-		}},
-		{name: "path-relative valueFrom percentage", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"metadata"},
-					LabelsFromPath: map[string][]string{
-						"name": {"name"},
+		},
+
+		{
+			name: "quantity_milli",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "quantity_milli"},
 					},
 				},
-				ValueFrom: ValueFrom{PathValueFrom: []string{"percentage"}},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 0.25),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 0.39, "name", "foo"),
-		}},
-		{name: "boolean_string", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"spec", "paused"},
-				},
-				NilIsZero: true,
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 0),
-		}},
-		{name: "info", each: mustCompileMetric(t, Metric{
-			Type: metric.Info,
-			Info: &MetricInfo{
-				MetricMeta: MetricMeta{
-					LabelsFromPath: map[string][]string{
-						"version": {"spec", "version"},
+		},
+
+		{
+			name: "quantity_binarySI",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "quantity_binarySI"},
 					},
 				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 5.36870912e+09),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1, "version", "v0.0.0"),
-		}},
-		{name: "info nil path", each: mustCompileMetric(t, Metric{
-			Type: metric.Info,
-			Info: &MetricInfo{
-				MetricMeta: MetricMeta{
-					Path: []string{"does", "not", "exist"},
-				},
-			},
-		}), wantResult: nil},
-		{name: "info label from key", each: mustCompileMetric(t, Metric{
-			Type: metric.Info,
-			Info: &MetricInfo{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "active"},
-				},
-				LabelFromKey: "type",
-			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1, "type", "type-a"),
-			newEachValue(t, 1, "type", "type-b"),
-		}},
-		{name: "info label from path", each: mustCompileMetric(t, Metric{
-			Type: metric.Info,
-			Info: &MetricInfo{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "sub"},
-					LabelsFromPath: map[string][]string{
-						"active": {"active"},
+		},
+
+		{
+			name: "percentage",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "percentage"},
 					},
 				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 0.28),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1, "active", "1"),
-			newEachValue(t, 1, "active", "3"),
-		}},
-		{name: "stateset", each: mustCompileMetric(t, Metric{
-			Type: metric.StateSet,
-			StateSet: &MetricStateSet{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "phase"},
+		},
+
+		{
+			name: "path-relative valueFrom percentage",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"metadata"},
+						LabelsFromPath: map[string][]string{
+							"name": {"name"},
+						},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"percentage"}},
 				},
-				LabelName: "phase",
-				List:      []string{"foo", "bar"},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 0.39, "name", "foo"),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 0, "phase", "bar"),
-			newEachValue(t, 1, "phase", "foo"),
-		}},
-		{name: "status_conditions", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "conditions", "[type=Ready]", "status"},
+		},
+
+		{
+			name: "boolean_string",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"spec", "paused"},
+					},
+					NilIsZero: true,
 				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 0),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1),
-		}},
-		{name: "status_conditions_all", each: mustCompileMetric(t, Metric{
-			Type: metric.Gauge,
-			Gauge: &MetricGauge{
-				MetricMeta: MetricMeta{
-					Path: []string{"status", "conditions"},
-					LabelsFromPath: map[string][]string{
-						"type": {"type"},
+		},
+
+		{
+			name: "info",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Info,
+				Info: &MetricInfo{
+					MetricMeta: MetricMeta{
+						LabelsFromPath: map[string][]string{
+							"version": []string{"spec", "version"},
+						},
 					},
 				},
-				ValueFrom: ValueFrom{PathValueFrom: []string{"status"}},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1, "version", "v0.0.0"),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 0, "type", "Provisioned"),
-			newEachValue(t, 1, "type", "Ready"),
-		}},
-		{name: "= expression matching", each: mustCompileMetric(t, Metric{
-			Type: metric.Info,
-			Info: &MetricInfo{
-				MetricMeta: MetricMeta{
-					LabelsFromPath: map[string][]string{
-						"bar": {"metadata", "annotations", "bar=baz"},
+		},
+
+		{
+			name: "info nil path",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Info,
+				Info: &MetricInfo{
+					MetricMeta: MetricMeta{
+						Path: []string{"does", "not", "exist"},
 					},
 				},
+			}),
+			wantResult: nil,
+		},
+
+		{
+			name: "info label from key",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Info,
+				Info: &MetricInfo{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "active"},
+					},
+					LabelFromKey: "type",
+				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1, "type", "type-a"),
+				newEachValue(t, 1, "type", "type-b"),
 			},
-		}), wantResult: []eachValue{
-			newEachValue(t, 1, "bar", "baz"),
-		}},
+		},
+
+		{
+			name: "info label from path",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Info,
+				Info: &MetricInfo{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "sub"},
+						LabelsFromPath: map[string][]string{
+							"active": {"active"},
+						},
+					},
+				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1, "active", "1"),
+				newEachValue(t, 1, "active", "3"),
+			},
+		},
+
+		{
+			name: "stateset",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.StateSet,
+				StateSet: &MetricStateSet{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "phase"},
+					},
+					LabelName: "phase",
+					List:      []string{"foo", "bar"},
+				},	
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 0, "phase", "bar"),
+				newEachValue(t, 1, "phase", "foo"),
+			},
+		},
+
+		{
+			name: "status_conditions",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "conditions", "[type=Ready]", "status"},
+					},
+				},	
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1),
+			},
+		},
+
+		{
+			name: "status_conditions_all",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "conditions"},
+						LabelsFromPath: map[string][]string{
+							"type": {"type"},
+						},
+					},
+					ValueFrom: ValueFrom{PathValueFrom: []string{"status"}},
+				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 0, "type", "Provisioned"),
+				newEachValue(t, 1, "type", "Ready"),
+			},
+		},
+
+		{
+			name: "= expression matching",
+			each: mustCompileMetric(t, Metric{
+				Type: metric.Info,
+				Info: &MetricInfo{
+					MetricMeta: MetricMeta{
+						LabelsFromPath: map[string][]string{
+							"bar": {"metadata", "annotations", "bar=baz"},
+						},
+					},
+				},
+			}),
+			wantResult: []eachValue{
+				newEachValue(t, 1, "bar", "baz"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

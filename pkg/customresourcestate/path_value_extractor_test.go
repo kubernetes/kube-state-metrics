@@ -85,7 +85,7 @@ func Test_extractValues(t *testing.T) {
 							"active": {"active"},
 						},
 					},
-					ValueFrom: ValueFrom{PathValueFrom: []string{"ready"}},
+					ValueFrom:    ValueFrom{PathValueFrom: []string{"ready"}},
 					LabelFromKey: "type",
 				},
 			}),
@@ -103,7 +103,7 @@ func Test_extractValues(t *testing.T) {
 					MetricMeta: MetricMeta{
 						Path: []string{"metadata"},
 						LabelsFromPath: map[string][]string{
-							"name": []string{"name"},
+							"name": {"name"},
 						},
 					},
 					ValueFrom: ValueFrom{PathValueFrom: []string{"creationTimestamp"}},
@@ -155,7 +155,7 @@ func Test_extractValues(t *testing.T) {
 					MetricMeta: MetricMeta{
 						Path: []string{"status", "condition_values"},
 						LabelsFromPath: map[string][]string{
-							"name": []string{"name"},
+							"name": {"name"},
 						},
 					},
 					ValueFrom: ValueFrom{PathValueFrom: []string{"non-existent"}},
@@ -172,7 +172,7 @@ func Test_extractValues(t *testing.T) {
 					MetricMeta: MetricMeta{
 						Path: []string{"status", "condition_values"},
 						LabelsFromPath: map[string][]string{
-							"name": []string{"name"},
+							"name": {"name"},
 						},
 					},
 					ValueFrom: ValueFrom{PathValueFrom: []string{"value"}},
@@ -355,7 +355,7 @@ func Test_extractValues(t *testing.T) {
 					},
 					LabelName: "phase",
 					List:      []string{"foo", "bar"},
-				},	
+				},
 			}),
 			wantResult: []eachValue{
 				newEachValue(t, 0, "phase", "bar"),
@@ -371,7 +371,7 @@ func Test_extractValues(t *testing.T) {
 					MetricMeta: MetricMeta{
 						Path: []string{"status", "conditions", "[type=Ready]", "status"},
 					},
-				},	
+				},
 			}),
 			wantResult: []eachValue{
 				newEachValue(t, 1),

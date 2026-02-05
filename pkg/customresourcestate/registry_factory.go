@@ -572,9 +572,14 @@ func compilePath(path []string) (out valuePath, _ error) {
 func compileValueExtractor(vf ValueFrom, path valuePath, labelFromPath map[string]valuePath, nilIsZero bool, labelFromKey string) (valueExtractor, error) {
 	hasPath := len(vf.PathValueFrom) > 0
 	hasCEL := vf.CelExpr != ""
+	hasLabelFromKey := labelFromKey != ""
 
 	if hasPath && hasCEL {
 		return nil, fmt.Errorf("cannot specify both pathValueFrom and celExpr")
+	}
+
+	if hasLabelFromKey && hasCEL {
+		return nil, fmt.Errorf("labelFromKey cannot be used with celExpr, consider using WithLabels(value, labels) CEL function instead")
 	}
 
 	if hasCEL {

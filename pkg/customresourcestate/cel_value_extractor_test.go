@@ -344,6 +344,128 @@ func Test_CEL_Label_Precedence(t *testing.T) {
 	}
 }
 
+// Test_CEL_Path_Equivalents tests CEL expressions that replicate path-based extraction scenarios.
+// These test cases demonstrate how ValueFrom and LabelFromKey can be replaced with CEL expressions.
+func Test_CEL_Path_Equivalents(t *testing.T) {
+	tests := []struct {
+		name   string
+		metric Metric
+		want   []eachValue
+	}{
+		{
+			name: "obj (CEL Equivalent)",
+			metric: Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "active"},
+					},
+					ValueFrom: ValueFrom{CelExpr: "value.map(k, WithLabels(value[k], {'type': k}))"},
+				},
+			},
+			want: []eachValue{
+				newEachValue(t, 1, "type", "type-a"),
+				newEachValue(t, 3, "type", "type-b"),
+			},
+		},
+		{
+			name: "deep obj (CEL Equivalent)",
+			metric: Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "sub"},
+					},
+					ValueFrom: ValueFrom{CelExpr: "value.map(k, WithLabels(value[k].ready, {'type': k, 'active': value[k].active}))"},
+				},
+			},
+			want: []eachValue{
+				newEachValue(t, 2, "type", "type-a", "active", "1"),
+				newEachValue(t, 4, "type", "type-b", "active", "3"),
+			},
+		},
+		{
+			name: "path-relative valueFrom value (CEL Equivalent)",
+			metric: Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"metadata"},
+						LabelsFromPath: map[string][]string{
+							"name": {"name"},
+						},
+					},
+					ValueFrom: ValueFrom{CelExpr: "value.creationTimestamp"},
+				},
+			},
+			want: []eachValue{
+				newEachValue(t, 1.6563744e+09, "name", "foo"),
+			},
+		},
+		{
+			name: "array (CEL Equivalent)",
+			metric: Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "condition_values"},
+					},
+					ValueFrom: ValueFrom{CelExpr: "value.map(c, WithLabels(c.value, {'name': c.name}))"},
+				},
+			},
+			want: []eachValue{
+				newEachValue(t, 45, "name", "a"),
+				newEachValue(t, 66, "name", "b"),
+			},
+		},
+		{
+			name: "path-relative valueFrom percentage (CEL Equivalent)",
+			metric: Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"metadata"},
+						LabelsFromPath: map[string][]string{
+							"name": {"name"},
+						},
+					},
+					ValueFrom: ValueFrom{CelExpr: "value.percentage"},
+				},
+			},
+			want: []eachValue{
+				newEachValue(t, 0.39, "name", "foo"),
+			},
+		},
+		{
+			name: "status_conditions_all (CEL Equivalent)",
+			metric: Metric{
+				Type: metric.Gauge,
+				Gauge: &MetricGauge{
+					MetricMeta: MetricMeta{
+						Path: []string{"status", "conditions"},
+					},
+					ValueFrom: ValueFrom{CelExpr: "value.map(c, WithLabels(c.status, {'type': c.type}))"},
+				},
+			},
+			want: []eachValue{
+				newEachValue(t, 0, "type", "Provisioned"),
+				newEachValue(t, 1, "type", "Ready"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			compiled := mustCompileMetric(t, tt.metric)
+			results, errs := scrapeValuesFor(compiled, cr)
+			if len(errs) > 0 {
+				t.Fatalf("unexpected errors: %v", errs)
+			}
+			assert.Equal(t, tt.want, results)
+		})
+	}
+}
+
 // Test_CEL_Compilation_Errors tests that invalid CEL expressions produce appropriate errors.
 func Test_CEL_Compilation_Errors(t *testing.T) {
 	tests := []struct {

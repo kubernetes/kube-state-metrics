@@ -902,10 +902,10 @@ gauge:
 
 CEL expressions can return values that will be converted to float64 metric values using the same type conversion rules described in [Type conversion and special handling](#type-conversion-and-special-handling). Supported return types:
 
-- **Single value**: Any value convertible to float64 (e.g., `42`, `true`, `"123"`, `"2024-01-01T00:00:00Z"`, `"250m"`, `"50%"`) - produces a single metric
-- **List of values**: An array/list of values convertible to float64 (e.g., `[1, 2, 3]`, `["true", "false"]`) - produces multiple metrics, one for each element
-- **WithLabels result**: The result of calling `WithLabels(metricValue, labelMap)` where `metricValue` is any value convertible to float64 - produces a single metric with additional labels
-- **List of WithLabels results**: An array/list of `WithLabels` results (e.g., `value.map(k, WithLabels(value[k], {'key': k}))`) - produces multiple metrics, each with their own labels
+* **Single value**: Any value convertible to float64 (e.g., `42`, `true`, `"123"`, `"2024-01-01T00:00:00Z"`, `"250m"`, `"50%"`) - produces a single metric
+* **List of values**: An array/list of values convertible to float64 (e.g., `[1, 2, 3]`, `["true", "false"]`) - produces multiple metrics, one for each element
+* **WithLabels result**: The result of calling `WithLabels(metricValue, labelMap)` where `metricValue` is any value convertible to float64 - produces a single metric with additional labels
+* **List of WithLabels results**: An array/list of `WithLabels` results (e.g., `value.map(k, WithLabels(value[k], {'key': k}))`) - produces multiple metrics, each with their own labels
 
 Values are converted using the same logic as path-based extraction: booleans, integers, strings (including dates, quantities, percentages), and other types are automatically converted to float64. See the type conversion section above for details.
 
@@ -913,13 +913,13 @@ Values are converted using the same logic as path-based extraction: booleans, in
 
 CEL provides many built-in functions:
 
-- **Type conversions**: `double()`, `int()`, `string()`, `bool()`
-- **String operations**: `size()`, `contains()`, `startsWith()`, `endsWith()`
-- **Collections**: `map()`, `filter()`, `all()`, `exists()`, `size()`
-- **Conditionals**: `condition ? trueValue : falseValue`
-- **Field checks**: `has(value.field)`
-- **Arithmetic**: `+`, `-`, `*`, `/`, `%`
-- **Comparisons**: `==`, `!=`, `<`, `>`, `<=`, `>=`
+* **Type conversions**: `double()`, `int()`, `string()`, `bool()`
+* **String operations**: `size()`, `contains()`, `startsWith()`, `endsWith()`
+* **Collections**: `map()`, `filter()`, `all()`, `exists()`, `size()`
+* **Conditionals**: `condition ? trueValue : falseValue`
+* **Field checks**: `has(value.field)`
+* **Arithmetic**: `+`, `-`, `*`, `/`, `%`
+* **Comparisons**: `==`, `!=`, `<`, `>`, `<=`, `>=`
 
 See the [CEL language definition](https://github.com/google/cel-spec) for complete documentation.
 

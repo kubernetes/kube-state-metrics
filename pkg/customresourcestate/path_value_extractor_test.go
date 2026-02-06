@@ -286,7 +286,7 @@ func Test_extractValues(t *testing.T) {
 				Info: &MetricInfo{
 					MetricMeta: MetricMeta{
 						LabelsFromPath: map[string][]string{
-							"version": []string{"spec", "version"},
+							"version": {"spec", "version"},
 						},
 					},
 				},

@@ -35,9 +35,11 @@ type WithLabels struct {
 }
 
 var (
+	// WithLabelsObjectType is the CEL type representation for WithLabels objects.
 	WithLabelsObjectType = cel.ObjectType("kubestatemetrics.WithLabels")
 )
 
+// ConvertToNative implements the ref.Val interface method.
 func (r *WithLabels) ConvertToNative(typeDesc reflect.Type) (interface{}, error) {
 	if reflect.TypeOf(r).AssignableTo(typeDesc) {
 		return r, nil
@@ -45,6 +47,7 @@ func (r *WithLabels) ConvertToNative(typeDesc reflect.Type) (interface{}, error)
 	return nil, fmt.Errorf("type conversion error from 'WithLabels' to '%v'", typeDesc)
 }
 
+// ConvertToType implements the ref.Val interface method.
 func (r *WithLabels) ConvertToType(typeVal ref.Type) ref.Val {
 	switch typeVal {
 	case WithLabelsObjectType:
@@ -55,6 +58,7 @@ func (r *WithLabels) ConvertToType(typeVal ref.Type) ref.Val {
 	return types.NewErr("type conversion error from '%s' to '%s'", WithLabelsObjectType, typeVal)
 }
 
+// Equal implements the ref.Val interface method.
 func (r *WithLabels) Equal(other ref.Val) ref.Val {
 	otherResult, ok := other.(*WithLabels)
 	if !ok {
@@ -78,10 +82,12 @@ func (r *WithLabels) Equal(other ref.Val) ref.Val {
 	return types.True
 }
 
+// Type implements the ref.Val interface method.
 func (r *WithLabels) Type() ref.Type {
 	return WithLabelsObjectType
 }
 
+// Value implements the ref.Val interface method.
 func (r *WithLabels) Value() interface{} {
 	return r
 }

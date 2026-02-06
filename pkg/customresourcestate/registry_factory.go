@@ -572,19 +572,20 @@ func compileValueExtractor(vf ValueFrom, path valuePath, labelFromPath map[strin
 
 	if hasCEL {
 		return newCELValueExtractor(vf.CelExpr, path, labelFromPath, nilIsZero)
-	} else {
-		pathValue, err := compilePath(vf.PathValueFrom)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile pathValueFrom: %w", err)
-		}
-		return &pathValueExtractor{
-			valueFrom:     pathValue,
-			path:          path,
-			labelFromPath: labelFromPath,
-			nilIsZero:     nilIsZero,
-			labelFromKey:  labelFromKey,
-		}, nil
 	}
+
+	pathValue, err := compilePath(vf.PathValueFrom)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile pathValueFrom: %w", err)
+	}
+
+	return &pathValueExtractor{
+		valueFrom:     pathValue,
+		path:          path,
+		labelFromPath: labelFromPath,
+		nilIsZero:     nilIsZero,
+		labelFromKey:  labelFromKey,
+	}, nil
 }
 
 func famGen(f compiledFamily) generator.FamilyGenerator {

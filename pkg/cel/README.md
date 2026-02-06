@@ -4,8 +4,8 @@ CEL extension library for kube-state-metrics.
 
 ## Package Structure
 
-- `pkg/cel/` - Type definitions
-- `pkg/cel/library/` - CEL library implementation
+* `pkg/cel/` - Type definitions
+* `pkg/cel/library/` - CEL library implementation
 
 ## Types
 
@@ -20,8 +20,9 @@ WithLabels(double(value) * 10.0, {'multiplied': 'true'})
 ```
 
 Fields:
-- `Val` - metric value (converted to float64 by extractor)
-- `AdditionalLabels` - labels to add to metric
+
+* `Val` - metric value (converted to float64 by extractor)
+* `AdditionalLabels` - labels to add to metric
 
 ## Usage
 

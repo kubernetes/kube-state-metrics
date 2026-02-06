@@ -51,10 +51,6 @@ func (*ksm) LibraryName() string {
 	return "kubestatemetrics"
 }
 
-func (*ksm) declarations() map[string][]cel.FunctionOpt {
-	return ksmLibraryDecls
-}
-
 func (*ksm) Types() []*cel.Type {
 	return []*cel.Type{ksmcel.WithLabelsObjectType}
 }

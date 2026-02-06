@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 

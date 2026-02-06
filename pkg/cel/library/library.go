@@ -23,6 +23,7 @@ import (
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/common/types/traits"
+
 	ksmcel "k8s.io/kube-state-metrics/v2/pkg/cel"
 )
 

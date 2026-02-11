@@ -33,10 +33,10 @@ func (d DiscoveredResource) String() string {
 	return fmt.Sprintf("%s/%s, Kind=%s, Plural=%s", d.Group, d.Version, d.Kind, d.Plural)
 }
 
-// extractor defines the interface for extracting DiscoveredResources
+// extractor defines the interface for extracting DiscoveredResources from CRDs/APIServices.
 type extractor interface {
 	// SourceID returns a unique identifier for the source object.
-	// For CRDs: "crd:<name>"
+	// For CRDs: "crd:<name>", for APIServices: "apiservice:<name>"
 	SourceID(obj interface{}) string
 	// ExtractGVKs extracts discovered resources from the object.
 	// Return nil to skip, empty array to signal deletion of all resources for the source.
@@ -48,7 +48,7 @@ type CRDiscoverer struct {
 	// mu protects all fields below.
 	mu sync.RWMutex
 	// resourcesBySource maps source objects to their discovered resources.
-	// Keys e.g. "crd:<name>"
+	// Keys: "crd:<name>" or "apiservice:<name>"
 	resourcesBySource map[string][]*DiscoveredResource
 	// wasUpdated indicates whether the cache was updated since last check.
 	wasUpdated bool

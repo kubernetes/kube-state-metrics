@@ -297,9 +297,9 @@ func TestUpdateSourceNilSkipsUpdate(t *testing.T) {
 			Plural:           "testobjects1",
 		},
 	}
-	discoverer.UpdateSource("crd:testobjects.testgroup", resources)
+	discoverer.UpdateSource("apiservice:testobjects.testgroup", resources)
 	// Update with nil (simulating skipping update)
-	discoverer.UpdateSource("crd:testobjects.testgroup", nil)
+	discoverer.UpdateSource("apiservice:testobjects.testgroup", nil)
 
 	// Verify original resource is still present
 	got, err := discoverer.Resolve(schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"})
@@ -321,10 +321,10 @@ func TestUpdateSourceEmptyRemovesResources(t *testing.T) {
 			Plural:           "testobjects1",
 		},
 	}
-	discoverer.UpdateSource("crd:testobjects.testgroup", resources)
+	discoverer.UpdateSource("apiservice:testobjects.testgroup", resources)
 
 	// Update with empty slice (simulating removal)
-	discoverer.UpdateSource("crd:testobjects.testgroup", []*DiscoveredResource{})
+	discoverer.UpdateSource("apiservice:testobjects.testgroup", []*DiscoveredResource{})
 
 	// Verify resource is removed
 	got, err := discoverer.Resolve(schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"})

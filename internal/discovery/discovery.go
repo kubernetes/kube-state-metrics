@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8sdiscovery "k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/rest"
@@ -42,7 +43,10 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	if err != nil {
 		return err
 	}
-
+	err = r.startAPIServiceDiscovery(ctx, config)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -87,6 +91,22 @@ func (r *CRDiscoverer) startCRDDiscovery(ctx context.Context, config *rest.Confi
 	}, "", 0, nil, nil)
 
 	extractor := &crdExtractor{}
+
+	return r.runInformer(ctx, factory.Informer(), extractor)
+}
+
+func (r *CRDiscoverer) startAPIServiceDiscovery(ctx context.Context, config *rest.Config) error {
+	client := dynamic.NewForConfigOrDie(config)
+	factory := dynamicinformer.NewFilteredDynamicInformer(client, schema.GroupVersionResource{
+		Group:    "apiregistration.k8s.io",
+		Version:  "v1",
+		Resource: "apiservices",
+	}, "", 0, nil, nil)
+
+	discoveryClient := k8sdiscovery.NewDiscoveryClientForConfigOrDie(config)
+	extractor := &apiServiceExtractor{
+		discoveryClient: discoveryClient,
+	}
 
 	return r.runInformer(ctx, factory.Informer(), extractor)
 }

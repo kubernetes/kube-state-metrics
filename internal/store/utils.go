@@ -22,8 +22,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/v2"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -33,9 +35,10 @@ import (
 )
 
 var (
-	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-	matchAllCap        = regexp.MustCompile("([a-z0-9])([A-Z])")
-	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
+	invalidLabelCharRE    = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	matchAllCap           = regexp.MustCompile("([a-z0-9])([A-Z])")
+	conditionStatuses     = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
+	allowListPatternCache sync.Map
 )
 
 func resourceVersionMetric(rv string) []*metric.Metric {
@@ -178,22 +181,86 @@ func isPrefixedNativeResource(name v1.ResourceName) bool {
 // createPrometheusLabelKeysValues takes in passed kubernetes annotations/labels
 // and associated allowed list in kubernetes label format.
 // It returns only those allowed annotations/labels that exist in the list and converts them to Prometheus labels.
+// Full wildcards (*) can only be set as first in the allow list, partial wildcards can appear anywhere in the list
 func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]string, allowList []string) ([]string, []string) {
 	allowedKubeData := make(map[string]string)
 
-	if len(allowList) > 0 {
-		if allowList[0] == options.LabelWildcard {
-			return kubeMapToPrometheusLabels(prefix, allKubeData)
+	for i, l := range allowList {
+		// only the first label can be the wildcard label
+		if l == options.LabelWildcard {
+			if i == 0 {
+				return kubeMapToPrometheusLabels(prefix, allKubeData)
+			}
+			continue
 		}
 
-		for _, l := range allowList {
-			v, found := allKubeData[l]
-			if found {
+		if !strings.Contains(l, options.LabelWildcard) {
+			// exact key — direct lookup, no regexp needed
+			if v, ok := allKubeData[l]; ok {
 				allowedKubeData[l] = v
+			}
+			continue
+		}
+
+		// look up or compile the pattern, caching the result so we only compile once per unique pattern
+		re := cachedCompileAllowListPattern(l)
+		if re == nil {
+			continue
+		}
+		for k, v := range allKubeData {
+			if re.MatchString(k) {
+				allowedKubeData[k] = v
 			}
 		}
 	}
+
 	return kubeMapToPrometheusLabels(prefix, allowedKubeData)
+}
+
+// expandWildcard expands wildcards (*) to regular expressions, up to a limited number of wildcards
+func expandWildcard(pattern string, limit uint) string {
+	var result strings.Builder
+	var replacements uint
+	for i, literal := range strings.Split(pattern, options.LabelWildcard) {
+		if i > 0 {
+			result.WriteString(".*")
+			replacements++
+		}
+
+		result.WriteString(regexp.QuoteMeta(literal))
+		if replacements >= limit {
+			break
+		}
+	}
+	return "^" + result.String() + "$"
+}
+
+// cachedCompileAllowListPattern returns a compiled regexp for the given wildcard pattern,
+// using allowListPatternCache to avoid recompiling on every object event.
+// Patterns with more wildcards than MaxPartialWildcardsPerLabel are rejected outright so
+// that an over-wildcarded entry like "*key*" fails closed rather than silently matching
+// as a truncated pattern (e.g. "^.*key$"). A warning is logged on the first rejection or
+// compile error so the operator can fix the configuration.
+func cachedCompileAllowListPattern(pattern string) *regexp.Regexp {
+	if uint(strings.Count(pattern, options.LabelWildcard)) > options.MaxPartialWildcardsPerLabel {
+		klog.Warningf("kube-state-metrics: ignoring allowlist pattern %q: exceeds maximum of %d wildcard(s)", pattern, options.MaxPartialWildcardsPerLabel)
+		return nil
+	}
+	expanded := expandWildcard(pattern, options.MaxPartialWildcardsPerLabel)
+	if v, ok := allowListPatternCache.Load(expanded); ok {
+		if v == nil {
+			return nil
+		}
+		return v.(*regexp.Regexp)
+	}
+	re, err := regexp.Compile(expanded)
+	if err != nil {
+		klog.Warningf("kube-state-metrics: ignoring invalid allowlist pattern %q: %v", pattern, err)
+		allowListPatternCache.Store(expanded, nil)
+		return nil
+	}
+	allowListPatternCache.Store(expanded, re)
+	return re
 }
 
 // mergeKeyValues merges label keys and values slice pairs into a single slice pair.

@@ -63,7 +63,7 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	store := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	store := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs := []v1.Service{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -151,7 +151,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	s1 := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	s1 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs1 := []v1.Service{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -191,7 +191,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 			},
 		},
 	}
-	s2 := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	s2 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	for _, s := range svcs2 {
 		svc := s
 		if err := s2.Add(&svc); err != nil {
@@ -251,7 +251,7 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	store := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	store := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 
 	multiNsWriter := NewMetricsWriter("test", store)
 	w := strings.Builder{}
@@ -287,7 +287,7 @@ func TestSanitizeHeaders(t *testing.T) {
 			},
 			expectedHeaders: []string{
 				"",
-				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
 				"",
 				"",
 				"",
@@ -313,7 +313,7 @@ func TestSanitizeHeaders(t *testing.T) {
 				"",
 				"",
 				"",
-				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
 				"",
 				"",
 				"",
@@ -335,7 +335,7 @@ func TestSanitizeHeaders(t *testing.T) {
 			},
 			expectedHeaders: []string{
 				"",
-				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
 				"",
 				"",
 				"",
@@ -361,7 +361,7 @@ func TestSanitizeHeaders(t *testing.T) {
 				"",
 				"",
 				"",
-				"# HELP foo foo_help\n# TYPE foo gauge",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
 				"",
 				"",
 				"",
@@ -406,9 +406,9 @@ func TestSanitizeHeadersImmutability(t *testing.T) {
 	}
 
 	expectedTextHeaders := []string{
-		"# HELP foo_info foo_help\n# TYPE foo_info gauge",
-		"# HELP foo_stateset foo_help\n# TYPE foo_stateset gauge",
-		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge",
+		"# HELP foo_info foo_help\n# TYPE foo_info gauge\n",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset gauge\n",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge\n",
 	}
 	if !reflect.DeepEqual(expectedTextHeaders, sanitizedWriters1[0].stores[0].headers) {
 		t.Fatalf("First request headers mismatch. (-want, +got):\n%s", cmp.Diff(expectedTextHeaders, sanitizedWriters1[0].stores[0].headers))
@@ -422,9 +422,9 @@ func TestSanitizeHeadersImmutability(t *testing.T) {
 	}
 
 	expectedOpenMetricsHeaders := []string{
-		"# HELP foo_info foo_help\n# TYPE foo_info info",
-		"# HELP foo_stateset foo_help\n# TYPE foo_stateset stateset",
-		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge",
+		"# HELP foo_info foo_help\n# TYPE foo_info info\n",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset stateset\n",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge\n",
 	}
 	if !reflect.DeepEqual(expectedOpenMetricsHeaders, sanitizedWriters2[0].stores[0].headers) {
 		t.Fatalf("Second request headers mismatch. Expected OpenMetrics to preserve info/stateset. (-want, +got):\n%s", cmp.Diff(expectedOpenMetricsHeaders, sanitizedWriters2[0].stores[0].headers))

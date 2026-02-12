@@ -26,6 +26,17 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
+const (
+	helpPrefix = "# HELP "
+	typePrefix = "# TYPE "
+)
+
+var (
+	infoTypeString     = string(metric.Info)
+	stateSetTypeString = string(metric.StateSet)
+	gaugeTypeString    = string(metric.Gauge)
+)
+
 // MetricsWriterList represent a list of MetricsWriter
 type MetricsWriterList []*MetricsWriter
 
@@ -39,6 +50,26 @@ type MetricsWriterList []*MetricsWriter
 type MetricsWriter struct {
 	stores       []*MetricsStore
 	ResourceName string
+}
+
+func metricNameFromHeaderLine(line, prefix string) (string, bool) {
+	if !strings.HasPrefix(line, prefix) {
+		return "", false
+	}
+
+	rest := line[len(prefix):]
+	if rest == "" {
+		return "", false
+	}
+
+	spaceIdx := strings.IndexByte(rest, ' ')
+	if spaceIdx == -1 {
+		return rest, true
+	}
+	if spaceIdx == 0 {
+		return "", false
+	}
+	return rest[:spaceIdx], true
 }
 
 // NewMetricsWriter creates a new MetricsWriter.
@@ -62,10 +93,6 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		// Skip empty headers (set by SanitizeHeaders for duplicates)
 		if help == "" {
 			continue
-		}
-
-		if help != "\n" {
-			help += "\n"
 		}
 
 		var err error
@@ -116,9 +143,17 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 		clonedWriters = append(clonedWriters, &MetricsWriter{stores: clonedStores, ResourceName: writer.ResourceName})
 	}
 
+	isTextPlain := contentType.FormatType() == expfmt.TypeTextPlain
+
 	// Deduplicate by metric name across all writers to handle non-consecutive duplicates during CRS reload.
-	seenHELP := make(map[string]struct{})
-	seenTYPE := make(map[string]struct{})
+	capHint := 0
+	for _, w := range clonedWriters {
+		if len(w.stores) > 0 {
+			capHint += len(w.stores[0].headers)
+		}
+	}
+	seenHELP := make(map[string]struct{}, capHint)
+	seenTYPE := make(map[string]struct{}, capHint)
 	for _, writer := range clonedWriters {
 		if len(writer.stores) > 0 {
 			for i := 0; i < len(writer.stores[0].headers); i++ {
@@ -129,34 +164,29 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 
 				for _, line := range lines {
 					switch {
-					case strings.HasPrefix(line, "# HELP "):
-						fields := strings.Fields(line)
-						if len(fields) >= 3 {
-							metricName := fields[2]
+					case strings.HasPrefix(line, helpPrefix):
+						metricName, ok := metricNameFromHeaderLine(line, helpPrefix)
+						if ok {
 							if _, seen := seenHELP[metricName]; seen {
 								shouldRemove = true
 								break
 							}
 							seenHELP[metricName] = struct{}{}
-							modifiedLines = append(modifiedLines, line)
-						} else {
-							modifiedLines = append(modifiedLines, line)
 						}
-					case strings.HasPrefix(line, "# TYPE "):
+						modifiedLines = append(modifiedLines, line)
+
+					case strings.HasPrefix(line, typePrefix):
 						if shouldRemove {
 							break
 						}
-						fields := strings.Fields(line)
-						if len(fields) >= 3 {
-							metricName := fields[2]
+						metricName, ok := metricNameFromHeaderLine(line, typePrefix)
+						if ok {
 							modifiedLine := line
-							if contentType.FormatType() == expfmt.TypeTextPlain {
-								infoTypeString := string(metric.Info)
-								stateSetTypeString := string(metric.StateSet)
+							if isTextPlain {
 								if strings.HasSuffix(line, infoTypeString) {
-									modifiedLine = line[:len(line)-len(infoTypeString)] + string(metric.Gauge)
+									modifiedLine = line[:len(line)-len(infoTypeString)] + gaugeTypeString
 								} else if strings.HasSuffix(line, stateSetTypeString) {
-									modifiedLine = line[:len(line)-len(stateSetTypeString)] + string(metric.Gauge)
+									modifiedLine = line[:len(line)-len(stateSetTypeString)] + gaugeTypeString
 								}
 							}
 							if _, seen := seenTYPE[metricName]; seen {
@@ -176,7 +206,11 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 				if shouldRemove {
 					writer.stores[0].headers[i] = ""
 				} else if len(modifiedLines) > 0 {
-					writer.stores[0].headers[i] = strings.Join(modifiedLines, "\n")
+					hdr := strings.Join(modifiedLines, "\n")
+					if hdr != "" && !strings.HasSuffix(hdr, "\n") {
+						hdr += "\n"
+					}
+					writer.stores[0].headers[i] = hdr
 				}
 			}
 		}

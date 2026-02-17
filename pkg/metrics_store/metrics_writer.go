@@ -97,7 +97,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 
 		var err error
 		m.stores[0].metrics.Range(func(_ interface{}, _ interface{}) bool {
-			_, err = w.Write([]byte(help))
+			_, err = io.WriteString(w, help)
 			if err != nil {
 				err = fmt.Errorf("failed to write help text: %v", err)
 			}

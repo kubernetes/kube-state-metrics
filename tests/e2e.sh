@@ -189,8 +189,18 @@ kubectl version
 # query kube-state-metrics image tag
 REGISTRY="registry.k8s.io/kube-state-metrics" make container
 docker images -a
-KUBE_STATE_METRICS_IMAGE_TAG=$(docker images -a|grep "${KUBE_STATE_METRICS_IMAGE_NAME}" |grep -v 'latest'|awk '{print $2}'|sort -u)
-echo "local kube-state-metrics image tag: $KUBE_STATE_METRICS_IMAGE_TAG"
+# Use Docker's machine-readable output - the human table columns/spacing can change between Docker versions.
+KUBE_STATE_METRICS_IMAGE_TAG="$(
+    docker images --format '{{.Repository}} {{.Tag}}' \
+        | awk -v repo="${KUBE_STATE_METRICS_IMAGE_NAME}" '$1 == repo && $2 != "latest" { print $2; exit }'
+)"
+if [[ -z "${KUBE_STATE_METRICS_IMAGE_TAG}" ]]; then
+    echo "ERROR: could not determine a local image tag for ${KUBE_STATE_METRICS_IMAGE_NAME} (excluding 'latest')." >&2
+    echo "Ensure the image was built successfully, then re-run. Debug output:" >&2
+    docker images --format '{{.Repository}} {{.Tag}}' >&2
+    exit 1
+fi
+echo "local kube-state-metrics image tag: ${KUBE_STATE_METRICS_IMAGE_TAG}"
 
 kind load docker-image "${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}"
 

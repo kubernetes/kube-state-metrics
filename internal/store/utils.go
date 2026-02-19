@@ -178,22 +178,45 @@ func isPrefixedNativeResource(name v1.ResourceName) bool {
 // createPrometheusLabelKeysValues takes in passed kubernetes annotations/labels
 // and associated allowed list in kubernetes label format.
 // It returns only those allowed annotations/labels that exist in the list and converts them to Prometheus labels.
+// Full wildcards (*) can only be set as first in the allow list, partial wildcards can appear anywhere in the list
 func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]string, allowList []string) ([]string, []string) {
 	allowedKubeData := make(map[string]string)
 
-	if len(allowList) > 0 {
-		if allowList[0] == options.LabelWildcard {
-			return kubeMapToPrometheusLabels(prefix, allKubeData)
+	for i, l := range allowList {
+		// only the first label can be the wildcard label
+		if l == options.LabelWildcard {
+			if i == 0 {
+				return kubeMapToPrometheusLabels(prefix, allKubeData)
+			}
+			continue
 		}
 
-		for _, l := range allowList {
-			v, found := allKubeData[l]
-			if found {
-				allowedKubeData[l] = v
+		for k, v := range allKubeData {
+			if found, _ := regexp.MatchString(expandWildcard(l, 1), k); found {
+				allowedKubeData[k] = v
 			}
 		}
 	}
+
 	return kubeMapToPrometheusLabels(prefix, allowedKubeData)
+}
+
+// expandWildcard expands wildcards (*) to regular expressions, up to a limited number of wildcards
+func expandWildcard(pattern string, limit uint) string {
+	var result strings.Builder
+	var replacements uint
+	for i, literal := range strings.Split(pattern, options.LabelWildcard) {
+		if i > 0 {
+			result.WriteString(".*")
+			replacements++
+		}
+
+		result.WriteString(regexp.QuoteMeta(literal))
+		if replacements >= limit {
+			break
+		}
+	}
+	return "^" + result.String() + "$"
 }
 
 // mergeKeyValues merges label keys and values slice pairs into a single slice pair.

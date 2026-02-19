@@ -22,6 +22,7 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -29,6 +30,13 @@ import (
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
+
+// StopChanProvider provides thread-safe access to stop channels for reflectors.
+type StopChanProvider interface {
+	// GetStopChan returns the stop channel for the given GVK.
+	// Returns false if no stop channel exists for this GVK.
+	GetStopChan(gvk schema.GroupVersionKind) (chan struct{}, bool)
+}
 
 // BuilderInterface represent all methods that a Builder should implements
 type BuilderInterface interface {

@@ -88,6 +88,64 @@ func init() {
 					"status": "False",
 				},
 			},
+			"parents": Array{
+				Obj{
+					"conditions": Array{
+						Obj{
+							"type":               "Ready",
+							"status":             "True",
+							"message":            "All good",
+							"reason":             "AsExpected",
+							"lastTransitionTime": "2022-06-28T00:00:00Z",
+							"observedGeneration": 42,
+						},
+						Obj{
+							"type":               "Synced",
+							"status":             "False",
+							"message":            "Not synced",
+							"reason":             "SyncError",
+							"lastTransitionTime": "2022-06-28T00:00:00Z",
+							"observedGeneration": 43,
+						},
+					},
+					"controllerName": "foo.bar/baz",
+					"parentRef": Obj{
+						"group":     "foo.bar",
+						"kind":      "Baz",
+						"name":      "baz-1",
+						"namespace": "default",
+					},
+				},
+				Obj{
+					"conditions": Array{
+						Obj{
+							"type":               "Ready",
+							"status":             "False",
+							"message":            "Not ready",
+							"reason":             "NotReady",
+							"lastTransitionTime": "2022-06-28T00:00:00Z",
+							"observedGeneration": 44,
+						},
+					},
+					"controllerName": "qux.corge/grault",
+					"parentRef": Obj{
+						"group":     "qux.corge",
+						"kind":      "Grault",
+						"name":      "grault-1",
+						"namespace": "default",
+					},
+				},
+				Obj{
+					"conditions":     Array{},
+					"controllerName": "garply.waldo/fred",
+					"parentRef": Obj{
+						"group":     "garply.waldo",
+						"kind":      "Fred",
+						"name":      "fred-1",
+						"namespace": "default",
+					},
+				},
+			},
 		},
 		"metadata": Obj{
 			"name": "foo",
@@ -351,6 +409,33 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 0, "type", "Provisioned"),
 			newEachValue(t, 1, "type", "Ready"),
+		}},
+		{name: "status_parents_conditions", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "parents", "[*]", "conditions"),
+				labelFromPath: map[string]valuePath{
+					"reason": mustCompilePath(t, "reason"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "status"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "reason", "AsExpected"),
+			newEachValue(t, 0, "reason", "NotReady"),
+			newEachValue(t, 0, "reason", "SyncError"),
+		}},
+		{name: "status_parents_conditions_included", each: &compiledGauge{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status", "parents"),
+				labelFromPath: map[string]valuePath{
+					"reason":     mustCompilePath(t, "conditions", "[*]", "reason"),
+					"parentName": mustCompilePath(t, "parentRef", "name"),
+				},
+			},
+			ValueFrom: mustCompilePath(t, "conditions", "[*]", "status"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 1, "parentName", "baz-1", "reason", "AsExpected"),
+			newEachValue(t, 0, "parentName", "baz-1", "reason", "SyncError"),
+			newEachValue(t, 0, "parentName", "grault-1", "reason", "NotReady"),
 		}},
 		{name: "= expression matching", each: &compiledInfo{
 			compiledCommon: compiledCommon{

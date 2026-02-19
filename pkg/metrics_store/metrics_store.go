@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -41,14 +42,48 @@ type MetricsStore struct {
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
 	headers []string
+
+	predicates []Predicate
 }
 
+type Predicate func(obj interface{}) (bool, error)
+
+type Opt func(*MetricsStore)
+
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface) *MetricsStore {
-	return &MetricsStore{
+func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface, opts ...Opt) *MetricsStore {
+	s := &MetricsStore{
 		generateMetricsFunc: generateFunc,
 		headers:             headers,
 		metrics:             sync.Map{},
+		predicates:          []Predicate{},
+	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+func WithNamespacesPredicate(namespaces []string) Opt {
+	return func(s *MetricsStore) {
+		s.predicates = append(s.predicates, func(obj interface{}) (bool, error) {
+			o, err := meta.Accessor(obj)
+			if err != nil {
+				return false, err
+			}
+
+			if o.GetNamespace() == metav1.NamespaceNone {
+				// cluster-scoped objects are excluded from this predicate
+				return true, nil
+			}
+
+			for _, namespace := range namespaces {
+				if o.GetNamespace() == namespace {
+					return true, nil
+				}
+			}
+			return false, nil
+		})
 	}
 }
 
@@ -57,6 +92,16 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.F
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj interface{}) error {
+	for _, p := range s.predicates {
+		ok, err := p(obj)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return nil
+		}
+	}
+
 	o, err := meta.Accessor(obj)
 	if err != nil {
 		return err

@@ -65,6 +65,7 @@ type Options struct {
 
 	Namespaces              NamespaceList `yaml:"namespaces"`
 	NamespacesDenylist      NamespaceList `yaml:"namespaces_denylist"`
+	NamespaceLabelSelector  string        `yaml:"namespace_label_selector"`
 	AutoGoMemlimitRatio     float64       `yaml:"auto-gomemlimit-ratio"`
 	Port                    int           `yaml:"port"`
 	TelemetryPort           int           `yaml:"telemetry_port"`
@@ -175,6 +176,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
+	o.cmd.Flags().StringVar(&o.NamespaceLabelSelector, "namespace-label-selector", "", "Label selector to filter what namespaces are scraped for metrics")
 	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of resources to be enabled. Defaults to %q", &DefaultResources))
 
 	o.cmd.Flags().DurationVar(&o.ServerReadTimeout, "server-read-timeout", defaultServerReadTimeout, "The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients. ")

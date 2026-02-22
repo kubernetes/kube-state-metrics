@@ -1,6 +1,6 @@
 module k8s.io/kube-state-metrics/v2
 
-go 1.24.5
+go 1.25.7
 
 require (
 	github.com/KimMachineGun/automemlimit v0.7.5

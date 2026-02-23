@@ -140,15 +140,15 @@ func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 	}
 }
 
-func createRoleBindingListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createRoleBindingListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcherWithContext {
 	return &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().RoleBindings(ns).List(context.TODO(), opts)
+			return kubeClient.RbacV1().RoleBindings(ns).List(ctx, opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().RoleBindings(ns).Watch(context.TODO(), opts)
+			return kubeClient.RbacV1().RoleBindings(ns).Watch(ctx, opts)
 		},
 	}
 }

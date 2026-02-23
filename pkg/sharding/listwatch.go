@@ -17,6 +17,7 @@ limitations under the License.
 package sharding
 
 import (
+	"context"
 	"hash/fnv"
 
 	jump "github.com/dgryski/go-jump"
@@ -29,23 +30,23 @@ import (
 
 type shardedListWatch struct {
 	sharding *sharding
-	lw       cache.ListerWatcher
+	lwc      cache.ListerWatcherWithContext
 }
 
 // NewShardedListWatch returns a new shardedListWatch via the cache.ListerWatcher interface.
 // In the case of no sharding needed, it returns the provided cache.ListerWatcher
-func NewShardedListWatch(shard int32, totalShards int, lw cache.ListerWatcher) cache.ListerWatcher {
+func NewShardedListWatch(shard int32, totalShards int, lwc cache.ListerWatcherWithContext) cache.ListerWatcherWithContext {
 	// This is an "optimization" as this configuration means no sharding is to
 	// be performed.
 	if shard == 0 && totalShards == 1 {
-		return lw
+		return lwc
 	}
 
-	return &shardedListWatch{sharding: &sharding{shard: shard, totalShards: totalShards}, lw: lw}
+	return &shardedListWatch{sharding: &sharding{shard: shard, totalShards: totalShards}, lwc: lwc}
 }
 
-func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, error) {
-	list, err := s.lw.List(options)
+func (s *shardedListWatch) ListWithContext(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+	list, err := s.lwc.ListWithContext(ctx, options)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +75,8 @@ func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, err
 	return res, nil
 }
 
-func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, error) {
-	w, err := s.lw.Watch(options)
+func (s *shardedListWatch) WatchWithContext(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+	w, err := s.lwc.WatchWithContext(ctx, options)
 	if err != nil {
 		return nil, err
 	}

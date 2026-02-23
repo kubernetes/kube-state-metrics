@@ -17,6 +17,7 @@ limitations under the License.
 package watch
 
 import (
+	"context"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -73,7 +74,7 @@ func NewListWatchMetrics(r prometheus.Registerer) *ListWatchMetrics {
 // InstrumentedListerWatcher provides the kube_state_metrics_watch_total metric
 // with a cache.ListerWatcher obj and the related resource.
 type InstrumentedListerWatcher struct {
-	lw                cache.ListerWatcher
+	lwc               cache.ListerWatcherWithContext
 	metrics           *ListWatchMetrics
 	resource          string
 	useAPIServerCache bool
@@ -81,9 +82,9 @@ type InstrumentedListerWatcher struct {
 }
 
 // NewInstrumentedListerWatcher returns a new InstrumentedListerWatcher.
-func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool, limit int64) cache.ListerWatcher {
+func NewInstrumentedListerWatcher(lwc cache.ListerWatcherWithContext, metrics *ListWatchMetrics, resource string, useAPIServerCache bool, limit int64) cache.ListerWatcherWithContext {
 	return &InstrumentedListerWatcher{
-		lw:                lw,
+		lwc:               lwc,
 		metrics:           metrics,
 		resource:          resource,
 		useAPIServerCache: useAPIServerCache,
@@ -95,7 +96,7 @@ func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetr
 // / counters based on the outcome of the List operation it instruments.
 // It supports setting object limits, this means if it is set it will only list and process
 // n objects of the same resource type.
-func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (runtime.Object, error) {
+func (i *InstrumentedListerWatcher) ListWithContext(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 
 	if i.useAPIServerCache {
 		options.ResourceVersion = "0"
@@ -106,7 +107,7 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (runtime.Ob
 		i.metrics.ListObjectsLimit.WithLabelValues(i.resource).Set(float64(i.limit))
 	}
 
-	res, err := i.lw.List(options)
+	res, err := i.lwc.ListWithContext(ctx, options)
 
 	if err != nil {
 		i.metrics.ListRequestsTotal.WithLabelValues("error", i.resource).Inc()
@@ -134,8 +135,8 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (runtime.Ob
 
 // Watch is a wrapper func around the cache.ListerWatcher.Watch func. It increases the success/error
 // counters based on the outcome of the Watch operation it instruments.
-func (i *InstrumentedListerWatcher) Watch(options metav1.ListOptions) (watch.Interface, error) {
-	res, err := i.lw.Watch(options)
+func (i *InstrumentedListerWatcher) WatchWithContext(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+	res, err := i.lwc.WatchWithContext(ctx, options)
 	if err != nil {
 		i.metrics.WatchRequestsTotal.WithLabelValues("error", i.resource).Inc()
 		return nil, err

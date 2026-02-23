@@ -176,13 +176,13 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *
 	}
 }
 
-func createNamespaceListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createNamespaceListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcherWithContext {
 	return &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Namespaces().List(context.TODO(), opts)
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+			return kubeClient.CoreV1().Namespaces().List(ctx, opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Namespaces().Watch(context.TODO(), opts)
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+			return kubeClient.CoreV1().Namespaces().Watch(ctx, opts)
 		},
 	}
 }

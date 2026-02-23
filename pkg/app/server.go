@@ -118,21 +118,21 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		}, []string{"type", "filename"})
 
 	// Register self-metrics to track the state of the cache.
-	crdsAddEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
+	crsAddEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
 		Name: "kube_state_metrics_custom_resource_state_add_events_total",
-		Help: "Number of times that the CRD informer triggered the add event.",
+		Help: "Number of times that the Custom Resource discovery triggered the add event.",
 	})
-	crdsUpdateEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
+	crsUpdateEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
 		Name: "kube_state_metrics_custom_resource_state_update_events_total",
-		Help: "Number of times that the CRD informer triggered the update event.",
+		Help: "Number of times that the Custom Resource discovery triggered the update event.",
 	})
-	crdsDeleteEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
+	crsDeleteEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
 		Name: "kube_state_metrics_custom_resource_state_delete_events_total",
-		Help: "Number of times that the CRD informer triggered the remove event.",
+		Help: "Number of times that the Custom Resource discovery triggered the remove event.",
 	})
-	crdsCacheCountGauge := promauto.With(ksmMetricsRegistry).NewGauge(prometheus.GaugeOpts{
+	crsCacheCountGauge := promauto.With(ksmMetricsRegistry).NewGauge(prometheus.GaugeOpts{
 		Name: "kube_state_metrics_custom_resource_state_cache",
-		Help: "Net amount of CRDs affecting the cache currently.",
+		Help: "Net amount of Custom Resources affecting the cache currently.",
 	})
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
@@ -316,14 +316,14 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	// A nil CRS config implies that we need to hold off on all CRS operations.
 	if config != nil {
-		discovererInstance := &discovery.CRDiscoverer{
-			CRDsAddEventsCounter:    crdsAddEventsCounter,
-			CRDsUpdateEventsCounter: crdsUpdateEventsCounter,
-			CRDsDeleteEventsCounter: crdsDeleteEventsCounter,
-			CRDsCacheCountGauge:     crdsCacheCountGauge,
-		}
-		// storeBuilder starts reflectors for the discovered GVKs, and as such, should close them too.
-		storeBuilder.GVKToReflectorStopChanMap = &discovererInstance.GVKToReflectorStopChanMap
+		discovererInstance := discovery.NewCRDiscoverer(
+			crsAddEventsCounter,
+			crsUpdateEventsCounter,
+			crsDeleteEventsCounter,
+			crsCacheCountGauge,
+		)
+		// storeBuilder uses the discoverer to get stop channels for reflectors.
+		storeBuilder.GVKStopChanProvider = discovererInstance
 		// This starts a goroutine that will watch for any new GVKs to extract from CRDs.
 		err = discovererInstance.StartDiscovery(ctx, kubeConfig)
 		if err != nil {

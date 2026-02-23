@@ -32,9 +32,10 @@ import (
 
 // BuilderInterface represent all methods that a Builder should implements
 type BuilderInterface interface {
+	NamespaceContainer
+
 	WithMetrics(r prometheus.Registerer)
 	WithEnabledResources(c []string) error
-	WithNamespaces(n options.NamespaceList)
 	WithFieldSelectorFilter(fieldSelectors string)
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
@@ -67,6 +68,11 @@ type BuildCustomResourceStoresFunc func(resourceName string,
 	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
+
+// NamespaceContainer stores a set of containers with the ability to set them
+type NamespaceContainer interface {
+	WithNamespaces(n options.NamespaceList)
+}
 
 // AllowDenyLister interface for AllowDeny lister that can allow or exclude metrics by there names
 type AllowDenyLister interface {

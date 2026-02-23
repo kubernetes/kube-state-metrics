@@ -206,6 +206,34 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
+		*generator.NewOptInFamilyGenerator(
+			"kube_ingress_status_load_balancer",
+			"Ingress load balancer status.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
+				if len(i.Status.LoadBalancer.Ingress) == 0 {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
+
+				ms := make([]*metric.Metric, len(i.Status.LoadBalancer.Ingress))
+
+				for idx, ingress := range i.Status.LoadBalancer.Ingress {
+					ms[idx] = &metric.Metric{
+						LabelKeys:   []string{"ip", "hostname"},
+						LabelValues: []string{ingress.IP, ingress.Hostname},
+						Value:       1,
+					}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
 	}
 }
 

@@ -453,6 +453,7 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_container_status_waiting [STABLE] Describes whether the container is currently in waiting state.
 				# HELP kube_pod_container_status_waiting_reason [STABLE] Describes the reason the container is currently in waiting state.
 				# HELP kube_pod_init_container_status_running [STABLE] Describes whether the init container is currently in running state.
+				# HELP kube_pod_init_container_state_started [STABLE] Start time in unix timestamp for an_init_pod container.
 				# HELP kube_pod_init_container_status_terminated [STABLE] Describes whether the init container is currently in terminated state.
 				# HELP kube_pod_init_container_status_terminated_reason Describes the reason the init container is currently in terminated state.
 				# HELP kube_pod_init_container_status_waiting [STABLE] Describes whether the init container is currently in waiting state.
@@ -464,6 +465,7 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_container_status_waiting gauge
 				# TYPE kube_pod_container_status_waiting_reason gauge
 				# TYPE kube_pod_init_container_status_running gauge
+				# TYPE kube_pod_init_container_state_started gauge
 				# TYPE kube_pod_init_container_status_terminated gauge
 				# TYPE kube_pod_init_container_status_terminated_reason gauge
 				# TYPE kube_pod_init_container_status_waiting gauge
@@ -473,6 +475,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_container_status_terminated{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 0
 				kube_pod_container_status_waiting{container="container1",namespace="ns1",pod="pod1",uid="uid1"} 0
 				kube_pod_init_container_status_running{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} 1
+				kube_pod_init_container_state_started{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} -6.21355968e+10
 				kube_pod_init_container_status_terminated{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} 0
 				kube_pod_init_container_status_waiting{container="initcontainer1",namespace="ns1",pod="pod1",uid="uid1"} 0
 			`,
@@ -483,6 +486,7 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_container_status_terminated",
 				"kube_pod_container_status_terminated_reason",
 				"kube_pod_init_container_status_running",
+				"kube_pod_init_container_state_started",
 				"kube_pod_init_container_status_waiting",
 				"kube_pod_init_container_status_waiting_reason",
 				"kube_pod_init_container_status_terminated",
@@ -1766,11 +1770,13 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
 				# HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
 				# HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
+				# HELP kube_pod_init_container_status_last_terminated_timestamp Last terminated time for a pod init container in unix timestamp.
 				# TYPE kube_pod_container_resource_limits gauge
 				# TYPE kube_pod_container_resource_requests gauge
 				# TYPE kube_pod_init_container_resource_limits gauge
 				# TYPE kube_pod_init_container_resource_requests gauge
 				# TYPE kube_pod_init_container_status_last_terminated_reason gauge
+				# TYPE kube_pod_init_container_status_last_terminated_timestamp gauge
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="cpu",unit="core",uid="uid1"} 0.2
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="ephemeral_storage",unit="byte",uid="uid1"} 3e+08
 				kube_pod_container_resource_limits{container="pod1_con1",namespace="ns1",node="",pod="pod1",resource="memory",unit="byte",uid="uid1"} 1e+08
@@ -1802,6 +1808,7 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_init_container_resource_limits",
 				"kube_pod_init_container_resource_requests",
 				"kube_pod_init_container_status_last_terminated_reason",
+				"kube_pod_init_container_status_last_terminated_timestamp",
 			},
 		},
 		{

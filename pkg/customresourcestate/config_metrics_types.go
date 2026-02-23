@@ -16,6 +16,20 @@ limitations under the License.
 
 package customresourcestate
 
+// ValueType specifies how to parse the value from the resource field.
+type ValueType string
+
+const (
+	// ValueTypeDefault uses automatic type detection (current behavior).
+	// This is the default when ValueType is not specified.
+	ValueTypeDefault ValueType = ""
+	// ValueTypeDuration parses duration strings (e.g., "1h", "30m", "1h30m45s") using time.ParseDuration.
+	// The parsed duration is converted to seconds as a float64 for Prometheus compatibility.
+	ValueTypeDuration ValueType = "duration"
+	// ValueTypeQuantity parses Kubernetes resource quantities (e.g., "250m" for millicores, "1Gi" for memory).
+	ValueTypeQuantity ValueType = "quantity"
+)
+
 // MetricMeta are variables which may used for any metric type.
 type MetricMeta struct {
 	// LabelsFromPath adds additional labels where the value of the label is taken from a field under Path.
@@ -32,7 +46,9 @@ type MetricGauge struct {
 	MetricMeta   `yaml:",inline" json:",inline"`
 
 	// ValueFrom is the path to a numeric field under Path that will be the metric value.
-	ValueFrom []string `yaml:"valueFrom" json:"valueFrom"`
+	ValueFrom []string  `yaml:"valueFrom" json:"valueFrom"`
+	ValueType ValueType `yaml:"valueType,omitempty" json:"valueType,omitempty"`
+
 	// NilIsZero indicates that if a value is nil it will be treated as zero value.
 	NilIsZero bool `yaml:"nilIsZero" json:"nilIsZero"`
 }

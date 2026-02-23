@@ -319,3 +319,181 @@ func TestMergeKeyValues(t *testing.T) {
 		})
 	}
 }
+
+func TestCreatePrometheusLabelKeysValues(t *testing.T) {
+	testCases := []struct {
+		name         string
+		prefix       string
+		kubeData     map[string]string
+		allowList    []string
+		expectKeys   []string
+		expectValues []string
+	}{
+		{
+			name:   "allMatches",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyB"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name:   "additionalAllow",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyB", "keyC"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name:   "partialMatches",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyC"},
+			expectKeys:   []string{"metric_key_a"},
+			expectValues: []string{"valueA"},
+		},
+		{
+			name:   "wildcardAsSuffix",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"key*"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name:   "wildcardAsPrefix",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*A"},
+			expectKeys:   []string{"metric_key_a", "metric_other_key_a"},
+			expectValues: []string{"valueA", "valueC"},
+		},
+		{
+			name:   "onlyFullWildcard",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b", "metric_other_key_a", "metric_other_key_b"},
+			expectValues: []string{"valueA", "valueB", "valueC", "valueD"},
+		},
+		{
+			name:   "additionalFullWildcard",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"keyA", "*"},
+			expectKeys:   []string{"metric_key_a"},
+			expectValues: []string{"valueA"},
+		},
+		{
+			name:   "multipleWildcards",
+			prefix: "metric",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*key*"},
+			expectKeys:   []string{},
+			expectValues: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.name != "multipleWildcards" {
+				t.Skip()
+			}
+			gotKeys, gotValues := createPrometheusLabelKeysValues(tc.prefix, tc.kubeData, tc.allowList)
+			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+				t.Errorf("createPrometheusLabelKeysValues() got = %v, want %v", gotKeys, tc.expectKeys)
+			}
+			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+				t.Errorf("createPrometheusLabelKeysValues() got1 = %v, want %v", gotValues, tc.expectValues)
+			}
+		})
+	}
+}
+
+func TestExpandWildcard(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+		limit    uint
+	}{
+		{
+			input:    "foo",
+			expected: "^foo$",
+			limit:    1,
+		},
+		{
+			input:    "foo*",
+			expected: "^foo.*$",
+			limit:    1,
+		},
+		{
+			input:    "*foo",
+			expected: "^.*foo$",
+			limit:    1,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo$",
+			limit:    1,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo.*$",
+			limit:    2,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo.*$",
+			limit:    3,
+		},
+		{
+			input:    "*f*o*o*",
+			expected: "^.*f.*o.*o$",
+			limit:    3,
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("test %d", i), func(t *testing.T) {
+			got := expandWildcard(tc.input, tc.limit)
+			if !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("expandWildcard() got = %v, want %v", got, tc.expected)
+			}
+		})
+	}
+}

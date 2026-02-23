@@ -59,6 +59,7 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 		createPersistentVolumeDeletionTimestamp(),
 		createPersistentVolumeCSIAttributes(),
 		createPersistentVolumeMode(),
+		createPersistentVolumeAccessMode(),
 	}
 }
 
@@ -482,6 +483,30 @@ func createPersistentVolumeMode() generator.FamilyGenerator {
 						Value:       1,
 					},
 				}}
+		}),
+	)
+}
+
+func createPersistentVolumeAccessMode() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_persistentvolume_access_mode",
+		"The access mode(s) specified by the persistent volume.",
+		metric.Gauge,
+		basemetrics.STABLE,
+		"",
+		wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(p.Spec.AccessModes))
+			for _, am := range p.Spec.AccessModes {
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"access_mode"},
+					LabelValues: []string{string(am)},
+					Value:       1,
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
 		}),
 	)
 }

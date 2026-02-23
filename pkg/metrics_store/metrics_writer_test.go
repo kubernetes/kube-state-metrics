@@ -63,7 +63,7 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	store := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	store := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs := []v1.Service{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -151,7 +151,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	s1 := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	s1 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs1 := []v1.Service{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -191,7 +191,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 			},
 		},
 	}
-	s2 := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	s2 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	for _, s := range svcs2 {
 		svc := s
 		if err := s2.Add(&svc); err != nil {
@@ -251,7 +251,7 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 
 		return []metric.FamilyInterface{&mf1, &mf2}
 	}
-	store := NewMetricsStore([]string{"Info 1 about services", "Info 2 about services"}, genFunc)
+	store := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 
 	multiNsWriter := NewMetricsWriter("test", store)
 	w := strings.Builder{}
@@ -286,10 +286,11 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo info",
-				"# HELP foo foo_help\n# TYPE foo stateset",
-				"# HELP foo foo_help\n# TYPE foo counter",
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
+				"",
+				"",
+				"",
 			},
 		},
 		{
@@ -309,10 +310,17 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo info",
-				"# HELP foo foo_help\n# TYPE foo stateset",
-				"# HELP foo foo_help\n# TYPE foo counter",
+				"",
+				"",
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
 			},
 		},
 		{
@@ -326,8 +334,11 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo counter",
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
+				"",
+				"",
+				"",
 			},
 		},
 		{
@@ -347,20 +358,76 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
-				"# HELP foo foo_help\n# TYPE foo gauge",
-				"# HELP foo foo_help\n# TYPE foo counter",
+				"",
+				"",
+				"",
+				"# HELP foo foo_help\n# TYPE foo gauge\n",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
 			},
 		},
 	}
 
 	for _, testcase := range testcases {
-		writer := NewMetricsWriter("test", NewMetricsStore(testcase.headers, nil))
+		originalStore := NewMetricsStore(testcase.headers, nil)
+		writer := NewMetricsWriter("test", originalStore)
 		t.Run(testcase.name, func(t *testing.T) {
-			SanitizeHeaders(testcase.contentType, MetricsWriterList{writer})
-			if !reflect.DeepEqual(testcase.expectedHeaders, writer.stores[0].headers) {
-				t.Fatalf("(-want, +got):\n%s", cmp.Diff(testcase.expectedHeaders, writer.stores[0].headers))
+			sanitizedWriters := SanitizeHeaders(testcase.contentType, MetricsWriterList{writer})
+			if !reflect.DeepEqual(testcase.expectedHeaders, sanitizedWriters[0].stores[0].headers) {
+				t.Fatalf("(-want, +got):\n%s", cmp.Diff(testcase.expectedHeaders, sanitizedWriters[0].stores[0].headers))
+			}
+			if !reflect.DeepEqual(testcase.headers, originalStore.headers) {
+				t.Fatalf("Original headers were mutated. Expected: %v, Got: %v", testcase.headers, originalStore.headers)
 			}
 		})
+	}
+}
+
+func TestSanitizeHeadersImmutability(t *testing.T) {
+	originalHeaders := []string{
+		"# HELP foo_info foo_help\n# TYPE foo_info info",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset stateset",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge",
+	}
+
+	store := NewMetricsStore(originalHeaders, nil)
+	writer := NewMetricsWriter("test", store)
+
+	textPlainContentType := expfmt.NewFormat(expfmt.TypeTextPlain)
+	sanitizedWriters1 := SanitizeHeaders(textPlainContentType, MetricsWriterList{writer})
+
+	if !reflect.DeepEqual(originalHeaders, store.headers) {
+		t.Fatalf("Original headers were mutated after first request. Expected: %v, Got: %v", originalHeaders, store.headers)
+	}
+
+	expectedTextHeaders := []string{
+		"# HELP foo_info foo_help\n# TYPE foo_info gauge\n",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset gauge\n",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge\n",
+	}
+	if !reflect.DeepEqual(expectedTextHeaders, sanitizedWriters1[0].stores[0].headers) {
+		t.Fatalf("First request headers mismatch. (-want, +got):\n%s", cmp.Diff(expectedTextHeaders, sanitizedWriters1[0].stores[0].headers))
+	}
+
+	openMetricsContentType := expfmt.NewFormat(expfmt.TypeOpenMetrics)
+	sanitizedWriters2 := SanitizeHeaders(openMetricsContentType, MetricsWriterList{writer})
+
+	if !reflect.DeepEqual(originalHeaders, store.headers) {
+		t.Fatalf("Original headers were mutated after second request. Expected: %v, Got: %v", originalHeaders, store.headers)
+	}
+
+	expectedOpenMetricsHeaders := []string{
+		"# HELP foo_info foo_help\n# TYPE foo_info info\n",
+		"# HELP foo_stateset foo_help\n# TYPE foo_stateset stateset\n",
+		"# HELP foo_gauge foo_help\n# TYPE foo_gauge gauge\n",
+	}
+	if !reflect.DeepEqual(expectedOpenMetricsHeaders, sanitizedWriters2[0].stores[0].headers) {
+		t.Fatalf("Second request headers mismatch. Expected OpenMetrics to preserve info/stateset. (-want, +got):\n%s", cmp.Diff(expectedOpenMetricsHeaders, sanitizedWriters2[0].stores[0].headers))
 	}
 }
 

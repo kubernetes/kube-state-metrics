@@ -42,6 +42,8 @@ func TestServiceStore(t *testing.T) {
 		# TYPE kube_service_spec_type gauge
 		# HELP kube_service_spec_external_ip [STABLE] Service external ips. One series for each ip
 		# TYPE kube_service_spec_external_ip gauge
+		# HELP kube_service_spec_ports [STABLE] Service ports. One series for each port
+		# TYPE kube_service_spec_ports gauge
 		# HELP kube_service_status_load_balancer_ingress [STABLE] Service load balancer ingress status
 		# TYPE kube_service_status_load_balancer_ingress gauge
 		# HELP kube_service_deletion_timestamp Unix deletion timestamp
@@ -285,6 +287,88 @@ func TestServiceStore(t *testing.T) {
 			`,
 			MetricNames: []string{
 				"kube_service_deletion_timestamp",
+			},
+		},
+		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service10",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					UID:               "uid10",
+					Labels: map[string]string{
+						"app": "example10",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{
+						{Port: 8080},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_service_spec_ports [STABLE] Service ports. One series for each port
+				# TYPE kube_service_spec_ports gauge
+				kube_service_spec_ports{namespace="default",service="test-service10",uid="uid10",port_name="",port_protocol="TCP",port_number="8080"} 1
+			`,
+			MetricNames: []string{
+				"kube_service_spec_ports",
+			},
+		},
+		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service11",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					UID:               "uid11",
+					Labels: map[string]string{
+						"app": "example11",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{
+						{Name: "http", Port: 8080},
+						{Name: "grpc", Port: 50051, Protocol: "TCP"},
+						{Name: "irc", Port: 194, Protocol: "UDP"},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_service_spec_ports [STABLE] Service ports. One series for each port
+				# TYPE kube_service_spec_ports gauge
+				kube_service_spec_ports{namespace="default",service="test-service11",uid="uid11",port_name="http",port_protocol="TCP",port_number="8080"} 1
+				kube_service_spec_ports{namespace="default",service="test-service11",uid="uid11",port_name="grpc",port_protocol="TCP",port_number="50051"} 1
+				kube_service_spec_ports{namespace="default",service="test-service11",uid="uid11",port_name="irc",port_protocol="UDP",port_number="194"} 1
+			`,
+			MetricNames: []string{
+				"kube_service_spec_ports",
+			},
+		},
+		{
+			Obj: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-service12",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					Namespace:         "default",
+					UID:               "uid12",
+					Labels: map[string]string{
+						"app": "example12",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{
+						{Port: 8080, NodePort: 8888},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_service_spec_ports [STABLE] Service ports. One series for each port
+				# TYPE kube_service_spec_ports gauge
+				kube_service_spec_ports{namespace="default",service="test-service12",uid="uid12",port_name="",port_protocol="TCP",port_number="8080",node_port_number="8888"} 1
+			`,
+			MetricNames: []string{
+				"kube_service_spec_ports",
 			},
 		},
 	}

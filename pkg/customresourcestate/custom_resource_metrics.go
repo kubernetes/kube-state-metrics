@@ -50,10 +50,9 @@ func NewCustomResourceMetrics(resource Resource) (customresource.RegistryFactory
 	if err != nil {
 		return nil, err
 	}
-	gvk := schema.GroupVersionKind(resource.GroupVersionKind)
 	return &customResourceMetrics{
 		MetricNamePrefix: resource.GetMetricNamePrefix(),
-		GroupVersionKind: gvk,
+		GroupVersionKind: resource.GroupVersionKind,
 		Families:         compiled,
 		ResourceName:     resource.GetResourceName(),
 	}, nil

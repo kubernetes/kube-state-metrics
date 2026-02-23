@@ -386,6 +386,43 @@ func TestNodeStore(t *testing.T) {
 				"kube_node_created",
 			},
 		},
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "127.0.0.1",
+				},
+				Status: v1.NodeStatus{
+					VolumesAttached: []v1.AttachedVolume{
+						{Name: "volume1", DevicePath: "/dev/sda1"},
+						{Name: "volume2", DevicePath: "/dev/sda2"},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_node_volumes_attached [STABLE] Number of volumes attached to the node
+				# TYPE kube_node_volumes_attached gauge
+				kube_node_volumes_attached{node="127.0.0.1"} 2
+			`,
+			MetricNames: []string{"kube_node_volumes_attached"},
+		},
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "127.0.0.1",
+				},
+				Status: v1.NodeStatus{
+					VolumesInUse: []v1.UniqueVolumeName{
+						"volume1",
+					},
+				},
+			},
+			Want: `
+				# HELP kube_node_volumes_in_use [STABLE] Number of volumes in use on the node
+				# TYPE kube_node_volumes_in_use gauge
+				kube_node_volumes_in_use{node="127.0.0.1"} 1
+			`,
+			MetricNames: []string{"kube_node_volumes_in_use"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(nodeMetricFamilies(nil, nil))

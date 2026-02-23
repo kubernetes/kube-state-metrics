@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -347,6 +348,15 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_deployment_spec_affinity",
+			"Pod affinity and anti-affinity rules defined in the deployment's pod template specification.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeploymentFunc(generateDeploymentAffinityMetrics),
+		),
+
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_deployment_metadata_generation",
 			"Sequence number representing a specific generation of the desired state.",
 			metric.Gauge,
@@ -454,4 +464,75 @@ func createDeploymentListWatch(kubeClient clientset.Interface, ns string, fieldS
 			return kubeClient.AppsV1().Deployments(ns).Watch(context.TODO(), opts)
 		},
 	}
+}
+func generateDeploymentAffinityMetrics(d *v1.Deployment) *metric.Family {
+	var metrics []*metric.Metric
+
+	if d.Spec.Template.Spec.Affinity == nil {
+		return &metric.Family{Metrics: metrics}
+	}
+
+	// Handle pod affinity rules
+	if d.Spec.Template.Spec.Affinity.PodAffinity != nil {
+		// Required affinity rules
+		for _, rule := range d.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+			labelSelector := formatLabelSelector(rule.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.NamespaceSelector)
+			namespaces := strings.Join(rule.Namespaces, ",")
+			metrics = append(metrics, &metric.Metric{
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podaffinity", "requiredDuringSchedulingIgnoredDuringExecution", rule.TopologyKey, labelSelector, namespaceSelector, namespaces},
+				Value:       1,
+			})
+		}
+
+		// Preferred affinity rules
+		for _, rule := range d.Spec.Template.Spec.Affinity.PodAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+			labelSelector := formatLabelSelector(rule.PodAffinityTerm.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.PodAffinityTerm.NamespaceSelector)
+			namespaces := strings.Join(rule.PodAffinityTerm.Namespaces, ",")
+			metrics = append(metrics, &metric.Metric{
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podaffinity", "preferredDuringSchedulingIgnoredDuringExecution", rule.PodAffinityTerm.TopologyKey, labelSelector, namespaceSelector, namespaces},
+				Value:       1,
+			})
+		}
+	}
+
+	// Handle pod anti-affinity rules
+	if d.Spec.Template.Spec.Affinity.PodAntiAffinity != nil {
+		// Required anti-affinity rules
+		for _, rule := range d.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+			labelSelector := formatLabelSelector(rule.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.NamespaceSelector)
+			namespaces := strings.Join(rule.Namespaces, ",")
+			metrics = append(metrics, &metric.Metric{
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podantiaffinity", "requiredDuringSchedulingIgnoredDuringExecution", rule.TopologyKey, labelSelector, namespaceSelector, namespaces},
+				Value:       1,
+			})
+		}
+
+		// Preferred anti-affinity rules
+		for _, rule := range d.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+			labelSelector := formatLabelSelector(rule.PodAffinityTerm.LabelSelector)
+			namespaceSelector := formatLabelSelector(rule.PodAffinityTerm.NamespaceSelector)
+			namespaces := strings.Join(rule.PodAffinityTerm.Namespaces, ",")
+			metrics = append(metrics, &metric.Metric{
+				LabelKeys:   []string{"affinity", "type", "topology_key", "label_selector", "namespace_selector", "namespaces"},
+				LabelValues: []string{"podantiaffinity", "preferredDuringSchedulingIgnoredDuringExecution", rule.PodAffinityTerm.TopologyKey, labelSelector, namespaceSelector, namespaces},
+				Value:       1,
+			})
+		}
+	}
+
+	return &metric.Family{Metrics: metrics}
+}
+
+// formatLabelSelector converts a LabelSelector to a string representation
+func formatLabelSelector(selector *metav1.LabelSelector) string {
+	if selector == nil {
+		return ""
+	}
+	return metav1.FormatLabelSelector(selector)
 }

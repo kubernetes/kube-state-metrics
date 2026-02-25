@@ -94,9 +94,14 @@ func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetr
 	}
 }
 
-// IsWatchListSemanticsUnSupported delegates WatchList semantics support check to the underlying client.
-// This ensures the reflector correctly disables the WatchListClient feature when the client does not support it.
+// IsWatchListSemanticsUnSupported returns true when an object limit is configured,
+// because WatchList semantics bypass the List() method where per-page limiting is
+// enforced. When no limit is set, the check is delegated to the underlying client
+// so that fake clients used in tests can correctly signal their capabilities.
 func (i *InstrumentedListerWatcher) IsWatchListSemanticsUnSupported() bool {
+	if i.limit > 0 {
+		return true
+	}
 	return watchlist.DoesClientNotSupportWatchListSemantics(i.client)
 }
 

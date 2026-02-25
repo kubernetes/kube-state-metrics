@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/watchlist"
 )
 
 // ListWatchMetrics stores the pointers of kube_state_metrics_[list|watch]_total metrics.
@@ -78,17 +79,25 @@ type InstrumentedListerWatcher struct {
 	resource          string
 	useAPIServerCache bool
 	limit             int64
+	client            any
 }
 
 // NewInstrumentedListerWatcher returns a new InstrumentedListerWatcher.
-func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool, limit int64) cache.ListerWatcher {
+func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool, limit int64, client any) cache.ListerWatcher {
 	return &InstrumentedListerWatcher{
 		lw:                lw,
 		metrics:           metrics,
 		resource:          resource,
 		useAPIServerCache: useAPIServerCache,
 		limit:             limit,
+		client:            client,
 	}
+}
+
+// IsWatchListSemanticsUnSupported delegates WatchList semantics support check to the underlying client.
+// This ensures the reflector correctly disables the WatchListClient feature when the client does not support it.
+func (i *InstrumentedListerWatcher) IsWatchListSemanticsUnSupported() bool {
+	return watchlist.DoesClientNotSupportWatchListSemantics(i.client)
 }
 
 // List is a wrapper func around the cache.ListerWatcher.List func. It increases the success/error

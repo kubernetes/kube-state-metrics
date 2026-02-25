@@ -91,6 +91,17 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 	}), nil
 }
 
+// IsWatchListSemanticsUnSupported delegates to the underlying ListerWatcher if it implements this interface.
+func (s *shardedListWatch) IsWatchListSemanticsUnSupported() bool {
+	type unsupported interface {
+		IsWatchListSemanticsUnSupported() bool
+	}
+	if u, ok := s.lw.(unsupported); ok {
+		return u.IsWatchListSemanticsUnSupported()
+	}
+	return false
+}
+
 type sharding struct {
 	shard       int32
 	totalShards int

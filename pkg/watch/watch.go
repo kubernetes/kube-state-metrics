@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/watchlist"
 )
 
 // ListWatchMetrics stores the pointers of kube_state_metrics_[list|watch]_total metrics.
@@ -78,17 +79,30 @@ type InstrumentedListerWatcher struct {
 	resource          string
 	useAPIServerCache bool
 	limit             int64
+	client            any
 }
 
 // NewInstrumentedListerWatcher returns a new InstrumentedListerWatcher.
-func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool, limit int64) cache.ListerWatcher {
+func NewInstrumentedListerWatcher(lw cache.ListerWatcher, metrics *ListWatchMetrics, resource string, useAPIServerCache bool, limit int64, client any) cache.ListerWatcher {
 	return &InstrumentedListerWatcher{
 		lw:                lw,
 		metrics:           metrics,
 		resource:          resource,
 		useAPIServerCache: useAPIServerCache,
 		limit:             limit,
+		client:            client,
 	}
+}
+
+// IsWatchListSemanticsUnSupported returns true when an object limit is configured,
+// because WatchList semantics bypass the List() method where per-page limiting is
+// enforced. When no limit is set, the check is delegated to the underlying client
+// so that fake clients used in tests can correctly signal their capabilities.
+func (i *InstrumentedListerWatcher) IsWatchListSemanticsUnSupported() bool {
+	if i.limit > 0 {
+		return true
+	}
+	return watchlist.DoesClientNotSupportWatchListSemantics(i.client)
 }
 
 // List is a wrapper func around the cache.ListerWatcher.List func. It increases the success/error

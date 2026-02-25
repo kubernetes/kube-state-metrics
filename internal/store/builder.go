@@ -532,7 +532,7 @@ func (b *Builder) buildStores(
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
+		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
 		return []cache.Store{store}
 	}
 
@@ -546,7 +546,7 @@ func (b *Builder) buildStores(
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
+		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
 		stores = append(stores, store)
 	}
 
@@ -590,7 +590,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
 		listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
+		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, customResourceClient)
 		return []cache.Store{store}
 	}
 
@@ -602,7 +602,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 		)
 		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		listWatcher := listWatchFunc(customResourceClient, ns, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit)
+		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, customResourceClient)
 		stores = append(stores, store)
 	}
 
@@ -617,8 +617,9 @@ func (b *Builder) startReflector(
 	listWatcher cache.ListerWatcher,
 	useAPIServerCache bool,
 	objectLimit int64,
+	client any,
 ) {
-	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit)
+	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit, client)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
 		go reflector.Run((*b.GVKToReflectorStopChanMap)[cr.GroupVersionKind().String()])

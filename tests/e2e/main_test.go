@@ -200,18 +200,33 @@ func TestKubeStateMetricsErrorMetrics(t *testing.T) {
 		t.Fatal("Failed to get or decode telemetry metrics", err)
 	}
 
-	// This map's keys are the metrics expected in kube-state-metrics telemetry.
-	// Its values are booleans, set to true when the metric is found.
-	foundMetricFamily := map[string]bool{
-		"kube_state_metrics_list_total":  false,
+	// requiredMetricFamilies are metrics that must be present in kube-state-metrics telemetry.
+	// kube_state_metrics_watch_total is always emitted since Watch calls are made regardless of
+	// whether WatchList semantics are used.
+	requiredMetricFamilies := map[string]bool{
 		"kube_state_metrics_watch_total": false,
+	}
+
+	// optionalMetricFamilies are metrics checked for errors only if present.
+	// kube_state_metrics_list_total is optional because when the WatchListClient feature gate
+	// is enabled (default in k8s 1.35+), the reflector uses WatchList semantics and List()
+	// is never called, so this metric will not be emitted.
+	optionalMetricFamilies := map[string]bool{
+		"kube_state_metrics_list_total": false,
 	}
 
 	for _, metricFamily := range metricFamilies {
 		name := metricFamily.GetName()
-		if _, expectedMetric := foundMetricFamily[name]; expectedMetric {
-			foundMetricFamily[name] = true
-
+		var tracked bool
+		if _, expectedMetric := requiredMetricFamilies[name]; expectedMetric {
+			requiredMetricFamilies[name] = true
+			tracked = true
+		}
+		if _, expectedMetric := optionalMetricFamilies[name]; expectedMetric {
+			optionalMetricFamilies[name] = true
+			tracked = true
+		}
+		if tracked {
 			for _, m := range metricFamily.Metric {
 				if hasLabelError(m) && m.GetCounter().GetValue() > 0 {
 					t.Errorf("Metric %s in telemetry shows a list/watch error", prettyPrintCounter(name, m))
@@ -220,7 +235,7 @@ func TestKubeStateMetricsErrorMetrics(t *testing.T) {
 		}
 	}
 
-	for metricFamily, found := range foundMetricFamily {
+	for metricFamily, found := range requiredMetricFamilies {
 		if !found {
 			t.Errorf("Metric family %s was not found in telemetry metrics", metricFamily)
 		}

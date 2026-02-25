@@ -70,7 +70,7 @@ func TestAsLibrary(t *testing.T) {
 func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore {
 	store := metricsstore.NewMetricsStore([]string{"test_metric describes a test metric"}, generateServiceMetrics)
 
-	lw := cache.ListWatch{
+	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			return kubeClient.CoreV1().Services(metav1.NamespaceDefault).List(context.TODO(), opts)
 		},
@@ -79,7 +79,7 @@ func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore
 		},
 	}
 
-	r := cache.NewReflectorWithOptions(&lw, &v1.Service{}, store, cache.ReflectorOptions{ResyncPeriod: 0})
+	r := cache.NewReflectorWithOptions(cache.ToListWatcherWithWatchListSemantics(lw, kubeClient), &v1.Service{}, store, cache.ReflectorOptions{ResyncPeriod: 0})
 
 	go r.Run(context.TODO().Done())
 

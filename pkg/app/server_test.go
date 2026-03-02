@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -1072,5 +1073,145 @@ func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
 	result := configureResourcesAndMetrics(opts, invalidYAML)
 	if result != opts {
 		t.Errorf("expected opts to be returned unchanged on invalid YAML")
+	}
+}
+
+type container struct {
+	namespaces []string
+}
+
+func (c *container) WithNamespaces(namespaces options.NamespaceList) {
+	c.namespaces = namespaces
+}
+
+func TestConfigureNamespaceDiscovery(t *testing.T) {
+
+	testCases := []struct {
+		desc     string
+		pre      func(*fake.Clientset)
+		opts     func() *options.Options
+		expected []string
+	}{
+		{
+			desc: "should use static namespaces only (1)",
+			pre:  nil,
+			opts: func() *options.Options {
+				opts := options.NewOptions()
+				opts.Namespaces = []string{metav1.NamespaceAll}
+				return opts
+			},
+			expected: []string{metav1.NamespaceAll},
+		},
+		{
+			desc: "should use static namespaces only (2)",
+			pre:  nil,
+			opts: func() *options.Options {
+				opts := options.NewOptions()
+				opts.Namespaces = []string{"default", "foobar"}
+				return opts
+			},
+			expected: []string{"default", "foobar"},
+		},
+		{
+			desc: "should use static namespaces, filtered by namespace denylist",
+			pre:  nil,
+			opts: func() *options.Options {
+				opts := options.NewOptions()
+				opts.Namespaces = []string{"default", "foobar"}
+				opts.NamespacesDenylist = []string{"foobar"}
+				return opts
+			},
+			expected: []string{"default"},
+		},
+		{
+			desc: "should use dynamic namespaces, filtered by label selector (1)",
+			pre: func(client *fake.Clientset) {
+				client.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "default",
+					},
+				}, metav1.CreateOptions{})
+
+				client.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "foobar",
+						Labels: map[string]string{
+							"foo": "bar",
+						},
+					},
+				}, metav1.CreateOptions{})
+			},
+			opts: func() *options.Options {
+				opts := options.NewOptions()
+				opts.Namespaces = []string{metav1.NamespaceAll}
+				opts.NamespaceLabelSelector = "foo=bar"
+				return opts
+			},
+			expected: []string{"foobar"},
+		},
+		{
+			desc: "should use dynamic namespaces, filtered by label selector (2)",
+			pre: func(client *fake.Clientset) {
+				client.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "default",
+					},
+				}, metav1.CreateOptions{})
+
+				client.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "foobar",
+						Labels: map[string]string{
+							"foo": "bar",
+						},
+					},
+				}, metav1.CreateOptions{})
+			},
+			opts: func() *options.Options {
+				opts := options.NewOptions()
+				opts.Namespaces = []string{"default", "foobar"}
+				opts.NamespaceLabelSelector = "foo=bar"
+				return opts
+			},
+			expected: []string{"foobar"},
+		},
+		// TODO: there is currently no support for field selectors in the fake client
+		// https://github.com/kubernetes-sigs/controller-runtime/issues/1376
+		//
+		// {
+		// 	desc: "should use dynamic namespaces, filtered by namespace denylist",
+		// 	opts: func() *options.Options {
+		// 		opts := options.NewOptions()
+		// 		opts.Namespaces = []string{metav1.NamespaceAll}
+		// 		opts.NamespacesDenylist = []string{"foobar"}
+		// 		return opts
+		// 	},
+		// 	expected: []string{"default"},
+		// },
+		// {
+		// 	desc: "should use dynamic namespaces, filtered by label selector and namespace denylist",
+		// 	pre: nil,
+		// 	opts: func() *options.Options {
+		// 		opts := options.NewOptions()
+		// 		opts.Namespaces = []string{metav1.NamespaceAll}
+		// 		opts.NamespaceLabelSelector = "foo=bar"
+		// 		opts.NamespacesDenylist = []string{"foobar"}
+		// 		return opts
+		// 	},
+		// 	expected: []string{"other"},
+		// },
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			client := fake.NewClientset()
+			if tc.pre != nil {
+				tc.pre(client)
+			}
+
+			got := container{}
+			configureNamespaceDiscovery(context.TODO(), tc.opts(), &got, client)
+			assert.ElementsMatch(t, got.namespaces, tc.expected)
+		})
 	}
 }

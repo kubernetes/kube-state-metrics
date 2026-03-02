@@ -27,7 +27,6 @@ DOCKER_CLI ?= docker
 PROMTOOL_CLI ?= promtool
 GOMPLATE_CLI ?= go tool github.com/hairyhenderson/gomplate/v4/cmd/gomplate
 GOJQ_CLI ?= go tool github.com/itchyny/gojq/cmd/gojq
-EMBEDMD_CLI ?= go tool github.com/campoy/embedmd
 JSONNET_CLI ?= go tool github.com/google/go-jsonnet/cmd/jsonnet
 JB_CLI ?= go tool github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 
@@ -151,7 +150,7 @@ e2e:
 generate: build-local generate-template
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
-	${EMBEDMD_CLI} -w `find . -path ./vendor -prune -o -name "*.md" -print`
+	${GOMPLATE_CLI} --file docs/developer/cli-arguments.md.tpl > docs/developer/cli-arguments.md
 
 validate-manifests: examples
 	@git diff --exit-code

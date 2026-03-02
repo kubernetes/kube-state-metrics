@@ -1,6 +1,6 @@
 module k8s.io/kube-state-metrics/v2
 
-go 1.24.5
+go 1.25
 
 require (
 	github.com/KimMachineGun/automemlimit v0.7.5
@@ -10,12 +10,12 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/gobuffalo/flect v1.0.3
 	github.com/google/go-cmp v0.7.0
+	github.com/netresearch/go-cron v0.13.0
 	github.com/oklog/run v1.2.0
 	github.com/prometheus/client_golang v1.23.3-0.20251103151724-a5ae20370e5e
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/exporter-toolkit v0.15.1
-	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1

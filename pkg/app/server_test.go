@@ -359,6 +359,7 @@ kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Unknown"
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Evicted"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="NodeAffinity"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="NodeLost"} 0
+kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="SchedulingGated"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Shutdown"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="UnexpectedAdmissionError"} 0
 `

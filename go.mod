@@ -9,6 +9,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-logr/logr v1.4.3
 	github.com/gobuffalo/flect v1.0.3
+	github.com/google/cel-go v0.26.0
 	github.com/google/go-cmp v0.7.0
 	github.com/oklog/run v1.2.0
 	github.com/prometheus/client_golang v1.23.3-0.20251103151724-a5ae20370e5e
@@ -116,7 +117,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/google/cel-go v0.26.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-jsonnet v0.21.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect

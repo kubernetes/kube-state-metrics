@@ -220,12 +220,12 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	m.metricsWriters = metricsstore.SanitizeHeaders(contentType, m.metricsWriters)
+	sanitizedWriters := metricsstore.SanitizeHeaders(contentType, m.metricsWriters)
 
 	requestedResources := parseResources(r.URL.Query()["resources"])
 	excludedResources := parseResources(r.URL.Query()["exclude_resources"])
 
-	for _, w := range m.metricsWriters {
+	for _, w := range sanitizedWriters {
 		if requestedResources != nil {
 			if _, ok := requestedResources[w.ResourceName]; !ok {
 				continue

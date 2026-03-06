@@ -621,7 +621,16 @@ func (b *Builder) startReflector(
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
-		go reflector.Run((*b.GVKToReflectorStopChanMap)[cr.GroupVersionKind().String()])
+		stopCh := make(chan struct{})
+		crStopCh := (*b.GVKToReflectorStopChanMap)[cr.GroupVersionKind().String()]
+		go func() {
+			select {
+			case <-b.ctx.Done():
+			case <-crStopCh:
+			}
+			close(stopCh)
+		}()
+		go reflector.Run(stopCh)
 	} else {
 		go reflector.Run(b.ctx.Done())
 	}

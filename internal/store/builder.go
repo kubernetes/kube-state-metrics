@@ -68,6 +68,7 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 type Builder struct {
 	kubeClient                    clientset.Interface
 	ctx                           context.Context
+	cancel                        func()
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
 	customResourceClients         map[string]interface{}
 	listWatchMetrics              *watch.ListWatchMetrics
@@ -91,7 +92,8 @@ type Builder struct {
 
 // NewBuilder returns a new builder.
 func NewBuilder() *Builder {
-	b := &Builder{}
+	ctx, cancel := context.WithCancel(context.Background())
+	b := &Builder{ctx: ctx, cancel: cancel}
 	return b
 }
 
@@ -149,9 +151,17 @@ func (b *Builder) WithSharding(shard int32, totalShards int) {
 	b.shardingMetrics.Total.Set(float64(totalShards))
 }
 
-// WithContext sets the ctx property of a Builder.
+// WithContext will observe the cancellations of the provided context
+// to cancel the internal b.ctx.
 func (b *Builder) WithContext(ctx context.Context) {
-	b.ctx = ctx
+	// WithContext might be called concurrently with startReflector.
+	// In order to avoid the data race, and also to notify the reflectors that
+	// are already running with the context, we don't replace b.ctx,
+	// but just subscribe to the cancellations of the provided context.
+	go func() {
+		<-ctx.Done()
+		b.cancel()
+	}()
 }
 
 // WithKubeClient sets the kubeClient property of a Builder.
@@ -623,13 +633,13 @@ func (b *Builder) startReflector(
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
 		stopCh := make(chan struct{})
 		crStopCh := (*b.GVKToReflectorStopChanMap)[cr.GroupVersionKind().String()]
-		go func() {
+		go func(builderContext context.Context) {
 			select {
-			case <-b.ctx.Done():
+			case <-builderContext.Done():
 			case <-crStopCh:
 			}
 			close(stopCh)
-		}()
+		}(b.ctx)
 		go reflector.Run(stopCh)
 	} else {
 		go reflector.Run(b.ctx.Done())

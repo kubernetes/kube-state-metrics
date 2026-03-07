@@ -403,6 +403,12 @@ func (c *compiledStateSet) values(v interface{}) (result []eachValue, errs []err
 	comparable := c.ValueFrom.Get(v)
 	value, ok := comparable.(string)
 	if !ok {
+		// If the path doesn't exist (nil), return empty results instead of an error.
+		// This is consistent with how Gauge handles nil values and is expected for
+		// status fields that don't exist at resource creation time.
+		if comparable == nil {
+			return []eachValue{}, nil
+		}
 		return []eachValue{}, []error{fmt.Errorf("%s: expected value for path to be string, got %T", c.path, comparable)}
 	}
 

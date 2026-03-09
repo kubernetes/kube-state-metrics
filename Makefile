@@ -19,7 +19,7 @@ IMAGE = $(REGISTRY)/kube-state-metrics
 MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-MARKDOWNLINT_CLI2_VERSION = 0.20.0
+MARKDOWNLINT_CLI2_VERSION = 0.21.0
 CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
 KSM_MODULE = $(shell go list -m)
 

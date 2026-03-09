@@ -20,7 +20,7 @@ env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
-  GOLANGCI_LINT_VERSION: "v2.8.0"
+  GOLANGCI_LINT_VERSION: "v2.11.3"
 
 jobs:
   ci-go-lint:

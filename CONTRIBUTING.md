@@ -72,6 +72,12 @@ make e2e
 * [Kubernetes Contributor Guide](http://git.k8s.io/community/contributors/guide) - Main contributor documentation, or you can just jump directly to the [contributing section](http://git.k8s.io/community/contributors/guide#contributing)
 * [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet/README.md) - Common resources for existing developers
 
+## Code Reviews
+
+To keep development moving despite our limited maintainer bandwidth, we are adjusting our review process. We will no longer require a secondary reviewer for maintainer PRs, meaning maintainers can now self-merge their changes after CI passes.
+
+kube-state-metrics runs on community support. If your company depends on this project, this is a great opportunity to get involved! We highly encourage you to help sustain the project by sponsoring maintainer time or allowing your engineers to contribute.
+
 ## Mentorship
 
 * [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!

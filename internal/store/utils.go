@@ -210,7 +210,7 @@ func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
 	keys = (keysValues[0:capacity:capacity])[:0]
 	values = (keysValues[capacity : capacity*2])[:0]
 
-	for i := 0; i < len(keyValues); i += 2 {
+	for i := 0; i+1 < len(keyValues); i += 2 {
 		keys = append(keys, keyValues[i]...)
 		values = append(values, keyValues[i+1]...)
 	}

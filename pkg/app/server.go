@@ -306,6 +306,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	)
 	// Run MetricsHandler
 	ctxMetricsHandler, cancel := context.WithCancel(ctx)
+	defer cancel()
 	g.Add(func() error {
 		return m.Run(ctxMetricsHandler)
 	}, func(error) {

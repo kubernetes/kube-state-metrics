@@ -267,7 +267,154 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 	}
 }
 
-// No two consecutive headers will be entirely the same. The cases used below are only for their suffixes.
+func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T) {
+	genFunc := func(obj interface{}) []metric.FamilyInterface {
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		shared := metric.Family{
+			Name: "kube_customresource_shared",
+			Metrics: []*metric.Metric{
+				{
+					LabelKeys:   []string{"uid"},
+					LabelValues: []string{string(o.GetUID())},
+					Value:       1,
+				},
+			},
+		}
+
+		// Simulates a same-name metric family with no samples, e.g. path not found.
+		sharedEmpty := metric.Family{
+			Name:    "kube_customresource_shared",
+			Metrics: []*metric.Metric{},
+		}
+
+		next := metric.Family{
+			Name: "kube_customresource_next",
+			Metrics: []*metric.Metric{
+				{
+					LabelKeys:   []string{"uid"},
+					LabelValues: []string{string(o.GetUID())},
+					Value:       2,
+				},
+			},
+		}
+
+		return []metric.FamilyInterface{&shared, &sharedEmpty, &next}
+	}
+
+	headers := []string{
+		"# HELP kube_customresource_shared demo\n# TYPE kube_customresource_shared gauge",
+		"# HELP kube_customresource_shared demo\n# TYPE kube_customresource_shared gauge",
+		"# HELP kube_customresource_next demo\n# TYPE kube_customresource_next gauge",
+	}
+	store := NewMetricsStore(headers, genFunc)
+	if err := store.Add(&v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "a1",
+			Name:      "service",
+			Namespace: "a",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	writer := NewMetricsWriter("test", store)
+	SanitizeHeaders(expfmt.NewFormat(expfmt.TypeOpenMetrics), MetricsWriterList{writer})
+
+	var out strings.Builder
+	if err := writer.WriteAll(&out); err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
+
+	result := out.String()
+	if !strings.Contains(result, `kube_customresource_next{uid="a1"} 2`) {
+		t.Fatalf("expected later family metric to be present, got %q", result)
+	}
+}
+
+func TestWriteAllWithSanitizedDuplicateHeadersWithoutEmptyFamiliesPreservesLaterFamily(t *testing.T) {
+	genFunc := func(obj interface{}) []metric.FamilyInterface {
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sharedA := metric.Family{
+			Name: "kube_customresource_shared",
+			Metrics: []*metric.Metric{
+				{
+					LabelKeys:   []string{"uid", "variant"},
+					LabelValues: []string{string(o.GetUID()), "a"},
+					Value:       1,
+				},
+			},
+		}
+
+		sharedB := metric.Family{
+			Name: "kube_customresource_shared",
+			Metrics: []*metric.Metric{
+				{
+					LabelKeys:   []string{"uid", "variant"},
+					LabelValues: []string{string(o.GetUID()), "b"},
+					Value:       1,
+				},
+			},
+		}
+
+		next := metric.Family{
+			Name: "kube_customresource_next",
+			Metrics: []*metric.Metric{
+				{
+					LabelKeys:   []string{"uid"},
+					LabelValues: []string{string(o.GetUID())},
+					Value:       2,
+				},
+			},
+		}
+
+		return []metric.FamilyInterface{&sharedA, &sharedB, &next}
+	}
+
+	headers := []string{
+		"# HELP kube_customresource_shared demo\n# TYPE kube_customresource_shared gauge",
+		"# HELP kube_customresource_shared demo\n# TYPE kube_customresource_shared gauge",
+		"# HELP kube_customresource_next demo\n# TYPE kube_customresource_next gauge",
+	}
+	store := NewMetricsStore(headers, genFunc)
+	if err := store.Add(&v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "a1",
+			Name:      "service",
+			Namespace: "a",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	writer := NewMetricsWriter("test", store)
+	SanitizeHeaders(expfmt.NewFormat(expfmt.TypeOpenMetrics), MetricsWriterList{writer})
+
+	var out strings.Builder
+	if err := writer.WriteAll(&out); err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
+
+	result := out.String()
+	if !strings.Contains(result, `kube_customresource_shared{uid="a1",variant="a"} 1`) {
+		t.Fatalf("expected first duplicate family metric to be present, got %q", result)
+	}
+	if !strings.Contains(result, `kube_customresource_shared{uid="a1",variant="b"} 1`) {
+		t.Fatalf("expected second duplicate family metric to be present, got %q", result)
+	}
+	if !strings.Contains(result, `kube_customresource_next{uid="a1"} 2`) {
+		t.Fatalf("expected later family metric to be present, got %q", result)
+	}
+}
+
+// Duplicate headers are blanked (not removed) to preserve header/family index alignment.
 func TestSanitizeHeaders(t *testing.T) {
 	testcases := []struct {
 		name            string
@@ -286,6 +433,7 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
+				"",
 				"# HELP foo foo_help\n# TYPE foo gauge",
 				"# HELP foo foo_help\n# TYPE foo info",
 				"# HELP foo foo_help\n# TYPE foo stateset",
@@ -309,10 +457,17 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
+				"",
+				"",
+				"",
 				"# HELP foo foo_help\n# TYPE foo gauge",
+				"",
 				"# HELP foo foo_help\n# TYPE foo info",
+				"",
 				"# HELP foo foo_help\n# TYPE foo stateset",
+				"",
 				"# HELP foo foo_help\n# TYPE foo counter",
+				"",
 			},
 		},
 		{
@@ -326,7 +481,10 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
+				"",
 				"# HELP foo foo_help\n# TYPE foo gauge",
+				"",
+				"",
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 		},
@@ -347,8 +505,17 @@ func TestSanitizeHeaders(t *testing.T) {
 				"# HELP foo foo_help\n# TYPE foo counter",
 			},
 			expectedHeaders: []string{
+				"",
+				"",
+				"",
 				"# HELP foo foo_help\n# TYPE foo gauge",
+				"",
+				"",
+				"",
+				"",
+				"",
 				"# HELP foo foo_help\n# TYPE foo counter",
+				"",
 			},
 		},
 	}

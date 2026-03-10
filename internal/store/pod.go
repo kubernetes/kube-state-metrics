@@ -21,6 +21,7 @@ import (
 	"strconv"
 
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/component-helpers/storage/ephemeral"
 	"k8s.io/utils/net"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
@@ -1404,7 +1405,7 @@ func createPodRuntimeClassNameInfoFamilyGenerator() generator.FamilyGenerator {
 func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
-		"Information about persistentvolumeclaim volumes in a pod.",
+		"Information about persistentvolumeclaim and ephemeral volumes in a pod.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
@@ -1414,8 +1415,14 @@ func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.F
 			for _, v := range p.Spec.Volumes {
 				if v.PersistentVolumeClaim != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"volume", "persistentvolumeclaim"},
-						LabelValues: []string{v.Name, v.PersistentVolumeClaim.ClaimName},
+						LabelKeys:   []string{"volume", "persistentvolumeclaim", "ephemeral"},
+						LabelValues: []string{v.Name, v.PersistentVolumeClaim.ClaimName, "false"},
+						Value:       1,
+					})
+				} else if v.Ephemeral != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"volume", "persistentvolumeclaim", "ephemeral"},
+						LabelValues: []string{v.Name, ephemeral.VolumeClaimName(p, &v), "true"},
 						Value:       1,
 					})
 				}
@@ -1431,7 +1438,7 @@ func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.F
 func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
-		"Describes whether a persistentvolumeclaim is mounted read only.",
+		"Describes whether a persistentvolumeclaim is mounted read only. Ephemeral volumes always report 0 since the ephemeral volume source does not support a read-only flag.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
@@ -1441,9 +1448,15 @@ func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generat
 			for _, v := range p.Spec.Volumes {
 				if v.PersistentVolumeClaim != nil {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"volume", "persistentvolumeclaim"},
-						LabelValues: []string{v.Name, v.PersistentVolumeClaim.ClaimName},
+						LabelKeys:   []string{"volume", "persistentvolumeclaim", "ephemeral"},
+						LabelValues: []string{v.Name, v.PersistentVolumeClaim.ClaimName, "false"},
 						Value:       boolFloat64(v.PersistentVolumeClaim.ReadOnly),
+					})
+				} else if v.Ephemeral != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"volume", "persistentvolumeclaim", "ephemeral"},
+						LabelValues: []string{v.Name, ephemeral.VolumeClaimName(p, &v), "true"},
+						Value:       0,
 					})
 				}
 			}

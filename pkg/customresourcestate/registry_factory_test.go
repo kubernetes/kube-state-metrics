@@ -537,7 +537,7 @@ func newEachValue(t *testing.T, value float64, labels ...string) eachValue {
 		t.Fatalf("labels must be even: %v", labels)
 	}
 	m := make(map[string]string)
-	for i := 0; i < len(labels); i += 2 {
+	for i := 0; i+1 < len(labels); i += 2 {
 		m[labels[i]] = labels[i+1]
 	}
 	return eachValue{

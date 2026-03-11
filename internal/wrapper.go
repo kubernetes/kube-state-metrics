@@ -43,6 +43,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	if file := options.GetConfigFile(*opts); file != "" {
 		cfgViper := viper.New()

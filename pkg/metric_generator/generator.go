@@ -82,7 +82,7 @@ func (g *FamilyGenerator) generateHeader() string {
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
 	if g.StabilityLevel == basemetrics.STABLE {
-		header.WriteString(fmt.Sprintf("[%v] %v", g.StabilityLevel, g.Help))
+		fmt.Fprintf(&header, "[%v] %v", g.StabilityLevel, g.Help)
 	} else {
 		header.WriteString(g.Help)
 	}

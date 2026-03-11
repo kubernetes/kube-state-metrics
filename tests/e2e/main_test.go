@@ -154,14 +154,25 @@ func getLabelsDocumentation() (map[string][]string, error) {
 	// Match wildcard patterns for dynamic labels such as label_CRONJOB_LABEL
 	patternRe := regexp.MustCompile(`_[A-Z_]+`)
 
-	err := filepath.WalkDir("../../docs", func(p string, d fs.DirEntry, _ error) error {
+	const docsDir = "../../docs"
+	docsRoot, rootErr := os.OpenRoot(docsDir)
+	if rootErr != nil {
+		log.Fatalf("cannot open docs directory: %s", rootErr)
+	}
+	defer docsRoot.Close()
+
+	err := filepath.WalkDir(docsDir, func(p string, d fs.DirEntry, _ error) error {
 
 		if d.IsDir() || !fileRe.MatchString(d.Name()) {
 			// Ignore the entry
 			return nil
 		}
 
-		f, e := os.Open(filepath.Clean(p))
+		relPath, relErr := filepath.Rel(docsDir, p)
+		if relErr != nil {
+			return fmt.Errorf("cannot get relative path for %s: %w", p, relErr)
+		}
+		f, e := docsRoot.Open(relPath)
 		if e != nil {
 			return fmt.Errorf("cannot read file %s: %w", p, e)
 		}
@@ -188,7 +199,7 @@ func getLabelsDocumentation() (map[string][]string, error) {
 		return nil
 	})
 	if err != nil {
-		log.Fatalf("cannot walk the documentation directory: %s", err)
+		return nil, fmt.Errorf("cannot walk the documentation directory: %w", err)
 	}
 
 	return documentedMetrics, nil

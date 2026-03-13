@@ -793,7 +793,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				},
 			},
 			Want: `
-					# HELP kube_persistentvolume_access_mode [STABLE] The access mode(s) specified by the persistent volume.
+					# HELP kube_persistentvolume_access_mode [ALPHA] The access mode(s) specified by the persistent volume.
 					# TYPE kube_persistentvolume_access_mode gauge
 					kube_persistentvolume_access_mode{persistentvolume="test-pv-access-modes",access_mode="ReadWriteOnce"} 1
 					kube_persistentvolume_access_mode{persistentvolume="test-pv-access-modes",access_mode="ReadOnlyMany"} 1

@@ -492,7 +492,7 @@ func createPersistentVolumeAccessMode() generator.FamilyGenerator {
 		"kube_persistentvolume_access_mode",
 		"The access mode(s) specified by the persistent volume.",
 		metric.Gauge,
-		basemetrics.STABLE,
+		basemetrics.ALPHA,
 		"",
 		wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Spec.AccessModes))

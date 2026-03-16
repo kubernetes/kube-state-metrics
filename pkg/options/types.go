@@ -18,6 +18,7 @@ package options
 
 import (
 	"errors"
+	"slices"
 	"sort"
 	"strings"
 
@@ -26,9 +27,14 @@ import (
 	"k8s.io/klog/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/kube-state-metrics/v2/pkg/constant"
 )
 
-var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
+var (
+	errLabelsAllowListFormat            = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
+	errLabelsAllowListMultipleWildcards = errors.New("invalid format, only one wildcard per label allowed")
+)
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -291,6 +297,18 @@ func (l *LabelsAllowList) Set(value string) error {
 			firstWordPos = i + 1
 		}
 	}
+
+	// check amount of wildcards per label
+	for _, group := range m {
+		// each label in a group of labels can only contain one partial wildcard
+		// like mylabel/*
+		if slices.ContainsFunc(group, func(label string) bool {
+			return strings.Count(label, "*") > constant.MaxPartialWildcardsPerLabel
+		}) {
+			return errLabelsAllowListMultipleWildcards
+		}
+	}
+
 	*l = m
 	return nil
 }

@@ -18,7 +18,10 @@ package store
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"strconv"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -143,6 +146,46 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_secret_tls_cert_not_after_seconds",
+			"Unix notAfter timestamp of the TLS certificate in the secret.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
+				if s.Type != v1.SecretTypeTLS {
+					return &metric.Family{}
+				}
+
+				labelKeys := []string{"cn", "sans", "serial"}
+
+				cert, err := mkCert(s.Data["tls.crt"])
+				if cert == nil || err != nil {
+					return &metric.Family{}
+				}
+
+				serial := ""
+				if cert.SerialNumber != nil {
+					serial = cert.SerialNumber.String()
+				}
+
+				labelValues := []string{
+					cert.Subject.CommonName,
+					strings.Join(cert.DNSNames, ","),
+					serial,
+				}
+
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   labelKeys,
+							LabelValues: labelValues,
+							Value:       float64(cert.NotAfter.Unix()),
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_secret_metadata_resource_version",
 			"Resource version representing a specific version of secret.",
 			metric.Gauge,
@@ -216,6 +259,19 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric
 
 		return metricFamily
 	}
+}
+
+func mkCert(certData []byte) (*x509.Certificate, error) {
+	if len(certData) == 0 {
+		return nil, nil
+	}
+
+	block, _ := pem.Decode(certData)
+	if block == nil || len(block.Bytes) == 0 {
+		return nil, nil
+	}
+
+	return x509.ParseCertificate(block.Bytes)
 }
 
 func createSecretListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {

@@ -26,6 +26,17 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
+const (
+	helpPrefix = "# HELP "
+	typePrefix = "# TYPE "
+)
+
+var (
+	infoTypeString     = string(metric.Info)
+	stateSetTypeString = string(metric.StateSet)
+	gaugeTypeString    = string(metric.Gauge)
+)
+
 // MetricsWriterList represent a list of MetricsWriter
 type MetricsWriterList []*MetricsWriter
 
@@ -39,6 +50,26 @@ type MetricsWriterList []*MetricsWriter
 type MetricsWriter struct {
 	stores       []*MetricsStore
 	ResourceName string
+}
+
+func metricNameFromHeaderLine(line, prefix string) (string, bool) {
+	if !strings.HasPrefix(line, prefix) {
+		return "", false
+	}
+
+	rest := line[len(prefix):]
+	if rest == "" {
+		return "", false
+	}
+
+	spaceIdx := strings.IndexByte(rest, ' ')
+	if spaceIdx == -1 {
+		return rest, true
+	}
+	if spaceIdx == 0 {
+		return "", false
+	}
+	return rest[:spaceIdx], true
 }
 
 // NewMetricsWriter creates a new MetricsWriter.
@@ -59,20 +90,18 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 	}
 
 	for i, help := range m.stores[0].headers {
-		if help != "" && help != "\n" {
-			help += "\n"
-		}
-
 		var err error
-		m.stores[0].metrics.Range(func(_ interface{}, _ interface{}) bool {
-			_, err = w.Write([]byte(help))
+		if help != "" {
+			m.stores[0].metrics.Range(func(_ interface{}, _ interface{}) bool {
+				_, err = io.WriteString(w, help)
+				if err != nil {
+					err = fmt.Errorf("failed to write help text: %v", err)
+				}
+				return false
+			})
 			if err != nil {
-				err = fmt.Errorf("failed to write help text: %v", err)
+				return err
 			}
-			return false
-		})
-		if err != nil {
-			return err
 		}
 
 		for _, s := range m.stores {
@@ -95,34 +124,94 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 
 // SanitizeHeaders sanitizes the headers of the given MetricsWriterList.
 func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) MetricsWriterList {
-	var lastHeader string
+	clonedWriters := make(MetricsWriterList, 0, len(writers))
 	for _, writer := range writers {
+		clonedStores := make([]*MetricsStore, 0, len(writer.stores))
+		for _, store := range writer.stores {
+			clonedHeaders := make([]string, len(store.headers))
+			copy(clonedHeaders, store.headers)
+			clonedStore := &MetricsStore{
+				headers: clonedHeaders,
+			}
+			// Share the metrics backing storage by sharing the pointer.
+			clonedStore.metrics = store.metrics
+			clonedStores = append(clonedStores, clonedStore)
+		}
+		clonedWriters = append(clonedWriters, &MetricsWriter{stores: clonedStores, ResourceName: writer.ResourceName})
+	}
+
+	isTextPlain := contentType.FormatType() == expfmt.TypeTextPlain
+
+	// Deduplicate by metric name across all writers to handle non-consecutive duplicates during CRS reload.
+	capHint := 0
+	for _, w := range clonedWriters {
+		if len(w.stores) > 0 {
+			capHint += len(w.stores[0].headers)
+		}
+	}
+	seenHELP := make(map[string]struct{}, capHint)
+	seenTYPE := make(map[string]struct{}, capHint)
+	for _, writer := range clonedWriters {
 		if len(writer.stores) > 0 {
-			for i, header := range writer.stores[0].headers {
-				// If the requested content type is text/plain, replace "info" and "statesets" with "gauge", as they are not recognized by Prometheus' plain text machinery.
-				// When Prometheus requests proto-based formats, this branch is also used because any requested format that is not OpenMetrics falls back to text/plain in metrics_handler.go.
-				if strings.HasPrefix(header, "# HELP") && contentType.FormatType() == expfmt.TypeTextPlain {
-					infoTypeString := string(metric.Info)
-					stateSetTypeString := string(metric.StateSet)
-					if strings.HasSuffix(header, infoTypeString) {
-						header = header[:len(header)-len(infoTypeString)] + string(metric.Gauge)
-					}
-					if strings.HasSuffix(header, stateSetTypeString) {
-						header = header[:len(header)-len(stateSetTypeString)] + string(metric.Gauge)
+			for i := 0; i < len(writer.stores[0].headers); i++ {
+				header := writer.stores[0].headers[i]
+				lines := strings.Split(header, "\n")
+				shouldRemove := false
+				modifiedLines := make([]string, 0, len(lines))
+
+				for _, line := range lines {
+					switch {
+					case strings.HasPrefix(line, helpPrefix):
+						metricName, ok := metricNameFromHeaderLine(line, helpPrefix)
+						if ok {
+							if _, seen := seenHELP[metricName]; seen {
+								shouldRemove = true
+								break
+							}
+							seenHELP[metricName] = struct{}{}
+						}
+						modifiedLines = append(modifiedLines, line)
+
+					case strings.HasPrefix(line, typePrefix):
+						if shouldRemove {
+							break
+						}
+						metricName, ok := metricNameFromHeaderLine(line, typePrefix)
+						if ok {
+							modifiedLine := line
+							if isTextPlain {
+								if strings.HasSuffix(line, infoTypeString) {
+									modifiedLine = line[:len(line)-len(infoTypeString)] + gaugeTypeString
+								} else if strings.HasSuffix(line, stateSetTypeString) {
+									modifiedLine = line[:len(line)-len(stateSetTypeString)] + gaugeTypeString
+								}
+							}
+							if _, seen := seenTYPE[metricName]; seen {
+								shouldRemove = true
+								break
+							}
+							seenTYPE[metricName] = struct{}{}
+							modifiedLines = append(modifiedLines, modifiedLine)
+						} else {
+							modifiedLines = append(modifiedLines, line)
+						}
+					default:
+						modifiedLines = append(modifiedLines, line)
 					}
 				}
 
-				// Keep header indexing stable with metric families. Duplicate headers are blanked instead of removed.
-				if header == "" || header == "\n" || header == lastHeader {
+				if shouldRemove {
 					writer.stores[0].headers[i] = ""
-					continue
+				} else if len(modifiedLines) > 0 {
+					hdr := strings.Join(modifiedLines, "\n")
+					if hdr != "" && !strings.HasSuffix(hdr, "\n") {
+						hdr += "\n"
+					}
+					writer.stores[0].headers[i] = hdr
 				}
-
-				writer.stores[0].headers[i] = header
-				lastHeader = header
 			}
 		}
 	}
 
-	return writers
+	return clonedWriters
 }

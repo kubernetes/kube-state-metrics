@@ -53,10 +53,6 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		if cfgViperReadInConfigErr = cfgViper.ReadInConfig(); cfgViperReadInConfigErr != nil {
 			if errors.Is(cfgViperReadInConfigErr, viper.ConfigFileNotFoundError{}) {
 				klog.ErrorS(cfgViperReadInConfigErr, "Options configuration file not found at startup", "file", file)
-			} else if _, isNotExisterr := os.Stat(filepath.Clean(file)); isNotExisterr != nil {
-				// TODO: Remove this check once viper.ConfigFileNotFoundError is working as expected, see this issue -
-				// https://github.com/spf13/viper/issues/1783
-				klog.ErrorS(isNotExisterr, "Options configuration file not found at startup", "file", file)
 			} else {
 				klog.ErrorS(cfgViperReadInConfigErr, "Error reading options configuration file", "file", file)
 			}
@@ -91,10 +87,6 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		if cfgViperReadInConfigErr := crcViper.ReadInConfig(); cfgViperReadInConfigErr != nil {
 			if errors.Is(cfgViperReadInConfigErr, viper.ConfigFileNotFoundError{}) {
 				klog.ErrorS(cfgViperReadInConfigErr, "Custom resource configuration file not found at startup", "file", opts.CustomResourceConfigFile)
-			} else if _, isNotExisterr := os.Stat(filepath.Clean(opts.CustomResourceConfigFile)); isNotExisterr != nil {
-				// Adding this check in addition to the above since viper.ConfigFileNotFoundError is not working as expected due to this issue -
-				// https://github.com/spf13/viper/issues/1783
-				klog.ErrorS(isNotExisterr, "Custom resource configuration file not found at startup", "file", opts.CustomResourceConfigFile)
 			} else {
 				klog.ErrorS(cfgViperReadInConfigErr, "Error reading Custom resource configuration file", "file", opts.CustomResourceConfigFile)
 			}

@@ -2032,6 +2032,10 @@ func TestPodStore(t *testing.T) {
 							},
 						},
 						{
+							Name:         "my-ephemeral-vol",
+							VolumeSource: v1.VolumeSource{Ephemeral: &v1.EphemeralVolumeSource{}},
+						},
+						{
 							Name: "not-pvc-vol",
 							VolumeSource: v1.VolumeSource{
 								EmptyDir: &v1.EmptyDirVolumeSource{
@@ -2043,14 +2047,16 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim volumes in a pod.
-				# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim is mounted read only.
+				# HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim and ephemeral volumes in a pod.
+				# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim or ephemeral volume is mounted read only.
 				# TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 				# TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 				kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="ns1",persistentvolumeclaim="claim1",pod="pod1",volume="myvol",uid="uid1"} 1
 				kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="ns1",persistentvolumeclaim="claim2",pod="pod1",volume="my-readonly-vol",uid="uid1"} 1
+				kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="ns1",persistentvolumeclaim="pod1-my-ephemeral-vol",pod="pod1",volume="my-ephemeral-vol",uid="uid1"} 1
 				kube_pod_spec_volumes_persistentvolumeclaims_readonly{namespace="ns1",persistentvolumeclaim="claim1",pod="pod1",volume="myvol",uid="uid1"} 0
 				kube_pod_spec_volumes_persistentvolumeclaims_readonly{namespace="ns1",persistentvolumeclaim="claim2",pod="pod1",volume="my-readonly-vol",uid="uid1"} 1
+				kube_pod_spec_volumes_persistentvolumeclaims_readonly{namespace="ns1",persistentvolumeclaim="pod1-my-ephemeral-vol",pod="pod1",volume="my-ephemeral-vol",uid="uid1"} 0
 
 		`,
 			MetricNames: []string{

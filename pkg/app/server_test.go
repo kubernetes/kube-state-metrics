@@ -246,8 +246,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_service_account The service account for a pod.
 # HELP kube_pod_owner [STABLE] Information about the Pod's owner.
 # HELP kube_pod_restart_policy [STABLE] Describes the restart policy in use by this pod.
-# HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim volumes in a pod.
-# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim is mounted read only.
+# HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim and ephemeral volumes in a pod.
+# HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim or ephemeral volume is mounted read only.
 # HELP kube_pod_start_time [STABLE] Start time in unix timestamp for a pod.
 # HELP kube_pod_status_container_ready_time Readiness achieved time in unix timestamp for a pod containers.
 # HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.

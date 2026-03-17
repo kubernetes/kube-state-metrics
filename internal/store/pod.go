@@ -1259,7 +1259,7 @@ func createPodRuntimeClassNameInfoFamilyGenerator() generator.FamilyGenerator {
 func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_spec_volumes_persistentvolumeclaims_info",
-		"Information about persistentvolumeclaim volumes in a pod.",
+		"Information about persistentvolumeclaim and ephemeral volumes in a pod.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
@@ -1271,6 +1271,12 @@ func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.F
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"volume", "persistentvolumeclaim"},
 						LabelValues: []string{v.Name, v.PersistentVolumeClaim.ClaimName},
+						Value:       1,
+					})
+				} else if v.Ephemeral != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"volume", "persistentvolumeclaim"},
+						LabelValues: []string{v.Name, p.Name + "-" + v.Name},
 						Value:       1,
 					})
 				}
@@ -1286,7 +1292,7 @@ func createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator() generator.F
 func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_spec_volumes_persistentvolumeclaims_readonly",
-		"Describes whether a persistentvolumeclaim is mounted read only.",
+		"Describes whether a persistentvolumeclaim or ephemeral volume is mounted read only.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
@@ -1299,6 +1305,12 @@ func createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator() generat
 						LabelKeys:   []string{"volume", "persistentvolumeclaim"},
 						LabelValues: []string{v.Name, v.PersistentVolumeClaim.ClaimName},
 						Value:       boolFloat64(v.PersistentVolumeClaim.ReadOnly),
+					})
+				} else if v.Ephemeral != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"volume", "persistentvolumeclaim"},
+						LabelValues: []string{v.Name, p.Name + "-" + v.Name},
+						Value:       0,
 					})
 				}
 			}

@@ -2282,6 +2282,112 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_scheduler",
 			},
 		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod8",
+					Namespace: "ns8",
+					UID:       "uid8",
+				},
+				Spec: v1.PodSpec{
+					InitContainers: []v1.Container{
+						{
+							Name:  "initcontainer1",
+							Image: "k8s.gcr.io/init1_spec",
+						},
+						{
+							Name:  "initcontainer2",
+							Image: "k8s.gcr.io/init2_spec",
+						},
+					},
+				},
+				Status: v1.PodStatus{
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "initcontainer1",
+							State: v1.ContainerState{
+								Running: &v1.ContainerStateRunning{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
+								},
+							},
+						},
+						{
+							Name: "initcontainer2",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_init_container_state_started Start time in unix timestamp for a pod init container.
+				# TYPE kube_pod_init_container_state_started gauge
+				kube_pod_init_container_state_started{container="initcontainer1",namespace="ns8",pod="pod8",uid="uid8"} 1.501777018e+09
+				kube_pod_init_container_state_started{container="initcontainer2",namespace="ns8",pod="pod8",uid="uid8"} 1.501777018e+09
+			`,
+			MetricNames: []string{
+				"kube_pod_init_container_state_started",
+			},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod9",
+					Namespace: "ns9",
+					UID:       "uid9",
+				},
+				Spec: v1.PodSpec{
+					InitContainers: []v1.Container{
+						{
+							Name:  "initcontainer1",
+							Image: "k8s.gcr.io/init1_spec",
+						},
+					},
+				},
+				Status: v1.PodStatus{
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "initcontainer1",
+							State: v1.ContainerState{
+								Running: &v1.ContainerStateRunning{
+									StartedAt: metav1.Time{
+										Time: time.Unix(1501777018, 0),
+									},
+								},
+							},
+							LastTerminationState: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason:   "OOMKilled",
+									ExitCode: 137,
+									FinishedAt: metav1.Time{
+										Time: time.Unix(1501779547, 0),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_init_container_state_started Start time in unix timestamp for a pod init container.
+				# HELP kube_pod_init_container_status_last_terminated_timestamp Last terminated time for a pod init container in unix timestamp.
+				# TYPE kube_pod_init_container_state_started gauge
+				# TYPE kube_pod_init_container_status_last_terminated_timestamp gauge
+				kube_pod_init_container_state_started{container="initcontainer1",namespace="ns9",pod="pod9",uid="uid9"} 1.501777018e+09
+				kube_pod_init_container_status_last_terminated_timestamp{container="initcontainer1",namespace="ns9",pod="pod9",uid="uid9"} 1.501779547e+09
+			`,
+			MetricNames: []string{
+				"kube_pod_init_container_state_started",
+				"kube_pod_init_container_status_last_terminated_timestamp",
+			},
+		},
 	}
 
 	for i, c := range cases {

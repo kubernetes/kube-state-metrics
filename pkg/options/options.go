@@ -143,7 +143,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	// Opt into the new klog behavior where -stderrthreshold is honored even
 	// when -logtostderr=true (see kubernetes/klog#212, kubernetes/klog#432).
 	_ = klogFlags.Set("legacy_stderr_threshold_behavior", "false") //nolint:errcheck
-	_ = klogFlags.Set("stderrthreshold", "INFO")                  //nolint:errcheck
+	_ = klogFlags.Set("stderrthreshold", "INFO")                   //nolint:errcheck
 
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
 

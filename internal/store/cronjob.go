@@ -31,6 +31,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	basemetrics "k8s.io/component-base/metrics"
 
+	"k8s.io/klog/v2"
+
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -251,8 +253,10 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				// If the cron job is suspended, don't track the next scheduled time
 				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
 				if err != nil {
-					panic(err)
-				} else if !*j.Spec.Suspend {
+					klog.Errorf("failed to compute next schedule time for cronjob %s/%s: %v", j.Namespace, j.Name, err)
+					return &metric.Family{Metrics: ms}
+				}
+				if !*j.Spec.Suspend {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},

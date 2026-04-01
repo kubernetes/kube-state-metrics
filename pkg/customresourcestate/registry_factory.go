@@ -286,7 +286,7 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 					value, err := c.value(nestedIt)
 
 					if err != nil {
-						onError(fmt.Errorf("[%d]: %w", j, err))
+						onError(fmt.Errorf("[%d][%d]: %w", i, j, err))
 						continue
 					}
 					if value == nil {

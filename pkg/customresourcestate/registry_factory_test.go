@@ -412,7 +412,7 @@ func Test_values(t *testing.T) {
 		}},
 		{name: "status_parents_conditions", each: &compiledGauge{
 			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "parents", "[*]", "conditions"),
+				path: mustCompilePath(t, "status", "parents", "[*]", "[conditions]"),
 				labelFromPath: map[string]valuePath{
 					"reason": mustCompilePath(t, "reason"),
 				},
@@ -427,11 +427,11 @@ func Test_values(t *testing.T) {
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "parents"),
 				labelFromPath: map[string]valuePath{
-					"reason":     mustCompilePath(t, "conditions", "[*]", "reason"),
+					"reason":     mustCompilePath(t, "conditions", "[*]", "[reason]"),
 					"parentName": mustCompilePath(t, "parentRef", "name"),
 				},
 			},
-			ValueFrom: mustCompilePath(t, "conditions", "[*]", "status"),
+			ValueFrom: mustCompilePath(t, "conditions", "[*]", "[status]"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "parentName", "baz-1", "reason", "AsExpected"),
 			newEachValue(t, 0, "parentName", "baz-1", "reason", "SyncError"),

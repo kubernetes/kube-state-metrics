@@ -655,6 +655,29 @@ func compilePath(path []string) (out valuePath, _ error) {
 				continue
 			}
 
+			// Collect field from each array element: [fieldname]
+			if !strings.Contains(part[1:len(part)-1], "=") {
+				fieldName := part[1 : len(part)-1]
+				out = append(out, pathOp{
+					part: part,
+					op: func(m interface{}) interface{} {
+						if s, ok := m.([]interface{}); ok {
+							var result []interface{}
+							for _, el := range s {
+								if mp, ok := el.(map[string]interface{}); ok {
+									if v, ok := mp[fieldName]; ok {
+										result = append(result, v)
+									}
+								}
+							}
+							return result
+						}
+						return nil
+					},
+				})
+				continue
+			}
+
 			// list lookup: [key=value]
 			eq := strings.SplitN(part[1:len(part)-1], "=", 2)
 			if len(eq) != 2 {
@@ -726,19 +749,6 @@ func compilePath(path []string) (out valuePath, _ error) {
 							}
 							return s[i]
 						}
-
-						// case we have a list and the part is an index
-						var result []interface{}
-						for _, el := range s {
-							if m, ok := el.(map[string]interface{}); ok {
-								if v, ok := m[part]; ok {
-									result = append(result, v)
-								}
-							} else {
-								continue
-							}
-						}
-						return result
 					}
 					return nil
 				},

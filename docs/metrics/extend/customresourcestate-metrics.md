@@ -189,7 +189,7 @@ spec:
               # if path targets an object, the object key will be used as label value
               # This is not supported for StateSet type as all values will be truthy, which is redundant.
               labelFromKey: type
-              # label values can be resolved specific to this path 
+              # label values can be resolved specific to this path
               labelsFromPath:
                 active: [active]
               # The actual field to use as metric value. Should be a number, boolean or RFC3339 timestamp string.
@@ -203,7 +203,7 @@ spec:
             # a prefix before the asterisk will be used as a label prefix
             "lorem_*": [metadata, annotations]
             "**": [metadata, annotations]
-            
+
             # or specific fields may be copied. these fields will always override values from *s
             name: [metadata, name]
             foo: [metadata, labels, foo]
@@ -212,10 +212,10 @@ spec:
 Produces the following metrics:
 
 ```prometheus
-kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", 
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo",
 customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a",
 lorem_bar="baz",lorem_qux="quxx",} 2
-kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", 
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo",
 customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b",
 lorem_bar="baz",lorem_qux="quxx",} 4
 ```
@@ -618,7 +618,7 @@ Supported types are:
 * for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
 * for string the following logic applies
   * `"true"` and `"yes"` are mapped to `1.0`, `"false"`, `"no"` and `"unknown"` are mapped to `0.0` (all case-insensitive)
-  * RFC3339 times are parsed to float timestamp  
+  * RFC3339 times are parsed to float timestamp
   * Quantities like "250m" or "512Gi" are parsed to float using <https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go>
   * Percentages ending with a "%" are parsed to float
   * finally the string is parsed to float using <https://pkg.go.dev/strconv#ParseFloat> which should support all common number formats. If that fails an error is yielded
@@ -803,10 +803,10 @@ Examples:
 # indexing an array
 [spec, order, "0", value]                # spec.order[0].value = true
 
-# finding an element in a list by key=value  
+# finding an element in a list by key=value
 [status, conditions, "[name=a]", value]  # status.conditions[0].value = 45
 
-# if the value to be matched is a number or boolean, the value is compared as a number or boolean  
+# if the value to be matched is a number or boolean, the value is compared as a number or boolean
 [status, conditions, "[value=66]", name]  # status.conditions[1].name = "b"
 
 # For generally matching against a field in an object schema, use the following syntax:
@@ -821,45 +821,45 @@ Examples:
 [status, parents, "[*]", "[conditions]"] # returns a flattened list of each parent's conditions array
 ```
 
-The `[fieldname]` syntax (a field name wrapped in brackets) explicitly opts into array traversal: it                                                                                                                                                                                             
-iterates the array produced by the preceding path segment and collects the named field from each                                                                                                                                                                                                 
-element. This is intentionally distinct from a plain string segment, which returns `nil` when applied                                                                                                                                                                                            
-to an array (metrics are skipped). The explicit syntax prevents accidental metric generation from                                                                                                                                                                                                
-paths that unintentionally reach a list.                                                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                                                                                 
-A common pattern is combining `[*]` with `[fieldname]` to traverse nested arrays. For example, given                                                                                                                                                                                             
-a resource with this structure:                                                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                                                                                 
-```yaml                                                                                                                                                                                                                                                                                          
-status:                                                                                                                                                                                                                                                                                          
-  parents:                                                                                                                                                                                                                                                                                       
-    - parentRef:                                                                                                                                                                                                                                                                                 
-        name: baz-1                                                                                                                                                                                                                                                                              
-      conditions:                                                                                                                                                                                                                                                                                
-        - reason: AsExpected                                                                                                                                                                                                                                                                     
-          status: "True"                                                                                                                                                                                                                                                                         
-        - reason: SyncError                                                                                                                                                                                                                                                                      
-          status: "False"                                                                                                                                                                                                                                                                        
-    - parentRef:                                                                                                                                                                                                                                                                                 
-        name: grault-1                                                                                                                                                                                                                                                                           
-      conditions:                                                                                                                                                                                                                                                                                
-        - reason: NotReady                                                                                                                                                                                                                                                                       
-          status: "False"                                                                                                                                                                                                                                                                        
-```                                                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                                                                 
-The following configuration emits one metric per condition across all parents, with labels for both                                                                                                                                                                                              
-the parent name and the condition reason:                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                 
-```yaml                                                                                                                                                                                                                                                                                          
-- name: parent_condition                                                                                                                                                                                                                                                                         
-  each:                                                                                                                                                                                                                                                                                          
-    type: Gauge                                                                                                                                                                                                                                                                                  
-    gauge:                                                                                                                                                                                                                                                                                       
-      path: [status, parents]                                                                                                                                                                                                                                                                    
-      labelsFromPath:                                                                                                                                                                                                                                                                            
-        parent_name: [parentRef, name]                                                                                                                                                                                                                                                           
-        reason: [conditions, "[*]", "[reason]"]                                                                                                                                                                                                                                                  
-      valueFrom: [conditions, "[*]", "[status]"]                                                                                                                                                                                                                                                 
+The `[fieldname]` syntax (a field name wrapped in brackets) explicitly opts into array traversal: it
+iterates the array produced by the preceding path segment and collects the named field from each
+element. This is intentionally distinct from a plain string segment, which returns `nil` when applied
+to an array (metrics are skipped). The explicit syntax prevents accidental metric generation from
+paths that unintentionally reach a list.
+
+A common pattern is combining `[*]` with `[fieldname]` to traverse nested arrays. For example, given
+a resource with this structure:
+
+```yaml
+status:
+  parents:
+    - parentRef:
+        name: baz-1
+      conditions:
+        - reason: AsExpected
+          status: "True"
+        - reason: SyncError
+          status: "False"
+    - parentRef:
+        name: grault-1
+      conditions:
+        - reason: NotReady
+          status: "False"
+```
+
+The following configuration emits one metric per condition across all parents, with labels for both
+the parent name and the condition reason:
+
+```yaml
+- name: parent_condition
+  each:
+    type: Gauge
+    gauge:
+      path: [status, parents]
+      labelsFromPath:
+        parent_name: [parentRef, name]
+        reason: [conditions, "[*]", "[reason]"]
+      valueFrom: [conditions, "[*]", "[status]"]
 ```
 
 ### Wildcard matching of version and kind fields

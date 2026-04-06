@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install Kubernetes BOM
-        uses: kubernetes-sigs/release-actions/setup-bom@ab33480f30919958240822cfc29af8d9903f313b # v0.4.1
+        uses: kubernetes-sigs/release-actions/setup-bom@8753ea6bdadb814d779c6ec34eaca689dbfb492b # v0.4.3
 
       - name: Generate SBOM
         run: |

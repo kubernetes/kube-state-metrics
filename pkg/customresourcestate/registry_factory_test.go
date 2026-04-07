@@ -366,7 +366,13 @@ func Test_values(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotResult, gotErrors := scrapeValuesFor(tt.each, cr)
 			assert.Equal(t, tt.wantResult, gotResult)
-			assert.Equal(t, tt.wantErrors, gotErrors)
+			if tt.wantErrors == nil {
+				assert.Nil(t, gotErrors)
+			} else if assert.Len(t, gotErrors, len(tt.wantErrors)) {
+				for i, wantErr := range tt.wantErrors {
+					assert.EqualError(t, gotErrors[i], wantErr.Error())
+				}
+			}
 		})
 	}
 }

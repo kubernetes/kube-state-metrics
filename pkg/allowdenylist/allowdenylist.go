@@ -18,6 +18,7 @@ package allowdenylist
 
 import (
 	"errors"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -59,10 +60,10 @@ func New(allow, deny map[string]struct{}) (*AllowDenyList, error) {
 
 	// Default to denylisting
 	if len(allow) != 0 {
-		list = copyList(allow)
+		list = maps.Clone(allow)
 		isAllowList = true
 	} else {
-		list = copyList(deny)
+		list = maps.Clone(deny)
 		isAllowList = false
 	}
 
@@ -171,10 +172,4 @@ func (l *AllowDenyList) Test(generator generator.FamilyGenerator) bool {
 	return isIncluded
 }
 
-func copyList(l map[string]struct{}) map[string]struct{} {
-	newList := map[string]struct{}{}
-	for k, v := range l {
-		newList[k] = v
-	}
-	return newList
-}
+

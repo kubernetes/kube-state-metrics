@@ -18,7 +18,7 @@ package optin
 
 import (
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -49,7 +49,7 @@ func (filter MetricFamilyFilter) Status() string {
 		asStrings = append(asStrings, metric.String())
 	}
 	// sort the strings for the sake of ux such that the resulting status is consistent
-	sort.Strings(asStrings)
+	slices.Sort(asStrings)
 	return strings.Join(asStrings, ", ")
 }
 

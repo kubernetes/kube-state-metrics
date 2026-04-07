@@ -26,7 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -336,7 +336,7 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 		for k := range resources {
 			s = append(s, k)
 		}
-		sort.Strings(s)
+		slices.Sort(s)
 		t.Fatalf("failed to find metrics of resources: %s", strings.Join(s, ", "))
 	}
 }

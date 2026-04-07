@@ -19,7 +19,7 @@ package store
 import (
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -87,7 +87,7 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 	for key := range labels {
 		sortedKeys = append(sortedKeys, key)
 	}
-	sort.Strings(sortedKeys)
+	slices.Sort(sortedKeys)
 
 	// conflictDesc holds some metadata for resolving potential label conflicts
 	type conflictDesc struct {

@@ -143,7 +143,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		} else {
 			configFile, err := os.ReadFile(filepath.Clean(got))
 			if err != nil {
-				return fmt.Errorf("failed to read opts config file: %v", err)
+				return fmt.Errorf("failed to read opts config file: %w", err)
 			}
 			// NOTE: Config value will override default values of intersecting options.
 			err = yaml.Unmarshal(configFile, opts)
@@ -184,7 +184,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
-		return fmt.Errorf("failed to build config from flags: %v", err)
+		return fmt.Errorf("failed to build config from flags: %w", err)
 	}
 
 	// Loading custom resource state configuration from cli argument or config file
@@ -199,7 +199,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		} else {
 			crcFile, err := os.ReadFile(filepath.Clean(opts.CustomResourceConfigFile))
 			if err != nil {
-				return fmt.Errorf("failed to read custom resource config file: %v", err)
+				return fmt.Errorf("failed to read custom resource config file: %w", err)
 			}
 			configSuccess.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).Set(1)
 			configSuccessTime.WithLabelValues("customresourceconfig", filepath.Clean(opts.CustomResourceConfigFile)).SetToCurrentTime()
@@ -223,7 +223,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 
 	if err := storeBuilder.WithEnabledResources(resources); err != nil {
-		return fmt.Errorf("failed to set up resources: %v", err)
+		return fmt.Errorf("failed to set up resources: %w", err)
 	}
 
 	namespaces := opts.Namespaces.GetNamespaces()
@@ -249,14 +249,14 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	err = allowDenyList.Parse()
 	if err != nil {
-		return fmt.Errorf("error initializing the allowdeny list: %v", err)
+		return fmt.Errorf("error initializing the allowdeny list: %w", err)
 	}
 
 	klog.InfoS("Metric allow-denylisting", "allowDenyStatus", allowDenyList.Status())
 
 	optInMetricFamilyFilter, err := optin.NewMetricFamilyFilter(opts.MetricOptInList)
 	if err != nil {
-		return fmt.Errorf("error initializing the opt-in metric list: %v", err)
+		return fmt.Errorf("error initializing the opt-in metric list: %w", err)
 	}
 
 	if optInMetricFamilyFilter.Count() > 0 {
@@ -276,18 +276,18 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	storeBuilder.WithUtilOptions(opts)
 	kubeClient, err := util.CreateKubeClient(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
-		return fmt.Errorf("failed to create client: %v", err)
+		return fmt.Errorf("failed to create client: %w", err)
 	}
 	storeBuilder.WithKubeClient(kubeClient)
 
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
-		return fmt.Errorf("failed to set up annotations allowlist: %v", err)
+		return fmt.Errorf("failed to set up annotations allowlist: %w", err)
 	}
 	klog.InfoS("Using annotations allowlist", "annotationsAllowList", opts.AnnotationsAllowList)
 
 	if err := storeBuilder.WithAllowLabels(opts.LabelsAllowList); err != nil {
-		return fmt.Errorf("failed to set up labels allowlist: %v", err)
+		return fmt.Errorf("failed to set up labels allowlist: %w", err)
 	}
 	klog.InfoS("Using labels allowlist", "labelsAllowList", opts.LabelsAllowList)
 
@@ -396,7 +396,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 
 	if err := g.Run(); err != nil {
-		return fmt.Errorf("run server group error: %v", err)
+		return fmt.Errorf("run server group error: %w", err)
 	}
 
 	klog.InfoS("Exited")
@@ -628,7 +628,7 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 		} else {
 			f, err := os.Open(filepath.Clean(file))
 			if err != nil {
-				return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %v", err)
+				return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %w", err)
 			}
 			return yaml.NewDecoder(f), nil
 		}

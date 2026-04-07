@@ -67,7 +67,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		m.stores[0].metrics.Range(func(_ interface{}, _ interface{}) bool {
 			_, err = w.Write([]byte(help))
 			if err != nil {
-				err = fmt.Errorf("failed to write help text: %v", err)
+				err = fmt.Errorf("failed to write help text: %w", err)
 			}
 			return false
 		})
@@ -80,7 +80,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 				metricFamilies := value.([][]byte)
 				_, err = w.Write(metricFamilies[i])
 				if err != nil {
-					err = fmt.Errorf("failed to write metrics family: %v", err)
+					err = fmt.Errorf("failed to write metrics family: %w", err)
 					return false
 				}
 				return true

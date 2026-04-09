@@ -91,6 +91,7 @@ func (g *FamilyGenerator) generateHeader() string {
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
 	header.WriteString(string(g.Type))
+	header.WriteByte('\n')
 
 	return header.String()
 }

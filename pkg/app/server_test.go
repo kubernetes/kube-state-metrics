@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"io"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,6 +52,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
@@ -1076,4 +1079,118 @@ func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
 	if result != opts {
 		t.Errorf("expected opts to be returned unchanged on invalid YAML")
 	}
+}
+
+func TestResolveCustomResourceConfig(t *testing.T) {
+	validCRSConfig := `
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: example.com
+        version: v1
+        kind: MyResource
+      metrics:
+        - name: my_resource_info
+          help: "My resource info"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                name: [metadata, name]
+`
+	assertDecodesConfig := func(t *testing.T, decoder customresourcestate.ConfigDecoder) {
+		t.Helper()
+		var config customresourcestate.Metrics
+		if err := decoder.Decode(&config); err != nil {
+			t.Fatalf("failed to decode CRS config: %v", err)
+		}
+		if len(config.Spec.Resources) != 1 {
+			t.Fatalf("expected 1 resource, got %d", len(config.Spec.Resources))
+		}
+		gvk := config.Spec.Resources[0].GroupVersionKind
+		if gvk.Group != "example.com" || gvk.Version != "v1" || gvk.Kind != "MyResource" {
+			t.Fatalf("unexpected GVK: %v", gvk)
+		}
+	}
+
+	t.Run("file exists, flag not set: loads config", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "crs-config-*.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.WriteString(validCRSConfig); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = f.Name()
+		opts.ContinueWithoutCustomResourceConfigFile = false
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder == nil {
+			t.Fatal("expected a decoder, got nil")
+		}
+		assertDecodesConfig(t, decoder)
+	})
+
+	t.Run("file exists, flag set: loads config", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "crs-config-*.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.WriteString(validCRSConfig); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = f.Name()
+		opts.ContinueWithoutCustomResourceConfigFile = true
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder == nil {
+			t.Fatal("expected a decoder, got nil — file exists but config was not loaded")
+		}
+		assertDecodesConfig(t, decoder)
+	})
+
+	t.Run("file absent, flag set: returns nil without error", func(t *testing.T) {
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = filepath.Join(t.TempDir(), "missing.yaml")
+		opts.ContinueWithoutCustomResourceConfigFile = true
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder != nil {
+			t.Fatal("expected nil decoder when file is absent and flag is set")
+		}
+	})
+
+	t.Run("file absent, flag not set: returns error", func(t *testing.T) {
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = filepath.Join(t.TempDir(), "missing.yaml")
+		opts.ContinueWithoutCustomResourceConfigFile = false
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err == nil {
+			t.Fatal("expected an error when file is absent and flag is not set")
+		}
+		if decoder != nil {
+			t.Fatal("expected nil decoder on error")
+		}
+	})
 }

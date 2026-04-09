@@ -612,9 +612,9 @@ func md5HashAsMetricValue(data []byte) float64 {
 	sum := md5.Sum(data) //nolint:gosec
 	// We only want 48 bits as a float64 only has a 53 bit mantissa.
 	smallSum := sum[0:6]
-	bytes := make([]byte, 8)
-	copy(bytes, smallSum)
-	return float64(binary.LittleEndian.Uint64(bytes))
+	buf := make([]byte, 8)
+	copy(buf, smallSum)
+	return float64(binary.LittleEndian.Uint64(buf))
 }
 
 func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, error) {

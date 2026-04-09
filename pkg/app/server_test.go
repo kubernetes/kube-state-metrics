@@ -24,6 +24,7 @@ import (
 	"io"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -1105,7 +1106,9 @@ spec:
 		if _, err := f.WriteString(validCRSConfig); err != nil {
 			t.Fatal(err)
 		}
-		f.Close()
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
 
 		opts := options.NewOptions()
 		opts.CustomResourceConfigFile = f.Name()
@@ -1128,7 +1131,9 @@ spec:
 		if _, err := f.WriteString(validCRSConfig); err != nil {
 			t.Fatal(err)
 		}
-		f.Close()
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
 
 		opts := options.NewOptions()
 		opts.CustomResourceConfigFile = f.Name()
@@ -1145,7 +1150,7 @@ spec:
 
 	t.Run("file absent, flag set: returns nil without error", func(t *testing.T) {
 		opts := options.NewOptions()
-		opts.CustomResourceConfigFile = "/nonexistent/crs-config.yaml"
+		opts.CustomResourceConfigFile = filepath.Join(t.TempDir(), "missing.yaml")
 		opts.ContinueWithoutCustomResourceConfigFile = true
 
 		decoder, err := resolveCustomResourceConfig(opts)
@@ -1159,7 +1164,7 @@ spec:
 
 	t.Run("file absent, flag not set: returns error", func(t *testing.T) {
 		opts := options.NewOptions()
-		opts.CustomResourceConfigFile = "/nonexistent/crs-config.yaml"
+		opts.CustomResourceConfigFile = filepath.Join(t.TempDir(), "missing.yaml")
 		opts.ContinueWithoutCustomResourceConfigFile = false
 
 		decoder, err := resolveCustomResourceConfig(opts)

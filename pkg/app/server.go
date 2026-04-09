@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5" //nolint:gosec
 	"encoding/binary"
@@ -621,17 +622,15 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 		return yaml.NewDecoder(strings.NewReader(s)), nil
 	}
 	if file := opts.CustomResourceConfigFile; file != "" {
-		if opts.ContinueWithoutCustomResourceConfigFile {
-			if _, err := os.Stat(filepath.Clean(file)); err != nil {
+		data, err := os.ReadFile(filepath.Clean(file))
+		if err != nil {
+			if opts.ContinueWithoutCustomResourceConfigFile && os.IsNotExist(err) {
 				klog.Warningf("Failed to open Custom Resource State Metrics file %s: %v, ignoring", file, err)
 				return nil, nil
 			}
-		}
-		f, err := os.Open(filepath.Clean(file))
-		if err != nil {
 			return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %v", err)
 		}
-		return yaml.NewDecoder(f), nil
+		return yaml.NewDecoder(bytes.NewReader(data)), nil
 	}
 	return nil, nil
 }

@@ -220,22 +220,35 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	m.metricsWriters = metricsstore.SanitizeHeaders(contentType, m.metricsWriters)
-
 	requestedResources := parseResources(r.URL.Query()["resources"])
 	excludedResources := parseResources(r.URL.Query()["exclude_resources"])
 
-	for _, w := range m.metricsWriters {
-		if requestedResources != nil {
-			if _, ok := requestedResources[w.ResourceName]; !ok {
-				continue
+	// Filter writers before sanitizing so that SanitizeHeaders only
+	// deduplicates across the writers that will actually be written.
+	// Sanitizing first can suppress HELP/TYPE headers for metrics whose
+	// only active writer is later in the list but its earlier same-named
+	// counterpart was filtered out.
+	activeWriters := m.metricsWriters
+	if requestedResources != nil || excludedResources != nil {
+		activeWriters = make(metricsstore.MetricsWriterList, 0, len(m.metricsWriters))
+		for _, mw := range m.metricsWriters {
+			if requestedResources != nil {
+				if _, ok := requestedResources[mw.ResourceName]; !ok {
+					continue
+				}
 			}
-		}
-		if excludedResources != nil {
-			if _, ok := excludedResources[w.ResourceName]; ok {
-				continue
+			if excludedResources != nil {
+				if _, ok := excludedResources[mw.ResourceName]; ok {
+					continue
+				}
 			}
+			activeWriters = append(activeWriters, mw)
 		}
+	}
+
+	sanitizedWriters := metricsstore.SanitizeHeaders(contentType, activeWriters)
+
+	for _, w := range sanitizedWriters {
 		err := w.WriteAll(writer)
 		if err != nil {
 			klog.ErrorS(err, "Failed to write metrics")

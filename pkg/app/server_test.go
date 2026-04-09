@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"net/http/httptest"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -1076,4 +1077,97 @@ func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
 	if result != opts {
 		t.Errorf("expected opts to be returned unchanged on invalid YAML")
 	}
+}
+
+func TestResolveCustomResourceConfig(t *testing.T) {
+	validCRSConfig := `
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: example.com
+        version: v1
+        kind: MyResource
+      metrics:
+        - name: my_resource_info
+          help: "My resource info"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                name: [metadata, name]
+`
+	t.Run("file exists, flag not set: loads config", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "crs-config-*.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.WriteString(validCRSConfig); err != nil {
+			t.Fatal(err)
+		}
+		f.Close()
+
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = f.Name()
+		opts.ContinueWithoutCustomResourceConfigFile = false
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder == nil {
+			t.Fatal("expected a decoder, got nil")
+		}
+	})
+
+	t.Run("file exists, flag set: loads config", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "crs-config-*.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.WriteString(validCRSConfig); err != nil {
+			t.Fatal(err)
+		}
+		f.Close()
+
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = f.Name()
+		opts.ContinueWithoutCustomResourceConfigFile = true
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder == nil {
+			t.Fatal("expected a decoder, got nil — file exists but config was not loaded")
+		}
+	})
+
+	t.Run("file absent, flag set: returns nil without error", func(t *testing.T) {
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = "/nonexistent/crs-config.yaml"
+		opts.ContinueWithoutCustomResourceConfigFile = true
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder != nil {
+			t.Fatal("expected nil decoder when file is absent and flag is set")
+		}
+	})
+
+	t.Run("file absent, flag not set: returns error", func(t *testing.T) {
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = "/nonexistent/crs-config.yaml"
+		opts.ContinueWithoutCustomResourceConfigFile = false
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err == nil {
+			t.Fatal("expected an error when file is absent and flag is not set")
+		}
+		if decoder != nil {
+			t.Fatal("expected nil decoder on error")
+		}
+	})
 }

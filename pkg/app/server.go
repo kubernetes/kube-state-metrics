@@ -624,14 +624,14 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 		if opts.ContinueWithoutCustomResourceConfigFile {
 			if _, err := os.Stat(filepath.Clean(file)); err != nil {
 				klog.Warningf("Failed to open Custom Resource State Metrics file %s: %v, ignoring", file, err)
+				return nil, nil
 			}
-		} else {
-			f, err := os.Open(filepath.Clean(file))
-			if err != nil {
-				return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %v", err)
-			}
-			return yaml.NewDecoder(f), nil
 		}
+		f, err := os.Open(filepath.Clean(file))
+		if err != nil {
+			return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %v", err)
+		}
+		return yaml.NewDecoder(f), nil
 	}
 	return nil, nil
 }

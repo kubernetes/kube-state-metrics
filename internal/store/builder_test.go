@@ -17,9 +17,11 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"reflect"
 	"slices"
 	"testing"
+	"time"
 
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -256,5 +258,81 @@ func TestWithEnabledResources(t *testing.T) {
 			t.Log("Expected enabled resources to be equal.")
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, b.enabledResources)
 		}
+	}
+}
+
+// TestCRReflectorStopChanRespondsToContextCancel verifies that the combined
+// stopCh used for CR reflectors closes when the context is cancelled.
+func TestCRReflectorStopChanRespondsToContextCancel(t *testing.T) {
+	const n = 20
+	stopChs := make([]chan struct{}, n)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for i := range n {
+		stopCh := make(chan struct{})
+		gvkStopCh := make(chan struct{})
+		stopChs[i] = stopCh
+
+		go func() {
+			defer close(stopCh)
+			select {
+			case <-gvkStopCh:
+			case <-ctx.Done():
+			}
+		}()
+	}
+
+	for i, ch := range stopChs {
+		select {
+		case <-ch:
+			t.Errorf("goroutine %d stopped prematurely before context cancel", i)
+		default:
+		}
+	}
+
+	cancel()
+
+	deadline := time.After(2 * time.Second)
+	for i, ch := range stopChs {
+		select {
+		case <-ch:
+		case <-deadline:
+			t.Errorf("goroutine %d did not stop after context cancellation", i)
+			return
+		}
+	}
+}
+
+// TestCRReflectorStopChanRespondsToGVKStop verifies that the combined stopCh
+// closes when the GVK-specific channel fires (CRD deleted from cluster).
+func TestCRReflectorStopChanRespondsToGVKStop(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	gvkStopCh := make(chan struct{})
+	stopCh := make(chan struct{})
+
+	go func() {
+		defer close(stopCh)
+		select {
+		case <-gvkStopCh:
+		case <-ctx.Done():
+		}
+	}()
+
+	select {
+	case <-stopCh:
+		t.Fatal("stopCh closed before gvkStopCh was signalled")
+	default:
+	}
+
+	close(gvkStopCh)
+
+	select {
+	case <-stopCh:
+	case <-time.After(2 * time.Second):
+		t.Fatal("stopCh did not close after gvkStopCh was closed")
 	}
 }

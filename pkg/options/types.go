@@ -18,10 +18,12 @@ package options
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"k8s.io/klog/v2"
 
@@ -38,6 +40,7 @@ const (
 var (
 	errLabelsAllowListFormat            = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
 	errLabelsAllowListMultipleWildcards = errors.New("invalid format, only one wildcard per label allowed")
+	errLabelSelectorFormat              = errors.New("invalid format, resource=labelSelector")
 )
 
 // MetricSet represents a collection which has a unique set of metrics.
@@ -228,6 +231,64 @@ func (n *NamespaceList) GetExcludeNSFieldSelector(nsDenylist []string) string {
 
 // Type returns a descriptive string about the NamespaceList type.
 func (n *NamespaceList) Type() string {
+	return "string"
+}
+
+// LabelSelectorSet represents resource-specific Kubernetes label selectors.
+type LabelSelectorSet map[string]string
+
+func (l *LabelSelectorSet) String() string {
+	if l == nil {
+		return ""
+	}
+
+	entries := make([]string, 0, len(*l))
+	for resource, selector := range *l {
+		entries = append(entries, fmt.Sprintf("%s=%s", resource, selector))
+	}
+	slices.Sort(entries)
+
+	return strings.Join(entries, ";")
+}
+
+// Set converts a repeatable "resource=labelSelector" flag into a map keyed by resource name.
+func (l *LabelSelectorSet) Set(value string) error {
+	resource, selector, found := strings.Cut(value, "=")
+	if !found {
+		return errLabelSelectorFormat
+	}
+
+	resource = strings.TrimSpace(resource)
+	selector = strings.TrimSpace(selector)
+	if resource == "" || selector == "" {
+		return errLabelSelectorFormat
+	}
+
+	if *l == nil {
+		*l = LabelSelectorSet{}
+	}
+
+	if _, ok := (*l)[resource]; ok {
+		return fmt.Errorf("duplicate label selector for resource %s", resource)
+	}
+
+	(*l)[resource] = selector
+	return nil
+}
+
+// Validate checks that all configured selector expressions are syntactically valid.
+func (l LabelSelectorSet) Validate() error {
+	for resource, selector := range l {
+		if _, err := labels.Parse(selector); err != nil {
+			return fmt.Errorf("invalid label selector for resource %s: %w", resource, err)
+		}
+	}
+
+	return nil
+}
+
+// Type returns a descriptive string about the LabelSelectorSet type.
+func (l *LabelSelectorSet) Type() string {
 	return "string"
 }
 

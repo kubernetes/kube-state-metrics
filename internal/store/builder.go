@@ -38,7 +38,9 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -76,6 +78,7 @@ type Builder struct {
 	buildCustomResourceStoresFunc ksmtypes.BuildCustomResourceStoresFunc
 	allowAnnotationsList          map[string][]string
 	allowLabelsList               map[string][]string
+	labelSelectorFilters          map[string]string
 	utilOptions                   *options.Options
 	// namespaceFilter is inside fieldSelectorFilter
 	fieldSelectorFilter string
@@ -127,6 +130,25 @@ func (b *Builder) WithEnabledResources(r []string) error {
 // WithFieldSelectorFilter sets the fieldSelector property of a Builder.
 func (b *Builder) WithFieldSelectorFilter(fieldSelectorFilter string) {
 	b.fieldSelectorFilter = fieldSelectorFilter
+}
+
+// WithLabelSelectorFilters sets resource-specific label selectors for builtin resources.
+func (b *Builder) WithLabelSelectorFilters(labelSelectorFilters map[string]string) error {
+	if len(labelSelectorFilters) == 0 {
+		b.labelSelectorFilters = nil
+		return nil
+	}
+
+	validatedFilters := make(map[string]string, len(labelSelectorFilters))
+	for resource, selector := range labelSelectorFilters {
+		if !resourceExists(resource) {
+			return fmt.Errorf("resource %s does not exist. Available resources: %s", resource, strings.Join(availableResources(), ","))
+		}
+		validatedFilters[resource] = selector
+	}
+
+	b.labelSelectorFilters = validatedFilters
+	return nil
 }
 
 // WithNamespaces sets the namespaces property of a Builder.
@@ -522,6 +544,7 @@ func (b *Builder) buildStores(
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
+	labelSelector := b.labelSelectorForExpectedType(expectedType)
 
 	if b.namespaces.IsAllNamespaces() {
 		store := metricsstore.NewMetricsStore(
@@ -531,7 +554,10 @@ func (b *Builder) buildStores(
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
-		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+		if labelSelector != "" {
+			klog.InfoS("LabelSelector is used", "labelSelector", labelSelector)
+		}
+		listWatcher := withLabelSelector(listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter), labelSelector)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
 		return []cache.Store{store}
 	}
@@ -545,7 +571,10 @@ func (b *Builder) buildStores(
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		}
-		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
+		if labelSelector != "" {
+			klog.InfoS("LabelSelector is used", "labelSelector", labelSelector)
+		}
+		listWatcher := withLabelSelector(listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter), labelSelector)
 		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
 		stores = append(stores, store)
 	}
@@ -636,4 +665,21 @@ func cacheStoresToMetricStores(cStores []cache.Store) []*metricsstore.MetricsSto
 	}
 
 	return mStores
+}
+
+func (b *Builder) labelSelectorForExpectedType(expectedType interface{}) string {
+	if len(b.labelSelectorFilters) == 0 {
+		return ""
+	}
+
+	t := reflect.TypeOf(expectedType)
+	if t == nil {
+		return ""
+	}
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	resource, _ := meta.UnsafeGuessKindToResource(schema.GroupVersionKind{Kind: t.Name()})
+	return b.labelSelectorFilters[resource.Resource]
 }

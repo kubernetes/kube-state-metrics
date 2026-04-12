@@ -52,6 +52,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Horizontal sharding](#horizontal-sharding)
     * [Automated sharding](#automated-sharding)
   * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
+  * [Per-resource label selectors](#per-resource-label-selectors)
   * [Resource filtering](#resource-filtering)
 * [Setup](#setup)
   * [Building the Docker container](#building-the-docker-container)
@@ -303,6 +304,38 @@ spec:
 ```
 
 Other metrics can be sharded via [Horizontal sharding](#horizontal-sharding).
+
+### Per-resource label selectors
+
+To restrict which objects kube-state-metrics watches for selected builtin resources, use the repeatable `--label-selector` flag:
+
+* `--label-selector=nodes=tenant=team-a`
+* `--label-selector='pods=app in (frontend,api)'`
+
+Each flag applies a Kubernetes `LabelSelector` to a single resource type. Resource names use the same plural form as `--resources`, such as `pods`, `nodes`, or `namespaces`. Resources without a matching `--label-selector` flag remain unfiltered.
+
+Filtered resources expose metrics only for the selected subset of objects and do not preserve cluster-wide semantics.
+
+`--label-selector=pods=...` can be combined with `--node=$(NODE_NAME)`. In that case both filters apply to Pod metrics.
+
+Examples:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:IMAGE_TAG
+        name: kube-state-metrics
+        args:
+        - --resources=nodes,pods
+        - --label-selector=nodes=tenant=team-a
+        - --label-selector=pods=app=frontend
+```
+
+This flag currently supports builtin resources only. Custom resource metrics use their own configuration paths.
 
 #### Resource Filtering
 

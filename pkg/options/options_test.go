@@ -63,3 +63,50 @@ func TestOptionsParse(t *testing.T) {
 		})
 	}
 }
+
+func TestOptionsValidateLabelSelectors(t *testing.T) {
+	tests := []struct {
+		Desc         string
+		Configure    func(*Options)
+		ExpectsError bool
+	}{
+		{
+			Desc: "known but disabled resource selector is allowed",
+			Configure: func(opts *Options) {
+				opts.Resources = ResourceSet{"nodes": {}}
+				opts.LabelSelectors = LabelSelectorSet{"pods": "app=frontend"}
+			},
+			ExpectsError: false,
+		},
+		{
+			Desc: "invalid label selector syntax",
+			Configure: func(opts *Options) {
+				opts.LabelSelectors = LabelSelectorSet{"pods": "app in (frontend"}
+			},
+			ExpectsError: true,
+		},
+		{
+			Desc: "unknown label selector resource",
+			Configure: func(opts *Options) {
+				opts.LabelSelectors = LabelSelectorSet{"foos": "app=frontend"}
+			},
+			ExpectsError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Desc, func(t *testing.T) {
+			opts := NewOptions()
+			opts.AutoGoMemlimitRatio = 0.9
+			test.Configure(opts)
+
+			err := opts.Validate()
+			if !test.ExpectsError && err != nil {
+				t.Fatalf("unexpected validation error: %v", err)
+			}
+			if test.ExpectsError && err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+}

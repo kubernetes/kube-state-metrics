@@ -17,9 +17,16 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"reflect"
 	"slices"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -30,6 +37,21 @@ type expectedError struct {
 	expectedResourceError bool
 	expectedLabelError    bool
 	expectedNotEqual      bool
+}
+
+type fakeListerWatcher struct {
+	listOptions  []metav1.ListOptions
+	watchOptions []metav1.ListOptions
+}
+
+func (r *fakeListerWatcher) ListWithContext(_ context.Context, options metav1.ListOptions) (runtime.Object, error) {
+	r.listOptions = append(r.listOptions, options)
+	return &v1.PodList{}, nil
+}
+
+func (r *fakeListerWatcher) WatchWithContext(_ context.Context, options metav1.ListOptions) (watch.Interface, error) {
+	r.watchOptions = append(r.watchOptions, options)
+	return watch.NewEmptyWatch(), nil
 }
 
 func TestWithAllowLabels(t *testing.T) {
@@ -256,5 +278,76 @@ func TestWithEnabledResources(t *testing.T) {
 			t.Log("Expected enabled resources to be equal.")
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, b.enabledResources)
 		}
+	}
+}
+
+func TestWithLabelSelectorFilters(t *testing.T) {
+	tests := []struct {
+		Desc          string
+		LabelSelector map[string]string
+		Want          map[string]string
+		WantError     bool
+	}{
+		{
+			Desc:          "builtin resource selector",
+			LabelSelector: map[string]string{"pods": "app=frontend", "nodes": "tenant=team-a"},
+			Want:          map[string]string{"pods": "app=frontend", "nodes": "tenant=team-a"},
+		},
+		{
+			Desc:          "unknown resource selector",
+			LabelSelector: map[string]string{"foos": "app=frontend"},
+			WantError:     true,
+		},
+	}
+
+	for _, test := range tests {
+		b := NewBuilder()
+		err := b.WithLabelSelectorFilters(test.LabelSelector)
+
+		if (err != nil) != test.WantError {
+			t.Fatalf("Test error for Desc: %s. Wanted Error: %v, Got Error: %v", test.Desc, test.WantError, err)
+		}
+		if err == nil && !reflect.DeepEqual(b.labelSelectorFilters, test.Want) {
+			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Want, b.labelSelectorFilters)
+		}
+	}
+}
+
+func TestWithLabelSelector(t *testing.T) {
+	fakeLW := &fakeListerWatcher{}
+	baseLW := &cache.ListWatch{
+		ListWithContextFunc:  fakeLW.ListWithContext,
+		WatchFuncWithContext: fakeLW.WatchWithContext,
+	}
+	labelSelectorLW := withLabelSelector(baseLW, "tenant in (team-a,team-b)")
+	listerWatcherWithContext := cache.ToListerWatcherWithContext(labelSelectorLW)
+
+	_, err := listerWatcherWithContext.ListWithContext(context.Background(), metav1.ListOptions{FieldSelector: "spec.nodeName=node-a", ResourceVersion: "10"})
+	if err != nil {
+		t.Fatalf("unexpected list error: %v", err)
+	}
+
+	_, err = listerWatcherWithContext.WatchWithContext(context.Background(), metav1.ListOptions{FieldSelector: "spec.nodeName=node-a"})
+	if err != nil {
+		t.Fatalf("unexpected watch error: %v", err)
+	}
+
+	if len(fakeLW.listOptions) != 1 {
+		t.Fatalf("expected 1 list call, got %d", len(fakeLW.listOptions))
+	}
+	if len(fakeLW.watchOptions) != 1 {
+		t.Fatalf("expected 1 watch call, got %d", len(fakeLW.watchOptions))
+	}
+	if got := fakeLW.listOptions[0].LabelSelector; got != "tenant in (team-a,team-b)" {
+		t.Fatalf("expected list label selector to be propagated, got %q", got)
+	}
+	if got := fakeLW.watchOptions[0].LabelSelector; got != "tenant in (team-a,team-b)" {
+		t.Fatalf("expected watch label selector to be propagated, got %q", got)
+	}
+	if got := fakeLW.listOptions[0].FieldSelector; got != "spec.nodeName=node-a" {
+		t.Fatalf("expected list field selector to be preserved, got %q", got)
+	}
+	if got := fakeLW.listOptions[0].ResourceVersion; got != "10" {
+		t.Fatalf("expected list resource version to be preserved, got %q", got)
 	}
 }

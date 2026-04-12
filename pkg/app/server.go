@@ -242,6 +242,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 	storeBuilder.WithNamespaces(namespaces)
 	storeBuilder.WithFieldSelectorFilter(merged)
+	if err := configureLabelSelectorFilters(opts, storeBuilder); err != nil {
+		return err
+	}
 
 	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
 	if err != nil {
@@ -445,6 +448,13 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 			}
 		}
 
+		if len(config.LabelSelectors) > 0 {
+			opts.LabelSelectors = options.LabelSelectorSet{}
+			for resource, selector := range config.LabelSelectors {
+				opts.LabelSelectors[resource] = selector
+			}
+		}
+
 		if len(config.AnnotationsAllowList) > 0 {
 			opts.AnnotationsAllowList = options.LabelsAllowList{}
 			for annotation, value := range config.AnnotationsAllowList {
@@ -455,6 +465,20 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 		klog.ErrorS(err, "failed to unmarshal configFile")
 	}
 	return opts
+}
+
+func configureLabelSelectorFilters(opts *options.Options, storeBuilder *store.Builder) error {
+	if err := opts.LabelSelectors.Validate(); err != nil {
+		return fmt.Errorf("failed to validate label selectors: %v", err)
+	}
+	if err := storeBuilder.WithLabelSelectorFilters(opts.LabelSelectors); err != nil {
+		return fmt.Errorf("failed to set up label selectors: %v", err)
+	}
+	if len(opts.LabelSelectors) > 0 {
+		klog.InfoS("Using label selectors", "labelSelectors", opts.LabelSelectors)
+	}
+
+	return nil
 }
 
 func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {

@@ -51,7 +51,7 @@ spec:
           each:
             type: Gauge
             gauge:
-              path: [ status, other, '[*]', detail ]
+              path: [ status, other, '[*]', '[detail]' ]
           errorLogV: 5
 
         - name: "other_count_array_deep_multiple"
@@ -60,9 +60,9 @@ spec:
             gauge:
               path: [ status ]
               labelsFromPath:
-                bar: [ other, '[*]', detail ]
+                bar: [ other, '[*]', '[detail]' ]
                 foo: [ foo, bar ]
-              valueFrom: [ other, '[*]', count ]
+              valueFrom: [ other, '[*]', '[count]' ]
 
           errorLogV: 5
 

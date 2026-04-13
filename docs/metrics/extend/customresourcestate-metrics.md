@@ -818,7 +818,7 @@ Examples:
 
 # collecting a field from each element of an array: [fieldname]
 # Iterates the array and returns the value of the named field from each element that has it.
-[status, parents, "[*]", "[conditions]"] # returns a flattened list of each parent's conditions array
+[status, parents, "[*]", "[conditions]"] # returns a list of each parent's conditions value (often itself an array)
 ```
 
 The `[fieldname]` syntax (a field name wrapped in brackets) explicitly opts into array traversal: it

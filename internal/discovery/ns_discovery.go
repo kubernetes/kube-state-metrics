@@ -145,8 +145,8 @@ func (d *NamespaceDiscoverer) PollForCacheUpdates(ctx context.Context, interval 
 			select {
 			case <-ctx.Done():
 				klog.InfoS("context cancelled")
-				close(notifyChan)
 				t.Stop()
+				close(notifyChan)
 				return
 			default:
 				var namespaces []string

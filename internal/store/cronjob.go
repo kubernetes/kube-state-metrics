@@ -253,7 +253,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				// If the cron job is suspended, don't track the next scheduled time
 				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
 				if err != nil {
-					klog.Errorf("failed to compute next schedule time for cronjob %s/%s: %v", j.Namespace, j.Name, err)
+					klog.ErrorS(err, "Failed to compute next schedule time for cronjob", "namespace", j.Namespace, "cronjob", j.Name, "schedule", j.Spec.Schedule, "timezone", j.Spec.TimeZone)
 					return &metric.Family{Metrics: ms}
 				}
 				if !*j.Spec.Suspend {

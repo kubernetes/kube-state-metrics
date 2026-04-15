@@ -525,7 +525,7 @@ func (b *Builder) buildStores(
 	var metricsStoreOpts []metricsstore.Opt
 
 	if !b.namespaces.IsAllNamespaces() {
-		metricsStoreOpts = append(metricsStoreOpts, metricsstore.WithNamespacesPredicate(b.namespaces))
+		metricsStoreOpts = append(metricsStoreOpts, metricsstore.WithNamespacesPredicate([]string(b.namespaces)))
 	}
 	store := metricsstore.NewMetricsStore(
 		familyHeaders,
@@ -570,7 +570,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 
 	var metricsStoreOpts []metricsstore.Opt
 	if !b.namespaces.IsAllNamespaces() {
-		metricsStoreOpts = append(metricsStoreOpts, metricsstore.WithNamespacesPredicate(b.namespaces))
+		metricsStoreOpts = append(metricsStoreOpts, metricsstore.WithNamespacesPredicate([]string(b.namespaces)))
 	}
 
 	store := metricsstore.NewMetricsStore(

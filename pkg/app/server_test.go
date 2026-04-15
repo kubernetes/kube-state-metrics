@@ -1197,7 +1197,7 @@ spec:
 }
 
 type container struct {
-	namespaces []string
+	namespaces options.NamespaceList
 }
 
 func (c *container) WithNamespaces(namespaces options.NamespaceList) {

@@ -31,8 +31,11 @@ import (
 func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 	client := fake.NewClientset()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	discoverer := NewNamespaceDiscoverer()
-	discoverer.Start(context.TODO(), client)
+	discoverer.Start(ctx, client)
 
 	discoverer.safeRead(func() {
 		// There should be no namespaces at start time
@@ -42,7 +45,7 @@ func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 		assert.False(t, discoverer.shouldRebuildMetrics)
 	})
 
-	client.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
+	client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "default",
 		},
@@ -60,7 +63,7 @@ func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 		assert.True(t, discoverer.shouldRebuildMetrics)
 	})
 
-	client.CoreV1().Namespaces().Delete(context.TODO(), "default", metav1.DeleteOptions{})
+	client.CoreV1().Namespaces().Delete(ctx, "default", metav1.DeleteOptions{})
 
 	time.Sleep(10 * time.Millisecond)
 
@@ -76,8 +79,11 @@ func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 func Test_NamespaceDiscoverer_Start_Concurrent(t *testing.T) {
 	client := fake.NewClientset()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	discoverer := NewNamespaceDiscoverer()
-	discoverer.Start(context.TODO(), client)
+	discoverer.Start(ctx, client)
 
 	var wg sync.WaitGroup
 
@@ -86,19 +92,19 @@ func Test_NamespaceDiscoverer_Start_Concurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			client.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
+			client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "default",
 				},
 			}, metav1.CreateOptions{})
 
-			client.CoreV1().Namespaces().Delete(context.TODO(), "default", metav1.DeleteOptions{})
+			client.CoreV1().Namespaces().Delete(ctx, "default", metav1.DeleteOptions{})
 		}()
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			client.CoreV1().Namespaces().Delete(context.TODO(), "default", metav1.DeleteOptions{})
+			client.CoreV1().Namespaces().Delete(ctx, "default", metav1.DeleteOptions{})
 		}()
 	}
 
@@ -130,11 +136,14 @@ func Test_NamespaceDiscoverer_Start_LabelSelector(t *testing.T) {
 		},
 	)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	discoverer := NewNamespaceDiscoverer(
 		WithLabelSelector("foo=bar"),
 	)
 
-	discoverer.Start(context.TODO(), client)
+	discoverer.Start(ctx, client)
 
 	time.Sleep(10 * time.Millisecond)
 
@@ -159,7 +168,7 @@ func Test_NamespaceDiscoverer_PollForCacheUpdates(t *testing.T) {
 	discoverer.namespaces = map[string]struct{}{"default": struct{}{}}
 	discoverer.shouldRebuildMetrics = true
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(context.Background())
 
 	updateChan := discoverer.PollForCacheUpdates(ctx, 1*time.Second)
 

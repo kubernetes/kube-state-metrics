@@ -320,7 +320,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		kubeClient,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to setup namespace discovery")
+		return fmt.Errorf("failed to setup namespace discovery: %w", err)
 	}
 
 	// This means no dynamic namespace discovery is required and thus no polling for new namespaces.

@@ -1330,7 +1330,8 @@ func TestConfigureNamespaceDiscovery(t *testing.T) {
 			}
 
 			got := container{}
-			configureNamespaceDiscovery(context.TODO(), tc.opts(), &got, client)
+			_, err := configureNamespaceDiscovery(context.TODO(), tc.opts(), &got, client)
+			assert.NoError(t, err)
 			assert.ElementsMatch(t, got.namespaces, tc.expected)
 		})
 	}

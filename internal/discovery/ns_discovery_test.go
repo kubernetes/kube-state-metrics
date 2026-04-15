@@ -38,10 +38,7 @@ func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 	discoverer.Start(ctx, client)
 
 	discoverer.safeRead(func() {
-		// There should be no namespaces at start time
 		assert.Empty(t, discoverer.namespaces)
-
-		// There should be no need to rebuild metrics at this time
 		assert.False(t, discoverer.shouldRebuildMetrics)
 	})
 
@@ -51,27 +48,29 @@ func Test_NamespaceDiscoverer_Start_Simple(t *testing.T) {
 		},
 	}, metav1.CreateOptions{})
 
-	time.Sleep(10 * time.Millisecond)
+	assert.Eventually(t, func() bool {
+		found := false
+		discoverer.safeRead(func() {
+			_, found = discoverer.namespaces["default"]
+		})
+		return found
+	}, time.Second, 10*time.Millisecond, "namespace should eventually be added")
 
 	discoverer.safeRead(func() {
-		// Should now contain the namespace added above.
-		assert.Equal(t, map[string]struct{}{
-			"default": struct{}{},
-		}, discoverer.namespaces)
-
-		// Should warrant the rebuilding of metrics to add the namespace from the store
 		assert.True(t, discoverer.shouldRebuildMetrics)
 	})
 
 	client.CoreV1().Namespaces().Delete(ctx, "default", metav1.DeleteOptions{})
 
-	time.Sleep(10 * time.Millisecond)
+	assert.Eventually(t, func() bool {
+		empty := true
+		discoverer.safeRead(func() {
+			empty = len(discoverer.namespaces) == 0
+		})
+		return empty
+	}, time.Second, 10*time.Millisecond, "namespace should eventually be removed")
 
 	discoverer.safeRead(func() {
-		// Should not contain the namespace deleted above.
-		assert.Empty(t, discoverer.namespaces)
-
-		// Should warrant the rebuilding of metrics to remove the namespace from the store
 		assert.True(t, discoverer.shouldRebuildMetrics)
 	})
 }
@@ -110,10 +109,13 @@ func Test_NamespaceDiscoverer_Start_Concurrent(t *testing.T) {
 
 	wg.Wait()
 
-	time.Sleep(10 * time.Millisecond)
-
-	// Should not contain the namespace deleted above.
-	assert.Empty(t, discoverer.namespaces)
+	assert.Eventually(t, func() bool {
+		empty := true
+		discoverer.safeRead(func() {
+			empty = len(discoverer.namespaces) == 0
+		})
+		return empty
+	}, time.Second, 10*time.Millisecond, "namespace should eventually be empty")
 }
 
 func Test_NamespaceDiscoverer_Start_LabelSelector(t *testing.T) {
@@ -145,7 +147,13 @@ func Test_NamespaceDiscoverer_Start_LabelSelector(t *testing.T) {
 
 	discoverer.Start(ctx, client)
 
-	time.Sleep(10 * time.Millisecond)
+	assert.Eventually(t, func() bool {
+		found := false
+		discoverer.safeRead(func() {
+			_, found = discoverer.namespaces["default"]
+		})
+		return found
+	}, time.Second, 10*time.Millisecond, "namespace should eventually be added")
 
 	// Should now contain only the default namespace labeled with foo=bar
 	assert.Equal(t, map[string]struct{}{

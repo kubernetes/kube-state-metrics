@@ -150,26 +150,21 @@ func (d *NamespaceDiscoverer) PollForCacheUpdates(ctx context.Context, interval 
 				return
 			default:
 				var namespaces []string
-				shouldRebuildMetrics := false
 
-				d.safeRead(func() {
-					shouldRebuildMetrics = d.shouldRebuildMetrics
-
-					if shouldRebuildMetrics {
-						namespaces = make([]string, len(d.namespaces))
-						i := 0
-						for namespace := range d.namespaces {
-							namespaces[i] = namespace
-							i++
-						}
+				d.safeWrite(func() {
+					if !d.shouldRebuildMetrics {
+						return
+					}
+					d.shouldRebuildMetrics = false
+					namespaces = make([]string, len(d.namespaces))
+					i := 0
+					for namespace := range d.namespaces {
+						namespaces[i] = namespace
+						i++
 					}
 				})
 
-				if shouldRebuildMetrics {
-					d.safeWrite(func() {
-						d.shouldRebuildMetrics = false
-					})
-
+				if namespaces != nil {
 					notifyChan <- namespaces
 				}
 			}

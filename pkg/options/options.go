@@ -25,6 +25,7 @@ import (
 
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
 )
 
@@ -219,6 +220,12 @@ func (o *Options) Validate() error {
 
 	if o.ObjectLimit < 0 {
 		return fmt.Errorf("value for --object-limit=%d must be equal or greater than 0", o.ObjectLimit)
+	}
+
+	if o.NamespaceLabelSelector != "" {
+		if _, err := labels.Parse(o.NamespaceLabelSelector); err != nil {
+			return fmt.Errorf("value for --namespace-label-selector=%q is invalid: %w", o.NamespaceLabelSelector, err)
+		}
 	}
 
 	return nil

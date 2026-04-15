@@ -464,7 +464,7 @@ func configureNamespaceDiscovery(
 	}
 
 	if !isAllNamespaces && isDenylistUsed {
-		// TODO: refactor this to be more idiomic to go
+		// TODO: refactor this to be more idiomatic to go
 		var namespaces []string
 		for _, namespace := range opts.Namespaces {
 			var denied bool

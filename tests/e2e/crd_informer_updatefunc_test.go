@@ -28,7 +28,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/internal"
-	"k8s.io/kube-state-metrics/v2/internal/discovery"
+	"k8s.io/kube-state-metrics/v2/pkg/discovery"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	ksmFramework "k8s.io/kube-state-metrics/v2/tests/e2e/framework"
 )

@@ -65,6 +65,11 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.F
 
 func WithNamespacesPredicate(namespaces []string) Opt {
 	return func(s *MetricsStore) {
+		namespaceSet := make(map[string]struct{}, len(namespaces))
+		for _, namespace := range namespaces {
+			namespaceSet[namespace] = struct{}{}
+		}
+
 		s.predicates = append(s.predicates, func(obj interface{}) (bool, error) {
 			o, err := meta.Accessor(obj)
 			if err != nil {
@@ -76,10 +81,8 @@ func WithNamespacesPredicate(namespaces []string) Opt {
 				return true, nil
 			}
 
-			for _, namespace := range namespaces {
-				if o.GetNamespace() == namespace {
-					return true, nil
-				}
+			if _, ok := namespaceSet[o.GetNamespace()]; ok {
+				return true, nil
 			}
 			return false, nil
 		})

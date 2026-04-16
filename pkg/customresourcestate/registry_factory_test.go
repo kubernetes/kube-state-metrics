@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -493,8 +494,8 @@ func r(metricNamePrefix *string) Resource {
 	return Resource{MetricNamePrefix: metricNamePrefix, GroupVersionKind: gkv("apps", "v1", "Deployment")}
 }
 
-func gkv(group, version, kind string) GroupVersionKind {
-	return GroupVersionKind{
+func gkv(group, version, kind string) schema.GroupVersionKind {
+	return schema.GroupVersionKind{
 		Group:   group,
 		Version: version,
 		Kind:    kind,

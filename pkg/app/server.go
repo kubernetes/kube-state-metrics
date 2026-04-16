@@ -318,12 +318,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	// A nil CRS config implies that we need to hold off on all CRS operations.
 	if config != nil {
-		discovererInstance := &discovery.CRDiscoverer{
-			CRDsAddEventsCounter:    crdsAddEventsCounter,
-			CRDsUpdateEventsCounter: crdsUpdateEventsCounter,
-			CRDsDeleteEventsCounter: crdsDeleteEventsCounter,
-			CRDsCacheCountGauge:     crdsCacheCountGauge,
-		}
+		discovererInstance := discovery.NewCRDiscoverer(crdsAddEventsCounter, crdsUpdateEventsCounter, crdsDeleteEventsCounter, crdsCacheCountGauge)
 		// storeBuilder starts reflectors for the discovered GVKs, and as such, should close them too.
 		storeBuilder.GVKToReflectorStopChanMap = &discovererInstance.GVKToReflectorStopChanMap
 		// This starts a goroutine that will watch for any new GVKs to extract from CRDs.

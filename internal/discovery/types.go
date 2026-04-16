@@ -55,6 +55,18 @@ type CRDiscoverer struct {
 	WasUpdated bool
 }
 
+// NewCRDiscoverer creates a new CRDiscoverer.
+func NewCRDiscoverer(crdsAddEventsCounter, crdsUpdateEventsCounter, crdsDeleteEventsCounter prometheus.Counter, crdsCacheCountGauge prometheus.Gauge) *CRDiscoverer {
+	return &CRDiscoverer{
+		CRDsAddEventsCounter:      crdsAddEventsCounter,
+		CRDsUpdateEventsCounter:   crdsUpdateEventsCounter,
+		CRDsDeleteEventsCounter:   crdsDeleteEventsCounter,
+		CRDsCacheCountGauge:       crdsCacheCountGauge,
+		Map:                       make(map[string]map[string][]kindPlural),
+		GVKToReflectorStopChanMap: make(map[string]chan struct{}),
+	}
+}
+
 // SafeRead executes the given function while holding a read lock.
 func (r *CRDiscoverer) SafeRead(f func()) {
 	r.m.RLock()

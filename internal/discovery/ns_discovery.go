@@ -66,7 +66,7 @@ func WithFieldSelector(s string) Opt {
 }
 
 func (d *NamespaceDiscoverer) Start(ctx context.Context, kubeClient clientset.Interface) ([]string, error) {
-	informer := cache.NewSharedInformer(&cache.ListWatch{
+	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			if d.fieldSelector != "" {
 				opts.FieldSelector = d.fieldSelector
@@ -85,7 +85,12 @@ func (d *NamespaceDiscoverer) Start(ctx context.Context, kubeClient clientset.In
 			}
 			return kubeClient.CoreV1().Namespaces().Watch(ctx, opts)
 		},
-	}, &corev1.Namespace{}, 0)
+	}
+
+	informer := cache.NewSharedInformer(
+		cache.ToListWatcherWithWatchListSemantics(lw, kubeClient),
+		&corev1.Namespace{}, 0,
+	)
 
 	// TODO: add transform to only return name of namespace to avoid RAM usage
 

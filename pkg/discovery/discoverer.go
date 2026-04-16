@@ -21,15 +21,21 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/rest"
+
 	"k8s.io/kube-state-metrics/v2/internal/discovery"
 )
 
+// Discoverer is an interface that provides a cache of the collected GVKs, along with helper utilities.
 type Discoverer interface {
 	SafeRead(f func())
 	SafeWrite(f func())
 	StartDiscovery(ctx context.Context, config *rest.Config) error
 }
 
+// ensure interface matches the struct that implements it
+var _ Discoverer = &discovery.CRDiscoverer{}
+
+// NewDiscoverer creates a new Discoverer.
 func NewDiscoverer(crdsAddEventsCounter, crdsUpdateEventsCounter, crdsDeleteEventsCounter prometheus.Counter, crdsCacheCountGauge prometheus.Gauge) Discoverer {
 	return discovery.NewCRDiscoverer(crdsAddEventsCounter, crdsUpdateEventsCounter, crdsDeleteEventsCounter, crdsCacheCountGauge)
 }

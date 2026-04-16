@@ -27,7 +27,7 @@ func TestPublicModuleAPI(t *testing.T) {
 	// It does not test any functionality, but rather that the code compiles and can be used as a library.
 
 	// This is a compile-time check that the NewDiscoverer function can be called with the correct arguments.
-	var discoverer discovery.Discoverer = discovery.NewDiscoverer(nil, nil, nil, nil)
+	discoverer := discovery.NewDiscoverer(nil, nil, nil, nil)
 	if discoverer == nil {
 		t.Fatal("expected discoverer to be non-nil")
 	}

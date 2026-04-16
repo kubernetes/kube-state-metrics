@@ -104,7 +104,20 @@ func (d *NamespaceDiscoverer) Start(ctx context.Context, kubeClient clientset.In
 			})
 		},
 		DeleteFunc: func(obj interface{}) {
-			name := obj.(*corev1.Namespace).ObjectMeta.Name
+			ns, ok := obj.(*corev1.Namespace)
+			if !ok {
+				tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+				if !ok {
+					klog.ErrorS(nil, "Error obtaining object from tombstone", "key", obj)
+					return
+				}
+				ns, ok = tombstone.Obj.(*corev1.Namespace)
+				if !ok {
+					klog.ErrorS(nil, "Tombstone contained object that is not a Namespace", "object", obj)
+					return
+				}
+			}
+			name := ns.ObjectMeta.Name
 
 			d.safeWrite(func() {
 				delete(d.namespaces, name)

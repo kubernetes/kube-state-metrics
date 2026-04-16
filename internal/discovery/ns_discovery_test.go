@@ -156,9 +156,11 @@ func Test_NamespaceDiscoverer_Start_LabelSelector(t *testing.T) {
 	}, time.Second, 10*time.Millisecond, "namespace should eventually be added")
 
 	// Should now contain only the default namespace labeled with foo=bar
-	assert.Equal(t, map[string]struct{}{
-		"default": struct{}{},
-	}, discoverer.namespaces)
+	discoverer.safeRead(func() {
+		assert.Equal(t, map[string]struct{}{
+			"default": struct{}{},
+		}, discoverer.namespaces)
+	})
 
 	// TODO: fake client does not seem to support label selectors during watch, only list,
 	// this is why we not do explicitly test this scenario here

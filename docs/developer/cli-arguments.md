@@ -54,6 +54,7 @@ Flags:
   -h, --help                                                 Print Help text
       --host string                                          Host to expose metrics on. (default "::")
       --kubeconfig string                                    Absolute path to the kubeconfig file
+      --label-selector string                                Repeatable resource-specific Kubernetes label selectors in the form 'resource=labelSelector'. Resources use the same plural names as --resources. Examples: '--label-selector=pods=app=frontend' or '--label-selector=nodes=tenant in (team-a,team-b)'.
       --legacy_stderr_threshold_behavior                     If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation                       when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                                       If non-empty, write log files in this directory (no effect when -logtostderr=true)

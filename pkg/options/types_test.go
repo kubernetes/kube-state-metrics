@@ -288,6 +288,106 @@ func TestMetricSetSet(t *testing.T) {
 	}
 }
 
+func TestLabelSelectorSetSet(t *testing.T) {
+	tests := []struct {
+		Desc    string
+		Values  []string
+		Wanted  LabelSelectorSet
+		wantErr bool
+	}{
+		{
+			Desc:   "one resource",
+			Values: []string{"pods=app=frontend"},
+			Wanted: LabelSelectorSet{
+				"pods": "app=frontend",
+			},
+		},
+		{
+			Desc:   "multiple resources with commas and spaces",
+			Values: []string{"nodes=tenant in (team-a,team-b)", "pods=app in (frontend,api)"},
+			Wanted: LabelSelectorSet{
+				"nodes": "tenant in (team-a,team-b)",
+				"pods":  "app in (frontend,api)",
+			},
+		},
+		{
+			Desc:   "selector with label key only",
+			Values: []string{"nodes=node-role.kubernetes.io/control-plane"},
+			Wanted: LabelSelectorSet{
+				"nodes": "node-role.kubernetes.io/control-plane",
+			},
+		},
+		{
+			Desc:   "split only on the first equal sign",
+			Values: []string{"pods=app.kubernetes.io/name=frontend"},
+			Wanted: LabelSelectorSet{
+				"pods": "app.kubernetes.io/name=frontend",
+			},
+		},
+		{
+			Desc:    "duplicate resource",
+			Values:  []string{"pods=app=frontend", "pods=tier=web"},
+			Wanted:  LabelSelectorSet{"pods": "app=frontend"},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		labelSelectors := &LabelSelectorSet{}
+
+		var gotErr error
+		for _, value := range test.Values {
+			gotErr = labelSelectors.Set(value)
+			if gotErr != nil {
+				break
+			}
+		}
+
+		if gotErr != nil && !test.wantErr {
+			t.Errorf("Test error for Desc: %s. Got Error: %v", test.Desc, gotErr)
+			continue
+		}
+		if gotErr == nil && test.wantErr {
+			t.Errorf("Expected error for Desc: %s", test.Desc)
+			continue
+		}
+		if !reflect.DeepEqual(*labelSelectors, test.Wanted) {
+			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, *labelSelectors)
+		}
+	}
+}
+
+func TestLabelSelectorSetValidate(t *testing.T) {
+	tests := []struct {
+		Desc        string
+		Selectors   LabelSelectorSet
+		WantedError bool
+	}{
+		{
+			Desc: "valid selectors",
+			Selectors: LabelSelectorSet{
+				"pods":  "app=frontend",
+				"nodes": "tenant in (team-a,team-b)",
+			},
+			WantedError: false,
+		},
+		{
+			Desc: "invalid selector syntax",
+			Selectors: LabelSelectorSet{
+				"pods": "app in (frontend",
+			},
+			WantedError: true,
+		},
+	}
+
+	for _, test := range tests {
+		err := test.Selectors.Validate()
+		if (err != nil) != test.WantedError {
+			t.Errorf("Test error for Desc: %s. Wanted Error: %v, Got Error: %v", test.Desc, test.WantedError, err)
+		}
+	}
+}
+
 func TestLabelsAllowListSet(t *testing.T) {
 	tests := []struct {
 		Desc   string

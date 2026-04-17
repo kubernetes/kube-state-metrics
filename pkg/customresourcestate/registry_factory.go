@@ -279,6 +279,42 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 		}
 	case []interface{}:
 		for i, it := range iter {
+			// Check if it is a [][]interface{} if yes loop over it
+			// Else process normally
+			if nestedIter, ok := it.([]interface{}); ok {
+				for j, nestedIt := range nestedIter {
+					value, err := c.value(nestedIt)
+
+					if err != nil {
+						onError(fmt.Errorf("[%d][%d]: %w", i, j, err))
+						continue
+					}
+					if value == nil {
+						continue
+					}
+					addPathLabels(nestedIt, c.LabelFromPath(), value.Labels)
+					result = append(result, *value)
+				}
+				continue
+			}
+
+			if values, ok := c.ValueFrom.Get(it).([]interface{}); ok {
+				for idx, v := range values {
+					val, err := toFloat64(v, c.NilIsZero)
+					if err != nil {
+						onError(fmt.Errorf("[%d][%d]: %w", i, idx, err))
+						continue
+					}
+					ev := eachValue{
+						Labels: make(map[string]string),
+						Value:  val,
+					}
+					addPathLabelsByIndex(it, c.LabelFromPath(), ev.Labels, idx)
+					result = append(result, ev)
+				}
+				continue
+			}
+
 			value, err := c.value(it)
 			if err != nil {
 				onError(fmt.Errorf("[%d]: %w", i, err))
@@ -516,6 +552,10 @@ func (f compiledFamily) BaseLabels(obj map[string]interface{}) map[string]string
 }
 
 func addPathLabels(obj interface{}, labels map[string]valuePath, result map[string]string) {
+	addPathLabelsByIndex(obj, labels, result, -1)
+}
+
+func addPathLabelsByIndex(obj interface{}, labels map[string]valuePath, result map[string]string, index int) {
 	// *prefixed is a special case, it means copy an object
 	// always do that first so other labels can override
 	var stars []string
@@ -527,6 +567,14 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 	sort.Strings(stars)
 	for _, star := range stars {
 		m := labels[star].Get(obj)
+		if s, ok := m.([]interface{}); ok && index != -1 {
+			if index < len(s) {
+				m = s[index]
+			} else {
+				continue
+			}
+		}
+
 		if kv, ok := m.(map[string]interface{}); ok {
 			for k, v := range kv {
 				if strings.HasSuffix(star, "*") {
@@ -541,6 +589,13 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 			continue
 		}
 		value := v.Get(obj)
+		if s, ok := value.([]interface{}); ok && index != -1 {
+			if index < len(s) {
+				value = s[index]
+			} else {
+				continue
+			}
+		}
 		// skip label if value is nil
 		if value == nil {
 			continue
@@ -579,87 +634,131 @@ func (p valuePath) String() string {
 	return b.String()
 }
 
-func compilePath(path []string) (out valuePath, _ error) {
-	for i := range path {
-		part := path[i]
-		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
-			// list lookup: [key=value]
-			eq := strings.SplitN(part[1:len(part)-1], "=", 2)
-			if len(eq) != 2 {
-				return nil, fmt.Errorf("invalid list lookup: %s", part)
+func compileWildcardOp(part string) pathOp {
+	return pathOp{
+		part: part,
+		op: func(m interface{}) interface{} {
+			if s, ok := m.([]interface{}); ok {
+				return s
 			}
-			key, val := eq[0], eq[1]
-			num, notNum := toFloat64(val, false)
-			boolVal, notBool := strconv.ParseBool(val)
-			out = append(out, pathOp{
-				part: part,
-				op: func(m interface{}) interface{} {
-					if s, ok := m.([]interface{}); ok {
-						for _, v := range s {
-							if m, ok := v.(map[string]interface{}); ok {
-								candidate, set := m[key]
-								if !set {
-									continue
-								}
+			return nil
+		},
+	}
+}
 
-								if candidate == val {
-									return m
-								}
+func compileFieldCollectOp(part string) pathOp {
+	fieldName := part[1 : len(part)-1]
+	return pathOp{
+		part: part,
+		op: func(m interface{}) interface{} {
+			if s, ok := m.([]interface{}); ok {
+				var result []interface{}
+				for _, el := range s {
+					if mp, ok := el.(map[string]interface{}); ok {
+						if v, ok := mp[fieldName]; ok {
+							result = append(result, v)
+						}
+					}
+				}
+				return result
+			}
+			return nil
+		},
+	}
+}
 
-								if notNum == nil {
-									if i, err := toFloat64(candidate, false); err == nil && num == i {
-										return m
-									}
-								}
-
-								if notBool == nil {
-									if v, ok := candidate.(bool); ok && v == boolVal {
-										return m
-									}
-								}
-
+func compileListLookupOp(part string) (pathOp, error) {
+	eq := strings.SplitN(part[1:len(part)-1], "=", 2)
+	if len(eq) != 2 {
+		return pathOp{}, fmt.Errorf("invalid list lookup: %s", part)
+	}
+	key, val := eq[0], eq[1]
+	num, notNum := toFloat64(val, false)
+	boolVal, notBool := strconv.ParseBool(val)
+	return pathOp{
+		part: part,
+		op: func(m interface{}) interface{} {
+			if s, ok := m.([]interface{}); ok {
+				for _, v := range s {
+					if mp, ok := v.(map[string]interface{}); ok {
+						candidate, set := mp[key]
+						if !set {
+							continue
+						}
+						if candidate == val {
+							return mp
+						}
+						if notNum == nil {
+							if i, err := toFloat64(candidate, false); err == nil && num == i {
+								return mp
+							}
+						}
+						if notBool == nil {
+							if v, ok := candidate.(bool); ok && v == boolVal {
+								return mp
 							}
 						}
 					}
-					return nil
-				},
-			})
+				}
+			}
+			return nil
+		},
+	}, nil
+}
+
+func compileBracketOp(part string) (pathOp, error) {
+	if part == "[*]" {
+		return compileWildcardOp(part), nil
+	}
+	if !strings.Contains(part[1:len(part)-1], "=") {
+		return compileFieldCollectOp(part), nil
+	}
+	return compileListLookupOp(part)
+}
+
+func compileKeyOp(part string) pathOp {
+	return pathOp{
+		part: part,
+		op: func(m interface{}) interface{} {
+			if mp, ok := m.(map[string]interface{}); ok {
+				kv := strings.Split(part, "=")
+				if len(kv) == 2 /* k=v */ {
+					key := kv[0]
+					val := kv[1]
+					if v, ok := mp[key]; ok && v == val {
+						return v
+					}
+				}
+				return mp[part]
+			} else if s, ok := m.([]interface{}); ok {
+				// case part is an integer index
+				i, err := strconv.Atoi(part)
+				if err == nil {
+					if i < 0 {
+						// negative index
+						i += len(s)
+					}
+					if i < 0 || i >= len(s) {
+						return fmt.Errorf("list index out of range: %s", part)
+					}
+					return s[i]
+				}
+			}
+			return nil
+		},
+	}
+}
+
+func compilePath(path []string) (out valuePath, _ error) {
+	for _, part := range path {
+		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
+			op, err := compileBracketOp(part)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, op)
 		} else {
-			out = append(out, pathOp{
-				part: part,
-				op: func(m interface{}) interface{} {
-					if mp, ok := m.(map[string]interface{}); ok {
-						kv := strings.Split(part, "=")
-						if len(kv) == 2 /* k=v */ {
-							key := kv[0]
-							val := kv[1]
-							if v, ok := mp[key]; ok {
-								if v == val {
-									return v
-								}
-							}
-						}
-						return mp[part]
-					} else if s, ok := m.([]interface{}); ok {
-						i, err := strconv.Atoi(part)
-						if err != nil {
-							// This means we are here: [ <string>, <int>, ... ] (eg., [ "foo", "0", ... ], i.e., <path>.foo[0]...
-							//                           ^
-							// Skip over.
-							return nil
-						}
-						if i < 0 {
-							// negative index
-							i += len(s)
-						}
-						if i < 0 || i >= len(s) {
-							return fmt.Errorf("list index out of range: %s", part)
-						}
-						return s[i]
-					}
-					return nil
-				},
-			})
+			out = append(out, compileKeyOp(part))
 		}
 	}
 	return out, nil

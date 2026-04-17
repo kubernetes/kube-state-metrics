@@ -161,7 +161,7 @@ examples/prometheus-alerting-rules/alerts.yaml: jsonnet $(shell find jsonnet | g
 	mkdir -p examples/prometheus-alerting-rules
 	${JSONNET_CLI}  -J scripts/vendor scripts/mixin.jsonnet | ${GOJQ_CLI} --yaml-output > examples/prometheus-alerting-rules/alerts.yaml
 
-examples: examples/standard examples/autosharding examples/daemonsetsharding mixin
+examples: examples/standard examples/autosharding examples/daemonsetsharding examples/deploymentsharding mixin
 
 examples/standard: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/standard.jsonnet scripts/vendor
 	mkdir -p examples/standard
@@ -176,6 +176,11 @@ examples/autosharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts
 examples/daemonsetsharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/daemonsetsharding.jsonnet scripts/vendor
 	mkdir -p examples/daemonsetsharding
 	${JSONNET_CLI} -J scripts/vendor -m examples/daemonsetsharding --ext-str version="$(VERSION)" scripts/daemonsetsharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJQ_CLI} --yaml-output > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
+	find examples -type f ! -name '*.yaml' -delete
+
+examples/deploymentsharding: jsonnet $(shell find jsonnet | grep ".libsonnet") scripts/deploymentsharding.jsonnet scripts/vendor
+	mkdir -p examples/deploymentsharding
+	${JSONNET_CLI} -J scripts/vendor -m examples/deploymentsharding --ext-str version="$(VERSION)" scripts/deploymentsharding.jsonnet | xargs -I{} sh -c 'cat {} | ${GOJQ_CLI} --yaml-output > `echo {} | sed "s/\(.\)\([A-Z]\)/\1-\2/g" | tr "[:upper:]" "[:lower:]"`.yaml' -- {}
 	find examples -type f ! -name '*.yaml' -delete
 
 scripts/vendor: scripts/jsonnetfile.json scripts/jsonnetfile.lock.json

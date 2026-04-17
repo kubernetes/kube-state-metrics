@@ -12,6 +12,8 @@ Two flags can be used:
 * `--custom-resource-state-config "inline yaml (see example)"` or
 * `--custom-resource-state-config-file /path/to/config.yaml`
 
+When using a `--config` file, the equivalent YAML key is `custom_resource_state_config_file`. The pre-v2.17 key `custom_resource_config_file` is still honored as a deprecated alias and will be removed in a future release; please migrate to `custom_resource_state_config_file`.
+
 If both flags are provided, the inline configuration will take precedence.
 When multiple entries for the same resource exist, kube-state-metrics will exit with an error.
 This includes configuration which refers to a different API version.

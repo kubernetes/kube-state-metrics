@@ -477,4 +477,45 @@
     clusterRole: ksm.clusterRole,
     clusterRoleBinding: ksm.clusterRoleBinding,
   },
+  deploymentsharding::
+    local totalShards = 3;
+    local deploymentShard(shard) =
+      local shardName = ksm.name + '-' + shard;
+      local c = ksm.deployment.spec.template.spec.containers[0] {
+        args: [
+          '--shard=' + shard,
+          '--total-shards=' + totalShards,
+        ],
+      };
+      std.mergePatch(
+        ksm.deployment,
+        {
+          metadata: {
+            name: shardName,
+            labels: { 'app.kubernetes.io/name': shardName },
+          },
+          spec: {
+            selector: {
+              matchLabels: { 'app.kubernetes.io/name': shardName },
+            },
+            template: {
+              metadata: {
+                labels: { 'app.kubernetes.io/name': shardName },
+              },
+              spec: {
+                containers: [c],
+              },
+            },
+          },
+        }
+      );
+    {
+      ['deployment-' + i]: deploymentShard(i)
+      for i in std.range(0, totalShards - 1)
+    } + {
+      service: ksm.service,
+      serviceAccount: ksm.serviceAccount,
+      clusterRole: ksm.clusterRole,
+      clusterRoleBinding: ksm.clusterRoleBinding,
+    },
 }

@@ -522,35 +522,22 @@ func (b *Builder) buildStores(
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
 	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
 	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
+	var metricsStoreOpts []metricsstore.Opt
 
-	if b.namespaces.IsAllNamespaces() {
-		store := metricsstore.NewMetricsStore(
-			familyHeaders,
-			composedMetricGenFuncs,
-		)
-		if b.fieldSelectorFilter != "" {
-			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
-		}
-		listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
-		return []cache.Store{store}
+	if !b.namespaces.IsAllNamespaces() {
+		metricsStoreOpts = append(metricsStoreOpts, metricsstore.WithNamespacesPredicate([]string(b.namespaces)))
 	}
-
-	stores := make([]cache.Store, 0, len(b.namespaces))
-	for _, ns := range b.namespaces {
-		store := metricsstore.NewMetricsStore(
-			familyHeaders,
-			composedMetricGenFuncs,
-		)
-		if b.fieldSelectorFilter != "" {
-			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
-		}
-		listWatcher := listWatchFunc(b.kubeClient, ns, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
-		stores = append(stores, store)
+	store := metricsstore.NewMetricsStore(
+		familyHeaders,
+		composedMetricGenFuncs,
+		metricsStoreOpts...,
+	)
+	if b.fieldSelectorFilter != "" {
+		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 	}
-
-	return stores
+	listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+	b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
+	return []cache.Store{store}
 }
 
 // TODO(Garrybest): Merge `buildStores` and `buildCustomResourceStores`
@@ -581,32 +568,22 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 		return []cache.Store{}
 	}
 
-	if b.namespaces.IsAllNamespaces() {
-		store := metricsstore.NewMetricsStore(
-			familyHeaders,
-			composedMetricGenFuncs,
-		)
-		if b.fieldSelectorFilter != "" {
-			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
-		}
-		listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, customResourceClient)
-		return []cache.Store{store}
+	var metricsStoreOpts []metricsstore.Opt
+	if !b.namespaces.IsAllNamespaces() {
+		metricsStoreOpts = append(metricsStoreOpts, metricsstore.WithNamespacesPredicate([]string(b.namespaces)))
 	}
 
-	stores := make([]cache.Store, 0, len(b.namespaces))
-	for _, ns := range b.namespaces {
-		store := metricsstore.NewMetricsStore(
-			familyHeaders,
-			composedMetricGenFuncs,
-		)
+	store := metricsstore.NewMetricsStore(
+		familyHeaders,
+		composedMetricGenFuncs,
+		metricsStoreOpts...,
+	)
+	if b.fieldSelectorFilter != "" {
 		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
-		listWatcher := listWatchFunc(customResourceClient, ns, b.fieldSelectorFilter)
-		b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, customResourceClient)
-		stores = append(stores, store)
 	}
-
-	return stores
+	listWatcher := listWatchFunc(customResourceClient, v1.NamespaceAll, b.fieldSelectorFilter)
+	b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, customResourceClient)
+	return []cache.Store{store}
 }
 
 // startReflector starts a Kubernetes client-go reflector with the given

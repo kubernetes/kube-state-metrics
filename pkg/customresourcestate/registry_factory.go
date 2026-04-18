@@ -164,13 +164,13 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		if err != nil {
 			return nil, fmt.Errorf("each.gauge: %w", err)
 		}
-		valueFromPath, err := compilePath(m.Gauge.ValueFrom)
+		strategy, err := compileValueExtractor(m.Gauge.ValueFrom, cc.path, cc.labelFromPath, m.Gauge.NilIsZero, m.Gauge.LabelFromKey)
 		if err != nil {
 			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
 		}
 		return &compiledGauge{
 			compiledCommon: *cc,
-			ValueFrom:      valueFromPath,
+			extractor:      strategy,
 			NilIsZero:      m.Gauge.NilIsZero,
 			labelFromKey:   m.Gauge.LabelFromKey,
 		}, nil
@@ -196,7 +196,8 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		if err != nil {
 			return nil, fmt.Errorf("each.stateSet: %w", err)
 		}
-		valueFromPath, err := compilePath(m.StateSet.ValueFrom)
+		// TODO: migrate to new ValueFrom struct and support CEL-based StateSet as well
+		valueFromPath, err := compilePath(m.StateSet.ValueFrom.PathValueFrom)
 		if err != nil {
 			return nil, fmt.Errorf("each.stateSet.valueFrom: %w", err)
 		}
@@ -214,95 +215,13 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 type compiledGauge struct {
 	compiledCommon
 	labelFromKey string
-	ValueFrom    valuePath
+	extractor    valueExtractor
 	NilIsZero    bool
 }
 
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
-	onError := func(err error) {
-		errs = append(errs, fmt.Errorf("%s: %v", c.Path(), err))
-	}
-
-	switch iter := v.(type) {
-	case map[string]interface{}:
-		for key, it := range iter {
-			// TODO: Handle multi-length valueFrom paths (https://github.com/kubernetes/kube-state-metrics/pull/1958#discussion_r1099243161).
-			// Try to deduce `valueFrom`'s value from the current element.
-			var ev *eachValue
-			var err error
-			var didResolveValueFrom bool
-			// `valueFrom` will ultimately be rendered into a string and sent to the fallback in place, which also expects a string.
-			// So we'll do the same and operate on the string representation of `valueFrom`'s value.
-			sValueFrom := c.ValueFrom.String()
-			// No comma means we're looking at a unit-length path (in an array).
-			if !strings.Contains(sValueFrom, ",") &&
-				sValueFrom[0] == '[' && sValueFrom[len(sValueFrom)-1] == ']' &&
-				// "[...]" and not "[]".
-				len(sValueFrom) > 2 {
-				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
-				if key == extractedValueFrom {
-					gotFloat, err := toFloat64(it, c.NilIsZero)
-					if err != nil {
-						onError(fmt.Errorf("[%s]: %w", key, err))
-						continue
-					}
-					labels := make(map[string]string)
-					ev = &eachValue{
-						Labels: labels,
-						Value:  gotFloat,
-					}
-					didResolveValueFrom = true
-				}
-			}
-			// Fallback to the regular path resolution, if we didn't manage to resolve `valueFrom`'s value.
-			if !didResolveValueFrom {
-				ev, err = c.value(it)
-				if ev == nil {
-					continue
-				}
-			}
-			if err != nil {
-				onError(fmt.Errorf("[%s]: %w", key, err))
-				continue
-			}
-			if _, ok := ev.Labels[c.labelFromKey]; ok {
-				onError(fmt.Errorf("labelFromKey (%s) generated labels conflict with labelsFromPath, consider renaming it", c.labelFromKey))
-				continue
-			}
-			if key != "" && c.labelFromKey != "" {
-				ev.Labels[c.labelFromKey] = key
-			}
-			addPathLabels(it, c.LabelFromPath(), ev.Labels)
-			// Evaluate path from parent's context as well (search w.r.t. the root element, not just specific fields).
-			addPathLabels(v, c.LabelFromPath(), ev.Labels)
-			result = append(result, *ev)
-		}
-	case []interface{}:
-		for i, it := range iter {
-			value, err := c.value(it)
-			if err != nil {
-				onError(fmt.Errorf("[%d]: %w", i, err))
-				continue
-			}
-			if value == nil {
-				continue
-			}
-			addPathLabels(it, c.LabelFromPath(), value.Labels)
-			result = append(result, *value)
-		}
-	default:
-		value, err := c.value(v)
-		if err != nil {
-			onError(err)
-			break
-		}
-		if value == nil {
-			break
-		}
-		addPathLabels(v, c.LabelFromPath(), value.Labels)
-		result = append(result, *value)
-	}
-	return
+	// Use the extractor to extract values
+	return c.extractor.extractValues(v)
 }
 
 type compiledInfo struct {
@@ -442,34 +361,6 @@ func less(a, b map[string]string) bool {
 		return va < vb
 	}
 	return len(aKeys) < len(bKeys)
-}
-
-func (c compiledGauge) value(it interface{}) (*eachValue, error) {
-	labels := make(map[string]string)
-	got := c.ValueFrom.Get(it)
-	// If `valueFrom` was not resolved, respect `NilIsZero` and return.
-	if got == nil {
-		if c.NilIsZero {
-			return &eachValue{
-				Labels: labels,
-				Value:  0,
-			}, nil
-		}
-		// no it means no iterables were passed down, meaning that the path resolution never happened
-		if it == nil {
-			return nil, fmt.Errorf("got nil while resolving path")
-		}
-		// Don't error if there was not a type-casting issue (`toFloat64`).
-		return nil, nil
-	}
-	value, err := toFloat64(got, c.NilIsZero)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", c.ValueFrom, err)
-	}
-	return &eachValue{
-		Labels: labels,
-		Value:  value,
-	}, nil
 }
 
 func (e eachValue) DefaultLabels(defaults map[string]string) {
@@ -663,6 +554,38 @@ func compilePath(path []string) (out valuePath, _ error) {
 		}
 	}
 	return out, nil
+}
+
+// compileValueExtractor creates the appropriate value extraction strategy based on ValueFrom configuration.
+func compileValueExtractor(vf ValueFrom, path valuePath, labelFromPath map[string]valuePath, nilIsZero bool, labelFromKey string) (valueExtractor, error) {
+	hasPath := len(vf.PathValueFrom) > 0
+	hasCEL := vf.CelExpr != ""
+	hasLabelFromKey := labelFromKey != ""
+
+	if hasPath && hasCEL {
+		return nil, fmt.Errorf("cannot specify both pathValueFrom and celExpr")
+	}
+
+	if hasLabelFromKey && hasCEL {
+		return nil, fmt.Errorf("labelFromKey cannot be used with celExpr, consider using WithLabels(value, labels) CEL function instead")
+	}
+
+	if hasCEL {
+		return newCELValueExtractor(vf.CelExpr, path, labelFromPath, nilIsZero)
+	}
+
+	pathValue, err := compilePath(vf.PathValueFrom)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile pathValueFrom: %w", err)
+	}
+
+	return &pathValueExtractor{
+		valueFrom:     pathValue,
+		path:          path,
+		labelFromPath: labelFromPath,
+		nilIsZero:     nilIsZero,
+		labelFromKey:  labelFromKey,
+	}, nil
 }
 
 func famGen(f compiledFamily) generator.FamilyGenerator {

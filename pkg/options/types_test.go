@@ -382,6 +382,21 @@ func TestLabelsAllowListSet(t *testing.T) {
 				},
 			}),
 		},
+		{
+			Desc:  "with partial wildcard",
+			Value: "*=[somelabel/*]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"*": {
+					"somelabel/*",
+				},
+			}),
+		},
+		{
+			Desc:   "[invalid] with multiple partial wildcards per label",
+			Value:  "*=[somelabel/*-foo-*]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    true,
+		},
 	}
 
 	for _, test := range tests {

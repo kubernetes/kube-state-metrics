@@ -84,8 +84,28 @@ func (r *CRDiscoverer) AppendToMap(gvkps ...groupVersionKindPlural) {
 		if _, ok := r.Map[gvkp.Group][gvkp.Version]; !ok {
 			r.Map[gvkp.Group][gvkp.Version] = []kindPlural{}
 		}
-		r.Map[gvkp.Group][gvkp.Version] = append(r.Map[gvkp.Group][gvkp.Version], kindPlural{Kind: gvkp.Kind, Plural: gvkp.Plural})
-		r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()] = make(chan struct{})
+
+		// Create a new channel if one doesn't exist yet
+		gvkString := gvkp.GroupVersionKind.String()
+		if _, ok := r.GVKToReflectorStopChanMap[gvkString]; !ok {
+			r.GVKToReflectorStopChanMap[gvkString] = make(chan struct{})
+		}
+
+		// Prevent duplicates
+		found := false
+		for i, el := range r.Map[gvkp.Group][gvkp.Version] {
+			if el.Kind == gvkp.Kind {
+				found = true
+				// Update plural if it changed
+				if el.Plural != gvkp.Plural {
+					r.Map[gvkp.Group][gvkp.Version][i].Plural = gvkp.Plural
+				}
+				break
+			}
+		}
+		if !found {
+			r.Map[gvkp.Group][gvkp.Version] = append(r.Map[gvkp.Group][gvkp.Version], kindPlural{Kind: gvkp.Kind, Plural: gvkp.Plural})
+		}
 	}
 }
 
@@ -100,9 +120,10 @@ func (r *CRDiscoverer) RemoveFromMap(gvkps ...groupVersionKindPlural) {
 		}
 		for i, el := range r.Map[gvkp.Group][gvkp.Version] {
 			if el.Kind == gvkp.Kind {
-				if _, ok := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]; ok {
-					close(r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()])
-					delete(r.GVKToReflectorStopChanMap, gvkp.GroupVersionKind.String())
+				gvkString := gvkp.GroupVersionKind.String()
+				if stopChan, ok := r.GVKToReflectorStopChanMap[gvkString]; ok {
+					close(stopChan)
+					delete(r.GVKToReflectorStopChanMap, gvkString)
 				}
 				if len(r.Map[gvkp.Group][gvkp.Version]) == 1 {
 					delete(r.Map[gvkp.Group], gvkp.Version)

@@ -235,6 +235,82 @@ func TestIngressStore(t *testing.T) {
 				`,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},
 		},
+		{
+			Obj: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress8",
+					Namespace:         "ns8",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "123456",
+				},
+				Status: networkingv1.IngressStatus{
+					LoadBalancer: networkingv1.IngressLoadBalancerStatus{
+						Ingress: []networkingv1.IngressLoadBalancerIngress{
+							{
+								IP:       "1.2.3.4",
+								Hostname: "www.example.com",
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_ingress_status_load_balancer Ingress load balancer status.
+				# TYPE kube_ingress_status_load_balancer gauge
+				kube_ingress_status_load_balancer{namespace="ns8",ingress="ingress8",ip="1.2.3.4",hostname="www.example.com"} 1
+				`,
+			MetricNames: []string{"kube_ingress_status_load_balancer"},
+		},
+		{
+			Obj: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress9",
+					Namespace:         "ns9",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "123456",
+				},
+				Status: networkingv1.IngressStatus{
+					LoadBalancer: networkingv1.IngressLoadBalancerStatus{
+						Ingress: []networkingv1.IngressLoadBalancerIngress{
+							{
+								IP: "1.2.3.4",
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_ingress_status_load_balancer Ingress load balancer status.
+				# TYPE kube_ingress_status_load_balancer gauge
+				kube_ingress_status_load_balancer{namespace="ns9",ingress="ingress9",ip="1.2.3.4",hostname=""} 1
+				`,
+			MetricNames: []string{"kube_ingress_status_load_balancer"},
+		},
+		{
+			Obj: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ingress10",
+					Namespace:         "ns10",
+					CreationTimestamp: metav1StartTime,
+					ResourceVersion:   "123456",
+				},
+				Status: networkingv1.IngressStatus{
+					LoadBalancer: networkingv1.IngressLoadBalancerStatus{
+						Ingress: []networkingv1.IngressLoadBalancerIngress{
+							{
+								Hostname: "www.example.com",
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_ingress_status_load_balancer Ingress load balancer status.
+				# TYPE kube_ingress_status_load_balancer gauge
+				kube_ingress_status_load_balancer{namespace="ns10",ingress="ingress10",ip="",hostname="www.example.com"} 1
+				`,
+			MetricNames: []string{"kube_ingress_status_load_balancer"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(ingressMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

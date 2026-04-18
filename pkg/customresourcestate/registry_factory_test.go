@@ -333,6 +333,22 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 0, "phase", "bar"),
 			newEachValue(t, 1, "phase", "foo"),
 		}},
+		{name: "stateset nil path", each: &compiledStateSet{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "does", "not", "exist"),
+			},
+			LabelName: "phase",
+			List:      []string{"foo", "bar"},
+		}, wantResult: []eachValue{}, wantErrors: nil},
+		{name: "stateset non-string value", each: &compiledStateSet{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "spec", "replicas"),
+			},
+			LabelName: "phase",
+			List:      []string{"1", "2"},
+		}, wantResult: []eachValue{}, wantErrors: []error{
+			errors.New("[spec,replicas]: expected value for path to be string, got float64"),
+		}},
 		{name: "status_conditions", each: &compiledGauge{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "status", "conditions", "[type=Ready]", "status"),

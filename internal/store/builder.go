@@ -414,11 +414,11 @@ func (b *Builder) buildLimitRangeStores() []cache.Store {
 }
 
 func (b *Builder) buildMutatingWebhookConfigurationStores() []cache.Store {
-	return b.buildStoresFunc(mutatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(mutatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.MutatingWebhookConfiguration{}, createMutatingWebhookConfigurationListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildNamespaceStores() []cache.Store {
-	return b.buildStoresFunc(namespaceMetricFamilies(b.allowAnnotationsList["namespaces"], b.allowLabelsList["namespaces"]), &v1.Namespace{}, createNamespaceListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(namespaceMetricFamilies(b.allowAnnotationsList["namespaces"], b.allowLabelsList["namespaces"]), &v1.Namespace{}, createNamespaceListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildNetworkPolicyStores() []cache.Store {
@@ -426,7 +426,7 @@ func (b *Builder) buildNetworkPolicyStores() []cache.Store {
 }
 
 func (b *Builder) buildNodeStores() []cache.Store {
-	return b.buildStoresFunc(nodeMetricFamilies(b.allowAnnotationsList["nodes"], b.allowLabelsList["nodes"]), &v1.Node{}, createNodeListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(nodeMetricFamilies(b.allowAnnotationsList["nodes"], b.allowLabelsList["nodes"]), &v1.Node{}, createNodeListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildPersistentVolumeClaimStores() []cache.Store {
@@ -434,7 +434,7 @@ func (b *Builder) buildPersistentVolumeClaimStores() []cache.Store {
 }
 
 func (b *Builder) buildPersistentVolumeStores() []cache.Store {
-	return b.buildStoresFunc(persistentVolumeMetricFamilies(b.allowAnnotationsList["persistentvolumes"], b.allowLabelsList["persistentvolumes"]), &v1.PersistentVolume{}, createPersistentVolumeListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(persistentVolumeMetricFamilies(b.allowAnnotationsList["persistentvolumes"], b.allowLabelsList["persistentvolumes"]), &v1.PersistentVolume{}, createPersistentVolumeListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildPodDisruptionBudgetStores() []cache.Store {
@@ -470,7 +470,7 @@ func (b *Builder) buildStatefulSetStores() []cache.Store {
 }
 
 func (b *Builder) buildStorageClassStores() []cache.Store {
-	return b.buildStoresFunc(storageClassMetricFamilies(b.allowAnnotationsList["storageclasses"], b.allowLabelsList["storageclasses"]), &storagev1.StorageClass{}, createStorageClassListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(storageClassMetricFamilies(b.allowAnnotationsList["storageclasses"], b.allowLabelsList["storageclasses"]), &storagev1.StorageClass{}, createStorageClassListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildPodStores() []cache.Store {
@@ -478,15 +478,15 @@ func (b *Builder) buildPodStores() []cache.Store {
 }
 
 func (b *Builder) buildCsrStores() []cache.Store {
-	return b.buildStoresFunc(csrMetricFamilies(b.allowAnnotationsList["certificatesigningrequests"], b.allowLabelsList["certificatesigningrequests"]), &certv1.CertificateSigningRequest{}, createCSRListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(csrMetricFamilies(b.allowAnnotationsList["certificatesigningrequests"], b.allowLabelsList["certificatesigningrequests"]), &certv1.CertificateSigningRequest{}, createCSRListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildValidatingWebhookConfigurationStores() []cache.Store {
-	return b.buildStoresFunc(validatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(validatingWebhookConfigurationMetricFamilies, &admissionregistrationv1.ValidatingWebhookConfiguration{}, createValidatingWebhookConfigurationListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildVolumeAttachmentStores() []cache.Store {
-	return b.buildStoresFunc(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildLeasesStores() []cache.Store {
@@ -494,7 +494,7 @@ func (b *Builder) buildLeasesStores() []cache.Store {
 }
 
 func (b *Builder) buildClusterRoleStores() []cache.Store {
-	return b.buildStoresFunc(clusterRoleMetricFamilies(b.allowAnnotationsList["clusterroles"], b.allowLabelsList["clusterroles"]), &rbacv1.ClusterRole{}, createClusterRoleListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(clusterRoleMetricFamilies(b.allowAnnotationsList["clusterroles"], b.allowLabelsList["clusterroles"]), &rbacv1.ClusterRole{}, createClusterRoleListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildRoleStores() []cache.Store {
@@ -502,7 +502,7 @@ func (b *Builder) buildRoleStores() []cache.Store {
 }
 
 func (b *Builder) buildClusterRoleBindingStores() []cache.Store {
-	return b.buildStoresFunc(clusterRoleBindingMetricFamilies(b.allowAnnotationsList["clusterrolebindings"], b.allowLabelsList["clusterrolebindings"]), &rbacv1.ClusterRoleBinding{}, createClusterRoleBindingListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(clusterRoleBindingMetricFamilies(b.allowAnnotationsList["clusterrolebindings"], b.allowLabelsList["clusterrolebindings"]), &rbacv1.ClusterRoleBinding{}, createClusterRoleBindingListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildRoleBindingStores() []cache.Store {
@@ -510,7 +510,33 @@ func (b *Builder) buildRoleBindingStores() []cache.Store {
 }
 
 func (b *Builder) buildIngressClassStores() []cache.Store {
-	return b.buildStoresFunc(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+// buildClusterScopedStores creates a single store for cluster-scoped resources
+// (e.g., nodes, PVs, namespaces, clusterroles). Unlike buildStores, this
+// always watches all objects regardless of the --namespaces flag, preventing
+// duplicate metrics when multiple namespaces are specified.
+func (b *Builder) buildClusterScopedStores(
+	metricFamilies []generator.FamilyGenerator,
+	expectedType interface{},
+	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	useAPIServerCache bool, objectLimit int64,
+) []cache.Store {
+	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
+	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
+	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
+
+	store := metricsstore.NewMetricsStore(
+		familyHeaders,
+		composedMetricGenFuncs,
+	)
+	if b.fieldSelectorFilter != "" {
+		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
+	}
+	listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
+	b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
+	return []cache.Store{store}
 }
 
 func (b *Builder) buildStores(

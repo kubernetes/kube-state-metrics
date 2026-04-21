@@ -217,8 +217,16 @@ func TestCRDExtractor_NoPanicOnArbitraryInput(t *testing.T) {
 		&unstructured.Unstructured{Object: map[string]interface{}{"spec": "not a map"}},
 		&unstructured.Unstructured{Object: map[string]interface{}{"spec": map[string]interface{}{"versions": "not a slice"}}},
 	}
+	mustNotPanic := func(name string, in interface{}, fn func()) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				t.Errorf("%s panicked on input %#v: %v", name, in, rec)
+			}
+		}()
+		fn()
+	}
 	for _, in := range weirdInputs {
-		_ = e.SourceID(in)
-		_ = e.ExtractGVKs(in)
+		mustNotPanic("SourceID", in, func() { _ = e.SourceID(in) })
+		mustNotPanic("ExtractGVKs", in, func() { _ = e.ExtractGVKs(in) })
 	}
 }

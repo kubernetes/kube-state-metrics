@@ -48,19 +48,44 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 
 func (r *CRDiscoverer) runInformer(ctx context.Context, informer cache.SharedIndexInformer, extractor extractor) error {
 	stopper := make(chan struct{})
+
+	// Each handler recovers from panics so a single bad object cannot kill
+	// the informer goroutine 
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
+			defer func() {
+				if rec := recover(); rec != nil {
+					klog.ErrorS(nil, "recovered from panic in discovery add handler", "panic", rec)
+				}
+			}()
 			sourceID := extractor.SourceID(obj)
-			resources := extractor.ExtractGVKs(obj)
-			r.UpdateSource(sourceID, resources)
+			if sourceID == "" {
+				return
+			}
+			r.UpdateSource(sourceID, extractor.ExtractGVKs(obj))
 		},
 		UpdateFunc: func(_, newObj interface{}) {
+			defer func() {
+				if rec := recover(); rec != nil {
+					klog.ErrorS(nil, "recovered from panic in discovery update handler", "panic", rec)
+				}
+			}()
 			sourceID := extractor.SourceID(newObj)
-			resources := extractor.ExtractGVKs(newObj)
-			r.UpdateSource(sourceID, resources)
+			if sourceID == "" {
+				return
+			}
+			r.UpdateSource(sourceID, extractor.ExtractGVKs(newObj))
 		},
 		DeleteFunc: func(obj interface{}) {
+			defer func() {
+				if rec := recover(); rec != nil {
+					klog.ErrorS(nil, "recovered from panic in discovery delete handler", "panic", rec)
+				}
+			}()
 			sourceID := extractor.SourceID(obj)
+			if sourceID == "" {
+				return
+			}
 			r.DeleteSource(sourceID)
 		},
 	})

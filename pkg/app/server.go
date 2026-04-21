@@ -326,7 +326,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		)
 		// storeBuilder uses the discoverer to get stop channels for reflectors.
 		storeBuilder.GVKStopChanProvider = discovererInstance
-		// This starts a goroutine that will watch for any new GVKs to extract from CRDs.
+		// Start a goroutine that watches the configured discovery sources
+		// for new or removed GVKs and keeps the CRDiscoverer cache up to date.
 		err = discovererInstance.StartDiscovery(ctx, kubeConfig)
 		if err != nil {
 			return err

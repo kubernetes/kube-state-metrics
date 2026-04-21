@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -32,17 +33,27 @@ func newTestCRDiscoverer() *CRDiscoverer {
 	)
 }
 
+// makeResources is a small helper for building a single-entry resource slice.
+func makeResources(group, version, kind, plural string) []DiscoveredResource {
+	return []DiscoveredResource{
+		{
+			GroupVersionKind: schema.GroupVersionKind{Group: group, Version: version, Kind: kind},
+			Plural:           plural,
+		},
+	}
+}
+
 func TestResolve(t *testing.T) {
 	type testcase struct {
 		desc      string
-		resources map[string][]*DiscoveredResource // map[sourceID] -> []resources
+		resources map[string][]DiscoveredResource // map[sourceID] -> []resources
 		gvk       schema.GroupVersionKind
 		want      []DiscoveredResource
 	}
 	testcases := []testcase{
 		{
 			desc: "variable version and kind",
-			resources: map[string][]*DiscoveredResource{
+			resources: map[string][]DiscoveredResource{
 				"crd:deployments.apps": {
 					{
 						GroupVersionKind: schema.GroupVersionKind{
@@ -76,7 +87,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			desc: "variable version",
-			resources: map[string][]*DiscoveredResource{
+			resources: map[string][]DiscoveredResource{
 				"crd:testobjects.testgroup": {
 					{
 						GroupVersionKind: schema.GroupVersionKind{
@@ -118,7 +129,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			desc: "variable kind",
-			resources: map[string][]*DiscoveredResource{
+			resources: map[string][]DiscoveredResource{
 				"crd:testobjects.testgroup": {
 					{
 						GroupVersionKind: schema.GroupVersionKind{
@@ -160,7 +171,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			desc: "fixed version and kind",
-			resources: map[string][]*DiscoveredResource{
+			resources: map[string][]DiscoveredResource{
 				"crd:testobjects.testgroup": {
 					{
 						GroupVersionKind: schema.GroupVersionKind{
@@ -198,7 +209,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			desc: "fixed version and kind, no matching cache entry",
-			resources: map[string][]*DiscoveredResource{
+			resources: map[string][]DiscoveredResource{
 				"crd:testobjects.testgroup": {
 					{
 						GroupVersionKind: schema.GroupVersionKind{
@@ -217,7 +228,6 @@ func TestResolve(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
 			discoverer := newTestCRDiscoverer()
-			// Populate the discoverer with test data
 			for sourceID, resources := range tc.resources {
 				discoverer.UpdateSource(sourceID, resources)
 			}
@@ -226,13 +236,9 @@ func TestResolve(t *testing.T) {
 			if err != nil {
 				t.Errorf("got error %v", err)
 			}
-			// Sort got and tc.want to ensure the order of the elements.
-			sort.Slice(got, func(i, j int) bool {
-				return got[i].String() < got[j].String()
-			})
-			sort.Slice(tc.want, func(i, j int) bool {
-				return tc.want[i].String() < tc.want[j].String()
-			})
+			// Iteration order over the source map is undefined.
+			sort.Slice(got, func(i, j int) bool { return got[i].String() < got[j].String() })
+			sort.Slice(tc.want, func(i, j int) bool { return tc.want[i].String() < tc.want[j].String() })
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("got %v, want %v", got, tc.want)
 			}
@@ -241,18 +247,12 @@ func TestResolve(t *testing.T) {
 }
 
 func TestUpdateSourceAndDeleteSource(t *testing.T) {
-	discoverer := newTestCRDiscoverer()
+	d := newTestCRDiscoverer()
+	gvk := schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"}
 
-	// Add resources for a source
-	resources := []*DiscoveredResource{
-		{
-			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-			Plural:           "testobjects1",
-		},
-	}
-	discoverer.UpdateSource("crd:testobjects.testgroup", resources)
-	// Verify resource is present
-	got, err := discoverer.Resolve(schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"})
+	d.UpdateSource("crd:testobjects.testgroup", makeResources(gvk.Group, gvk.Version, gvk.Kind, "testobjects1"))
+
+	got, err := d.Resolve(gvk)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -260,49 +260,36 @@ func TestUpdateSourceAndDeleteSource(t *testing.T) {
 		t.Fatalf("expected 1 resource, got %d", len(got))
 	}
 
-	// Get stop channel
-	stopChan, ok := discoverer.GetStopChan(schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"})
+	stopChan, ok := d.GetStopChan(gvk)
 	if !ok {
 		t.Fatal("expected stop channel to exist")
 	}
 
-	// Delete the source
-	discoverer.DeleteSource("crd:testobjects.testgroup")
+	d.DeleteSource("crd:testobjects.testgroup")
 
-	// Verify resource is removed
-	got, err = discoverer.Resolve(schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"})
+	got, err = d.Resolve(gvk)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(got) != 0 {
-		t.Fatalf("expected 0 resources, got %d", len(got))
+		t.Fatalf("expected 0 resources after delete, got %d", len(got))
 	}
 
-	// Verify stop channel is closed
 	select {
 	case <-stopChan:
-		// expected - channel is closed
 	default:
-		t.Fatal("expected stop channel to be closed")
+		t.Fatal("expected stop channel to be closed after DeleteSource")
 	}
 }
 
 func TestUpdateSourceNilSkipsUpdate(t *testing.T) {
-	discoverer := newTestCRDiscoverer()
+	d := newTestCRDiscoverer()
+	gvk := schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"}
 
-	// Add initial resources
-	resources := []*DiscoveredResource{
-		{
-			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-			Plural:           "testobjects1",
-		},
-	}
-	discoverer.UpdateSource("crd:testobjects.testgroup", resources)
-	// Update with nil (simulating skipping update)
-	discoverer.UpdateSource("crd:testobjects.testgroup", nil)
+	d.UpdateSource("crd:testobjects.testgroup", makeResources(gvk.Group, gvk.Version, gvk.Kind, "testobjects1"))
+	d.UpdateSource("crd:testobjects.testgroup", nil)
 
-	// Verify original resource is still present
-	got, err := discoverer.Resolve(schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"})
+	got, err := d.Resolve(gvk)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -312,53 +299,111 @@ func TestUpdateSourceNilSkipsUpdate(t *testing.T) {
 }
 
 func TestUpdateSourceEmptyRemovesResources(t *testing.T) {
-	discoverer := newTestCRDiscoverer()
+	d := newTestCRDiscoverer()
+	gvk := schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"}
+	src := "crd:testobjects.testgroup"
 
-	// Add initial resources
-	resources := []*DiscoveredResource{
-		{
-			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-			Plural:           "testobjects1",
-		},
-	}
-	discoverer.UpdateSource("crd:testobjects.testgroup", resources)
+	d.UpdateSource(src, makeResources(gvk.Group, gvk.Version, gvk.Kind, "testobjects1"))
+	stopChan, _ := d.GetStopChan(gvk)
 
-	// Update with empty slice (simulating removal)
-	discoverer.UpdateSource("crd:testobjects.testgroup", []*DiscoveredResource{})
+	d.UpdateSource(src, []DiscoveredResource{})
 
-	// Verify resource is removed
-	got, err := discoverer.Resolve(schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"})
+	got, err := d.Resolve(gvk)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(got) != 0 {
 		t.Fatalf("expected 0 resources, got %d", len(got))
 	}
+	// Empty slice should also stop reflectors, just like DeleteSource.
+	select {
+	case <-stopChan:
+	default:
+		t.Fatal("expected stop channel to be closed after empty UpdateSource")
+	}
+}
+
+// TestUpdateSourceEmptyOnExistingSourceCountsAsDelete verifies that
+// UpdateSource(id, []) bumps DeleteEvents (not UpdateEvents) when the source
+// existed, since semantically the operation is a deletion.
+func TestUpdateSourceEmptyOnExistingSourceCountsAsDelete(t *testing.T) {
+	d := newTestCRDiscoverer()
+	src := "crd:testobjects.testgroup"
+
+	d.UpdateSource(src, makeResources("testgroup", "v1", "TestObject1", "testobjects1"))
+	addBefore := testutil.ToFloat64(d.AddEvents)
+	updateBefore := testutil.ToFloat64(d.UpdateEvents)
+	deleteBefore := testutil.ToFloat64(d.DeleteEvents)
+
+	d.UpdateSource(src, []DiscoveredResource{})
+
+	if got := testutil.ToFloat64(d.AddEvents) - addBefore; got != 0 {
+		t.Errorf("AddEvents delta = %v, want 0", got)
+	}
+	if got := testutil.ToFloat64(d.UpdateEvents) - updateBefore; got != 0 {
+		t.Errorf("UpdateEvents delta = %v, want 0", got)
+	}
+	if got := testutil.ToFloat64(d.DeleteEvents) - deleteBefore; got != 1 {
+		t.Errorf("DeleteEvents delta = %v, want 1", got)
+	}
+}
+
+// TestUpdateSourceReplaceClosesOldStopChans verifies that replacing the
+// resource set for an existing source stops the old reflectors before the
+// new ones take over.
+func TestUpdateSourceReplaceClosesOldStopChans(t *testing.T) {
+	d := newTestCRDiscoverer()
+	src := "crd:testobjects.testgroup"
+	oldGVK := schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "Old"}
+	newGVK := schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "New"}
+
+	d.UpdateSource(src, makeResources(oldGVK.Group, oldGVK.Version, oldGVK.Kind, "olds"))
+	oldStop, ok := d.GetStopChan(oldGVK)
+	if !ok {
+		t.Fatal("expected stop channel for old GVK")
+	}
+
+	d.UpdateSource(src, makeResources(newGVK.Group, newGVK.Version, newGVK.Kind, "news"))
+
+	select {
+	case <-oldStop:
+	default:
+		t.Fatal("expected old stop channel to be closed after replacement")
+	}
+	if _, ok := d.GetStopChan(newGVK); !ok {
+		t.Fatal("expected stop channel for new GVK")
+	}
+}
+
+func TestUpdateSourceEmptySourceIDIsNoop(t *testing.T) {
+	d := newTestCRDiscoverer()
+	d.UpdateSource("", makeResources("g", "v1", "K", "ks"))
+	if d.CheckAndResetUpdated() {
+		t.Fatal("expected no update from empty sourceID")
+	}
+}
+
+func TestDeleteSourceEmptySourceIDIsNoop(t *testing.T) {
+	d := newTestCRDiscoverer()
+	d.DeleteSource("")
+	if d.CheckAndResetUpdated() {
+		t.Fatal("expected no update from empty sourceID")
+	}
 }
 
 func TestCheckAndResetUpdated(t *testing.T) {
-	discoverer := newTestCRDiscoverer()
+	d := newTestCRDiscoverer()
 
-	// Initially not updated
-	if discoverer.CheckAndResetUpdated() {
+	if d.CheckAndResetUpdated() {
 		t.Fatal("expected wasUpdated to be false initially")
 	}
 
-	// Add a resource
-	discoverer.UpdateSource("crd:testobjects.testgroup", []*DiscoveredResource{
-		{
-			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-			Plural:           "testobjects1",
-		},
-	})
+	d.UpdateSource("crd:testobjects.testgroup", makeResources("testgroup", "v1", "TestObject1", "testobjects1"))
 
-	// Should be updated now
-	if !discoverer.CheckAndResetUpdated() {
+	if !d.CheckAndResetUpdated() {
 		t.Fatal("expected wasUpdated to be true after UpdateSource")
 	}
-
-	// Should be reset
-	if discoverer.CheckAndResetUpdated() {
+	if d.CheckAndResetUpdated() {
 		t.Fatal("expected wasUpdated to be false after CheckAndResetUpdated")
 	}
 }

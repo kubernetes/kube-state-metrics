@@ -50,7 +50,7 @@ func (r *CRDiscoverer) runInformer(ctx context.Context, informer cache.SharedInd
 	stopper := make(chan struct{})
 
 	// Each handler recovers from panics so a single bad object cannot kill
-	// the informer goroutine 
+	// the informer goroutine
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			defer func() {

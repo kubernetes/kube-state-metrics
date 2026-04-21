@@ -109,4 +109,3 @@ func requiredString(obj map[string]interface{}, path ...string) (string, error) 
 	}
 	return val, nil
 }
-

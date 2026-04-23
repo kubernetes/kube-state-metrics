@@ -22,6 +22,7 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
+	"github.com/google/cel-go/ext"
 
 	ksmcel "k8s.io/kube-state-metrics/v2/pkg/cel"
 	"k8s.io/kube-state-metrics/v2/pkg/cel/library"
@@ -57,6 +58,12 @@ func newCELValueExtractor(expr string, path valuePath, labelFromPath map[string]
 
 	env, err := cel.NewEnv(
 		library.KSM(),
+		ext.Strings(ext.StringsVersion(4)),
+		ext.Lists(ext.ListsVersion(3)),
+		ext.Sets(ext.SetsVersion(1)),
+		ext.Math(ext.MathVersion(2)),
+		ext.Bindings(ext.BindingsVersion(1)),
+		ext.TwoVarComprehensions(ext.TwoVarComprehensionsVersion(1)),
 		cel.Variable("value", cel.DynType),
 	)
 	if err != nil {

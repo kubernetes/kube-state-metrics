@@ -925,6 +925,168 @@ CEL provides many built-in functions:
 
 See the [CEL language definition](https://github.com/google/cel-spec) for complete documentation.
 
+**Extensions:**
+
+In addition to the built-in macros and functions, kube-state-metrics enables several official [cel-go extension libraries](https://github.com/google/cel-go/blob/master/ext). The set of functions available to a CEL expression is fixed by the version of each extension that kube-state-metrics is built with — see the table below for the versions currently in use.
+
+| Extension | Version | Documentation |
+|---|---|---|
+| `Strings` | 4 | [ext/README.md#strings](https://github.com/google/cel-go/blob/master/ext/README.md#strings), [cel-spec strings.md](https://github.com/google/cel-spec/blob/master/doc/extensions/strings.md) |
+| `Lists` | 3 | [ext/README.md#lists](https://github.com/google/cel-go/blob/master/ext/README.md#lists) |
+| `Sets` | 1 | [ext/README.md#sets](https://github.com/google/cel-go/blob/master/ext/README.md#sets) |
+| `Math` | 2 | [ext/README.md#math](https://github.com/google/cel-go/blob/master/ext/README.md#math) |
+| `Bindings` | 1 | [ext/README.md#bindings](https://github.com/google/cel-go/blob/master/ext/README.md#bindings) |
+| `TwoVarComprehensions` | 1 | [ext/README.md#twovarcomprehensions](https://github.com/google/cel-go/blob/master/ext/README.md#twovarcomprehensions) |
+
+If you need a function that was added in a later version of an extension, bump the corresponding `*Version(N)` argument in `newCELValueExtractor` inside [`cel_value_extractor.go`](../../../pkg/customresourcestate/cel_value_extractor.go). 
+
+**Examples:**
+
+The examples below assume `value` is the result of resolving the `path` defined alongside `celExpr`. Each example shows a sample resolved `value`, the `celExpr` you might configure, and the metric(s) it would produce. Standard custom-resource identity labels (`customresource_group`, `customresource_kind`, `customresource_version`, `namespace`, `name`, etc.) are always attached by kube-state-metrics and are omitted below for brevity.
+
+*Strings*
+
+Use when a string field needs to be parsed or normalized before being emitted as a label.
+
+```yaml
+# value: {"name": "app-frontend-prod", "replicas": 3}
+celExpr: "WithLabels(value.replicas, {'component': value.name.split('-')[1]})"
+```
+
+```prometheus
+kube_customresource_app_replicas{component="frontend"} 3.0
+```
+
+```yaml
+# value: {"image": "nginx:1.25", "count": 5}
+celExpr: "WithLabels(value.count, {'image': value.image.replace(':', '@')})"
+```
+
+```prometheus
+kube_customresource_image_info{image="nginx@1.25"} 5.0
+```
+
+*Lists*
+
+Use for aggregating or reordering list-shaped CR fields.
+
+```yaml
+# value:
+#   [{"type":"Ready","status":"True","lastTransitionTime":"2024-01-02T00:00:00Z"},
+#    {"type":"Available","status":"True","lastTransitionTime":"2024-01-03T00:00:00Z"}]
+celExpr: "value.sortBy(c, c.lastTransitionTime).last().status"
+```
+
+```prometheus
+kube_customresource_latest_condition_ready 1.0
+```
+
+```yaml
+# value: {"partitions": [[1, 2, 3], [4, 5]]}
+celExpr: "value.partitions.flatten().size()"
+```
+
+```prometheus
+kube_customresource_partition_entry_count 5.0
+```
+
+*Sets*
+
+Use to gate or flag metrics based on set membership.
+
+```yaml
+# value: {"type": "Pod", "allowedTypes": ["Pod", "Job"], "count": 5}
+celExpr: "sets.contains(value.allowedTypes, [value.type]) ? double(value.count) : 0.0"
+```
+
+```prometheus
+kube_customresource_allowed_resource_count 5.0
+```
+
+```yaml
+# value: {"conditions": [{"type":"Ready"}, {"type":"Initialized"}]}
+celExpr: "sets.intersects(['Ready', 'Available'], value.conditions.map(c, c.type))"
+```
+
+```prometheus
+kube_customresource_availability_signal 1.0
+```
+
+*Math*
+
+Use for numeric transforms that plain arithmetic cannot express.
+
+```yaml
+# value: {"replicas": -1}
+celExpr: "math.greatest(double(value.replicas), 0.0)"
+```
+
+```prometheus
+kube_customresource_effective_replicas 0.0
+```
+
+```yaml
+# value: {"used": 7, "total": 9}
+celExpr: "math.round((double(value.used) / double(value.total)) * 100.0)"
+```
+
+```prometheus
+kube_customresource_utilization_percent 78.0
+```
+
+*Bindings*
+
+Use `cel.bind(name, expr, body)` to evaluate `expr` once and reference it by `name` inside `body`. Most useful when the same sub-expression feeds both the metric value and a derived label.
+
+```yaml
+# value: {"used": 90, "total": 100}
+celExpr: |
+  cel.bind(ratio,
+    double(value.used) / double(value.total),
+    WithLabels(ratio, {'alert': ratio > 0.8 ? 'high' : 'ok'}))
+```
+
+```prometheus
+kube_customresource_usage_ratio{alert="high"} 0.9
+```
+
+```yaml
+# value: {"used": 10, "total": 100}
+celExpr: |
+  cel.bind(ratio,
+    double(value.used) / double(value.total),
+    ratio > 0.8 ? ratio : 0.0)
+```
+
+```prometheus
+kube_customresource_usage_ratio_if_high 0.0
+```
+
+*TwoVarComprehensions*
+
+Adds `transformList`, `transformMap`, and two-variable forms of `all`/`exists` that expose both the index/key and the value. Useful when the index or key needs to appear as a label.
+
+```yaml
+# value: [{"name":"app","restartCount":1}, {"name":"sidecar","restartCount":3}]
+celExpr: |
+  value.transformList(i, c,
+    WithLabels(c.restartCount, {'index': string(i), 'name': c.name}))
+```
+
+```prometheus
+kube_customresource_container_restarts{index="0", name="app"} 1.0
+kube_customresource_container_restarts{index="1", name="sidecar"} 3.0
+```
+
+```yaml
+# value: [{"ready":true}, {"ready":true}]
+celExpr: "value.all(i, r, r.ready)"
+```
+
+```prometheus
+kube_customresource_all_replicas_ready 1.0
+```
+
 **Backwards Compatibility:**
 
 Path-based `valueFrom` is still fully supported:

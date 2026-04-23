@@ -974,7 +974,7 @@ Use for aggregating or reordering list-shaped CR fields.
 # value:
 #   [{"type":"Ready","status":"True","lastTransitionTime":"2024-01-02T00:00:00Z"},
 #    {"type":"Available","status":"True","lastTransitionTime":"2024-01-03T00:00:00Z"}]
-celExpr: "value.sortBy(c, c.lastTransitionTime).last().status"
+celExpr: "value.sortBy(c, c.lastTransitionTime).reverse()[0].status"
 ```
 
 ```prometheus

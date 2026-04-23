@@ -938,13 +938,13 @@ In addition to the built-in macros and functions, kube-state-metrics enables sev
 | `Bindings` | 1 | [ext/README.md#bindings](https://github.com/google/cel-go/blob/master/ext/README.md#bindings) |
 | `TwoVarComprehensions` | 1 | [ext/README.md#twovarcomprehensions](https://github.com/google/cel-go/blob/master/ext/README.md#twovarcomprehensions) |
 
-If you need a function that was added in a later version of an extension, bump the corresponding `*Version(N)` argument in `newCELValueExtractor` inside [`cel_value_extractor.go`](../../../pkg/customresourcestate/cel_value_extractor.go). 
+If you need a function that was added in a later version of an extension, bump the corresponding `*Version(N)` argument in `newCELValueExtractor` inside [`cel_value_extractor.go`](../../../pkg/customresourcestate/cel_value_extractor.go).
 
 **Examples:**
 
 The examples below assume `value` is the result of resolving the `path` defined alongside `celExpr`. Each example shows a sample resolved `value`, the `celExpr` you might configure, and the metric(s) it would produce. Standard custom-resource identity labels (`customresource_group`, `customresource_kind`, `customresource_version`, `namespace`, `name`, etc.) are always attached by kube-state-metrics and are omitted below for brevity.
 
-*Strings*
+###### Strings
 
 Use when a string field needs to be parsed or normalized before being emitted as a label.
 
@@ -966,7 +966,7 @@ celExpr: "WithLabels(value.count, {'image': value.image.replace(':', '@')})"
 kube_customresource_image_info{image="nginx@1.25"} 5.0
 ```
 
-*Lists*
+###### Lists
 
 Use for aggregating or reordering list-shaped CR fields.
 
@@ -990,7 +990,7 @@ celExpr: "value.partitions.flatten().size()"
 kube_customresource_partition_entry_count 5.0
 ```
 
-*Sets*
+###### Sets
 
 Use to gate or flag metrics based on set membership.
 
@@ -1012,7 +1012,7 @@ celExpr: "sets.intersects(['Ready', 'Available'], value.conditions.map(c, c.type
 kube_customresource_availability_signal 1.0
 ```
 
-*Math*
+###### Math
 
 Use for numeric transforms that plain arithmetic cannot express.
 
@@ -1034,7 +1034,7 @@ celExpr: "math.round((double(value.used) / double(value.total)) * 100.0)"
 kube_customresource_utilization_percent 78.0
 ```
 
-*Bindings*
+###### Bindings
 
 Use `cel.bind(name, expr, body)` to evaluate `expr` once and reference it by `name` inside `body`. Most useful when the same sub-expression feeds both the metric value and a derived label.
 
@@ -1062,7 +1062,7 @@ celExpr: |
 kube_customresource_usage_ratio_if_high 0.0
 ```
 
-*TwoVarComprehensions*
+###### TwoVarComprehensions
 
 Adds `transformList`, `transformMap`, and two-variable forms of `all`/`exists` that expose both the index/key and the value. Useful when the index or key needs to appear as a label.
 

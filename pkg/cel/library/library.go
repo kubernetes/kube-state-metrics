@@ -31,15 +31,17 @@ import (
 //
 // # WithLabels
 //
-// Wraps a metric value with additional labels.
+// Wraps a metric value with additional labels. Non-string label values are
+// automatically stringified (via fmt "%v").
 //
-//	WithLabels(<any>, <map<string, string>>) <WithLabels>
+//	WithLabels(<any>, <map<string, any>>) <WithLabels>
 //
 // Examples:
 //
 //	WithLabels(100.0, {}) // returns value 100.0 with no additional labels
 //	WithLabels(42, {'severity': 'high'}) // returns value 42 with label severity=high
 //	WithLabels(double(value) * 10.0, {'multiplied': 'true'}) // returns computed value with label
+//	WithLabels(v.ready, {'replicas': v.replicas}) // numeric label stringified
 func KSM() cel.EnvOption {
 	return cel.Lib(ksmLib)
 }
@@ -59,7 +61,7 @@ func (*ksm) Types() []*cel.Type {
 var ksmLibraryDecls = map[string][]cel.FunctionOpt{
 	"WithLabels": {
 		cel.Overload("withlabels_any_map",
-			[]*cel.Type{cel.DynType, cel.MapType(cel.StringType, cel.StringType)},
+			[]*cel.Type{cel.DynType, cel.MapType(cel.StringType, cel.DynType)},
 			ksmcel.WithLabelsObjectType,
 			cel.BinaryBinding(withLabelsConstructor)),
 	},

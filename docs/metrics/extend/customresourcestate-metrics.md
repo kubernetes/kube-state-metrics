@@ -778,6 +778,8 @@ gauge:
     celExpr: "WithLabels(double(value), {'scaled': value > 1 ? 'yes' : 'no'})"
 ```
 
+> **Label value stringification:** Label map values may be of any type. Non-string values are automatically stringified (via `fmt.Sprintf("%v")`). If you need precise control over the string output (e.g. fixed decimals, padding, hex), use the [`format()`](https://pkg.go.dev/github.com/google/cel-go/ext#Strings) function from CEL's Strings extension.
+
 **Label Precedence:**
 
 When labels come from multiple sources, they're merged with this precedence (highest to lowest):

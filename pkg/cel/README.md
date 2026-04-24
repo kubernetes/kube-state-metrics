@@ -11,12 +11,13 @@ CEL extension library for kube-state-metrics.
 
 ### WithLabels Type
 
-`WithLabels(value, labels)` wraps a metric value with additional labels.
+`WithLabels(value, labels)` wraps a metric value with additional labels. Non-string label values are automatically stringified.
 
 ```cel
 WithLabels(100.0, {})
 WithLabels(42, {'severity': 'high'})
 WithLabels(double(value) * 10.0, {'multiplied': 'true'})
+WithLabels(v.ready, {'replicas': v.replicas}) // numeric label value is stringified
 ```
 
 Fields:

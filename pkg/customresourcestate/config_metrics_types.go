@@ -38,8 +38,8 @@ type ValueFrom struct {
 	CelExpr string `yaml:"celExpr,omitempty" json:"celExpr,omitempty"`
 }
 
-// unmarshallValueFrom unmarshalls ValueFrom from either a string slice or struct.
-func (vf *ValueFrom) unmarshallValueFrom(unmarshal func(interface{}) error) error {
+// unmarshalValueFrom unmarshals ValueFrom from either a string slice or struct.
+func (vf *ValueFrom) unmarshalValueFrom(unmarshal func(interface{}) error) error {
 	var stringSlice []string
 	if err := unmarshal(&stringSlice); err == nil {
 		vf.PathValueFrom = stringSlice
@@ -54,7 +54,7 @@ func (vf *ValueFrom) unmarshallValueFrom(unmarshal func(interface{}) error) erro
 	}
 
 	// Ensure fields are mutually exclusive
-	if len(valueFromStruct.PathValueFrom) > 0 && valueFromStruct.CelExpr != "" {
+	if valueFromStruct.PathValueFrom != nil && valueFromStruct.CelExpr != "" {
 		return fmt.Errorf("cannot specify both pathValueFrom and celExpr")
 	}
 
@@ -62,16 +62,16 @@ func (vf *ValueFrom) unmarshallValueFrom(unmarshal func(interface{}) error) erro
 	return nil
 }
 
-// UnmarshalJSON unmarshalls ValueFrom either from a string slice or from a full struct.
+// UnmarshalJSON unmarshals ValueFrom either from a string slice or from a full struct.
 func (vf *ValueFrom) UnmarshalJSON(data []byte) error {
-	return vf.unmarshallValueFrom(func(v interface{}) error {
+	return vf.unmarshalValueFrom(func(v interface{}) error {
 		return json.Unmarshal(data, v)
 	})
 }
 
-// UnmarshalYAML unmarshalls ValueFrom either from a string slice or from a full struct.
+// UnmarshalYAML unmarshals ValueFrom either from a string slice or from a full struct.
 func (vf *ValueFrom) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return vf.unmarshallValueFrom(unmarshal)
+	return vf.unmarshalValueFrom(unmarshal)
 }
 
 // MetricGauge targets a Path that may be a single value, array, or object. Arrays and objects will generate a metric per element.

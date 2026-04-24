@@ -24,6 +24,7 @@ import (
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/ext"
 
+	"k8s.io/kube-state-metrics/v2/internal/store"
 	ksmcel "k8s.io/kube-state-metrics/v2/pkg/cel"
 	"k8s.io/kube-state-metrics/v2/pkg/cel/library"
 )
@@ -104,12 +105,11 @@ func (s *celValueExtractor) extractValues(v interface{}) (result []eachValue, er
 	}
 
 	for _, value := range values {
-
 		labels := make(map[string]string)
 		addPathLabels(v, s.labelFromPath, labels)
 		// Apply AdditionalLabels last so they are not overwritten
 		for k, v := range value.Labels {
-			labels[k] = v
+			labels[store.SanitizeLabelName(k)] = v
 		}
 		value.Labels = labels
 

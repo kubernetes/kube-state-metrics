@@ -171,8 +171,6 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		return &compiledGauge{
 			compiledCommon: *cc,
 			extractor:      strategy,
-			NilIsZero:      m.Gauge.NilIsZero,
-			labelFromKey:   m.Gauge.LabelFromKey,
 		}, nil
 	case metric.Info:
 		if m.Info == nil {
@@ -197,6 +195,9 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, fmt.Errorf("each.stateSet: %w", err)
 		}
 		// TODO: migrate to new ValueFrom struct and support CEL-based StateSet as well
+		if m.StateSet.ValueFrom.CelExpr != "" {
+			return nil, errors.New("each.stateSet.valueFrom.celExpr: CEL expressions are not yet supported for stateSet metrics")
+		}
 		valueFromPath, err := compilePath(m.StateSet.ValueFrom.PathValueFrom)
 		if err != nil {
 			return nil, fmt.Errorf("each.stateSet.valueFrom: %w", err)
@@ -214,9 +215,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 
 type compiledGauge struct {
 	compiledCommon
-	labelFromKey string
-	extractor    valueExtractor
-	NilIsZero    bool
+	extractor valueExtractor
 }
 
 func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {

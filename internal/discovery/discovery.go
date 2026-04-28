@@ -56,6 +56,14 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 			v := version.(map[string]interface{})["name"].(string)
 			k := objSpec["names"].(map[string]interface{})["kind"].(string)
 			p := objSpec["names"].(map[string]interface{})["plural"].(string)
+
+			// Ignore non-served versions
+			// API Server will return errors when trying to retrieve stuff using this version
+			versionServed := version.(map[string]interface{})["served"].(bool)
+			if !versionServed {
+				continue
+			}
+
 			gvkps = append(gvkps, groupVersionKindPlural{
 				GroupVersionKind: schema.GroupVersionKind{
 					Group:   g,

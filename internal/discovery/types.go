@@ -21,99 +21,224 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type groupVersionKindPlural struct {
+// DiscoveredResource represents a discovered custom resource type.
+type DiscoveredResource struct {
 	schema.GroupVersionKind
 	Plural string
 }
 
-func (g groupVersionKindPlural) String() string {
-	return fmt.Sprintf("%s/%s, Kind=%s, Plural=%s", g.Group, g.Version, g.Kind, g.Plural)
+// String returns a string representation of the DiscoveredResource.
+func (d DiscoveredResource) String() string {
+	return fmt.Sprintf("%s/%s, Kind=%s, Plural=%s", d.Group, d.Version, d.Kind, d.Plural)
 }
 
-type kindPlural struct {
-	Kind   string
-	Plural string
+// resourceEntry is the internal cache entry: a DiscoveredResource plus the
+// stop channel used to stop its reflector.
+type resourceEntry struct {
+	DiscoveredResource
+	stopChan chan struct{}
 }
 
-// CRDiscoverer provides a cache of the collected GVKs, along with helper utilities.
+// extractor extracts DiscoveredResources from source objects (e.g. CRDs).
+type extractor interface {
+	// SourceID returns a unique identifier for the source object,
+	// e.g. "crd:<name>". Returns "" if obj cannot be identified.
+	SourceID(obj interface{}) string
+	// ExtractGVKs returns the resources discovered from obj.
+	// Return nil to skip; return an empty slice to signal deletion of all
+	// resources for the source.
+	ExtractGVKs(obj interface{}) []DiscoveredResource
+}
+
+// CRDiscoverer provides discovery and lifecycle management for custom resources.
 type CRDiscoverer struct {
-	// CRDsAddEventsCounter tracks the number of times that the CRD informer triggered the "add" event.
-	CRDsAddEventsCounter prometheus.Counter
-	// CRDsUpdateEventsCounter tracks the number of times that the CRD informer triggered the "update" event.
-	CRDsUpdateEventsCounter prometheus.Counter
-	// CRDsDeleteEventsCounter tracks the number of times that the CRD informer triggered the "remove" event.
-	CRDsDeleteEventsCounter prometheus.Counter
-	// CRDsCacheCountGauge tracks the net amount of CRDs affecting the cache at this point.
-	CRDsCacheCountGauge prometheus.Gauge
-	// Map is a cache of the collected GVKs.
-	Map map[string]map[string][]kindPlural
-	// GVKToReflectorStopChanMap is a map of GVKs to channels that can be used to stop their corresponding reflector.
-	GVKToReflectorStopChanMap map[string]chan struct{}
-	// m is a mutex to protect the cache.
-	m sync.RWMutex
-	// ShouldUpdate is a flag that indicates whether the cache was updated.
-	WasUpdated bool
+	// mu protects all fields below.
+	mu sync.RWMutex
+	// resourcesBySource maps source objects to their discovered resources.
+	// Keys e.g. "crd:<name>"
+	resourcesBySource map[string][]resourceEntry
+	// wasUpdated indicates whether the cache was updated since last check.
+	wasUpdated bool
+
+	// Metrics for discovery events.
+	// AddEvents counts add operations.
+	AddEvents prometheus.Counter
+	// UpdateEvents counts update operations.
+	UpdateEvents prometheus.Counter
+	// DeleteEvents counts source deletions.
+	DeleteEvents prometheus.Counter
+	// CacheCount tracks the current number of discovered resources.
+	CacheCount prometheus.Gauge
 }
 
-// SafeRead executes the given function while holding a read lock.
-func (r *CRDiscoverer) SafeRead(f func()) {
-	r.m.RLock()
-	defer r.m.RUnlock()
-	f()
-}
-
-// SafeWrite executes the given function while holding a write lock.
-func (r *CRDiscoverer) SafeWrite(f func()) {
-	r.m.Lock()
-	defer r.m.Unlock()
-	f()
-}
-
-// AppendToMap appends the given GVKs to the cache.
-func (r *CRDiscoverer) AppendToMap(gvkps ...groupVersionKindPlural) {
-	if r.Map == nil {
-		r.Map = map[string]map[string][]kindPlural{}
-	}
-	if r.GVKToReflectorStopChanMap == nil {
-		r.GVKToReflectorStopChanMap = map[string]chan struct{}{}
-	}
-	for _, gvkp := range gvkps {
-		if _, ok := r.Map[gvkp.Group]; !ok {
-			r.Map[gvkp.Group] = map[string][]kindPlural{}
-		}
-		if _, ok := r.Map[gvkp.Group][gvkp.Version]; !ok {
-			r.Map[gvkp.Group][gvkp.Version] = []kindPlural{}
-		}
-		r.Map[gvkp.Group][gvkp.Version] = append(r.Map[gvkp.Group][gvkp.Version], kindPlural{Kind: gvkp.Kind, Plural: gvkp.Plural})
-		r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()] = make(chan struct{})
+// NewCRDiscoverer creates a new CRDiscoverer instance.
+func NewCRDiscoverer(
+	addEvents prometheus.Counter,
+	updateEvents prometheus.Counter,
+	deleteEvents prometheus.Counter,
+	cacheCount prometheus.Gauge,
+) *CRDiscoverer {
+	return &CRDiscoverer{
+		resourcesBySource: make(map[string][]resourceEntry),
+		AddEvents:         addEvents,
+		UpdateEvents:      updateEvents,
+		DeleteEvents:      deleteEvents,
+		CacheCount:        cacheCount,
 	}
 }
 
-// RemoveFromMap removes the given GVKs from the cache.
-func (r *CRDiscoverer) RemoveFromMap(gvkps ...groupVersionKindPlural) {
-	for _, gvkp := range gvkps {
-		if _, ok := r.Map[gvkp.Group]; !ok {
-			continue
+// UpdateSource replaces all resources for a source.
+//   - sourceID == "": noop.
+//   - resources == nil: noop (signals "no change").
+//   - len(resources) == 0: equivalent to DeleteSource(sourceID).
+func (r *CRDiscoverer) UpdateSource(sourceID string, resources []DiscoveredResource) {
+	if sourceID == "" {
+		return
+	}
+	if resources == nil {
+		return
+	}
+
+	if len(resources) == 0 {
+		r.DeleteSource(sourceID)
+		return
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	_, existing := r.resourcesBySource[sourceID]
+
+	// Stop reflectors for the previous resources before replacing them.
+	r.closeStopChans(r.resourcesBySource[sourceID])
+
+	newEntries := make([]resourceEntry, 0, len(resources))
+	for _, res := range resources {
+		newEntries = append(newEntries, resourceEntry{
+			DiscoveredResource: res,
+			stopChan:           make(chan struct{}),
+		})
+	}
+
+	r.resourcesBySource[sourceID] = newEntries
+	r.wasUpdated = true
+
+	if existing {
+		r.UpdateEvents.Inc()
+	} else {
+		r.AddEvents.Inc()
+	}
+
+	r.updateCacheCountLocked()
+}
+
+// DeleteSource removes all resources for a source and stops their reflectors.
+func (r *CRDiscoverer) DeleteSource(sourceID string) {
+	if sourceID == "" {
+		return
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.deleteSourceLocked(sourceID)
+}
+
+// deleteSourceLocked removes a source and updates metrics. Caller must hold r.mu.
+func (r *CRDiscoverer) deleteSourceLocked(sourceID string) {
+	entries, ok := r.resourcesBySource[sourceID]
+	if !ok {
+		return
+	}
+
+	r.closeStopChans(entries)
+	delete(r.resourcesBySource, sourceID)
+	r.wasUpdated = true
+
+	r.DeleteEvents.Inc()
+	r.updateCacheCountLocked()
+}
+
+// closeStopChans closes every non-nil stop channel and nils it out so a
+// subsequent close is a no-op rather than a panic.
+func (r *CRDiscoverer) closeStopChans(entries []resourceEntry) {
+	for i := range entries {
+		if entries[i].stopChan != nil {
+			close(entries[i].stopChan)
+			entries[i].stopChan = nil
 		}
-		if _, ok := r.Map[gvkp.Group][gvkp.Version]; !ok {
-			continue
-		}
-		for i, el := range r.Map[gvkp.Group][gvkp.Version] {
-			if el.Kind == gvkp.Kind {
-				if _, ok := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]; ok {
-					close(r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()])
-					delete(r.GVKToReflectorStopChanMap, gvkp.GroupVersionKind.String())
-				}
-				if len(r.Map[gvkp.Group][gvkp.Version]) == 1 {
-					delete(r.Map[gvkp.Group], gvkp.Version)
-					if len(r.Map[gvkp.Group]) == 0 {
-						delete(r.Map, gvkp.Group)
-					}
-					break
-				}
-				r.Map[gvkp.Group][gvkp.Version] = append(r.Map[gvkp.Group][gvkp.Version][:i], r.Map[gvkp.Group][gvkp.Version][i+1:]...)
-				break
+	}
+}
+
+// GetStopChan returns the stop channel for the given GVK. A (group, version,
+// kind) tuple is unique across all sources (Kubernetes enforces this at the
+// API discovery layer), so the first match is the only match.
+func (r *CRDiscoverer) GetStopChan(gvk schema.GroupVersionKind) (chan struct{}, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, entries := range r.resourcesBySource {
+		for _, entry := range entries {
+			if entry.GroupVersionKind == gvk {
+				return entry.stopChan, true
 			}
 		}
 	}
+	return nil, false
+}
+
+// Resolve resolves a GVK pattern to matching DiscoveredResources.
+// Group is required and cannot be a wildcard. Version and Kind may be "*".
+func (r *CRDiscoverer) Resolve(gvk schema.GroupVersionKind) ([]DiscoveredResource, error) {
+	g := gvk.Group
+	v := gvk.Version
+	k := gvk.Kind
+
+	if g == "" || g == "*" {
+		return nil, fmt.Errorf("group is required in the defined GVK %v", gvk)
+	}
+
+	hasVersion := v != "" && v != "*"
+	hasKind := k != "" && k != "*"
+
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var results []DiscoveredResource
+	for _, entries := range r.resourcesBySource {
+		for _, entry := range entries {
+			if entry.Group != g {
+				continue
+			}
+			if hasVersion && entry.Version != v {
+				continue
+			}
+			if hasKind && entry.Kind != k {
+				continue
+			}
+			results = append(results, entry.DiscoveredResource)
+			// A fully-specified GVK has at most one match.
+			if hasVersion && hasKind {
+				return results, nil
+			}
+		}
+	}
+	return results, nil
+}
+
+// CheckAndResetUpdated checks if the cache was updated and resets the flag.
+func (r *CRDiscoverer) CheckAndResetUpdated() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	updated := r.wasUpdated
+	r.wasUpdated = false
+	return updated
+}
+
+// updateCacheCountLocked updates the cache count gauge. Must be called with mu held.
+func (r *CRDiscoverer) updateCacheCountLocked() {
+	count := 0
+	for _, entries := range r.resourcesBySource {
+		count += len(entries)
+	}
+	r.CacheCount.Set(float64(count))
 }

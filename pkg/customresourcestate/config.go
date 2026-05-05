@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/v2/internal/discovery"
+	"k8s.io/kube-state-metrics/v2/pkg/discovery"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/util"
 )

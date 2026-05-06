@@ -1,5 +1,32 @@
 # Changelog
 
+## v2.19.0 / 2026-05-05
+
+NOTE: This release addresses a security vulnerability (GHSA-g3c8-4qh2-rhrg) where `/debug/pprof/*` endpoints were not protected by the `--auth-filter` flag. The endpoints have been moved to the telemetry server and are now correctly gated. See [#2924](https://github.com/kubernetes/kube-state-metrics/pull/2924) for details. Credits to @vldevadath for responsible disclosure.
+
+* This release builds with Go `v1.26.2`
+* This release builds with `k8s.io/client-go`: `v0.35.4`
+
+* [SECURITY] Fix authentication bypass: move pprof endpoints to telemetry server and protect with auth filter (GHSA-g3c8-4qh2-rhrg) by @bhope in [#2924](https://github.com/kubernetes/kube-state-metrics/pull/2924)
+* [SECURITY] Bump `go-jose/v4` to `v4.1.4` for CVE-2026-34986 by @marioferh in [#2941](https://github.com/kubernetes/kube-state-metrics/pull/2941)
+* [SECURITY] Fix CVE-2026-24051 in otel go library by @marvin659 in [#2908](https://github.com/kubernetes/kube-state-metrics/pull/2908)
+* [SECURITY] Fix CVE-2026-39883 in otel go library by @Dinesh-Jilagam in [#2952](https://github.com/kubernetes/kube-state-metrics/pull/2952)
+* [SECURITY] Bump `google.golang.org/grpc` to `v1.79.3` by @sturman in [#2925](https://github.com/kubernetes/kube-state-metrics/pull/2925)
+* [FEATURE] Add `PreemptionByScheduler` and `TerminationByKubelet` to `kube_pod_status_reason` by @bhope in [#2892](https://github.com/kubernetes/kube-state-metrics/pull/2892)
+* [FEATURE] Add `SchedulingGated` to `kube_pod_status_reason` by @bhope in [#2880](https://github.com/kubernetes/kube-state-metrics/pull/2880)
+* [FEATURE] Add `container` label to HPA ContainerResource metrics by @bxrne in [#2836](https://github.com/kubernetes/kube-state-metrics/pull/2836)
+* [FEATURE] Add deployment-based sharding example by @ystkfujii in [#2931](https://github.com/kubernetes/kube-state-metrics/pull/2931)
+* [BUGFIX] Handle DeletedFinalStateUnknown panic in CR informer by @rexagod in [#2955](https://github.com/kubernetes/kube-state-metrics/pull/2955)
+* [BUGFIX] Fix memory leak from orphaned CR reflector goroutines on repeated CRD discovery by @bhope in [#2920](https://github.com/kubernetes/kube-state-metrics/pull/2920)
+* [BUGFIX] Load CRS config when `--continue-without-custom-resource-state-config-file` is set and file exists by @ybouhachem in [#2918](https://github.com/kubernetes/kube-state-metrics/pull/2918)
+* [BUGFIX] Accept legacy `custom_resource_config_file` as deprecated alias by @nmn3m in [#2926](https://github.com/kubernetes/kube-state-metrics/pull/2926)
+* [BUGFIX] Fix order-dependent metric loss from header deduplication by @jfremy-openai in [#2866](https://github.com/kubernetes/kube-state-metrics/pull/2866)
+* [BUGFIX] Avoid mutating metric families during write by @bhope in [#2852](https://github.com/kubernetes/kube-state-metrics/pull/2852)
+* [BUGFIX] Honor `stderrthreshold` when `logtostderr` is enabled by @pierluigilenoci in [#2906](https://github.com/kubernetes/kube-state-metrics/pull/2906)
+* [ENHANCEMENT] Bump to Kubernetes 1.35 by @mrueg in [#2861](https://github.com/kubernetes/kube-state-metrics/pull/2861)
+* [ENHANCEMENT] Build with Go 1.26 by @mrueg in [#2890](https://github.com/kubernetes/kube-state-metrics/pull/2890)
+* [ENHANCEMENT] Switch to a maintained fork of `robfig/cron` by @mrueg in [#2874](https://github.com/kubernetes/kube-state-metrics/pull/2874)
+
 ## v2.18.0 / 2026-01-11
 
 NOTE: This release addresses a regression that caused a panic when new versions were added to existing `CustomResourceDefinition`s. See the post-mortem analysis in <https://github.com/kubernetes/kube-state-metrics/pull/2838> for more details.

@@ -66,6 +66,8 @@ func toPaths(m map[string]valuePath) map[string]string {
 
 func TestFromConfig_BuiltInResource(t *testing.T) {
 	// Test that built-in Kubernetes resources (not CRDs) work with customResourceState
+	// Issue #2681: built-in resources like CSINode were silently dropped when configured
+	// because discovery only watches CRDs and ResolveGVKToGVKPs returns empty for non-CRD resources.
 	config := `
 kind: CustomResourceStateMetrics
 spec:
@@ -87,6 +89,7 @@ spec:
               valueFrom: [metadata, name]
 `
 	// Create an empty CRDiscoverer (no CRDs registered)
+	// This simulates the behavior where CSINode (a built-in resource) won't be found in CRD discovery
 	discoverer := &discovery.CRDiscoverer{}
 
 	decoder := yaml.NewDecoder(strings.NewReader(config))
@@ -95,8 +98,13 @@ spec:
 
 	factories, err := factoryGenerator()
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(factories), "Expected one factory for CSINode")
 
-	factory := factories[0]
-	assert.Equal(t, "csinodes", factory.Name(), "Factory name should match configured resourcePlural")
+	// On main: this FAILS because built-in resources are silently dropped (len(factories) == 0)
+	// On fix branch: this PASSES because built-in resources are kept (len(factories) == 1)
+	assert.Equal(t, 1, len(factories), "Expected one factory for CSINode built-in resource")
+
+	if len(factories) > 0 {
+		factory := factories[0]
+		assert.Equal(t, "csinodes", factory.Name(), "Factory name should match configured resourcePlural")
+	}
 }

@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/klog/v2"
+	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
@@ -61,4 +62,41 @@ func toPaths(m map[string]valuePath) map[string]string {
 		out[k] = v.String()
 	}
 	return out
+}
+
+func TestFromConfig_BuiltInResource(t *testing.T) {
+	// Test that built-in Kubernetes resources (not CRDs) work with customResourceState
+	config := `
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: storage.k8s.io
+        version: v1
+        kind: CSINode
+      resourcePlural: csinodes
+      metricNamePrefix: csi_node
+      metrics:
+        - name: labels
+          help: "CSINode basic information"
+          each:
+            type: Gauge
+            gauge:
+              labelsFromPath:
+                node: [metadata, name]
+              valueFrom: [metadata, name]
+`
+	// Create an empty CRDiscoverer (no CRDs registered)
+	discoverer := &discovery.CRDiscoverer{}
+
+	decoder := yaml.NewDecoder(strings.NewReader(config))
+	factoryGenerator, err := FromConfig(decoder, discoverer)
+	assert.NoError(t, err)
+
+	factories, err := factoryGenerator()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(factories), "Expected one factory for CSINode")
+
+	factory := factories[0]
+	assert.Equal(t, "csinodes", factory.Name(), "Factory name should match configured resourcePlural")
 }

@@ -192,6 +192,13 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 			if err != nil {
 				klog.ErrorS(err, "failed to resolve GVK", "gvk", resource.GroupVersionKind)
 			}
+			if len(resolvedSet) == 0 {
+				// Resource not found in CRD discovery cache. This can happen for built-in Kubernetes resources
+				// (e.g., CSINode) that are not CustomResourceDefinitions. Use the resource config as-is.
+				klog.InfoS("Resource not found in CRD cache, using as built-in resource", "gvk", resource.GroupVersionKind)
+				resolvedGVKPs = append(resolvedGVKPs, resource)
+				continue
+			}
 			for _, resolved /* GVKP */ := range resolvedSet {
 				// Set their G** attributes to various resolutions of the GVK.
 				resource.GroupVersionKind = GroupVersionKind(resolved.GroupVersionKind)

@@ -346,7 +346,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		)
 	}
 
-	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, kubeConfig)
+	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, kubeConfig, web.NewLandingPage)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
 	telemetryServer := http.Server{
 		Handler:           telemetryMux,
@@ -356,7 +356,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		WebConfigFile:      &tlsConfig,
 	}
 
-	metricsMux := buildMetricsServer(m, durationVec, kubeClient, opts.AuthFilter, kubeConfig)
+	metricsMux := buildMetricsServer(m, durationVec, kubeClient, opts.AuthFilter, kubeConfig, web.NewLandingPage)
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	metricsServer := http.Server{
 		Handler:           metricsMux,
@@ -457,7 +457,7 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 	return opts
 }
 
-func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
+func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config, newLandingPage func(web.LandingConfig) (*web.LandingPageHandler, error)) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	loghandler := logr.ToSlogHandler(klog.Background())
@@ -539,9 +539,10 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 			},
 		},
 	}
-	landingPage, err := web.NewLandingPage(landingConfig)
+	landingPage, err := newLandingPage(landingConfig)
 	if err != nil {
 		klog.ErrorS(err, "failed to create landing page")
+		return mux
 	}
 	mux.Handle("/", landingPage)
 	return mux
@@ -563,7 +564,7 @@ func handleClusterDelegationForProber(client kubernetes.Interface, probeType str
 	}
 }
 
-func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
+func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface, authFilter bool, kubeConfig *rest.Config, newLandingPage func(web.LandingConfig) (*web.LandingPageHandler, error)) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Add metricsPath
@@ -621,9 +622,10 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 			},
 		},
 	}
-	landingPage, err := web.NewLandingPage(landingConfig)
+	landingPage, err := newLandingPage(landingConfig)
 	if err != nil {
 		klog.ErrorS(err, "failed to create landing page")
+		return mux
 	}
 	mux.Handle("/", landingPage)
 	return mux

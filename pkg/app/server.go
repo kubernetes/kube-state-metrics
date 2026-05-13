@@ -539,12 +539,21 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 			},
 		},
 	}
-	landingPage, err := web.NewLandingPage(landingConfig)
+	registerLandingPage(mux, landingConfig, web.NewLandingPage)
+	return mux
+}
+
+// registerLandingPage serves the landing page at "/". If it cannot be built the
+// page is skipped rather than registered: web.NewLandingPage returns a nil
+// handler alongside its error, and a typed nil stored in an http.Handler is not
+// nil, so the mux would accept it and panic on the first request to "/".
+func registerLandingPage(mux *http.ServeMux, landingConfig web.LandingConfig, newLandingPage func(web.LandingConfig) (*web.LandingPageHandler, error)) {
+	landingPage, err := newLandingPage(landingConfig)
 	if err != nil {
 		klog.ErrorS(err, "failed to create landing page")
+		return
 	}
 	mux.Handle("/", landingPage)
-	return mux
 }
 
 func handleClusterDelegationForProber(client kubernetes.Interface, probeType string) http.HandlerFunc {
@@ -621,11 +630,7 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 			},
 		},
 	}
-	landingPage, err := web.NewLandingPage(landingConfig)
-	if err != nil {
-		klog.ErrorS(err, "failed to create landing page")
-	}
-	mux.Handle("/", landingPage)
+	registerLandingPage(mux, landingConfig, web.NewLandingPage)
 	return mux
 }
 

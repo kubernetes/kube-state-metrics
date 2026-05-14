@@ -4,7 +4,6 @@ REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
 TAG_PREFIX = v
 VERSION = $(shell grep '^version:' data.yaml | grep -oE "[0-9]+.[0-9]+.[0-9]+")
 TAG ?= $(TAG_PREFIX)$(VERSION)
-LATEST_RELEASE_BRANCH := release-$(shell echo $(VERSION) | grep -ohE "[0-9]+.[0-9]+")
 BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
@@ -99,7 +98,7 @@ generate-template:
 validate-template: generate-template
 	git diff --no-ext-diff --quiet --exit-code README.md
 
-# Runs benchmark tests on the current git ref and the last release and compares
+# Runs benchmark tests on the current git ref and the previous release tag and compares
 # the two.
 test-benchmark-compare:
 	$(MAKE) test-benchmark-compare-main test-benchmark-compare-release
@@ -109,8 +108,8 @@ test-benchmark-compare-main:
 	./tests/compare_benchmarks.sh main 6
 
 test-benchmark-compare-release:
-	@git fetch origin ${LATEST_RELEASE_BRANCH}
-	./tests/compare_benchmarks.sh ${LATEST_RELEASE_BRANCH} 6
+	@git fetch --tags origin
+	./tests/compare_benchmarks.sh $$(git describe --tags --abbrev=0 HEAD^) 6
 
 all: all-container
 

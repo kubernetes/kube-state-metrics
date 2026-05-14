@@ -158,6 +158,9 @@ jobs:
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
 
     - name: Set up Go 1.x
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -169,7 +172,7 @@ jobs:
       run: |
         BENCHSTAT_OUTPUT_FILE=result.txt make test-benchmark-compare-release
     - run: |
-        echo "Comparison against release branch" >> "$GITHUB_STEP_SUMMARY"
+        echo "Comparison against previous release tag" >> "$GITHUB_STEP_SUMMARY"
         echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
         cat result.txt >> "$GITHUB_STEP_SUMMARY"
         echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"

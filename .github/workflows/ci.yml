@@ -88,6 +88,11 @@ jobs:
         go-version-file: '.go-version'
       id: go
 
+    - name: Install GoReleaser
+      uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
+      with:
+        install-only: true
+
     - name: Check that all metrics are documented and templates have no delta
       run: |
         make doccheck
@@ -193,9 +198,20 @@ jobs:
         go-version-file: '.go-version'
       id: go
 
-    - name: Build
+    - name: Extract versions
+      id: versions
       run: |
-        make build
+        CLIENT_GO_VERSION=$(go list -m -f '{{.Version}}' k8s.io/client-go)
+        echo "client-go-version=${CLIENT_GO_VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Build
+      uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
+      with:
+        args: build --snapshot --clean --single-target 
+      env:
+        GOOS: "linux"
+        GOARCH: "amd64"
+        K8S_CLIENT_VERSION: ${{ steps.versions.outputs.client-go-version }}
 
   ci-e2e-tests:
     name: ci-e2e-tests
@@ -209,6 +225,11 @@ jobs:
       with:
         go-version-file: '.go-version'
       id: go
+
+    - name: Install GoReleaser
+      uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
+      with:
+        install-only: true
 
     - name: End-to-end tests
       run: |

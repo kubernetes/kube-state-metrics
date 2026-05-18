@@ -11,14 +11,10 @@ ARCH ?= $(shell go env GOARCH)
 BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
 PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 3.9.1
 GO_VERSION = $(shell cat .go-version)
 IMAGE = $(REGISTRY)/kube-state-metrics
-MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
-USER ?= $(shell id -u -n)
-HOST ?= $(shell hostname)
 MARKDOWNLINT_CLI2_VERSION = 0.21.0
 CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
 KSM_MODULE = $(shell go list -m)
@@ -29,8 +25,6 @@ GOMPLATE_CLI ?= go tool github.com/hairyhenderson/gomplate/v4/cmd/gomplate
 GOJQ_CLI ?= go tool github.com/itchyny/gojq/cmd/gojq
 JSONNET_CLI ?= go tool github.com/google/go-jsonnet/cmd/jsonnet
 JB_CLI ?= go tool github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
-
-export DOCKER_CLI_EXPERIMENTAL=enabled
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
@@ -69,14 +63,8 @@ doccheck: generate validate-template
 	@cd docs; for doc in $$(find metrics/* -name '*.md' | sed 's/.*\///'); do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
-build-local:
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${KSM_MODULE}/pkg/app.ClientGoVersion=${CLIENT_GO_VERSION}" -o kube-state-metrics
-
-build: kube-state-metrics
-
-kube-state-metrics:
-	# Need to update git setting to prevent failing builds due to https://github.com/docker-library/golang/issues/452
-	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} git config --global --add safe.directory "*" && make build-local
+build:
+	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser build --single-target --clean --snapshot
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
@@ -114,31 +102,13 @@ test-benchmark-compare-release:
 
 all: all-container
 
-# Container build for multiple architectures as defined in ALL_ARCH
+# Container build and push using goreleaser / ko
 
-container: container-$(ARCH)
+container:
+	K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --snapshot --clean --skip=archive,announce,publish
 
-container-%:
-	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
-
-sub-container-%:
-	$(MAKE) --no-print-directory ARCH=$* container
-
-all-container: $(addprefix sub-container-,$(ALL_ARCH))
-
-# Container push, push is the target to push for multiple architectures as defined in ALL_ARCH
-
-push: $(addprefix sub-push-,$(ALL_ARCH)) push-multi-arch;
-
-sub-push-%: container-% do-push-% ;
-
-do-push-%:
-	${DOCKER_CLI} push $(IMAGE)-$*:$(TAG)
-
-push-multi-arch:
-	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
-	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
+push:
+	K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean
 
 clean:
 	rm -f kube-state-metrics
@@ -147,7 +117,7 @@ clean:
 e2e:
 	./tests/e2e.sh
 
-generate: build-local generate-template
+generate: build generate-template
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
 	${GOMPLATE_CLI} --file docs/developer/cli-arguments.md.tpl > docs/developer/cli-arguments.md
@@ -191,4 +161,4 @@ install-promtool:
 	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" |\
 	tar xvz --strip-components=1 prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}/promtool
 
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template 
+.PHONY: all build all-container container push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template

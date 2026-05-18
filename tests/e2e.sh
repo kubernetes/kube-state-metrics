@@ -28,7 +28,7 @@ NODE_IMAGE_NAME="docker.io/kindest/node"
 KUBERNETES_VERSION=${KUBERNETES_VERSION:-"v1.35.0"}
 KUBE_STATE_METRICS_LOG_DIR=./log
 KUBE_STATE_METRICS_CURRENT_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics"
-KUBE_STATE_METRICS_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics-${ARCH}"
+KUBE_STATE_METRICS_IMAGE_NAME="registry.k8s.io/kube-state-metrics/kube-state-metrics"
 E2E_SETUP_KIND=${E2E_SETUP_KIND:-}
 E2E_SETUP_KUBECTL=${E2E_SETUP_KUBECTL:-}
 KIND_VERSION=v0.31.0
@@ -187,7 +187,7 @@ set -e
 kubectl version
 
 # query kube-state-metrics image tag
-REGISTRY="registry.k8s.io/kube-state-metrics" make container
+make container
 docker images -a
 # Use Docker's machine-readable output - the human table columns/spacing can change between Docker versions.
 KUBE_STATE_METRICS_IMAGE_TAG="$(

@@ -20,7 +20,7 @@ jobs:
       - name: Extract versions
         id: versions
         run: |
-          # Extract Go version from Dockerfile
+          # Extract Go version from .go-version
           GO_VERSION=$(cat .go-version)
           echo "go-version=${GO_VERSION}" >> $GITHUB_OUTPUT
           

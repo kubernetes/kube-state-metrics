@@ -23,8 +23,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/klog/v2"
-	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
+
+	"k8s.io/kube-state-metrics/v2/internal/discovery"
 )
 
 //go:embed example_config.yaml

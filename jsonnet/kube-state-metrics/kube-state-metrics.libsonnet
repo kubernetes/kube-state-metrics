@@ -57,7 +57,6 @@
           'persistentvolumeclaims',
           'persistentvolumes',
           'namespaces',
-          'endpoints',
         ],
         verbs: ['list', 'watch'],
       },

@@ -330,7 +330,6 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"cronjobs":                        func(b *Builder) []cache.Store { return b.buildCronJobStores() },
 	"daemonsets":                      func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
 	"deployments":                     func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
-	"endpoints":                       func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
 	"endpointslices":                  func(b *Builder) []cache.Store { return b.buildEndpointSlicesStores() },
 	"horizontalpodautoscalers":        func(b *Builder) []cache.Store { return b.buildHPAStores() },
 	"ingresses":                       func(b *Builder) []cache.Store { return b.buildIngressStores() },
@@ -387,10 +386,6 @@ func (b *Builder) buildDaemonSetStores() []cache.Store {
 
 func (b *Builder) buildDeploymentStores() []cache.Store {
 	return b.buildStoresFunc(deploymentMetricFamilies(b.allowAnnotationsList["deployments"], b.allowLabelsList["deployments"]), &appsv1.Deployment{}, createDeploymentListWatch, b.useAPIServerCache, b.objectLimit)
-}
-
-func (b *Builder) buildEndpointsStores() []cache.Store {
-	return b.buildStoresFunc(endpointMetricFamilies(b.allowAnnotationsList["endpoints"], b.allowLabelsList["endpoints"]), &v1.Endpoints{}, createEndpointsListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildEndpointSlicesStores() []cache.Store {

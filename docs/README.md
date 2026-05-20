@@ -38,7 +38,6 @@ See each file for specific documentation about the exposed metrics:
 * [CronJob Metrics](metrics/workload/cronjob-metrics.md)
 * [DaemonSet Metrics](metrics/workload/daemonset-metrics.md)
 * [Deployment Metrics](metrics/workload/deployment-metrics.md)
-* [Endpoint Metrics](metrics/service/endpoint-metrics.md)
 * [Horizontal Pod Autoscaler Metrics](metrics/workload/horizontalpodautoscaler-metrics.md)
 * [Ingress Metrics](metrics/service/ingress-metrics.md)
 * [Job Metrics](metrics/workload/job-metrics.md)

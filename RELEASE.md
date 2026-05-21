@@ -36,7 +36,7 @@ Maintaining the release branches for older minor releases happens on a best effo
 * Cut the new release branch, e.g. `release-1.2`, or merge/cherry-pick changes onto the minor release branch you intend to tag the release on
 * Cut the new release tag, e.g. `v1.2.0-rc.0`
 * Create a new **pre-release** on github
-* New images are automatically built and pushed to `gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics`
+* New images are automatically built and pushed to `gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics`. If `post-kube-state-metrics-push-images` seems to error due to failed pulls, try updating the image used in [cloudbuild.yaml](./cloudbuild.yaml), see [this Slack thread](https://kubernetes.slack.com/archives/C0ARY011QTW/p1779357270928509) for more information.
 * Promote image by sending a PR to [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io) repository. Follow the [example PR](https://github.com/kubernetes/k8s.io/pull/3798). Use [kpromo pr](https://github.com/kubernetes-sigs/promo-tools/blob/main/docs/promotion-pull-requests.md) to update the manifest files in this repository, e.g. `kpromo pr --fork=$YOURNAME -i --project=kube-state-metrics -t=v2.5.0`
 * Create a PR to merge the changes of this release back into the main branch.
 * Once the PR to promote the image is merged, mark the pre-release as a regular release.

@@ -195,7 +195,9 @@ func SanitizeHeaders(contentType expfmt.Format, writers MetricsWriterList) Metri
 		clonedStores := make([]*MetricsStore, 0, len(writer.stores))
 		for i, store := range writer.stores {
 			clonedStore := &MetricsStore{
-				metrics: store.metrics,
+				metrics:               store.metrics,
+				lastResourceVersion:   store.lastResourceVersion,
+				lastResourceVersionMu: store.lastResourceVersionMu,
 			}
 			if i == 0 {
 				clonedHeaders := make([]string, len(store.headers))

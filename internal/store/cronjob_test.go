@@ -533,13 +533,16 @@ func TestCronJobStore(t *testing.T) {
 func TestGetNextScheduledTime(t *testing.T) {
 
 	testCases := []struct {
+		Desc             string
 		schedule         string
 		lastScheduleTime metav1.Time
 		createdTime      metav1.Time
 		timeZone         string
 		expected         time.Time
+		expectErr        bool
 	}{
 		{
+			Desc:             "valid schedule with UTC timezone",
 			schedule:         "0 */6 * * *",
 			lastScheduleTime: metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 			createdTime:      metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
@@ -547,18 +550,48 @@ func TestGetNextScheduledTime(t *testing.T) {
 			expected:         ActiveRunningCronJob1LastScheduleTime.Add(time.Second*4 + time.Minute*25 + time.Hour),
 		},
 		{
+			Desc:             "valid schedule with named timezone",
 			schedule:         "0 */6 * * *",
 			lastScheduleTime: metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 			createdTime:      metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 			timeZone:         TimeZone,
 			expected:         ActiveRunningCronJob1LastScheduleTime.Add(time.Second*4 + time.Minute*25 + time.Hour*5),
 		},
+		{
+			Desc:             "invalid timezone returns error",
+			schedule:         "0 */6 * * *",
+			lastScheduleTime: metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
+			createdTime:      metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
+			timeZone:         "Not/A_Real_Zone",
+			expectErr:        true,
+		},
+		{
+			Desc:             "invalid schedule expression returns error",
+			schedule:         "not a cron expression",
+			lastScheduleTime: metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
+			createdTime:      metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
+			timeZone:         "UTC",
+			expectErr:        true,
+		},
 	}
 
 	for _, test := range testCases {
-		actual, _ := getNextScheduledTime(test.schedule, &test.lastScheduleTime, test.createdTime, &test.timeZone) // #nosec G601
+		actual, err := getNextScheduledTime(test.schedule, &test.lastScheduleTime, test.createdTime, &test.timeZone) // #nosec G601
+		if test.expectErr {
+			if err == nil {
+				t.Errorf("%s: expected error, got nil (actual=%v)", test.Desc, actual)
+			}
+			if !actual.IsZero() {
+				t.Errorf("%s: expected zero time on error, got %v", test.Desc, actual)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("%s: unexpected error: %v", test.Desc, err)
+			continue
+		}
 		if !actual.Equal(test.expected) {
-			t.Fatalf("%v: expected %v, actual %v", test.schedule, test.expected, actual)
+			t.Fatalf("%s: expected %v, actual %v", test.Desc, test.expected, actual)
 		}
 	}
 

@@ -252,7 +252,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
 				if err != nil {
 					panic(err)
-				} else if !*j.Spec.Suspend {
+				} else if j.Spec.Suspend == nil || !*j.Spec.Suspend {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},

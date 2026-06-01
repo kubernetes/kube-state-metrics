@@ -17,6 +17,7 @@ limitations under the License.
 package sharding
 
 import (
+	"context"
 	"strconv"
 	"testing"
 	"time"
@@ -78,7 +79,7 @@ func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T
 				},
 			}
 
-			shardedWatch, err := NewShardedListWatch(shard, 4, lw).Watch(metav1.ListOptions{})
+			shardedWatch, err := cache.ToWatcherWithContext(NewShardedListWatch(shard, 4, lw)).WatchWithContext(context.Background(), metav1.ListOptions{})
 			if err != nil {
 				t.Fatalf("failed to create sharded watch: %v", err)
 			}

@@ -70,23 +70,31 @@ func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T
 		},
 	}
 
+	source := watch.NewBroadcaster(1, watch.WaitIfChannelFull)
+	t.Cleanup(source.Shutdown)
+
+	var shardedWatches []watch.Interface
 	for shard := int32(0); shard < 4; shard++ {
-		t.Run(strconv.Itoa(int(shard)), func(t *testing.T) {
-			source := watch.NewRaceFreeFake()
-			lw := &cache.ListWatch{
-				WatchFunc: func(metav1.ListOptions) (watch.Interface, error) {
-					return source, nil
-				},
-			}
+		lw := &cache.ListWatch{
+			WatchFunc: func(metav1.ListOptions) (watch.Interface, error) {
+				return source.Watch()
+			},
+		}
 
-			shardedWatch, err := cache.ToWatcherWithContext(NewShardedListWatch(shard, 4, lw)).WatchWithContext(context.Background(), metav1.ListOptions{})
-			if err != nil {
-				t.Fatalf("failed to create sharded watch: %v", err)
-			}
-			defer shardedWatch.Stop()
+		shardedWatch, err := cache.ToWatcherWithContext(NewShardedListWatch(shard, 4, lw)).WatchWithContext(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			t.Fatalf("failed to create sharded watch: %v", err)
+		}
+		t.Cleanup(shardedWatch.Stop)
+		shardedWatches = append(shardedWatches, shardedWatch)
+	}
 
-			source.Action(watch.Bookmark, bookmark)
+	if err := source.Action(watch.Bookmark, bookmark); err != nil {
+		t.Fatalf("failed to broadcast initial events end bookmark: %v", err)
+	}
 
+	for shard, shardedWatch := range shardedWatches {
+		t.Run(strconv.Itoa(shard), func(t *testing.T) {
 			select {
 			case event := <-shardedWatch.ResultChan():
 				if event.Type != watch.Bookmark {

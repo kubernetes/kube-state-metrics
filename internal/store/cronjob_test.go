@@ -563,3 +563,98 @@ func TestGetNextScheduledTime(t *testing.T) {
 	}
 
 }
+
+func TestCronJobStoreScheduleParsing(t *testing.T) {
+	newCronJob := func(name, schedule string) *batchv1.CronJob {
+		return &batchv1.CronJob{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: "ns1",
+			},
+			Status: batchv1.CronJobStatus{
+				LastScheduleTime: &metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
+			},
+			Spec: batchv1.CronJobSpec{
+				Schedule: schedule,
+			},
+		}
+	}
+
+	// next schedule time for a valid "0 */6 * * *" schedule relative to LastScheduleTime.
+	validNextScheduleTime := calculateNextSchedule6h(ActiveRunningCronJob1LastScheduleTime, "Local")
+
+	cases := []generateMetricsTestCase{
+		{
+			// Valid schedule: next_schedule_time is emitted, schedule_invalid is not.
+			Obj: newCronJob("ValidScheduleCronJob", "0 */6 * * *"),
+			Want: `
+				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
+				# TYPE kube_cronjob_schedule_invalid gauge
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# TYPE kube_cronjob_status_last_schedule_time gauge
+				kube_cronjob_status_last_schedule_time{cronjob="ValidScheduleCronJob",namespace="ns1"} 1.520742896e+09
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# TYPE kube_cronjob_next_schedule_time gauge
+` + fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"ValidScheduleCronJob\",namespace=\"ns1\"} %ve+09\n",
+				float64(validNextScheduleTime.Unix())/math.Pow10(9)),
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
+		},
+		{
+			// Unparseable schedule (step >= range size): next_schedule_time omitted, schedule_invalid emitted, no panic.
+			Obj: newCronJob("UnparseableScheduleCronJob", "*/120 4-22 * * *"),
+			Want: `
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# TYPE kube_cronjob_next_schedule_time gauge
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# TYPE kube_cronjob_status_last_schedule_time gauge
+				kube_cronjob_status_last_schedule_time{cronjob="UnparseableScheduleCronJob",namespace="ns1"} 1.520742896e+09
+				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
+				# TYPE kube_cronjob_schedule_invalid gauge
+				kube_cronjob_schedule_invalid{cronjob="UnparseableScheduleCronJob",namespace="ns1"} 1
+`,
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
+		},
+		{
+			// Unparseable schedule (list with out-of-range step): next_schedule_time omitted, schedule_invalid emitted, no panic.
+			Obj: newCronJob("UnparseableScheduleCronJob", "0 1 */32,1-7 * 3"),
+			Want: `
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# TYPE kube_cronjob_next_schedule_time gauge
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# TYPE kube_cronjob_status_last_schedule_time gauge
+				kube_cronjob_status_last_schedule_time{cronjob="UnparseableScheduleCronJob",namespace="ns1"} 1.520742896e+09
+				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
+				# TYPE kube_cronjob_schedule_invalid gauge
+				kube_cronjob_schedule_invalid{cronjob="UnparseableScheduleCronJob",namespace="ns1"} 1
+`,
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
+		},
+		{
+			// Invalid timezone: next_schedule_time omitted, schedule_invalid emitted, no panic.
+			Obj: func() *batchv1.CronJob {
+				cj := newCronJob("InvalidTimeZoneCronJob", "0 */6 * * *")
+				invalidTimeZone := "Invalid/Zone"
+				cj.Spec.TimeZone = &invalidTimeZone
+				return cj
+			}(),
+			Want: `
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# TYPE kube_cronjob_next_schedule_time gauge
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# TYPE kube_cronjob_status_last_schedule_time gauge
+				kube_cronjob_status_last_schedule_time{cronjob="InvalidTimeZoneCronJob",namespace="ns1"} 1.520742896e+09
+				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
+				# TYPE kube_cronjob_schedule_invalid gauge
+				kube_cronjob_schedule_invalid{cronjob="InvalidTimeZoneCronJob",namespace="ns1"} 1
+`,
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
+		},
+	}
+	for i, c := range cases {
+		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
+		}
+	}
+}

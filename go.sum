@@ -500,8 +500,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8m
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f h1:KUppIJq7/+SVif2QVs3tOP0zanoHgBEVAwHxUSIzRqU=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
-github.com/netresearch/go-cron v0.14.0 h1:CnUt6kGjet0dQL6rc4xmS+q2EbP9BKR9kh4AX5bnc5U=
-github.com/netresearch/go-cron v0.14.0/go.mod h1:79iktHfV90py3jcaFUtWcGSKbZXRev+WwoLMyV5eMvo=
+github.com/netresearch/go-cron v0.15.0 h1:pu+dhMZjBao9m5IpYe0o+zcNFlP94Z7TDHrORQk+/t0=
+github.com/netresearch/go-cron v0.15.0/go.mod h1:79iktHfV90py3jcaFUtWcGSKbZXRev+WwoLMyV5eMvo=
 github.com/oklog/run v1.2.0 h1:O8x3yXwah4A73hJdlrwo/2X6J62gE5qTMusH0dvz60E=
 github.com/oklog/run v1.2.0/go.mod h1:mgDbKRSwPhJfesJ4PntqFUbKQRZ50NgmZTSPlFA0YFk=
 github.com/onsi/ginkgo/v2 v2.27.2 h1:LzwLj0b89qtIy6SSASkzlNvX6WktqurSHwkk2ipF/Ns=

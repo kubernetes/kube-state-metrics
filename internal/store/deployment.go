@@ -271,12 +271,16 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if d.Spec.Replicas != nil {
+					ms = append(ms, &metric.Metric{
+						Value: float64(*d.Spec.Replicas),
+					})
+				}
+
 				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: float64(*d.Spec.Replicas),
-						},
-					},
+					Metrics: ms,
 				}
 			}),
 		),
@@ -303,7 +307,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				if d.Spec.Strategy.RollingUpdate == nil {
+				if d.Spec.Strategy.RollingUpdate == nil || d.Spec.Replicas == nil {
 					return &metric.Family{}
 				}
 
@@ -328,7 +332,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				if d.Spec.Strategy.RollingUpdate == nil {
+				if d.Spec.Strategy.RollingUpdate == nil || d.Spec.Replicas == nil {
 					return &metric.Family{}
 				}
 

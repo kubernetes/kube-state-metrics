@@ -17,11 +17,16 @@ limitations under the License.
 package sharding
 
 import (
+	"context"
+	"strconv"
 	"testing"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
 )
 
 func TestSharding(t *testing.T) {
@@ -52,5 +57,52 @@ func TestSharding(t *testing.T) {
 
 	if s2.keep(cm) {
 		t.Fatal("Shard two should not pick up the object.")
+	}
+}
+
+func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T) {
+	bookmark := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			ResourceVersion: "1",
+			Annotations: map[string]string{
+				metav1.InitialEventsAnnotationKey: "true",
+			},
+		},
+	}
+
+	source := watch.NewBroadcaster(1, watch.WaitIfChannelFull)
+	t.Cleanup(source.Shutdown)
+
+	var shardedWatches []watch.Interface
+	for shard := int32(0); shard < 4; shard++ {
+		lw := &cache.ListWatch{
+			WatchFunc: func(metav1.ListOptions) (watch.Interface, error) {
+				return source.Watch()
+			},
+		}
+
+		shardedWatch, err := cache.ToWatcherWithContext(NewShardedListWatch(shard, 4, lw)).WatchWithContext(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			t.Fatalf("failed to create sharded watch: %v", err)
+		}
+		t.Cleanup(shardedWatch.Stop)
+		shardedWatches = append(shardedWatches, shardedWatch)
+	}
+
+	if err := source.Action(watch.Bookmark, bookmark); err != nil {
+		t.Fatalf("failed to broadcast initial events end bookmark: %v", err)
+	}
+
+	for shard, shardedWatch := range shardedWatches {
+		t.Run(strconv.Itoa(shard), func(t *testing.T) {
+			select {
+			case event := <-shardedWatch.ResultChan():
+				if event.Type != watch.Bookmark {
+					t.Fatalf("got event type %q, want %q", event.Type, watch.Bookmark)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("timed out waiting for initial events end bookmark")
+			}
+		})
 	}
 }

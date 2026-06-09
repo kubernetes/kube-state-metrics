@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"io"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,6 +52,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
@@ -359,8 +362,10 @@ kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Unknown"
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Evicted"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="NodeAffinity"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="NodeLost"} 0
+kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="PreemptionByScheduler"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="SchedulingGated"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Shutdown"} 0
+kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="TerminationByKubelet"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="UnexpectedAdmissionError"} 0
 `
 
@@ -435,6 +440,58 @@ kube_state_metrics_total_shards 1
 	for i := 0; i < len(expectedSplit2); i++ {
 		if expectedSplit2[i] != gotFiltered2[i] {
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit2[i], gotFiltered2[i])
+		}
+	}
+}
+
+func TestPprofRouting(t *testing.T) {
+	t.Parallel()
+
+	pprofPaths := []string{
+		"/debug/pprof/",
+		"/debug/pprof/cmdline",
+		"/debug/pprof/profile",
+		"/debug/pprof/symbol",
+		"/debug/pprof/trace",
+	}
+
+	pprofPatterns := make(map[string]struct{}, len(pprofPaths))
+	for _, path := range pprofPaths {
+		pprofPatterns[path] = struct{}{}
+	}
+
+	fakeConfig := &rest.Config{Host: "https://fake-server:443"}
+
+	for _, authEnabled := range []bool{false, true} {
+		var cfg *rest.Config
+		if authEnabled {
+			cfg = fakeConfig
+		}
+
+		reg := prometheus.NewRegistry()
+		telemetryMux := buildTelemetryServer(reg, authEnabled, cfg)
+		for _, path := range pprofPaths {
+			req := httptest.NewRequest("GET", "http://localhost:8081"+path, nil)
+			_, pattern := telemetryMux.Handler(req)
+			if _, ok := pprofPatterns[pattern]; !ok {
+				t.Errorf("authFilter=%v: expected pprof path %s to be registered on telemetry server, matched pattern %q", authEnabled, path, pattern)
+			}
+		}
+
+		opts := options.NewOptions()
+		metricsMux := buildMetricsServer(
+			metricshandler.New(opts, fake.NewSimpleClientset(), nil, false),
+			prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "test_duration_seconds", Help: "helpless"}, []string{"method"}),
+			fake.NewSimpleClientset(),
+			authEnabled,
+			cfg,
+		)
+		for _, path := range pprofPaths {
+			req := httptest.NewRequest("GET", "http://localhost:8080"+path, nil)
+			_, pattern := metricsMux.Handler(req)
+			if _, ok := pprofPatterns[pattern]; ok {
+				t.Errorf("authFilter=%v: expected pprof path %s to be unregistered on metrics server, matched pattern %q", authEnabled, path, pattern)
+			}
 		}
 	}
 }
@@ -1074,4 +1131,118 @@ func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
 	if result != opts {
 		t.Errorf("expected opts to be returned unchanged on invalid YAML")
 	}
+}
+
+func TestResolveCustomResourceConfig(t *testing.T) {
+	validCRSConfig := `
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: example.com
+        version: v1
+        kind: MyResource
+      metrics:
+        - name: my_resource_info
+          help: "My resource info"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                name: [metadata, name]
+`
+	assertDecodesConfig := func(t *testing.T, decoder customresourcestate.ConfigDecoder) {
+		t.Helper()
+		var config customresourcestate.Metrics
+		if err := decoder.Decode(&config); err != nil {
+			t.Fatalf("failed to decode CRS config: %v", err)
+		}
+		if len(config.Spec.Resources) != 1 {
+			t.Fatalf("expected 1 resource, got %d", len(config.Spec.Resources))
+		}
+		gvk := config.Spec.Resources[0].GroupVersionKind
+		if gvk.Group != "example.com" || gvk.Version != "v1" || gvk.Kind != "MyResource" {
+			t.Fatalf("unexpected GVK: %v", gvk)
+		}
+	}
+
+	t.Run("file exists, flag not set: loads config", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "crs-config-*.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.WriteString(validCRSConfig); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = f.Name()
+		opts.ContinueWithoutCustomResourceConfigFile = false
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder == nil {
+			t.Fatal("expected a decoder, got nil")
+		}
+		assertDecodesConfig(t, decoder)
+	})
+
+	t.Run("file exists, flag set: loads config", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "crs-config-*.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.WriteString(validCRSConfig); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = f.Name()
+		opts.ContinueWithoutCustomResourceConfigFile = true
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder == nil {
+			t.Fatal("expected a decoder, got nil — file exists but config was not loaded")
+		}
+		assertDecodesConfig(t, decoder)
+	})
+
+	t.Run("file absent, flag set: returns nil without error", func(t *testing.T) {
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = filepath.Join(t.TempDir(), "missing.yaml")
+		opts.ContinueWithoutCustomResourceConfigFile = true
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if decoder != nil {
+			t.Fatal("expected nil decoder when file is absent and flag is set")
+		}
+	})
+
+	t.Run("file absent, flag not set: returns error", func(t *testing.T) {
+		opts := options.NewOptions()
+		opts.CustomResourceConfigFile = filepath.Join(t.TempDir(), "missing.yaml")
+		opts.ContinueWithoutCustomResourceConfigFile = false
+
+		decoder, err := resolveCustomResourceConfig(opts)
+		if err == nil {
+			t.Fatal("expected an error when file is absent and flag is not set")
+		}
+		if decoder != nil {
+			t.Fatal("expected nil decoder on error")
+		}
+	})
 }

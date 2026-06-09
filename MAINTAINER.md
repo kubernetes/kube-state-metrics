@@ -16,4 +16,4 @@ As part of the Kubernetes project, we rely on the [community membership process]
 * Add the new approver to the [OWNERS](OWNERS) file to be able to approve pull requests.
 * Add the new approver to the [SECURITY_CONTACTS](SECURITY_CONTACTS) file to be able to get notified on security related incidents.
 * Add the new approver to the [kube-state-metrics-admin group](https://github.com/kubernetes/org/blob/main/config/kubernetes/sig-instrumentation/teams.yaml), to get admin access to the kube-state-metrics repository.
-* Add the new approver to the k8s.io [OWNERS](https://github.com/kubernetes/k8s.io/blob/main/k8s.gcr.io/images/k8s-staging-kube-state-metrics/OWNERS) file to be able to approve image promotion from the staging registry.
+* Add the new approver to the k8s.io [OWNERS](https://github.com/kubernetes/k8s.io/blob/main/registry.k8s.io/images/k8s-staging-kube-state-metrics/OWNERS) file to be able to approve image promotion from the staging registry.

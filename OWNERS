@@ -4,7 +4,10 @@ reviewers:
   - logicalhan
   - mrueg
   - rexagod
+  - bhope
+  - nmn3m
 approvers:
+  - bhope
   - CatherineF-dev
   - dgrisonnet
   - mrueg

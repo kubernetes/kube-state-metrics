@@ -1304,8 +1304,10 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_phase", "kube_pod_status_reason"},
@@ -1349,8 +1351,10 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 1
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
@@ -1374,8 +1378,10 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 1
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
@@ -1399,8 +1405,10 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 1
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
@@ -1424,8 +1432,64 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					UID:               "uid4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "PreemptionByScheduler",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 1
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "pod4",
+					Namespace:         "ns4",
+					UID:               "uid4",
+					DeletionTimestamp: &metav1.Time{},
+				},
+				Status: v1.PodStatus{
+					Phase:  v1.PodRunning,
+					Reason: "TerminationByKubelet",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 1
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
@@ -1449,8 +1513,10 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+			kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
@@ -1479,8 +1545,10 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 1
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},

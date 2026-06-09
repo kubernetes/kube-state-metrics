@@ -37,7 +37,7 @@ import (
 
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
-	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "SchedulingGated", "Shutdown", "UnexpectedAdmissionError"}
+	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
 )
 
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {

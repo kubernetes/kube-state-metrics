@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Fetch source code into GITHUB_WORKSPACE
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install Kubernetes BOM
-        uses: kubernetes-sigs/release-actions/setup-bom@8af7b2a5596dff526de9db59b2c4b8457e9f52a1 # v0.4.0
+        uses: kubernetes-sigs/release-actions/setup-bom@8753ea6bdadb814d779c6ec34eaca689dbfb492b # v0.4.3
 
       - name: Generate SBOM
         run: |

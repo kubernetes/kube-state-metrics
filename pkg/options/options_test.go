@@ -19,6 +19,8 @@ package options
 import (
 	"os"
 	"testing"
+
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 func TestOptionsParse(t *testing.T) {
@@ -62,4 +64,33 @@ func TestOptionsParse(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
+	t.Run("deprecated key populates alias field", func(t *testing.T) {
+		opts := NewOptions()
+		if err := yaml.Unmarshal([]byte("custom_resource_config_file: /etc/ksm/crs.yaml\n"), opts); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if opts.CustomResourceConfigFileDeprecated != "/etc/ksm/crs.yaml" {
+			t.Fatalf("expected deprecated alias to be set, got %q", opts.CustomResourceConfigFileDeprecated)
+		}
+		if opts.CustomResourceConfigFile != "" {
+			t.Fatalf("expected canonical field to remain empty pre-merge, got %q", opts.CustomResourceConfigFile)
+		}
+	})
+
+	t.Run("canonical key takes precedence when both are set", func(t *testing.T) {
+		opts := NewOptions()
+		yamlIn := "custom_resource_config_file: /old.yaml\ncustom_resource_state_config_file: /new.yaml\n"
+		if err := yaml.Unmarshal([]byte(yamlIn), opts); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if opts.CustomResourceConfigFile != "/new.yaml" {
+			t.Fatalf("expected canonical field to win, got %q", opts.CustomResourceConfigFile)
+		}
+		if opts.CustomResourceConfigFileDeprecated != "/old.yaml" {
+			t.Fatalf("expected deprecated field to retain its value, got %q", opts.CustomResourceConfigFileDeprecated)
+		}
+	})
 }

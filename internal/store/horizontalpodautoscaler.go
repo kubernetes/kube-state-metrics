@@ -50,7 +50,7 @@ var (
 	descHorizontalPodAutoscalerLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descHorizontalPodAutoscalerLabelsDefaultLabels = []string{"namespace", "horizontalpodautoscaler"}
 
-	targetMetricLabels = []string{"metric_name", "metric_target_type"}
+	targetMetricLabels = []string{"metric_name", "metric_target_type", "container"}
 )
 
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -194,6 +194,7 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 			for _, m := range a.Spec.Metrics {
 				var metricName string
 				var metricTarget autoscaling.MetricTarget
+				var containerName string
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
 
@@ -210,6 +211,7 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				case autoscaling.ContainerResourceMetricSourceType:
 					metricName = string(m.ContainerResource.Name)
 					metricTarget = m.ContainerResource.Target
+					containerName = m.ContainerResource.Container
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					metricTarget = m.External.Target
@@ -231,7 +233,7 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				for metricTypeIndex, metricValue := range metricMap {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelValues: []string{metricName, metricTypeIndex.String(), containerName},
 						Value:       metricValue,
 					})
 				}
@@ -253,6 +255,7 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 			for _, m := range a.Status.CurrentMetrics {
 				var metricName string
 				var currentMetric autoscaling.MetricValueStatus
+				var containerName string
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
 
@@ -269,6 +272,7 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				case autoscaling.ContainerResourceMetricSourceType:
 					metricName = string(m.ContainerResource.Name)
 					currentMetric = m.ContainerResource.Current
+					containerName = m.ContainerResource.Container
 				case autoscaling.ExternalMetricSourceType:
 					metricName = m.External.Metric.Name
 					currentMetric = m.External.Current
@@ -290,7 +294,7 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				for metricTypeIndex, metricValue := range metricMap {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   targetMetricLabels,
-						LabelValues: []string{metricName, metricTypeIndex.String()},
+						LabelValues: []string{metricName, metricTypeIndex.String(), containerName},
 						Value:       metricValue,
 					})
 				}

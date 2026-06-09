@@ -47,10 +47,15 @@ type Options struct {
 	MetricOptInList      MetricSet       `yaml:"metric_opt_in_list"`
 	Resources            ResourceSet     `yaml:"resources"`
 
-	cmd                                     *cobra.Command
-	Apiserver                               string   `yaml:"apiserver"`
-	CustomResourceConfig                    string   `yaml:"custom_resource_config"`
-	CustomResourceConfigFile                string   `yaml:"custom_resource_state_config_file"`
+	cmd                      *cobra.Command
+	Apiserver                string `yaml:"apiserver"`
+	CustomResourceConfig     string `yaml:"custom_resource_config"`
+	CustomResourceConfigFile string `yaml:"custom_resource_state_config_file"`
+	// CustomResourceConfigFileDeprecated preserves backward compatibility with the
+	// pre-v2.17 config key `custom_resource_config_file`. Honored as an alias when
+	// the canonical `custom_resource_state_config_file` is not set; emits a
+	// deprecation warning at startup. Will be removed in a future release.
+	CustomResourceConfigFileDeprecated      string   `yaml:"custom_resource_config_file"`
 	ContinueWithoutCustomResourceConfigFile bool     `yaml:"continue_without_custom_resource_state_config_file"`
 	Host                                    string   `yaml:"host"`
 	Kubeconfig                              string   `yaml:"kubeconfig"`
@@ -139,6 +144,11 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	_ = o.cmd.Flags().Lookup("logtostderr").Value.Set("true")
 	o.cmd.Flags().Lookup("logtostderr").DefValue = "true"
 	o.cmd.Flags().Lookup("logtostderr").NoOptDefVal = "true"
+
+	// Opt into the new klog behavior where -stderrthreshold is honored even
+	// when -logtostderr=true (see kubernetes/klog#212, kubernetes/klog#432).
+	_ = klogFlags.Set("legacy_stderr_threshold_behavior", "false") //nolint:errcheck
+	_ = klogFlags.Set("stderrthreshold", "INFO")                   //nolint:errcheck
 
 	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
 

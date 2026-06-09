@@ -316,6 +316,35 @@ func TestDeploymentStore(t *testing.T) {
 				kube_deployment_status_replicas_updated{deployment="deployment-without-owner",namespace="ns5"} 0
 			`,
 		},
+		{
+			Obj: &v1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deployment-nil-replicas",
+					Namespace: "ns6",
+				},
+				Spec: v1.DeploymentSpec{
+					Strategy: v1.DeploymentStrategy{
+						RollingUpdate: &v1.RollingUpdateDeployment{
+							MaxUnavailable: &depl1MaxUnavailable,
+							MaxSurge:       &depl1MaxSurge,
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
+				# TYPE kube_deployment_spec_replicas gauge
+				# HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable [STABLE] Maximum number of unavailable replicas during a rolling update of a deployment.
+				# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
+				# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
+				# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+			`,
+			MetricNames: []string{
+				"kube_deployment_spec_replicas",
+				"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+				"kube_deployment_spec_strategy_rollingupdate_max_surge",
+			},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(deploymentMetricFamilies(c.AllowAnnotationsList, nil))

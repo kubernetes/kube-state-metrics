@@ -3,27 +3,30 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/component: exporter
-    app.kubernetes.io/name: kube-state-metrics-unscheduled-pods-fetching
+    app.kubernetes.io/name: kube-state-metrics
     app.kubernetes.io/version: 2.19.0
-  name: kube-state-metrics-unscheduled-pods-fetching
+    kube-state-metrics.io/shard: "0"
+  name: kube-state-metrics-0
   namespace: kube-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: kube-state-metrics-unscheduled-pods-fetching
+      app.kubernetes.io/name: kube-state-metrics
+      kube-state-metrics.io/shard: "0"
   template:
     metadata:
       labels:
         app.kubernetes.io/component: exporter
-        app.kubernetes.io/name: kube-state-metrics-unscheduled-pods-fetching
+        app.kubernetes.io/name: kube-state-metrics
         app.kubernetes.io/version: 2.19.0
+        kube-state-metrics.io/shard: "0"
     spec:
       automountServiceAccountToken: true
       containers:
         - args:
-            - --resources=pods
-            - --track-unscheduled-pods
+            - --shard=0
+            - --total-shards=3
           image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.0
           livenessProbe:
             httpGet:
@@ -31,7 +34,7 @@ spec:
               port: http-metrics
             initialDelaySeconds: 5
             timeoutSeconds: 5
-          name: kube-state-metrics-unscheduled-pods-fetching
+          name: kube-state-metrics
           ports:
             - containerPort: 8080
               name: http-metrics

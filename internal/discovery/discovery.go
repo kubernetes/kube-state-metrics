@@ -49,7 +49,15 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	informer := factory.Informer()
 	stopper := make(chan struct{})
 	extractGVKPs := func(obj interface{}) []groupVersionKindPlural {
-		objSpec := obj.(*unstructured.Unstructured).Object["spec"].(map[string]interface{})
+		if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+			obj = d.Obj
+		}
+		u, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			klog.ErrorS(nil, "expected *unstructured.Unstructured", "got", fmt.Sprintf("%T", obj))
+			return nil
+		}
+		objSpec := u.Object["spec"].(map[string]interface{})
 		var gvkps []groupVersionKindPlural
 		for _, version := range objSpec["versions"].([]interface{}) {
 			g := objSpec["group"].(string)

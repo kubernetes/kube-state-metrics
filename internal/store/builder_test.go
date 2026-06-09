@@ -17,9 +17,11 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"reflect"
 	"slices"
 	"testing"
+	"time"
 
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -256,5 +258,58 @@ func TestWithEnabledResources(t *testing.T) {
 			t.Log("Expected enabled resources to be equal.")
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, b.enabledResources)
 		}
+	}
+}
+
+func TestCRReflectorStopChanRespondsToContextCancel(t *testing.T) {
+	const n = 20
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	stopChs := make([]chan struct{}, n)
+	for i := range n {
+		gvkStopCh := make(chan struct{})
+		stopChs[i] = newCRReflectorStopCh(ctx, gvkStopCh)
+	}
+
+	for i, ch := range stopChs {
+		select {
+		case <-ch:
+			t.Errorf("goroutine %d stopped prematurely before context cancel", i)
+		default:
+		}
+	}
+
+	cancel()
+
+	for i, ch := range stopChs {
+		select {
+		case <-ch:
+		case <-time.After(2 * time.Second):
+			t.Errorf("goroutine %d did not stop after context cancellation", i)
+			return
+		}
+	}
+}
+
+func TestCRReflectorStopChanRespondsToGVKStop(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	gvkStopCh := make(chan struct{})
+	stopCh := newCRReflectorStopCh(ctx, gvkStopCh)
+
+	select {
+	case <-stopCh:
+		t.Fatal("stopCh closed before gvkStopCh was signalled")
+	default:
+	}
+
+	close(gvkStopCh)
+
+	select {
+	case <-stopCh:
+	case <-time.After(2 * time.Second):
+		t.Fatal("stopCh did not close after gvkStopCh was closed")
 	}
 }

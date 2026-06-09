@@ -51,6 +51,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [A note on costing](#a-note-on-costing)
   * [Horizontal sharding](#horizontal-sharding)
     * [Automated sharding](#automated-sharding)
+    * [Deployment sharding](#deployment-sharding)
   * [Daemonset sharding for pod metrics](#daemonset-sharding-for-pod-metrics)
   * [Resource filtering](#resource-filtering)
 * [Setup](#setup)
@@ -256,6 +257,23 @@ To enable automated sharding, kube-state-metrics must be run by a `StatefulSet` 
 This way of deploying shards is useful when you want to manage KSM shards through a single Kubernetes resource (a single `StatefulSet` in this case) instead of having one `Deployment` per shard. The advantage can be especially significant when deploying a high number of shards.
 
 The downside of using an auto-sharded setup comes from the rollout strategy supported by `StatefulSet`s. When managed by a `StatefulSet`, pods are replaced one at a time with each pod first getting terminated and then recreated. Besides such rollouts being slower, they will also lead to short downtime for each shard. If a Prometheus scrape happens during a rollout, it can miss some of the metrics exported by kube-state-metrics.
+
+#### Deployment sharding
+
+If you prefer to manage shards as independent `Deployment` objects instead of using a single `StatefulSet`, you can use deployment-based sharding. In this model, each `Deployment` is configured with an explicit shard index using `--shard=<N>` and the total number of shards using `--total-shards=<N>`.
+
+Example manifests for deployment-based sharding are available in [`/examples/deploymentsharding`](./examples/deploymentsharding).
+
+Compared to automated sharding, this approach:
+
+* Uses the standard `Deployment` rolling update behavior, which can reduce the risk of metric gaps during upgrades
+* Gives each shard a fixed, explicitly assigned shard index
+
+The trade-offs are that:
+
+* You must manage each shard as a separate Kubernetes `Deployment`
+* You must keep the shard configuration consistent across all shard `Deployment` objects, such as the total shard count and shared settings
+  * This means scaling the number of shards requires redeploying all of them
 
 ### Daemonset sharding for pod metrics
 

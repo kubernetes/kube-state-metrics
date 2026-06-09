@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/internal/store"
@@ -672,7 +673,15 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 		Type: f.Each.Type(),
 		Help: f.Help,
 		GenerateFunc: func(obj interface{}) *metric.Family {
-			return generate(obj.(*unstructured.Unstructured), f, errLog)
+			if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+				obj = d.Obj
+			}
+			u, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				klog.ErrorS(nil, "expected *unstructured.Unstructured", "got", fmt.Sprintf("%T", obj))
+				return &metric.Family{}
+			}
+			return generate(u, f, errLog)
 		},
 	}
 }

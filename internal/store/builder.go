@@ -86,7 +86,7 @@ type Builder struct {
 	useAPIServerCache   bool
 	objectLimit         int64
 
-	GVKToReflectorStopChanMap *map[string]chan struct{}
+	GetGVKStopChan func(gvk string) chan struct{}
 }
 
 // NewBuilder returns a new builder.
@@ -609,6 +609,18 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 	return stores
 }
 
+func newCRReflectorStopCh(ctx context.Context, gvkStopCh chan struct{}) chan struct{} {
+	stopCh := make(chan struct{})
+	go func() {
+		defer close(stopCh)
+		select {
+		case <-gvkStopCh:
+		case <-ctx.Done():
+		}
+	}()
+	return stopCh
+}
+
 // startReflector starts a Kubernetes client-go reflector with the given
 // listWatcher and registers it with the given store.
 func (b *Builder) startReflector(
@@ -622,7 +634,8 @@ func (b *Builder) startReflector(
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit, client)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
-		go reflector.Run((*b.GVKToReflectorStopChanMap)[cr.GroupVersionKind().String()])
+		gvkStopCh := b.GetGVKStopChan(cr.GroupVersionKind().String())
+		go reflector.Run(newCRReflectorStopCh(b.ctx, gvkStopCh))
 	} else {
 		go reflector.Run(b.ctx.Done())
 	}

@@ -477,4 +477,45 @@
     clusterRole: ksm.clusterRole,
     clusterRoleBinding: ksm.clusterRoleBinding,
   },
+  deploymentsharding(totalShards=3,replicas=1)::
+    local deploymentShard(shard) =
+      local shardName = std.toString(ksm.name) + '-' + std.toString(shard);
+      local c = ksm.deployment.spec.template.spec.containers[0] {
+        args: [
+          '--shard=' + std.toString(shard),
+          '--total-shards=' + std.toString(totalShards),
+        ],
+      };
+      std.mergePatch(
+        ksm.deployment,
+        {
+          metadata: {
+            name: shardName,
+            labels: { 'kube-state-metrics.io/shard': std.toString(shard)},
+          },
+          spec: {
+            replicas: replicas,
+            selector: {
+              matchLabels: { 'kube-state-metrics.io/shard': std.toString(shard) },
+            },
+            template: {
+              metadata: {
+                labels: { 'kube-state-metrics.io/shard': std.toString(shard) },
+              },
+              spec: {
+                containers: [c],
+              },
+            },
+          },
+        }
+      );
+    {
+      ['deployment-' + std.toString(i)]: deploymentShard(i)
+      for i in std.range(0, totalShards - 1)
+    } + {
+      service: ksm.service,
+      serviceAccount: ksm.serviceAccount,
+      clusterRole: ksm.clusterRole,
+      clusterRoleBinding: ksm.clusterRoleBinding,
+    },
 }

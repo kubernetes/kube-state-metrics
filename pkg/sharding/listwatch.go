@@ -80,13 +80,16 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 		return nil, err
 	}
 
-	return watch.Filter(w, func(in watch.Event) (out watch.Event, keep bool) {
-		// Bookmarks are stream control events. They carry a resource version but
-		// no UID, so filtering them would route every bookmark to a single shard.
-		if in.Type == watch.Bookmark {
-			return in, true
-		}
+	return watch.Filter(w, s.filterWatchEvent), nil
+}
 
+// filterWatchEvent shards resource state changes and passes every other event
+// through. Control and unknown events must reach every reflector so sharding
+// cannot hide stream progress, errors, or event types it does not understand.
+// Future event types that mutate resource state must be added to the switch.
+func (s *shardedListWatch) filterWatchEvent(in watch.Event) (out watch.Event, keep bool) {
+	switch in.Type {
+	case watch.Added, watch.Modified, watch.Deleted:
 		a, err := meta.Accessor(in.Object)
 		if err != nil {
 			// TODO(brancz): needs logging
@@ -94,7 +97,9 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 		}
 
 		return in, s.sharding.keep(a)
-	}), nil
+	default:
+		return in, true
+	}
 }
 
 // IsWatchListSemanticsUnSupported delegates to the underlying ListerWatcher if it implements this interface.

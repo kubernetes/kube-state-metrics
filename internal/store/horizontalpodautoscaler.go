@@ -171,10 +171,15 @@ func createHPASpecMinReplicas() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
+			minReplicas := float64(1)
+			if a.Spec.MinReplicas != nil {
+				minReplicas = float64(*a.Spec.MinReplicas)
+			}
+
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
-						Value: float64(*a.Spec.MinReplicas),
+						Value: minReplicas,
 					},
 				},
 			}

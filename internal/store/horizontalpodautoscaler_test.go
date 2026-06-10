@@ -260,6 +260,30 @@ func TestHPAStore(t *testing.T) {
 			},
 		},
 		{
+			// Verify omitted minReplicas falls back to the API default.
+			Obj: &autoscaling.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "hpa-default-min-replicas",
+					Namespace: "ns1",
+				},
+				Spec: autoscaling.HorizontalPodAutoscalerSpec{
+					MaxReplicas: 3,
+					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
+						Kind: "Deployment",
+						Name: "deployment-default-min",
+					},
+				},
+			},
+			Want: `
+				# HELP kube_horizontalpodautoscaler_spec_min_replicas [STABLE] Lower limit for the number of pods that can be set by the autoscaler, default 1.
+				# TYPE kube_horizontalpodautoscaler_spec_min_replicas gauge
+				kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler="hpa-default-min-replicas",namespace="ns1"} 1
+			`,
+			MetricNames: []string{
+				"kube_horizontalpodautoscaler_spec_min_replicas",
+			},
+		},
+		{
 			// Verify populating base metric.
 			AllowAnnotationsList: []string{
 				"app.k8s.io/owner",

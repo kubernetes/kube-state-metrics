@@ -131,3 +131,15 @@ func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 func (s *MetricsStore) Resync() error {
 	return nil
 }
+
+// LastStoreSyncResourceVersion implements the LastStoreSyncResourceVersion method of the
+// store interface. The MetricsStore does not track resource versions, so it returns an
+// empty string, which callers treat as "unknown".
+func (s *MetricsStore) LastStoreSyncResourceVersion() string {
+	return ""
+}
+
+// Bookmark implements the Bookmark method of the store interface. The MetricsStore does
+// not track resource versions, so bookmarks are ignored.
+func (s *MetricsStore) Bookmark(_ string) {
+}

@@ -80,6 +80,7 @@ type Options struct {
 	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
 
 	Shard                int32 `yaml:"shard"`
+	ServerSideSharding   bool  `yaml:"server_side_sharding"`
 	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
 	CustomResourcesOnly  bool  `yaml:"custom_resources_only"`
 	EnableGZIPEncoding   bool  `yaml:"enable_gzip_encoding"`
@@ -159,6 +160,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().BoolVarP(&o.UseAPIServerCache, "use-apiserver-cache", "", false, "Sets resourceVersion=0 for ListWatch requests, using cached resources from the apiserver instead of an etcd quorum read.")
 	o.cmd.Flags().Int64Var(&o.ObjectLimit, "object-limit", 0, "The total number of objects to list per resource from the API Server. (experimental)")
 	o.cmd.Flags().Int32Var(&o.Shard, "shard", int32(0), "The instances shard nominal (zero indexed) within the total number of shards. (default 0)")
+	o.cmd.Flags().BoolVar(&o.ServerSideSharding, "server-side-sharding", false, "Requests apiserver-side filtering of list/watch responses to this instance's shard, so each shard only receives and decodes its own subset of objects. Requires Kubernetes 1.36+ with the ShardedListAndWatch feature gate enabled on the apiserver; falls back to client-side shard filtering otherwise. (experimental)")
 	o.cmd.Flags().IntVar(&o.Port, "port", 8080, `Port to expose metrics on.`)
 	o.cmd.Flags().IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")

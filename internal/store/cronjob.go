@@ -250,13 +250,37 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				// If the cron job is suspended, don't track the next scheduled time
 				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
-				if err != nil {
-					panic(err)
-				} else if !*j.Spec.Suspend {
+				// A single CronJob with an unparseable schedule must not crash the
+				// whole exporter. Skip its next-schedule metric and keep going, the
+				// same way the Kubernetes CronJob controller tolerates such schedules.
+				// kube_cronjob_schedule_invalid surfaces the parse failure as a metric.
+				if err == nil && (j.Spec.Suspend == nil || !*j.Spec.Suspend) {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
 						Value:       float64(nextScheduledTime.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_cronjob_schedule_invalid",
+			"Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if _, err := parseSchedule(j.Spec.Schedule, j.Spec.TimeZone); err != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{},
+						LabelValues: []string{},
+						Value:       1,
 					})
 				}
 
@@ -351,14 +375,22 @@ func createCronJobListWatch(kubeClient clientset.Interface, ns string, fieldSele
 	}
 }
 
-func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time, timeZone *string) (time.Time, error) {
+func parseSchedule(schedule string, timeZone *string) (cron.Schedule, error) {
 	if timeZone != nil {
 		schedule = fmt.Sprintf("CRON_TZ=%s %s", *timeZone, schedule)
 	}
 
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse cron job schedule '%s': %w", schedule, err)
+		return nil, fmt.Errorf("failed to parse cron job schedule '%s': %w", schedule, err)
+	}
+	return sched, nil
+}
+
+func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, createdTime metav1.Time, timeZone *string) (time.Time, error) {
+	sched, err := parseSchedule(schedule, timeZone)
+	if err != nil {
+		return time.Time{}, err
 	}
 	if !lastScheduleTime.IsZero() {
 		return sched.Next(lastScheduleTime.Time), nil

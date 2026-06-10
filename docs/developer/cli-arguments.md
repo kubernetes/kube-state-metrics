@@ -77,6 +77,7 @@ Flags:
       --server-idle-timeout duration                         The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients. (default 5m0s)
       --server-read-header-timeout duration                  The maximum duration for reading the header of requests. (default 5s)
       --server-read-timeout duration                         The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients.  (default 1m0s)
+      --server-side-sharding                                 Requests apiserver-side filtering of list/watch responses to this instance's shard, so each shard only receives and decodes its own subset of objects. Requires Kubernetes 1.36+ with the ShardedListAndWatch feature gate enabled on the apiserver; falls back to client-side shard filtering otherwise. (experimental)
       --server-write-timeout duration                        The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients.. (default 1m0s)
       --shard int32                                          The instances shard nominal (zero indexed) within the total number of shards. (default 0)
       --skip_headers                                         If true, avoid header prefixes in the log messages

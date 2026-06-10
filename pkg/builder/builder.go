@@ -74,6 +74,12 @@ func (b *Builder) WithSharding(shard int32, totalShards int) {
 	b.internal.WithSharding(shard, totalShards)
 }
 
+// WithServerSideSharding makes the Builder request apiserver-side filtering of
+// list/watch responses to this instance's shard.
+func (b *Builder) WithServerSideSharding(serverSideSharding bool) {
+	b.internal.WithServerSideSharding(serverSideSharding)
+}
+
 // WithContext sets the ctx property of a Builder.
 func (b *Builder) WithContext(ctx context.Context) {
 	b.internal.WithContext(ctx)

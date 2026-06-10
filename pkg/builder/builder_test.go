@@ -125,3 +125,10 @@ func (s *fakeStore) Replace(_ []interface{}, _ string) error {
 func (s *fakeStore) Resync() error {
 	return nil
 }
+
+func (s *fakeStore) LastStoreSyncResourceVersion() string {
+	return ""
+}
+
+func (s *fakeStore) Bookmark(_ string) {
+}

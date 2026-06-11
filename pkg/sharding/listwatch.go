@@ -81,6 +81,12 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 	}
 
 	return watch.Filter(w, func(in watch.Event) (out watch.Event, keep bool) {
+		// Bookmarks are stream control events. They carry a resource version but
+		// no UID, so filtering them would route every bookmark to a single shard.
+		if in.Type == watch.Bookmark {
+			return in, true
+		}
+
 		a, err := meta.Accessor(in.Object)
 		if err != nil {
 			// TODO(brancz): needs logging

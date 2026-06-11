@@ -17,9 +17,11 @@ limitations under the License.
 package sharding
 
 import (
+	"fmt"
 	"hash/fnv"
 
 	jump "github.com/dgryski/go-jump"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -83,10 +85,8 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 	return watch.Filter(w, s.filterWatchEvent), nil
 }
 
-// filterWatchEvent shards resource state changes and passes every other event
-// through. Control and unknown events must reach every reflector so sharding
-// cannot hide stream progress, errors, or event types it does not understand.
-// Future event types that mutate resource state must be added to the switch.
+// filterWatchEvent shards resource state changes, passes control events through,
+// and rejects unknown events so new mutation types cannot bypass sharding.
 func (s *shardedListWatch) filterWatchEvent(in watch.Event) (out watch.Event, keep bool) {
 	switch in.Type {
 	case watch.Added, watch.Modified, watch.Deleted:
@@ -97,8 +97,13 @@ func (s *shardedListWatch) filterWatchEvent(in watch.Event) (out watch.Event, ke
 		}
 
 		return in, s.sharding.keep(a)
-	default:
+	case watch.Bookmark, watch.Error:
 		return in, true
+	default:
+		return watch.Event{
+			Type:   watch.Error,
+			Object: &apierrors.NewInternalError(fmt.Errorf("sharded list watch failed to recognize event type %q", in.Type)).ErrStatus,
+		}, true
 	}
 }
 

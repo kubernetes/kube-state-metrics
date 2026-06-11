@@ -19,10 +19,12 @@ package sharding
 import (
 	"context"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
@@ -73,13 +75,14 @@ func TestShardedListWatchFiltersOnlyResourceStateEvents(t *testing.T) {
 		name        string
 		eventType   watch.EventType
 		shouldShard bool
+		wantError   bool
 	}{
 		{name: "added", eventType: watch.Added, shouldShard: true},
 		{name: "modified", eventType: watch.Modified, shouldShard: true},
 		{name: "deleted", eventType: watch.Deleted, shouldShard: true},
 		{name: "bookmark", eventType: watch.Bookmark},
 		{name: "error", eventType: watch.Error},
-		{name: "unknown", eventType: watch.EventType("UNKNOWN")},
+		{name: "unknown", eventType: watch.EventType("UNKNOWN"), wantError: true},
 	}
 
 	for _, shardIndex := range []int32{0, 1} {
@@ -101,7 +104,18 @@ func TestShardedListWatchFiltersOnlyResourceStateEvents(t *testing.T) {
 				if gotKeep != wantKeep {
 					t.Fatalf("got keep %t, want %t", gotKeep, wantKeep)
 				}
-				if out.Type != in.Type || out.Object != in.Object {
+				if test.wantError {
+					if out.Type != watch.Error {
+						t.Fatalf("got event type %q, want %q", out.Type, watch.Error)
+					}
+					err := apierrors.FromObject(out.Object)
+					if !apierrors.IsInternalError(err) {
+						t.Fatalf("got error %v, want internal error", err)
+					}
+					if !strings.Contains(err.Error(), `failed to recognize event type "UNKNOWN"`) {
+						t.Fatalf("got error %q, want unsupported event type", err)
+					}
+				} else if out.Type != in.Type || out.Object != in.Object {
 					t.Fatalf("filter changed event from %#v to %#v", in, out)
 				}
 			})

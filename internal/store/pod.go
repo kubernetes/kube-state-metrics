@@ -79,6 +79,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodOverheadCPUCoresFamilyGenerator(),
 		createPodOverheadMemoryBytesFamilyGenerator(),
 		createPodOwnerFamilyGenerator(),
+		createPodResourceClaimInfoFamilyGenerator(),
 		createPodRestartPolicyFamilyGenerator(),
 		createPodRuntimeClassNameInfoFamilyGenerator(),
 		createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator(),
@@ -658,6 +659,62 @@ func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 
 			return &metric.Family{
 				Metrics: []*metric.Metric{&m},
+			}
+		}),
+	)
+}
+
+func createPodResourceClaimInfoFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_resourceclaim_info",
+		"Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim_name is the resolved ResourceClaim object name.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			if len(p.Spec.ResourceClaims) == 0 {
+				return &metric.Family{}
+			}
+
+			// Template-generated claims have their resolved object name written
+			// into pod.status.resourceClaimStatuses by the kubelet.
+			resolved := make(map[string]string, len(p.Status.ResourceClaimStatuses))
+			for _, s := range p.Status.ResourceClaimStatuses {
+				if s.ResourceClaimName != nil {
+					resolved[s.Name] = *s.ResourceClaimName
+				}
+			}
+
+			ms := make([]*metric.Metric, 0, len(p.Spec.ResourceClaims))
+			for _, rc := range p.Spec.ResourceClaims {
+				// The API guarantees exactly one of ResourceClaimName /
+				// ResourceClaimTemplateName is set; skip a malformed entry that
+				// has neither, since it references no claim to report.
+				if rc.ResourceClaimName == nil && rc.ResourceClaimTemplateName == nil {
+					continue
+				}
+
+				var resourceClaimName, resourceClaimTemplateName string
+				if rc.ResourceClaimName != nil {
+					resourceClaimName = *rc.ResourceClaimName
+				} else {
+					// Template-backed claim: the resolved name comes from status and
+					// stays empty while the claim is still pending creation.
+					resourceClaimName = resolved[rc.Name]
+				}
+				if rc.ResourceClaimTemplateName != nil {
+					resourceClaimTemplateName = *rc.ResourceClaimTemplateName
+				}
+
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"claim_name", "resourceclaim_name", "resourceclaim_template_name"},
+					LabelValues: []string{rc.Name, resourceClaimName, resourceClaimTemplateName},
+					Value:       1,
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
 			}
 		}),
 	)

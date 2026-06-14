@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/version: 2.19.0
+    app.kubernetes.io/version: 2.19.1
     kube-state-metrics.io/shard: "2"
   name: kube-state-metrics-2
   namespace: kube-system
@@ -19,7 +19,7 @@ spec:
       labels:
         app.kubernetes.io/component: exporter
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/version: 2.19.0
+        app.kubernetes.io/version: 2.19.1
         kube-state-metrics.io/shard: "2"
     spec:
       automountServiceAccountToken: true
@@ -27,7 +27,7 @@ spec:
         - args:
             - --shard=2
             - --total-shards=3
-          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.0
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.1
           livenessProbe:
             httpGet:
               path: /livez

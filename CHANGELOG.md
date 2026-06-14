@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.19.1 / 2026-06-10
+
+* This release builds with Go `v1.26.4`
+* This release builds with `k8s.io/client-go`: `v0.35.4`
+
+* [SECURITY] Upgrade Go toolchain to address CVE-2026-42504 (GO-2026-5038) by @slessard in [#2982](https://github.com/kubernetes/kube-state-metrics/pull/2982)
+* [SECURITY] Fix several high-scoring CVEs (golang.org/x/net, oauth2, sys, term, text) by @slessard in [#2981](https://github.com/kubernetes/kube-state-metrics/pull/2981)
+* [BUGFIX] Fix watch-list bookmarks with sharding (WatchListClient compatibility) by @jfremy-openai in [#2974](https://github.com/kubernetes/kube-state-metrics/pull/2974)
+* [BUGFIX] Don't panic on CronJobs with unparseable schedules by @atosatto in [#2978](https://github.com/kubernetes/kube-state-metrics/pull/2978)
+
 ## v2.19.0 / 2026-05-05
 
 NOTE: This release addresses a security vulnerability (GHSA-g3c8-4qh2-rhrg) where `/debug/pprof/*` endpoints were not protected by the `--auth-filter` flag. The endpoints have been moved to the telemetry server and are now correctly gated. See [#2924](https://github.com/kubernetes/kube-state-metrics/pull/2924) for details. Credits to @vldevadath for responsible disclosure.

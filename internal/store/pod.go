@@ -66,6 +66,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodInitContainerResourceRequestsFamilyGenerator(),
 		createPodInitContainerStateStartedFamilyGenerator(),
 		createPodInitContainerStatusLastTerminatedReasonFamilyGenerator(),
+		createPodInitContainerStatusLastTerminatedExitCodeFamilyGenerator(),
 		createPodInitContainerStatusLastTerminatedTimestampFamilyGenerator(),
 		createPodInitContainerStatusReadyFamilyGenerator(),
 		createPodInitContainerStatusRestartsTotalFamilyGenerator(),
@@ -1142,6 +1143,32 @@ func createPodInitContainerStateStartedFamilyGenerator() generator.FamilyGenerat
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
 						Value:       float64((cs.State.Terminated.StartedAt).Unix()),
+					})
+				}
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodInitContainerStatusLastTerminatedExitCodeFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_init_container_status_last_terminated_exitcode",
+		"Describes the exit code for the last init container in terminated state.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
+			for _, cs := range p.Status.InitContainerStatuses {
+				if cs.LastTerminationState.Terminated != nil {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"container"},
+						LabelValues: []string{cs.Name},
+						Value:       float64(cs.LastTerminationState.Terminated.ExitCode),
 					})
 				}
 			}

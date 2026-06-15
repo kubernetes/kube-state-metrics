@@ -233,6 +233,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
 # HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
 # HELP kube_pod_init_container_state_started Start time in unix timestamp for a pod init container.
+# HELP kube_pod_init_container_status_last_terminated_exitcode Describes the exit code for the last init container in terminated state.
 # HELP kube_pod_init_container_status_last_terminated_reason Describes the last reason the init container was in terminated state.
 # HELP kube_pod_init_container_status_last_terminated_timestamp Last terminated time for a pod init container in unix timestamp.
 # HELP kube_pod_init_container_status_ready [STABLE] Describes whether the init containers readiness check succeeded.
@@ -290,6 +291,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_init_container_resource_limits gauge
 # TYPE kube_pod_init_container_resource_requests gauge
 # TYPE kube_pod_init_container_state_started gauge
+# TYPE kube_pod_init_container_status_last_terminated_exitcode gauge
 # TYPE kube_pod_init_container_status_last_terminated_reason gauge
 # TYPE kube_pod_init_container_status_last_terminated_timestamp gauge
 # TYPE kube_pod_init_container_status_ready gauge

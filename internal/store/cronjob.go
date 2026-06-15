@@ -201,18 +201,14 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			basemetrics.STABLE,
 			"",
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
-				ms := []*metric.Metric{}
-
-				if j.Spec.Suspend != nil {
-					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{},
-						LabelValues: []string{},
-						Value:       boolFloat64(*j.Spec.Suspend),
-					})
-				}
-
 				return &metric.Family{
-					Metrics: ms,
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{},
+							LabelValues: []string{},
+							Value:       boolFloat64(j.Spec.Suspend != nil && *j.Spec.Suspend),
+						},
+					},
 				}
 			}),
 		),

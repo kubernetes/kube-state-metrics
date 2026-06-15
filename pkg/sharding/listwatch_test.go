@@ -24,6 +24,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
@@ -57,6 +58,69 @@ func TestSharding(t *testing.T) {
 
 	if s2.keep(cm) {
 		t.Fatal("Shard two should not pick up the object.")
+	}
+}
+
+func TestShardedListWatchListDoesNotRetainSourceItemsArray(t *testing.T) {
+	const (
+		totalShards     = 2
+		resourceVersion = "42"
+	)
+
+	source := &v1.ConfigMapList{
+		ListMeta: metav1.ListMeta{ResourceVersion: resourceVersion},
+		Items: []v1.ConfigMap{
+			configMapForShard(0, totalShards),
+			configMapForShard(1, totalShards),
+		},
+	}
+	lw := &cache.ListWatch{
+		ListFunc: func(metav1.ListOptions) (runtime.Object, error) {
+			return source, nil
+		},
+	}
+	shardedLister := cache.ToListerWithContext(NewShardedListWatch(0, totalShards, lw))
+
+	result, err := shardedLister.ListWithContext(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		t.Fatalf("failed to list shard: %v", err)
+	}
+	list, ok := result.(*metav1.List)
+	if !ok {
+		t.Fatalf("got result type %T, want *metav1.List", result)
+	}
+	if list.ResourceVersion != resourceVersion {
+		t.Errorf("got resource version %q, want %q", list.ResourceVersion, resourceVersion)
+	}
+	if len(list.Items) != 1 {
+		t.Fatalf("got %d retained items, want 1", len(list.Items))
+	}
+	retained, ok := list.Items[0].Object.(*v1.ConfigMap)
+	if !ok {
+		t.Fatalf("got retained item type %T, want *v1.ConfigMap", list.Items[0].Object)
+	}
+	if retained.UID != source.Items[0].UID {
+		t.Errorf("got retained item UID %q, want %q", retained.UID, source.Items[0].UID)
+	}
+	for i := range source.Items {
+		if retained == &source.Items[i] {
+			t.Fatalf("retained item aliases source Items[%d]", i)
+		}
+	}
+}
+
+func configMapForShard(shard int32, totalShards int) v1.ConfigMap {
+	filter := &sharding{shard: shard, totalShards: totalShards}
+	for i := 0; ; i++ {
+		configMap := v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "configmap-" + strconv.Itoa(i),
+				UID:  types.UID(strconv.Itoa(i)),
+			},
+		}
+		if filter.keep(&configMap) {
+			return configMap
+		}
 	}
 }
 

@@ -83,6 +83,7 @@ type Builder struct {
 	enabledResources    []string
 	totalShards         int
 	shard               int32
+	serverSideSharding  bool
 	useAPIServerCache   bool
 	objectLimit         int64
 
@@ -147,6 +148,12 @@ func (b *Builder) WithSharding(shard int32, totalShards int) {
 	b.shardingMetrics.Ordinal.With(labels).Set(float64(shard))
 	b.totalShards = totalShards
 	b.shardingMetrics.Total.Set(float64(totalShards))
+}
+
+// WithServerSideSharding makes the Builder request apiserver-side filtering of
+// list/watch responses to this instance's shard.
+func (b *Builder) WithServerSideSharding(serverSideSharding bool) {
+	b.serverSideSharding = serverSideSharding
 }
 
 // WithContext sets the ctx property of a Builder.
@@ -632,7 +639,13 @@ func (b *Builder) startReflector(
 	client any,
 ) {
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit, client)
-	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
+	var shardedListWatch cache.ListerWatcher
+	if b.serverSideSharding {
+		shardedListWatch = sharding.NewServerSideShardedListWatch(b.shard, b.totalShards, instrumentedListWatch)
+	} else {
+		shardedListWatch = sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch)
+	}
+	reflector := cache.NewReflectorWithOptions(shardedListWatch, expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
 		gvkStopCh := b.GetGVKStopChan(cr.GroupVersionKind().String())
 		go reflector.Run(newCRReflectorStopCh(b.ctx, gvkStopCh))

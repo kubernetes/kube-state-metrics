@@ -37,6 +37,7 @@ type BuilderInterface interface {
 	WithNamespaces(n options.NamespaceList)
 	WithFieldSelectorFilter(fieldSelectors string)
 	WithSharding(shard int32, totalShards int)
+	WithServerSideSharding(serverSideSharding bool)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
 	WithCustomResourceClients(cs map[string]interface{})

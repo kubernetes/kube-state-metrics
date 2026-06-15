@@ -23,6 +23,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/kubernetes/fake"
+
+	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -311,5 +315,32 @@ func TestCRReflectorStopChanRespondsToGVKStop(t *testing.T) {
 	case <-stopCh:
 	case <-time.After(2 * time.Second):
 		t.Fatal("stopCh did not close after gvkStopCh was closed")
+	}
+}
+
+func TestClusterScopedStoresNotDuplicatedPerNamespace(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b := NewBuilder()
+	b.WithMetrics(prometheus.NewRegistry())
+	b.WithKubeClient(fake.NewSimpleClientset())
+	b.WithSharding(0, 1)
+	b.WithContext(ctx)
+	b.WithNamespaces(options.NamespaceList{"ns1", "ns2", "ns3"})
+	b.WithFamilyGeneratorFilter(l)
+	b.WithGenerateStoresFunc(b.DefaultGenerateStoresFunc())
+
+	if got := len(b.buildNodeStores()); got != 1 {
+		t.Errorf("cluster-scoped node stores across 3 namespaces: got %d, want 1", got)
+	}
+
+	if got := len(b.buildPodStores()); got != 3 {
+		t.Errorf("namespaced pod stores across 3 namespaces: got %d, want 3", got)
 	}
 }

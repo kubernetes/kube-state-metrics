@@ -46,6 +46,7 @@ import (
 	"k8s.io/klog/v2"
 	samplev1alpha1 "k8s.io/sample-controller/pkg/apis/samplecontroller/v1alpha1"
 	samplefake "k8s.io/sample-controller/pkg/generated/clientset/versioned/fake"
+	"k8s.io/utils/ptr"
 
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -253,6 +254,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_service_account The service account for a pod.
 # HELP kube_pod_owner [STABLE] Information about the Pod's owner.
 # HELP kube_pod_restart_policy [STABLE] Describes the restart policy in use by this pod.
+# HELP kube_pod_spec_termination_grace_period_seconds The pod's termination grace period in seconds.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim and ephemeral volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim is mounted read only. Ephemeral volumes always report 0 since the ephemeral volume source does not support a read-only flag.
 # HELP kube_pod_start_time [STABLE] Start time in unix timestamp for a pod.
@@ -311,6 +313,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_service_account gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
+# TYPE kube_pod_spec_termination_grace_period_seconds gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge
@@ -362,6 +365,7 @@ kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="",owner_na
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
 kube_pod_scheduler{namespace="default",pod="pod0",uid="abc-0",name="scheduler1"} 1
 kube_pod_service_account{namespace="default",pod="pod0",uid="abc-0",service_account=""} 1
+kube_pod_spec_termination_grace_period_seconds{namespace="default",pod="pod0",uid="abc-0"} 30
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Failed"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Pending"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Running"} 1
@@ -854,9 +858,10 @@ func pod(client *fake.Clientset, index int) error {
 			UID:               types.UID("abc-" + i),
 		},
 		Spec: v1.PodSpec{
-			SchedulerName: "scheduler1",
-			RestartPolicy: v1.RestartPolicyAlways,
-			NodeName:      "node1",
+			SchedulerName:                 "scheduler1",
+			RestartPolicy:                 v1.RestartPolicyAlways,
+			NodeName:                      "node1",
+			TerminationGracePeriodSeconds: ptr.To(int64(30)),
 			Containers: []v1.Container{
 				{
 					Image: "k8s.gcr.io/hyperkube2_spec",

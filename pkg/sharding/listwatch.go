@@ -92,18 +92,21 @@ func (s *shardedListWatch) filterWatchEvent(in watch.Event) (out watch.Event, ke
 	case watch.Added, watch.Modified, watch.Deleted:
 		a, err := meta.Accessor(in.Object)
 		if err != nil {
-			// TODO(brancz): needs logging
-			return in, true
+			return internalErrorEvent(fmt.Errorf("sharded list watch failed to access object metadata for event type %q: %w", in.Type, err)), true
 		}
 
 		return in, s.sharding.keep(a)
 	case watch.Bookmark, watch.Error:
 		return in, true
 	default:
-		return watch.Event{
-			Type:   watch.Error,
-			Object: &apierrors.NewInternalError(fmt.Errorf("sharded list watch failed to recognize event type %q", in.Type)).ErrStatus,
-		}, true
+		return internalErrorEvent(fmt.Errorf("sharded list watch failed to recognize event type %q", in.Type)), true
+	}
+}
+
+func internalErrorEvent(err error) watch.Event {
+	return watch.Event{
+		Type:   watch.Error,
+		Object: &apierrors.NewInternalError(err).ErrStatus,
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
@@ -120,6 +121,38 @@ func TestShardedListWatchFiltersOnlyResourceStateEvents(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestShardedListWatchRejectsMutationEventsWithoutMetadata(t *testing.T) {
+	shardedListWatch := &shardedListWatch{
+		sharding: &sharding{
+			shard:       0,
+			totalShards: 2,
+		},
+	}
+
+	for _, eventType := range []watch.EventType{watch.Added, watch.Modified, watch.Deleted} {
+		t.Run(string(eventType), func(t *testing.T) {
+			out, gotKeep := shardedListWatch.filterWatchEvent(watch.Event{
+				Type:   eventType,
+				Object: &runtime.Unknown{},
+			})
+
+			if !gotKeep {
+				t.Fatal("error event was filtered out")
+			}
+			if out.Type != watch.Error {
+				t.Fatalf("got event type %q, want %q", out.Type, watch.Error)
+			}
+			err := apierrors.FromObject(out.Object)
+			if !apierrors.IsInternalError(err) {
+				t.Fatalf("got error %v, want internal error", err)
+			}
+			if !strings.Contains(err.Error(), "failed to access object metadata") {
+				t.Fatalf("got error %q, want metadata access failure", err)
+			}
+		})
 	}
 }
 

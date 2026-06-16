@@ -39,6 +39,10 @@ var (
 	descDeploymentLabelsName          = "kube_deployment_labels"
 	descDeploymentLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descDeploymentLabelsDefaultLabels = []string{"namespace", "deployment"}
+	defaultDeploymentRollingUpdate    = v1.RollingUpdateDeployment{
+		MaxUnavailable: &intstr.IntOrString{Type: intstr.String, StrVal: "25%"},
+		MaxSurge:       &intstr.IntOrString{Type: intstr.String, StrVal: "25%"},
+	}
 )
 
 // Reasons copied from kubernetes/pkg/controller/deployment/deployment_utils.go.
@@ -307,11 +311,17 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				if d.Spec.Strategy.RollingUpdate == nil || d.Spec.Replicas == nil {
+				rollingUpdate := resolveDeploymentRollingUpdate(d)
+				if rollingUpdate == nil || d.Spec.Replicas == nil {
 					return &metric.Family{}
 				}
 
-				maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
+				maxUnavailable := rollingUpdate.MaxUnavailable
+				if maxUnavailable == nil {
+					maxUnavailable = defaultDeploymentRollingUpdate.MaxUnavailable
+				}
+
+				maxUnavailableValue, err := intstr.GetScaledValueFromIntOrPercent(maxUnavailable, int(*d.Spec.Replicas), false)
 				if err != nil {
 					panic(err)
 				}
@@ -319,7 +329,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(maxUnavailable),
+							Value: float64(maxUnavailableValue),
 						},
 					},
 				}
@@ -332,11 +342,17 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 			basemetrics.STABLE,
 			"",
 			wrapDeploymentFunc(func(d *v1.Deployment) *metric.Family {
-				if d.Spec.Strategy.RollingUpdate == nil || d.Spec.Replicas == nil {
+				rollingUpdate := resolveDeploymentRollingUpdate(d)
+				if rollingUpdate == nil || d.Spec.Replicas == nil {
 					return &metric.Family{}
 				}
 
-				maxSurge, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
+				maxSurge := rollingUpdate.MaxSurge
+				if maxSurge == nil {
+					maxSurge = defaultDeploymentRollingUpdate.MaxSurge
+				}
+
+				maxSurgeValue, err := intstr.GetScaledValueFromIntOrPercent(maxSurge, int(*d.Spec.Replicas), true)
 				if err != nil {
 					panic(err)
 				}
@@ -344,7 +360,7 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: float64(maxSurge),
+							Value: float64(maxSurgeValue),
 						},
 					},
 				}
@@ -458,4 +474,16 @@ func createDeploymentListWatch(kubeClient clientset.Interface, ns string, fieldS
 			return kubeClient.AppsV1().Deployments(ns).Watch(context.TODO(), opts)
 		},
 	}
+}
+
+func resolveDeploymentRollingUpdate(d *v1.Deployment) *v1.RollingUpdateDeployment {
+	if d.Spec.Strategy.Type == v1.RecreateDeploymentStrategyType {
+		return nil
+	}
+
+	if d.Spec.Strategy.RollingUpdate != nil {
+		return d.Spec.Strategy.RollingUpdate
+	}
+
+	return &defaultDeploymentRollingUpdate
 }

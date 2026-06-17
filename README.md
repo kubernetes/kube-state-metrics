@@ -85,7 +85,7 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 | **v2.17.0**        | v1.33                        |
 | **v2.18.0**        | v1.34                        |
 | **v2.19.0**        | v1.35                        |
-| **main**           | v1.35                        |
+| **main**           | v1.36                        |
 
 #### Resource group version compatibility
 

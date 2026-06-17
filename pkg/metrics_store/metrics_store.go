@@ -33,6 +33,12 @@ type MetricsStore struct {
 	// safely share the same backing storage without copying or mutating it.
 	metrics *sync.Map
 
+	// lastResourceVersion points to a string containing the last resource version seen.
+	// It's a pointer so cloned stores can safely share the same resource version.
+	lastResourceVersion *string
+	// lastResourceVersionMu points to a mutex protecting lastResourceVersion.
+	lastResourceVersionMu *sync.RWMutex
+
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
 	generateMetricsFunc func(interface{}) []metric.FamilyInterface
@@ -44,10 +50,13 @@ type MetricsStore struct {
 
 // NewMetricsStore returns a new MetricsStore
 func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface) *MetricsStore {
+	rv := ""
 	return &MetricsStore{
-		generateMetricsFunc: generateFunc,
-		headers:             headers,
-		metrics:             &sync.Map{},
+		generateMetricsFunc:   generateFunc,
+		headers:               headers,
+		metrics:               &sync.Map{},
+		lastResourceVersion:   &rv,
+		lastResourceVersionMu: &sync.RWMutex{},
 	}
 }
 
@@ -60,6 +69,8 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	s.setLastResourceVersion(o.GetResourceVersion())
 
 	families := s.generateMetricsFunc(obj)
 	familyStrings := make([][]byte, len(families))
@@ -87,6 +98,8 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 		return err
 	}
 
+	s.setLastResourceVersion(o.GetResourceVersion())
+
 	s.metrics.Delete(o.GetUID())
 
 	return nil
@@ -112,9 +125,9 @@ func (s *MetricsStore) GetByKey(_ string) (item interface{}, exists bool, err er
 	return nil, false, nil
 }
 
-// Replace will delete the contents of the store, using instead the
-// given list.
-func (s *MetricsStore) Replace(list []interface{}, _ string) error {
+// Replace will delete the contents of the store, using instead the given list,
+// and records the provided resourceVersion as the last sync resource version.
+func (s *MetricsStore) Replace(list []interface{}, resourceVersion string) error {
 	s.metrics.Clear()
 
 	for _, o := range list {
@@ -124,10 +137,30 @@ func (s *MetricsStore) Replace(list []interface{}, _ string) error {
 		}
 	}
 
+	s.setLastResourceVersion(resourceVersion)
+
 	return nil
 }
 
 // Resync implements the Resync method of the store interface.
 func (s *MetricsStore) Resync() error {
 	return nil
+}
+
+// Bookmark implements the Bookmark method of the store interface.
+func (s *MetricsStore) Bookmark(resourceVersion string) {
+	s.setLastResourceVersion(resourceVersion)
+}
+
+// LastStoreSyncResourceVersion implements the LastStoreSyncResourceVersion method of the store interface.
+func (s *MetricsStore) LastStoreSyncResourceVersion() string {
+	s.lastResourceVersionMu.RLock()
+	defer s.lastResourceVersionMu.RUnlock()
+	return *s.lastResourceVersion
+}
+
+func (s *MetricsStore) setLastResourceVersion(rv string) {
+	s.lastResourceVersionMu.Lock()
+	defer s.lastResourceVersionMu.Unlock()
+	*s.lastResourceVersion = rv
 }

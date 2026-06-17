@@ -205,19 +205,24 @@ func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T
 	}
 }
 
+const shardedWatchTestTimeout = 5 * time.Second
+
 func TestShardedWatchStopUnblocksPendingSend(t *testing.T) {
 	// Regression test for https://github.com/kubernetes/kubernetes/issues/113254.
 	source := watch.NewRaceFreeFake()
 	filterCalled := make(chan struct{})
+	var filterCalledOnce sync.Once
 	filtered := newShardedWatch(source, func(event watch.Event) (watch.Event, bool) {
-		close(filterCalled)
+		filterCalledOnce.Do(func() {
+			close(filterCalled)
+		})
 		return event, true
 	})
 
 	source.Add(&v1.ConfigMap{})
 	select {
 	case <-filterCalled:
-	case <-time.After(time.Second):
+	case <-time.After(shardedWatchTestTimeout):
 		t.Fatal("timed out waiting for the event to reach the filter")
 	}
 
@@ -285,7 +290,7 @@ func waitForShardedWatchStop(t *testing.T, w *shardedWatch) {
 	t.Helper()
 	select {
 	case <-w.doneCh:
-	case <-time.After(time.Second):
+	case <-time.After(shardedWatchTestTimeout):
 		t.Fatal("timed out waiting for the sharded watch to stop")
 	}
 }

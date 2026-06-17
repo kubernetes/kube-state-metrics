@@ -125,8 +125,9 @@ func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, err
 	if err != nil {
 		return nil, err
 	}
-	// Retained shard items outlive the source list. Allocate non-pointer items so
-	// they do not keep the source list's entire Items backing array reachable.
+	// Shard items outlive the source list. ExtractListWithAlloc shallow-copies
+	// non-pointer items so retained objects cannot keep the source Items backing
+	// array reachable.
 	items, err := meta.ExtractListWithAlloc(list)
 	if err != nil {
 		return nil, err

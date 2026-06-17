@@ -19,11 +19,14 @@ package sharding
 import (
 	"context"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
@@ -57,6 +60,99 @@ func TestSharding(t *testing.T) {
 
 	if s2.keep(cm) {
 		t.Fatal("Shard two should not pick up the object.")
+	}
+}
+
+func TestShardedListWatchFiltersOnlyResourceStateEvents(t *testing.T) {
+	obj := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "configmap1",
+			Namespace: "ns1",
+			UID:       types.UID("test_uid"),
+		},
+	}
+
+	tests := []struct {
+		name        string
+		eventType   watch.EventType
+		shouldShard bool
+		wantError   bool
+	}{
+		{name: "added", eventType: watch.Added, shouldShard: true},
+		{name: "modified", eventType: watch.Modified, shouldShard: true},
+		{name: "deleted", eventType: watch.Deleted, shouldShard: true},
+		{name: "bookmark", eventType: watch.Bookmark},
+		{name: "error", eventType: watch.Error},
+		{name: "unknown", eventType: watch.EventType("UNKNOWN"), wantError: true},
+	}
+
+	for _, shardIndex := range []int32{0, 1} {
+		shardedListWatch := &shardedListWatch{
+			sharding: &sharding{
+				shard:       shardIndex,
+				totalShards: 2,
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name+"/shard-"+strconv.Itoa(int(shardIndex)), func(t *testing.T) {
+				// Use a metadata-bearing payload for every event so control events
+				// pass because of their type, not because their usual payload lacks a UID.
+				in := watch.Event{Type: test.eventType, Object: obj}
+				out, gotKeep := shardedListWatch.filterWatchEvent(in)
+				wantKeep := !test.shouldShard || shardedListWatch.sharding.keep(obj)
+
+				if gotKeep != wantKeep {
+					t.Fatalf("got keep %t, want %t", gotKeep, wantKeep)
+				}
+				if test.wantError {
+					if out.Type != watch.Error {
+						t.Fatalf("got event type %q, want %q", out.Type, watch.Error)
+					}
+					err := apierrors.FromObject(out.Object)
+					if !apierrors.IsInternalError(err) {
+						t.Fatalf("got error %v, want internal error", err)
+					}
+					if !strings.Contains(err.Error(), `failed to recognize event type "UNKNOWN"`) {
+						t.Fatalf("got error %q, want unsupported event type", err)
+					}
+				} else if out.Type != in.Type || out.Object != in.Object {
+					t.Fatalf("filter changed event from %#v to %#v", in, out)
+				}
+			})
+		}
+	}
+}
+
+func TestShardedListWatchRejectsMutationEventsWithoutMetadata(t *testing.T) {
+	shardedListWatch := &shardedListWatch{
+		sharding: &sharding{
+			shard:       0,
+			totalShards: 2,
+		},
+	}
+
+	for _, eventType := range []watch.EventType{watch.Added, watch.Modified, watch.Deleted} {
+		t.Run(string(eventType), func(t *testing.T) {
+			out, gotKeep := shardedListWatch.filterWatchEvent(watch.Event{
+				Type:   eventType,
+				Object: &runtime.Unknown{},
+			})
+
+			if !gotKeep {
+				t.Fatal("error event was filtered out")
+			}
+			if out.Type != watch.Error {
+				t.Fatalf("got event type %q, want %q", out.Type, watch.Error)
+			}
+			err := apierrors.FromObject(out.Object)
+			if !apierrors.IsInternalError(err) {
+				t.Fatalf("got error %v, want internal error", err)
+			}
+			if !strings.Contains(err.Error(), "failed to access object metadata") {
+				t.Fatalf("got error %q, want metadata access failure", err)
+			}
+		})
 	}
 }
 

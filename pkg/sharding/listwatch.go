@@ -17,9 +17,11 @@ limitations under the License.
 package sharding
 
 import (
+	"fmt"
 	"hash/fnv"
 
 	jump "github.com/dgryski/go-jump"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -80,21 +82,32 @@ func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, e
 		return nil, err
 	}
 
-	return watch.Filter(w, func(in watch.Event) (out watch.Event, keep bool) {
-		// Bookmarks are stream control events. They carry a resource version but
-		// no UID, so filtering them would route every bookmark to a single shard.
-		if in.Type == watch.Bookmark {
-			return in, true
-		}
+	return watch.Filter(w, s.filterWatchEvent), nil
+}
 
+// filterWatchEvent shards resource state changes, passes control events through,
+// and rejects unknown events so new mutation types cannot bypass sharding.
+func (s *shardedListWatch) filterWatchEvent(in watch.Event) (out watch.Event, keep bool) {
+	switch in.Type {
+	case watch.Added, watch.Modified, watch.Deleted:
 		a, err := meta.Accessor(in.Object)
 		if err != nil {
-			// TODO(brancz): needs logging
-			return in, true
+			return internalErrorEvent(fmt.Errorf("sharded list watch failed to access object metadata for event type %q: %w", in.Type, err)), true
 		}
 
 		return in, s.sharding.keep(a)
-	}), nil
+	case watch.Bookmark, watch.Error:
+		return in, true
+	default:
+		return internalErrorEvent(fmt.Errorf("sharded list watch failed to recognize event type %q", in.Type)), true
+	}
+}
+
+func internalErrorEvent(err error) watch.Event {
+	return watch.Event{
+		Type:   watch.Error,
+		Object: &apierrors.NewInternalError(err).ErrStatus,
+	}
 }
 
 // IsWatchListSemanticsUnSupported delegates to the underlying ListerWatcher if it implements this interface.

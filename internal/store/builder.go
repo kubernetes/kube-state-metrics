@@ -513,28 +513,28 @@ func (b *Builder) buildIngressClassStores() []cache.Store {
 	return b.buildClusterScopedStores(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
-// Cluster-scoped resources have no namespace, so watch all namespaces once.
-// Building one store per --namespaces entry would duplicate every series.
+// buildClusterScopedStores delegates to the configured buildStoresFunc (honouring
+// any custom function injected via WithGenerateStoresFunc) while guaranteeing that
+// cluster-scoped resources are watched exactly once across all namespaces.
+// It achieves this by (a) wrapping listWatchFunc to always pass v1.NamespaceAll
+// and (b) temporarily replacing b.namespaces with a single-entry NamespaceAll
+// list so that buildStoresFunc creates only one store regardless of the
+// number of namespaces the caller originally configured.
 func (b *Builder) buildClusterScopedStores(
 	metricFamilies []generator.FamilyGenerator,
 	expectedType interface{},
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
-	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
-	composedMetricGenFuncs := generator.ComposeMetricGenFuncs(metricFamilies)
-	familyHeaders := generator.ExtractMetricFamilyHeaders(metricFamilies)
-
-	store := metricsstore.NewMetricsStore(
-		familyHeaders,
-		composedMetricGenFuncs,
-	)
-	if b.fieldSelectorFilter != "" {
-		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
+	clusterScopedListWatch := func(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+		return listWatchFunc(kubeClient, v1.NamespaceAll, fieldSelector)
 	}
-	listWatcher := listWatchFunc(b.kubeClient, v1.NamespaceAll, b.fieldSelectorFilter)
-	b.startReflector(expectedType, store, listWatcher, useAPIServerCache, objectLimit, b.kubeClient)
-	return []cache.Store{store}
+
+	originalNamespaces := b.namespaces
+	b.namespaces = options.NamespaceList{v1.NamespaceAll}
+	defer func() { b.namespaces = originalNamespaces }()
+
+	return b.buildStoresFunc(metricFamilies, expectedType, clusterScopedListWatch, useAPIServerCache, objectLimit)
 }
 
 func (b *Builder) buildStores(

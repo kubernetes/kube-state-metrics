@@ -50,6 +50,7 @@ func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 		createNodeInfoFamilyGenerator(),
 		createNodeLabelsGenerator(allowLabelsList),
 		createNodeRoleFamilyGenerator(),
+		createNodeSpecPodCIDRFamilyGenerator(),
 		createNodeSpecTaintFamilyGenerator(),
 		createNodeSpecUnschedulableFamilyGenerator(),
 		createNodeStatusAllocatableFamilyGenerator(),
@@ -250,6 +251,34 @@ func createNodeRoleFamilyGenerator() generator.FamilyGenerator {
 					})
 				}
 			}
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createNodeSpecPodCIDRFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_node_spec_pod_cidrs",
+		"The pod CIDRs of a cluster node.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			ms := make([]*metric.Metric, len(n.Spec.PodCIDRs))
+
+			// A node carries one pod CIDR per IP family. kube_node_info only
+			// exposes the primary one, so dual-stack nodes have a second CIDR
+			// that isn't surfaced anywhere else.
+			for i, podCIDR := range n.Spec.PodCIDRs {
+				ms[i] = &metric.Metric{
+					LabelKeys:   []string{"pod_cidr"},
+					LabelValues: []string{podCIDR},
+					Value:       1,
+				}
+			}
+
 			return &metric.Family{
 				Metrics: ms,
 			}

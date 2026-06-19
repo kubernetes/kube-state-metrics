@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -36,6 +37,57 @@ func TestPodStore(t *testing.T) {
 	restartPolicyAlways := v1.ContainerRestartPolicyAlways
 
 	cases := []generateMetricsTestCase{
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
+					ResourceClaims: []v1.PodResourceClaim{
+						{Name: "gpu", ResourceClaimName: ptr.To("shared-gpu-claim")},
+						{Name: "gpu-tmpl", ResourceClaimTemplateName: ptr.To("gpu-template")},
+					},
+				},
+				Status: v1.PodStatus{
+					ResourceClaimStatuses: []v1.PodResourceClaimStatus{
+						{Name: "gpu-tmpl", ResourceClaimName: ptr.To("pod1-gpu-tmpl-abcde")},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_resourceclaim_info Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim_name is the resolved ResourceClaim object name.
+				# TYPE kube_pod_resourceclaim_info gauge
+				kube_pod_resourceclaim_info{claim_name="gpu",namespace="ns1",pod="pod1",resourceclaim_name="shared-gpu-claim",resourceclaim_template_name="",uid="uid1"} 1
+				kube_pod_resourceclaim_info{claim_name="gpu-tmpl",namespace="ns1",pod="pod1",resourceclaim_name="pod1-gpu-tmpl-abcde",resourceclaim_template_name="gpu-template",uid="uid1"} 1
+			`,
+			MetricNames: []string{"kube_pod_resourceclaim_info"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: "ns2",
+					UID:       "uid2",
+				},
+				Spec: v1.PodSpec{
+					ResourceClaims: []v1.PodResourceClaim{
+						// Template-backed claim with no status resolution yet (pending):
+						// resourceclaim_name stays empty but the series is still emitted.
+						{Name: "pending", ResourceClaimTemplateName: ptr.To("gpu-template")},
+						// Malformed entry with neither name nor template set -> skipped.
+						{Name: "bad"},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_resourceclaim_info Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim_name is the resolved ResourceClaim object name.
+				# TYPE kube_pod_resourceclaim_info gauge
+				kube_pod_resourceclaim_info{claim_name="pending",namespace="ns2",pod="pod2",resourceclaim_name="",resourceclaim_template_name="gpu-template",uid="uid2"} 1
+			`,
+			MetricNames: []string{"kube_pod_resourceclaim_info"},
+		},
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2492,7 +2544,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 57
+	expectedFamilies := 58
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

@@ -133,6 +133,8 @@
         apiGroups: ['admissionregistration.k8s.io'],
         resources: [
           'mutatingwebhookconfigurations',
+          'validatingadmissionpolicies',
+          'validatingadmissionpolicybindings',
           'validatingwebhookconfigurations',
         ],
         verbs: ['list', 'watch'],
@@ -358,7 +360,7 @@
       // extending the default container from above
       local c = ksm.deployment.spec.template.spec.containers[0] {
         args: [
-          '--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpointslices,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments',
+          '--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpointslices,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingadmissionpolicies,validatingadmissionpolicybindings,validatingwebhookconfigurations,volumeattachments',
         ],
       };
       std.mergePatch(

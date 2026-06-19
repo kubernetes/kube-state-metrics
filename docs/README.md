@@ -59,6 +59,8 @@ See each file for specific documentation about the exposed metrics:
 * [Service Metrics](metrics/service/service-metrics.md)
 * [StatefulSet Metrics](metrics/workload/statefulset-metrics.md)
 * [StorageClass Metrics](metrics/storage/storageclass-metrics.md)
+* [ValidatingAdmissionPolicy Metrics](metrics/extend/validatingadmissionpolicy-metrics.md)
+* [ValidatingAdmissionPolicyBinding Metrics](metrics/extend/validatingadmissionpolicybinding-metrics.md)
 * [ValidatingWebhookConfiguration Metrics](metrics/extend/validatingwebhookconfiguration-metrics.md)
 * [VolumeAttachment Metrics](metrics/storage/volumeattachment-metrics.md)
 

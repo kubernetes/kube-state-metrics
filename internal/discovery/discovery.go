@@ -140,6 +140,9 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	if hasVersion && hasKind {
 		for _, el := range r.Map[g][v] {
 			if el.Kind == k {
+				// The CRD is present now; clear any prior "missing" warning so a
+				// future disappearance is logged again.
+				r.clearMissingGVKWarning(gvk)
 				return []groupVersionKindPlural{
 					{
 						GroupVersionKind: schema.GroupVersionKind{
@@ -155,8 +158,11 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 		// The GVK was fully specified but is absent from the discovery cache,
 		// which usually means the CRD is not installed in the cluster. Surface
 		// this so a missing or misconfigured CRD is visible instead of silently
-		// generating no metrics for it.
-		klog.InfoS("Configured custom resource was not found in the cluster, no metrics will be generated for it until its CRD is installed", "gvk", gvk)
+		// generating no metrics for it. ResolveGVKToGVKPs runs on every discovery
+		// tick, so log only on the first miss to avoid flooding the log.
+		if r.markMissingGVKWarned(gvk) {
+			klog.InfoS("Configured custom resource was not found in the cluster, no metrics will be generated for it until its CRD is installed", "gvk", gvk)
+		}
 		return nil, nil
 	}
 	if hasVersion && !hasKind {

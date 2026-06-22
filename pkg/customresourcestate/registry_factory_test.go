@@ -554,3 +554,234 @@ func mustCompilePath(t *testing.T, path ...string) valuePath {
 	}
 	return out
 }
+
+// TestParseDurationValue tests the parseDurationValue function
+func TestParseDurationValue(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       interface{}
+		expected    float64
+		expectError bool
+	}{
+		{
+			name:        "simple hours",
+			input:       "1h",
+			expected:    3600.0,
+			expectError: false,
+		},
+		{
+			name:        "simple minutes",
+			input:       "30m",
+			expected:    1800.0,
+			expectError: false,
+		},
+		{
+			name:        "simple seconds",
+			input:       "45s",
+			expected:    45.0,
+			expectError: false,
+		},
+		{
+			name:        "complex duration",
+			input:       "1h30m45s",
+			expected:    5445.0,
+			expectError: false,
+		},
+		{
+			name:        "cert-manager style 90 days",
+			input:       "2160h",
+			expected:    7776000.0,
+			expectError: false,
+		},
+		{
+			name:        "milliseconds",
+			input:       "500ms",
+			expected:    0.5,
+			expectError: false,
+		},
+		{
+			name:        "zero duration",
+			input:       "0s",
+			expected:    0.0,
+			expectError: false,
+		},
+		{
+			name:        "invalid format",
+			input:       "invalid",
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name:        "empty string",
+			input:       "",
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name:        "nil value",
+			input:       nil,
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name:        "non-string value",
+			input:       123,
+			expected:    0,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := parseDurationValue(tt.input)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if result != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestDurationValueType tests gauge metrics with duration valueType
+func TestDurationValueType(t *testing.T) {
+	tests := []struct {
+		name       string
+		each       compiledEach
+		resource   map[string]interface{}
+		wantResult []eachValue
+		wantErrors []error
+	}{
+		{
+			name: "duration hours",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "spec", "duration"),
+				},
+				valueType: ValueTypeDuration,
+			},
+			resource: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"duration": "2160h",
+				},
+			},
+			wantResult: []eachValue{newEachValue(t, 7776000.0)},
+		},
+		{
+			name: "duration minutes",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "timeout"),
+				},
+				valueType: ValueTypeDuration,
+			},
+			resource: map[string]interface{}{
+				"timeout": "30m",
+			},
+			wantResult: []eachValue{newEachValue(t, 1800.0)},
+		},
+		{
+			name: "duration complex",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "spec", "renewBefore"),
+				},
+				valueType: ValueTypeDuration,
+			},
+			resource: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"renewBefore": "1h30m",
+				},
+			},
+			wantResult: []eachValue{newEachValue(t, 5400.0)},
+		},
+		{
+			name: "duration with labels",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "spec"),
+					labelFromPath: map[string]valuePath{
+						"name": mustCompilePath(t, "name"),
+					},
+				},
+				ValueFrom: mustCompilePath(t, "duration"),
+				valueType: ValueTypeDuration,
+			},
+			resource: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"name":     "test-cert",
+					"duration": "720h",
+				},
+			},
+			wantResult: []eachValue{newEachValue(t, 2592000.0, "name", "test-cert")},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotResult, gotErrors := scrapeValuesFor(tt.each, tt.resource)
+			assert.Equal(t, tt.wantResult, gotResult)
+			assert.Equal(t, tt.wantErrors, gotErrors)
+		})
+	}
+}
+
+// TestValueTypeBackwardCompatibility tests that omitting valueType still works
+func TestValueTypeBackwardCompatibility(t *testing.T) {
+	tests := []struct {
+		name       string
+		each       compiledEach
+		wantResult []eachValue
+	}{
+		{
+			name: "numeric without valueType",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "spec", "replicas"),
+				},
+				// valueType omitted (defaults to "")
+			},
+			wantResult: []eachValue{newEachValue(t, 1)},
+		},
+		{
+			name: "quantity without explicit valueType",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "status", "quantity_milli"),
+				},
+				// valueType omitted - should auto-detect as quantity
+			},
+			wantResult: []eachValue{newEachValue(t, 0.25)},
+		},
+		{
+			name: "bool without valueType",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "spec", "order", "0", "value"),
+				},
+			},
+			wantResult: []eachValue{newEachValue(t, 1)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotResult, gotErrors := scrapeValuesFor(tt.each, cr)
+			assert.Equal(t, tt.wantResult, gotResult)
+			if len(gotErrors) > 0 {
+				t.Errorf("unexpected errors: %v", gotErrors)
+			}
+		})
+	}
+}

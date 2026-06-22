@@ -338,6 +338,8 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"jobs":                              func(b *Builder) []cache.Store { return b.buildJobStores() },
 	"leases":                            func(b *Builder) []cache.Store { return b.buildLeasesStores() },
 	"limitranges":                       func(b *Builder) []cache.Store { return b.buildLimitRangeStores() },
+	"mutatingadmissionpolicies":         func(b *Builder) []cache.Store { return b.buildMutatingAdmissionPolicyStores() },
+	"mutatingadmissionpolicybindings":   func(b *Builder) []cache.Store { return b.buildMutatingAdmissionPolicyBindingStores() },
 	"mutatingwebhookconfigurations":     func(b *Builder) []cache.Store { return b.buildMutatingWebhookConfigurationStores() },
 	"namespaces":                        func(b *Builder) []cache.Store { return b.buildNamespaceStores() },
 	"networkpolicies":                   func(b *Builder) []cache.Store { return b.buildNetworkPolicyStores() },
@@ -489,6 +491,14 @@ func (b *Builder) buildValidatingAdmissionPolicyStores() []cache.Store {
 
 func (b *Builder) buildValidatingAdmissionPolicyBindingStores() []cache.Store {
 	return b.buildClusterScopedStores(validatingAdmissionPolicyBindingMetricFamilies, &admissionregistrationv1.ValidatingAdmissionPolicyBinding{}, createValidatingAdmissionPolicyBindingListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildMutatingAdmissionPolicyStores() []cache.Store {
+	return b.buildClusterScopedStores(mutatingAdmissionPolicyMetricFamilies, &admissionregistrationv1.MutatingAdmissionPolicy{}, createMutatingAdmissionPolicyListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildMutatingAdmissionPolicyBindingStores() []cache.Store {
+	return b.buildClusterScopedStores(mutatingAdmissionPolicyBindingMetricFamilies, &admissionregistrationv1.MutatingAdmissionPolicyBinding{}, createMutatingAdmissionPolicyBindingListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildValidatingWebhookConfigurationStores() []cache.Store {

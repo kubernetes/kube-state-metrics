@@ -1,0 +1,24 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: example-mutatingadmissionpolicy
+spec:
+  failurePolicy: Fail
+  reinvocationPolicy: Never
+  matchConstraints:
+    resourceRules:
+    - apiGroups: ["apps"]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["deployments"]
+  mutations:
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: >-
+        Object{
+          metadata: Object.metadata{
+            labels: {
+              "mutated-by": "admission-policy"
+            }
+          }
+        }

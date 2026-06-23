@@ -2429,14 +2429,18 @@ func TestPodStore(t *testing.T) {
 			},
 			Want: `
 				# HELP kube_pod_init_container_state_started Start time in unix timestamp for a pod init container.
+				# HELP kube_pod_init_container_status_last_terminated_exitcode Describes the exit code for the last init container in terminated state.
 				# HELP kube_pod_init_container_status_last_terminated_timestamp Last terminated time for a pod init container in unix timestamp.
 				# TYPE kube_pod_init_container_state_started gauge
+				# TYPE kube_pod_init_container_status_last_terminated_exitcode gauge
 				# TYPE kube_pod_init_container_status_last_terminated_timestamp gauge
 				kube_pod_init_container_state_started{container="initcontainer1",namespace="ns9",pod="pod9",uid="uid9"} 1.501777018e+09
+				kube_pod_init_container_status_last_terminated_exitcode{container="initcontainer1",namespace="ns9",pod="pod9",uid="uid9"} 137
 				kube_pod_init_container_status_last_terminated_timestamp{container="initcontainer1",namespace="ns9",pod="pod9",uid="uid9"} 1.501779547e+09
 			`,
 			MetricNames: []string{
 				"kube_pod_init_container_state_started",
+				"kube_pod_init_container_status_last_terminated_exitcode",
 				"kube_pod_init_container_status_last_terminated_timestamp",
 			},
 		},
@@ -2544,7 +2548,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 58
+	expectedFamilies := 59
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

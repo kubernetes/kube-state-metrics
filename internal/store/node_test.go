@@ -274,6 +274,24 @@ func TestNodeStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_node_spec_taint"},
 		},
+		// Verify SpecPodCIDR
+		{
+			Obj: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "127.0.0.1",
+				},
+				Spec: v1.NodeSpec{
+					PodCIDRs: []string{"10.244.0.0/24", "2001:db8::/64"},
+				},
+			},
+			Want: `
+				# HELP kube_node_spec_pod_cidrs The pod CIDRs of a cluster node.
+				# TYPE kube_node_spec_pod_cidrs gauge
+				kube_node_spec_pod_cidrs{node="127.0.0.1",pod_cidr="10.244.0.0/24"} 1
+				kube_node_spec_pod_cidrs{node="127.0.0.1",pod_cidr="2001:db8::/64"} 1
+			`,
+			MetricNames: []string{"kube_node_spec_pod_cidrs"},
+		},
 		{
 			Obj: &v1.Node{
 				ObjectMeta: metav1.ObjectMeta{

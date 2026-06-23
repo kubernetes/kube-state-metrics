@@ -37,6 +37,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	resourcev1beta1 "k8s.io/api/resource/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clientset "k8s.io/client-go/kubernetes"
@@ -358,6 +359,8 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"storageclasses":                    func(b *Builder) []cache.Store { return b.buildStorageClassStores() },
 	"validatingadmissionpolicies":       func(b *Builder) []cache.Store { return b.buildValidatingAdmissionPolicyStores() },
 	"validatingadmissionpolicybindings": func(b *Builder) []cache.Store { return b.buildValidatingAdmissionPolicyBindingStores() },
+	"resourceclaims":                    func(b *Builder) []cache.Store { return b.buildResourceClaimStores() },
+	"resourceclaimtemplates":           func(b *Builder) []cache.Store { return b.buildResourceClaimTemplateStores() },
 	"validatingwebhookconfigurations":   func(b *Builder) []cache.Store { return b.buildValidatingWebhookConfigurationStores() },
 	"volumeattachments":                 func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
 }
@@ -673,6 +676,14 @@ func (b *Builder) startReflector(
 	} else {
 		go reflector.Run(b.ctx.Done())
 	}
+}
+
+func (b *Builder) buildResourceClaimStores() []cache.Store {
+	return b.buildStoresFunc(resourceClaimMetricFamilies, &resourcev1beta1.ResourceClaim{}, createResourceClaimListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceClaimTemplateStores() []cache.Store {
+	return b.buildStoresFunc(resourceClaimTemplateMetricFamilies, &resourcev1beta1.ResourceClaimTemplate{}, createResourceClaimTemplateListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

@@ -55,6 +55,8 @@ See each file for specific documentation about the exposed metrics:
 * [ReplicaSet Metrics](metrics/workload/replicaset-metrics.md)
 * [ReplicationController Metrics](metrics/workload/replicationcontroller-metrics.md)
 * [ResourceQuota Metrics](metrics/policy/resourcequota-metrics.md)
+* [ResourceClaim Metrics](metrics/extend/resourceclaim-metrics.md)
+* [ResourceClaimTemplate Metrics](metrics/extend/resourceclaimtemplate-metrics.md)
 * [Secret Metrics](metrics/storage/secret-metrics.md)
 * [Service Metrics](metrics/service/service-metrics.md)
 * [StatefulSet Metrics](metrics/workload/statefulset-metrics.md)

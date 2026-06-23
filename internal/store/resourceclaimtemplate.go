@@ -61,7 +61,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceClaimTemplateFunc(func(rct *resourcev1beta1.ResourceClaimTemplate) *metric.Family {
+			wrapResourceClaimTemplateFunc(func(_ *resourcev1beta1.ResourceClaimTemplate) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

@@ -359,8 +359,10 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"storageclasses":                    func(b *Builder) []cache.Store { return b.buildStorageClassStores() },
 	"validatingadmissionpolicies":       func(b *Builder) []cache.Store { return b.buildValidatingAdmissionPolicyStores() },
 	"validatingadmissionpolicybindings": func(b *Builder) []cache.Store { return b.buildValidatingAdmissionPolicyBindingStores() },
+	"deviceclasses":                    func(b *Builder) []cache.Store { return b.buildDeviceClassStores() },
 	"resourceclaims":                    func(b *Builder) []cache.Store { return b.buildResourceClaimStores() },
 	"resourceclaimtemplates":           func(b *Builder) []cache.Store { return b.buildResourceClaimTemplateStores() },
+	"resourceslices":                    func(b *Builder) []cache.Store { return b.buildResourceSliceStores() },
 	"validatingwebhookconfigurations":   func(b *Builder) []cache.Store { return b.buildValidatingWebhookConfigurationStores() },
 	"volumeattachments":                 func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
 }
@@ -678,12 +680,20 @@ func (b *Builder) startReflector(
 	}
 }
 
+func (b *Builder) buildDeviceClassStores() []cache.Store {
+	return b.buildClusterScopedStores(deviceClassMetricFamilies, &resourcev1beta1.DeviceClass{}, createDeviceClassListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
 func (b *Builder) buildResourceClaimStores() []cache.Store {
 	return b.buildStoresFunc(resourceClaimMetricFamilies, &resourcev1beta1.ResourceClaim{}, createResourceClaimListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildResourceClaimTemplateStores() []cache.Store {
 	return b.buildStoresFunc(resourceClaimTemplateMetricFamilies, &resourcev1beta1.ResourceClaimTemplate{}, createResourceClaimTemplateListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceSliceStores() []cache.Store {
+	return b.buildClusterScopedStores(resourceSliceMetricFamilies, &resourcev1beta1.ResourceSlice{}, createResourceSliceListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

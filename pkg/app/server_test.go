@@ -262,6 +262,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_status_ready_time Readiness achieved time in unix timestamp for a pod.
 # HELP kube_pod_status_ready [STABLE] Describes whether the pod is ready to serve requests.
 # HELP kube_pod_status_reason The pod status reasons
+# HELP kube_pod_status_disruption_reason The pod disruption reason, derived from the DisruptionTarget condition
 # HELP kube_pod_status_scheduled [STABLE] Describes the status of the scheduling process for the pod.
 # HELP kube_pod_status_scheduled_time [STABLE] Unix timestamp when pod moved into scheduled status
 # HELP kube_pod_status_unschedulable [STABLE] Describes the unschedulable status for the pod.
@@ -319,6 +320,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_status_ready gauge
 # TYPE kube_pod_status_ready_time gauge
 # TYPE kube_pod_status_reason gauge
+# TYPE kube_pod_status_disruption_reason gauge
 # TYPE kube_pod_status_scheduled gauge
 # TYPE kube_pod_status_scheduled_time gauge
 # TYPE kube_pod_status_unschedulable gauge
@@ -366,6 +368,11 @@ kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Running"
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Succeeded"} 0
 kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Unknown"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Evicted"} 0
+kube_pod_status_disruption_reason{namespace="default",pod="pod0",uid="abc-0",reason="DeletionByPodGC"} 0
+kube_pod_status_disruption_reason{namespace="default",pod="pod0",uid="abc-0",reason="DeletionByTaintManager"} 0
+kube_pod_status_disruption_reason{namespace="default",pod="pod0",uid="abc-0",reason="EvictionByEvictionAPI"} 0
+kube_pod_status_disruption_reason{namespace="default",pod="pod0",uid="abc-0",reason="PreemptionByScheduler"} 0
+kube_pod_status_disruption_reason{namespace="default",pod="pod0",uid="abc-0",reason="TerminationByKubelet"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="NodeAffinity"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="NodeLost"} 0
 kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="PreemptionByScheduler"} 0

@@ -38,6 +38,10 @@ import (
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
+	// podDisruptionConditionReasons lists the disruption reasons set on the DisruptionTarget
+	// pod condition by the kube-scheduler, kubelet, or pod GC controller.
+	// See https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-conditions
+	podDisruptionConditionReasons = []string{"DeletionByPodGC", "DeletionByTaintManager", "EvictionByEvictionAPI", "PreemptionByScheduler", "TerminationByKubelet"}
 )
 
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -93,6 +97,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusInitializedTimeFamilyGenerator(),
 		createPodStatusContainerReadyTimeFamilyGenerator(),
 		createPodStatusReasonFamilyGenerator(),
+		createPodStatusDisruptionReasonFamilyGenerator(),
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
@@ -1713,6 +1718,36 @@ func getPodStatusReasonValue(p *v1.Pod, reason string) float64 {
 	}
 	for _, cs := range p.Status.ContainerStatuses {
 		if cs.State.Terminated != nil && cs.State.Terminated.Reason == reason {
+			return 1
+		}
+	}
+	return 0
+}
+
+func createPodStatusDisruptionReasonFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_status_disruption_reason",
+		"The pod disruption reason, derived from the DisruptionTarget condition",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+			for _, reason := range podDisruptionConditionReasons {
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"reason"},
+					LabelValues: []string{reason},
+					Value:       getDisruptionConditionReasonValue(p, reason),
+				})
+			}
+			return &metric.Family{Metrics: ms}
+		}),
+	)
+}
+
+func getDisruptionConditionReasonValue(p *v1.Pod, reason string) float64 {
+	for _, cond := range p.Status.Conditions {
+		if cond.Type == "DisruptionTarget" && cond.Reason == reason {
 			return 1
 		}
 	}

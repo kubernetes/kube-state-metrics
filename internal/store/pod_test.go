@@ -2726,3 +2726,64 @@ func TestKubePodTolerations_DeduplicatesDuplicateEntries_WithTolerationSeconds(t
 		t.Errorf("expected %d unique toleration metrics, got %d", wantMetricCount, got)
 	}
 }
+
+func TestGetDisruptionConditionReasonValue(t *testing.T) {
+	tests := []struct {
+		name   string
+		pod    *v1.Pod
+		reason string
+		want   float64
+	}{
+		{
+			name:   "DisruptionTarget condition with matching reason returns 1",
+			reason: "EvictionByEvictionAPI",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{Type: "DisruptionTarget", Reason: "EvictionByEvictionAPI", Status: v1.ConditionTrue},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name:   "DisruptionTarget condition with non-matching reason returns 0",
+			reason: "EvictionByEvictionAPI",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{Type: "DisruptionTarget", Reason: "PreemptionByScheduler", Status: v1.ConditionTrue},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name:   "non-DisruptionTarget condition with matching reason returns 0",
+			reason: "EvictionByEvictionAPI",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{Type: "Ready", Reason: "EvictionByEvictionAPI", Status: v1.ConditionFalse},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name:   "no conditions returns 0",
+			reason: "EvictionByEvictionAPI",
+			pod:    &v1.Pod{},
+			want:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getDisruptionConditionReasonValue(tt.pod, tt.reason)
+			if got != tt.want {
+				t.Errorf("getDisruptionConditionReasonValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

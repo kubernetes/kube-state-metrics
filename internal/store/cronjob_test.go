@@ -45,37 +45,40 @@ var (
 
 func calculateNextSchedule6h(timestamp time.Time, timezone string) time.Time {
 	loc, _ := time.LoadLocation(timezone)
-	hour := timestamp.In(loc).Hour()
+	// Extract the date components in the target zone, not the machine's local
+	// zone, so the result is correct regardless of where the test runs.
+	ts := timestamp.In(loc)
+	hour := ts.Hour()
 	switch {
 	case hour < 6:
 		return time.Date(
-			timestamp.Year(),
-			timestamp.Month(),
-			timestamp.Day(),
+			ts.Year(),
+			ts.Month(),
+			ts.Day(),
 			6,
 			0,
 			0, 0, loc)
 	case hour < 12:
 		return time.Date(
-			timestamp.Year(),
-			timestamp.Month(),
-			timestamp.Day(),
+			ts.Year(),
+			ts.Month(),
+			ts.Day(),
 			12,
 			0,
 			0, 0, loc)
 	case hour < 18:
 		return time.Date(
-			timestamp.Year(),
-			timestamp.Month(),
-			timestamp.Day(),
+			ts.Year(),
+			ts.Month(),
+			ts.Day(),
 			18,
 			0,
 			0, 0, loc)
 	default:
 		return time.Date(
-			timestamp.Year(),
-			timestamp.Month(),
-			timestamp.Day()+1,
+			ts.Year(),
+			ts.Month(),
+			ts.Day()+1,
 			0,
 			0,
 			0, 0, loc)
@@ -587,6 +590,12 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 	// next schedule time for a valid "0 */6 * * *" schedule relative to LastScheduleTime.
 	validNextScheduleTime := calculateNextSchedule6h(ActiveRunningCronJob1LastScheduleTime, "Local")
 
+	// next schedule time for the same schedule evaluated in a valid named time zone.
+	// This is the scenario from issue #2898: resolving "Asia/Singapore" requires the
+	// IANA tz database, which main.go embeds via `_ "time/tzdata"` so that named zones
+	// resolve even on minimal/distroless images that ship no tzdata.
+	namedTZNextScheduleTime := calculateNextSchedule6h(ActiveRunningCronJob1LastScheduleTime, "Asia/Singapore")
+
 	cases := []generateMetricsTestCase{
 		{
 			// Valid schedule: next_schedule_time is emitted, schedule_invalid is not.
@@ -651,6 +660,29 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 				# TYPE kube_cronjob_schedule_invalid gauge
 				kube_cronjob_schedule_invalid{cronjob="InvalidTimeZoneCronJob",namespace="ns1"} 1
 `,
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
+		},
+		{
+			// Valid named time zone (regression for issue #2898): next_schedule_time is
+			// emitted, computed in that zone, and schedule_invalid is not. Before tzdata
+			// was embedded into the binary, a distroless image could not resolve
+			// "Asia/Singapore" and KSM wrongly flagged the schedule as invalid.
+			Obj: func() *batchv1.CronJob {
+				cj := newCronJob("NamedTimeZoneCronJob", "0 */6 * * *")
+				namedTimeZone := "Asia/Singapore"
+				cj.Spec.TimeZone = &namedTimeZone
+				return cj
+			}(),
+			Want: `
+				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
+				# TYPE kube_cronjob_schedule_invalid gauge
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# TYPE kube_cronjob_status_last_schedule_time gauge
+				kube_cronjob_status_last_schedule_time{cronjob="NamedTimeZoneCronJob",namespace="ns1"} 1.520742896e+09
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# TYPE kube_cronjob_next_schedule_time gauge
+` + fmt.Sprintf("kube_cronjob_next_schedule_time{cronjob=\"NamedTimeZoneCronJob\",namespace=\"ns1\"} %ve+09\n",
+				float64(namedTZNextScheduleTime.Unix())/math.Pow10(9)),
 			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
 		},
 	}

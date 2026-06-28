@@ -40,14 +40,25 @@ var (
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
 )
 
+func wrapNamespaceDefaultLabels(labels []string) []string {
+	return mergeKeys(descNamespaceLabelsDefaultLabels, labels)
+}
+
+func wrapNamespaceDefaultLabelValues(name string, values []string) []string {
+	return mergeValues([]string{name}, values)
+}
+
 func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	statusPhaseLabelKeys := []string{"phase"}
+
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_namespace_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapNamespaceDefaultLabels(nil),
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := []*metric.Metric{}
 				if !n.CreationTimestamp.IsZero() {
@@ -84,12 +95,13 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descNamespaceLabelsName,
 			descNamespaceLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapNamespaceDefaultLabels([]string{"label_NS_LABEL"}),
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -106,12 +118,13 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_namespace_status_phase",
 			"kubernetes namespace status phase.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapNamespaceDefaultLabels(statusPhaseLabelKeys),
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := []*metric.Metric{
 					{
@@ -125,7 +138,7 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 
 				for _, metric := range ms {
-					metric.LabelKeys = []string{"phase"}
+					metric.LabelKeys = statusPhaseLabelKeys
 				}
 
 				return &metric.Family{
@@ -169,7 +182,8 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *
 		metricFamily := f(namespace)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descNamespaceLabelsDefaultLabels, []string{namespace.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapNamespaceDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapNamespaceDefaultLabelValues(namespace.Name, m.LabelValues)
 		}
 
 		return metricFamily

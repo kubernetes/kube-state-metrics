@@ -41,14 +41,27 @@ var (
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
 )
 
+func wrapPersistentVolumeClaimDefaultLabels(labels []string) []string {
+	return mergeKeys(descPersistentVolumeClaimLabelsDefaultLabels, labels)
+}
+
+func wrapPersistentVolumeClaimDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	infoLabelKeys := []string{"storageclass", "volumename", "volumemode"}
+	statusPhaseLabelKeys := []string{"phase"}
+	accessModeLabelKeys := []string{"access_mode"}
+
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descPersistentVolumeClaimLabelsName,
 			descPersistentVolumeClaimLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPersistentVolumeClaimDefaultLabels([]string{"label_PERSISTENTVOLUMECLAIM_LABEL"}),
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -87,12 +100,13 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_persistentvolumeclaim_info",
 			"Information about persistent volume claim.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPersistentVolumeClaimDefaultLabels(infoLabelKeys),
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				storageClassName := getPersistentVolumeClaimClass(p)
 				volumeName := p.Spec.VolumeName
@@ -105,7 +119,7 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"storageclass", "volumename", "volumemode"},
+							LabelKeys:   infoLabelKeys,
 							LabelValues: []string{storageClassName, volumeName, volumeMode},
 							Value:       1,
 						},
@@ -203,12 +217,13 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_persistentvolumeclaim_status_phase",
 			"The phase the persistent volume claim is currently in.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPersistentVolumeClaimDefaultLabels(statusPhaseLabelKeys),
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				phase := p.Status.Phase
 
@@ -235,7 +250,7 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 
 				for _, m := range ms {
-					m.LabelKeys = []string{"phase"}
+					m.LabelKeys = statusPhaseLabelKeys
 				}
 
 				return &metric.Family{
@@ -243,12 +258,13 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_persistentvolumeclaim_resource_requests_storage_bytes",
 			"The capacity of storage requested by the persistent volume claim.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPersistentVolumeClaimDefaultLabels(nil),
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -263,18 +279,19 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_persistentvolumeclaim_access_mode",
 			"The access mode(s) specified by the persistent volume claim.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPersistentVolumeClaimDefaultLabels(accessModeLabelKeys),
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
 				ms := make([]*metric.Metric, len(p.Spec.AccessModes))
 
 				for i, mode := range p.Spec.AccessModes {
 					ms[i] = &metric.Metric{
-						LabelKeys:   []string{"access_mode"},
+						LabelKeys:   accessModeLabelKeys,
 						LabelValues: []string{string(mode)},
 						Value:       1,
 					}
@@ -392,7 +409,8 @@ func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Fam
 		metricFamily := f(persistentVolumeClaim)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descPersistentVolumeClaimLabelsDefaultLabels, []string{persistentVolumeClaim.Namespace, persistentVolumeClaim.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapPersistentVolumeClaimDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapPersistentVolumeClaimDefaultLabelValues(persistentVolumeClaim.Namespace, persistentVolumeClaim.Name, m.LabelValues)
 		}
 
 		return metricFamily

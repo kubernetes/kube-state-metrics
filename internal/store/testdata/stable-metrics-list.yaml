@@ -1,0 +1,1463 @@
+- name: kube_certificatesigningrequest_cert_length
+  help: Length of the issued cert
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - certificatesigningrequest
+    - signer_name
+- name: kube_certificatesigningrequest_condition
+  help: The number of each certificatesigningrequest condition
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - certificatesigningrequest
+    - signer_name
+- name: kube_certificatesigningrequest_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - certificatesigningrequest
+    - signer_name
+- name: kube_certificatesigningrequest_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - certificatesigningrequest
+    - signer_name
+- name: kube_configmap_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - configmap
+- name: kube_configmap_info
+  help: Information about configmap.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - configmap
+- name: kube_configmap_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - configmap
+    - label_CONFIGMAP_LABEL
+- name: kube_cronjob_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_cronjob_info
+  help: Info about cronjob.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+    - schedule
+    - concurrency_policy
+    - timezone
+- name: kube_cronjob_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+    - label_CRONJOB_LABEL
+- name: kube_cronjob_metadata_resource_version
+  help: Resource version representing a specific version of the cronjob.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_cronjob_next_schedule_time
+  help: Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_cronjob_spec_starting_deadline_seconds
+  help: Deadline in seconds for starting the job if it misses scheduled time for any reason.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_cronjob_spec_suspend
+  help: Suspend flag tells the controller to suspend subsequent executions.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_cronjob_status_active
+  help: Active holds pointers to currently running jobs.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_cronjob_status_last_schedule_time
+  help: LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_cronjob_status_last_successful_time
+  help: LastSuccessfulTime keeps information of when was the last time the job was completed successfully.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - cronjob
+- name: kube_daemonset_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+    - label_DAEMONSET_LABEL
+- name: kube_daemonset_metadata_generation
+  help: Sequence number representing a specific generation of the desired state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_current_number_scheduled
+  help: The number of nodes running at least one daemon pod and are supposed to.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_desired_number_scheduled
+  help: The number of nodes that should be running the daemon pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_number_available
+  help: The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_number_misscheduled
+  help: The number of nodes running a daemon pod but are not supposed to.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_number_ready
+  help: The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_number_unavailable
+  help: The number of nodes that should be running the daemon pod and have none of the daemon pod running and available
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_observed_generation
+  help: The most recent generation observed by the daemon set controller.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_daemonset_status_updated_number_scheduled
+  help: The total number of nodes that are running updated daemon pod
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - daemonset
+- name: kube_deployment_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+    - label_DEPLOYMENT_LABEL
+- name: kube_deployment_metadata_generation
+  help: Sequence number representing a specific generation of the desired state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_spec_paused
+  help: Whether the deployment is paused and will not be processed by the deployment controller.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_spec_replicas
+  help: Number of desired pods for a deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_spec_strategy_rollingupdate_max_surge
+  help: Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_spec_strategy_rollingupdate_max_unavailable
+  help: Maximum number of unavailable replicas during a rolling update of a deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_status_condition
+  help: The current status conditions of a deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+    - reason
+    - condition
+    - status
+- name: kube_deployment_status_observed_generation
+  help: The generation observed by the deployment controller.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_status_replicas
+  help: The number of replicas per deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_status_replicas_available
+  help: The number of available replicas per deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_status_replicas_ready
+  help: The number of ready replicas per deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_status_replicas_unavailable
+  help: The number of unavailable replicas per deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_deployment_status_replicas_updated
+  help: The number of updated replicas per deployment.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - deployment
+- name: kube_endpoint_address
+  help: Information about Endpoint available and non available addresses.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - endpoint
+    - port_protocol
+    - port_number
+    - port_name
+    - ip
+    - ready
+- name: kube_endpoint_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - endpoint
+- name: kube_endpoint_info
+  help: Information about endpoint.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - endpoint
+- name: kube_endpoint_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - endpoint
+    - label_ENDPOINT_LABEL
+- name: kube_endpoint_ports
+  help: (Deprecated since v2.14.0) Information about the Endpoint ports.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - endpoint
+    - port_name
+    - port_protocol
+    - port_number
+- name: kube_horizontalpodautoscaler_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+- name: kube_horizontalpodautoscaler_metadata_generation
+  help: The generation observed by the HorizontalPodAutoscaler controller.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+- name: kube_horizontalpodautoscaler_spec_max_replicas
+  help: Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+- name: kube_horizontalpodautoscaler_spec_min_replicas
+  help: Lower limit for the number of pods that can be set by the autoscaler, default 1.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+- name: kube_horizontalpodautoscaler_status_condition
+  help: The condition of this autoscaler.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+    - condition
+    - status
+- name: kube_horizontalpodautoscaler_status_current_replicas
+  help: Current number of replicas of pods managed by this autoscaler.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+- name: kube_horizontalpodautoscaler_status_desired_replicas
+  help: Desired number of replicas of pods managed by this autoscaler.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+- name: kube_horizontalpodautoscaler_status_target_metric
+  help: The current metric status used by this autoscaler when calculating the desired replica count.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - horizontalpodautoscaler
+- name: kube_ingress_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - ingress
+- name: kube_ingress_info
+  help: Information about ingress.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - ingress
+    - ingressclass
+- name: kube_ingress_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - ingress
+    - label_INGRESS_LABEL
+- name: kube_ingress_path
+  help: Ingress host, paths and backend service information.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - ingress
+    - host
+    - path
+    - path_type
+    - service_name
+    - service_port
+    - resource_api_group
+    - resource_kind
+    - resource_name
+- name: kube_ingress_tls
+  help: Ingress TLS host and secret information.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - ingress
+    - tls_host
+    - secret
+- name: kube_job_complete
+  help: The job has completed its execution.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+    - condition
+- name: kube_job_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_failed
+  help: The job has failed its execution.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+    - condition
+- name: kube_job_info
+  help: Information about job.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+    - label_JOB_LABEL
+- name: kube_job_owner
+  help: Information about the Job's owner.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+    - owner_kind
+    - owner_name
+    - owner_is_controller
+- name: kube_job_spec_active_deadline_seconds
+  help: The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_spec_completions
+  help: The desired number of successfully finished pods the job should be run with.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_spec_parallelism
+  help: The maximum desired number of pods the job should run at any given time.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_status_active
+  help: The number of actively running pods.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_status_completion_time
+  help: CompletionTime represents time when the job was completed.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_status_failed
+  help: The number of pods which reached Phase Failed and the reason for failure.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+    - reason
+- name: kube_job_status_start_time
+  help: StartTime represents time when the job was acknowledged by the Job Manager.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_job_status_succeeded
+  help: The number of pods which reached Phase Succeeded.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - job_name
+- name: kube_limitrange
+  help: Information about limit range.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - limitrange
+    - resource
+    - type
+    - constraint
+- name: kube_limitrange_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - limitrange
+- name: kube_namespace_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+- name: kube_namespace_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - label_NS_LABEL
+- name: kube_namespace_status_phase
+  help: kubernetes namespace status phase.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - phase
+- name: kube_node_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+- name: kube_node_info
+  help: Information about a cluster node.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+    - kernel_version
+    - os_image
+    - container_runtime_version
+    - kubelet_version
+    - kubeproxy_version
+    - provider_id
+    - pod_cidr
+    - system_uuid
+    - internal_ip
+- name: kube_node_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+    - label_NODE_LABEL
+- name: kube_node_spec_taint
+  help: The taint of a cluster node.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+    - key
+    - value
+    - effect
+- name: kube_node_spec_unschedulable
+  help: Whether a node can schedule new pods.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+- name: kube_node_status_allocatable
+  help: The allocatable for different resources of a node that are available for scheduling.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+    - resource
+    - unit
+- name: kube_node_status_capacity
+  help: The capacity for different resources of a node.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+    - resource
+    - unit
+- name: kube_node_status_condition
+  help: The condition of a cluster node.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - node
+    - condition
+    - status
+- name: kube_persistentvolume_capacity_bytes
+  help: Persistentvolume capacity in bytes.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - persistentvolume
+- name: kube_persistentvolume_claim_ref
+  help: Information about the Persistent Volume Claim Reference.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - persistentvolume
+    - name
+    - claim_namespace
+- name: kube_persistentvolume_info
+  help: Information about persistentvolume.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - persistentvolume
+    - storageclass
+    - gce_persistent_disk_name
+    - ebs_volume_id
+    - azure_disk_name
+    - fc_wwids
+    - fc_lun
+    - fc_target_wwns
+    - iscsi_target_portal
+    - iscsi_iqn
+    - iscsi_lun
+    - iscsi_initiator_name
+    - nfs_server
+    - nfs_path
+    - csi_driver
+    - csi_volume_handle
+    - local_path
+    - local_fs
+    - host_path
+    - host_path_type
+    - reclaim_policy
+- name: kube_persistentvolume_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - persistentvolume
+    - label_PERSISTENTVOLUME_LABEL
+- name: kube_persistentvolume_status_phase
+  help: The phase indicates if a volume is available, bound to a claim, or released by a claim.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - persistentvolume
+    - phase
+- name: kube_persistentvolumeclaim_access_mode
+  help: The access mode(s) specified by the persistent volume claim.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - persistentvolumeclaim
+    - access_mode
+- name: kube_persistentvolumeclaim_info
+  help: Information about persistent volume claim.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - persistentvolumeclaim
+    - storageclass
+    - volumename
+    - volumemode
+- name: kube_persistentvolumeclaim_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - persistentvolumeclaim
+    - label_PERSISTENTVOLUMECLAIM_LABEL
+- name: kube_persistentvolumeclaim_resource_requests_storage_bytes
+  help: The capacity of storage requested by the persistent volume claim.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - persistentvolumeclaim
+- name: kube_persistentvolumeclaim_status_phase
+  help: The phase the persistent volume claim is currently in.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - persistentvolumeclaim
+    - phase
+- name: kube_pod_completion_time
+  help: Completion time in unix timestamp for a pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+- name: kube_pod_container_info
+  help: Information about a container in a pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+    - image_spec
+    - image
+    - image_id
+    - container_id
+- name: kube_pod_container_resource_limits
+  help: The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+    - node
+    - resource
+    - unit
+- name: kube_pod_container_resource_requests
+  help: The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+    - node
+    - resource
+    - unit
+- name: kube_pod_container_state_started
+  help: Start time in unix timestamp for a pod container.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_container_status_ready
+  help: Describes whether the containers readiness check succeeded.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_container_status_restarts_total
+  help: The number of container restarts per container.
+  type: Counter
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_container_status_running
+  help: Describes whether the container is currently in running state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_container_status_terminated
+  help: Describes whether the container is currently in terminated state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_container_status_waiting
+  help: Describes whether the container is currently in waiting state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_container_status_waiting_reason
+  help: Describes the reason the container is currently in waiting state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+    - reason
+- name: kube_pod_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+- name: kube_pod_info
+  help: Information about pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - host_ip
+    - pod_ip
+    - node
+    - created_by_kind
+    - created_by_name
+    - priority_class
+    - host_network
+- name: kube_pod_init_container_info
+  help: Information about an init container in a pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+    - image_spec
+    - image
+    - image_id
+    - container_id
+    - restart_policy
+- name: kube_pod_init_container_status_ready
+  help: Describes whether the init containers readiness check succeeded.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_init_container_status_restarts_total
+  help: The number of restarts for the init container.
+  type: Counter
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_init_container_status_running
+  help: Describes whether the init container is currently in running state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_init_container_status_terminated
+  help: Describes whether the init container is currently in terminated state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_init_container_status_waiting
+  help: Describes whether the init container is currently in waiting state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - container
+- name: kube_pod_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - label_POD_LABEL
+- name: kube_pod_owner
+  help: Information about the Pod's owner.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - owner_kind
+    - owner_name
+    - owner_is_controller
+- name: kube_pod_restart_policy
+  help: Describes the restart policy in use by this pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - type
+- name: kube_pod_spec_volumes_persistentvolumeclaims_info
+  help: Information about persistentvolumeclaim volumes in a pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - volume
+    - persistentvolumeclaim
+- name: kube_pod_spec_volumes_persistentvolumeclaims_readonly
+  help: Describes whether a persistentvolumeclaim is mounted read only.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - volume
+    - persistentvolumeclaim
+- name: kube_pod_start_time
+  help: Start time in unix timestamp for a pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+- name: kube_pod_status_phase
+  help: The pods current phase.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - phase
+- name: kube_pod_status_ready
+  help: Describes whether the pod is ready to serve requests.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - condition
+- name: kube_pod_status_scheduled
+  help: Describes the status of the scheduling process for the pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+    - condition
+- name: kube_pod_status_scheduled_time
+  help: Unix timestamp when pod moved into scheduled status
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+- name: kube_pod_status_unschedulable
+  help: Describes the unschedulable status for the pod.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - pod
+    - uid
+- name: kube_poddisruptionbudget_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - poddisruptionbudget
+- name: kube_poddisruptionbudget_status_current_healthy
+  help: Current number of healthy pods
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - poddisruptionbudget
+- name: kube_poddisruptionbudget_status_desired_healthy
+  help: Minimum desired number of healthy pods
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - poddisruptionbudget
+- name: kube_poddisruptionbudget_status_expected_pods
+  help: Total number of pods counted by this disruption budget
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - poddisruptionbudget
+- name: kube_poddisruptionbudget_status_observed_generation
+  help: Most recent generation observed when updating this PDB status
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - poddisruptionbudget
+- name: kube_poddisruptionbudget_status_pod_disruptions_allowed
+  help: Number of pod disruptions that are currently allowed
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - poddisruptionbudget
+- name: kube_replicaset_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+- name: kube_replicaset_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+    - label_REPLICASET_LABEL
+- name: kube_replicaset_metadata_generation
+  help: Sequence number representing a specific generation of the desired state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+- name: kube_replicaset_owner
+  help: Information about the ReplicaSet's owner.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+    - owner_kind
+    - owner_name
+    - owner_is_controller
+- name: kube_replicaset_spec_replicas
+  help: Number of desired pods for a ReplicaSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+- name: kube_replicaset_status_fully_labeled_replicas
+  help: The number of fully labeled replicas per ReplicaSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+- name: kube_replicaset_status_observed_generation
+  help: The generation observed by the ReplicaSet controller.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+- name: kube_replicaset_status_ready_replicas
+  help: The number of ready replicas per ReplicaSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+- name: kube_replicaset_status_replicas
+  help: The number of replicas per ReplicaSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicaset
+- name: kube_replicationcontroller_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_replicationcontroller_metadata_generation
+  help: Sequence number representing a specific generation of the desired state.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_replicationcontroller_spec_replicas
+  help: Number of desired pods for a ReplicationController.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_replicationcontroller_status_available_replicas
+  help: The number of available replicas per ReplicationController.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_replicationcontroller_status_fully_labeled_replicas
+  help: The number of fully labeled replicas per ReplicationController.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_replicationcontroller_status_observed_generation
+  help: The generation observed by the ReplicationController controller.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_replicationcontroller_status_ready_replicas
+  help: The number of ready replicas per ReplicationController.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_replicationcontroller_status_replicas
+  help: The number of replicas per ReplicationController.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - replicationcontroller
+- name: kube_resourcequota
+  help: Information about resource quota.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - resourcequota
+    - resource
+    - type
+- name: kube_resourcequota_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - resourcequota
+- name: kube_resourcequota_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - resourcequota
+    - label_RESOURCE_QUOTA_LABEL
+- name: kube_secret_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - secret
+- name: kube_secret_info
+  help: Information about secret.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - secret
+- name: kube_secret_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - secret
+    - label_SECRET_LABEL
+- name: kube_secret_type
+  help: Type about secret.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - secret
+    - type
+- name: kube_service_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - service
+    - uid
+- name: kube_service_info
+  help: Information about service.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - service
+    - uid
+    - cluster_ip
+    - external_name
+    - load_balancer_ip
+    - external_traffic_policy
+- name: kube_service_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - service
+    - uid
+    - label_SERVICE_LABEL
+- name: kube_service_spec_external_ip
+  help: Service external ips. One series for each ip
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - service
+    - uid
+    - external_ip
+- name: kube_service_spec_type
+  help: Type about service.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - service
+    - uid
+    - type
+- name: kube_service_status_load_balancer_ingress
+  help: Service load balancer ingress status
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - service
+    - uid
+    - ip
+    - hostname
+- name: kube_statefulset_annotations
+  help: Kubernetes annotations converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_deletion_timestamp
+  help: Unix deletion timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+    - label_STATEFULSET_LABEL
+- name: kube_statefulset_metadata_generation
+  help: Sequence number representing a specific generation of the desired state for the StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_ordinals_start
+  help: Start ordinal of the StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_persistentvolumeclaim_retention_policy
+  help: Count of retention policy for StatefulSet template PVCs
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+    - when_deleted
+    - when_scaled
+- name: kube_statefulset_replicas
+  help: Number of desired pods for a StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_status_current_revision
+  help: Indicates the version of the StatefulSet used to generate Pods in the sequence [0,currentReplicas).
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+    - revision
+- name: kube_statefulset_status_observed_generation
+  help: The generation observed by the StatefulSet controller.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_status_replicas
+  help: The number of replicas per StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_status_replicas_available
+  help: The number of available replicas per StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_status_replicas_current
+  help: The number of current replicas per StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_status_replicas_ready
+  help: The number of ready replicas per StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_status_replicas_updated
+  help: The number of updated replicas per StatefulSet.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+- name: kube_statefulset_status_update_revision
+  help: Indicates the version of the StatefulSet used to generate Pods in the sequence [replicas-updatedReplicas,replicas)
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - namespace
+    - statefulset
+    - revision
+- name: kube_storageclass_created
+  help: Unix creation timestamp
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - storageclass
+- name: kube_storageclass_info
+  help: Information about storageclass.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - storageclass
+    - provisioner
+    - reclaim_policy
+    - volume_binding_mode
+- name: kube_storageclass_labels
+  help: Kubernetes labels converted to Prometheus labels.
+  type: Gauge
+  stabilityLevel: BETA
+  labels:
+    - storageclass
+    - label_STORAGECLASS_LABEL

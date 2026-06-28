@@ -40,6 +40,14 @@ var (
 	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest", "signer_name"}
 )
 
+func wrapCSRDefaultLabels(labels []string) []string {
+	return mergeKeys(descCSRLabelsDefaultLabels, labels)
+}
+
+func wrapCSRDefaultLabelValues(name, signerName string, values []string) []string {
+	return mergeValues([]string{name, signerName}, values)
+}
+
 func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -64,12 +72,13 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descCSRLabelsName,
 			descCSRLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCSRDefaultLabels(nil),
 			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -86,12 +95,13 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_certificatesigningrequest_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCSRDefaultLabels(nil),
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				ms := []*metric.Metric{}
 				if !csr.CreationTimestamp.IsZero() {
@@ -107,24 +117,26 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_certificatesigningrequest_condition",
 			"The number of each certificatesigningrequest condition",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCSRDefaultLabels(nil),
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: addCSRConditionMetrics(csr.Status),
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_certificatesigningrequest_cert_length",
 			"Length of the issued cert",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCSRDefaultLabels(nil),
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -146,7 +158,8 @@ func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(
 		metricFamily := f(csr)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descCSRLabelsDefaultLabels, []string{csr.Name, csr.Spec.SignerName}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapCSRDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapCSRDefaultLabelValues(csr.Name, csr.Spec.SignerName, m.LabelValues)
 		}
 
 		return metricFamily

@@ -48,7 +48,17 @@ var (
 	descCronJobLabelsDefaultLabels = []string{"namespace", "cronjob"}
 )
 
+func wrapCronJobDefaultLabels(labels []string) []string {
+	return mergeKeys(descCronJobLabelsDefaultLabels, labels)
+}
+
+func wrapCronJobDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	infoLabelKeys := []string{"schedule", "concurrency_policy", "timezone"}
+
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			descCronJobAnnotationsName,
@@ -72,12 +82,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descCronJobLabelsName,
 			descCronJobLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels([]string{"label_CRONJOB_LABEL"}),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -94,12 +105,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_info",
 			"Info about cronjob.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(infoLabelKeys),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				timeZone := "local"
 				if j.Spec.TimeZone != nil {
@@ -108,7 +120,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"schedule", "concurrency_policy", "timezone"},
+							LabelKeys:   infoLabelKeys,
 							LabelValues: []string{j.Spec.Schedule, string(j.Spec.ConcurrencyPolicy), timeZone},
 							Value:       1,
 						},
@@ -116,12 +128,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 				if !j.CreationTimestamp.IsZero() {
@@ -137,12 +150,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_status_active",
 			"Active holds pointers to currently running jobs.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -155,12 +169,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_status_last_schedule_time",
 			"LastScheduleTime keeps information of when was the last time the job was successfully scheduled.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -177,12 +192,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_status_last_successful_time",
 			"LastSuccessfulTime keeps information of when was the last time the job was completed successfully.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -199,12 +215,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_spec_suspend",
 			"Suspend flag tells the controller to suspend subsequent executions.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -217,12 +234,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_spec_starting_deadline_seconds",
 			"Deadline in seconds for starting the job if it misses scheduled time for any reason.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -240,12 +258,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_next_schedule_time",
 			"Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -290,12 +309,13 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_cronjob_metadata_resource_version",
 			"Resource version representing a specific version of the cronjob.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapCronJobDefaultLabels(nil),
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				return &metric.Family{
 					Metrics: resourceVersionMetric(j.ResourceVersion),
@@ -356,7 +376,8 @@ func wrapCronJobFunc(f func(*batchv1.CronJob) *metric.Family) func(interface{}) 
 		metricFamily := f(cronJob)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descCronJobLabelsDefaultLabels, []string{cronJob.Namespace, cronJob.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapCronJobDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapCronJobDefaultLabelValues(cronJob.Namespace, cronJob.Name, m.LabelValues)
 		}
 
 		return metricFamily

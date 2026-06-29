@@ -215,6 +215,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_info [STABLE] Information about a container in a pod.
 # HELP kube_pod_container_resource_limits [STABLE] The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
 # HELP kube_pod_container_resource_requests [STABLE] The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
+# HELP kube_pod_spec_resource_limits The pod-level resource limits, set via the pod's spec.resources.limits.
+# HELP kube_pod_spec_resource_requests The pod-level requested resources, set via the pod's spec.resources.requests.
 # HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
 # HELP kube_pod_container_status_last_terminated_exitcode Describes the exit code for the last container in terminated state.
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
@@ -273,6 +275,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_container_info gauge
 # TYPE kube_pod_container_resource_limits gauge
 # TYPE kube_pod_container_resource_requests gauge
+# TYPE kube_pod_spec_resource_limits gauge
+# TYPE kube_pod_spec_resource_requests gauge
 # TYPE kube_pod_container_state_started gauge
 # TYPE kube_pod_container_status_last_terminated_exitcode gauge
 # TYPE kube_pod_container_status_last_terminated_reason gauge

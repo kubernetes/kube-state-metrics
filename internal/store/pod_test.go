@@ -1854,6 +1854,38 @@ func TestPodStore(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-pr",
+					Namespace: "ns1",
+					UID:       "uid-pr",
+				},
+				Spec: v1.PodSpec{
+					Resources: &v1.ResourceRequirements{
+						Requests: map[v1.ResourceName]resource.Quantity{
+							v1.ResourceCPU:    resource.MustParse("200m"),
+							v1.ResourceMemory: resource.MustParse("100M"),
+						},
+						Limits: map[v1.ResourceName]resource.Quantity{
+							v1.ResourceCPU:    resource.MustParse("200m"),
+							v1.ResourceMemory: resource.MustParse("100M"),
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_spec_resource_limits The pod-level resource limits, set via the pod's spec.resources.limits.
+				# HELP kube_pod_spec_resource_requests The pod-level requested resources, set via the pod's spec.resources.requests.
+				# TYPE kube_pod_spec_resource_limits gauge
+				# TYPE kube_pod_spec_resource_requests gauge
+				kube_pod_spec_resource_limits{namespace="ns1",node="",pod="pod-pr",resource="cpu",unit="core",uid="uid-pr"} 0.2
+				kube_pod_spec_resource_limits{namespace="ns1",node="",pod="pod-pr",resource="memory",unit="byte",uid="uid-pr"} 1e+08
+				kube_pod_spec_resource_requests{namespace="ns1",node="",pod="pod-pr",resource="cpu",unit="core",uid="uid-pr"} 0.2
+				kube_pod_spec_resource_requests{namespace="ns1",node="",pod="pod-pr",resource="memory",unit="byte",uid="uid-pr"} 1e+08
+			`,
+			MetricNames: []string{"kube_pod_spec_resource_requests", "kube_pod_spec_resource_limits"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "ns1",
 					UID:       "uid1",
@@ -2548,7 +2580,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 59
+	expectedFamilies := 61
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

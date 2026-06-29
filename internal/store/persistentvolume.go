@@ -47,6 +47,14 @@ var (
 	descPersistentVolumeCSIAttributesHelp = "CSI attributes of the Persistent Volume."
 )
 
+func wrapPersistentVolumeDefaultLabels(labels []string) []string {
+	return mergeKeys(descPersistentVolumeLabelsDefaultLabels, labels)
+}
+
+func wrapPersistentVolumeDefaultLabelValues(name string, values []string) []string {
+	return mergeValues([]string{name}, values)
+}
+
 func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createPersistentVolumeClaimRef(),
@@ -69,7 +77,8 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(
 		metricFamily := f(persistentVolume)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descPersistentVolumeLabelsDefaultLabels, []string{persistentVolume.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapPersistentVolumeDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapPersistentVolumeDefaultLabelValues(persistentVolume.Name, m.LabelValues)
 		}
 
 		return metricFamily
@@ -88,12 +97,15 @@ func createPersistentVolumeListWatch(kubeClient clientset.Interface, _ string, _
 }
 
 func createPersistentVolumeClaimRef() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	claimRefLabelKeys := []string{"name", "claim_namespace"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		descPersistentVolumeClaimRefName,
 		descPersistentVolumeClaimRefHelp,
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapPersistentVolumeDefaultLabels(claimRefLabelKeys),
 		wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 			claimRef := p.Spec.ClaimRef
 
@@ -105,10 +117,7 @@ func createPersistentVolumeClaimRef() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
-						LabelKeys: []string{
-							"name",
-							"claim_namespace",
-						},
+						LabelKeys: claimRefLabelKeys,
 						LabelValues: []string{
 							p.Spec.ClaimRef.Name,
 							p.Spec.ClaimRef.Namespace,
@@ -147,12 +156,13 @@ func createPersistentVolumeAnnotations(allowAnnotationsList []string) generator.
 }
 
 func createPersistentVolumeLabels(allowLabelsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		descPersistentVolumeLabelsName,
 		descPersistentVolumeLabelsHelp,
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapPersistentVolumeDefaultLabels([]string{"label_PERSISTENTVOLUME_LABEL"}),
 		wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
@@ -172,12 +182,15 @@ func createPersistentVolumeLabels(allowLabelsList []string) generator.FamilyGene
 }
 
 func createPersistentVolumeStatusPhase() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	statusPhaseLabelKeys := []string{"phase"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_persistentvolume_status_phase",
 		"The phase indicates if a volume is available, bound to a claim, or released by a claim.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapPersistentVolumeDefaultLabels(statusPhaseLabelKeys),
 		wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 			phase := p.Status.Phase
 
@@ -212,7 +225,7 @@ func createPersistentVolumeStatusPhase() generator.FamilyGenerator {
 			}
 
 			for _, m := range ms {
-				m.LabelKeys = []string{"phase"}
+				m.LabelKeys = statusPhaseLabelKeys
 			}
 
 			return &metric.Family{
@@ -223,12 +236,15 @@ func createPersistentVolumeStatusPhase() generator.FamilyGenerator {
 }
 
 func createPersistentVolumeInfo() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	infoLabelKeys := []string{"storageclass", "gce_persistent_disk_name", "ebs_volume_id", "azure_disk_name", "fc_wwids", "fc_lun", "fc_target_wwns", "iscsi_target_portal", "iscsi_iqn", "iscsi_lun", "iscsi_initiator_name", "nfs_server", "nfs_path", "csi_driver", "csi_volume_handle", "local_path", "local_fs", "host_path", "host_path_type", "reclaim_policy"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_persistentvolume_info",
 		"Information about persistentvolume.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapPersistentVolumeDefaultLabels(infoLabelKeys),
 		wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 			var (
 				gcePDDiskName,
@@ -293,28 +309,7 @@ func createPersistentVolumeInfo() generator.FamilyGenerator {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
-						LabelKeys: []string{
-							"storageclass",
-							"gce_persistent_disk_name",
-							"ebs_volume_id",
-							"azure_disk_name",
-							"fc_wwids",
-							"fc_lun",
-							"fc_target_wwns",
-							"iscsi_target_portal",
-							"iscsi_iqn",
-							"iscsi_lun",
-							"iscsi_initiator_name",
-							"nfs_server",
-							"nfs_path",
-							"csi_driver",
-							"csi_volume_handle",
-							"local_path",
-							"local_fs",
-							"host_path",
-							"host_path_type",
-							"reclaim_policy",
-						},
+						LabelKeys: infoLabelKeys,
 						LabelValues: []string{
 							p.Spec.StorageClassName,
 							gcePDDiskName,
@@ -346,12 +341,13 @@ func createPersistentVolumeInfo() generator.FamilyGenerator {
 }
 
 func createPersistentVolumeCapacityBytes() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_persistentvolume_capacity_bytes",
 		"Persistentvolume capacity in bytes.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapPersistentVolumeDefaultLabels(nil),
 		wrapPersistentVolumeFunc(func(p *v1.PersistentVolume) *metric.Family {
 			storage := p.Spec.Capacity[v1.ResourceStorage]
 			return &metric.Family{

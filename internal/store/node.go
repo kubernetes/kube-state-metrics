@@ -42,6 +42,19 @@ var (
 	descNodeLabelsDefaultLabels = []string{"node"}
 )
 
+const (
+	descNodeAnnotationAllowlistLabel = "annotation_NODE_ANNOTATION"
+	descNodeLabelAllowlistLabel      = "label_NODE_LABEL"
+)
+
+func wrapNodeDefaultLabels(labels []string) []string {
+	return mergeKeys(descNodeLabelsDefaultLabels, labels)
+}
+
+func wrapNodeDefaultLabelValues(nodeName string, values []string) []string {
+	return mergeValues([]string{nodeName}, values)
+}
+
 func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createNodeAnnotationsGenerator(allowAnnotationsList),
@@ -61,12 +74,13 @@ func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 }
 
 func createNodeDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_deletion_timestamp",
 		"Unix deletion timestamp",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",
+		wrapNodeDefaultLabels(nil),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			var ms []*metric.Metric
 
@@ -84,12 +98,13 @@ func createNodeDeletionTimestampFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_created",
 		"Unix creation timestamp",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels(nil),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
 
@@ -108,17 +123,20 @@ func createNodeCreatedFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeStateAddressFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{"type", "address"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_status_addresses",
 		"Node address information.",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
 			for _, address := range n.Status.Addresses {
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{"type", "address"},
+					LabelKeys:   labels,
 					LabelValues: []string{string(address.Type), address.Address},
 					Value:       1,
 				})
@@ -131,23 +149,26 @@ func createNodeStateAddressFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{
+		"kernel_version",
+		"os_image",
+		"container_runtime_version",
+		"kubelet_version",
+		"kubeproxy_version",
+		"provider_id",
+		"pod_cidr",
+		"system_uuid",
+		"internal_ip",
+	}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_info",
 		"Information about a cluster node.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
-			labelKeys := []string{
-				"kernel_version",
-				"os_image",
-				"container_runtime_version",
-				"kubelet_version",
-				"kubeproxy_version",
-				"provider_id",
-				"pod_cidr",
-				"system_uuid",
-			}
 			labelValues := []string{
 				n.Status.NodeInfo.KernelVersion,
 				n.Status.NodeInfo.OSImage,
@@ -166,13 +187,12 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 					internalIP = address.Address
 				}
 			}
-			labelKeys = append(labelKeys, "internal_ip")
 			labelValues = append(labelValues, internalIP)
 
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
-						LabelKeys:   labelKeys,
+						LabelKeys:   labels,
 						LabelValues: labelValues,
 						Value:       1,
 					},
@@ -183,12 +203,13 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		descNodeAnnotationsName,
 		descNodeAnnotationsHelp,
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",
+		wrapNodeDefaultLabels([]string{descNodeAnnotationAllowlistLabel}),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			if len(allowAnnotationsList) == 0 {
 				return &metric.Family{}
@@ -208,12 +229,13 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 }
 
 func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels([]string{descNodeLabelAllowlistLabel}),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
@@ -233,19 +255,22 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 }
 
 func createNodeRoleFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{"role"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_role",
 		"The role of a cluster node.",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			const prefix = "node-role.kubernetes.io/"
 			ms := []*metric.Metric{}
 			for lbl := range n.Labels {
 				if strings.HasPrefix(lbl, prefix) {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"role"},
+						LabelKeys:   labels,
 						LabelValues: []string{strings.TrimPrefix(lbl, prefix)},
 						Value:       float64(1),
 					})
@@ -259,12 +284,15 @@ func createNodeRoleFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeSpecPodCIDRFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{"pod_cidr"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_spec_pod_cidrs",
 		"The pod CIDRs of a cluster node.",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := make([]*metric.Metric, len(n.Spec.PodCIDRs))
 
@@ -273,7 +301,7 @@ func createNodeSpecPodCIDRFamilyGenerator() generator.FamilyGenerator {
 			// that isn't surfaced anywhere else.
 			for i, podCIDR := range n.Spec.PodCIDRs {
 				ms[i] = &metric.Metric{
-					LabelKeys:   []string{"pod_cidr"},
+					LabelKeys:   labels,
 					LabelValues: []string{podCIDR},
 					Value:       1,
 				}
@@ -287,12 +315,15 @@ func createNodeSpecPodCIDRFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeSpecTaintFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{"key", "value", "effect"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_spec_taint",
 		"The taint of a cluster node.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := make([]*metric.Metric, len(n.Spec.Taints))
 
@@ -301,7 +332,7 @@ func createNodeSpecTaintFamilyGenerator() generator.FamilyGenerator {
 				// toleration.  Many node conditions are optionally reflected as taints
 				// by the node controller in order to simplify scheduling constraints.
 				ms[i] = &metric.Metric{
-					LabelKeys:   []string{"key", "value", "effect"},
+					LabelKeys:   labels,
 					LabelValues: []string{taint.Key, taint.Value, string(taint.Effect)},
 					Value:       1,
 				}
@@ -315,12 +346,13 @@ func createNodeSpecTaintFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeSpecUnschedulableFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_spec_unschedulable",
 		"Whether a node can schedule new pods.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels(nil),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -334,12 +366,15 @@ func createNodeSpecUnschedulableFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{"resource", "unit"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_status_allocatable",
 		"The allocatable for different resources of a node that are available for scheduling.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
 
@@ -407,7 +442,7 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 			}
 
 			for _, m := range ms {
-				m.LabelKeys = []string{"resource", "unit"}
+				m.LabelKeys = labels
 			}
 
 			return &metric.Family{
@@ -418,12 +453,15 @@ func createNodeStatusAllocatableFamilyGenerator() generator.FamilyGenerator {
 }
 
 func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{"resource", "unit"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_status_capacity",
 		"The capacity for different resources of a node.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := []*metric.Metric{}
 
@@ -490,7 +528,7 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 			}
 
 			for _, metric := range ms {
-				metric.LabelKeys = []string{"resource", "unit"}
+				metric.LabelKeys = labels
 			}
 
 			return &metric.Family{
@@ -505,12 +543,15 @@ func createNodeStatusCapacityFamilyGenerator() generator.FamilyGenerator {
 // customized condition for cluster node (e.g. node-problem-detector), and
 // Kubernetes may add new core conditions in future.
 func createNodeStatusConditionFamilyGenerator() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	labels := []string{"condition", "status"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_node_status_condition",
 		"The condition of a cluster node.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapNodeDefaultLabels(labels),
 		wrapNodeFunc(func(n *v1.Node) *metric.Family {
 			ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
 
@@ -521,7 +562,7 @@ func createNodeStatusConditionFamilyGenerator() generator.FamilyGenerator {
 				for j, m := range conditionMetrics {
 					metric := m
 
-					metric.LabelKeys = []string{"condition", "status"}
+					metric.LabelKeys = labels
 					metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 
 					ms[i*len(conditionStatuses)+j] = metric
@@ -542,7 +583,8 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(interface{}) *metric.Fam
 		metricFamily := f(node)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descNodeLabelsDefaultLabels, []string{node.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapNodeDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapNodeDefaultLabelValues(node.Name, m.LabelValues)
 		}
 
 		return metricFamily

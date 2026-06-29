@@ -18,6 +18,7 @@ package options
 
 import (
 	"errors"
+	"slices"
 	"sort"
 	"strings"
 
@@ -26,9 +27,19 @@ import (
 	"k8s.io/klog/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
-var errLabelsAllowListFormat = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
+const (
+	// MaxPartialWildcardsPerLabel defines the amount of times a wildcard (*) may occur in a Label (or Annotation) passed
+	// with --metric-labels-allowlist or --metric-annotations-allowlist
+	MaxPartialWildcardsPerLabel = 1
+)
+
+var (
+	errLabelsAllowListFormat            = errors.New("invalid format, metric=[label1,label2,labeln...],metricN=[]")
+	errLabelsAllowListMultipleWildcards = errors.New("invalid format, only one wildcard per label allowed")
+)
 
 // MetricSet represents a collection which has a unique set of metrics.
 type MetricSet map[string]struct{}
@@ -289,6 +300,37 @@ func (l *LabelsAllowList) Set(value string) error {
 				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
 			}
 			firstWordPos = i + 1
+		}
+	}
+
+	// check amount of wildcards per label
+	for _, group := range m {
+		// each label in a group of labels can only contain one partial wildcard
+		// like mylabel/*
+		if slices.ContainsFunc(group, func(label string) bool {
+			return strings.Count(label, "*") > MaxPartialWildcardsPerLabel
+		}) {
+			return errLabelsAllowListMultipleWildcards
+		}
+	}
+
+	*l = m
+	return nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler so that the wildcard-count
+// constraint enforced by Set also applies when the value is loaded from a
+// YAML config file.
+func (l *LabelsAllowList) UnmarshalYAML(value *yaml.Node) error {
+	var m map[string][]string
+	if err := value.Decode(&m); err != nil {
+		return err
+	}
+	for _, group := range m {
+		if slices.ContainsFunc(group, func(label string) bool {
+			return strings.Count(label, LabelWildcard) > MaxPartialWildcardsPerLabel
+		}) {
+			return errLabelsAllowListMultipleWildcards
 		}
 	}
 	*l = m

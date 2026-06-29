@@ -253,6 +253,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_service_account The service account for a pod.
 # HELP kube_pod_owner [STABLE] Information about the Pod's owner.
 # HELP kube_pod_restart_policy [STABLE] Describes the restart policy in use by this pod.
+# HELP kube_pod_spec_termination_grace_period_seconds The pod's termination grace period in seconds.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_info [STABLE] Information about persistentvolumeclaim volumes in a pod.
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim is mounted read only.
 # HELP kube_pod_start_time [STABLE] Start time in unix timestamp for a pod.
@@ -311,6 +312,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_service_account gauge
 # TYPE kube_pod_owner gauge
 # TYPE kube_pod_restart_policy gauge
+# TYPE kube_pod_spec_termination_grace_period_seconds gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_info gauge
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge

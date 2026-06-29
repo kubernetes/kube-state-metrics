@@ -17,6 +17,11 @@ limitations under the License.
 package main
 
 import (
+	// Embed the IANA time zone database into the binary so that named time
+	// zones (e.g. a CronJob's spec.timeZone of "Asia/Singapore") resolve even
+	// when running from a minimal/distroless image that ships no tzdata.
+	_ "time/tzdata"
+
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 

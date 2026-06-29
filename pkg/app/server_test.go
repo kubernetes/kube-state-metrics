@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/exporter-toolkit/web"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -403,7 +405,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 		}
 	}
 
-	telemetryMux := buildTelemetryServer(reg, false, nil)
+	telemetryMux := buildTelemetryServer(reg, false, nil, web.NewLandingPage)
 
 	req2 := httptest.NewRequest("GET", "http://localhost:8081/metrics", nil)
 
@@ -477,7 +479,7 @@ func TestPprofRouting(t *testing.T) {
 		}
 
 		reg := prometheus.NewRegistry()
-		telemetryMux := buildTelemetryServer(reg, authEnabled, cfg)
+		telemetryMux := buildTelemetryServer(reg, authEnabled, cfg, web.NewLandingPage)
 		for _, path := range pprofPaths {
 			req := httptest.NewRequest("GET", "http://localhost:8081"+path, nil)
 			_, pattern := telemetryMux.Handler(req)
@@ -493,6 +495,7 @@ func TestPprofRouting(t *testing.T) {
 			fake.NewSimpleClientset(),
 			authEnabled,
 			cfg,
+			web.NewLandingPage,
 		)
 		for _, path := range pprofPaths {
 			req := httptest.NewRequest("GET", "http://localhost:8080"+path, nil)
@@ -1047,6 +1050,103 @@ func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fiel
 		},
 	}
 }
+
+func failingLandingPage(_ web.LandingConfig) (*web.LandingPageHandler, error) {
+	return nil, fmt.Errorf("injected landing page error")
+}
+
+func TestBuildTelemetryServerLandingPage(t *testing.T) {
+	t.Parallel()
+	reg := prometheus.NewRegistry()
+	mux := buildTelemetryServer(reg, false, nil, web.NewLandingPage)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for landing page at /, got %d", w.Code)
+	}
+}
+
+func TestBuildTelemetryServerLandingPageError(t *testing.T) {
+	t.Parallel()
+	reg := prometheus.NewRegistry()
+	mux := buildTelemetryServer(reg, false, nil, failingLandingPage)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for / when landing page creation fails, got %d", w.Code)
+	}
+
+	req = httptest.NewRequest("GET", "/metrics", nil)
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for /metrics even when landing page fails, got %d", w.Code)
+	}
+}
+
+func TestBuildMetricsServerLandingPage(t *testing.T) {
+	t.Parallel()
+	kubeClient := fake.NewSimpleClientset()
+
+	durationVec := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:        "http_request_duration_seconds",
+		ConstLabels: prometheus.Labels{"handler": "metrics"},
+	}, []string{"method"})
+
+	builder := store.NewBuilder()
+	builder.WithMetrics(prometheus.NewRegistry())
+	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+
+	mux := buildMetricsServer(handler, durationVec, kubeClient, false, nil, web.NewLandingPage)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for landing page at /, got %d", w.Code)
+	}
+}
+
+func TestBuildMetricsServerLandingPageError(t *testing.T) {
+	t.Parallel()
+	kubeClient := fake.NewSimpleClientset()
+
+	durationVec := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:        "http_request_duration_seconds",
+		ConstLabels: prometheus.Labels{"handler": "metrics"},
+	}, []string{"method"})
+
+	builder := store.NewBuilder()
+	builder.WithMetrics(prometheus.NewRegistry())
+	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+
+	mux := buildMetricsServer(handler, durationVec, kubeClient, false, nil, failingLandingPage)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for / when landing page creation fails, got %d", w.Code)
+	}
+
+	req = httptest.NewRequest("GET", "/healthz", nil)
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for /healthz even when landing page fails, got %d", w.Code)
+	}
+}
+
 func TestConfigureResourcesAndMetrics(t *testing.T) {
 	// Prepare a config file in YAML format
 	configYAML := `

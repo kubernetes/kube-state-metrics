@@ -46,6 +46,8 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodContainerInfoFamilyGenerator(),
 		createPodContainerResourceLimitsFamilyGenerator(),
 		createPodContainerResourceRequestsFamilyGenerator(),
+		createPodSpecResourceLimitsFamilyGenerator(),
+		createPodSpecResourceRequestsFamilyGenerator(),
 		createPodContainerStateStartedFamilyGenerator(),
 		createPodContainerStatusLastTerminatedReasonFamilyGenerator(),
 		createPodContainerStatusLastTerminatedExitCodeFamilyGenerator(),
@@ -292,6 +294,75 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 			return &metric.Family{
 				Metrics: ms,
 			}
+		}),
+	)
+}
+
+// podResourceListMetrics converts a ResourceList into metrics labeled by node,
+// resource, and unit, mirroring the per-container resource metrics.
+func podResourceListMetrics(rl v1.ResourceList, nodeName string) []*metric.Metric {
+	ms := []*metric.Metric{}
+	for resourceName, val := range rl {
+		switch resourceName {
+		case v1.ResourceCPU:
+			ms = append(ms, &metric.Metric{
+				LabelValues: []string{nodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitCore)},
+				Value:       convertValueToFloat64(&val),
+			})
+		case v1.ResourceStorage, v1.ResourceEphemeralStorage, v1.ResourceMemory:
+			ms = append(ms, &metric.Metric{
+				LabelValues: []string{nodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+				Value:       float64(val.Value()),
+			})
+		default:
+			if isHugePageResourceName(resourceName) || isAttachableVolumeResourceName(resourceName) {
+				ms = append(ms, &metric.Metric{
+					LabelValues: []string{nodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitByte)},
+					Value:       float64(val.Value()),
+				})
+			}
+			if isExtendedResourceName(resourceName) {
+				ms = append(ms, &metric.Metric{
+					LabelValues: []string{nodeName, SanitizeLabelName(string(resourceName)), string(constant.UnitInteger)},
+					Value:       float64(val.Value()),
+				})
+			}
+		}
+	}
+	for _, m := range ms {
+		m.LabelKeys = []string{"node", "resource", "unit"}
+	}
+	return ms
+}
+
+func createPodSpecResourceRequestsFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_spec_resource_requests",
+		"The pod-level requested resources, set via the pod's spec.resources.requests.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			if p.Spec.Resources == nil {
+				return &metric.Family{Metrics: []*metric.Metric{}}
+			}
+			return &metric.Family{Metrics: podResourceListMetrics(p.Spec.Resources.Requests, p.Spec.NodeName)}
+		}),
+	)
+}
+
+func createPodSpecResourceLimitsFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_spec_resource_limits",
+		"The pod-level resource limits, set via the pod's spec.resources.limits.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			if p.Spec.Resources == nil {
+				return &metric.Family{Metrics: []*metric.Metric{}}
+			}
+			return &metric.Family{Metrics: podResourceListMetrics(p.Spec.Resources.Limits, p.Spec.NodeName)}
 		}),
 	)
 }

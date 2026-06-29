@@ -44,6 +44,8 @@ See each file for specific documentation about the exposed metrics:
 * [Job Metrics](metrics/workload/job-metrics.md)
 * [Lease Metrics](metrics/cluster/lease-metrics.md)
 * [LimitRange Metrics](metrics/policy/limitrange-metrics.md)
+* [MutatingAdmissionPolicy Metrics](metrics/extend/mutatingadmissionpolicy-metrics.md)
+* [MutatingAdmissionPolicyBinding Metrics](metrics/extend/mutatingadmissionpolicybinding-metrics.md)
 * [MutatingWebhookConfiguration Metrics](metrics/extend/mutatingwebhookconfiguration-metrics.md)
 * [Namespace Metrics](metrics/cluster/namespace-metrics.md)
 * [NetworkPolicy Metrics](metrics/policy/networkpolicy-metrics.md)

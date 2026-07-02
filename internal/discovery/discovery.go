@@ -140,8 +140,6 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	if hasVersion && hasKind {
 		for _, el := range r.Map[g][v] {
 			if el.Kind == k {
-				// The CRD is present now; clear any prior "missing" warning so a
-				// future disappearance is logged again.
 				r.clearMissingGVKWarning(gvk)
 				return []groupVersionKindPlural{
 					{

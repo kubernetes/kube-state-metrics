@@ -726,6 +726,23 @@ func TestDurationValueType(t *testing.T) {
 			},
 			wantResult: []eachValue{newEachValue(t, 2592000.0, "name", "test-cert")},
 		},
+		{
+			name: "duration nil with NilIsZero in valueFrom fast path",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "spec"),
+				},
+				ValueFrom: mustCompilePath(t, "duration"),
+				valueType: ValueTypeDuration,
+				NilIsZero: true,
+			},
+			resource: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"duration": nil,
+				},
+			},
+			wantResult: []eachValue{newEachValue(t, 0)},
+		},
 	}
 
 	for _, tt := range tests {

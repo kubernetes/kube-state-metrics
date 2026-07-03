@@ -46,7 +46,8 @@ type MetricGauge struct {
 	MetricMeta   `yaml:",inline" json:",inline"`
 
 	// ValueFrom is the path to a numeric field under Path that will be the metric value.
-	ValueFrom []string  `yaml:"valueFrom" json:"valueFrom"`
+	ValueFrom []string `yaml:"valueFrom" json:"valueFrom"`
+	// ValueType controls how the value at ValueFrom is parsed: "duration", "quantity", or empty for automatic detection.
 	ValueType ValueType `yaml:"valueType,omitempty" json:"valueType,omitempty"`
 
 	// NilIsZero indicates that if a value is nil it will be treated as zero value.

@@ -250,7 +250,12 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 
 					switch c.valueType {
 					case ValueTypeDuration:
-						gotFloat, err = parseDurationValue(it)
+						if it == nil {
+							// Mirror value(): respect NilIsZero for nil values instead of failing duration parsing.
+							gotFloat, err = toFloat64(it, c.NilIsZero)
+						} else {
+							gotFloat, err = parseDurationValue(it)
+						}
 					case ValueTypeQuantity:
 						gotFloat, err = toFloat64(it, c.NilIsZero)
 					case ValueTypeDefault:

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 )
 
 func TestNegotiateSupportedContentType(t *testing.T) {
@@ -32,6 +33,18 @@ func TestNegotiateSupportedContentType(t *testing.T) {
 		"text/plain;version=0.0.4;q=0.2," +
 		"*/*;q=0.1"
 
+	allowUTF8, err := model.ToEscapingScheme("allow-utf-8")
+	if err != nil {
+		t.Fatalf("ToEscapingScheme(allow-utf-8): %v", err)
+	}
+	valuesEscaping, err := model.ToEscapingScheme("values")
+	if err != nil {
+		t.Fatalf("ToEscapingScheme(values): %v", err)
+	}
+	openMetricsAllowUTF8 := expfmt.NewFormat(expfmt.TypeOpenMetrics).WithEscapingScheme(allowUTF8)
+	openMetricsValues := expfmt.NewFormat(expfmt.TypeOpenMetrics).WithEscapingScheme(valuesEscaping)
+	textPlain := expfmt.NewFormat(expfmt.TypeTextPlain)
+
 	tests := []struct {
 		name     string
 		accept   string
@@ -40,27 +53,27 @@ func TestNegotiateSupportedContentType(t *testing.T) {
 		{
 			name:     "prometheus default accept prefers openmetrics over text/plain",
 			accept:   prometheusDefaultAccept,
-			expected: expfmt.FmtOpenMetrics_1_0_0 + "; escaping=allow-utf-8",
+			expected: openMetricsAllowUTF8,
 		},
 		{
 			name:     "openmetrics only",
 			accept:   "application/openmetrics-text;version=1.0.0",
-			expected: expfmt.FmtOpenMetrics_1_0_0 + "; escaping=values",
+			expected: openMetricsValues,
 		},
 		{
 			name:     "text plain only",
 			accept:   "text/plain;version=0.0.4",
-			expected: expfmt.FmtText,
+			expected: textPlain,
 		},
 		{
 			name:     "protobuf only falls back to text plain",
 			accept:   "application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.6",
-			expected: expfmt.FmtText,
+			expected: textPlain,
 		},
 		{
 			name:     "empty accept falls back to text plain",
 			accept:   "",
-			expected: expfmt.FmtText,
+			expected: textPlain,
 		},
 	}
 

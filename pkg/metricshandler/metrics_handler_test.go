@@ -17,9 +17,99 @@ limitations under the License.
 package metricshandler
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/prometheus/common/expfmt"
 )
+
+func TestNegotiateSupportedContentType(t *testing.T) {
+	prometheusDefaultAccept := "application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.6," +
+		"application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.5," +
+		"application/openmetrics-text;version=0.0.1;q=0.4," +
+		"text/plain;version=1.0.0;escaping=allow-utf-8;q=0.3," +
+		"text/plain;version=0.0.4;q=0.2," +
+		"*/*;q=0.1"
+
+	tests := []struct {
+		name     string
+		accept   string
+		expected expfmt.Format
+	}{
+		{
+			name:     "prometheus default accept prefers openmetrics over text/plain",
+			accept:   prometheusDefaultAccept,
+			expected: expfmt.FmtOpenMetrics_1_0_0 + "; escaping=allow-utf-8",
+		},
+		{
+			name:     "openmetrics only",
+			accept:   "application/openmetrics-text;version=1.0.0",
+			expected: expfmt.FmtOpenMetrics_1_0_0 + "; escaping=values",
+		},
+		{
+			name:     "text plain only",
+			accept:   "text/plain;version=0.0.4",
+			expected: expfmt.FmtText,
+		},
+		{
+			name:     "protobuf only falls back to text plain",
+			accept:   "application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.6",
+			expected: expfmt.FmtText,
+		},
+		{
+			name:     "empty accept falls back to text plain",
+			accept:   "",
+			expected: expfmt.FmtText,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := http.Header{}
+			if tt.accept != "" {
+				h.Set("Accept", tt.accept)
+			}
+			got := negotiateSupportedContentType(h)
+			if got.FormatType() != tt.expected.FormatType() {
+				t.Errorf("negotiateSupportedContentType() format type = %v, want %v (got %q, want %q)", got.FormatType(), tt.expected.FormatType(), got, tt.expected)
+			}
+			if tt.name == "prometheus default accept prefers openmetrics over text/plain" {
+				if got != tt.expected {
+					t.Errorf("negotiateSupportedContentType() = %q, want %q", got, tt.expected)
+				}
+			}
+		})
+	}
+}
+
+func TestFilterProtoFromAccept(t *testing.T) {
+	tests := []struct {
+		name   string
+		accept string
+		want   string
+	}{
+		{
+			name:   "removes protobuf entry",
+			accept: "application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.6,text/plain;version=0.0.4;q=0.2",
+			want:   "text/plain;version=0.0.4;q=0.2",
+		},
+		{
+			name:   "empty accept",
+			accept: "",
+			want:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterProtoFromAccept(tt.accept)
+			if got != tt.want {
+				t.Errorf("filterProtoFromAccept() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestParseResources(t *testing.T) {
 	tests := []struct {

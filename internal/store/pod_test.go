@@ -2548,7 +2548,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 59
+	expectedFamilies := 60
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {
@@ -2724,5 +2724,66 @@ func TestKubePodTolerations_DeduplicatesDuplicateEntries_WithTolerationSeconds(t
 	wantMetricCount := 4 // key1@3600, key1@1800, key2@0, key2@nil
 	if got := len(metricsSeen); got != wantMetricCount {
 		t.Errorf("expected %d unique toleration metrics, got %d", wantMetricCount, got)
+	}
+}
+
+func TestGetDisruptionConditionReasonValue(t *testing.T) {
+	tests := []struct {
+		name   string
+		pod    *v1.Pod
+		reason string
+		want   float64
+	}{
+		{
+			name:   "DisruptionTarget condition with matching reason returns 1",
+			reason: "EvictionByEvictionAPI",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{Type: "DisruptionTarget", Reason: "EvictionByEvictionAPI", Status: v1.ConditionTrue},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name:   "DisruptionTarget condition with non-matching reason returns 0",
+			reason: "EvictionByEvictionAPI",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{Type: "DisruptionTarget", Reason: "PreemptionByScheduler", Status: v1.ConditionTrue},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name:   "non-DisruptionTarget condition with matching reason returns 0",
+			reason: "EvictionByEvictionAPI",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{Type: "Ready", Reason: "EvictionByEvictionAPI", Status: v1.ConditionFalse},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name:   "no conditions returns 0",
+			reason: "EvictionByEvictionAPI",
+			pod:    &v1.Pod{},
+			want:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getDisruptionConditionReasonValue(tt.pod, tt.reason)
+			if got != tt.want {
+				t.Errorf("getDisruptionConditionReasonValue() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

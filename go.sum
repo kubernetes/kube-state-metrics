@@ -900,12 +900,12 @@ inet.af/netaddr v0.0.0-20230525184311-b8eac61e914a h1:1XCVEdxrvL6c0TGOhecLuB7U9z
 inet.af/netaddr v0.0.0-20230525184311-b8eac61e914a/go.mod h1:e83i32mAQOW1LAqEIweALsuK2Uw4mhQadA5r7b0Wobo=
 k8s.io/api v0.36.4 h1:RxrvqCL6vgH5/+UnTeu1IIFqYmGfy0hnyrod1rn35Oo=
 k8s.io/api v0.36.4/go.mod h1:S2B3orCFBDhrgyWbLeuKcT2QdHIpQesBkCYSlWtwUOw=
-k8s.io/apiextensions-apiserver v0.36.0 h1:Wt7E8J+VBCbj4FjiBfDTK/neXDDjyJVJc7xfuOHImZ0=
-k8s.io/apiextensions-apiserver v0.36.0/go.mod h1:kGDjH0msuiIB3tgsYRV0kS9GqpMYMUsQ3GHv7TApyug=
+k8s.io/apiextensions-apiserver v0.36.4 h1:SfvCVt+4CqKWvzuVytYDT5g9hyb9MztoiYELIkPVrFc=
+k8s.io/apiextensions-apiserver v0.36.4/go.mod h1:JT9V2Ju7ys1FY4zbSpmX9XOvKB3/BwsODc4hFQEa+Xo=
 k8s.io/apimachinery v0.36.4 h1:PT2UzkupGuAx/+xT5XjiMJ1WGpY3fn9/hdAvjweRet4=
 k8s.io/apimachinery v0.36.4/go.mod h1:p2I2dipt7JHG+quVwQ1d02d28O4GdDi77RByQ13MTpk=
-k8s.io/apiserver v0.36.0 h1:Jg5OFAENUACByUCg15CmhZAYrr5ZyJ+jodyA1mHl3YE=
-k8s.io/apiserver v0.36.0/go.mod h1:mHvwdHf+qKEm+1/hYm756SV+oREOKSPnsjagOpx6Vho=
+k8s.io/apiserver v0.36.4 h1:AtKjaf2eUiX5G6TfF2IOlhuUuvMsHh49Ivr1+4fZ2gA=
+k8s.io/apiserver v0.36.4/go.mod h1:RyiGghXP67hb0Ll+7iLJ6GGv2JpEzCn7ljbiA+L3cJ0=
 k8s.io/client-go v0.36.4 h1:MDvfDNvMSt0Br94SK8neviVlwL9qifw9B26hJCpD1K0=
 k8s.io/client-go v0.36.4/go.mod h1:pNK4WKELbwlEDvtbE8l22lEZL5THYF61H5EealokZmA=
 k8s.io/component-base v0.36.4 h1:tz75yC2xgq3kd7vPdBtR8do5iMx0OHf6Zd1kuaxDB84=

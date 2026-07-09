@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"strings"
 
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientset "k8s.io/client-go/kubernetes"
@@ -76,6 +77,18 @@ func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	klog.InfoS("Communication with server successful")
 
 	return kubeClient, nil
+}
+
+// CreateApiextensionsClient creates an apiextensions clientset for
+// apiextensions.k8s.io resources such as CustomResourceDefinitions, sharing
+// the same rest config settings as the core clientset.
+func CreateApiextensionsClient(apiserver string, kubeconfig string) (apiextensionsclientset.Interface, error) {
+	config, err := buildConfig(apiserver, kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiextensionsclientset.NewForConfig(config)
 }
 
 // CreateCustomResourceClients creates a custom resource clientset.

@@ -132,6 +132,13 @@
         verbs: ['list', 'watch'],
       },
       {
+        apiGroups: ['apiextensions.k8s.io'],
+        resources: [
+          'customresourcedefinitions',
+        ],
+        verbs: ['list', 'watch'],
+      },
+      {
         apiGroups: ['admissionregistration.k8s.io'],
         resources: [
           'mutatingadmissionpolicies',

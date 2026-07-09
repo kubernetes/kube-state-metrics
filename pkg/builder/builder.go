@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -93,6 +94,11 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.internal.WithKubeClient(c)
+}
+
+// WithApiextensionsClient sets the apiextensionsClient property of a Builder.
+func (b *Builder) WithApiextensionsClient(c apiextensionsclientset.Interface) {
+	b.internal.WithApiextensionsClient(c)
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.

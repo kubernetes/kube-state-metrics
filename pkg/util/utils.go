@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"strings"
 
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
@@ -38,6 +39,7 @@ import (
 
 var config *rest.Config
 var currentKubeClient clientset.Interface
+var currentApiextensionsClient apiextensionsclientset.Interface
 var currentDiscoveryClient *discovery.DiscoveryClient
 
 // CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
@@ -77,6 +79,32 @@ func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 
 	currentKubeClient = kubeClient
 	return kubeClient, nil
+}
+
+// CreateApiextensionsClient creates an apiextensions clientset for
+// apiextensions.k8s.io resources such as CustomResourceDefinitions, reusing
+// the same rest config as the core clientset.
+func CreateApiextensionsClient(apiserver string, kubeconfig string) (apiextensionsclientset.Interface, error) {
+	if currentApiextensionsClient != nil {
+		return currentApiextensionsClient, nil
+	}
+
+	var err error
+
+	if config == nil {
+		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	apiextensionsClient, err := apiextensionsclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	currentApiextensionsClient = apiextensionsClient
+	return apiextensionsClient, nil
 }
 
 // CreateCustomResourceClients creates a custom resource clientset.

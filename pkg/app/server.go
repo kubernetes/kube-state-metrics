@@ -281,6 +281,12 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 	storeBuilder.WithKubeClient(kubeClient)
 
+	apiextensionsClient, err := util.CreateApiextensionsClient(opts.Apiserver, opts.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create apiextensions client: %v", err)
+	}
+	storeBuilder.WithApiextensionsClient(apiextensionsClient)
+
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {
 		return fmt.Errorf("failed to set up annotations allowlist: %v", err)

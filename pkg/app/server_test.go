@@ -35,6 +35,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
+	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -89,6 +90,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 		b.Fatal(err)
 	}
 	builder.WithKubeClient(kubeClient)
+	builder.WithApiextensionsClient(apiextensionsfake.NewSimpleClientset())
 	builder.WithSharding(0, 1)
 	builder.WithContext(ctx)
 	builder.WithNamespaces(options.DefaultNamespaces)
@@ -166,6 +168,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	builder.WithKubeClient(kubeClient)
+	builder.WithApiextensionsClient(apiextensionsfake.NewSimpleClientset())
 	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())
 
@@ -533,6 +536,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	unshardedBuilder.WithKubeClient(kubeClient)
+	unshardedBuilder.WithApiextensionsClient(apiextensionsfake.NewSimpleClientset())
 	unshardedBuilder.WithNamespaces(options.DefaultNamespaces)
 	unshardedBuilder.WithFamilyGeneratorFilter(l)
 	unshardedBuilder.WithAllowLabels(map[string][]string{})
@@ -549,6 +553,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	shardedBuilder1.WithKubeClient(kubeClient)
+	shardedBuilder1.WithApiextensionsClient(apiextensionsfake.NewSimpleClientset())
 	shardedBuilder1.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder1.WithFamilyGeneratorFilter(l)
 	shardedBuilder1.WithAllowLabels(map[string][]string{})
@@ -565,6 +570,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	shardedBuilder2.WithKubeClient(kubeClient)
+	shardedBuilder2.WithApiextensionsClient(apiextensionsfake.NewSimpleClientset())
 	shardedBuilder2.WithNamespaces(options.DefaultNamespaces)
 	shardedBuilder2.WithFamilyGeneratorFilter(l)
 	shardedBuilder2.WithAllowLabels(map[string][]string{})
@@ -706,6 +712,7 @@ func TestCustomResourceExtension(t *testing.T) {
 	}
 
 	builder.WithKubeClient(kubeClient)
+	builder.WithApiextensionsClient(apiextensionsfake.NewSimpleClientset())
 	builder.WithCustomResourceClients(customResourceClients)
 	builder.WithNamespaces(options.DefaultNamespaces)
 	builder.WithGenerateStoresFunc(builder.DefaultGenerateStoresFunc())

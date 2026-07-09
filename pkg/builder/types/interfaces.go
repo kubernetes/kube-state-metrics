@@ -22,6 +22,7 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
 	"github.com/prometheus/client_golang/prometheus"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -39,6 +40,7 @@ type BuilderInterface interface {
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
+	WithApiextensionsClient(c apiextensionsclientset.Interface)
 	WithCustomResourceClients(cs map[string]interface{})
 	WithUsingAPIServerCache(u bool)
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)

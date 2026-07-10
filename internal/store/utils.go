@@ -83,7 +83,7 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 	labelKeys := make([]string, 0, len(labels))
 	labelValues := make([]string, 0, len(labels))
 
-	sortedKeys := make([]string, 0)
+	sortedKeys := make([]string, 0, len(labels))
 	for key := range labels {
 		sortedKeys = append(sortedKeys, key)
 	}
@@ -99,23 +99,35 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 		initial int
 	}
 
-	conflicts := make(map[string]*conflictDesc)
+	var conflicts map[string]*conflictDesc
 	for _, k := range sortedKeys {
 		labelKey := labelName(prefix, k)
-		if conflict, ok := conflicts[labelKey]; ok {
-			if conflict.count == 1 {
-				// this is the first conflict for the label,
-				// so we have to go back and rename the initial label that we've already added
-				labelKeys[conflict.initial] = labelConflictSuffix(labelKeys[conflict.initial], conflict.count)
-			}
-
+		var conflict *conflictDesc
+		if conflicts != nil {
+			conflict = conflicts[labelKey]
+		}
+		if conflict != nil {
 			conflict.count++
 			labelKey = labelConflictSuffix(labelKey, conflict.count)
 		} else {
-			// we'll need this info later in case there are conflicts
-			conflicts[labelKey] = &conflictDesc{
-				count:   1,
-				initial: len(labelKeys),
+			initialIdx := -1
+			for i, lk := range labelKeys {
+				if lk == labelKey {
+					initialIdx = i
+					break
+				}
+			}
+			if initialIdx != -1 {
+				if conflicts == nil {
+					conflicts = make(map[string]*conflictDesc)
+				}
+				labelKeys[initialIdx] = labelConflictSuffix(labelKeys[initialIdx], 1)
+				conflict = &conflictDesc{
+					count:   2,
+					initial: initialIdx,
+				}
+				conflicts[labelKey] = conflict
+				labelKey = labelConflictSuffix(labelKey, 2)
 			}
 		}
 		labelKeys = append(labelKeys, labelKey)

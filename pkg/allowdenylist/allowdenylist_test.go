@@ -320,3 +320,24 @@ func TestCatastrophicBacktrackTimeout(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkAllowDenyList(b *testing.B) {
+	allowlist, err := New(map[string]struct{}{
+		"kube_pod_.*":     {},
+		"kube_service_.*": {},
+		"kube_node_.*":    {},
+	}, map[string]struct{}{})
+	if err != nil {
+		b.Fatal(err)
+	}
+	err = allowlist.Parse()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = allowlist.IsIncluded("kube_pod_info")
+		_, _ = allowlist.IsIncluded("kube_deployment_info")
+	}
+}

@@ -38,6 +38,7 @@ import (
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
+	descPodIPsLabelKeys        = []string{"ip", "ip_family"}
 )
 
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -730,7 +731,6 @@ func createPodIPFamilyGenerator() generator.FamilyGenerator {
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.PodIPs))
-			labelKeys := []string{"ip", "ip_family"}
 
 			for _, ip := range p.Status.PodIPs {
 				addr, err := netip.ParseAddr(ip.IP)
@@ -748,7 +748,7 @@ func createPodIPFamilyGenerator() generator.FamilyGenerator {
 					continue
 				}
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   labelKeys,
+					LabelKeys:   descPodIPsLabelKeys,
 					LabelValues: []string{ip.IP, ipFamily},
 					Value:       1,
 				})

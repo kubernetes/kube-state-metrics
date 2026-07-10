@@ -171,5 +171,3 @@ func (l *AllowDenyList) Test(generator generator.FamilyGenerator) bool {
 
 	return isIncluded
 }
-
-

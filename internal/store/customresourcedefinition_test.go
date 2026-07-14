@@ -14,10 +14,15 @@ limitations under the License.
 package store
 
 import (
+	"context"
 	"testing"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clienttesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -95,5 +100,23 @@ func TestCustomResourceDefinitionStore(t *testing.T) {
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
+	}
+}
+
+func TestCreateCustomResourceDefinitionListWatchFieldSelector(t *testing.T) {
+	client := apiextensionsfake.NewSimpleClientset()
+	var gotFieldSelector string
+	client.PrependReactor("list", "customresourcedefinitions", func(action clienttesting.Action) (bool, runtime.Object, error) {
+		gotFieldSelector = action.(clienttesting.ListAction).GetListRestrictions().Fields.String()
+		return false, nil, nil
+	})
+
+	lw := createCustomResourceDefinitionListWatch(client, "metadata.name!=foos.example.com").(*cache.ListWatch)
+	_, err := lw.ListWithContext(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotFieldSelector != "metadata.name!=foos.example.com" {
+		t.Errorf("expected field selector to be propagated, got %q", gotFieldSelector)
 	}
 }

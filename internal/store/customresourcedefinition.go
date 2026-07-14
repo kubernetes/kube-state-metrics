@@ -133,12 +133,14 @@ func wrapCustomResourceDefinitionFunc(f func(*apiextensionsv1.CustomResourceDefi
 	}
 }
 
-func createCustomResourceDefinitionListWatch(apiextensionsClient apiextensionsclientset.Interface) cache.ListerWatcher {
+func createCustomResourceDefinitionListWatch(apiextensionsClient apiextensionsclientset.Interface, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
 			return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
 			return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Watch(context.TODO(), opts)
 		},
 	}

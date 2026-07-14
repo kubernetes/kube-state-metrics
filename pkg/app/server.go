@@ -28,6 +28,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -83,6 +84,18 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) erro
 		return nil
 	}
 	return err
+}
+
+func registerApiextensionsClient(storeBuilder *store.Builder, opts *options.Options, resources []string) error {
+	if !slices.Contains(resources, "customresourcedefinitions") {
+		return nil
+	}
+	apiextensionsClient, err := util.CreateApiextensionsClient(opts.Apiserver, opts.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create apiextensions client: %v", err)
+	}
+	storeBuilder.WithApiextensionsClient(apiextensionsClient)
+	return nil
 }
 
 // RunKubeStateMetrics will build and run the kube-state-metrics.
@@ -281,11 +294,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 	storeBuilder.WithKubeClient(kubeClient)
 
-	apiextensionsClient, err := util.CreateApiextensionsClient(opts.Apiserver, opts.Kubeconfig)
-	if err != nil {
-		return fmt.Errorf("failed to create apiextensions client: %v", err)
+	if err := registerApiextensionsClient(storeBuilder, opts, resources); err != nil {
+		return err
 	}
-	storeBuilder.WithApiextensionsClient(apiextensionsClient)
 
 	storeBuilder.WithSharding(opts.Shard, opts.TotalShards)
 	if err := storeBuilder.WithAllowAnnotations(opts.AnnotationsAllowList); err != nil {

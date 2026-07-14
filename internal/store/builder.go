@@ -481,11 +481,15 @@ func (b *Builder) buildStatefulSetStores() []cache.Store {
 }
 
 func (b *Builder) buildCustomResourceDefinitionStores() []cache.Store {
+	if b.apiextensionsClient == nil {
+		klog.ErrorS(nil, "Cannot build customresourcedefinitions store: no apiextensions client, set one with WithApiextensionsClient")
+		return nil
+	}
 	return b.buildClusterScopedStores(
 		customResourceDefinitionMetricFamilies(b.allowAnnotationsList["customresourcedefinitions"], b.allowLabelsList["customresourcedefinitions"]),
 		&apiextensionsv1.CustomResourceDefinition{},
-		func(_ clientset.Interface, _ string, _ string) cache.ListerWatcher {
-			return createCustomResourceDefinitionListWatch(b.apiextensionsClient)
+		func(_ clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+			return createCustomResourceDefinitionListWatch(b.apiextensionsClient, fieldSelector)
 		},
 		b.useAPIServerCache,
 		b.objectLimit,

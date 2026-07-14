@@ -21,6 +21,7 @@ import (
 	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	clienttesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 
@@ -111,6 +112,12 @@ func TestCreateCustomResourceDefinitionListWatchFieldSelector(t *testing.T) {
 		return false, nil, nil
 	})
 
+	var gotWatchFieldSelector string
+	client.PrependWatchReactor("customresourcedefinitions", func(action clienttesting.Action) (bool, watch.Interface, error) {
+		gotWatchFieldSelector = action.(clienttesting.WatchAction).GetWatchRestrictions().Fields.String()
+		return false, nil, nil
+	})
+
 	lw := createCustomResourceDefinitionListWatch(client, "metadata.name!=foos.example.com").(*cache.ListWatch)
 	_, err := lw.ListWithContext(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -118,5 +125,14 @@ func TestCreateCustomResourceDefinitionListWatchFieldSelector(t *testing.T) {
 	}
 	if gotFieldSelector != "metadata.name!=foos.example.com" {
 		t.Errorf("expected field selector to be propagated, got %q", gotFieldSelector)
+	}
+
+	w, err := lw.WatchWithContext(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	w.Stop()
+	if gotWatchFieldSelector != "metadata.name!=foos.example.com" {
+		t.Errorf("expected watch field selector to be propagated, got %q", gotWatchFieldSelector)
 	}
 }

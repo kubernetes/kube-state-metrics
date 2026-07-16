@@ -12,6 +12,7 @@
   labels:
     - certificatesigningrequest
     - signer_name
+    - condition
 - name: kube_certificatesigningrequest_created
   help: Unix creation timestamp
   type: Gauge
@@ -26,6 +27,7 @@
   labels:
     - certificatesigningrequest
     - signer_name
+    - label_CERTIFICATESIGNINGREQUEST_LABEL
 - name: kube_configmap_created
   help: Unix creation timestamp
   type: Gauge
@@ -405,6 +407,9 @@
   labels:
     - namespace
     - horizontalpodautoscaler
+    - metric_name
+    - metric_target_type
+    - container
 - name: kube_ingress_created
   help: Unix creation timestamp
   type: Gauge
@@ -977,7 +982,7 @@
     - uid
     - type
 - name: kube_pod_spec_volumes_persistentvolumeclaims_info
-  help: Information about persistentvolumeclaim volumes in a pod.
+  help: Information about persistentvolumeclaim and ephemeral volumes in a pod.
   type: Gauge
   stabilityLevel: BETA
   labels:
@@ -986,8 +991,9 @@
     - uid
     - volume
     - persistentvolumeclaim
+    - ephemeral
 - name: kube_pod_spec_volumes_persistentvolumeclaims_readonly
-  help: Describes whether a persistentvolumeclaim is mounted read only.
+  help: Describes whether a persistentvolumeclaim is mounted read only. Ephemeral volumes always report 0 since the ephemeral volume source does not support a read-only flag.
   type: Gauge
   stabilityLevel: BETA
   labels:
@@ -996,6 +1002,7 @@
     - uid
     - volume
     - persistentvolumeclaim
+    - ephemeral
 - name: kube_pod_start_time
   help: Start time in unix timestamp for a pod.
   type: Gauge
@@ -1330,6 +1337,7 @@
   labels:
     - namespace
     - statefulset
+    - annotation_STATEFULSET_ANNOTATION
 - name: kube_statefulset_created
   help: Unix creation timestamp
   type: Gauge

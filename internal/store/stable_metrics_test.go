@@ -179,6 +179,7 @@ func collectStableMetrics(t *testing.T) []stableMetricEntry {
 			typeName = string(fg.Type)
 		}
 		if fg.Labels == nil {
+			t.Errorf("STABLE metric %q is missing an explicit label schema. Use NewFamilyGeneratorWithLabels to define its labels.", fg.Name)
 			continue
 		}
 		stable = append(stable, stableMetricEntry{

@@ -228,14 +228,22 @@ func mergeValues(values ...[]string) []string {
 // Arguments are passed as equal-length pairs of slices, where the first slice contains keys and second contains values.
 // Example: mergeKeyValues(keys1, values1, keys2, values2) => (keys1+keys2, values1+values2)
 func mergeKeyValues(keyValues ...[]string) (keys, values []string) {
-	var keySets, valueSets [][]string
-
-	for i := 0; i+1 < len(keyValues); i += 2 {
-		keySets = append(keySets, keyValues[i])
-		valueSets = append(valueSets, keyValues[i+1])
+	capacity := 0
+	for i := 0; i < len(keyValues); i += 2 {
+		capacity += len(keyValues[i])
 	}
 
-	return mergeKeys(keySets...), mergeValues(valueSets...)
+	// Allocate one contiguous block, then split it up to keys and values zero'd slices.
+	keysValues := make([]string, 0, capacity*2)
+	keys = (keysValues[0:capacity:capacity])[:0]
+	values = (keysValues[capacity : capacity*2])[:0]
+
+	for i := 0; i+1 < len(keyValues); i += 2 {
+		keys = append(keys, keyValues[i]...)
+		values = append(values, keyValues[i+1]...)
+	}
+
+	return keys, values
 }
 
 // convertValueToFloat64 converts a resource.Quantity to a float64 and checks for a possible overflow in the value.

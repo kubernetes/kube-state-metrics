@@ -394,7 +394,7 @@ func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
-		wrapHPADefaultLabels(nil),
+		wrapHPADefaultLabels([]string{"label_HPA_LABEL"}),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}

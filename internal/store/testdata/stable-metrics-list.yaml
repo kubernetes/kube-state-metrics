@@ -353,6 +353,7 @@
   labels:
     - namespace
     - horizontalpodautoscaler
+    - label_HPA_LABEL
 - name: kube_horizontalpodautoscaler_metadata_generation
   help: The generation observed by the HorizontalPodAutoscaler controller.
   type: Gauge

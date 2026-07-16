@@ -144,6 +144,7 @@ func TestEndpointStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(nil, nil))
 		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(nil, nil))
+		c.FamilyGens = endpointMetricFamilies(nil, nil)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -284,6 +285,7 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		}
 		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(allowAnnotations, allowLabels))
 		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(allowAnnotations, allowLabels))
+		c.FamilyGens = endpointMetricFamilies(allowAnnotations, allowLabels)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

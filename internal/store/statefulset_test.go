@@ -444,6 +444,7 @@ func TestStatefulSetStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(statefulSetMetricFamilies(nil, nil))
 		c.Headers = generator.ExtractMetricFamilyHeaders(statefulSetMetricFamilies(nil, nil))
+		c.FamilyGens = statefulSetMetricFamilies(nil, nil)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result for statefulset%d run:\n%s", i+1, err)
 		}

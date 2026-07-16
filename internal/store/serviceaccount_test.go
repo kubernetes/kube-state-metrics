@@ -81,6 +81,7 @@ func TestServiceAccountStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(serviceAccountMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		c.Headers = generator.ExtractMetricFamilyHeaders(serviceAccountMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = serviceAccountMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

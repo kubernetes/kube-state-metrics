@@ -270,7 +270,7 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapStatefulSetDefaultLabels(nil),
+			wrapStatefulSetDefaultLabels([]string{"annotation_STATEFULSET_ANNOTATION"}),
 			wrapStatefulSetFunc(func(s *v1.StatefulSet) *metric.Family {
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}

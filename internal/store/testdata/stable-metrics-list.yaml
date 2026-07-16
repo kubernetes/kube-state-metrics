@@ -12,6 +12,7 @@
   labels:
     - certificatesigningrequest
     - signer_name
+    - condition
 - name: kube_certificatesigningrequest_created
   help: Unix creation timestamp
   type: Gauge
@@ -26,6 +27,7 @@
   labels:
     - certificatesigningrequest
     - signer_name
+    - label_CERTIFICATESIGNINGREQUEST_LABEL
 - name: kube_configmap_created
   help: Unix creation timestamp
   type: Gauge
@@ -405,6 +407,9 @@
   labels:
     - namespace
     - horizontalpodautoscaler
+    - metric_name
+    - metric_target_type
+    - container
 - name: kube_ingress_created
   help: Unix creation timestamp
   type: Gauge
@@ -1330,6 +1335,7 @@
   labels:
     - namespace
     - statefulset
+    - annotation_STATEFULSET_ANNOTATION
 - name: kube_statefulset_created
   help: Unix creation timestamp
   type: Gauge

@@ -267,7 +267,7 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
-		wrapHPADefaultLabels(nil),
+		wrapHPADefaultLabels(targetMetricLabels),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
 			for _, m := range a.Status.CurrentMetrics {

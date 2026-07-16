@@ -537,6 +537,7 @@ func TestCronJobStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
@@ -695,6 +696,7 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		c.Headers = generator.ExtractMetricFamilyHeaders(cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = cronJobMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

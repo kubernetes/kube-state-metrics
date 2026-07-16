@@ -164,6 +164,7 @@ func TestSecretStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(secretMetricFamilies(nil, nil))
 		c.Headers = generator.ExtractMetricFamilyHeaders(secretMetricFamilies(nil, nil))
+		c.FamilyGens = secretMetricFamilies(nil, nil)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

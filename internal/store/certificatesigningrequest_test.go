@@ -266,8 +266,9 @@ func TestCsrStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(csrMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(csrMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(csrMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(csrMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = csrMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected error when collecting result in %vth run:\n%s", i, err)
 		}

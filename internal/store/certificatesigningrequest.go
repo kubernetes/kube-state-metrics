@@ -38,6 +38,8 @@ var (
 	descCSRLabelsName          = "kube_certificatesigningrequest_labels"
 	descCSRLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 	descCSRLabelsDefaultLabels = []string{"certificatesigningrequest", "signer_name"}
+
+	csrConditionLabelKeys = []string{"condition"}
 )
 
 func wrapCSRDefaultLabels(labels []string) []string {
@@ -123,7 +125,7 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapCSRDefaultLabels([]string{"condition"}),
+			wrapCSRDefaultLabels(csrConditionLabelKeys),
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: addCSRConditionMetrics(csr.Status),
@@ -198,17 +200,17 @@ func addCSRConditionMetrics(cs certv1.CertificateSigningRequestStatus) []*metric
 		{
 			LabelValues: []string{"approved"},
 			Value:       float64(cApproved),
-			LabelKeys:   []string{"condition"},
+			LabelKeys:   csrConditionLabelKeys,
 		},
 		{
 			LabelValues: []string{"denied"},
 			Value:       float64(cDenied),
-			LabelKeys:   []string{"condition"},
+			LabelKeys:   csrConditionLabelKeys,
 		},
 		{
 			LabelValues: []string{"failed"},
 			Value:       float64(cFailed),
-			LabelKeys:   []string{"condition"},
+			LabelKeys:   csrConditionLabelKeys,
 		},
 	}
 }

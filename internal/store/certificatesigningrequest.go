@@ -78,7 +78,7 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapCSRDefaultLabels(nil),
+			wrapCSRDefaultLabels([]string{"label_CERTIFICATESIGNINGREQUEST_LABEL"}),
 			wrapCSRFunc(func(j *certv1.CertificateSigningRequest) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -123,7 +123,7 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
-			wrapCSRDefaultLabels(nil),
+			wrapCSRDefaultLabels([]string{"condition"}),
 			wrapCSRFunc(func(csr *certv1.CertificateSigningRequest) *metric.Family {
 				return &metric.Family{
 					Metrics: addCSRConditionMetrics(csr.Status),

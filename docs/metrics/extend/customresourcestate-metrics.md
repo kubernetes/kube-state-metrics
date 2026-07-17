@@ -634,7 +634,6 @@ By default, kube-state-metrics automatically detects and converts values using t
 The `valueType` field in gauge configuration accepts the following values:
 
 * `duration` - Explicitly parse Go duration strings (e.g., "1h", "30m", "1h30m45s") and convert them to seconds
-* `quantity` - Explicitly parse Kubernetes resource quantities (e.g., "250m", "5Gi")
 * (empty/omitted) - Use automatic type detection (default behavior)
 
 ###### Duration Value Type
@@ -703,10 +702,7 @@ Use `valueType: duration` when:
 * Auto-detection fails because the string isn't recognized as a number
 * You want explicit, predictable parsing behavior
 
-Use `valueType: quantity` when:
-
-* You want to ensure Kubernetes quantity parsing (even if auto-detection would work)
-* You want to make the parsing behavior explicit in configuration
+Kubernetes quantities like "250m" or "5Gi" need no explicit valueType; automatic detection already parses them.
 
 ###### valueType with valueFrom
 

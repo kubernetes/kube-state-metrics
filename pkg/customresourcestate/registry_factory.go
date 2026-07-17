@@ -170,7 +170,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
 		}
 		switch m.Gauge.ValueType {
-		case ValueTypeDefault, ValueTypeDuration, ValueTypeQuantity:
+		case ValueTypeDefault, ValueTypeDuration:
 		default:
 			return nil, fmt.Errorf("each.gauge.valueType: unknown valueType: %s", m.Gauge.ValueType)
 		}
@@ -249,9 +249,9 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				len(sValueFrom) > 2 {
 				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
 				if key == extractedValueFrom {
-					gotFloat, err := parseGaugeValue(it, c.valueType, c.NilIsZero)
-					if err != nil {
-						onError(fmt.Errorf("[%s]: %w", key, err))
+					gotFloat, parseErr := parseGaugeValue(it, c.valueType, c.NilIsZero)
+					if parseErr != nil {
+						onError(fmt.Errorf("[%s]: %w", key, parseErr))
 						continue
 					}
 					labels := make(map[string]string)
@@ -464,7 +464,7 @@ func parseGaugeValue(value interface{}, valueType ValueType, nilIsZero bool) (fl
 			return 0, errors.New("expected duration but found nil value")
 		}
 		return parseDurationValue(value)
-	case ValueTypeQuantity, ValueTypeDefault:
+	case ValueTypeDefault:
 		return toFloat64(value, nilIsZero)
 	default:
 		return 0, fmt.Errorf("unknown valueType: %s", valueType)

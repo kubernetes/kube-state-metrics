@@ -26,8 +26,6 @@ const (
 	// ValueTypeDuration parses duration strings (e.g., "1h", "30m", "1h30m45s") using time.ParseDuration.
 	// The parsed duration is converted to seconds as a float64 for Prometheus compatibility.
 	ValueTypeDuration ValueType = "duration"
-	// ValueTypeQuantity parses Kubernetes resource quantities (e.g., "250m" for millicores, "1Gi" for memory).
-	ValueTypeQuantity ValueType = "quantity"
 )
 
 // MetricMeta are variables which may used for any metric type.
@@ -47,7 +45,7 @@ type MetricGauge struct {
 
 	// ValueFrom is the path to a numeric field under Path that will be the metric value.
 	ValueFrom []string `yaml:"valueFrom" json:"valueFrom"`
-	// ValueType controls how the value at ValueFrom is parsed: "duration", "quantity", or empty for automatic detection.
+	// ValueType controls how the value at ValueFrom is parsed: "duration", or empty for automatic detection.
 	ValueType ValueType `yaml:"valueType,omitempty" json:"valueType,omitempty"`
 
 	// NilIsZero indicates that if a value is nil it will be treated as zero value.

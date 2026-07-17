@@ -169,6 +169,11 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		if err != nil {
 			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
 		}
+		switch m.Gauge.ValueType {
+		case ValueTypeDefault, ValueTypeDuration, ValueTypeQuantity:
+		default:
+			return nil, fmt.Errorf("each.gauge.valueType: unknown valueType: %s", m.Gauge.ValueType)
+		}
 		return &compiledGauge{
 			compiledCommon: *cc,
 			ValueFrom:      valueFromPath,
@@ -244,26 +249,7 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 				len(sValueFrom) > 2 {
 				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
 				if key == extractedValueFrom {
-					// Check if explicit valueType is specified
-					var gotFloat float64
-					var err error
-
-					switch c.valueType {
-					case ValueTypeDuration:
-						if it == nil {
-							// Mirror value(): respect NilIsZero for nil values instead of failing duration parsing.
-							gotFloat, err = toFloat64(it, c.NilIsZero)
-						} else {
-							gotFloat, err = parseDurationValue(it)
-						}
-					case ValueTypeQuantity:
-						gotFloat, err = toFloat64(it, c.NilIsZero)
-					case ValueTypeDefault:
-						gotFloat, err = toFloat64(it, c.NilIsZero)
-					default:
-						err = fmt.Errorf("unknown valueType: %s", c.valueType)
-					}
-
+					gotFloat, err := parseGaugeValue(it, c.valueType, c.NilIsZero)
 					if err != nil {
 						onError(fmt.Errorf("[%s]: %w", key, err))
 						continue
@@ -466,6 +452,25 @@ func less(a, b map[string]string) bool {
 	return len(aKeys) < len(bKeys)
 }
 
+// parseGaugeValue converts a resolved value into a float64 according to valueType.
+// Shared by the valueFrom fast path and value() so their parsing cannot drift.
+func parseGaugeValue(value interface{}, valueType ValueType, nilIsZero bool) (float64, error) {
+	switch valueType {
+	case ValueTypeDuration:
+		if value == nil {
+			if nilIsZero {
+				return 0, nil
+			}
+			return 0, errors.New("expected duration but found nil value")
+		}
+		return parseDurationValue(value)
+	case ValueTypeQuantity, ValueTypeDefault:
+		return toFloat64(value, nilIsZero)
+	default:
+		return 0, fmt.Errorf("unknown valueType: %s", valueType)
+	}
+}
+
 func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 	labels := make(map[string]string)
 	got := c.ValueFrom.Get(it)
@@ -485,22 +490,7 @@ func (c compiledGauge) value(it interface{}) (*eachValue, error) {
 		return nil, nil
 	}
 
-	// Check if explicit valueType is specified
-	var value float64
-	var err error
-	switch c.valueType {
-	case ValueTypeDuration:
-		value, err = parseDurationValue(got)
-	case ValueTypeQuantity:
-		// Use existing quantity parsing from toFloat64
-		value, err = toFloat64(got, c.NilIsZero)
-	case ValueTypeDefault:
-		// Fall through to auto-detection (existing logic)
-		value, err = toFloat64(got, c.NilIsZero)
-	default:
-		return nil, fmt.Errorf("unknown valueType: %s", c.valueType)
-	}
-
+	value, err := parseGaugeValue(got, c.valueType, c.NilIsZero)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", c.ValueFrom, err)
 	}

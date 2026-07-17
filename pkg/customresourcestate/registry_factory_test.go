@@ -743,6 +743,24 @@ func TestDurationValueType(t *testing.T) {
 			},
 			wantResult: []eachValue{newEachValue(t, 0)},
 		},
+		{
+			name: "duration nil without NilIsZero in valueFrom fast path",
+			each: &compiledGauge{
+				compiledCommon: compiledCommon{
+					path: mustCompilePath(t, "spec"),
+				},
+				ValueFrom: mustCompilePath(t, "duration"),
+				valueType: ValueTypeDuration,
+			},
+			resource: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"duration": nil,
+				},
+			},
+			wantErrors: []error{
+				errors.New("[spec]: [duration]: expected duration but found nil value"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -752,6 +770,18 @@ func TestDurationValueType(t *testing.T) {
 			assert.Equal(t, tt.wantErrors, gotErrors)
 		})
 	}
+}
+
+func Test_newCompiledMetric_rejectsUnknownValueType(t *testing.T) {
+	_, err := newCompiledMetric(Metric{
+		Type: metric.Gauge,
+		Gauge: &MetricGauge{
+			MetricMeta: MetricMeta{Path: []string{"spec"}},
+			ValueFrom:  []string{"duration"},
+			ValueType:  "bogus",
+		},
+	})
+	assert.EqualError(t, err, "each.gauge.valueType: unknown valueType: bogus")
 }
 
 // TestValueTypeBackwardCompatibility tests that omitting valueType still works

@@ -30,6 +30,8 @@ import (
 func TestPersistentVolumeClaimStore(t *testing.T) {
 	storageClassName := "rbd"
 	volumeMode := v1.PersistentVolumeBlock
+	volumeAttributesClassGold := "gold"
+	volumeAttributesClassSilver := "silver"
 	cases := []generateMetricsTestCase{
 		// Verify phase enumerations.
 		{
@@ -56,8 +58,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 							v1.ResourceStorage: resource.MustParse("1Gi"),
 						},
 					},
-					VolumeName: "pvc-mysql-data",
-					VolumeMode: &volumeMode,
+					VolumeName:                "pvc-mysql-data",
+					VolumeMode:                &volumeMode,
+					VolumeAttributesClassName: &volumeAttributesClassGold,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimBound,
@@ -77,6 +80,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
+				# HELP kube_persistentvolumeclaim_volume_attributes_class The name of the VolumeAttributesClass requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_current_volume_attributes_class The current VolumeAttributesClass applied to the persistent volume claim, as reported by the CSI driver.
+				# HELP kube_persistentvolumeclaim_status_modify_volume_status Information about the status of an in-progress ModifyVolume operation on the persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
 				# TYPE kube_persistentvolumeclaim_annotations gauge
@@ -85,6 +91,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
+				# TYPE kube_persistentvolumeclaim_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_current_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_modify_volume_status gauge
 				kube_persistentvolumeclaim_created{namespace="default",persistentvolumeclaim="mysql-data"} 1.5e+09
 				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Bound"} 1
@@ -102,8 +111,10 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="CustomizedType"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="FileSystemResizePending"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="Resizing"} 0
+				kube_persistentvolumeclaim_volume_attributes_class{namespace="default",persistentvolumeclaim="mysql-data",volume_attributes_class="gold"} 1
+				kube_persistentvolumeclaim_status_current_volume_attributes_class{namespace="default",persistentvolumeclaim="mysql-data",volume_attributes_class=""} 1
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_volume_attributes_class", "kube_persistentvolumeclaim_status_current_volume_attributes_class", "kube_persistentvolumeclaim_status_modify_volume_status"},
 		},
 		{
 			AllowLabelsList: []string{
@@ -128,8 +139,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 							v1.ResourceStorage: resource.MustParse("1Gi"),
 						},
 					},
-					VolumeName: "pvc-mysql-data",
-					VolumeMode: &volumeMode,
+					VolumeName:                "pvc-mysql-data",
+					VolumeMode:                &volumeMode,
+					VolumeAttributesClassName: &volumeAttributesClassSilver,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
 					Phase: v1.ClaimBound,
@@ -138,6 +150,7 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 						{Type: v1.PersistentVolumeClaimFileSystemResizePending, Status: v1.ConditionFalse},
 						{Type: v1.PersistentVolumeClaimConditionType("CustomizedType"), Status: v1.ConditionTrue},
 					},
+					CurrentVolumeAttributesClassName: &volumeAttributesClassSilver,
 				},
 			},
 			Want: `
@@ -149,6 +162,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
+				# HELP kube_persistentvolumeclaim_volume_attributes_class The name of the VolumeAttributesClass requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_current_volume_attributes_class The current VolumeAttributesClass applied to the persistent volume claim, as reported by the CSI driver.
+				# HELP kube_persistentvolumeclaim_status_modify_volume_status Information about the status of an in-progress ModifyVolume operation on the persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
 				# TYPE kube_persistentvolumeclaim_annotations gauge
@@ -157,6 +173,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
+				# TYPE kube_persistentvolumeclaim_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_current_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_modify_volume_status gauge
 				kube_persistentvolumeclaim_created{namespace="default",persistentvolumeclaim="mysql-data"} 1.5e+09
 				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="mysql-data",storageclass="rbd",volumename="pvc-mysql-data",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="mysql-data",phase="Bound"} 1
@@ -174,8 +193,10 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="CustomizedType"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="FileSystemResizePending"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="Resizing"} 0
+				kube_persistentvolumeclaim_volume_attributes_class{namespace="default",persistentvolumeclaim="mysql-data",volume_attributes_class="silver"} 1
+				kube_persistentvolumeclaim_status_current_volume_attributes_class{namespace="default",persistentvolumeclaim="mysql-data",volume_attributes_class="silver"} 1
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_volume_attributes_class", "kube_persistentvolumeclaim_status_current_volume_attributes_class", "kube_persistentvolumeclaim_status_modify_volume_status"},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
@@ -188,12 +209,18 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						v1.ReadWriteOnce,
 					},
-					StorageClassName: &storageClassName,
-					VolumeName:       "pvc-prometheus-data",
-					VolumeMode:       &volumeMode,
+					StorageClassName:          &storageClassName,
+					VolumeName:                "pvc-prometheus-data",
+					VolumeMode:                &volumeMode,
+					VolumeAttributesClassName: &volumeAttributesClassGold,
 				},
 				Status: v1.PersistentVolumeClaimStatus{
-					Phase: v1.ClaimPending,
+					Phase:                            v1.ClaimPending,
+					CurrentVolumeAttributesClassName: &volumeAttributesClassSilver,
+					ModifyVolumeStatus: &v1.ModifyVolumeStatus{
+						TargetVolumeAttributesClassName: volumeAttributesClassGold,
+						Status:                          v1.PersistentVolumeClaimModifyVolumeInProgress,
+					},
 				},
 			},
 			Want: `
@@ -204,6 +231,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
+				# HELP kube_persistentvolumeclaim_volume_attributes_class The name of the VolumeAttributesClass requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_current_volume_attributes_class The current VolumeAttributesClass applied to the persistent volume claim, as reported by the CSI driver.
+				# HELP kube_persistentvolumeclaim_status_modify_volume_status Information about the status of an in-progress ModifyVolume operation on the persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
 				# TYPE kube_persistentvolumeclaim_info gauge
@@ -211,14 +241,22 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
+				# TYPE kube_persistentvolumeclaim_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_current_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_modify_volume_status gauge
 				kube_persistentvolumeclaim_created{namespace="default",persistentvolumeclaim="prometheus-data"} 1.5e+09
 				kube_persistentvolumeclaim_info{namespace="default",persistentvolumeclaim="prometheus-data",storageclass="rbd",volumename="pvc-prometheus-data",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Bound"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Lost"} 0
 				kube_persistentvolumeclaim_status_phase{namespace="default",persistentvolumeclaim="prometheus-data",phase="Pending"} 1
 				kube_persistentvolumeclaim_access_mode{namespace="default",persistentvolumeclaim="prometheus-data",access_mode="ReadWriteOnce"} 1
+				kube_persistentvolumeclaim_volume_attributes_class{namespace="default",persistentvolumeclaim="prometheus-data",volume_attributes_class="gold"} 1
+				kube_persistentvolumeclaim_status_current_volume_attributes_class{namespace="default",persistentvolumeclaim="prometheus-data",volume_attributes_class="silver"} 1
+				kube_persistentvolumeclaim_status_modify_volume_status{namespace="default",persistentvolumeclaim="prometheus-data",status="Pending",target_volume_attributes_class="gold"} 0
+				kube_persistentvolumeclaim_status_modify_volume_status{namespace="default",persistentvolumeclaim="prometheus-data",status="InProgress",target_volume_attributes_class="gold"} 1
+				kube_persistentvolumeclaim_status_modify_volume_status{namespace="default",persistentvolumeclaim="prometheus-data",status="Infeasible",target_volume_attributes_class="gold"} 0
 			`,
-			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created"},
+			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_volume_attributes_class", "kube_persistentvolumeclaim_status_current_volume_attributes_class", "kube_persistentvolumeclaim_status_modify_volume_status"},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
@@ -250,6 +288,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# HELP kube_persistentvolumeclaim_resource_requests_storage_bytes [STABLE] The capacity of storage requested by the persistent volume claim.
 				# HELP kube_persistentvolumeclaim_status_phase [STABLE] The phase the persistent volume claim is currently in.
 				# HELP kube_persistentvolumeclaim_status_condition Information about status of different conditions of persistent volume claim.
+				# HELP kube_persistentvolumeclaim_volume_attributes_class The name of the VolumeAttributesClass requested by the persistent volume claim.
+				# HELP kube_persistentvolumeclaim_status_current_volume_attributes_class The current VolumeAttributesClass applied to the persistent volume claim, as reported by the CSI driver.
+				# HELP kube_persistentvolumeclaim_status_modify_volume_status Information about the status of an in-progress ModifyVolume operation on the persistent volume claim.
 				# TYPE kube_persistentvolumeclaim_created gauge
 				# TYPE kube_persistentvolumeclaim_access_mode gauge
 				# TYPE kube_persistentvolumeclaim_annotations gauge
@@ -258,6 +299,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				# TYPE kube_persistentvolumeclaim_resource_requests_storage_bytes gauge
 				# TYPE kube_persistentvolumeclaim_status_phase gauge
 				# TYPE kube_persistentvolumeclaim_status_condition gauge
+				# TYPE kube_persistentvolumeclaim_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_current_volume_attributes_class gauge
+				# TYPE kube_persistentvolumeclaim_status_modify_volume_status gauge
 				kube_persistentvolumeclaim_created{namespace="",persistentvolumeclaim="mongo-data"} 1.5e+09
 				kube_persistentvolumeclaim_info{namespace="",persistentvolumeclaim="mongo-data",storageclass="",volumename="",volumemode="Block"} 1
 				kube_persistentvolumeclaim_status_phase{namespace="",persistentvolumeclaim="mongo-data",phase="Bound"} 0
@@ -273,8 +317,10 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="CustomizedType"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="FileSystemResizePending"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="Resizing"} 0
+				kube_persistentvolumeclaim_volume_attributes_class{namespace="",persistentvolumeclaim="mongo-data",volume_attributes_class=""} 1
+				kube_persistentvolumeclaim_status_current_volume_attributes_class{namespace="",persistentvolumeclaim="mongo-data",volume_attributes_class=""} 1
 `,
-			MetricNames: []string{"kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition"},
+			MetricNames: []string{"kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_volume_attributes_class", "kube_persistentvolumeclaim_status_current_volume_attributes_class", "kube_persistentvolumeclaim_status_modify_volume_status"},
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{

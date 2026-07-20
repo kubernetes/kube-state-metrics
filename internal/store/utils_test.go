@@ -319,3 +319,169 @@ func TestMergeKeyValues(t *testing.T) {
 		})
 	}
 }
+
+func TestCreatePrometheusLabelKeysValues(t *testing.T) {
+	testCases := []struct {
+		name         string
+		kubeData     map[string]string
+		allowList    []string
+		expectKeys   []string
+		expectValues []string
+	}{
+		{
+			name: "allMatches",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyB"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name: "additionalAllow",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyB", "keyC"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name: "partialMatches",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyC"},
+			expectKeys:   []string{"metric_key_a"},
+			expectValues: []string{"valueA"},
+		},
+		{
+			name: "wildcardAsSuffix",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"key*"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name: "wildcardAsPrefix",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*A"},
+			expectKeys:   []string{"metric_key_a", "metric_other_key_a"},
+			expectValues: []string{"valueA", "valueC"},
+		},
+		{
+			name: "onlyFullWildcard",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b", "metric_other_key_a", "metric_other_key_b"},
+			expectValues: []string{"valueA", "valueB", "valueC", "valueD"},
+		},
+		{
+			name: "additionalFullWildcard",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"keyA", "*"},
+			expectKeys:   []string{"metric_key_a"},
+			expectValues: []string{"valueA"},
+		},
+		{
+			name: "multipleWildcards",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*key*"},
+			expectKeys:   []string{},
+			expectValues: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotKeys, gotValues := createPrometheusLabelKeysValues("metric", tc.kubeData, tc.allowList)
+			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+				t.Errorf("createPrometheusLabelKeysValues() got = %v, want %v", gotKeys, tc.expectKeys)
+			}
+			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+				t.Errorf("createPrometheusLabelKeysValues() got1 = %v, want %v", gotValues, tc.expectValues)
+			}
+		})
+	}
+}
+
+func TestExpandWildcard(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+		limit    uint
+	}{
+		{
+			input:    "foo",
+			expected: "^foo$",
+			limit:    1,
+		},
+		{
+			input:    "foo*",
+			expected: "^foo.*$",
+			limit:    1,
+		},
+		{
+			input:    "*foo",
+			expected: "^.*foo$",
+			limit:    1,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo$",
+			limit:    1,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo.*$",
+			limit:    2,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo.*$",
+			limit:    3,
+		},
+		{
+			input:    "*f*o*o*",
+			expected: "^.*f.*o.*o$",
+			limit:    3,
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("test %d", i), func(t *testing.T) {
+			got := expandWildcard(tc.input, tc.limit)
+			if !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("expandWildcard() got = %v, want %v", got, tc.expected)
+			}
+		})
+	}
+}

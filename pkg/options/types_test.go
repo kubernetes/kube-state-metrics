@@ -19,6 +19,8 @@ package options
 import (
 	"reflect"
 	"testing"
+
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 func TestResourceSetSet(t *testing.T) {
@@ -293,7 +295,7 @@ func TestLabelsAllowListSet(t *testing.T) {
 		Desc   string
 		Value  string
 		Wanted LabelsAllowList
-		err    bool
+		err    error
 	}{
 		{
 			Desc:   "empty labels list",
@@ -304,26 +306,26 @@ func TestLabelsAllowListSet(t *testing.T) {
 			Desc:   "[invalid] space delimited",
 			Value:  "cronjobs=[somelabel,label2] cronjobs=[label3,label4]",
 			Wanted: LabelsAllowList(map[string][]string{}),
-			err:    true,
+			err:    errLabelsAllowListFormat,
 		},
 		{
 			Desc:   "[invalid] normal missing bracket",
 			Value:  "cronjobs=[somelabel,label2],cronjobs=label3,label4]",
 			Wanted: LabelsAllowList(map[string][]string{}),
-			err:    true,
+			err:    errLabelsAllowListFormat,
 		},
 
 		{
 			Desc:   "[invalid] no comma between metrics",
 			Value:  "cronjobs=[somelabel,label2]cronjobs=[label3,label4]",
 			Wanted: LabelsAllowList(map[string][]string{}),
-			err:    true,
+			err:    errLabelsAllowListFormat,
 		},
 		{
 			Desc:   "[invalid] no '=' between name and label list",
 			Value:  "cronjobs[somelabel,label2]cronjobs=[label3,label4]",
 			Wanted: LabelsAllowList(map[string][]string{}),
-			err:    true,
+			err:    errLabelsAllowListFormat,
 		},
 		{
 			Desc:  "one resource",
@@ -382,13 +384,74 @@ func TestLabelsAllowListSet(t *testing.T) {
 				},
 			}),
 		},
+		{
+			Desc:  "with partial wildcard",
+			Value: "*=[somelabel/*]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"*": {
+					"somelabel/*",
+				},
+			}),
+		},
+		{
+			Desc:   "[invalid] with multiple partial wildcards per label",
+			Value:  "*=[somelabel/*-foo-*]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListMultipleWildcards,
+		},
 	}
 
 	for _, test := range tests {
 		lal := &LabelsAllowList{}
 		gotError := lal.Set(test.Value)
-		if gotError != nil && !test.err || !reflect.DeepEqual(*lal, test.Wanted) {
-			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v\n Got Error: %#v", test.Desc, test.Wanted, *lal, gotError)
+		if gotError != test.err {
+			t.Errorf("Test error for Desc: %s\n Want Error: %#v\n Got Error: %#v", test.Desc, test.err, gotError)
+		}
+		if !reflect.DeepEqual(*lal, test.Wanted) {
+			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, *lal)
+		}
+	}
+}
+
+func TestLabelsAllowListUnmarshalYAML(t *testing.T) {
+	tests := []struct {
+		Desc    string
+		YAML    string
+		Wanted  LabelsAllowList
+		wantErr bool
+	}{
+		{
+			Desc:   "valid single wildcard per label",
+			YAML:   "pods:\n- foo/*\nnamespaces:\n- bar\n",
+			Wanted: LabelsAllowList{"pods": {"foo/*"}, "namespaces": {"bar"}},
+		},
+		{
+			Desc:   "bare wildcard allowed",
+			YAML:   "pods:\n- '*'\n",
+			Wanted: LabelsAllowList{"pods": {"*"}},
+		},
+		{
+			Desc:    "multiple wildcards per label rejected",
+			YAML:    "pods:\n- foo-*-bar-*\n",
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		lal := &LabelsAllowList{}
+		err := yaml.Unmarshal([]byte(test.YAML), lal)
+		if test.wantErr {
+			if err == nil {
+				t.Errorf("Test %q: expected error, got none", test.Desc)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("Test %q: unexpected error: %v", test.Desc, err)
+			continue
+		}
+		if !reflect.DeepEqual(*lal, test.Wanted) {
+			t.Errorf("Test %q:\n want: %+v\n  got: %+v", test.Desc, test.Wanted, *lal)
 		}
 	}
 }

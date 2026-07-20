@@ -12,7 +12,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/netresearch/go-cron v0.15.0
 	github.com/oklog/run v1.2.0
-	github.com/prometheus/client_golang v1.24.0-rc.0
+	github.com/prometheus/client_golang v1.24.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.70.0
 	github.com/prometheus/exporter-toolkit v0.17.1

@@ -30,6 +30,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -247,10 +248,12 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				// If the cron job is suspended, don't track the next scheduled time
 				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
 				// A single CronJob with an unparseable schedule must not crash the
-				// whole exporter. Skip its next-schedule metric and keep going, the
-				// same way the Kubernetes CronJob controller tolerates such schedules.
+				// whole exporter. Log and skip its next-schedule metric, the same way
+				// the Kubernetes CronJob controller tolerates such schedules.
 				// kube_cronjob_schedule_invalid surfaces the parse failure as a metric.
-				if err == nil && (j.Spec.Suspend == nil || !*j.Spec.Suspend) {
+				if err != nil {
+					klog.ErrorS(err, "Failed to parse CronJob schedule; skipping next schedule time metric", "namespace", j.Namespace, "cronjob", j.Name)
+				} else if j.Spec.Suspend == nil || !*j.Spec.Suspend {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},

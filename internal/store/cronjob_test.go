@@ -619,6 +619,21 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
+			// Unparseable schedule from issue #2988 (step == range size): next_schedule_time omitted, schedule_invalid emitted, no panic.
+			Obj: newCronJob("UnparseableScheduleCronJob", "*/60 * * * *"),
+			Want: `
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# TYPE kube_cronjob_next_schedule_time gauge
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# TYPE kube_cronjob_status_last_schedule_time gauge
+				kube_cronjob_status_last_schedule_time{cronjob="UnparseableScheduleCronJob",namespace="ns1"} 1.520742896e+09
+				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
+				# TYPE kube_cronjob_schedule_invalid gauge
+				kube_cronjob_schedule_invalid{cronjob="UnparseableScheduleCronJob",namespace="ns1"} 1
+`,
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
+		},
+		{
 			// Unparseable schedule (list with out-of-range step): next_schedule_time omitted, schedule_invalid emitted, no panic.
 			Obj: newCronJob("UnparseableScheduleCronJob", "0 1 */32,1-7 * 3"),
 			Want: `

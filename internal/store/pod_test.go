@@ -2444,6 +2444,50 @@ func TestPodStore(t *testing.T) {
 				"kube_pod_init_container_status_last_terminated_timestamp",
 			},
 		},
+		{
+			// Verify container status resource metrics (status.containerStatuses[*].resources).
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-resize",
+					Namespace: "ns1",
+					UID:       "uid-resize",
+				},
+				Spec: v1.PodSpec{
+					NodeName: "node1",
+					Containers: []v1.Container{
+						{Name: "container1"},
+					},
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "container1",
+							Resources: &v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceCPU:    resource.MustParse("200m"),
+									v1.ResourceMemory: resource.MustParse("100Mi"),
+								},
+								Limits: v1.ResourceList{
+									v1.ResourceCPU:    resource.MustParse("400m"),
+									v1.ResourceMemory: resource.MustParse("200Mi"),
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_container_status_resource_limits The limit resources currently allocated to a container
+				# HELP kube_pod_container_status_resource_requests The request resources currently allocated to a container
+				# TYPE kube_pod_container_status_resource_limits gauge
+				# TYPE kube_pod_container_status_resource_requests gauge
+				kube_pod_container_status_resource_limits{container="container1",namespace="ns1",node="node1",pod="pod-resize",resource="cpu",uid="uid-resize",unit="core"} 0.4
+				kube_pod_container_status_resource_limits{container="container1",namespace="ns1",node="node1",pod="pod-resize",resource="memory",uid="uid-resize",unit="byte"} 2.097152e+08
+				kube_pod_container_status_resource_requests{container="container1",namespace="ns1",node="node1",pod="pod-resize",resource="cpu",uid="uid-resize",unit="core"} 0.2
+				kube_pod_container_status_resource_requests{container="container1",namespace="ns1",node="node1",pod="pod-resize",resource="memory",uid="uid-resize",unit="byte"} 1.048576e+08
+			`,
+			MetricNames: []string{"kube_pod_container_status_resource_requests", "kube_pod_container_status_resource_limits"},
+		},
 	}
 
 	for i, c := range cases {
@@ -2548,7 +2592,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 59
+	expectedFamilies := 61
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

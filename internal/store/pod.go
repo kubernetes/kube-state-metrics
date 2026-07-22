@@ -83,6 +83,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodResourceClaimInfoFamilyGenerator(),
 		createPodRestartPolicyFamilyGenerator(),
 		createPodRuntimeClassNameInfoFamilyGenerator(),
+		createPodSpecTerminationGracePeriodSecondsFamilyGenerator(),
 		createPodSpecVolumesPersistentVolumeClaimsInfoFamilyGenerator(),
 		createPodSpecVolumesPersistentVolumeClaimsReadonlyFamilyGenerator(),
 		createPodStartTimeFamilyGenerator(),
@@ -1348,6 +1349,29 @@ func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
 				}
 			}
 
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createPodSpecTerminationGracePeriodSecondsFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_spec_termination_grace_period_seconds",
+		"The pod's termination grace period in seconds.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+			if p.Spec.TerminationGracePeriodSeconds != nil {
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{},
+					LabelValues: []string{},
+					Value:       float64(*p.Spec.TerminationGracePeriodSeconds),
+				})
+			}
 			return &metric.Family{
 				Metrics: ms,
 			}

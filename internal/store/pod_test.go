@@ -96,6 +96,24 @@ func TestPodStore(t *testing.T) {
 					UID:       "uid1",
 				},
 				Spec: v1.PodSpec{
+					TerminationGracePeriodSeconds: ptr.To(int64(30)),
+				},
+			},
+			Want: `
+				# HELP kube_pod_spec_termination_grace_period_seconds The pod's termination grace period in seconds.
+				# TYPE kube_pod_spec_termination_grace_period_seconds gauge
+				kube_pod_spec_termination_grace_period_seconds{namespace="ns1",pod="pod1",uid="uid1"} 30
+			`,
+			MetricNames: []string{"kube_pod_spec_termination_grace_period_seconds"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: "ns1",
+					UID:       "uid1",
+				},
+				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
 							Name:  "container1",
@@ -2548,7 +2566,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 59
+	expectedFamilies := 60
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {

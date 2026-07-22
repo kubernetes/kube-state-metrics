@@ -191,7 +191,7 @@ spec:
               # if path targets an object, the object key will be used as label value
               # This is not supported for StateSet type as all values will be truthy, which is redundant.
               labelFromKey: type
-              # label values can be resolved specific to this path 
+              # label values can be resolved specific to this path
               labelsFromPath:
                 active: [active]
               # The actual field to use as metric value. Should be a number, boolean or RFC3339 timestamp string.
@@ -205,7 +205,7 @@ spec:
             # a prefix before the asterisk will be used as a label prefix
             "lorem_*": [metadata, annotations]
             "**": [metadata, annotations]
-            
+
             # or specific fields may be copied. these fields will always override values from *s
             name: [metadata, name]
             foo: [metadata, labels, foo]
@@ -214,10 +214,10 @@ spec:
 Produces the following metrics:
 
 ```prometheus
-kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", 
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo",
 customresource_version="v1", active="1",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-a",
 lorem_bar="baz",lorem_qux="quxx",} 2
-kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo", 
+kube_customresource_ready_count{customresource_group="myteam.io", customresource_kind="Foo",
 customresource_version="v1", active="3",custom_metric="yes",foo="bar",name="foo",bar="baz",qux="quxx",type="type-b",
 lorem_bar="baz",lorem_qux="quxx",} 4
 ```
@@ -620,10 +620,108 @@ Supported types are:
 * for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
 * for string the following logic applies
   * `"true"` and `"yes"` are mapped to `1.0`, `"false"`, `"no"` and `"unknown"` are mapped to `0.0` (all case-insensitive)
-  * RFC3339 times are parsed to float timestamp  
+  * RFC3339 times are parsed to float timestamp
   * Quantities like "250m" or "512Gi" are parsed to float using <https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go>
   * Percentages ending with a "%" are parsed to float
   * finally the string is parsed to float using <https://pkg.go.dev/strconv#ParseFloat> which should support all common number formats. If that fails an error is yielded
+
+##### Value Type Specification
+
+By default, kube-state-metrics automatically detects and converts values using the logic described above. However, you can **explicitly specify the value type** for more predictable parsing, especially for duration strings that would otherwise fail float parsing.
+
+###### Available Value Types
+
+The `valueType` field in gauge configuration accepts the following values:
+
+* `duration` - Explicitly parse Go duration strings (e.g., "1h", "30m", "1h30m45s") and convert them to seconds
+* (empty/omitted) - Use automatic type detection (default behavior)
+
+###### Duration Value Type
+
+The `duration` value type is particularly useful for custom resources that store time values as Go duration strings, such as cert-manager Certificates.
+
+###### Example: cert-manager Certificate Duration
+
+```yaml
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        group: cert-manager.io
+        version: v1
+        kind: Certificate
+      labelsFromPath:
+        name: [metadata, name]
+        namespace: [metadata, namespace]
+      metrics:
+        - name: "certificate_duration_seconds"
+          help: "Certificate validity duration in seconds"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, duration]
+              valueType: duration  # Explicitly parse as duration
+
+        - name: "certificate_renew_before_seconds"
+          help: "Time before expiration when certificate should be renewed"
+          each:
+            type: Gauge
+            gauge:
+              path: [spec, renewBefore]
+              valueType: duration  # Explicitly parse as duration
+```
+
+###### Supported Duration Formats
+
+The `duration` value type uses Go's `time.ParseDuration` format and supports:
+
+* Hours: `"1h"`, `"24h"`, `"2160h"` (90 days)
+* Minutes: `"30m"`, `"90m"`
+* Seconds: `"45s"`
+* Milliseconds: `"500ms"`
+* Microseconds: `"100us"`, `"1000µs"`
+* Nanoseconds: `"1000ns"`
+* Combined: `"1h30m45s"`, `"2h15m30s"`
+
+All durations are converted to **seconds as float64** for Prometheus compatibility.
+
+###### Example Metrics Output
+
+For a cert-manager Certificate with `spec.duration: "2160h"` and `spec.renewBefore: "720h"`:
+
+```prometheus
+kube_customresource_certificate_duration_seconds{customresource_group="cert-manager.io", customresource_kind="Certificate", customresource_version="v1", name="example-cert", namespace="default"} 7776000
+kube_customresource_certificate_renew_before_seconds{customresource_group="cert-manager.io", customresource_kind="Certificate", customresource_version="v1", name="example-cert", namespace="default"} 2592000
+```
+
+###### When to Use valueType
+
+Use `valueType: duration` when:
+
+* The resource field contains Go duration strings (e.g., "72h", "30m")
+* Auto-detection fails because the string isn't recognized as a number
+* You want explicit, predictable parsing behavior
+
+Kubernetes quantities like "250m" or "5Gi" need no explicit valueType; automatic detection already parses them.
+
+###### valueType with valueFrom
+
+The `valueType` field works with both direct `path` and `valueFrom` configurations:
+
+```yaml
+# Direct path
+gauge:
+  path: [spec, duration]
+  valueType: duration
+
+# With valueFrom (nested extraction)
+gauge:
+  path: [spec]
+  valueFrom: [duration]
+  valueType: duration
+  labelsFromPath:
+    name: [name]
+```
 
 ##### Example for status conditions on Kubernetes Controllers
 
@@ -805,10 +903,10 @@ Examples:
 # indexing an array
 [spec, order, "0", value]                # spec.order[0].value = true
 
-# finding an element in a list by key=value  
+# finding an element in a list by key=value
 [status, conditions, "[name=a]", value]  # status.conditions[0].value = 45
 
-# if the value to be matched is a number or boolean, the value is compared as a number or boolean  
+# if the value to be matched is a number or boolean, the value is compared as a number or boolean
 [status, conditions, "[value=66]", name]  # status.conditions[1].name = "b"
 
 # For generally matching against a field in an object schema, use the following syntax:

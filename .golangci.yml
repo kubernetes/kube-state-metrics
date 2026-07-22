@@ -39,7 +39,7 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: .*List|Watch'
-        path: 'pkg/sharding/listwatch.go|pkg/watch/watch.go'
+        path: 'pkg/sharding/listwatch.go|pkg/watch/watch.go|internal/store/listwatch.go|internal/store/builder_test.go'
 
     paths:
       - third_party$

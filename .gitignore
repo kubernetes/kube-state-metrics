@@ -43,3 +43,6 @@ help.txt
 
 # jsonnet dependency management
 /scripts/vendor
+
+# goreleaser build output
+/dist

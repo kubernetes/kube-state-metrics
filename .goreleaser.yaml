@@ -1,5 +1,56 @@
 version: 2
 
+snapshot:
+  version_template: "snapshot"
+
+builds:
+  - id: kube-state-metrics
+    main: .
+    binary: kube-state-metrics
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+      - ppc64le
+      - s390x
+    goarm:
+      - "6"
+      - "7"
+    ldflags:
+      - -s -w
+      - -X github.com/prometheus/common/version.Version={{.Tag}}
+      - -X github.com/prometheus/common/version.Revision={{.ShortCommit}}
+      - -X github.com/prometheus/common/version.Branch={{.Branch}}
+      - -X github.com/prometheus/common/version.BuildDate={{.Date}}
+      - -X k8s.io/kube-state-metrics/v2/pkg/app.ClientGoVersion={{ index .Env "K8S_CLIENT_VERSION" }}
+
+kos:
+  - 
+    id: kube-state-metrics
+    build: kube-state-metrics
+    repositories:
+      - gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics
+    base_image: gcr.io/distroless/static-debian13:nonroot
+    # In snapshot mode, ko publishes to the local Docker daemon using this domain.
+    local_domain: "registry.k8s.io/kube-state-metrics/kube-state-metrics"
+    platforms:
+      - linux/amd64
+      - linux/arm/v6
+      - linux/arm/v7
+      - linux/arm64
+      - linux/ppc64le
+      - linux/s390x
+    tags:
+      - "{{.Tag}}"
+      - '{{if not .IsSnapshot}}latest{{end}}'
+    creation_time: "{{.CommitTimestamp}}"
+    ko_data_creation_time: "{{.CommitTimestamp}}"
+    bare: true
+
 archives:
   - formats: [tar.gz]
     # this name template makes the OS and Arch compatible with the results of `uname`.

@@ -106,6 +106,7 @@ func TestClusterRoleBindingStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(clusterRoleBindingMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		c.Headers = generator.ExtractMetricFamilyHeaders(clusterRoleBindingMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = clusterRoleBindingMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

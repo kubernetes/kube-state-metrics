@@ -1,0 +1,10 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: example-mutatingadmissionpolicybinding
+spec:
+  policyName: example-mutatingadmissionpolicy
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        environment: prod

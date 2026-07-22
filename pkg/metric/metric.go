@@ -104,7 +104,14 @@ var (
 // '\"'.
 // Taken from github.com/prometheus/common/expfmt/text_create.go.
 func escapeString(m *bytes.Buffer, v string) {
-	escapeWithDoubleQuote.WriteString(m, v)
+	for i := 0; i < len(v); i++ {
+		c := v[i]
+		if c == '\\' || c == '\n' || c == '"' {
+			escapeWithDoubleQuote.WriteString(m, v)
+			return
+		}
+	}
+	m.WriteString(v)
 }
 
 // writeFloat is equivalent to fmt.Fprint with a float64 argument but hardcodes

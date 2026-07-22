@@ -46,18 +46,40 @@ type MetricsStore struct {
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
 	headers []string
+
+	headersOpenMetrics []string
+	headersTextPlain   []string
+	metricNames        []string
 }
 
 // NewMetricsStore returns a new MetricsStore
 func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface) *MetricsStore {
 	rv := ""
+	headersOpenMetrics, headersTextPlain, metricNames := precomputeHeaders(headers)
 	return &MetricsStore{
 		generateMetricsFunc:   generateFunc,
 		headers:               headers,
+		headersOpenMetrics:    headersOpenMetrics,
+		headersTextPlain:      headersTextPlain,
+		metricNames:           metricNames,
 		metrics:               &sync.Map{},
 		lastResourceVersion:   &rv,
 		lastResourceVersionMu: &sync.RWMutex{},
 	}
+}
+
+func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, metricNames []string) {
+	headersOpenMetrics = make([]string, len(headers))
+	headersTextPlain = make([]string, len(headers))
+	metricNames = make([]string, len(headers))
+	for i, h := range headers {
+		mName, rHeaderOM := parseHeaderStatic(h, false)
+		_, rHeaderText := parseHeaderStatic(h, true)
+		headersOpenMetrics[i] = rHeaderOM
+		headersTextPlain[i] = rHeaderText
+		metricNames[i] = mName
+	}
+	return headersOpenMetrics, headersTextPlain, metricNames
 }
 
 // Implementing k8s.io/client-go/tools/cache.Store interface

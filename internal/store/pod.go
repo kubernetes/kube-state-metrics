@@ -18,10 +18,10 @@ package store
 
 import (
 	"context"
+	"net/netip"
 	"strconv"
 
 	basemetrics "k8s.io/component-base/metrics"
-	"k8s.io/utils/net"
 
 	"k8s.io/kube-state-metrics/v2/pkg/constant"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -38,6 +38,7 @@ import (
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
+	descPodIPsLabelKeys        = []string{"ip", "ip_family"}
 )
 
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -729,25 +730,28 @@ func createPodIPFamilyGenerator() generator.FamilyGenerator {
 		basemetrics.ALPHA,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			ms := make([]*metric.Metric, len(p.Status.PodIPs))
-			labelKeys := []string{"ip", "ip_family"}
+			ms := make([]*metric.Metric, 0, len(p.Status.PodIPs))
 
-			for i, ip := range p.Status.PodIPs {
-				netIP := net.ParseIPSloppy(ip.IP)
-				var ipFamily net.IPFamily
+			for _, ip := range p.Status.PodIPs {
+				addr, err := netip.ParseAddr(ip.IP)
+				if err != nil {
+					continue // indicates failure to parse, so we don't include that in our metrics series
+				}
+				addr = addr.Unmap()
+				var ipFamily string
 				switch {
-				case net.IsIPv4(netIP):
-					ipFamily = net.IPv4
-				case net.IsIPv6(netIP):
-					ipFamily = net.IPv6
+				case addr.Is4():
+					ipFamily = "4"
+				case addr.Is6():
+					ipFamily = "6"
 				default:
-					continue // nil from ParseIPSloppy indicates failure to parse, so we don't include that in our metrics series
+					continue
 				}
-				ms[i] = &metric.Metric{
-					LabelKeys:   labelKeys,
-					LabelValues: []string{ip.IP, string(ipFamily)},
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   descPodIPsLabelKeys,
+					LabelValues: []string{ip.IP, ipFamily},
 					Value:       1,
-				}
+				})
 			}
 
 			return &metric.Family{

@@ -18,6 +18,7 @@ package allowdenylist
 
 import (
 	"errors"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -40,6 +41,7 @@ type AllowDenyList struct {
 	list        map[string]struct{}
 	rList       []*regexp.Regexp
 	isAllowList bool
+	cache       *sync.Map
 }
 
 // New constructs a new AllowDenyList based on a allow- and a
@@ -59,16 +61,17 @@ func New(allow, deny map[string]struct{}) (*AllowDenyList, error) {
 
 	// Default to denylisting
 	if len(allow) != 0 {
-		list = copyList(allow)
+		list = maps.Clone(allow)
 		isAllowList = true
 	} else {
-		list = copyList(deny)
+		list = maps.Clone(deny)
 		isAllowList = false
 	}
 
 	return &AllowDenyList{
 		list:        list,
 		isAllowList: isAllowList,
+		cache:       &sync.Map{},
 	}, nil
 }
 
@@ -83,11 +86,13 @@ func (l *AllowDenyList) Parse() error {
 		regexes = append(regexes, r)
 	}
 	l.rList = regexes
+	l.cache = &sync.Map{}
 	return nil
 }
 
 // Include includes the given items in the list.
 func (l *AllowDenyList) Include(items []string) {
+	l.cache = &sync.Map{}
 	if l.isAllowList {
 		for _, item := range items {
 			l.list[item] = struct{}{}
@@ -101,6 +106,7 @@ func (l *AllowDenyList) Include(items []string) {
 
 // Exclude excludes the given items from the list.
 func (l *AllowDenyList) Exclude(items []string) {
+	l.cache = &sync.Map{}
 	if l.isAllowList {
 		for _, item := range items {
 			delete(l.list, item)
@@ -114,6 +120,10 @@ func (l *AllowDenyList) Exclude(items []string) {
 
 // IsIncluded returns if the given item is included.
 func (l *AllowDenyList) IsIncluded(item string) (bool, error) {
+	if val, ok := l.cache.Load(item); ok {
+		return val.(bool), nil
+	}
+
 	var (
 		matched bool
 		err     error
@@ -128,11 +138,13 @@ func (l *AllowDenyList) IsIncluded(item string) (bool, error) {
 		}
 	}
 
-	if l.isAllowList {
-		return matched, nil
+	result := matched
+	if !l.isAllowList {
+		result = !matched
 	}
 
-	return !matched, nil
+	l.cache.Store(item, result)
+	return result, nil
 }
 
 // IsExcluded returns if the given item is excluded.
@@ -169,12 +181,4 @@ func (l *AllowDenyList) Test(generator generator.FamilyGenerator) bool {
 	}
 
 	return isIncluded
-}
-
-func copyList(l map[string]struct{}) map[string]struct{} {
-	newList := map[string]struct{}{}
-	for k, v := range l {
-		newList[k] = v
-	}
-	return newList
 }

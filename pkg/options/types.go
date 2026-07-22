@@ -18,7 +18,7 @@ package options
 
 import (
 	"errors"
-	"sort"
+	"slices"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -36,7 +36,7 @@ type MetricSet map[string]struct{}
 func (ms *MetricSet) String() string {
 	s := *ms
 	ss := s.asSlice()
-	sort.Strings(ss)
+	slices.Sort(ss)
 	return strings.Join(ss, ",")
 }
 
@@ -73,7 +73,7 @@ type ResourceSet map[string]struct{}
 func (r *ResourceSet) String() string {
 	s := *r
 	ss := s.AsSlice()
-	sort.Strings(ss)
+	slices.Sort(ss)
 	return strings.Join(ss, ",")
 }
 
@@ -307,7 +307,7 @@ func (l LabelsAllowList) asSlice() []string {
 func (l *LabelsAllowList) String() string {
 	s := *l
 	ss := s.asSlice()
-	sort.Strings(ss)
+	slices.Sort(ss)
 	return strings.Join(ss, ",")
 }
 

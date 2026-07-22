@@ -21,7 +21,7 @@ package store
 import (
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -97,7 +97,7 @@ func sortLabels(s string) string {
 		value := split[1]
 
 		labels := strings.Split(split[0], ",")
-		sort.Strings(labels)
+		slices.Sort(labels)
 
 		sorted = append(sorted, fmt.Sprintf("%v{%v}%v", name, strings.Join(labels, ","), value))
 	}
@@ -107,7 +107,7 @@ func sortLabels(s string) string {
 
 func sortByLine(s string) string {
 	split := strings.Split(s, "\n")
-	sort.Strings(split)
+	slices.Sort(split)
 	return strings.Join(split, "\n")
 }
 

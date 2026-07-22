@@ -18,7 +18,7 @@ package store
 
 import (
 	"fmt"
-	"reflect"
+	"slices"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -310,10 +310,10 @@ func TestMergeKeyValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			gotKeys, gotValues := mergeKeyValues(tc.keyValuePairSlices...)
-			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+			if !slices.Equal(gotKeys, tc.expectKeys) {
 				t.Errorf("mergeKeyValues() got = %v, want %v", gotKeys, tc.expectKeys)
 			}
-			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+			if !slices.Equal(gotValues, tc.expectValues) {
 				t.Errorf("mergeKeyValues() got1 = %v, want %v", gotValues, tc.expectValues)
 			}
 		})

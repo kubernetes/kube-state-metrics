@@ -198,3 +198,42 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveGVKToGVKPsMissingWarnDedup(t *testing.T) {
+	missing := schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"}
+	r := &CRDiscoverer{
+		Map: map[string]map[string][]kindPlural{
+			"testgroup": {"v1": {kindPlural{Kind: "TestObject2", Plural: "testobjects2"}}},
+		},
+	}
+
+	// First miss records the warning; the key is tracked.
+	if !r.markMissingGVKWarned(missing) {
+		t.Fatalf("expected first markMissingGVKWarned to report true")
+	}
+	// Subsequent misses must not re-warn until the GVK is resolved.
+	if r.markMissingGVKWarned(missing) {
+		t.Errorf("expected repeated markMissingGVKWarned to report false")
+	}
+
+	// Once the CRD appears, resolving it clears the warning state.
+	r.SafeWrite(func() {
+		r.Map["testgroup"]["v1"] = append(r.Map["testgroup"]["v1"], kindPlural{Kind: "TestObject1", Plural: "testobjects1"})
+	})
+	if _, err := r.ResolveGVKToGVKPs(missing); err != nil {
+		t.Fatalf("unexpected error resolving present GVK: %v", err)
+	}
+	r.SafeRead(func() {
+		if _, ok := r.warnedMissingGVKs[missing.String()]; ok {
+			t.Errorf("expected warning to be cleared after successful resolution")
+		}
+	})
+
+	// After the CRD disappears again, a fresh warning is emitted.
+	r.SafeWrite(func() {
+		r.Map["testgroup"]["v1"] = []kindPlural{{Kind: "TestObject2", Plural: "testobjects2"}}
+	})
+	if !r.markMissingGVKWarned(missing) {
+		t.Errorf("expected warning to fire again after the GVK disappeared")
+	}
+}

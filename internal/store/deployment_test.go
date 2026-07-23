@@ -226,6 +226,8 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_owner{deployment="depl3",namespace="ns3",owner_kind="",owner_name=""} 1
         kube_deployment_spec_paused{deployment="depl3",namespace="ns3"} 0
         kube_deployment_spec_replicas{deployment="depl3",namespace="ns3"} 1
+        kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl3",namespace="ns3"} 1
+        kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl3",namespace="ns3"} 0
         kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="true"} 0
         kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="false"} 1
         kube_deployment_status_condition{condition="Available",deployment="depl3",namespace="ns3",reason="unknown",status="unknown"} 0
@@ -236,15 +238,40 @@ func TestDeploymentStore(t *testing.T) {
         kube_deployment_status_replicas_unavailable{deployment="depl3",namespace="ns3"} 0
         kube_deployment_status_replicas_updated{deployment="depl3",namespace="ns3"} 0
 	    kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="false"} 0
-        kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="true"} 1
+	    kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="true"} 1
         kube_deployment_status_condition{condition="Progressing",deployment="depl3",namespace="ns3",reason="",status="unknown"} 0
 `,
 		},
 		{
 			Obj: &v1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "depl-default-rollingupdate",
+					Namespace: "ns4",
+				},
+				Spec: v1.DeploymentSpec{
+					Replicas: &depl4Replicas,
+				},
+			},
+			Want: metadata + `
+				kube_deployment_metadata_generation{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+				kube_deployment_owner{deployment="depl-default-rollingupdate",namespace="ns4",owner_kind="",owner_name=""} 1
+				kube_deployment_spec_paused{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+				kube_deployment_spec_replicas{deployment="depl-default-rollingupdate",namespace="ns4"} 10
+				kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="depl-default-rollingupdate",namespace="ns4"} 3
+				kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="depl-default-rollingupdate",namespace="ns4"} 2
+				kube_deployment_status_observed_generation{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+				kube_deployment_status_replicas{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+				kube_deployment_status_replicas_available{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+				kube_deployment_status_replicas_ready{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+				kube_deployment_status_replicas_unavailable{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+				kube_deployment_status_replicas_updated{deployment="depl-default-rollingupdate",namespace="ns4"} 0
+			`,
+		},
+		{
+			Obj: &v1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:              "deployment-terminating",
-					Namespace:         "ns4",
+					Namespace:         "ns5",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1600000000, 0)},
 					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
 					Labels: map[string]string{
@@ -260,7 +287,7 @@ func TestDeploymentStore(t *testing.T) {
 			Want: `
 			    # HELP kube_deployment_deletion_timestamp Unix deletion timestamp
 			    # TYPE kube_deployment_deletion_timestamp gauge
-					kube_deployment_deletion_timestamp{deployment="deployment-terminating",namespace="ns4"} 1.8e+09`,
+					kube_deployment_deletion_timestamp{deployment="deployment-terminating",namespace="ns5"} 1.8e+09`,
 			MetricNames: []string{"kube_deployment_deletion_timestamp"},
 		},
 		{
@@ -285,6 +312,8 @@ func TestDeploymentStore(t *testing.T) {
 				kube_deployment_metadata_generation{deployment="deployment-with-owner",namespace="ns5"} 0
 				kube_deployment_spec_paused{deployment="deployment-with-owner",namespace="ns5"} 0
 				kube_deployment_spec_replicas{deployment="deployment-with-owner",namespace="ns5"} 200
+				kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="deployment-with-owner",namespace="ns5"} 50
+				kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="deployment-with-owner",namespace="ns5"} 50
 				kube_deployment_status_observed_generation{deployment="deployment-with-owner",namespace="ns5"} 0
 				kube_deployment_status_replicas{deployment="deployment-with-owner",namespace="ns5"} 0
 				kube_deployment_status_replicas_available{deployment="deployment-with-owner",namespace="ns5"} 0
@@ -308,6 +337,8 @@ func TestDeploymentStore(t *testing.T) {
 				kube_deployment_metadata_generation{deployment="deployment-without-owner",namespace="ns5"} 0
 				kube_deployment_spec_paused{deployment="deployment-without-owner",namespace="ns5"} 0
 				kube_deployment_spec_replicas{deployment="deployment-without-owner",namespace="ns5"} 200
+				kube_deployment_spec_strategy_rollingupdate_max_surge{deployment="deployment-without-owner",namespace="ns5"} 50
+				kube_deployment_spec_strategy_rollingupdate_max_unavailable{deployment="deployment-without-owner",namespace="ns5"} 50
 				kube_deployment_status_observed_generation{deployment="deployment-without-owner",namespace="ns5"} 0
 				kube_deployment_status_replicas{deployment="deployment-without-owner",namespace="ns5"} 0
 				kube_deployment_status_replicas_available{deployment="deployment-without-owner",namespace="ns5"} 0

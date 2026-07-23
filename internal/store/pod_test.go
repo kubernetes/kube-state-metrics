@@ -1103,7 +1103,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_ips{namespace="ns1",pod="pod1",uid="abc-123-xxx",ip="1.2.3.4",ip_family="4"} 1
 				kube_pod_ips{namespace="ns1",pod="pod1",uid="abc-123-xxx",ip="fc00:1234:5678:90ab:cdef:cafe:f00d:d00d",ip_family="6"} 1
 				kube_pod_start_time{namespace="ns1",pod="pod1",uid="abc-123-xxx"} 1.501569018e+09
-				kube_pod_owner{namespace="ns1",owner_is_controller="",owner_kind="",owner_name="",pod="pod1",uid="abc-123-xxx"} 1
+				kube_pod_owner{namespace="ns1",owner_api_version="",owner_api_group="",owner_is_controller="",owner_kind="",owner_name="",pod="pod1",uid="abc-123-xxx"} 1
 `,
 			MetricNames: []string{"kube_pod_created", "kube_pod_info", "kube_pod_ips", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner"},
 		},
@@ -1177,6 +1177,7 @@ func TestPodStore(t *testing.T) {
 					UID:       "abc-456-xxx",
 					OwnerReferences: []metav1.OwnerReference{
 						{
+							APIVersion: "apps/v1",
 							Kind:       "ReplicaSet",
 							Name:       "rs-name",
 							Controller: &test,
@@ -1259,7 +1260,7 @@ func TestPodStore(t *testing.T) {
 				# TYPE kube_pod_start_time gauge
 				kube_pod_info{created_by_kind="ReplicaSet",created_by_name="rs-name",host_ip="1.1.1.1",namespace="ns2",node="node2",pod="pod2",pod_ip="2.3.4.5",uid="abc-456-xxx",priority_class="",host_network="false"} 1
 				kube_pod_completion_time{namespace="ns2",pod="pod2",uid="abc-456-xxx"} 1.501888018e+09
-				kube_pod_owner{namespace="ns2",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="rs-name",pod="pod2",uid="abc-456-xxx"} 1
+				kube_pod_owner{namespace="ns2",owner_api_version="v1",owner_api_group="apps",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="rs-name",pod="pod2",uid="abc-456-xxx"} 1
 				`,
 			MetricNames: []string{"kube_pod_created", "kube_pod_info", "kube_pod_start_time", "kube_pod_completion_time", "kube_pod_owner"},
 		},

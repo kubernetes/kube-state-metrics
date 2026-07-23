@@ -30,6 +30,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -1315,7 +1316,7 @@ func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
 		basemetrics.STABLE,
 		"",
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
-			labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+			labelKeys := []string{"owner_kind", "owner_name", "owner_api_version", "owner_api_group", "owner_is_controller"}
 
 			owners := p.GetOwnerReferences()
 			if len(owners) == 0 {
@@ -1323,7 +1324,7 @@ func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   labelKeys,
-							LabelValues: []string{"", "", ""},
+							LabelValues: []string{"", "", "", "", ""},
 							Value:       1,
 						},
 					},
@@ -1333,18 +1334,17 @@ func createPodOwnerFamilyGenerator() generator.FamilyGenerator {
 			ms := make([]*metric.Metric, len(owners))
 
 			for i, owner := range owners {
+				gv := schema.FromAPIVersionAndKind(owner.APIVersion, owner.Kind).GroupVersion()
+
+				isController := "false"
 				if owner.Controller != nil {
-					ms[i] = &metric.Metric{
-						LabelKeys:   labelKeys,
-						LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
-						Value:       1,
-					}
-				} else {
-					ms[i] = &metric.Metric{
-						LabelKeys:   labelKeys,
-						LabelValues: []string{owner.Kind, owner.Name, "false"},
-						Value:       1,
-					}
+					isController = strconv.FormatBool(*owner.Controller)
+				}
+
+				ms[i] = &metric.Metric{
+					LabelKeys:   labelKeys,
+					LabelValues: []string{owner.Kind, owner.Name, gv.Version, gv.Group, isController},
+					Value:       1,
 				}
 			}
 

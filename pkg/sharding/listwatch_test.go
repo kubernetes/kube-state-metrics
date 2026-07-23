@@ -20,6 +20,8 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -201,4 +203,119 @@ func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T
 			}
 		})
 	}
+}
+
+const shardedWatchTestTimeout = 5 * time.Second
+
+func TestShardedWatchStopUnblocksPendingSend(t *testing.T) {
+	// Regression test for https://github.com/kubernetes/kubernetes/issues/113254.
+	source := watch.NewRaceFreeFake()
+	filterCalled := make(chan struct{})
+	var filterCalledOnce sync.Once
+	filtered := newShardedWatch(source, func(event watch.Event) (watch.Event, bool) {
+		filterCalledOnce.Do(func() {
+			close(filterCalled)
+		})
+		return event, true
+	})
+
+	source.Add(&v1.ConfigMap{})
+	select {
+	case <-filterCalled:
+	case <-time.After(shardedWatchTestTimeout):
+		t.Fatal("timed out waiting for the event to reach the filter")
+	}
+
+	// Do not consume ResultChan. Stop must interrupt the pending send without
+	// relying on the consumer to drain the event.
+	filtered.Stop()
+	waitForShardedWatchStop(t, filtered)
+
+	select {
+	case _, ok := <-filtered.ResultChan():
+		if ok {
+			t.Fatal("got an event after the sharded watch stopped")
+		}
+	default:
+		t.Fatal("result channel is not closed after the sharded watch stopped")
+	}
+}
+
+func TestShardedWatchStopIsIdempotent(t *testing.T) {
+	source := newCountingWatch()
+	filtered := newShardedWatch(source, func(event watch.Event) (watch.Event, bool) {
+		return event, true
+	})
+
+	const callers = 10
+	var wg sync.WaitGroup
+	wg.Add(callers)
+	for i := 0; i < callers; i++ {
+		go func() {
+			defer wg.Done()
+			filtered.Stop()
+		}()
+	}
+	wg.Wait()
+	waitForShardedWatchStop(t, filtered)
+
+	if got := source.stopCalls.Load(); got != 1 {
+		t.Fatalf("upstream Stop called %d times, want 1", got)
+	}
+}
+
+func TestShardedWatchClosesWhenUpstreamCloses(t *testing.T) {
+	source := newCountingWatch()
+	filtered := newShardedWatch(source, func(event watch.Event) (watch.Event, bool) {
+		return event, true
+	})
+
+	source.closeResult()
+	waitForShardedWatchStop(t, filtered)
+
+	select {
+	case _, ok := <-filtered.ResultChan():
+		if ok {
+			t.Fatal("got an event after the upstream watch closed")
+		}
+	default:
+		t.Fatal("result channel is not closed after the upstream watch closed")
+	}
+	if got := source.stopCalls.Load(); got != 1 {
+		t.Fatalf("upstream Stop called %d times after its result channel closed, want 1", got)
+	}
+}
+
+func waitForShardedWatchStop(t *testing.T, w *shardedWatch) {
+	t.Helper()
+	select {
+	case <-w.doneCh:
+	case <-time.After(shardedWatchTestTimeout):
+		t.Fatal("timed out waiting for the sharded watch to stop")
+	}
+}
+
+type countingWatch struct {
+	result    chan watch.Event
+	stopCalls atomic.Int32
+	stopOnce  sync.Once
+}
+
+func newCountingWatch() *countingWatch {
+	return &countingWatch{result: make(chan watch.Event)}
+}
+
+func (w *countingWatch) Stop() {
+	w.stopCalls.Add(1)
+	w.closeResult()
+}
+
+func (w *countingWatch) closeResult() {
+	w.stopOnce.Do(func() {
+		close(w.result)
+	})
+}
+
+func (w *countingWatch) ResultChan() <-chan watch.Event {
+	return w.result
 }

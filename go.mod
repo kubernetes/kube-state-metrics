@@ -7,7 +7,7 @@ require (
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
 	github.com/dlclark/regexp2 v1.12.0
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/gobuffalo/flect v1.0.3
 	github.com/google/go-cmp v0.7.0
 	github.com/netresearch/go-cron v0.15.0

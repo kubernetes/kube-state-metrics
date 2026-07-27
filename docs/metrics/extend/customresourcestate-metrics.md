@@ -1,5 +1,8 @@
 # Custom Resource State Metrics
 
+> [!NOTE]
+> `custom-resource-state` is feature-frozen in favor of [resource-state-metrics](https://github.com/kubernetes-sigs/resource-state-metrics). Once `resource-state-metrics` is stable, `custom-resource-state` will be deprecated.
+
 This section describes how to add metrics based on the state of a custom resource without writing a custom resource
 registry and running your own build of KSM.
 

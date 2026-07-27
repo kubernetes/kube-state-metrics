@@ -41,6 +41,7 @@ are deleted they are no longer visible on the `/metrics` endpoint.
   * [Resource group version compatibility](#resource-group-version-compatibility)
   * [Container Image](#container-image)
 * [Metrics Documentation](#metrics-documentation)
+  * [Custom Resource State Metrics](#custom-resource-state-metrics)
   * [ECMAScript regular expression support for allow and deny lists](#ecmascript-regular-expression-support-for-allow-and-deny-lists)
   * [Conflict resolution in label names](#conflict-resolution-in-label-names)
 * [Kube-state-metrics self metrics](#kube-state-metrics-self-metrics)
@@ -107,6 +108,11 @@ Any resources and metrics based on alpha Kubernetes APIs are excluded from any s
 which may be changed at any given release.
 
 See the [`docs`](docs) directory for more information on the exposed metrics.
+
+#### Custom Resource State Metrics
+
+> [!NOTE]
+> `custom-resource-state` is feature-frozen in favor of [resource-state-metrics](https://github.com/kubernetes-sigs/resource-state-metrics). Once `resource-state-metrics` is stable, `custom-resource-state` will be deprecated.
 
 #### Conflict resolution in label names
 

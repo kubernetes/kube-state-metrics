@@ -138,6 +138,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	if hasVersion && hasKind {
 		for _, el := range r.Map[g][v] {
 			if el.Kind == k {
+				r.clearMissingGVKWarning(gvk)
 				return []groupVersionKindPlural{
 					{
 						GroupVersionKind: schema.GroupVersionKind{
@@ -150,6 +151,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 				}, nil
 			}
 		}
+		if r.markMissingGVKWarned(gvk) {
+			klog.InfoS("Configured custom resource was not found in the cluster, no metrics will be generated for it until its CRD is installed", "gvk", gvk)
+		}
+		return nil, nil
 	}
 	if hasVersion && !hasKind {
 		kinds := r.Map[g][v]

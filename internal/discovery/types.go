@@ -49,6 +49,10 @@ type CRDiscoverer struct {
 	Map map[string]map[string][]kindPlural
 	// GVKToReflectorStopChanMap is a map of GVKs to channels that can be used to stop their corresponding reflector.
 	GVKToReflectorStopChanMap map[string]chan struct{}
+	// warnedMissingGVKs tracks fully-specified GVKs that were already logged as
+	// absent from the cache. ResolveGVKToGVKPs runs on every discovery tick, so
+	// this avoids re-logging the same missing CRD until it is resolved.
+	warnedMissingGVKs map[string]struct{}
 	// m is a mutex to protect the cache.
 	m sync.RWMutex
 	// ShouldUpdate is a flag that indicates whether the cache was updated.
@@ -67,6 +71,32 @@ func (r *CRDiscoverer) SafeWrite(f func()) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	f()
+}
+
+// markMissingGVKWarned records that the given GVK was found missing and reports
+// whether this is the first time, so the caller logs only once per missing
+// episode. The cache mutex protects warnedMissingGVKs.
+func (r *CRDiscoverer) markMissingGVKWarned(gvk schema.GroupVersionKind) bool {
+	firstTime := false
+	r.SafeWrite(func() {
+		if r.warnedMissingGVKs == nil {
+			r.warnedMissingGVKs = map[string]struct{}{}
+		}
+		key := gvk.String()
+		if _, ok := r.warnedMissingGVKs[key]; !ok {
+			r.warnedMissingGVKs[key] = struct{}{}
+			firstTime = true
+		}
+	})
+	return firstTime
+}
+
+// clearMissingGVKWarning forgets a previously recorded "missing" warning for the
+// given GVK so that a future disappearance is logged again.
+func (r *CRDiscoverer) clearMissingGVKWarning(gvk schema.GroupVersionKind) {
+	r.SafeWrite(func() {
+		delete(r.warnedMissingGVKs, gvk.String())
+	})
 }
 
 // AppendToMap appends the given GVKs to the cache.

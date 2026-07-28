@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	regexp "github.com/dlclark/regexp2"
+	regexp "github.com/dlclark/regexp2/v2"
 	"k8s.io/klog/v2"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"

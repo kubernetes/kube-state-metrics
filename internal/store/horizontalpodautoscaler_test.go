@@ -602,6 +602,35 @@ func TestHPAStore(t *testing.T) {
 				"kube_horizontalpodautoscaler_created",
 			},
 		},
+		{
+			// Verify spec.behavior scale up/down tolerance metrics.
+			Obj: &autoscaling.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "hpa1",
+					Namespace: "ns1",
+				},
+				Spec: autoscaling.HorizontalPodAutoscalerSpec{
+					MaxReplicas: 4,
+					Behavior: &autoscaling.HorizontalPodAutoscalerBehavior{
+						ScaleUp: &autoscaling.HPAScalingRules{
+							Tolerance: resourcePtr(resource.MustParse("0.5")),
+						},
+						ScaleDown: &autoscaling.HPAScalingRules{
+							Tolerance: resourcePtr(resource.MustParse("0.25")),
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_horizontalpodautoscaler_spec_behavior_scale_down_tolerance The tolerance on the ratio between the current and desired metric value below which no scale down occurs.
+				# HELP kube_horizontalpodautoscaler_spec_behavior_scale_up_tolerance The tolerance on the ratio between the current and desired metric value below which no scale up occurs.
+				# TYPE kube_horizontalpodautoscaler_spec_behavior_scale_down_tolerance gauge
+				# TYPE kube_horizontalpodautoscaler_spec_behavior_scale_up_tolerance gauge
+				kube_horizontalpodautoscaler_spec_behavior_scale_down_tolerance{horizontalpodautoscaler="hpa1",namespace="ns1"} 0.25
+				kube_horizontalpodautoscaler_spec_behavior_scale_up_tolerance{horizontalpodautoscaler="hpa1",namespace="ns1"} 0.5
+			`,
+			MetricNames: []string{"kube_horizontalpodautoscaler_spec_behavior_scale_up_tolerance", "kube_horizontalpodautoscaler_spec_behavior_scale_down_tolerance"},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(hpaMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

@@ -101,6 +101,9 @@ sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod,
 
 ## Metrics from Custom Resources
 
+> [!NOTE]
+> `custom-resource-state` is feature-frozen in favor of [resource-state-metrics](https://github.com/kubernetes-sigs/resource-state-metrics). Once `resource-state-metrics` is stable, `custom-resource-state` will be deprecated.
+
 See [Custom Resource State Metrics](metrics/extend/customresourcestate-metrics.md) for experimental support for custom resources.
 
 ## CLI Arguments

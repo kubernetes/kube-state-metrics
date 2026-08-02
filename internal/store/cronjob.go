@@ -22,6 +22,11 @@ import (
 	"fmt"
 	"time"
 
+	// Embed the IANA time zone database into the binary so that named time
+	// zones (e.g. a CronJob's spec.timeZone of "Asia/Singapore") resolve even
+	// when running from a minimal/distroless image that ships no tzdata.
+	_ "time/tzdata"
+
 	cron "github.com/netresearch/go-cron"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

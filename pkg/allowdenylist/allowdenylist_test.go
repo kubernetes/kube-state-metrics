@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	regexp "github.com/dlclark/regexp2"
+	regexp "github.com/dlclark/regexp2/v2"
 )
 
 func TestNew(t *testing.T) {
@@ -294,7 +294,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestCatastrophicBacktrackTimeout(t *testing.T) {
-	r, err := regexp.Compile("(.+)*\\?", 0)
+	r, err := regexp.Compile("(.+)*\\?", regexp.None)
 	if err != nil {
 		t.Fatal(err)
 	}

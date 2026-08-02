@@ -42,7 +42,7 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapMutatingAdmissionPolicyFunc(func(mapObj *admissionregistrationv1.MutatingAdmissionPolicy) *metric.Family {
-				var paramAPIVersion, paramKind, failurePolicy, reininvocationPolicy string
+				var paramAPIVersion, paramKind, failurePolicy, reinvocationPolicy string
 				if mapObj.Spec.ParamKind != nil {
 					paramAPIVersion = mapObj.Spec.ParamKind.APIVersion
 					paramKind = mapObj.Spec.ParamKind.Kind
@@ -50,13 +50,13 @@ var (
 				if mapObj.Spec.FailurePolicy != nil {
 					failurePolicy = string(*mapObj.Spec.FailurePolicy)
 				}
-				reininvocationPolicy = string(mapObj.Spec.ReinvocationPolicy)
+				reinvocationPolicy = string(mapObj.Spec.ReinvocationPolicy)
 
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"param_api_version", "param_kind", "failure_policy", "reinvocation_policy"},
-							LabelValues: []string{paramAPIVersion, paramKind, failurePolicy, reininvocationPolicy},
+							LabelValues: []string{paramAPIVersion, paramKind, failurePolicy, reinvocationPolicy},
 							Value:       1,
 						},
 					},

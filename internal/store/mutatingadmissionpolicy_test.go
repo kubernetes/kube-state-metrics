@@ -30,8 +30,8 @@ func TestMutatingAdmissionPolicyStore(t *testing.T) {
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 	failurePolicyFail := admissionregistrationv1.Fail
 	failurePolicyIgnore := admissionregistrationv1.Ignore
-	reininvocationPolicyNever := admissionregistrationv1.NeverReinvocationPolicy
-	reininvocationPolicyIfNeeded := admissionregistrationv1.IfNeededReinvocationPolicy
+	reinvocationPolicyNever := admissionregistrationv1.NeverReinvocationPolicy
+	reinvocationPolicyIfNeeded := admissionregistrationv1.IfNeededReinvocationPolicy
 
 	cases := []generateMetricsTestCase{
 		{
@@ -47,7 +47,7 @@ func TestMutatingAdmissionPolicyStore(t *testing.T) {
 						Kind:       "Rule",
 					},
 					FailurePolicy:      &failurePolicyFail,
-					ReinvocationPolicy: reininvocationPolicyNever,
+					ReinvocationPolicy: reinvocationPolicyNever,
 				},
 			},
 			Want: `
@@ -67,7 +67,7 @@ func TestMutatingAdmissionPolicyStore(t *testing.T) {
 				},
 				Spec: admissionregistrationv1.MutatingAdmissionPolicySpec{
 					FailurePolicy:      &failurePolicyIgnore,
-					ReinvocationPolicy: reininvocationPolicyIfNeeded,
+					ReinvocationPolicy: reinvocationPolicyIfNeeded,
 				},
 			},
 			Want: `

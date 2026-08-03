@@ -45,6 +45,10 @@ type stubStoreBuilder struct {
 	buildWriters metricsstore.MetricsWriterList
 	syncOK       atomic.Bool
 	buildCount   atomic.Int64
+	syncCount    atomic.Int64
+	// failingSyncs is how many leading WaitForStoresSync calls report failure,
+	// regardless of syncOK, so tests can pin which attempt fails.
+	failingSyncs int64
 }
 
 func (s *stubStoreBuilder) WithMetrics(_ prometheus.Registerer)                         {}
@@ -76,7 +80,27 @@ func (s *stubStoreBuilder) Build() metricsstore.MetricsWriterList {
 }
 
 func (s *stubStoreBuilder) WaitForStoresSync(_ context.Context, _ time.Duration) bool {
+	if s.syncCount.Add(1) <= s.failingSyncs {
+		return false
+	}
 	return s.syncOK.Load()
+}
+
+// waitForRebuildIdle blocks until no rebuild is in flight, so assertions do not
+// race an in-progress swap.
+func waitForRebuildIdle(t *testing.T, h *MetricsHandler) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		h.rebuildMu.Lock()
+		running := h.rebuildRunning
+		h.rebuildMu.Unlock()
+		if !running {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal("rebuild did not finish before deadline")
 }
 
 func TestBuildWriters_KeepsPreviousWritersWhenSyncFails(t *testing.T) {
@@ -92,18 +116,19 @@ func TestBuildWriters_KeepsPreviousWritersWhenSyncFails(t *testing.T) {
 	h.mtx.Unlock()
 
 	h.BuildWriters(context.Background())
+	waitForRebuildIdle(t, h)
 
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		h.mtx.RLock()
-		got := h.metricsWriters
-		h.mtx.RUnlock()
-		if stub.buildCount.Load() >= 1 && len(got) == 1 && got[0].ResourceName == "stable" {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
+	if stub.buildCount.Load() < 1 || stub.syncCount.Load() < 1 {
+		t.Fatalf("expected a build and a sync attempt; buildCount=%d syncCount=%d",
+			stub.buildCount.Load(), stub.syncCount.Load())
 	}
-	t.Fatalf("expected stable writers after failed sync; buildCount=%d", stub.buildCount.Load())
+
+	h.mtx.RLock()
+	got := h.metricsWriters
+	h.mtx.RUnlock()
+	if len(got) != 1 || got[0].ResourceName != "stable" {
+		t.Fatalf("expected stable writers to be kept after failed sync, got %+v", got)
+	}
 }
 
 func TestBuildWriters_SwapsWritersWhenSyncSucceeds(t *testing.T) {
@@ -119,18 +144,14 @@ func TestBuildWriters_SwapsWritersWhenSyncSucceeds(t *testing.T) {
 	h.mtx.Unlock()
 
 	h.BuildWriters(context.Background())
+	waitForRebuildIdle(t, h)
 
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		h.mtx.RLock()
-		got := h.metricsWriters
-		h.mtx.RUnlock()
-		if len(got) == 1 && got[0].ResourceName == "next" {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
+	h.mtx.RLock()
+	got := h.metricsWriters
+	h.mtx.RUnlock()
+	if len(got) != 1 || got[0].ResourceName != "next" {
+		t.Fatalf("expected writers to swap after successful sync, got %+v", got)
 	}
-	t.Fatal("expected writers to swap after successful sync")
 }
 
 func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {
@@ -138,23 +159,28 @@ func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {
 	initialStoreSyncRetryDelay = 10 * time.Millisecond
 	defer func() { initialStoreSyncRetryDelay = restore }()
 
+	// Only the first sync attempt fails, so the retry is what populates writers.
 	stub := &stubStoreBuilder{
 		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("first")},
+		failingSyncs: 1,
 	}
+	stub.syncOK.Store(true)
 	h := New(options.NewOptions(), nil, stub, false)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	// The first rebuild runs inline because no writers exist yet.
 	h.BuildWriters(ctx)
 
+	if got := stub.syncCount.Load(); got != 1 {
+		t.Fatalf("expected exactly one sync attempt before the retry, got %d", got)
+	}
 	h.mtx.RLock()
 	got := len(h.metricsWriters)
 	h.mtx.RUnlock()
 	if got != 0 {
 		t.Fatalf("expected no writers after failed initial sync, got %d", got)
 	}
-
-	stub.syncOK.Store(true)
 
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
@@ -186,7 +212,18 @@ func TestServeHTTP_WriterSnapshot(t *testing.T) {
 			h.mtx.Unlock()
 		},
 	}
-	h.ServeHTTP(body, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	// ServeHTTP must not hold mtx across the response body, or onFirstWrite would
+	// deadlock instead of failing.
+	done := make(chan struct{})
+	go func() {
+		h.ServeHTTP(body, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("ServeHTTP did not complete while writers were replaced")
+	}
 
 	out := rec.Body.String()
 	for _, want := range []string{"kube_test_first", "kube_test_second"} {

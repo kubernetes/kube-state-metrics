@@ -113,6 +113,94 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_persistentvolumeclaim_volume_attributes_class",
+			"The name of the VolumeAttributesClass requested by the persistent volume claim.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				volumeAttributesClassName := ""
+				if p.Spec.VolumeAttributesClassName != nil {
+					volumeAttributesClassName = *p.Spec.VolumeAttributesClassName
+				}
+
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"volume_attributes_class"},
+							LabelValues: []string{volumeAttributesClassName},
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_persistentvolumeclaim_status_current_volume_attributes_class",
+			"The current VolumeAttributesClass applied to the persistent volume claim, as reported by the CSI driver.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				currentVolumeAttributesClassName := ""
+				if p.Status.CurrentVolumeAttributesClassName != nil {
+					currentVolumeAttributesClassName = *p.Status.CurrentVolumeAttributesClassName
+				}
+
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   []string{"volume_attributes_class"},
+							LabelValues: []string{currentVolumeAttributesClassName},
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_persistentvolumeclaim_status_modify_volume_status",
+			"Information about the status of an in-progress ModifyVolume operation on the persistent volume claim.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				modifyVolumeStatus := p.Status.ModifyVolumeStatus
+
+				if modifyVolumeStatus == nil {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
+				}
+
+				status := modifyVolumeStatus.Status
+				targetVolumeAttributesClass := modifyVolumeStatus.TargetVolumeAttributesClassName
+
+				ms := []*metric.Metric{
+					{
+						LabelValues: []string{string(v1.PersistentVolumeClaimModifyVolumePending), targetVolumeAttributesClass},
+						Value:       boolFloat64(status == v1.PersistentVolumeClaimModifyVolumePending),
+					},
+					{
+						LabelValues: []string{string(v1.PersistentVolumeClaimModifyVolumeInProgress), targetVolumeAttributesClass},
+						Value:       boolFloat64(status == v1.PersistentVolumeClaimModifyVolumeInProgress),
+					},
+					{
+						LabelValues: []string{string(v1.PersistentVolumeClaimModifyVolumeInfeasible), targetVolumeAttributesClass},
+						Value:       boolFloat64(status == v1.PersistentVolumeClaimModifyVolumeInfeasible),
+					},
+				}
+
+				for _, m := range ms {
+					m.LabelKeys = []string{"status", "target_volume_attributes_class"}
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_status_phase",
 			"The phase the persistent volume claim is currently in.",
 			metric.Gauge,

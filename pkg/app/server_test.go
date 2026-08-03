@@ -220,6 +220,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_container_status_last_terminated_reason Describes the last reason the container was in terminated state.
 # HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container in unix timestamp.
 # HELP kube_pod_container_status_ready [STABLE] Describes whether the containers readiness check succeeded.
+# HELP kube_pod_container_status_resource_limits The limit resources currently allocated to a container
+# HELP kube_pod_container_status_resource_requests The request resources currently allocated to a container
 # HELP kube_pod_container_status_restarts_total [STABLE] The number of container restarts per container.
 # HELP kube_pod_container_status_running [STABLE] Describes whether the container is currently in running state.
 # HELP kube_pod_container_status_terminated [STABLE] Describes whether the container is currently in terminated state.
@@ -278,6 +280,8 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_container_status_last_terminated_reason gauge
 # TYPE kube_pod_container_status_last_terminated_timestamp gauge
 # TYPE kube_pod_container_status_ready gauge
+# TYPE kube_pod_container_status_resource_limits gauge
+# TYPE kube_pod_container_status_resource_requests gauge
 # TYPE kube_pod_container_status_restarts_total counter
 # TYPE kube_pod_container_status_running gauge
 # TYPE kube_pod_container_status_terminated gauge

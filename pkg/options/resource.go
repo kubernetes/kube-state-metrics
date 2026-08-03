@@ -37,6 +37,8 @@ var (
 		"jobs":                              struct{}{},
 		"leases":                            struct{}{},
 		"limitranges":                       struct{}{},
+		"mutatingadmissionpolicies":         struct{}{},
+		"mutatingadmissionpolicybindings":   struct{}{},
 		"mutatingwebhookconfigurations":     struct{}{},
 		"namespaces":                        struct{}{},
 		"networkpolicies":                   struct{}{},

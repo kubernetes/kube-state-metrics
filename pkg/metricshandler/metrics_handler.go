@@ -62,7 +62,15 @@ type MetricsHandler struct {
 	rebuildRunning   bool
 	pendingRebuild   bool
 	rebuildParentCtx context.Context
+	syncRetryDelay   time.Duration
 }
+
+// Backoff bounds for retrying a failed store sync while no metrics writers are
+// available. Declared as variables so tests can shorten them.
+var (
+	initialStoreSyncRetryDelay = 5 * time.Second
+	maxStoreSyncRetryDelay     = 2 * time.Minute
+)
 
 // New creates and returns a new MetricsHandler with the given options.
 func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
@@ -78,9 +86,12 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 // BuildWriters rebuilds metrics writers after store configuration changes.
 // Rebuilds are coalesced and swap in the new writer set only after reflector stores sync.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
+	m.mtx.RLock()
+	syncFirst := len(m.metricsWriters) == 0
+	m.mtx.RUnlock()
+
 	m.rebuildMu.Lock()
 	m.rebuildParentCtx = ctx
-	syncFirst := len(m.metricsWriters) == 0
 	if m.rebuildRunning {
 		m.pendingRebuild = true
 		m.rebuildMu.Unlock()
@@ -99,20 +110,64 @@ func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 func (m *MetricsHandler) rebuildLoop(initialCtx context.Context) {
 	ctx := initialCtx
 	for {
-		m.doRebuild(ctx)
+		synced := m.doRebuild(ctx)
+
+		m.mtx.RLock()
+		noWriters := len(m.metricsWriters) == 0
+		m.mtx.RUnlock()
+
 		m.rebuildMu.Lock()
-		if !m.pendingRebuild {
-			m.rebuildRunning = false
+		if m.pendingRebuild {
+			m.pendingRebuild = false
+			ctx = m.rebuildParentCtx
 			m.rebuildMu.Unlock()
-			return
+			continue
 		}
-		m.pendingRebuild = false
-		ctx = m.rebuildParentCtx
+		m.rebuildRunning = false
+		var retryDelay time.Duration
+		if !synced && noWriters {
+			m.syncRetryDelay = nextStoreSyncRetryDelay(m.syncRetryDelay)
+			retryDelay = m.syncRetryDelay
+		} else {
+			m.syncRetryDelay = 0
+		}
 		m.rebuildMu.Unlock()
+
+		if retryDelay > 0 {
+			m.scheduleSyncRetry(ctx, retryDelay)
+		}
+		return
 	}
 }
 
-func (m *MetricsHandler) doRebuild(parentCtx context.Context) {
+// scheduleSyncRetry re-runs a rebuild after delay. Without it, a store sync that
+// fails before any writer generation exists would leave the handler serving no
+// metrics until an unrelated event triggers another rebuild, which never happens
+// when autosharding is disabled.
+func (m *MetricsHandler) scheduleSyncRetry(ctx context.Context, delay time.Duration) {
+	klog.ErrorS(nil, "Store sync failed with no metrics writers available; scheduling rebuild retry", "retryDelay", delay)
+	go func() {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+		case <-timer.C:
+			m.BuildWriters(ctx)
+		}
+	}()
+}
+
+func nextStoreSyncRetryDelay(current time.Duration) time.Duration {
+	if current <= 0 {
+		return initialStoreSyncRetryDelay
+	}
+	if next := current * 2; next < maxStoreSyncRetryDelay {
+		return next
+	}
+	return maxStoreSyncRetryDelay
+}
+
+func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
 	m.mtx.Lock()
 	newCtx, newCancel := context.WithCancel(parentCtx)
 	m.storeBuilder.WithContext(newCtx)
@@ -121,7 +176,7 @@ func (m *MetricsHandler) doRebuild(parentCtx context.Context) {
 
 	syncTimeout := m.opts.StoreSyncTimeout
 	if syncTimeout <= 0 {
-		syncTimeout = 120 * time.Second
+		syncTimeout = options.DefaultStoreSyncTimeout
 	}
 	syncStart := time.Now()
 	synced := m.storeBuilder.WaitForStoresSync(newCtx, syncTimeout)
@@ -137,7 +192,7 @@ func (m *MetricsHandler) doRebuild(parentCtx context.Context) {
 			oldCancel()
 		}
 		klog.InfoS("Swapped metrics writers after store sync", "writerCount", len(newWriters), "syncWaitDuration", syncWaitDuration)
-		return
+		return true
 	}
 
 	newCancel()
@@ -146,6 +201,7 @@ func (m *MetricsHandler) doRebuild(parentCtx context.Context) {
 		"syncTimeout", syncTimeout,
 		"writerCount", len(newWriters),
 	)
+	return false
 }
 
 // ConfigureSharding configures sharding. Configuration can be used multiple times and

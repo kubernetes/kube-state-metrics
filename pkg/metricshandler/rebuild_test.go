@@ -18,15 +18,24 @@ package metricshandler
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -34,8 +43,8 @@ import (
 
 type stubStoreBuilder struct {
 	buildWriters metricsstore.MetricsWriterList
-	syncOK       bool
-	buildCount   int
+	syncOK       atomic.Bool
+	buildCount   atomic.Int64
 }
 
 func (s *stubStoreBuilder) WithMetrics(_ prometheus.Registerer)                         {}
@@ -62,18 +71,17 @@ func (s *stubStoreBuilder) WithGenerateCustomResourceStoresFunc(_ ksmtypes.Build
 }
 
 func (s *stubStoreBuilder) Build() metricsstore.MetricsWriterList {
-	s.buildCount++
+	s.buildCount.Add(1)
 	return s.buildWriters
 }
 
 func (s *stubStoreBuilder) WaitForStoresSync(_ context.Context, _ time.Duration) bool {
-	return s.syncOK
+	return s.syncOK.Load()
 }
 
 func TestBuildWriters_KeepsPreviousWritersWhenSyncFails(t *testing.T) {
 	stub := &stubStoreBuilder{
 		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("candidate")},
-		syncOK:       false,
 	}
 	opts := options.NewOptions()
 	h := New(opts, nil, stub, false)
@@ -90,19 +98,19 @@ func TestBuildWriters_KeepsPreviousWritersWhenSyncFails(t *testing.T) {
 		h.mtx.RLock()
 		got := h.metricsWriters
 		h.mtx.RUnlock()
-		if stub.buildCount >= 1 && len(got) == 1 && got[0].ResourceName == "stable" {
+		if stub.buildCount.Load() >= 1 && len(got) == 1 && got[0].ResourceName == "stable" {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatalf("expected stable writers after failed sync; buildCount=%d", stub.buildCount)
+	t.Fatalf("expected stable writers after failed sync; buildCount=%d", stub.buildCount.Load())
 }
 
 func TestBuildWriters_SwapsWritersWhenSyncSucceeds(t *testing.T) {
 	stub := &stubStoreBuilder{
 		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("next")},
-		syncOK:       true,
 	}
+	stub.syncOK.Store(true)
 	opts := options.NewOptions()
 	h := New(opts, nil, stub, false)
 
@@ -125,23 +133,108 @@ func TestBuildWriters_SwapsWritersWhenSyncSucceeds(t *testing.T) {
 	t.Fatal("expected writers to swap after successful sync")
 }
 
-func TestServeHTTP_WriterSnapshot(t *testing.T) {
-	h := New(options.NewOptions(), nil, &stubStoreBuilder{}, false)
-	w1 := metricsstore.NewMetricsWriter("first")
-	w2 := metricsstore.NewMetricsWriter("second")
-	h.mtx.Lock()
-	h.metricsWriters = metricsstore.MetricsWriterList{w1, w2}
-	h.mtx.Unlock()
+func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {
+	restore := initialStoreSyncRetryDelay
+	initialStoreSyncRetryDelay = 10 * time.Millisecond
+	defer func() { initialStoreSyncRetryDelay = restore }()
+
+	stub := &stubStoreBuilder{
+		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("first")},
+	}
+	h := New(options.NewOptions(), nil, stub, false)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h.BuildWriters(ctx)
 
 	h.mtx.RLock()
-	snapshot := append(metricsstore.MetricsWriterList(nil), h.metricsWriters...)
+	got := len(h.metricsWriters)
 	h.mtx.RUnlock()
+	if got != 0 {
+		t.Fatalf("expected no writers after failed initial sync, got %d", got)
+	}
 
+	stub.syncOK.Store(true)
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		h.mtx.RLock()
+		writers := h.metricsWriters
+		h.mtx.RUnlock()
+		if len(writers) == 1 && writers[0].ResourceName == "first" {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("expected retry to populate writers; buildCount=%d", stub.buildCount.Load())
+}
+
+func TestServeHTTP_WriterSnapshot(t *testing.T) {
+	h := New(options.NewOptions(), nil, &stubStoreBuilder{}, false)
 	h.mtx.Lock()
-	h.metricsWriters = metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("replaced")}
+	h.metricsWriters = metricsstore.MetricsWriterList{newTestWriter("first"), newTestWriter("second")}
 	h.mtx.Unlock()
 
-	if len(snapshot) != 2 || snapshot[0].ResourceName != "first" || snapshot[1].ResourceName != "second" {
-		t.Fatalf("unexpected snapshot: %+v", snapshot)
+	// Replace the writer list while ServeHTTP is mid-response: the snapshot it
+	// took must still be written out in full.
+	rec := httptest.NewRecorder()
+	body := &blockingWriter{
+		ResponseWriter: rec,
+		onFirstWrite: func() {
+			h.mtx.Lock()
+			h.metricsWriters = metricsstore.MetricsWriterList{newTestWriter("replaced")}
+			h.mtx.Unlock()
+		},
 	}
+	h.ServeHTTP(body, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+
+	out := rec.Body.String()
+	for _, want := range []string{"kube_test_first", "kube_test_second"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected %q in response, got:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "kube_test_replaced") {
+		t.Fatalf("response used writers swapped in mid-request:\n%s", out)
+	}
+}
+
+// blockingWriter runs onFirstWrite once, before the first byte of the response
+// body is written, to simulate a rebuild landing during a scrape.
+type blockingWriter struct {
+	http.ResponseWriter
+	onFirstWrite func()
+	written      bool
+}
+
+func (b *blockingWriter) Write(p []byte) (int, error) {
+	if !b.written {
+		b.written = true
+		b.onFirstWrite()
+	}
+	return b.ResponseWriter.Write(p)
+}
+
+func newTestWriter(name string) *metricsstore.MetricsWriter {
+	genFunc := func(obj interface{}) []metric.FamilyInterface {
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			panic(err)
+		}
+		return []metric.FamilyInterface{&metric.Family{
+			Name: "kube_test_" + name,
+			Metrics: []*metric.Metric{{
+				LabelKeys:   []string{"namespace"},
+				LabelValues: []string{o.GetNamespace()},
+				Value:       1,
+			}},
+		}}
+	}
+	store := metricsstore.NewMetricsStore([]string{"# HELP kube_test_" + name + " test\n"}, genFunc)
+	if err := store.Add(&v1.Service{
+		ObjectMeta: metav1.ObjectMeta{UID: types.UID(name), Name: name, Namespace: "ns"},
+	}); err != nil {
+		panic(err)
+	}
+	return metricsstore.NewMetricsWriter(name, store)
 }

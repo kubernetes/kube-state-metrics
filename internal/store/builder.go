@@ -688,10 +688,7 @@ func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) 
 		return true
 	}
 
-	syncCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	err := wait.PollUntilContextTimeout(syncCtx, ResourceDiscoveryInterval, timeout, true, func(context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, ResourceDiscoveryInterval, timeout, true, func(context.Context) (bool, error) {
 		for _, reflector := range b.reflectors {
 			if reflector.LastSyncResourceVersion() == "" {
 				return false, nil

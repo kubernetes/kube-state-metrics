@@ -358,7 +358,7 @@ kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",con
 kube_pod_container_status_waiting{namespace="default",pod="pod0",uid="abc-0",container="pod1_con2"} 0
 kube_pod_created{namespace="default",pod="pod0",uid="abc-0"} 1.5e+09
 kube_pod_info{namespace="default",pod="pod0",uid="abc-0",host_ip="1.1.1.1",pod_ip="1.2.3.4",node="node1",created_by_kind="",created_by_name="",priority_class="",host_network="false"} 1
-kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="",owner_name="",owner_is_controller=""} 1
+kube_pod_owner{namespace="default",pod="pod0",uid="abc-0",owner_kind="",owner_name="",owner_api_version="",owner_api_group="",owner_is_controller=""} 1
 kube_pod_restart_policy{namespace="default",pod="pod0",uid="abc-0",type="Always"} 1
 kube_pod_scheduler{namespace="default",pod="pod0",uid="abc-0",name="scheduler1"} 1
 kube_pod_service_account{namespace="default",pod="pod0",uid="abc-0",service_account=""} 1

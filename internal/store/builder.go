@@ -232,7 +232,7 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 }
 
 // allowList validates the given map and checks if the resources exists.
-// If there is a '*' as key, return new map with all enabled resources.
+// If there is a '*' as key, merge wildcard labels with resource-specific labels.
 func (b *Builder) allowList(list map[string][]string) (map[string][]string, error) {
 	if len(list) == 0 {
 		return nil, nil
@@ -244,16 +244,48 @@ func (b *Builder) allowList(list map[string][]string) (map[string][]string, erro
 		}
 	}
 
-	// "*" takes precedence over other specifications
-	allowedList, ok := list["*"]
-	if !ok {
+	wildcardList, hasWildcard := list["*"]
+	if !hasWildcard {
 		return list, nil
 	}
+
 	m := make(map[string][]string)
 	for _, resource := range b.enabledResources {
-		m[resource] = allowedList
+		resourceLabels := list[resource]
+		m[resource] = mergeLabels(wildcardList, resourceLabels)
 	}
 	return m, nil
+}
+
+// mergeLabels combines two label slices, deduplicating entries.
+func mergeLabels(base, additional []string) []string {
+	if len(additional) == 0 {
+		return base
+	}
+	if len(base) == 0 {
+		return additional
+	}
+
+	// Collision detection map
+	seen := make(map[string]struct{}, len(base)+len(additional))
+
+	// Assume there will be no name collisions; this will over-allocate
+	// space if collisions occur, but avoid reallocations otherwise.
+	result := make([]string, 0, len(base)+len(additional))
+
+	for _, l := range base {
+		if _, exists := seen[l]; !exists {
+			seen[l] = struct{}{}
+			result = append(result, l)
+		}
+	}
+	for _, l := range additional {
+		if _, exists := seen[l]; !exists {
+			seen[l] = struct{}{}
+			result = append(result, l)
+		}
+	}
+	return result
 }
 
 // WithAllowAnnotations configures which annotations can be returned for metrics

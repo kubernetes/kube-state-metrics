@@ -67,6 +67,25 @@ func TestWithAllowLabels(t *testing.T) {
 			}),
 		},
 		{
+			Desc:             "wildcard merged with resource-specific labels",
+			LabelsAllowlist:  map[string][]string{"*": {"common_label"}, "pods": {"pod_specific"}, "nodes": {"node_label1", "node_label2"}},
+			EnabledResources: []string{"pods", "deployments", "nodes"},
+			Wanted: LabelsAllowList(map[string][]string{
+				"deployments": {"common_label"},
+				"pods":        {"common_label", "pod_specific"},
+				"nodes":       {"common_label", "node_label1", "node_label2"},
+			}),
+		},
+		{
+			Desc:             "wildcard merged with resource-specific labels, deduplication",
+			LabelsAllowlist:  map[string][]string{"*": {"label1", "label2"}, "pods": {"label2", "label3"}},
+			EnabledResources: []string{"pods", "deployments"},
+			Wanted: LabelsAllowList(map[string][]string{
+				"deployments": {"label1", "label2"},
+				"pods":        {"label1", "label2", "label3"},
+			}),
+		},
+		{
 			Desc:             "wildcard key-value as not the only element, with resource mismatch",
 			LabelsAllowlist:  map[string][]string{"*": {"*"}, "pods": {"*"}, "cronjobs": {"*"}, "configmaps": {"*"}},
 			EnabledResources: []string{"cronjobs", "pods", "deployments"},
@@ -201,6 +220,61 @@ func TestWithAllowAnnotations(t *testing.T) {
 			t.Log("Expected maps to be equal.")
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, resolvedAllowAnnotations)
 		}
+	}
+}
+
+func TestMergeLabels(t *testing.T) {
+	tests := []struct {
+		name       string
+		base       []string
+		additional []string
+		want       []string
+	}{
+		{
+			name:       "both empty",
+			base:       nil,
+			additional: nil,
+			want:       nil,
+		},
+		{
+			name:       "base only",
+			base:       []string{"a", "b"},
+			additional: nil,
+			want:       []string{"a", "b"},
+		},
+		{
+			name:       "additional only",
+			base:       nil,
+			additional: []string{"c", "d"},
+			want:       []string{"c", "d"},
+		},
+		{
+			name:       "merge without duplicates",
+			base:       []string{"a", "b"},
+			additional: []string{"c", "d"},
+			want:       []string{"a", "b", "c", "d"},
+		},
+		{
+			name:       "merge with duplicates",
+			base:       []string{"a", "b", "c"},
+			additional: []string{"b", "c", "d"},
+			want:       []string{"a", "b", "c", "d"},
+		},
+		{
+			name:       "all duplicates",
+			base:       []string{"a", "b"},
+			additional: []string{"a", "b"},
+			want:       []string{"a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mergeLabels(tt.base, tt.additional)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("mergeLabels() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

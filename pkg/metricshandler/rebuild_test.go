@@ -46,9 +46,9 @@ type stubStoreBuilder struct {
 	syncOK       atomic.Bool
 	buildCount   atomic.Int64
 	syncCount    atomic.Int64
-	// failingSyncs is how many leading WaitForStoresSync calls report failure,
-	// regardless of syncOK, so tests can pin which attempt fails.
-	failingSyncs int64
+	// syncGate, when set, makes WaitForStoresSync block until a result is sent.
+	// This lets tests assert mid-retry state without racing the retry timer.
+	syncGate chan bool
 }
 
 func (s *stubStoreBuilder) WithMetrics(_ prometheus.Registerer)                         {}
@@ -80,8 +80,9 @@ func (s *stubStoreBuilder) Build() metricsstore.MetricsWriterList {
 }
 
 func (s *stubStoreBuilder) WaitForStoresSync(_ context.Context, _ time.Duration) bool {
-	if s.syncCount.Add(1) <= s.failingSyncs {
-		return false
+	s.syncCount.Add(1)
+	if s.syncGate != nil {
+		return <-s.syncGate
 	}
 	return s.syncOK.Load()
 }
@@ -156,25 +157,33 @@ func TestBuildWriters_SwapsWritersWhenSyncSucceeds(t *testing.T) {
 
 func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {
 	restore := initialStoreSyncRetryDelay
-	initialStoreSyncRetryDelay = 10 * time.Millisecond
+	initialStoreSyncRetryDelay = time.Millisecond
 	defer func() { initialStoreSyncRetryDelay = restore }()
 
-	// Only the first sync attempt fails, so the retry is what populates writers.
+	// Channel-gated sync: first attempt fails immediately; the retry blocks until
+	// the test releases a successful result, so mid-retry assertions cannot race
+	// the retry timer.
+	syncGate := make(chan bool)
 	stub := &stubStoreBuilder{
 		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("first")},
-		failingSyncs: 1,
+		syncGate:     syncGate,
 	}
-	stub.syncOK.Store(true)
 	h := New(options.NewOptions(), nil, stub, false)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	firstSyncDone := make(chan struct{})
+	go func() {
+		syncGate <- false
+		close(firstSyncDone)
+	}()
 	// The first rebuild runs inline because no writers exist yet.
 	h.BuildWriters(ctx)
+	<-firstSyncDone
 
-	if got := stub.syncCount.Load(); got != 1 {
-		t.Fatalf("expected exactly one sync attempt before the retry, got %d", got)
-	}
+	// Writers stay empty until we release the retry, even if the retry timer has
+	// already fired and is blocked in WaitForStoresSync.
 	h.mtx.RLock()
 	got := len(h.metricsWriters)
 	h.mtx.RUnlock()
@@ -182,17 +191,25 @@ func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {
 		t.Fatalf("expected no writers after failed initial sync, got %d", got)
 	}
 
+	// Release the retry sync as success. Send in a goroutine so we do not block
+	// if the retry has not entered WaitForStoresSync yet.
+	go func() { syncGate <- true }()
+
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
 		h.mtx.RLock()
 		writers := h.metricsWriters
 		h.mtx.RUnlock()
 		if len(writers) == 1 && writers[0].ResourceName == "first" {
+			if stub.syncCount.Load() < 2 {
+				t.Fatalf("expected retry sync attempt; syncCount=%d", stub.syncCount.Load())
+			}
 			return
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(time.Millisecond)
 	}
-	t.Fatalf("expected retry to populate writers; buildCount=%d", stub.buildCount.Load())
+	t.Fatalf("expected retry to populate writers; buildCount=%d syncCount=%d",
+		stub.buildCount.Load(), stub.syncCount.Load())
 }
 
 func TestServeHTTP_WriterSnapshot(t *testing.T) {

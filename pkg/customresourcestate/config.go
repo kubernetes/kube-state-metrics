@@ -191,6 +191,8 @@ func FromConfig(decoder ConfigDecoder, discovererInstance *discovery.CRDiscovere
 			resolvedSet /* GVKPs */, err := discovererInstance.ResolveGVKToGVKPs(schema.GroupVersionKind(resource.GroupVersionKind))
 			if err != nil {
 				klog.ErrorS(err, "failed to resolve GVK", "gvk", resource.GroupVersionKind)
+			} else if len(resolvedSet) == 0 {
+				klog.InfoS("no matching CRD found for configured GVK, skipping", "gvk", resource.GroupVersionKind)
 			}
 			for _, resolved /* GVKP */ := range resolvedSet {
 				// Set their G** attributes to various resolutions of the GVK.

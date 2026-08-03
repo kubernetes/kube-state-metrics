@@ -1059,6 +1059,8 @@ func TestConfigureResourcesAndMetrics(t *testing.T) {
   "kube_pod_labels": {}
 "metric_opt_in_list":
   "kube_pod_status_phase": {}
+"label_selectors":
+  "pods": "app=frontend"
 "labels_allow_list":
   "labelX": 
     - foo 
@@ -1074,6 +1076,7 @@ func TestConfigureResourcesAndMetrics(t *testing.T) {
 	opts.MetricDenylist = options.MetricSet{"olddeny": {}}
 	opts.MetricOptInList = options.MetricSet{"oldoptin": {}}
 	opts.LabelsAllowList = options.LabelsAllowList{"oldlabel": {"oldvalue"}}
+	opts.LabelSelectors = options.LabelSelectorSet{"nodes": "tenant=team-a"}
 	opts.AnnotationsAllowList = options.LabelsAllowList{"oldannotation": {"oldvalue"}}
 
 	newOpts := configureResourcesAndMetrics(opts, []byte(configYAML))
@@ -1119,6 +1122,14 @@ func TestConfigureResourcesAndMetrics(t *testing.T) {
 	}
 	if vals, ok := newOpts.LabelsAllowList["oldlabel"]; ok {
 		t.Errorf("expected oldlabel to be overwritten, got %v", vals)
+	}
+
+	// Check label selectors
+	if selector, ok := newOpts.LabelSelectors["pods"]; !ok || selector != "app=frontend" {
+		t.Errorf("expected pods label selector to be overwritten, got %q", selector)
+	}
+	if selector, ok := newOpts.LabelSelectors["nodes"]; ok {
+		t.Errorf("expected old nodes label selector to be overwritten, got %q", selector)
 	}
 
 	// Check annotations allow list

@@ -24,6 +24,10 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
@@ -36,6 +40,21 @@ type expectedError struct {
 	expectedResourceError bool
 	expectedLabelError    bool
 	expectedNotEqual      bool
+}
+
+type fakeListerWatcher struct {
+	listOptions  []metav1.ListOptions
+	watchOptions []metav1.ListOptions
+}
+
+func (r *fakeListerWatcher) List(options metav1.ListOptions) (runtime.Object, error) {
+	r.listOptions = append(r.listOptions, options)
+	return &v1.PodList{}, nil
+}
+
+func (r *fakeListerWatcher) Watch(options metav1.ListOptions) (watch.Interface, error) {
+	r.watchOptions = append(r.watchOptions, options)
+	return watch.NewEmptyWatch(), nil
 }
 
 func TestWithAllowLabels(t *testing.T) {
@@ -296,6 +315,38 @@ func TestCRReflectorStopChanRespondsToContextCancel(t *testing.T) {
 	}
 }
 
+func TestWithLabelSelectorFilters(t *testing.T) {
+	tests := []struct {
+		Desc          string
+		LabelSelector map[string]string
+		Want          map[string]string
+		WantError     bool
+	}{
+		{
+			Desc:          "built-in resource selector",
+			LabelSelector: map[string]string{"pods": "app=frontend", "nodes": "tenant=team-a"},
+			Want:          map[string]string{"pods": "app=frontend", "nodes": "tenant=team-a"},
+		},
+		{
+			Desc:          "unknown resource selector",
+			LabelSelector: map[string]string{"foos": "app=frontend"},
+			WantError:     true,
+		},
+	}
+
+	for _, test := range tests {
+		b := NewBuilder()
+		err := b.WithLabelSelectorFilters(test.LabelSelector)
+
+		if (err != nil) != test.WantError {
+			t.Fatalf("Test error for Desc: %s. Wanted Error: %v, Got Error: %v", test.Desc, test.WantError, err)
+		}
+		if err == nil && !reflect.DeepEqual(b.labelSelectorFilters, test.Want) {
+			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Want, b.labelSelectorFilters)
+		}
+	}
+}
+
 func TestCRReflectorStopChanRespondsToGVKStop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -342,5 +393,39 @@ func TestClusterScopedStoresNotDuplicatedPerNamespace(t *testing.T) {
 
 	if got := len(b.buildPodStores()); got != 3 {
 		t.Errorf("namespaced pod stores across 3 namespaces: got %d, want 3", got)
+	}
+}
+
+func TestWithLabelSelector(t *testing.T) {
+	lw := &fakeListerWatcher{}
+	wrapped := withLabelSelector(lw, "tenant in (team-a,team-b)")
+
+	_, err := wrapped.List(metav1.ListOptions{FieldSelector: "spec.nodeName=node-a", ResourceVersion: "10"})
+	if err != nil {
+		t.Fatalf("unexpected list error: %v", err)
+	}
+
+	_, err = wrapped.Watch(metav1.ListOptions{FieldSelector: "spec.nodeName=node-a"})
+	if err != nil {
+		t.Fatalf("unexpected watch error: %v", err)
+	}
+
+	if len(lw.listOptions) != 1 {
+		t.Fatalf("expected 1 list call, got %d", len(lw.listOptions))
+	}
+	if len(lw.watchOptions) != 1 {
+		t.Fatalf("expected 1 watch call, got %d", len(lw.watchOptions))
+	}
+	if got := lw.listOptions[0].LabelSelector; got != "tenant in (team-a,team-b)" {
+		t.Fatalf("expected list label selector to be propagated, got %q", got)
+	}
+	if got := lw.watchOptions[0].LabelSelector; got != "tenant in (team-a,team-b)" {
+		t.Fatalf("expected watch label selector to be propagated, got %q", got)
+	}
+	if got := lw.listOptions[0].FieldSelector; got != "spec.nodeName=node-a" {
+		t.Fatalf("expected list field selector to be preserved, got %q", got)
+	}
+	if got := lw.listOptions[0].ResourceVersion; got != "10" {
+		t.Fatalf("expected list resource version to be preserved, got %q", got)
 	}
 }

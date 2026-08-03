@@ -178,6 +178,10 @@ func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
 	if syncTimeout <= 0 {
 		syncTimeout = options.DefaultStoreSyncTimeout
 	}
+	// mtx is deliberately released before waiting: ServeHTTP takes it for read on
+	// every scrape, so holding it for up to syncTimeout would stall all scrapes
+	// for the whole sync window. Rebuilds are already serialized by rebuildMu, so
+	// no other Build() can run concurrently with the wait.
 	syncStart := time.Now()
 	synced := m.storeBuilder.WaitForStoresSync(newCtx, syncTimeout)
 	syncWaitDuration := time.Since(syncStart)

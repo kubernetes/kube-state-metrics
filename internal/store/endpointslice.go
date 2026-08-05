@@ -153,7 +153,7 @@ func createEndpointsSliceEndpoints() generator.FamilyGenerator {
 				}
 
 				if ep.Conditions.Terminating != nil {
-					serving = strconv.FormatBool(*ep.Conditions.Terminating)
+					terminating = strconv.FormatBool(*ep.Conditions.Terminating)
 				}
 				if ep.Hostname != nil {
 					hostname = *ep.Hostname
@@ -174,7 +174,7 @@ func createEndpointsSliceEndpoints() generator.FamilyGenerator {
 				}
 
 				labelKeys := []string{"ready", "serving", "hostname", "terminating", "targetref_kind", "targetref_name", "targetref_namespace", "endpoint_nodename", "endpoint_zone", "address"}
-				labelValues := []string{ready, serving, terminating, hostname, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone}
+				labelValues := []string{ready, serving, hostname, terminating, targetrefKind, targetrefName, targetrefNamespace, endpointNodename, endpointZone}
 
 				for _, address := range ep.Addresses {
 					newlabelValues := make([]string, len(labelValues))

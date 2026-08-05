@@ -33,6 +33,7 @@ func TestEndpointSliceStore(t *testing.T) {
 	hostname := "host"
 	zone := "west"
 	ready := true
+	serving := true
 	terminating := false
 	addresses := []string{"10.0.0.1", "192.168.1.10"}
 
@@ -108,6 +109,7 @@ func TestEndpointSliceStore(t *testing.T) {
 						Conditions: discoveryv1.EndpointConditions{
 							Ready:       &ready,
 							Terminating: &terminating,
+							Serving:     &serving,
 						},
 						Hostname:  &hostname,
 						Zone:      &zone,
@@ -120,8 +122,8 @@ func TestEndpointSliceStore(t *testing.T) {
 					# HELP kube_endpointslice_endpoints_hints Topology routing hints attached to endpoints
 					# TYPE kube_endpointslice_endpoints gauge
 					# TYPE kube_endpointslice_endpoints_hints gauge
-					kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="",namespace="test",ready="true",serving="false",targetref_kind="",targetref_name="",targetref_namespace="",terminating="host"} 1
-					kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="",namespace="test",ready="true",serving="false",targetref_kind="",targetref_name="",targetref_namespace="",terminating="host"} 1
+					kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",namespace="test",ready="true",serving="true",targetref_kind="",targetref_name="",targetref_namespace="",terminating="false"} 1
+					kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",namespace="test",ready="true",serving="true",targetref_kind="",targetref_name="",targetref_namespace="",terminating="false"} 1
 				  `,
 
 			MetricNames: []string{
@@ -141,6 +143,7 @@ func TestEndpointSliceStore(t *testing.T) {
 						Conditions: discoveryv1.EndpointConditions{
 							Ready:       &ready,
 							Terminating: &terminating,
+							Serving:     &serving,
 						},
 						Hostname:  &hostname,
 						Zone:      &zone,
@@ -159,8 +162,8 @@ func TestEndpointSliceStore(t *testing.T) {
 					# TYPE kube_endpointslice_endpoints gauge
         			# TYPE kube_endpointslice_endpoints_hints gauge
          			kube_endpointslice_endpoints_hints{address="10.0.0.1",endpointslice="test_endpointslice-endpoints",for_zone="zone1",namespace="test"} 1
-        			kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="",namespace="test",ready="true",serving="false",targetref_kind="",targetref_name="",targetref_namespace="",terminating="host"} 1
-					kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="",namespace="test",ready="true",serving="false",targetref_kind="",targetref_name="",targetref_namespace="",terminating="host"} 1
+         			kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",namespace="test",ready="true",serving="true",targetref_kind="",targetref_name="",targetref_namespace="",terminating="false"} 1
+					kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",namespace="test",ready="true",serving="true",targetref_kind="",targetref_name="",targetref_namespace="",terminating="false"} 1
 				`,
 
 			MetricNames: []string{

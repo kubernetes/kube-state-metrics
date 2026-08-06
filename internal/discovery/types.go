@@ -57,6 +57,10 @@ type CRDiscoverer struct {
 	m sync.RWMutex
 	// ShouldUpdate is a flag that indicates whether the cache was updated.
 	WasUpdated bool
+	// cacheRevision changes whenever the discoverable GVK set changes. It lets
+	// reconciliation distinguish delete/re-add cycles that resolve to the same
+	// GVR strings but replace reflector stop channels.
+	cacheRevision uint64
 }
 
 // SafeRead executes the given function while holding a read lock.
@@ -100,7 +104,9 @@ func (r *CRDiscoverer) clearMissingGVKWarning(gvk schema.GroupVersionKind) {
 }
 
 // AppendToMap appends the given GVKs to the cache.
-func (r *CRDiscoverer) AppendToMap(gvkps ...groupVersionKindPlural) {
+// It returns true when at least one new kind entry was added.
+func (r *CRDiscoverer) AppendToMap(gvkps ...groupVersionKindPlural) bool {
+	changed := false
 	if r.Map == nil {
 		r.Map = map[string]map[string][]kindPlural{}
 	}
@@ -123,11 +129,16 @@ func (r *CRDiscoverer) AppendToMap(gvkps ...groupVersionKindPlural) {
 		}
 		if !alreadyExists {
 			r.Map[gvkp.Group][gvkp.Version] = append(r.Map[gvkp.Group][gvkp.Version], kindPlural{Kind: gvkp.Kind, Plural: gvkp.Plural})
+			changed = true
 		}
 		if _, exists := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]; !exists {
 			r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()] = make(chan struct{})
 		}
 	}
+	if changed {
+		r.cacheRevision++
+	}
+	return changed
 }
 
 // GetStopChanForGVK returns the stop channel for the given GVK under the read lock.
@@ -140,7 +151,10 @@ func (r *CRDiscoverer) GetStopChanForGVK(gvk string) chan struct{} {
 }
 
 // RemoveFromMap removes the given GVKs from the cache.
-func (r *CRDiscoverer) RemoveFromMap(gvkps ...groupVersionKindPlural) {
+// It returns true when at least one kind entry was removed. Stop channels are
+// closed only for GVKs that were actually present.
+func (r *CRDiscoverer) RemoveFromMap(gvkps ...groupVersionKindPlural) bool {
+	changed := false
 	for _, gvkp := range gvkps {
 		if _, ok := r.Map[gvkp.Group]; !ok {
 			continue
@@ -154,6 +168,7 @@ func (r *CRDiscoverer) RemoveFromMap(gvkps ...groupVersionKindPlural) {
 					close(r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()])
 					delete(r.GVKToReflectorStopChanMap, gvkp.GroupVersionKind.String())
 				}
+				changed = true
 				if len(r.Map[gvkp.Group][gvkp.Version]) == 1 {
 					delete(r.Map[gvkp.Group], gvkp.Version)
 					if len(r.Map[gvkp.Group]) == 0 {
@@ -166,4 +181,69 @@ func (r *CRDiscoverer) RemoveFromMap(gvkps ...groupVersionKindPlural) {
 			}
 		}
 	}
+	if changed {
+		r.cacheRevision++
+	}
+	return changed
+}
+
+// applyCRDUpdate applies only the changed GVKs from a CRD update. Status-only
+// or metadata-only updates preserve existing reflector stop channels.
+// The caller must hold r.m for writing.
+func (r *CRDiscoverer) applyCRDUpdate(oldGVKPs, newGVKPs []groupVersionKindPlural) bool {
+	if equalGVKPSet(oldGVKPs, newGVKPs) {
+		return false
+	}
+	removed, added := diffGVKPs(oldGVKPs, newGVKPs)
+	changed := r.RemoveFromMap(removed...)
+	if r.AppendToMap(added...) {
+		changed = true
+	}
+	if changed {
+		r.WasUpdated = true
+	}
+	return changed
+}
+
+// equalGVKPSet reports whether a and b contain the same GVK+plural entries,
+// ignoring order.
+func equalGVKPSet(a, b []groupVersionKindPlural) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	counts := make(map[string]int, len(a))
+	for _, gvkp := range a {
+		counts[gvkp.String()]++
+	}
+	for _, gvkp := range b {
+		key := gvkp.String()
+		if counts[key] == 0 {
+			return false
+		}
+		counts[key]--
+	}
+	return true
+}
+
+// diffGVKPs returns entries present only in old and only in new.
+func diffGVKPs(oldGVKPs, newGVKPs []groupVersionKindPlural) (removed, added []groupVersionKindPlural) {
+	oldSet := make(map[string]groupVersionKindPlural, len(oldGVKPs))
+	newSet := make(map[string]groupVersionKindPlural, len(newGVKPs))
+	for _, gvkp := range oldGVKPs {
+		oldSet[gvkp.String()] = gvkp
+	}
+	for _, gvkp := range newGVKPs {
+		newSet[gvkp.String()] = gvkp
+	}
+	for key, gvkp := range oldSet {
+		if _, ok := newSet[key]; !ok {
+			removed = append(removed, gvkp)
+		}
+	}
+	for key, gvkp := range newSet {
+		if _, ok := oldSet[key]; !ok {
+			added = append(added, gvkp)
+		}
+	}
+	return removed, added
 }

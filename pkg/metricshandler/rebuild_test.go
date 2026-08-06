@@ -48,7 +48,8 @@ type stubStoreBuilder struct {
 	syncCount    atomic.Int64
 	// syncGate, when set, makes WaitForStoresSync block until a result is sent.
 	// This lets tests assert mid-retry state without racing the retry timer.
-	syncGate chan bool
+	syncGate     chan bool
+	syncObserved chan bool
 }
 
 func (s *stubStoreBuilder) WithMetrics(_ prometheus.Registerer)                         {}
@@ -82,7 +83,11 @@ func (s *stubStoreBuilder) Build() metricsstore.MetricsWriterList {
 func (s *stubStoreBuilder) WaitForStoresSync(_ context.Context, _ time.Duration) bool {
 	s.syncCount.Add(1)
 	if s.syncGate != nil {
-		return <-s.syncGate
+		result := <-s.syncGate
+		if s.syncObserved != nil {
+			s.syncObserved <- result
+		}
+		return result
 	}
 	return s.syncOK.Load()
 }
@@ -116,7 +121,9 @@ func TestBuildWriters_KeepsPreviousWritersWhenSyncFails(t *testing.T) {
 	h.metricsWriters = existing
 	h.mtx.Unlock()
 
-	h.BuildWriters(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h.BuildWriters(ctx)
 	waitForRebuildIdle(t, h)
 
 	if stub.buildCount.Load() < 1 || stub.syncCount.Load() < 1 {
@@ -208,6 +215,57 @@ func TestBuildWriters_DoesNotRetryFailedRebuildAfterEmptyGenerationInstalled(t *
 	}
 }
 
+func TestBuildWriters_RetriesFailedSyncWithExistingWriters(t *testing.T) {
+	restore := initialStoreSyncRetryDelay
+	initialStoreSyncRetryDelay = time.Millisecond
+	defer func() { initialStoreSyncRetryDelay = restore }()
+
+	syncGate := make(chan bool, 1)
+	syncObserved := make(chan bool, 1)
+	stub := &stubStoreBuilder{
+		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("next")},
+		syncGate:     syncGate,
+		syncObserved: syncObserved,
+	}
+	h := New(options.NewOptions(), nil, stub, false)
+	h.mtx.Lock()
+	h.metricsWriters = metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("stable")}
+	h.mtx.Unlock()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	syncGate <- false
+	h.BuildWriters(ctx)
+	if result := <-syncObserved; result {
+		t.Fatal("expected first sync attempt to fail")
+	}
+
+	h.mtx.RLock()
+	got := h.metricsWriters
+	h.mtx.RUnlock()
+	if len(got) != 1 || got[0].ResourceName != "stable" {
+		t.Fatalf("expected stable writers to remain active after failed sync, got %+v", got)
+	}
+
+	syncGate <- true
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		h.mtx.RLock()
+		got = h.metricsWriters
+		h.mtx.RUnlock()
+		if len(got) == 1 && got[0].ResourceName == "next" {
+			waitForRebuildIdle(t, h)
+			if stub.syncCount.Load() < 2 {
+				t.Fatalf("expected retry sync attempt; syncCount=%d", stub.syncCount.Load())
+			}
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("expected retry to replace stable writers; buildCount=%d syncCount=%d",
+		stub.buildCount.Load(), stub.syncCount.Load())
+}
+
 func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {
 	restore := initialStoreSyncRetryDelay
 	initialStoreSyncRetryDelay = time.Millisecond
@@ -256,6 +314,9 @@ func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {
 			if stub.syncCount.Load() < 2 {
 				t.Fatalf("expected retry sync attempt; syncCount=%d", stub.syncCount.Load())
 			}
+			// The retry rebuild must leave rebuildLoop before the deferred
+			// initialStoreSyncRetryDelay restore runs.
+			waitForRebuildIdle(t, h)
 			return
 		}
 		time.Sleep(time.Millisecond)
@@ -343,4 +404,85 @@ func newTestWriter(name string) *metricsstore.MetricsWriter {
 		panic(err)
 	}
 	return metricsstore.NewMetricsWriter(name, store)
+}
+
+func TestConfigureStore_AppliesConfigUnderLockThenRebuilds(t *testing.T) {
+	stub := &stubStoreBuilder{
+		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("configured")},
+	}
+	stub.syncOK.Store(true)
+	h := New(options.NewOptions(), nil, stub, false)
+
+	h.mtx.Lock()
+	h.metricsWriters = metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("prev")}
+	h.mtx.Unlock()
+
+	var configured atomic.Bool
+	h.ConfigureStore(context.Background(), func(b ksmtypes.BuilderInterface) {
+		if b != stub {
+			t.Fatalf("expected ConfigureStore to pass the handler store builder")
+		}
+		configured.Store(true)
+	})
+	waitForRebuildIdle(t, h)
+
+	if !configured.Load() {
+		t.Fatal("expected ConfigureStore callback to run")
+	}
+	if stub.buildCount.Load() < 1 {
+		t.Fatalf("expected rebuild after ConfigureStore; buildCount=%d", stub.buildCount.Load())
+	}
+
+	h.mtx.RLock()
+	got := h.metricsWriters
+	h.mtx.RUnlock()
+	if len(got) != 1 || got[0].ResourceName != "configured" {
+		t.Fatalf("expected writers swapped after ConfigureStore rebuild, got %+v", got)
+	}
+}
+
+func TestConfigureStore_CoalescesWithInFlightRebuild(t *testing.T) {
+	syncGate := make(chan bool, 1)
+	stub := &stubStoreBuilder{
+		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("next")},
+		syncGate:     syncGate,
+	}
+	h := New(options.NewOptions(), nil, stub, false)
+
+	h.mtx.Lock()
+	h.metricsWriters = metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("prev")}
+	h.mtx.Unlock()
+
+	// Start an async rebuild that blocks in WaitForStoresSync.
+	h.BuildWriters(context.Background())
+
+	deadline := time.Now().Add(2 * time.Second)
+	for stub.syncCount.Load() < 1 {
+		if time.Now().After(deadline) {
+			t.Fatal("first rebuild did not reach WaitForStoresSync")
+		}
+		time.Sleep(time.Millisecond)
+	}
+
+	var configDuringWait atomic.Int64
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) {
+			configDuringWait.Add(1)
+		})
+	}()
+
+	// Release the first sync as success; coalesced rebuild from ConfigureStore follows.
+	syncGate <- true
+	go func() { syncGate <- true }()
+	<-done
+	waitForRebuildIdle(t, h)
+
+	if configDuringWait.Load() != 1 {
+		t.Fatalf("expected ConfigureStore callback once, got %d", configDuringWait.Load())
+	}
+	if stub.buildCount.Load() < 2 {
+		t.Fatalf("expected coalesced rebuild after ConfigureStore during wait; buildCount=%d", stub.buildCount.Load())
+	}
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## main / unreleased
+
+* [BUGFIX] Wait for reflector initial list before swapping metrics writers on custom resource state rebuild
+
 ## v2.19.1 / 2026-06-10
 
 * This release builds with Go `v1.26.4`

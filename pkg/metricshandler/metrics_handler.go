@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/prometheus/common/expfmt"
 
@@ -50,13 +51,28 @@ type MetricsHandler struct {
 
 	cancel func()
 
-	// mtx protects metricsWriters, curShard, and curTotalShards
+	// mtx protects metricsWriters, curShard, curTotalShards, and storeBuilder
+	// configuration (With* calls). Build() runs under this lock; WaitForStoresSync
+	// deliberately does not, so scrapes are not blocked for the sync timeout.
 	mtx                *sync.RWMutex
 	metricsWriters     metricsstore.MetricsWriterList
 	curTotalShards     int
 	curShard           int32
 	enableGZIPEncoding bool
+
+	rebuildMu        sync.Mutex
+	rebuildRunning   bool
+	pendingRebuild   bool
+	rebuildParentCtx context.Context
+	syncRetryDelay   time.Duration
 }
+
+// Backoff bounds for retrying a failed store sync while no metrics writers are
+// available. Declared as variables so tests can shorten them.
+var (
+	initialStoreSyncRetryDelay = 5 * time.Second
+	maxStoreSyncRetryDelay     = 2 * time.Minute
+)
 
 // New creates and returns a new MetricsHandler with the given options.
 func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
@@ -69,35 +85,153 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 	}
 }
 
-// BuildWriters builds the metrics writers, cancelling any previous context and passing a new one on every build.
-// Build can be used multiple times and concurrently.
+// BuildWriters rebuilds metrics writers after store configuration changes.
+// Rebuilds are coalesced and swap in the new writer set only after reflector stores sync.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
+	m.mtx.RLock()
+	syncFirst := len(m.metricsWriters) == 0
+	m.mtx.RUnlock()
 
-	if m.cancel != nil {
-		m.cancel()
+	m.rebuildMu.Lock()
+	m.rebuildParentCtx = ctx
+	if m.rebuildRunning {
+		m.pendingRebuild = true
+		m.rebuildMu.Unlock()
+		return
 	}
-	ctx, m.cancel = context.WithCancel(ctx)
-	m.storeBuilder.WithContext(ctx)
-	m.metricsWriters = m.storeBuilder.Build()
+	m.rebuildRunning = true
+	m.rebuildMu.Unlock()
+
+	if syncFirst {
+		m.rebuildLoop(ctx)
+		return
+	}
+	go m.rebuildLoop(ctx)
+}
+
+func (m *MetricsHandler) rebuildLoop(initialCtx context.Context) {
+	ctx := initialCtx
+	for {
+		synced := m.doRebuild(ctx)
+
+		m.rebuildMu.Lock()
+		if m.pendingRebuild {
+			m.pendingRebuild = false
+			ctx = m.rebuildParentCtx
+			m.rebuildMu.Unlock()
+			continue
+		}
+		m.rebuildRunning = false
+		var retryDelay time.Duration
+		if !synced {
+			m.syncRetryDelay = nextStoreSyncRetryDelay(m.syncRetryDelay)
+			retryDelay = m.syncRetryDelay
+		} else {
+			m.syncRetryDelay = 0
+		}
+		m.rebuildMu.Unlock()
+
+		if retryDelay > 0 {
+			m.scheduleSyncRetry(ctx, retryDelay)
+		}
+		return
+	}
+}
+
+// scheduleSyncRetry re-runs a failed rebuild after a bounded backoff. Existing
+// writers remain active until a retry successfully synchronizes and swaps.
+func (m *MetricsHandler) scheduleSyncRetry(ctx context.Context, delay time.Duration) {
+	klog.ErrorS(nil, "Store sync failed; scheduling rebuild retry", "retryDelay", delay)
+	go func() {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+		case <-timer.C:
+			m.BuildWriters(ctx)
+		}
+	}()
+}
+
+func nextStoreSyncRetryDelay(current time.Duration) time.Duration {
+	if current <= 0 {
+		return initialStoreSyncRetryDelay
+	}
+	if next := current * 2; next < maxStoreSyncRetryDelay {
+		return next
+	}
+	return maxStoreSyncRetryDelay
+}
+
+func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
+	m.mtx.Lock()
+	newCtx, newCancel := context.WithCancel(parentCtx)
+	m.storeBuilder.WithContext(newCtx)
+	newWriters := m.storeBuilder.Build()
+	m.mtx.Unlock()
+
+	syncTimeout := m.opts.StoreSyncTimeout
+	if syncTimeout <= 0 {
+		syncTimeout = options.DefaultStoreSyncTimeout
+	}
+	// mtx is deliberately released before waiting: ServeHTTP takes it for read on
+	// every scrape, so holding it for up to syncTimeout would stall all scrapes
+	// for the whole sync window. Rebuilds are already serialized by rebuildMu, so
+	// no other Build() can run concurrently with the wait. storeBuilder config
+	// may still change under mtx (ConfigureStore / ConfigureSharding); that only
+	// marks a pending rebuild and does not disturb the reflectors being waited on.
+	syncStart := time.Now()
+	synced := m.storeBuilder.WaitForStoresSync(newCtx, syncTimeout)
+	syncWaitDuration := time.Since(syncStart)
+
+	if synced {
+		m.mtx.Lock()
+		oldCancel := m.cancel
+		m.metricsWriters = newWriters
+		m.cancel = newCancel
+		m.mtx.Unlock()
+		if oldCancel != nil {
+			oldCancel()
+		}
+		klog.InfoS("Swapped metrics writers after store sync", "writerCount", len(newWriters), "syncWaitDuration", syncWaitDuration)
+		return true
+	}
+
+	newCancel()
+	klog.ErrorS(nil, "Store sync timed out during metrics writer rebuild; keeping previous writers",
+		"syncWaitDuration", syncWaitDuration,
+		"syncTimeout", syncTimeout,
+		"writerCount", len(newWriters),
+	)
+	return false
+}
+
+// ConfigureStore applies storeBuilder configuration under mtx, then rebuilds
+// writers. Runtime callers that mutate the shared builder (for example CR
+// discovery) must use this instead of calling builder With* methods directly,
+// so configuration cannot race with Build().
+func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface)) {
+	if configure == nil {
+		m.BuildWriters(ctx)
+		return
+	}
+	m.mtx.Lock()
+	configure(m.storeBuilder)
+	m.mtx.Unlock()
+	m.BuildWriters(ctx)
 }
 
 // ConfigureSharding configures sharding. Configuration can be used multiple times and
 // concurrently.
 func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
-	m.mtx.Lock()
-
 	if totalShards != 1 {
 		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
 	}
-	m.curShard = shard
-	m.curTotalShards = totalShards
-	m.storeBuilder.WithSharding(shard, totalShards)
-
-	// unlock because BuildWriters will hold a lock again
-	m.mtx.Unlock()
-	m.BuildWriters(ctx)
+	m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) {
+		m.curShard = shard
+		m.curTotalShards = totalShards
+		b.WithSharding(shard, totalShards)
+	})
 }
 
 // Run configures the MetricsHandler's sharding and if autosharding is enabled
@@ -193,7 +327,9 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 // Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mtx.RLock()
-	defer m.mtx.RUnlock()
+	writers := append(metricsstore.MetricsWriterList(nil), m.metricsWriters...)
+	m.mtx.RUnlock()
+
 	resHeader := w.Header()
 	var writer io.Writer = w
 
@@ -228,10 +364,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Sanitizing first can suppress HELP/TYPE headers for metrics whose
 	// only active writer is later in the list but its earlier same-named
 	// counterpart was filtered out.
-	activeWriters := m.metricsWriters
+	activeWriters := writers
 	if requestedResources != nil || excludedResources != nil {
-		activeWriters = make(metricsstore.MetricsWriterList, 0, len(m.metricsWriters))
-		for _, mw := range m.metricsWriters {
+		activeWriters = make(metricsstore.MetricsWriterList, 0, len(writers))
+		for _, mw := range writers {
 			if requestedResources != nil {
 				if _, ok := requestedResources[mw.ResourceName]; !ok {
 					continue

@@ -38,15 +38,15 @@ var (
 	descEndpointSliceLabelsDefaultLabels = []string{"endpointslice", "namespace"}
 )
 
-func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func endpointSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createEndpointsSliceInfo(),
 		createEndpointsSliceCreated(),
 		createEndpointsSliceHints(),
 		createEndpointsSliceEndpoints(),
 		createEndpointSlicePorts(),
-		createEndpointsSliceAnnotations(allowAnnotationsList),
-		createEndpointsSliceLabels(allowLabelsList),
+		createEndpointsSliceAnnotations(allowAnnotationsList, annotationsPrefix),
+		createEndpointsSliceLabels(allowLabelsList, labelsPrefix),
 	}
 }
 
@@ -218,7 +218,7 @@ func createEndpointSlicePorts() generator.FamilyGenerator {
 	)
 }
 
-func createEndpointsSliceAnnotations(allowAnnotationsList []string) generator.FamilyGenerator {
+func createEndpointsSliceAnnotations(allowAnnotationsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descEndpointSliceAnnotationsName,
 		descEndpointSliceAnnotationsHelp,
@@ -229,7 +229,7 @@ func createEndpointsSliceAnnotations(allowAnnotationsList []string) generator.Fa
 			if len(allowAnnotationsList) == 0 {
 				return &metric.Family{}
 			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues(prefix, s.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
@@ -243,7 +243,7 @@ func createEndpointsSliceAnnotations(allowAnnotationsList []string) generator.Fa
 	)
 }
 
-func createEndpointsSliceLabels(allowLabelsList []string) generator.FamilyGenerator {
+func createEndpointsSliceLabels(allowLabelsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descEndpointSliceLabelsName,
 		descEndpointSliceLabelsHelp,
@@ -254,7 +254,7 @@ func createEndpointsSliceLabels(allowLabelsList []string) generator.FamilyGenera
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
 			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues(prefix, s.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{

@@ -41,7 +41,7 @@ var (
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
 )
 
-func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func podMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createPodCompletionTimeFamilyGenerator(),
 		createPodContainerInfoFamilyGenerator(),
@@ -76,8 +76,8 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodInitContainerStatusTerminatedReasonFamilyGenerator(),
 		createPodInitContainerStatusWaitingFamilyGenerator(),
 		createPodInitContainerStatusWaitingReasonFamilyGenerator(),
-		createPodAnnotationsGenerator(allowAnnotationsList),
-		createPodLabelsGenerator(allowLabelsList),
+		createPodAnnotationsGenerator(allowAnnotationsList, annotationsPrefix),
+		createPodLabelsGenerator(allowLabelsList, labelsPrefix),
 		createPodOverheadCPUCoresFamilyGenerator(),
 		createPodOverheadMemoryBytesFamilyGenerator(),
 		createPodOwnerFamilyGenerator(),
@@ -1207,7 +1207,7 @@ func createPodInitContainerStatusLastTerminatedTimestampFamilyGenerator() genera
 	)
 }
 
-func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGenerator {
+func createPodAnnotationsGenerator(allowAnnotations []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_annotations",
 		"Kubernetes annotations converted to Prometheus labels.",
@@ -1218,7 +1218,7 @@ func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGe
 			if len(allowAnnotations) == 0 {
 				return &metric.Family{}
 			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotations)
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues(prefix, p.Annotations, allowAnnotations)
 			m := metric.Metric{
 				LabelKeys:   annotationKeys,
 				LabelValues: annotationValues,
@@ -1231,7 +1231,7 @@ func createPodAnnotationsGenerator(allowAnnotations []string) generator.FamilyGe
 	)
 }
 
-func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
+func createPodLabelsGenerator(allowLabelsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_labels",
 		"Kubernetes labels converted to Prometheus labels.",
@@ -1242,7 +1242,7 @@ func createPodLabelsGenerator(allowLabelsList []string) generator.FamilyGenerato
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
 			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues(prefix, p.Labels, allowLabelsList)
 			m := metric.Metric{
 				LabelKeys:   labelKeys,
 				LabelValues: labelValues,

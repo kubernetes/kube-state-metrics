@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,11 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )
+
+// validPrefixRE matches a valid Prometheus label prefix: must start with
+// a letter or single underscore, followed by letters/digits/underscores.
+// Double-underscore prefixes are reserved by Prometheus and rejected separately.
+var validPrefixRE = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
 var (
 	// Align with the default scrape interval from Prometheus: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
@@ -88,6 +94,9 @@ type Options struct {
 	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
 	ObjectLimit          int64 `yaml:"object_limit"`
 	AuthFilter           bool  `yaml:"auth_filter"`
+
+	LabelsPrefix      string `yaml:"labels_prefix"`
+	AnnotationsPrefix string `yaml:"annotations_prefix"`
 }
 
 // GetConfigFile is the getter for --config value.
@@ -104,6 +113,8 @@ func NewOptions() *Options {
 		MetricOptInList:      MetricSet{},
 		AnnotationsAllowList: LabelsAllowList{},
 		LabelsAllowList:      LabelsAllowList{},
+		LabelsPrefix:         "label",
+		AnnotationsPrefix:    "annotation",
 	}
 }
 
@@ -180,6 +191,8 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
 	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotations keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]').")
 	o.cmd.Flags().Var(&o.LabelsAllowList, "metric-labels-allowlist", "Comma-separated list of additional Kubernetes label keys that will be used in the resource' labels metric. By default the labels metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes label keys you would like to allow for them (Example: '=namespaces=[k8s-label-1,k8s-label-n,...],pods=[app],...)'. A single '*' can be provided per resource instead to allow any labels, but that has severe performance implications (Example: '=pods=[*]'). Additionally, an asterisk (*) can be provided as a key, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'.")
+	o.cmd.Flags().StringVar(&o.LabelsPrefix, "metric-labels-prefix", "label", "Prefix to use for Prometheus label names derived from Kubernetes labels. Set to an empty string to disable the prefix (Example: '--metric-labels-prefix=\"\"').")
+	o.cmd.Flags().StringVar(&o.AnnotationsPrefix, "metric-annotations-prefix", "annotation", "Prefix to use for Prometheus label names derived from Kubernetes annotations. Set to an empty string to disable the prefix (Example: '--metric-annotations-prefix=\"\"').")
 	o.cmd.Flags().Var(&o.MetricAllowlist, "metric-allowlist", "Comma-separated list of metrics to be exposed. This list comprises of exact metric names and/or *ECMAScript-based* regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.cmd.Flags().Var(&o.MetricDenylist, "metric-denylist", "Comma-separated list of metrics not to be enabled. This list comprises of exact metric names and/or *ECMAScript-based* regex patterns. The allowlist and denylist are mutually exclusive.")
 	o.cmd.Flags().Var(&o.MetricOptInList, "metric-opt-in-list", "Comma-separated list of metrics which are opt-in and not enabled by default. This is in addition to the metric allow- and denylists")
@@ -204,8 +217,34 @@ func (o *Options) Usage() {
 	_ = o.cmd.Flags().FlagUsages()
 }
 
+// validateLabelPrefix checks that a metric label/annotation prefix is either
+// empty (allowed — disables the prefix) or a valid Prometheus label name
+// component.
+func validateLabelPrefix(value, flagName string) error {
+	if value == "" {
+		return nil
+	}
+	if strings.HasPrefix(value, "__") {
+		return fmt.Errorf("value for --%s=%q starts with '__', which is reserved by Prometheus", flagName, value)
+	}
+	if value == "_" {
+		return fmt.Errorf("value for --%s=%q would produce '__'-prefixed label names (e.g. '__key'), which are reserved by Prometheus", flagName, value)
+	}
+	if !validPrefixRE.MatchString(value) {
+		return fmt.Errorf("value for --%s=%q is not a valid Prometheus label name prefix (must match [a-zA-Z_][a-zA-Z0-9_]*)", flagName, value)
+	}
+	return nil
+}
+
 // Validate validates arguments
 func (o *Options) Validate() error {
+	if err := validateLabelPrefix(o.LabelsPrefix, "metric-labels-prefix"); err != nil {
+		return err
+	}
+	if err := validateLabelPrefix(o.AnnotationsPrefix, "metric-annotations-prefix"); err != nil {
+		return err
+	}
+
 	shardableResource := "pods"
 	if o.Node == "" {
 		return nil

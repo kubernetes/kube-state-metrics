@@ -40,7 +40,7 @@ var (
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 )
 
-func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_endpoint_info",
@@ -89,7 +89,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", e.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, e.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -111,7 +111,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", e.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, e.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

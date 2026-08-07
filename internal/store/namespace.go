@@ -40,7 +40,7 @@ var (
 	descNamespaceLabelsDefaultLabels = []string{"namespace"}
 )
 
-func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_namespace_created",
@@ -72,7 +72,7 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 					return &metric.Family{}
 				}
 
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, n.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -94,7 +94,7 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

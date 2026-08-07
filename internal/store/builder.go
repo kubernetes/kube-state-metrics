@@ -275,10 +275,12 @@ func (b *Builder) WithAllowLabels(labels map[string][]string) error {
 	return err
 }
 
+// WithLabelsPrefix sets the labelsPrefix property of a Builder.
 func (b *Builder) WithLabelsPrefix(prefix string) {
 	b.labelsPrefix = prefix
 }
 
+// WithAnnotationsPrefix sets the annotationsPrefix property of a Builder.
 func (b *Builder) WithAnnotationsPrefix(prefix string) {
 	b.annotationsPrefix = prefix
 }

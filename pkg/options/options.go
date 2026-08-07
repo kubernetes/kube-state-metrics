@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,11 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )
+
+// validPrefixRE matches a valid Prometheus label prefix: must start with
+// a letter or single underscore, followed by letters/digits/underscores.
+// Double-underscore prefixes are reserved by Prometheus and rejected separately.
+var validPrefixRE = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
 var (
 	// Align with the default scrape interval from Prometheus: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
@@ -211,8 +217,31 @@ func (o *Options) Usage() {
 	_ = o.cmd.Flags().FlagUsages()
 }
 
+// validateLabelPrefix checks that a metric label/annotation prefix is either
+// empty (allowed — disables the prefix) or a valid Prometheus label name
+// component.
+func validateLabelPrefix(value, flagName string) error {
+	if value == "" {
+		return nil
+	}
+	if strings.HasPrefix(value, "__") {
+		return fmt.Errorf("value for --%s=%q starts with '__', which is reserved by Prometheus", flagName, value)
+	}
+	if !validPrefixRE.MatchString(value) {
+		return fmt.Errorf("value for --%s=%q is not a valid Prometheus label name prefix (must match [a-zA-Z_][a-zA-Z0-9_]*)", flagName, value)
+	}
+	return nil
+}
+
 // Validate validates arguments
 func (o *Options) Validate() error {
+	if err := validateLabelPrefix(o.LabelsPrefix, "metric-labels-prefix"); err != nil {
+		return err
+	}
+	if err := validateLabelPrefix(o.AnnotationsPrefix, "metric-annotations-prefix"); err != nil {
+		return err
+	}
+
 	shardableResource := "pods"
 	if o.Node == "" {
 		return nil

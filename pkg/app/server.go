@@ -293,7 +293,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	klog.InfoS("Using labels allowlist", "labelsAllowList", opts.LabelsAllowList)
 
 	storeBuilder.WithLabelsPrefix(opts.LabelsPrefix)
-	klog.InfoS("Using labels prefix", "labelsPrfix", opts.LabelsPrefix)
+	klog.InfoS("Using labels prefix", "labelsPrefix", opts.LabelsPrefix)
 	storeBuilder.WithAnnotationsPrefix(opts.AnnotationsPrefix)
 	klog.InfoS("Using annotations prefix", "annotationsPrefix", opts.AnnotationsPrefix)
 

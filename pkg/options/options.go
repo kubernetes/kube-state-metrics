@@ -227,6 +227,9 @@ func validateLabelPrefix(value, flagName string) error {
 	if strings.HasPrefix(value, "__") {
 		return fmt.Errorf("value for --%s=%q starts with '__', which is reserved by Prometheus", flagName, value)
 	}
+	if value == "_" {
+		return fmt.Errorf("value for --%s=%q would produce '__'-prefixed label names (e.g. '__key'), which are reserved by Prometheus", flagName, value)
+	}
 	if !validPrefixRE.MatchString(value) {
 		return fmt.Errorf("value for --%s=%q is not a valid Prometheus label name prefix (must match [a-zA-Z_][a-zA-Z0-9_]*)", flagName, value)
 	}

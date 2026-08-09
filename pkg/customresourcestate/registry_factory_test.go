@@ -339,15 +339,33 @@ func Test_values(t *testing.T) {
 			},
 			LabelName: "phase",
 			List:      []string{"foo", "bar"},
-		}, wantResult: []eachValue{}, wantErrors: nil},
+		}, wantResult: nil, wantErrors: nil},
+		{name: "stateset nil valueFrom", each: &compiledStateSet{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status"),
+			},
+			ValueFrom: mustCompilePath(t, "does", "not", "exist"),
+			LabelName: "phase",
+			List:      []string{"foo", "bar"},
+		}, wantResult: nil, wantErrors: nil},
 		{name: "stateset non-string value", each: &compiledStateSet{
 			compiledCommon: compiledCommon{
 				path: mustCompilePath(t, "spec", "replicas"),
 			},
 			LabelName: "phase",
 			List:      []string{"1", "2"},
-		}, wantResult: []eachValue{}, wantErrors: []error{
+		}, wantResult: nil, wantErrors: []error{
 			errors.New("[spec,replicas]: expected value for path to be string, got float64"),
+		}},
+		{name: "stateset non-string valueFrom", each: &compiledStateSet{
+			compiledCommon: compiledCommon{
+				path: mustCompilePath(t, "status"),
+			},
+			ValueFrom: mustCompilePath(t, "uptime"),
+			LabelName: "phase",
+			List:      []string{"foo", "bar"},
+		}, wantResult: nil, wantErrors: []error{
+			errors.New("[status,uptime]: expected value for path to be string, got float64"),
 		}},
 		{name: "status_conditions", each: &compiledGauge{
 			compiledCommon: compiledCommon{

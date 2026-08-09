@@ -399,17 +399,26 @@ func (c *compiledStateSet) Values(v interface{}) (result []eachValue, errs []err
 	return c.values(v)
 }
 
+// fullValuePath returns the path the state set value is resolved from, including
+// valueFrom if it is set, so that errors point at the field that actually failed.
+func (c *compiledStateSet) fullValuePath() valuePath {
+	if len(c.ValueFrom) == 0 {
+		return c.path
+	}
+	return append(append(valuePath{}, c.path...), c.ValueFrom...)
+}
+
 func (c *compiledStateSet) values(v interface{}) (result []eachValue, errs []error) {
 	comparable := c.ValueFrom.Get(v)
+	if comparable == nil {
+		// The path does not resolve to a value, which is expected for status fields
+		// that do not exist yet at resource creation time. Report no metrics instead
+		// of an error, consistent with how the other metric types handle nil values.
+		return nil, nil
+	}
 	value, ok := comparable.(string)
 	if !ok {
-		// If the path doesn't exist (nil), return empty results instead of an error.
-		// This is consistent with how Gauge handles nil values and is expected for
-		// status fields that don't exist at resource creation time.
-		if comparable == nil {
-			return []eachValue{}, nil
-		}
-		return []eachValue{}, []error{fmt.Errorf("%s: expected value for path to be string, got %T", c.path, comparable)}
+		return nil, []error{fmt.Errorf("%s: expected value for path to be string, got %T", c.fullValuePath(), comparable)}
 	}
 
 	for _, entry := range c.List {

@@ -695,6 +695,10 @@ spec:
 Metrics of type `StateSet` will generate a metric for each value defined in `list` for each resource.
 The value will be 1, if the value matches the one in list.
 
+If `path` (or `valueFrom`, if set) does not resolve, for example because the status field is not populated yet,
+no metrics are produced for that resource and no error is logged. Once the field is set, the metrics appear.
+A value that resolves to a non-string type is reported as an error.
+
 Produces the metric:
 
 ```prometheus

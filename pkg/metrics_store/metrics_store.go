@@ -68,6 +68,10 @@ func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.F
 	}
 }
 
+// precomputeHeaders parses each header once at store construction, returning the
+// rewritten header for both exposition formats plus the metric name it declares.
+// SanitizeHeaders runs on every scrape and would otherwise redo this work per
+// header, per store, per request.
 func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, metricNames []string) {
 	headersOpenMetrics = make([]string, len(headers))
 	headersTextPlain = make([]string, len(headers))

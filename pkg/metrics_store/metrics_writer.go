@@ -94,7 +94,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 				return false
 			})
 			if err != nil {
-				return fmt.Errorf("failed to write help text: %v", err)
+				return fmt.Errorf("failed to write help text: %w", err)
 			}
 		}
 
@@ -103,7 +103,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 				metricFamilies := value.([][]byte)
 				_, err = w.Write(metricFamilies[i])
 				if err != nil {
-					err = fmt.Errorf("failed to write metrics family: %v", err)
+					err = fmt.Errorf("failed to write metrics family: %w", err)
 					return false
 				}
 				return true

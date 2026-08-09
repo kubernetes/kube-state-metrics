@@ -18,7 +18,7 @@ package store
 
 import (
 	"fmt"
-	"reflect"
+	"slices"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -312,10 +312,10 @@ func TestMergeKeyValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			gotKeys, gotValues := mergeKeyValues(tc.keyValuePairSlices...)
-			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+			if !slices.Equal(gotKeys, tc.expectKeys) {
 				t.Errorf("mergeKeyValues() got = %v, want %v", gotKeys, tc.expectKeys)
 			}
-			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+			if !slices.Equal(gotValues, tc.expectValues) {
 				t.Errorf("mergeKeyValues() got1 = %v, want %v", gotValues, tc.expectValues)
 			}
 		})
@@ -427,10 +427,10 @@ func TestCreatePrometheusLabelKeysValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			gotKeys, gotValues := createPrometheusLabelKeysValues("metric", tc.kubeData, tc.allowList)
-			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+			if !slices.Equal(gotKeys, tc.expectKeys) {
 				t.Errorf("createPrometheusLabelKeysValues() got = %v, want %v", gotKeys, tc.expectKeys)
 			}
-			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+			if !slices.Equal(gotValues, tc.expectValues) {
 				t.Errorf("createPrometheusLabelKeysValues() got1 = %v, want %v", gotValues, tc.expectValues)
 			}
 		})
@@ -532,7 +532,7 @@ func TestExpandWildcard(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("test %d", i), func(t *testing.T) {
 			got := expandWildcard(tc.input, tc.limit)
-			if !reflect.DeepEqual(got, tc.expected) {
+			if got != tc.expected {
 				t.Errorf("expandWildcard() got = %v, want %v", got, tc.expected)
 			}
 		})

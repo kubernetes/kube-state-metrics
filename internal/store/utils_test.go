@@ -538,3 +538,28 @@ func TestExpandWildcard(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkMapToPrometheusLabels(b *testing.B) {
+	for _, n := range []int{4, 8, 32} {
+		labels := make(map[string]string, n)
+		for i := 0; i < n; i++ {
+			labels[fmt.Sprintf("app.kubernetes.io/component-%d", i)] = fmt.Sprintf("value-%d", i)
+		}
+
+		b.Run(fmt.Sprintf("labels-%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, _ = mapToPrometheusLabels(labels, "label")
+			}
+		})
+	}
+
+	// Keys that sanitize to the same Prometheus label name exercise the conflict path.
+	conflicting := map[string]string{"foo.bar": "a", "foo_bar": "b", "foo-bar": "c", "other": "d"}
+	b.Run("conflicts", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			_, _ = mapToPrometheusLabels(conflicting, "label")
+		}
+	})
+}

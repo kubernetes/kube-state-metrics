@@ -40,11 +40,48 @@ func (f Family) Inspect(inspect func(Family)) {
 
 // ByteSlice returns the given Family in its string representation.
 func (f Family) ByteSlice() []byte {
-	b := bytes.Buffer{}
-	for _, m := range f.Metrics {
-		b.WriteString(f.Name)
-		m.Write(&b)
+	return f.AppendBytes(nil)
+}
+
+// AppendBytes appends the family in its string representation to b and returns
+// the extended slice. Callers rendering many families for the same object can
+// share a single buffer instead of allocating one per family.
+func (f Family) AppendBytes(b []byte) []byte {
+	// Nothing to render. Returning early also avoids bytes.Buffer.Grow's minimum
+	// allocation, which empty families would otherwise pay on every event.
+	if len(f.Metrics) == 0 {
+		return b
 	}
 
-	return b.Bytes()
+	buf := bytes.NewBuffer(b)
+	buf.Grow(f.SizeHint())
+	for _, m := range f.Metrics {
+		buf.WriteString(f.Name)
+		m.Write(buf)
+	}
+
+	return buf.Bytes()
+}
+
+// valueSizeHint is the assumed rendered length of a metric value plus the
+// separating space and trailing newline.
+const valueSizeHint = 16
+
+// SizeHint estimates the rendered size of the family so callers can size their
+// buffer up front instead of growing (and copying) it repeatedly. It is an
+// estimate, not a bound: the value length is assumed rather than computed.
+func (f Family) SizeHint() int {
+	size := 0
+	for _, m := range f.Metrics {
+		// name, '{', '}', the value, the space before it and the newline after
+		size += len(f.Name) + 2 + valueSizeHint
+		for i, k := range m.LabelKeys {
+			// key, '=', '"', value, '"' and the separating ',' or '{'
+			size += len(k) + 4
+			if i < len(m.LabelValues) {
+				size += len(m.LabelValues[i])
+			}
+		}
+	}
+	return size
 }

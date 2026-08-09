@@ -142,3 +142,43 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 		t.Fatalf("expected resource version 127, got %v", rv)
 	}
 }
+
+func BenchmarkAdd(b *testing.B) {
+	const nFamilies = 50
+
+	headers := make([]string, nFamilies)
+	genFunc := func(obj interface{}) []metric.FamilyInterface {
+		o, _ := meta.Accessor(obj)
+		families := make([]metric.FamilyInterface, nFamilies)
+		for j := 0; j < nFamilies; j++ {
+			families[j] = &metric.Family{
+				Name: fmt.Sprintf("kube_bench_metric_%d", j),
+				Metrics: []*metric.Metric{
+					{
+						LabelKeys:   []string{"namespace", "service", "uid"},
+						LabelValues: []string{o.GetNamespace(), o.GetName(), string(o.GetUID())},
+						Value:       float64(j),
+					},
+				},
+			}
+		}
+		return families
+	}
+
+	store := NewMetricsStore(headers, genFunc)
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       types.UID("uid-0"),
+			Name:      "svc-0",
+			Namespace: "default",
+		},
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := store.Add(svc); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

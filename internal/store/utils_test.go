@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 func TestIsHugePageSizeFromResourceName(t *testing.T) {
@@ -315,6 +317,223 @@ func TestMergeKeyValues(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotValues, tc.expectValues) {
 				t.Errorf("mergeKeyValues() got1 = %v, want %v", gotValues, tc.expectValues)
+			}
+		})
+	}
+}
+
+func TestCreatePrometheusLabelKeysValues(t *testing.T) {
+	testCases := []struct {
+		name         string
+		kubeData     map[string]string
+		allowList    []string
+		expectKeys   []string
+		expectValues []string
+	}{
+		{
+			name: "allMatches",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyB"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name: "additionalAllow",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyB", "keyC"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name: "partialMatches",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
+			allowList:    []string{"keyA", "keyC"},
+			expectKeys:   []string{"metric_key_a"},
+			expectValues: []string{"valueA"},
+		},
+		{
+			name: "wildcardAsSuffix",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"key*"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b"},
+			expectValues: []string{"valueA", "valueB"},
+		},
+		{
+			name: "wildcardAsPrefix",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*A"},
+			expectKeys:   []string{"metric_key_a", "metric_other_key_a"},
+			expectValues: []string{"valueA", "valueC"},
+		},
+		{
+			name: "onlyFullWildcard",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"*"},
+			expectKeys:   []string{"metric_key_a", "metric_key_b", "metric_other_key_a", "metric_other_key_b"},
+			expectValues: []string{"valueA", "valueB", "valueC", "valueD"},
+		},
+		{
+			name: "additionalFullWildcard",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"otherKeyB": "valueD",
+			},
+			allowList:    []string{"keyA", "*"},
+			expectKeys:   []string{"metric_key_a"},
+			expectValues: []string{"valueA"},
+		},
+		{
+			// "*key*" has two wildcards; without the over-wildcard guard it would be truncated
+			// to "^.*key$" and match keys ending in "key" — verify it matches nothing instead.
+			name: "multipleWildcards",
+			kubeData: map[string]string{
+				"keyA":      "valueA",
+				"keyB":      "valueB",
+				"otherKeyA": "valueC",
+				"somekey":   "valueD",
+			},
+			allowList:    []string{"*key*"},
+			expectKeys:   []string{},
+			expectValues: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotKeys, gotValues := createPrometheusLabelKeysValues("metric", tc.kubeData, tc.allowList)
+			if !reflect.DeepEqual(gotKeys, tc.expectKeys) {
+				t.Errorf("createPrometheusLabelKeysValues() got = %v, want %v", gotKeys, tc.expectKeys)
+			}
+			if !reflect.DeepEqual(gotValues, tc.expectValues) {
+				t.Errorf("createPrometheusLabelKeysValues() got1 = %v, want %v", gotValues, tc.expectValues)
+			}
+		})
+	}
+}
+
+func TestCachedCompileAllowListPattern(t *testing.T) {
+	t.Run("valid pattern returns non-nil regexp", func(t *testing.T) {
+		re := cachedCompileAllowListPattern("app*")
+		if re == nil {
+			t.Error("expected non-nil regexp for valid pattern")
+		}
+	})
+
+	t.Run("returned regexp matches correctly", func(t *testing.T) {
+		re := cachedCompileAllowListPattern("app*")
+		if !re.MatchString("app.kubernetes.io/name") {
+			t.Error("expected pattern app* to match app.kubernetes.io/name")
+		}
+		if re.MatchString("other") {
+			t.Error("expected pattern app* not to match 'other'")
+		}
+	})
+
+	t.Run("same pattern returns same cached regexp instance", func(t *testing.T) {
+		pattern := "cached-test-pattern*"
+		re1 := cachedCompileAllowListPattern(pattern)
+		re2 := cachedCompileAllowListPattern(pattern)
+		if re1 != re2 {
+			t.Error("expected the same *regexp.Regexp pointer on second call (cache hit)")
+		}
+	})
+
+	t.Run("pattern exceeding wildcard limit returns nil", func(t *testing.T) {
+		// "*key*" has two wildcards; without the rejection guard expandWildcard would silently
+		// truncate it to "^.*key$" and match keys ending in "key".
+		re := cachedCompileAllowListPattern("*key*")
+		if re != nil {
+			t.Errorf("expected nil for over-wildcarded pattern, got %v", re)
+		}
+	})
+
+	t.Run("pre-cached nil entry returns nil without recompiling", func(t *testing.T) {
+		pattern := "nil-sentinel-pattern*"
+		expanded := expandWildcard(pattern, options.MaxPartialWildcardsPerLabel)
+		allowListPatternCache.Store(expanded, nil)
+		t.Cleanup(func() { allowListPatternCache.Delete(expanded) })
+
+		re := cachedCompileAllowListPattern(pattern)
+		if re != nil {
+			t.Error("expected nil for pre-cached failed pattern")
+		}
+	})
+}
+
+func TestExpandWildcard(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+		limit    uint
+	}{
+		{
+			input:    "foo",
+			expected: "^foo$",
+			limit:    1,
+		},
+		{
+			input:    "foo*",
+			expected: "^foo.*$",
+			limit:    1,
+		},
+		{
+			input:    "*foo",
+			expected: "^.*foo$",
+			limit:    1,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo$",
+			limit:    1,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo.*$",
+			limit:    2,
+		},
+		{
+			input:    "*foo*",
+			expected: "^.*foo.*$",
+			limit:    3,
+		},
+		{
+			input:    "*f*o*o*",
+			expected: "^.*f.*o.*o$",
+			limit:    3,
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("test %d", i), func(t *testing.T) {
+			got := expandWildcard(tc.input, tc.limit)
+			if !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("expandWildcard() got = %v, want %v", got, tc.expected)
 			}
 		})
 	}

@@ -268,6 +268,57 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 	}
 }
 
+// There is one store per namespace, so the first store can be empty while a
+// later one holds objects. The headers describe the families of every store, so
+// they must still be written in that case.
+func TestWriteAllWithEmptyFirstStore(t *testing.T) {
+	genFunc := func(obj interface{}) []metric.FamilyInterface {
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mf := metric.Family{
+			Name: "kube_service_info_1",
+			Metrics: []*metric.Metric{
+				{
+					LabelKeys:   []string{"namespace", "uid"},
+					LabelValues: []string{o.GetNamespace(), string(o.GetUID())},
+					Value:       float64(1),
+				},
+			},
+		}
+
+		return []metric.FamilyInterface{&mf}
+	}
+
+	headers := []string{"# HELP kube_service_info_1 Info 1 about services\n# TYPE kube_service_info_1 gauge"}
+	emptyStore := NewMetricsStore(headers, genFunc)
+	populatedStore := NewMetricsStore(headers, genFunc)
+
+	svc := v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "b1",
+			Name:      "service",
+			Namespace: "b",
+		},
+	}
+	if err := populatedStore.Add(&svc); err != nil {
+		t.Fatal(err)
+	}
+
+	multiNsWriter := NewMetricsWriter("test", emptyStore, populatedStore)
+	w := strings.Builder{}
+	if err := multiNsWriter.WriteAll(&w); err != nil {
+		t.Fatalf("failed to write metrics: %v", err)
+	}
+
+	expected := "# HELP kube_service_info_1 Info 1 about services\n# TYPE kube_service_info_1 gauge\nkube_service_info_1{namespace=\"b\",uid=\"b1\"} 1\n"
+	if w.String() != expected {
+		t.Fatalf("Unexpected output, got %q, want %q", w.String(), expected)
+	}
+}
+
 func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T) {
 	genFunc := func(obj interface{}) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)

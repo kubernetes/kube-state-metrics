@@ -14,6 +14,7 @@ limitations under the License.
 package store
 
 import (
+	"slices"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -205,5 +206,65 @@ func TestEndpointSliceStore(t *testing.T) {
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
+	}
+}
+
+// Each hint gets its own label slices. Building them by appending onto a slice
+// shared across the loop works only while that slice has no spare capacity; with
+// any slack every zone writes into the same backing array and they all report
+// the last one.
+func TestEndpointSliceHintsPerZone(t *testing.T) {
+	es := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "es", Namespace: "ns"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{{
+			Addresses: []string{"10.0.0.1"},
+			Hints: &discoveryv1.EndpointHints{
+				ForZones: []discoveryv1.ForZone{{Name: "zone-a"}, {Name: "zone-b"}, {Name: "zone-c"}},
+			},
+		}},
+	}
+
+	g := createEndpointsSliceHints()
+	family := g.Generate(es)
+
+	got := []string{}
+	for _, m := range family.Metrics {
+		if len(m.LabelKeys) != len(m.LabelValues) {
+			t.Fatalf("label keys and values differ in length: %v vs %v", m.LabelKeys, m.LabelValues)
+		}
+		for i, k := range m.LabelKeys {
+			if k == "for_zone" {
+				got = append(got, m.LabelValues[i])
+			}
+		}
+	}
+
+	want := []string{"zone-a", "zone-b", "zone-c"}
+	if !slices.Equal(got, want) {
+		t.Errorf("for_zone values: got %v, want %v", got, want)
+	}
+}
+
+// Validation requires at least one address today, so this is defence against a
+// future relaxation rather than a reachable panic.
+func TestEndpointSliceHintsWithoutAddresses(t *testing.T) {
+	es := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "es", Namespace: "ns"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{{
+			Hints: &discoveryv1.EndpointHints{ForZones: []discoveryv1.ForZone{{Name: "zone-a"}}},
+		}},
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("panic on an endpoint with no addresses: %v", r)
+		}
+	}()
+
+	g := createEndpointsSliceHints()
+	if family := g.Generate(es); len(family.Metrics) != 0 {
+		t.Errorf("expected the endpoint to be skipped, got %d metrics", len(family.Metrics))
 	}
 }

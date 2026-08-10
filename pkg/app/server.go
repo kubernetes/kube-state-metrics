@@ -158,12 +158,19 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 				klog.InfoS("waiting for config to be fixed")
 				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
 				<-ctx.Done()
-			} else {
-				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
-				configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
-				hash := md5HashAsMetricValue(configFile)
-				configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+				// The wait ended because the watcher cancelled this run to start a
+				// fresh one with the corrected config. Returning hands over to it;
+				// carrying on would build a second, half-configured instance on a
+				// context that is already done, racing the new run for the listen
+				// ports and for the options this one shares with it.
+				return nil
 			}
+
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
+			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
+			hash := md5HashAsMetricValue(configFile)
+			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+
 			opts = configureResourcesAndMetrics(opts, configFile)
 			klog.InfoS("Using config file", "file", got)
 		}

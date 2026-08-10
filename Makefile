@@ -9,6 +9,8 @@ ARCH ?= $(shell go env GOARCH)
 BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
+USER ?= $(shell id -u -n)
+HOST ?= $(shell hostname)
 PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 3.9.1
 GO_VERSION = $(shell cat .go-version)
@@ -67,8 +69,14 @@ doccheck: generate validate-template
 	@cd docs; for doc in $$(find metrics/* -name '*.md' | sed 's/.*\///'); do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
+# build produces the release artifact via goreleaser, matching what ships in the
+# container image. build-local produces a binary for the host, which is what the
+# docs generation and local development need.
 build:
 	GOOS=linux GOARCH=$(ARCH) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser build --single-target --clean --snapshot
+
+build-local:
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${KSM_MODULE}/pkg/app.ClientGoVersion=${CLIENT_GO_VERSION}" -o kube-state-metrics
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
@@ -113,8 +121,10 @@ all-container: container
 container:
 	K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --snapshot --clean --skip=archive,announce,publish
 
+# Pushes the container images only. The GitHub release is published separately
+# by the pre-release workflow, which is the runner that holds a GITHUB_TOKEN.
 push:
-	GORELEASER_CURRENT_TAG=$(TAG) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean
+	GORELEASER_SKIP_GITHUB_RELEASE=true GORELEASER_CURRENT_TAG=$(TAG) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean --skip=announce
 
 clean:
 	rm -rf dist kube-state-metrics
@@ -123,7 +133,7 @@ clean:
 e2e:
 	./tests/e2e.sh
 
-generate: build generate-template
+generate: build-local generate-template
 	@echo ">> generating docs"
 	@./scripts/generate-help-text.sh
 	${GOMPLATE_CLI} --file docs/developer/cli-arguments.md.tpl > docs/developer/cli-arguments.md

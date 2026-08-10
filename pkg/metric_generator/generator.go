@@ -76,15 +76,20 @@ func (g *FamilyGenerator) Generate(obj interface{}) *metric.Family {
 	return family
 }
 
+// escapeHelp escapes the characters the exposition format reserves in a HELP
+// line. A newline would end the line early and a backslash would start an
+// escape sequence, either of which makes the whole exposition unparseable.
+var escapeHelp = strings.NewReplacer(`\`, `\\`, "\n", `\n`)
+
 func (g *FamilyGenerator) generateHeader() string {
 	header := strings.Builder{}
 	header.WriteString("# HELP ")
 	header.WriteString(g.Name)
 	header.WriteByte(' ')
 	if g.StabilityLevel == basemetrics.STABLE {
-		fmt.Fprintf(&header, "[%v] %v", g.StabilityLevel, g.Help)
+		fmt.Fprintf(&header, "[%v] %v", g.StabilityLevel, escapeHelp.Replace(g.Help))
 	} else {
-		header.WriteString(g.Help)
+		header.WriteString(escapeHelp.Replace(g.Help))
 	}
 	header.WriteByte('\n')
 	header.WriteString("# TYPE ")

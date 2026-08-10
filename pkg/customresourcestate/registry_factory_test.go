@@ -169,15 +169,22 @@ func Test_addPathLabels_indexOutOfRange(t *testing.T) {
 // whose path fails to compile must report the error rather than panic.
 func Test_newCompiledMetric_compileError(t *testing.T) {
 	// "[Ready]" is a list lookup with no "key=value", which compilePath rejects.
-	badMeta := MetricMeta{Path: []string{"status", "conditions", "[Ready]"}}
+	// compileCommon compiles both path and labelsFromPath, so either can fail.
+	badPath := MetricMeta{Path: []string{"status", "conditions", "[Ready]"}}
+	badLabels := MetricMeta{LabelsFromPath: map[string][]string{
+		"cond": {"status", "conditions", "[Ready]"},
+	}}
 
 	for _, tt := range []struct {
 		name string
 		m    Metric
 	}{
-		{name: "gauge", m: Metric{Type: metric.Gauge, Gauge: &MetricGauge{MetricMeta: badMeta}}},
-		{name: "info", m: Metric{Type: metric.Info, Info: &MetricInfo{MetricMeta: badMeta}}},
-		{name: "stateSet", m: Metric{Type: metric.StateSet, StateSet: &MetricStateSet{MetricMeta: badMeta}}},
+		{name: "gauge path", m: Metric{Type: metric.Gauge, Gauge: &MetricGauge{MetricMeta: badPath}}},
+		{name: "info path", m: Metric{Type: metric.Info, Info: &MetricInfo{MetricMeta: badPath}}},
+		{name: "stateSet path", m: Metric{Type: metric.StateSet, StateSet: &MetricStateSet{MetricMeta: badPath}}},
+		{name: "gauge labelsFromPath", m: Metric{Type: metric.Gauge, Gauge: &MetricGauge{MetricMeta: badLabels}}},
+		{name: "info labelsFromPath", m: Metric{Type: metric.Info, Info: &MetricInfo{MetricMeta: badLabels}}},
+		{name: "stateSet labelsFromPath", m: Metric{Type: metric.StateSet, StateSet: &MetricStateSet{MetricMeta: badLabels}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := newCompiledMetric(tt.m)

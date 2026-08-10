@@ -197,13 +197,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resHeader := w.Header()
 	var writer io.Writer = w
 
-	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
-
-	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022.
-
-	if contentType.FormatType() != expfmt.TypeOpenMetrics {
-		contentType = expfmt.NewFormat(expfmt.TypeTextPlain)
-	}
+	contentType := negotiateSupportedContentType(r.Header)
 	resHeader.Set("Content-Type", string(contentType))
 
 	if m.enableGZIPEncoding {
@@ -271,6 +265,49 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+// negotiateSupportedContentType selects the highest-quality exposition format
+// kube-state-metrics can serve. Protobuf is skipped so clients that prefer it
+// (e.g. Prometheus scrapers) still receive OpenMetrics or text/plain.
+func negotiateSupportedContentType(h http.Header) expfmt.Format {
+	contentType := expfmt.NegotiateIncludingOpenMetrics(h)
+	if isProtoFormat(contentType) {
+		filtered := http.Header{}
+		filtered.Set(hdrAccept, filterProtoFromAccept(h.Get(hdrAccept)))
+		contentType = expfmt.NegotiateIncludingOpenMetrics(filtered)
+	}
+	if contentType.FormatType() != expfmt.TypeOpenMetrics && contentType.FormatType() != expfmt.TypeTextPlain {
+		contentType = expfmt.NewFormat(expfmt.TypeTextPlain)
+	}
+	return contentType
+}
+
+func isProtoFormat(contentType expfmt.Format) bool {
+	switch contentType.FormatType() {
+	case expfmt.TypeProtoDelim, expfmt.TypeProtoText, expfmt.TypeProtoCompact:
+		return true
+	default:
+		return false
+	}
+}
+
+func filterProtoFromAccept(accept string) string {
+	if accept == "" {
+		return accept
+	}
+	parts := strings.Split(accept, ",")
+	filtered := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if strings.HasPrefix(trimmed, expfmt.ProtoType) {
+			continue
+		}
+		filtered = append(filtered, trimmed)
+	}
+	return strings.Join(filtered, ",")
+}
+
+const hdrAccept = "Accept"
 
 func parseResources(params []string) map[string]struct{} {
 	if params == nil {

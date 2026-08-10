@@ -147,6 +147,12 @@ func TestValidate(t *testing.T) {
 			mutate: func(o *Options) { o.Node = "node-1"; o.Resources = ResourceSet{"pods": struct{}{}} },
 		},
 		{
+			// The resource restriction exists because --node filters by
+			// spec.nodeName, so it must stay scoped to node-mode runs.
+			name:   "non-node run with an unshardable resource",
+			mutate: func(o *Options) { o.Resources = ResourceSet{"deployments": struct{}{}} },
+		},
+		{
 			name:    "zero total shards",
 			mutate:  func(o *Options) { o.TotalShards = 0 },
 			wantErr: true,

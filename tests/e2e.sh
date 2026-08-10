@@ -106,7 +106,11 @@ function kube_pod_up() {
         # Test the pipeline inside the condition. As a bare statement it is
         # subject to `set -e`, so the first poll that finds nothing ends the
         # script before the retry below is ever reached.
-        if kubectl get pods -A | grep -q "$1"; then
+        #
+        # Not `grep -q`: it stops reading at the first match, so kubectl can be
+        # killed by SIGPIPE, and `set -o pipefail` then reports the whole
+        # pipeline as failed even though the pod was found.
+        if kubectl get pods -A | grep "$1" 1>/dev/null 2>&1; then
             is_pod_running="true"
             break
         fi

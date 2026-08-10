@@ -46,18 +46,44 @@ type MetricsStore struct {
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
 	headers []string
+
+	headersOpenMetrics []string
+	headersTextPlain   []string
+	metricNames        []string
 }
 
 // NewMetricsStore returns a new MetricsStore
 func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface) *MetricsStore {
 	rv := ""
+	headersOpenMetrics, headersTextPlain, metricNames := precomputeHeaders(headers)
 	return &MetricsStore{
 		generateMetricsFunc:   generateFunc,
 		headers:               headers,
+		headersOpenMetrics:    headersOpenMetrics,
+		headersTextPlain:      headersTextPlain,
+		metricNames:           metricNames,
 		metrics:               &sync.Map{},
 		lastResourceVersion:   &rv,
 		lastResourceVersionMu: &sync.RWMutex{},
 	}
+}
+
+// precomputeHeaders parses each header once at store construction, returning the
+// rewritten header for both exposition formats plus the metric name it declares.
+// SanitizeHeaders runs on every scrape and would otherwise redo this work per
+// header, per store, per request.
+func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, metricNames []string) {
+	headersOpenMetrics = make([]string, len(headers))
+	headersTextPlain = make([]string, len(headers))
+	metricNames = make([]string, len(headers))
+	for i, h := range headers {
+		mName, rHeaderOM := parseHeaderStatic(h, false)
+		_, rHeaderText := parseHeaderStatic(h, true)
+		headersOpenMetrics[i] = rHeaderOM
+		headersTextPlain[i] = rHeaderText
+		metricNames[i] = mName
+	}
+	return headersOpenMetrics, headersTextPlain, metricNames
 }
 
 // Implementing k8s.io/client-go/tools/cache.Store interface
@@ -73,15 +99,62 @@ func (s *MetricsStore) Add(obj interface{}) error {
 	s.setLastResourceVersion(o.GetResourceVersion())
 
 	families := s.generateMetricsFunc(obj)
-	familyStrings := make([][]byte, len(families))
 
-	for i, f := range families {
-		familyStrings[i] = f.ByteSlice()
-	}
-
-	s.metrics.Store(o.GetUID(), familyStrings)
+	s.metrics.Store(o.GetUID(), renderFamilies(families))
 
 	return nil
+}
+
+// byteAppender is implemented by families that can render themselves into a
+// caller-provided buffer, letting all families of one object share a single
+// allocation.
+type byteAppender interface {
+	AppendBytes(b []byte) []byte
+	SizeHint() int
+}
+
+// renderFamilies renders every family of an object into one contiguous buffer
+// and returns per-family views into it. One allocation per object beats one per
+// family, both for allocation count and for the size-class rounding that a few
+// dozen small slices would otherwise waste.
+func renderFamilies(families []metric.FamilyInterface) [][]byte {
+	familyStrings := make([][]byte, len(families))
+	ends := make([]int, len(families))
+
+	// Size the shared buffer from the families themselves, so appending does not
+	// grow it geometrically and overshoot; the result is retained for the
+	// lifetime of the object, so slack is memory we would never reclaim.
+	hint := 0
+	for _, f := range families {
+		if a, ok := f.(byteAppender); ok {
+			hint += a.SizeHint()
+		}
+	}
+
+	buf := make([]byte, 0, hint)
+	for i, f := range families {
+		if a, ok := f.(byteAppender); ok {
+			buf = a.AppendBytes(buf)
+		} else {
+			buf = append(buf, f.ByteSlice()...)
+		}
+		ends[i] = len(buf)
+	}
+
+	// SizeHint over-estimates the value length, so trim the remaining slack
+	// rather than retain it for every object in the store.
+	if cap(buf)-len(buf) > len(buf)/8 {
+		buf = append(make([]byte, 0, len(buf)), buf...)
+	}
+
+	start := 0
+	for i, end := range ends {
+		// Full slice expression: a later append must not write into the next family.
+		familyStrings[i] = buf[start:end:end]
+		start = end
+	}
+
+	return familyStrings
 }
 
 // Update updates the existing entry in the MetricsStore.

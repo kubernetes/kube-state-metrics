@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/exporter-toolkit/web"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1047,6 +1049,70 @@ func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fiel
 		},
 	}
 }
+
+func failingLandingPage(_ web.LandingConfig) (*web.LandingPageHandler, error) {
+	return nil, fmt.Errorf("injected landing page error")
+}
+
+func TestRegisterLandingPage(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	registerLandingPage(mux, web.LandingConfig{Name: "kube-state-metrics"}, web.NewLandingPage)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for landing page at /, got %d", w.Code)
+	}
+}
+
+// A failing factory returns a nil *web.LandingPageHandler. Registering that would
+// store a non-nil http.Handler holding a nil pointer, which panics on the first
+// request to "/", so nothing must be registered at all.
+func TestRegisterLandingPageError(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	registerLandingPage(mux, web.LandingConfig{Name: "kube-state-metrics"}, failingLandingPage)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for / when landing page creation fails, got %d", w.Code)
+	}
+}
+
+// The builders wire the landing page up for real, so "/" must be served.
+func TestBuildServersServeLandingPage(t *testing.T) {
+	t.Parallel()
+	kubeClient := fake.NewSimpleClientset()
+
+	durationVec := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:        "http_request_duration_seconds",
+		ConstLabels: prometheus.Labels{"handler": "metrics"},
+	}, []string{"method"})
+
+	builder := store.NewBuilder()
+	builder.WithMetrics(prometheus.NewRegistry())
+	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+
+	for name, mux := range map[string]*http.ServeMux{
+		"telemetry": buildTelemetryServer(prometheus.NewRegistry(), false, nil),
+		"metrics":   buildMetricsServer(handler, durationVec, kubeClient, false, nil),
+	} {
+		req := httptest.NewRequest("GET", "/", nil)
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("%s server: expected 200 for landing page at /, got %d", name, w.Code)
+		}
+	}
+}
+
 func TestConfigureResourcesAndMetrics(t *testing.T) {
 	// Prepare a config file in YAML format
 	configYAML := `

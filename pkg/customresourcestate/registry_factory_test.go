@@ -155,6 +155,38 @@ func Test_addPathLabels(t *testing.T) {
 	}
 }
 
+// An index past the end of a list does not resolve, so it must be skipped like
+// any other unresolvable path rather than surfacing as a label value.
+func Test_addPathLabels_indexOutOfRange(t *testing.T) {
+	m := make(map[string]string)
+	addPathLabels(cr, map[string]valuePath{
+		"idx": mustCompilePath(t, "spec", "order", "5"),
+	}, m)
+	assert.Equal(t, map[string]string{}, m)
+}
+
+// compileCommon returns a nil *compiledCommon alongside its error, so a metric
+// whose path fails to compile must report the error rather than panic.
+func Test_newCompiledMetric_compileError(t *testing.T) {
+	// "[Ready]" is a list lookup with no "key=value", which compilePath rejects.
+	badMeta := MetricMeta{Path: []string{"status", "conditions", "[Ready]"}}
+
+	for _, tt := range []struct {
+		name string
+		m    Metric
+	}{
+		{name: "gauge", m: Metric{Type: metric.Gauge, Gauge: &MetricGauge{MetricMeta: badMeta}}},
+		{name: "info", m: Metric{Type: metric.Info, Info: &MetricInfo{MetricMeta: badMeta}}},
+		{name: "stateSet", m: Metric{Type: metric.StateSet, StateSet: &MetricStateSet{MetricMeta: badMeta}}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := newCompiledMetric(tt.m)
+			assert.Nil(t, got)
+			assert.ErrorContains(t, err, "invalid list lookup: [Ready]")
+		})
+	}
+}
+
 func Test_values(t *testing.T) {
 	type tc struct {
 		name       string

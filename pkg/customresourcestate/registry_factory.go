@@ -160,10 +160,12 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, errors.New("expected each.gauge to not be nil")
 		}
 		cc, err := compileCommon(m.Gauge.MetricMeta)
-		cc.t = metric.Gauge
 		if err != nil {
+			// compileCommon returns a nil *compiledCommon alongside its error,
+			// so nothing may be assigned through cc before this check.
 			return nil, fmt.Errorf("each.gauge: %w", err)
 		}
+		cc.t = metric.Gauge
 		valueFromPath, err := compilePath(m.Gauge.ValueFrom)
 		if err != nil {
 			return nil, fmt.Errorf("each.gauge.valueFrom: %w", err)
@@ -179,10 +181,12 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, errors.New("expected each.info to not be nil")
 		}
 		cc, err := compileCommon(m.Info.MetricMeta)
-		cc.t = metric.Info
 		if err != nil {
+			// compileCommon returns a nil *compiledCommon alongside its error,
+			// so nothing may be assigned through cc before this check.
 			return nil, fmt.Errorf("each.info: %w", err)
 		}
+		cc.t = metric.Info
 		return &compiledInfo{
 			compiledCommon: *cc,
 			labelFromKey:   m.Info.LabelFromKey,
@@ -192,10 +196,12 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 			return nil, errors.New("expected each.stateSet to not be nil")
 		}
 		cc, err := compileCommon(m.StateSet.MetricMeta)
-		cc.t = metric.StateSet
 		if err != nil {
+			// compileCommon returns a nil *compiledCommon alongside its error,
+			// so nothing may be assigned through cc before this check.
 			return nil, fmt.Errorf("each.stateSet: %w", err)
 		}
+		cc.t = metric.StateSet
 		valueFromPath, err := compilePath(m.StateSet.ValueFrom)
 		if err != nil {
 			return nil, fmt.Errorf("each.stateSet.valueFrom: %w", err)
@@ -665,7 +671,12 @@ func compilePath(path []string) (out valuePath, _ error) {
 							i += len(s)
 						}
 						if i < 0 || i >= len(s) {
-							return fmt.Errorf("list index out of range: %s", part)
+							// The path does not resolve. Returning an error here
+							// would hand it back as the resolved *value*, which
+							// then surfaces as a label value or a "expected number
+							// but was ..." message, so report it the same way every
+							// other unresolvable path does.
+							return nil
 						}
 						return s[i]
 					}

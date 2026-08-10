@@ -266,21 +266,40 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
 
+				// Unlike spec.metrics, status.currentMetrics is not validated:
+				// ValidateHorizontalPodAutoscalerStatusUpdate checks only the
+				// replica counts and the conditions, so the source matching Type
+				// may be absent. Skip such an entry rather than dereferencing it.
 				switch m.Type {
 				case autoscaling.ObjectMetricSourceType:
+					if m.Object == nil {
+						continue
+					}
 					metricName = m.Object.Metric.Name
 					currentMetric = m.Object.Current
 				case autoscaling.PodsMetricSourceType:
+					if m.Pods == nil {
+						continue
+					}
 					metricName = m.Pods.Metric.Name
 					currentMetric = m.Pods.Current
 				case autoscaling.ResourceMetricSourceType:
+					if m.Resource == nil {
+						continue
+					}
 					metricName = string(m.Resource.Name)
 					currentMetric = m.Resource.Current
 				case autoscaling.ContainerResourceMetricSourceType:
+					if m.ContainerResource == nil {
+						continue
+					}
 					metricName = string(m.ContainerResource.Name)
 					currentMetric = m.ContainerResource.Current
 					containerName = m.ContainerResource.Container
 				case autoscaling.ExternalMetricSourceType:
+					if m.External == nil {
+						continue
+					}
 					metricName = m.External.Metric.Name
 					currentMetric = m.External.Current
 				default:

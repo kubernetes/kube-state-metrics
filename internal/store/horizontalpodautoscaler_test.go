@@ -648,3 +648,40 @@ func int32ptr(value int32) *int32 {
 func resourcePtr(quantity resource.Quantity) *resource.Quantity {
 	return &quantity
 }
+
+// status.currentMetrics is not validated by the API server -- unlike
+// spec.metrics, ValidateHorizontalPodAutoscalerStatusUpdate checks only the
+// replica counts and the conditions -- so the source matching Type can be
+// absent. Generating metrics for such an entry must skip it rather than
+// dereference the nil source, which would panic on the reflector goroutine.
+func TestHPAStatusTargetMetricWithNilSource(t *testing.T) {
+	for _, metricType := range []autoscaling.MetricSourceType{
+		autoscaling.ObjectMetricSourceType,
+		autoscaling.PodsMetricSourceType,
+		autoscaling.ResourceMetricSourceType,
+		autoscaling.ContainerResourceMetricSourceType,
+		autoscaling.ExternalMetricSourceType,
+	} {
+		t.Run(string(metricType), func(t *testing.T) {
+			hpa := &autoscaling.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{Name: "hpa", Namespace: "ns"},
+				Status: autoscaling.HorizontalPodAutoscalerStatus{
+					// Type is set, but the matching source is not.
+					CurrentMetrics: []autoscaling.MetricStatus{{Type: metricType}},
+				},
+			}
+
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("panic generating metrics for a %s status with no source: %v", metricType, r)
+				}
+			}()
+
+			g := createHPAStatusTargetMetric()
+			family := g.Generate(hpa)
+			if len(family.Metrics) != 0 {
+				t.Errorf("expected the entry to be skipped, got %d metrics", len(family.Metrics))
+			}
+		})
+	}
+}

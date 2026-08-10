@@ -97,6 +97,31 @@ func TestEndpointSliceStore(t *testing.T) {
 			},
 		},
 		{
+			// Port is optional and, unlike Name and Protocol, is not defaulted by
+			// the API server: an EndpointSlice that is not used for routing
+			// traffic may omit it.
+			Obj: &discoveryv1.EndpointSlice{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test_endpointslice-ports-without-number",
+					Namespace: "test",
+				},
+				AddressType: "IPv4",
+				Ports: []discoveryv1.EndpointPort{
+					{Name: &portname,
+						Protocol: &portprotocol,
+					},
+				},
+			},
+			Want: `
+					# HELP kube_endpointslice_ports Ports attached to the endpointslice.
+					# TYPE kube_endpointslice_ports gauge
+					kube_endpointslice_ports{endpointslice="test_endpointslice-ports-without-number",port_name="http",port_protocol="TCP",port_number="",namespace="test"} 1
+				`,
+			MetricNames: []string{
+				"kube_endpointslice_ports",
+			},
+		},
+		{
 			Obj: &discoveryv1.EndpointSlice{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test_endpointslice-endpoints",

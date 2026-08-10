@@ -17,6 +17,7 @@ limitations under the License.
 package options
 
 import (
+	"math"
 	"os"
 	"testing"
 
@@ -117,6 +118,13 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "gomemlimit ratio of 0 without node",
 			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = 0 },
+			wantErr: true,
+		},
+		{
+			// NaN parses as a valid float64 and compares false against every
+			// bound, so the range check alone lets it through.
+			name:    "gomemlimit ratio of NaN",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = math.NaN() },
 			wantErr: true,
 		},
 		{

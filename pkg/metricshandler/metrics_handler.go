@@ -236,19 +236,16 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Sanitizing first can suppress HELP/TYPE headers for metrics whose
 	// only active writer is later in the list but its earlier same-named
 	// counterpart was filtered out.
-	// Compare on length, not against nil: "?resources=" parses to an empty set,
-	// which names no resource and so is a request for no filtering rather than a
-	// request for nothing.
 	activeWriters := writers
-	if len(requestedResources) > 0 || len(excludedResources) > 0 {
+	if requestedResources != nil || excludedResources != nil {
 		activeWriters = make(metricsstore.MetricsWriterList, 0, len(writers))
 		for _, mw := range writers {
-			if len(requestedResources) > 0 {
+			if requestedResources != nil {
 				if _, ok := requestedResources[mw.ResourceName]; !ok {
 					continue
 				}
 			}
-			if len(excludedResources) > 0 {
+			if excludedResources != nil {
 				if _, ok := excludedResources[mw.ResourceName]; ok {
 					continue
 				}

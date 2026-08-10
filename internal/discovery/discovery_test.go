@@ -16,6 +16,7 @@ package discovery
 import (
 	"cmp"
 	"slices"
+	"sync"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -311,4 +312,49 @@ func TestExtractGVKPs(t *testing.T) {
 			t.Errorf("testcase: %s: got %v, want %v", tc.desc, got, tc.want)
 		}
 	}
+}
+
+// The CRD informer's handlers write the cache while the discovery poll resolves
+// configured GVKs against it. Both must go through the lock: a concurrent map
+// read and write is a fatal runtime throw, not a recoverable panic. Run under
+// -race, which CI already does for unit tests.
+func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
+	r := &CRDiscoverer{}
+	gvk := schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject"}
+	gvkp := groupVersionKindPlural{GroupVersionKind: gvk, Plural: "testobjects"}
+
+	const iterations = 200
+	var wg sync.WaitGroup
+
+	// Stand in for the informer's event handlers.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			r.SafeWrite(func() { r.AppendToMap(gvkp) })
+			r.SafeWrite(func() { r.RemoveFromMap(gvkp) })
+		}
+	}()
+
+	// Stand in for the discovery poll resolving configured resources, covering
+	// the fixed lookup and all three wildcard paths.
+	for _, q := range []schema.GroupVersionKind{
+		{Group: "testgroup", Version: "v1", Kind: "TestObject"},
+		{Group: "testgroup", Version: "v1", Kind: "*"},
+		{Group: "testgroup", Version: "*", Kind: "TestObject"},
+		{Group: "testgroup", Version: "*", Kind: "*"},
+	} {
+		wg.Add(1)
+		go func(q schema.GroupVersionKind) {
+			defer wg.Done()
+			for i := 0; i < iterations; i++ {
+				if _, err := r.ResolveGVKToGVKPs(q); err != nil {
+					t.Errorf("resolving %v: %v", q, err)
+					return
+				}
+			}
+		}(q)
+	}
+
+	wg.Wait()
 }

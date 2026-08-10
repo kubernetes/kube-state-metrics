@@ -21,6 +21,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -45,6 +46,25 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Every watched file gets its own viper instance, and viper runs each
+	// OnConfigChange callback on its own goroutine. They all restart KSM through
+	// the same ctx and cancel, and a ConfigMap holding more than one watched file
+	// updates them together, so the callbacks have to take turns. Otherwise one
+	// cancel is overwritten before it is used, the instance it belonged to is
+	// never stopped, and two of them contend for the listen ports.
+	var reloadMu sync.Mutex
+	restart := func(e fsnotify.Event) {
+		reloadMu.Lock()
+		defer reloadMu.Unlock()
+
+		klog.InfoS("Changes detected", "name", e.Name)
+		cancel()
+		// Wait for the ports to be released.
+		<-time.After(3 * time.Second)
+		ctx, cancel = context.WithCancel(context.Background())
+		go KSMRunOrDie(ctx)
+	}
+
 	if file := options.GetConfigFile(*opts); file != "" {
 		cfgViper := viper.New()
 		cfgViper.SetConfigType("yaml")
@@ -64,14 +84,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
 		}
-		cfgViper.OnConfigChange(func(e fsnotify.Event) {
-			klog.InfoS("Changes detected", "name", e.Name)
-			cancel()
-			// Wait for the ports to be released.
-			<-time.After(3 * time.Second)
-			ctx, cancel = context.WithCancel(context.Background())
-			go KSMRunOrDie(ctx)
-		})
+		cfgViper.OnConfigChange(restart)
 		cfgViper.WatchConfig()
 
 		if cfgViperReadInConfigErr == nil {
@@ -116,14 +129,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
 		}
-		crcViper.OnConfigChange(func(e fsnotify.Event) {
-			klog.InfoS("Changes detected", "name", e.Name)
-			cancel()
-			// Wait for the ports to be released.
-			<-time.After(3 * time.Second)
-			ctx, cancel = context.WithCancel(context.Background())
-			go KSMRunOrDie(ctx)
-		})
+		crcViper.OnConfigChange(restart)
 		crcViper.WatchConfig()
 	}
 	if opts.Kubeconfig != "" {
@@ -138,14 +144,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			}
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
-		kubecfgViper.OnConfigChange(func(e fsnotify.Event) {
-			klog.InfoS("Changes detected", "name", e.Name)
-			cancel()
-			// Wait for the ports to be released.
-			<-time.After(3 * time.Second)
-			ctx, cancel = context.WithCancel(context.Background())
-			go KSMRunOrDie(ctx)
-		})
+		kubecfgViper.OnConfigChange(restart)
 		kubecfgViper.WatchConfig()
 	}
 	klog.InfoS("Starting kube-state-metrics")

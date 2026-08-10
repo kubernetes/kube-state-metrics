@@ -225,5 +225,17 @@ func (o *Options) Validate() error {
 		return fmt.Errorf("value for --object-limit=%d must be equal or greater than 0", o.ObjectLimit)
 	}
 
+	// The shard an object belongs to is jump.Hash(hash(uid), totalShards). That
+	// returns -1 for a non-positive bucket count, and no shard index can match an
+	// out-of-range one, so either mistake filters out every object and serves an
+	// empty /metrics with no error anywhere.
+	if o.TotalShards < 1 {
+		return fmt.Errorf("value for --total-shards=%d must be greater than 0", o.TotalShards)
+	}
+
+	if o.Shard < 0 || int(o.Shard) >= o.TotalShards {
+		return fmt.Errorf("value for --shard=%d must be between 0 and --total-shards=%d minus 1", o.Shard, o.TotalShards)
+	}
+
 	return nil
 }

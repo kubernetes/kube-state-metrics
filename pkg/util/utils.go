@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -105,15 +104,6 @@ func CreateCustomResourceClients(apiserver string, kubeconfig string, factories 
 		customResourceClients[gvrString] = customResourceClient
 	}
 	return customResourceClients, nil
-}
-
-// CreateDiscoveryClient creates a Kubernetes discovery client.
-func CreateDiscoveryClient(apiserver string, kubeconfig string) (*discovery.DiscoveryClient, error) {
-	config, err := buildConfig(apiserver, kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-	return discovery.NewDiscoveryClientForConfig(config)
 }
 
 // GVRFromType returns the GroupVersionResource for a given type.

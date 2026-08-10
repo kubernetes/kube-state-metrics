@@ -12,9 +12,16 @@ OS ?= $(shell uname -s | tr A-Z a-z)
 PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 3.9.1
 GO_VERSION = $(shell cat .go-version)
+GORELEASER_VERSION = 2.17.1
 MARKDOWNLINT_CLI2_VERSION = 0.21.0
 CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
 KSM_MODULE = $(shell go list -m)
+
+# Release assets are named after `uname -s`/`uname -m`, except that goreleaser
+# publishes arm64 where Linux reports aarch64.
+GORELEASER_OS = $(shell uname -s)
+GORELEASER_ARCH = $(patsubst aarch64,arm64,$(shell uname -m))
+GORELEASER_INSTALL_DIR ?= /usr/local/bin
 
 DOCKER_CLI ?= docker
 PROMTOOL_CLI ?= promtool
@@ -160,4 +167,9 @@ install-promtool:
 	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" |\
 	tar xvz --strip-components=1 prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}/promtool
 
-.PHONY: all build all-container container push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template
+install-goreleaser:
+	@echo Installing goreleaser v${GORELEASER_VERSION} to ${GORELEASER_INSTALL_DIR}
+	@curl -sSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_${GORELEASER_OS}_${GORELEASER_ARCH}.tar.gz" |\
+	tar xz -C ${GORELEASER_INSTALL_DIR} goreleaser
+
+.PHONY: all build all-container container push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template install-promtool install-goreleaser

@@ -103,8 +103,10 @@ function kube_pod_up() {
     is_pod_running="false"
 
     for _ in {1..90}; do # timeout for 3 minutes
-        kubectl get pods -A | grep "$1" 1>/dev/null 2>&1
-        if [[ $? -ne 1 ]]; then
+        # Test the pipeline inside the condition. As a bare statement it is
+        # subject to `set -e`, so the first poll that finds nothing ends the
+        # script before the retry below is ever reached.
+        if kubectl get pods -A | grep -q "$1"; then
             is_pod_running="true"
             break
         fi

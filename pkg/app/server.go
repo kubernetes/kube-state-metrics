@@ -379,7 +379,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			klog.InfoS("Started kube-state-metrics self metrics server", "telemetryAddress", telemetryListenAddress)
 			return web.ListenAndServe(&telemetryServer, &telemetryFlags, sLogger)
 		}, func(error) {
-			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
+			// Not derived from ctx: the interrupt handler runs because ctx was
+			// cancelled, so a child of it is already done and Shutdown would
+			// return immediately instead of draining in-flight scrapes.
+			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			telemetryServer.Shutdown(ctxShutDown)
 		})
@@ -390,7 +393,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			klog.InfoS("Started metrics server", "metricsServerAddress", metricsServerListenAddress)
 			return web.ListenAndServe(&metricsServer, &metricsFlags, sLogger)
 		}, func(error) {
-			ctxShutDown, cancel := context.WithTimeout(ctx, 3*time.Second)
+			// Not derived from ctx: the interrupt handler runs because ctx was
+			// cancelled, so a child of it is already done and Shutdown would
+			// return immediately instead of draining in-flight scrapes.
+			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			metricsServer.Shutdown(ctxShutDown)
 		})
@@ -557,8 +563,12 @@ func registerLandingPage(mux *http.ServeMux, landingConfig web.LandingConfig, ne
 }
 
 func handleClusterDelegationForProber(client kubernetes.Interface, probeType string) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		got := client.CoreV1().RESTClient().Get().AbsPath(probeType).Do(context.Background())
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Tie the upstream call to the probe request. With context.Background()
+		// an API server that accepts the connection but never answers would pin
+		// this goroutine until the TCP keepalive gave up, long after the prober
+		// stopped waiting.
+		got := client.CoreV1().RESTClient().Get().AbsPath(probeType).Do(r.Context())
 		if got.Error() != nil {
 			var statusCode int
 			got.StatusCode(&statusCode)

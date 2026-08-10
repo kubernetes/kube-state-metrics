@@ -17,8 +17,16 @@ limitations under the License.
 package metricshandler
 
 import (
+	"compress/gzip"
+	"io"
+	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"k8s.io/client-go/kubernetes/fake"
+
+	"k8s.io/kube-state-metrics/v2/internal/store"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 func TestParseResources(t *testing.T) {
@@ -74,6 +82,39 @@ func TestParseResources(t *testing.T) {
 			got := parseResources(tt.params)
 			if !reflect.DeepEqual(got, tt.expected) {
 				t.Errorf("parseResources() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+// A client may send more than one gzip token in Accept-Encoding. Wrapping the
+// response writer once per token would leave every inner writer unclosed, so its
+// deflate stream is never finalised and the body cannot be decompressed.
+func TestServeHTTPGzipWrapsOnce(t *testing.T) {
+	// No writers are needed: the response is wrapped before any are consulted,
+	// and an empty gzip stream is still a valid one.
+	handler := New(&options.Options{}, fake.NewSimpleClientset(), store.NewBuilder(), true)
+
+	for _, acceptEncoding := range []string{"gzip", "gzip, gzip", "gzip;q=1.0, gzip"} {
+		t.Run(acceptEncoding, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/metrics", nil)
+			req.Header.Set("Accept-Encoding", acceptEncoding)
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			res := w.Result()
+			defer res.Body.Close()
+			if got := res.Header.Get("Content-Encoding"); got != "gzip" {
+				t.Fatalf("Content-Encoding: got %q, want %q", got, "gzip")
+			}
+
+			zr, err := gzip.NewReader(res.Body)
+			if err != nil {
+				t.Fatalf("response is not readable gzip: %v", err)
+			}
+			defer zr.Close()
+			if _, err := io.ReadAll(zr); err != nil {
+				t.Fatalf("decompressing response: %v", err)
 			}
 		})
 	}

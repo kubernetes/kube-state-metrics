@@ -23,6 +23,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -80,11 +81,15 @@ type Builder struct {
 	// namespaceFilter is inside fieldSelectorFilter
 	fieldSelectorFilter string
 	namespaces          options.NamespaceList
-	enabledResources    []string
-	totalShards         int
-	shard               int32
-	useAPIServerCache   bool
-	objectLimit         int64
+	// enabledResourcesMu guards enabledResources, which WithEnabledResources
+	// appends to from the custom resource discovery goroutine while Build reads
+	// it from the goroutine driving the rebuild.
+	enabledResourcesMu sync.RWMutex
+	enabledResources   []string
+	totalShards        int
+	shard              int32
+	useAPIServerCache  bool
+	objectLimit        int64
 
 	GetGVKStopChan func(gvk string) chan struct{}
 }
@@ -116,6 +121,9 @@ func (b *Builder) WithEnabledResources(r []string) error {
 			return fmt.Errorf("resource %s does not exist. Available resources: %s", resource, strings.Join(availableResources(), ","))
 		}
 	}
+
+	b.enabledResourcesMu.Lock()
+	defer b.enabledResourcesMu.Unlock()
 
 	b.enabledResources = append(b.enabledResources, r...)
 	slices.Sort(b.enabledResources)
@@ -215,10 +223,7 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 		} else {
 			gvrString = f.Name()
 		}
-		if _, ok := availableStores[gvrString]; ok {
-			klog.InfoS("Updating store", "GVR", gvrString)
-		}
-		availableStores[gvrString] = func(b *Builder) []cache.Store {
+		replaced := registerStore(gvrString, func(b *Builder) []cache.Store {
 			return b.buildCustomResourceStoresFunc(
 				f.Name(),
 				f.MetricFamilyGenerators(),
@@ -227,6 +232,9 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 				b.useAPIServerCache,
 				b.objectLimit,
 			)
+		})
+		if replaced {
+			klog.InfoS("Updating store", "GVR", gvrString)
 		}
 	}
 }
@@ -250,7 +258,7 @@ func (b *Builder) allowList(list map[string][]string) (map[string][]string, erro
 		return list, nil
 	}
 	m := make(map[string][]string)
-	for _, resource := range b.enabledResources {
+	for _, resource := range b.enabledResourcesSnapshot() {
 		m[resource] = allowedList
 	}
 	return m, nil
@@ -270,6 +278,16 @@ func (b *Builder) WithAllowLabels(labels map[string][]string) error {
 	return err
 }
 
+// enabledResourcesSnapshot returns a copy of the enabled resources. Callers take
+// a copy rather than holding the lock for the whole build: the store
+// constructors mutate the builder as they run, so holding it across them would
+// be both a longer critical section than needed and a write under a read lock.
+func (b *Builder) enabledResourcesSnapshot() []string {
+	b.enabledResourcesMu.RLock()
+	defer b.enabledResourcesMu.RUnlock()
+	return slices.Clone(b.enabledResources)
+}
+
 // Build initializes and registers all enabled stores.
 // It returns metrics writers which can be used to write out
 // metrics from the stores.
@@ -281,8 +299,8 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 	var metricsWriters metricsstore.MetricsWriterList
 	var activeStoreNames []string
 
-	for _, c := range b.enabledResources {
-		constructor, ok := availableStores[c]
+	for _, c := range b.enabledResourcesSnapshot() {
+		constructor, ok := lookupStore(c)
 		if ok {
 			stores := cacheStoresToMetricStores(constructor(b))
 			activeStoreNames = append(activeStoreNames, c)
@@ -308,8 +326,8 @@ func (b *Builder) BuildStores() [][]cache.Store {
 	var allStores [][]cache.Store
 	var activeStoreNames []string
 
-	for _, c := range b.enabledResources {
-		constructor, ok := availableStores[c]
+	for _, c := range b.enabledResourcesSnapshot() {
+		constructor, ok := lookupStore(c)
 		if ok {
 			stores := constructor(b)
 			activeStoreNames = append(activeStoreNames, c)
@@ -321,6 +339,14 @@ func (b *Builder) BuildStores() [][]cache.Store {
 
 	return allStores
 }
+
+// availableStoresMu guards availableStores. The map is package state seeded with
+// the built-in resources, but WithCustomResourceStoreFactories adds to it from
+// the custom resource discovery goroutine while Build reads it from whichever
+// goroutine triggered the rebuild -- the autosharding informer, for instance.
+// A concurrent map read and write is a fatal runtime throw, not a recoverable
+// panic, so every access goes through the helpers below.
+var availableStoresMu sync.RWMutex
 
 var availableStores = map[string]func(f *Builder) []cache.Store{
 	"certificatesigningrequests":        func(b *Builder) []cache.Store { return b.buildCsrStores() },
@@ -364,12 +390,32 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"volumeattachments":                 func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
 }
 
+// lookupStore returns the store constructor registered for name.
+func lookupStore(name string) (func(*Builder) []cache.Store, bool) {
+	availableStoresMu.RLock()
+	defer availableStoresMu.RUnlock()
+	constructor, ok := availableStores[name]
+	return constructor, ok
+}
+
+// registerStore records the store constructor for name, replacing any previous
+// one, and reports whether it replaced an existing entry.
+func registerStore(name string, constructor func(*Builder) []cache.Store) bool {
+	availableStoresMu.Lock()
+	defer availableStoresMu.Unlock()
+	_, existed := availableStores[name]
+	availableStores[name] = constructor
+	return existed
+}
+
 func resourceExists(name string) bool {
-	_, ok := availableStores[name]
+	_, ok := lookupStore(name)
 	return ok
 }
 
 func availableResources() []string {
+	availableStoresMu.RLock()
+	defer availableStoresMu.RUnlock()
 	c := []string{}
 	for name := range availableStores {
 		c = append(c, name)

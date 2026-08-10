@@ -17,8 +17,19 @@ limitations under the License.
 package metricshandler
 
 import (
+	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
+
+	"k8s.io/kube-state-metrics/v2/internal/store"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 func TestParseResources(t *testing.T) {
@@ -77,4 +88,62 @@ func TestParseResources(t *testing.T) {
 			}
 		})
 	}
+}
+
+// "?resources=" names no resource, so it is a request for no filtering rather
+// than a request for nothing. Same for its exclude counterpart, and for the
+// combination where one is empty and the other is not.
+func TestServeHTTPEmptyResourceFilter(t *testing.T) {
+	handler := New(&options.Options{}, fake.NewSimpleClientset(), store.NewBuilder(), false)
+	handler.metricsWriters = metricsstore.MetricsWriterList{
+		metricsstore.NewMetricsWriter("pods", newStoreWithOneMetric(t, "kube_pod_test")),
+		metricsstore.NewMetricsWriter("nodes", newStoreWithOneMetric(t, "kube_node_test")),
+	}
+
+	for _, tc := range []struct {
+		query string
+		want  []string
+		gone  []string
+	}{
+		{query: "", want: []string{"kube_pod_test", "kube_node_test"}},
+		{query: "?resources=", want: []string{"kube_pod_test", "kube_node_test"}},
+		{query: "?exclude_resources=", want: []string{"kube_pod_test", "kube_node_test"}},
+		{query: "?resources=&exclude_resources=nodes", want: []string{"kube_pod_test"}, gone: []string{"kube_node_test"}},
+		{query: "?resources=pods", want: []string{"kube_pod_test"}, gone: []string{"kube_node_test"}},
+	} {
+		t.Run(tc.query, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/metrics"+tc.query, nil)
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			body := w.Body.String()
+			for _, want := range tc.want {
+				if !strings.Contains(body, want) {
+					t.Errorf("expected %q in the response, got %q", want, body)
+				}
+			}
+			for _, gone := range tc.gone {
+				if strings.Contains(body, gone) {
+					t.Errorf("did not expect %q in the response, got %q", gone, body)
+				}
+			}
+		})
+	}
+}
+
+func newStoreWithOneMetric(t *testing.T, name string) *metricsstore.MetricsStore {
+	t.Helper()
+	s := metricsstore.NewMetricsStore(
+		[]string{"# HELP " + name + " help\n# TYPE " + name + " gauge"},
+		func(interface{}) []metric.FamilyInterface {
+			return []metric.FamilyInterface{&metric.Family{
+				Name:    name,
+				Metrics: []*metric.Metric{{Value: 1}},
+			}}
+		},
+	)
+	if err := s.Add(&v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "ns", UID: "uid"}}); err != nil {
+		t.Fatalf("adding to store: %v", err)
+	}
+	return s
 }

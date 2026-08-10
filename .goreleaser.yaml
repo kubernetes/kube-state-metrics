@@ -95,8 +95,14 @@ changelog:
 
 release:
   github:
-    owner: kubernetes     
-    name: kube-state-metrics      
+    owner: kubernetes
+    name: kube-state-metrics
+
+  # The GitHub release and the staging images are published by different runners:
+  # the pre-release workflow has a GITHUB_TOKEN but no registry credentials, and
+  # Cloud Build has registry credentials but no token. Setting this lets Cloud
+  # Build push images only; without it goreleaser aborts on a missing token.
+  disable: '{{ envOrDefault "GORELEASER_SKIP_GITHUB_RELEASE" "false" }}'
 
   prerelease: "true"
 

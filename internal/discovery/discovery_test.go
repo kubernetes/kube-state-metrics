@@ -304,6 +304,59 @@ func TestExtractGVKPs(t *testing.T) {
 			obj:  "not-a-crd",
 			want: nil,
 		},
+		// Every field below is required on apiextensions.k8s.io/v1, so the API
+		// server would reject these. They are covered because extractGVKPs runs
+		// on the informer goroutine, where a failed type assertion is an
+		// unrecovered panic rather than a skipped object.
+		{
+			desc: "no spec",
+			obj:  &unstructured.Unstructured{Object: map[string]interface{}{}},
+			want: nil,
+		},
+		{
+			desc: "spec is not an object",
+			obj:  &unstructured.Unstructured{Object: map[string]interface{}{"spec": "nope"}},
+			want: nil,
+		},
+		{
+			desc: "no group",
+			obj: &unstructured.Unstructured{Object: map[string]interface{}{
+				"spec": map[string]interface{}{"names": map[string]interface{}{"kind": "K", "plural": "ks"}},
+			}},
+			want: nil,
+		},
+		{
+			desc: "no names",
+			obj: &unstructured.Unstructured{Object: map[string]interface{}{
+				"spec": map[string]interface{}{"group": "g"},
+			}},
+			want: nil,
+		},
+		{
+			desc: "no versions",
+			obj: &unstructured.Unstructured{Object: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"group": "g",
+					"names": map[string]interface{}{"kind": "K", "plural": "ks"},
+				},
+			}},
+			want: nil,
+		},
+		{
+			desc: "a malformed version is skipped, the rest are kept",
+			obj: &unstructured.Unstructured{Object: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"group": "testgroup",
+					"names": map[string]interface{}{"kind": "TestObject", "plural": "testobjects"},
+					"versions": []interface{}{
+						"not-an-object",
+						map[string]interface{}{"served": true},
+						map[string]interface{}{"name": "v1", "served": true},
+					},
+				},
+			}},
+			want: []groupVersionKindPlural{gvkp("v1")},
+		},
 	}
 	for _, tc := range testcases {
 		got := extractGVKPs(tc.obj)

@@ -48,17 +48,57 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 		klog.ErrorS(nil, "expected *unstructured.Unstructured", "got", fmt.Sprintf("%T", obj))
 		return nil
 	}
-	objSpec := u.Object["spec"].(map[string]interface{})
-	g := objSpec["group"].(string)
-	k := objSpec["names"].(map[string]interface{})["kind"].(string)
-	p := objSpec["names"].(map[string]interface{})["plural"].(string)
+	// Every field read below is required on apiextensions.k8s.io/v1, so a CRD the
+	// API server accepted has them. They are still checked rather than asserted:
+	// this runs on the informer goroutine, where a failed assertion is an
+	// unrecovered panic that takes the process down, and the cost of being wrong
+	// about the shape of one object should be that object being skipped.
+	objSpec, ok := u.Object["spec"].(map[string]interface{})
+	if !ok {
+		klog.ErrorS(nil, "CRD has no spec object", "crd", u.GetName())
+		return nil
+	}
+	g, ok := objSpec["group"].(string)
+	if !ok {
+		klog.ErrorS(nil, "CRD spec has no group", "crd", u.GetName())
+		return nil
+	}
+	names, ok := objSpec["names"].(map[string]interface{})
+	if !ok {
+		klog.ErrorS(nil, "CRD spec has no names object", "crd", u.GetName())
+		return nil
+	}
+	k, ok := names["kind"].(string)
+	if !ok {
+		klog.ErrorS(nil, "CRD spec has no kind", "crd", u.GetName())
+		return nil
+	}
+	p, ok := names["plural"].(string)
+	if !ok {
+		klog.ErrorS(nil, "CRD spec has no plural", "crd", u.GetName())
+		return nil
+	}
+	versions, ok := objSpec["versions"].([]interface{})
+	if !ok {
+		klog.ErrorS(nil, "CRD spec has no versions list", "crd", u.GetName())
+		return nil
+	}
 	var gvkps []groupVersionKindPlural
-	for _, version := range objSpec["versions"].([]interface{}) {
-		v := version.(map[string]interface{})["name"].(string)
+	for _, version := range versions {
+		versionSpec, ok := version.(map[string]interface{})
+		if !ok {
+			klog.ErrorS(nil, "CRD version is not an object", "crd", u.GetName())
+			continue
+		}
+		v, ok := versionSpec["name"].(string)
+		if !ok {
+			klog.ErrorS(nil, "CRD version has no name", "crd", u.GetName())
+			continue
+		}
 		// Versions that are not served by the API server cannot be listed or watched,
 		// so any reflector started for them would fail indefinitely. `served` is a
 		// required field on apiextensions.k8s.io/v1, treat it as served if absent.
-		if served, ok := version.(map[string]interface{})["served"].(bool); ok && !served {
+		if served, ok := versionSpec["served"].(bool); ok && !served {
 			klog.V(1).InfoS("skipping CRD version that is not served by the API server", "group", g, "version", v, "kind", k)
 			continue
 		}

@@ -295,6 +295,14 @@ func TestExtractGVKPs(t *testing.T) {
 			want: []groupVersionKindPlural{gvkp("v1")},
 		},
 		{
+			// served is present but unreadable, so whether the API server would
+			// serve this version is unknown. Skip it rather than start a
+			// reflector that may never succeed.
+			desc: "non-boolean served field is skipped",
+			obj:  crd(version("v1", "false"), version("v2", true)),
+			want: []groupVersionKindPlural{gvkp("v2")},
+		},
+		{
 			desc: "tombstoned object is unwrapped",
 			obj:  cache.DeletedFinalStateUnknown{Key: "testobjects.testgroup", Obj: crd(version("v1", true), version("v1beta1", false))},
 			want: []groupVersionKindPlural{gvkp("v1")},

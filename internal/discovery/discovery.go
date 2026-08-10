@@ -95,12 +95,22 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 			klog.ErrorS(nil, "CRD version has no name", "crd", u.GetName())
 			continue
 		}
-		// Versions that are not served by the API server cannot be listed or watched,
-		// so any reflector started for them would fail indefinitely. `served` is a
-		// required field on apiextensions.k8s.io/v1, treat it as served if absent.
-		if served, ok := versionSpec["served"].(bool); ok && !served {
-			klog.V(1).InfoS("skipping CRD version that is not served by the API server", "group", g, "version", v, "kind", k)
-			continue
+		// Versions that are not served by the API server cannot be listed or
+		// watched, so any reflector started for them would fail indefinitely.
+		// `served` is a required field on apiextensions.k8s.io/v1, so treat it as
+		// served when absent, but skip the version when it is present and not a
+		// bool: the point of this check is to avoid starting a reflector that can
+		// never succeed, and a value we cannot read is not a reason to start one.
+		if rawServed, present := versionSpec["served"]; present {
+			served, ok := rawServed.(bool)
+			if !ok {
+				klog.ErrorS(nil, "CRD version has a non-boolean served field", "crd", u.GetName(), "version", v)
+				continue
+			}
+			if !served {
+				klog.V(1).InfoS("skipping CRD version that is not served by the API server", "group", g, "version", v, "kind", k)
+				continue
+			}
 		}
 		gvkps = append(gvkps, groupVersionKindPlural{
 			GroupVersionKind: schema.GroupVersionKind{

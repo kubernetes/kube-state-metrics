@@ -206,13 +206,14 @@ func (o *Options) Usage() {
 
 // Validate validates arguments
 func (o *Options) Validate() error {
-	shardableResource := "pods"
-	if o.Node == "" {
-		return nil
-	}
-	for _, x := range o.Resources.AsSlice() {
-		if x != shardableResource {
-			return fmt.Errorf("resource %s can't be sharded by field selector spec.nodeName", x)
+	// Only node-scoped runs are restricted to the shardable resource; the checks
+	// below apply to every run, so they must not sit behind this condition.
+	if o.Node != "" {
+		shardableResource := "pods"
+		for _, x := range o.Resources.AsSlice() {
+			if x != shardableResource {
+				return fmt.Errorf("resource %s can't be sharded by field selector spec.nodeName", x)
+			}
 		}
 	}
 

@@ -18,7 +18,9 @@ import (
 	"sort"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
 )
 
 func TestGVKMapsResolveGVK(t *testing.T) {
@@ -235,5 +237,78 @@ func TestResolveGVKToGVKPsMissingWarnDedup(t *testing.T) {
 	})
 	if !r.markMissingGVKWarned(missing) {
 		t.Errorf("expected warning to fire again after the GVK disappeared")
+	}
+}
+
+func TestExtractGVKPs(t *testing.T) {
+	// crd builds a minimal CRD object, one entry per version. A nil `served`
+	// leaves the field out entirely, mimicking an object that predates it.
+	crd := func(versions ...interface{}) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]interface{}{
+			"spec": map[string]interface{}{
+				"group": "testgroup",
+				"names": map[string]interface{}{
+					"kind":   "TestObject",
+					"plural": "testobjects",
+				},
+				"versions": versions,
+			},
+		}}
+	}
+	version := func(name string, served interface{}) interface{} {
+		v := map[string]interface{}{"name": name}
+		if served != nil {
+			v["served"] = served
+		}
+		return v
+	}
+	gvkp := func(v string) groupVersionKindPlural {
+		return groupVersionKindPlural{
+			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: v, Kind: "TestObject"},
+			Plural:           "testobjects",
+		}
+	}
+
+	testcases := []struct {
+		desc string
+		obj  interface{}
+		want []groupVersionKindPlural
+	}{
+		{
+			desc: "all versions served",
+			obj:  crd(version("v1", true), version("v1beta1", true)),
+			want: []groupVersionKindPlural{gvkp("v1"), gvkp("v1beta1")},
+		},
+		{
+			desc: "non-served versions are skipped",
+			obj:  crd(version("v1", true), version("v1beta1", false)),
+			want: []groupVersionKindPlural{gvkp("v1")},
+		},
+		{
+			desc: "no served versions",
+			obj:  crd(version("v1alpha1", false), version("v1beta1", false)),
+			want: nil,
+		},
+		{
+			desc: "missing served field defaults to served",
+			obj:  crd(version("v1", nil)),
+			want: []groupVersionKindPlural{gvkp("v1")},
+		},
+		{
+			desc: "tombstoned object is unwrapped",
+			obj:  cache.DeletedFinalStateUnknown{Key: "testobjects.testgroup", Obj: crd(version("v1", true), version("v1beta1", false))},
+			want: []groupVersionKindPlural{gvkp("v1")},
+		},
+		{
+			desc: "unexpected type yields no GVKPs",
+			obj:  "not-a-crd",
+			want: nil,
+		},
+	}
+	for _, tc := range testcases {
+		got := extractGVKPs(tc.obj)
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("testcase: %s: got %v, want %v", tc.desc, got, tc.want)
+		}
 	}
 }

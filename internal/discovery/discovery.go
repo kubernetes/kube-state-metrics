@@ -37,6 +37,43 @@ import (
 // Interval is the time interval between two cache sync checks.
 const Interval = 3 * time.Second
 
+// extractGVKPs returns the GVKPs defined by the given CRD, skipping any version
+// that the API server does not serve.
+func extractGVKPs(obj interface{}) []groupVersionKindPlural {
+	if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		obj = d.Obj
+	}
+	u, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		klog.ErrorS(nil, "expected *unstructured.Unstructured", "got", fmt.Sprintf("%T", obj))
+		return nil
+	}
+	objSpec := u.Object["spec"].(map[string]interface{})
+	g := objSpec["group"].(string)
+	k := objSpec["names"].(map[string]interface{})["kind"].(string)
+	p := objSpec["names"].(map[string]interface{})["plural"].(string)
+	var gvkps []groupVersionKindPlural
+	for _, version := range objSpec["versions"].([]interface{}) {
+		v := version.(map[string]interface{})["name"].(string)
+		// Versions that are not served by the API server cannot be listed or watched,
+		// so any reflector started for them would fail indefinitely. `served` is a
+		// required field on apiextensions.k8s.io/v1, treat it as served if absent.
+		if served, ok := version.(map[string]interface{})["served"].(bool); ok && !served {
+			klog.V(1).InfoS("skipping CRD version that is not served by the API server", "group", g, "version", v, "kind", k)
+			continue
+		}
+		gvkps = append(gvkps, groupVersionKindPlural{
+			GroupVersionKind: schema.GroupVersionKind{
+				Group:   g,
+				Version: v,
+				Kind:    k,
+			},
+			Plural: p,
+		})
+	}
+	return gvkps
+}
+
 // StartDiscovery starts the discovery process, fetching all the objects that can be listed from the apiserver, every `Interval` seconds.
 // resolveGVK needs to be called after StartDiscovery to generate factories.
 func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) error {
@@ -48,41 +85,6 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	}, "", 0, nil, nil)
 	informer := factory.Informer()
 	stopper := make(chan struct{})
-	extractGVKPs := func(obj interface{}) []groupVersionKindPlural {
-		if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
-			obj = d.Obj
-		}
-		u, ok := obj.(*unstructured.Unstructured)
-		if !ok {
-			klog.ErrorS(nil, "expected *unstructured.Unstructured", "got", fmt.Sprintf("%T", obj))
-			return nil
-		}
-		objSpec := u.Object["spec"].(map[string]interface{})
-		var gvkps []groupVersionKindPlural
-		for _, version := range objSpec["versions"].([]interface{}) {
-			g := objSpec["group"].(string)
-			v := version.(map[string]interface{})["name"].(string)
-			k := objSpec["names"].(map[string]interface{})["kind"].(string)
-			p := objSpec["names"].(map[string]interface{})["plural"].(string)
-
-			// Ignore non-served versions
-			// API Server will return errors when trying to retrieve stuff using this version
-			versionServed := version.(map[string]interface{})["served"].(bool)
-			if !versionServed {
-				continue
-			}
-
-			gvkps = append(gvkps, groupVersionKindPlural{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   g,
-					Version: v,
-					Kind:    k,
-				},
-				Plural: p,
-			})
-		}
-		return gvkps
-	}
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			gvkps := extractGVKPs(obj)
@@ -160,7 +162,7 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 			}
 		}
 		if r.markMissingGVKWarned(gvk) {
-			klog.InfoS("Configured custom resource was not found in the cluster, no metrics will be generated for it until its CRD is installed", "gvk", gvk)
+			klog.InfoS("Configured custom resource was not found in the cluster, no metrics will be generated for it until a CRD serving this version is installed", "gvk", gvk)
 		}
 		return nil, nil
 	}

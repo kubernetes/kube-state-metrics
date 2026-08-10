@@ -19,6 +19,7 @@ package options
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -217,7 +218,9 @@ func (o *Options) Validate() error {
 		}
 	}
 
-	if o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
+	// NaN parses as a valid float64 and compares false against every bound, so it
+	// has to be rejected explicitly rather than by the range check alone.
+	if math.IsNaN(o.AutoGoMemlimitRatio) || o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
 		return fmt.Errorf("value for --auto-gomemlimit-ratio=%f must be greater than 0 and less than or equal to 1", o.AutoGoMemlimitRatio)
 	}
 

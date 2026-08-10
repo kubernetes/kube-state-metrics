@@ -138,6 +138,30 @@ func TestValidate(t *testing.T) {
 			name:   "node scoped run with pods",
 			mutate: func(o *Options) { o.Node = "node-1"; o.Resources = ResourceSet{"pods": struct{}{}} },
 		},
+		{
+			name:    "zero total shards",
+			mutate:  func(o *Options) { o.TotalShards = 0 },
+			wantErr: true,
+		},
+		{
+			name:    "negative total shards",
+			mutate:  func(o *Options) { o.TotalShards = -1 },
+			wantErr: true,
+		},
+		{
+			name:    "shard index beyond total shards",
+			mutate:  func(o *Options) { o.Shard = 3; o.TotalShards = 3 },
+			wantErr: true,
+		},
+		{
+			name:    "negative shard index",
+			mutate:  func(o *Options) { o.Shard = -1 },
+			wantErr: true,
+		},
+		{
+			name:   "last shard of a sharded set",
+			mutate: func(o *Options) { o.Shard = 2; o.TotalShards = 3 },
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			opts := NewOptions()

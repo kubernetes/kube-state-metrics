@@ -149,6 +149,11 @@ func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, err
 		}
 	}
 	res.ResourceVersion = metaObj.GetResourceVersion()
+	// The reflector pages through large lists. Dropping the continue token would
+	// end the pager after the first page and silently truncate the relist, so it
+	// has to survive the shard filtering along with the resource version.
+	res.Continue = metaObj.GetContinue()
+	res.RemainingItemCount = metaObj.GetRemainingItemCount()
 
 	return res, nil
 }

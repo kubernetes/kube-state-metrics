@@ -14,8 +14,8 @@
 package discovery
 
 import (
-	"reflect"
-	"sort"
+	"cmp"
+	"slices"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -189,13 +189,13 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			t.Errorf("testcase: %s: got error %v", tc.desc, err)
 		}
 		// Sort got and tc.want to ensure the order of the elements.
-		sort.Slice(got, func(i, j int) bool {
-			return got[i].String() < got[j].String()
+		slices.SortFunc(got, func(a, b groupVersionKindPlural) int {
+			return cmp.Compare(a.String(), b.String())
 		})
-		sort.Slice(tc.want, func(i, j int) bool {
-			return tc.want[i].String() < tc.want[j].String()
+		slices.SortFunc(tc.want, func(a, b groupVersionKindPlural) int {
+			return cmp.Compare(a.String(), b.String())
 		})
-		if !reflect.DeepEqual(got, tc.want) {
+		if !slices.Equal(got, tc.want) {
 			t.Errorf("testcase: %s: got %v, want %v", tc.desc, got, tc.want)
 		}
 	}
@@ -307,7 +307,7 @@ func TestExtractGVKPs(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		got := extractGVKPs(tc.obj)
-		if !reflect.DeepEqual(got, tc.want) {
+		if !slices.Equal(got, tc.want) {
 			t.Errorf("testcase: %s: got %v, want %v", tc.desc, got, tc.want)
 		}
 	}

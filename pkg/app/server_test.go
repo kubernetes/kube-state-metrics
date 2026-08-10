@@ -25,7 +25,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -378,7 +378,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 `
 
 	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
-	sort.Strings(expectedSplit)
+	slices.Sort(expectedSplit)
 
 	gotSplit := strings.Split(strings.TrimSpace(string(body)), "\n")
 
@@ -389,7 +389,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 		}
 	}
 
-	sort.Strings(gotFiltered)
+	slices.Sort(gotFiltered)
 
 	if len(expectedSplit) != len(gotFiltered) {
 		fmt.Println(len(expectedSplit))
@@ -426,7 +426,7 @@ kube_state_metrics_total_shards 1
 `
 
 	expectedSplit2 := strings.Split(strings.TrimSpace(expected2), "\n")
-	sort.Strings(expectedSplit2)
+	slices.Sort(expectedSplit2)
 
 	gotSplit2 := strings.Split(strings.TrimSpace(string(body2)), "\n")
 
@@ -437,7 +437,7 @@ kube_state_metrics_total_shards 1
 		}
 	}
 
-	sort.Strings(gotFiltered2)
+	slices.Sort(gotFiltered2)
 
 	if len(expectedSplit2) != len(gotFiltered2) {
 		fmt.Println(len(expectedSplit2))
@@ -623,7 +623,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	// normalize results:
 
 	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
-	sort.Strings(expectedSplit)
+	slices.Sort(expectedSplit)
 
 	expectedFiltered := []string{}
 	for _, l := range expectedSplit {
@@ -633,7 +633,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	}
 
 	got1Split := strings.Split(strings.TrimSpace(got1), "\n")
-	sort.Strings(got1Split)
+	slices.Sort(got1Split)
 
 	got1Filtered := []string{}
 	for _, l := range got1Split {
@@ -643,7 +643,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	}
 
 	got2Split := strings.Split(strings.TrimSpace(got2), "\n")
-	sort.Strings(got2Split)
+	slices.Sort(got2Split)
 
 	got2Filtered := []string{}
 	for _, l := range got2Split {
@@ -665,7 +665,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	}
 
 	got1Filtered = append(got1Filtered, got2Filtered...)
-	sort.Strings(got1Filtered)
+	slices.Sort(got1Filtered)
 
 	for i := 0; i < len(expectedFiltered); i++ {
 		expected := strings.TrimSpace(expectedFiltered[i])
@@ -769,7 +769,7 @@ kube_foo_status_replicas_available{namespace="default",foo="foo9"} 9
 `
 
 	expectedSplit := strings.Split(strings.TrimSpace(expected), "\n")
-	sort.Strings(expectedSplit)
+	slices.Sort(expectedSplit)
 
 	gotSplit := strings.Split(strings.TrimSpace(string(body)), "\n")
 
@@ -780,7 +780,7 @@ kube_foo_status_replicas_available{namespace="default",foo="foo9"} 9
 		}
 	}
 
-	sort.Strings(gotFiltered)
+	slices.Sort(gotFiltered)
 
 	if len(expectedSplit) != len(gotFiltered) {
 		fmt.Println(len(expectedSplit))

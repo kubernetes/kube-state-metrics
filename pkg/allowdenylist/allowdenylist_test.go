@@ -65,6 +65,24 @@ func TestNew(t *testing.T) {
 			t.Fatal("expected list to be denylist")
 		}
 	})
+
+	// The list is mutated by Include and Exclude, so New must return a writable
+	// map even when both inputs are nil.
+	t.Run("nil inputs produce a writable list", func(t *testing.T) {
+		list, err := New(nil, nil)
+		if err != nil {
+			t.Fatal("expected New() to not fail")
+		}
+
+		if list.list == nil {
+			t.Fatal("expected list to be non-nil")
+		}
+
+		list.Exclude([]string{"item1"})
+		if _, ok := list.list["item1"]; !ok {
+			t.Fatal("expected Exclude() to add item1 to the denylist")
+		}
+	})
 }
 
 func TestInclude(t *testing.T) {

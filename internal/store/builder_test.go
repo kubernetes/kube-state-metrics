@@ -18,13 +18,16 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"slices"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -343,4 +346,55 @@ func TestClusterScopedStoresNotDuplicatedPerNamespace(t *testing.T) {
 	if got := len(b.buildPodStores()); got != 3 {
 		t.Errorf("namespaced pod stores across 3 namespaces: got %d, want 3", got)
 	}
+}
+
+// The custom resource discovery goroutine registers store factories and enabled
+// resources while a rebuild -- triggered from the autosharding informer, for
+// instance -- reads them. A concurrent map read and write on the package-level
+// store registry is a fatal runtime throw, not a recoverable panic. Run under
+// -race, which CI already does for unit tests.
+func TestBuilderSharedStateIsRaceFree(t *testing.T) {
+	const iterations = 200
+
+	b := NewBuilder()
+	b.WithMetrics(prometheus.NewRegistry())
+	b.WithEnabledResources([]string{"pods"}) //nolint:errcheck
+
+	var wg sync.WaitGroup
+
+	// Stand in for discovery registering factories for discovered CRDs.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			registerStore(fmt.Sprintf("testgroup/v1, Resource=test%d", i), func(*Builder) []cache.Store { return nil })
+		}
+	}()
+
+	// Stand in for discovery updating the enabled set.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			if err := b.WithEnabledResources([]string{"pods"}); err != nil {
+				t.Errorf("enabling resources: %v", err)
+				return
+			}
+		}
+	}()
+
+	// Stand in for the rebuild reading both.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			for _, name := range b.enabledResourcesSnapshot() {
+				lookupStore(name) //nolint:errcheck
+			}
+			availableResources()
+			resourceExists("pods")
+		}
+	}()
+
+	wg.Wait()
 }

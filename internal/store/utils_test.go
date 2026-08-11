@@ -245,6 +245,26 @@ func TestKubeLabelsToPrometheusLabels(t *testing.T) {
 				"snake_case",
 			},
 		},
+		{
+			// A key that sanitizes straight onto the name the conflict suffix
+			// would generate. Prometheus rejects a sample carrying the same
+			// label name twice, so the suffix has to skip past it.
+			kubeLabels: map[string]string{
+				"A.b.conflict1": "already_taken",
+				"a-b":           "dash",
+				"a.b":           "dot",
+			},
+			expectKeys: []string{
+				"label_a_b_conflict1",
+				"label_a_b_conflict2",
+				"label_a_b_conflict3",
+			},
+			expectValues: []string{
+				"already_taken",
+				"dash",
+				"dot",
+			},
+		},
 	}
 
 	for _, tc := range testCases {

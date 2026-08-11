@@ -92,51 +92,52 @@ func mapToPrometheusLabels(labels map[string]string, prefix string) ([]string, [
 	}
 	slices.Sort(sortedKeys)
 
-	// conflictDesc holds some metadata for resolving potential label conflicts
-	type conflictDesc struct {
-		// the number of conflicting label keys we saw so far
-		count int
+	// used maps an emitted label name to its offset in labelKeys, so that the
+	// first time a name collides the entry already emitted under it can be
+	// renamed. conflicts counts the suffixes handed out per sanitized name.
+	// Prometheus rejects a sample carrying the same label name twice, so a
+	// generated "_conflictN" name must be checked against used as well: it can
+	// collide with a name some other key sanitized to.
+	used := make(map[string]int, len(labels))
+	conflicts := make(map[string]int)
 
-		// the offset of the initial conflicting label key, so we could
-		// later go back and rename "label_foo" to "label_foo_conflict1"
-		initial int
-	}
-
-	var conflicts map[string]*conflictDesc
 	for _, k := range sortedKeys {
-		labelKey := labelName(prefix, k)
-		var conflict *conflictDesc
-		if conflicts != nil {
-			conflict = conflicts[labelKey]
+		base := labelName(prefix, k)
+		name := base
+		if count, seen := conflicts[base]; seen {
+			// This name has collided before, so the unsuffixed form is no longer
+			// in use and every further occurrence just takes the next suffix.
+			name = nextFreeLabelName(base, &count, used)
+			conflicts[base] = count
+		} else if idx, taken := used[name]; taken {
+			// First collision for this name: the entry already emitted is still
+			// unsuffixed, so rename it to "_conflict1" and take "_conflict2".
+			count := 0
+			renamed := nextFreeLabelName(base, &count, used)
+			delete(used, name)
+			labelKeys[idx] = renamed
+			used[renamed] = idx
+
+			name = nextFreeLabelName(base, &count, used)
+			conflicts[base] = count
 		}
-		if conflict != nil {
-			conflict.count++
-			labelKey = labelConflictSuffix(labelKey, conflict.count)
-		} else {
-			initialIdx := -1
-			for i, lk := range labelKeys {
-				if lk == labelKey {
-					initialIdx = i
-					break
-				}
-			}
-			if initialIdx != -1 {
-				if conflicts == nil {
-					conflicts = make(map[string]*conflictDesc)
-				}
-				labelKeys[initialIdx] = labelConflictSuffix(labelKeys[initialIdx], 1)
-				conflict = &conflictDesc{
-					count:   2,
-					initial: initialIdx,
-				}
-				conflicts[labelKey] = conflict
-				labelKey = labelConflictSuffix(labelKey, 2)
-			}
-		}
-		labelKeys = append(labelKeys, labelKey)
+		used[name] = len(labelKeys)
+		labelKeys = append(labelKeys, name)
 		labelValues = append(labelValues, labels[k])
 	}
 	return labelKeys, labelValues
+}
+
+// nextFreeLabelName advances count until base with that conflict suffix is a
+// name no label is using yet, and returns it.
+func nextFreeLabelName(base string, count *int, used map[string]int) string {
+	for {
+		*count++
+		candidate := labelConflictSuffix(base, *count)
+		if _, taken := used[candidate]; !taken {
+			return candidate
+		}
+	}
 }
 
 func labelName(prefix, labelName string) string {

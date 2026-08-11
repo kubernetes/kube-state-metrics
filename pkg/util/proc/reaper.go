@@ -21,33 +21,54 @@ package proc
 import (
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"k8s.io/klog/v2"
 )
 
+var (
+	reaperOnce = new(sync.Once)
+
+	// Indirected so the guard can be tested without the test binary running as
+	// pid 1 or registering a real SIGCHLD handler.
+	getpid = os.Getpid
+	launch = func() { go reapChildren() }
+)
+
 // StartReaper starts a goroutine to reap processes if called from a process
 // that has pid 1.
+//
+// It is safe to call more than once: the reaper runs for the lifetime of the
+// process and has no stop path, and RunKubeStateMetrics -- which calls this --
+// is restarted by the config file watchers on every reload. Without the guard
+// each reload would strand another goroutine blocked on its own signal channel,
+// which the signal package keeps a reference to, so it is never collected.
 func StartReaper() {
-	if os.Getpid() == 1 {
+	if getpid() != 1 {
+		return
+	}
+	reaperOnce.Do(func() {
 		klog.V(4).InfoS("Launching reaper")
-		go func() {
-			sigs := make(chan os.Signal, 1)
-			signal.Notify(sigs, syscall.SIGCHLD)
-			for {
-				// Wait for a child to terminate
-				sig := <-sigs
-				klog.V(4).InfoS("Signal received", "signal", sig)
-				for {
-					// Reap processes
-					cpid, _ := syscall.Wait4(-1, nil, syscall.WNOHANG, nil)
-					if cpid < 1 {
-						break
-					}
+		launch()
+	})
+}
 
-					klog.V(4).InfoS("Reaped process with pid", "cpid", cpid)
-				}
+func reapChildren() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGCHLD)
+	for {
+		// Wait for a child to terminate
+		sig := <-sigs
+		klog.V(4).InfoS("Signal received", "signal", sig)
+		for {
+			// Reap processes
+			cpid, _ := syscall.Wait4(-1, nil, syscall.WNOHANG, nil)
+			if cpid < 1 {
+				break
 			}
-		}()
+
+			klog.V(4).InfoS("Reaped process with pid", "cpid", cpid)
+		}
 	}
 }

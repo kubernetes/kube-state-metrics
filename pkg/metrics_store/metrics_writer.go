@@ -80,28 +80,41 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		return nil
 	}
 
+	// Headers describe the families written below, so they are emitted only when
+	// there is at least one object to describe. That has to consider every store,
+	// not just the first: there is one store per namespace, so the first can be
+	// empty while a later one holds objects whose families are still written.
+	// The answer is the same for every header, so determine it once.
+	hasMetrics := false
+	for _, s := range m.stores {
+		s.metrics.Range(func(_ interface{}, _ interface{}) bool {
+			hasMetrics = true
+			return false
+		})
+		if hasMetrics {
+			break
+		}
+	}
+
 	for i, help := range m.stores[0].headers {
 		var err error
 
 		// SanitizeHeaders blanks duplicate headers to preserve header/family
 		// index alignment. An empty header means suppress the header text but
 		// still emit the metric family bytes at this index.
-		if help != "" {
+		if help != "" && hasMetrics {
 			// Avoid allocating a new string if the header lacks a trailing newline:
 			// check once and emit "\n" as a second write if needed.
 			needsNewline := help[len(help)-1] != '\n'
-			m.stores[0].metrics.Range(func(_ interface{}, _ interface{}) bool {
-				_, err = io.WriteString(w, help)
-				if err != nil {
-					return false
-				}
-				if needsNewline {
-					_, err = io.WriteString(w, "\n")
-				}
-				return false
-			})
+			_, err = io.WriteString(w, help)
 			if err != nil {
 				return fmt.Errorf("failed to write help text: %w", err)
+			}
+			if needsNewline {
+				_, err = io.WriteString(w, "\n")
+				if err != nil {
+					return fmt.Errorf("failed to write help text: %w", err)
+				}
 			}
 		}
 

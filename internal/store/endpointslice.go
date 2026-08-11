@@ -205,8 +205,25 @@ func createEndpointSlicePorts() generator.FamilyGenerator {
 		wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
 			m := []*metric.Metric{}
 			for _, port := range e.Ports {
+				// Every field of EndpointPort is optional. Name and Protocol are
+				// defaulted by the API server, but Port is not: an EndpointSlice
+				// used for something other than routing traffic is allowed to omit
+				// it. Expose the missing value as an empty label rather than
+				// dereferencing a nil pointer.
+				portName := ""
+				if port.Name != nil {
+					portName = *port.Name
+				}
+				portProtocol := ""
+				if port.Protocol != nil {
+					portProtocol = string(*port.Protocol)
+				}
+				portNumber := ""
+				if port.Port != nil {
+					portNumber = strconv.FormatInt(int64(*port.Port), 10)
+				}
 				m = append(m, &metric.Metric{
-					LabelValues: []string{*port.Name, string(*port.Protocol), strconv.FormatInt(int64(*port.Port), 10)},
+					LabelValues: []string{portName, portProtocol, portNumber},
 					LabelKeys:   []string{"port_name", "port_protocol", "port_number"},
 					Value:       1,
 				})

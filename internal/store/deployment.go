@@ -311,9 +311,13 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 
+				// GetScaledValueFromIntOrPercent also fails on a nil
+				// MaxUnavailable and on a percentage that does not parse, neither
+				// of which the guard above covers. A single such Deployment must
+				// not crash the exporter, so skip its metric instead.
 				maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxUnavailable, int(*d.Spec.Replicas), false)
 				if err != nil {
-					panic(err)
+					return &metric.Family{}
 				}
 
 				return &metric.Family{
@@ -336,9 +340,11 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 					return &metric.Family{}
 				}
 
+				// As above: a nil MaxSurge or an unparseable percentage is an
+				// error here, not a panic-worthy invariant violation.
 				maxSurge, err := intstr.GetScaledValueFromIntOrPercent(d.Spec.Strategy.RollingUpdate.MaxSurge, int(*d.Spec.Replicas), true)
 				if err != nil {
-					panic(err)
+					return &metric.Family{}
 				}
 
 				return &metric.Family{

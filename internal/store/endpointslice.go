@@ -102,26 +102,32 @@ func createEndpointsSliceHints() generator.FamilyGenerator {
 			for _, ep := range e.Endpoints {
 				// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
 				// If there is no hint, skip this metric
-				if ep.Hints != nil && len(ep.Hints.ForZones) > 0 {
-					var (
-						labelKeys,
-						labelValues []string
-					)
+				if ep.Hints == nil || len(ep.Hints.ForZones) == 0 {
+					continue
+				}
 
-					// Per Docs.
-					// This must contain at least one address but no more than
-					// 100. These are all assumed to be fungible and clients may choose to only
-					// use the first element. Refer to: https://issue.k8s.io/106267
-					labelKeys = append(labelKeys, "address")
-					labelValues = append(labelValues, ep.Addresses[0])
+				// Per Docs.
+				// This must contain at least one address but no more than
+				// 100. These are all assumed to be fungible and clients may choose to only
+				// use the first element. Refer to: https://issue.k8s.io/106267
+				// Validation enforces the lower bound today, but indexing on the
+				// strength of a comment is one relaxation away from a panic on the
+				// reflector goroutine.
+				if len(ep.Addresses) == 0 {
+					continue
+				}
+				address := ep.Addresses[0]
 
-					for _, zone := range ep.Hints.ForZones {
-						m = append(m, &metric.Metric{
-							LabelKeys:   append(labelKeys, "for_zone"),
-							LabelValues: append(labelValues, zone.Name),
-							Value:       1,
-						})
-					}
+				for _, zone := range ep.Hints.ForZones {
+					// Built per zone rather than appended onto a slice shared by
+					// the loop: if that slice ever had spare capacity, every zone
+					// would write into the same backing array and report the last
+					// one.
+					m = append(m, &metric.Metric{
+						LabelKeys:   []string{"address", "for_zone"},
+						LabelValues: []string{address, zone.Name},
+						Value:       1,
+					})
 				}
 			}
 			return &metric.Family{

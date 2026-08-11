@@ -192,8 +192,16 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 // ServeHTTP implements the http.Handler interface. It writes all generated metrics to the response body.
 // Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Snapshot the writers instead of holding the lock for the whole response.
+	// BuildWriters and ConfigureSharding need the write lock, so a slow client
+	// would otherwise delay a re-shard -- and since a waiting writer blocks new
+	// readers, every scrape queued behind it too. Writers are replaced wholesale
+	// rather than mutated, so a snapshot stays readable and self-consistent even
+	// if it is rebuilt mid-response.
 	m.mtx.RLock()
-	defer m.mtx.RUnlock()
+	writers := m.metricsWriters
+	m.mtx.RUnlock()
+
 	resHeader := w.Header()
 	var writer io.Writer = w
 
@@ -232,10 +240,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Sanitizing first can suppress HELP/TYPE headers for metrics whose
 	// only active writer is later in the list but its earlier same-named
 	// counterpart was filtered out.
-	activeWriters := m.metricsWriters
+	activeWriters := writers
 	if requestedResources != nil || excludedResources != nil {
-		activeWriters = make(metricsstore.MetricsWriterList, 0, len(m.metricsWriters))
-		for _, mw := range m.metricsWriters {
+		activeWriters = make(metricsstore.MetricsWriterList, 0, len(writers))
+		for _, mw := range writers {
 			if requestedResources != nil {
 				if _, ok := requestedResources[mw.ResourceName]; !ok {
 					continue

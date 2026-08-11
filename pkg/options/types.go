@@ -254,16 +254,21 @@ func (l *LabelsAllowList) Set(value string) error {
 		firstWordPos int
 		name         string
 	)
+	// Scan over runes, not bytes. `range` on a string yields byte offsets, which
+	// stop addressing []rune(value) as soon as the value holds a multi-byte
+	// character — indexing the rune slice with them reads the wrong character or
+	// runs off the end.
+	runes := []rune(value)
 	firstWordPos = 0
 
-	for i, v := range value {
-		if i+1 == len(value) {
+	for i, v := range runes {
+		if i+1 == len(runes) {
 			next = EOF
 		} else {
-			next = []rune(value)[i+1]
+			next = runes[i+1]
 		}
 		if i-1 >= 0 {
-			previous = []rune(value)[i-1]
+			previous = runes[i-1]
 		} else {
 			previous = v
 		}
@@ -273,7 +278,7 @@ func (l *LabelsAllowList) Set(value string) error {
 			if previous == ',' || next != '[' {
 				return errLabelsAllowListFormat
 			}
-			name = strings.TrimSpace(string(([]rune(value)[firstWordPos:i])))
+			name = strings.TrimSpace(string(runes[firstWordPos:i]))
 			m[name] = []string{}
 			firstWordPos = i + 1
 		case '[':
@@ -287,7 +292,7 @@ func (l *LabelsAllowList) Set(value string) error {
 				return errLabelsAllowListFormat
 			}
 			if previous != '[' {
-				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+				m[name] = append(m[name], strings.TrimSpace(string(runes[firstWordPos:i])))
 			}
 			firstWordPos = i + 1
 		case ',':
@@ -296,7 +301,7 @@ func (l *LabelsAllowList) Set(value string) error {
 				return errLabelsAllowListFormat
 			}
 			if previous != ']' {
-				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
+				m[name] = append(m[name], strings.TrimSpace(string(runes[firstWordPos:i])))
 			}
 			firstWordPos = i + 1
 		}

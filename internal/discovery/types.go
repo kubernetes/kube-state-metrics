@@ -79,24 +79,31 @@ func (r *CRDiscoverer) SafeWrite(f func()) {
 func (r *CRDiscoverer) markMissingGVKWarned(gvk schema.GroupVersionKind) bool {
 	firstTime := false
 	r.SafeWrite(func() {
-		if r.warnedMissingGVKs == nil {
-			r.warnedMissingGVKs = map[string]struct{}{}
-		}
-		key := gvk.String()
-		if _, ok := r.warnedMissingGVKs[key]; !ok {
-			r.warnedMissingGVKs[key] = struct{}{}
-			firstTime = true
-		}
+		firstTime = r.markMissingGVKWarnedLocked(gvk)
 	})
 	return firstTime
 }
 
-// clearMissingGVKWarning forgets a previously recorded "missing" warning for the
-// given GVK so that a future disappearance is logged again.
-func (r *CRDiscoverer) clearMissingGVKWarning(gvk schema.GroupVersionKind) {
-	r.SafeWrite(func() {
-		delete(r.warnedMissingGVKs, gvk.String())
-	})
+// markMissingGVKWarnedLocked is markMissingGVKWarned for a caller that already
+// holds the cache lock. sync.RWMutex is not reentrant, so such a caller must not
+// go through SafeWrite.
+func (r *CRDiscoverer) markMissingGVKWarnedLocked(gvk schema.GroupVersionKind) bool {
+	if r.warnedMissingGVKs == nil {
+		r.warnedMissingGVKs = map[string]struct{}{}
+	}
+	key := gvk.String()
+	if _, ok := r.warnedMissingGVKs[key]; ok {
+		return false
+	}
+	r.warnedMissingGVKs[key] = struct{}{}
+	return true
+}
+
+// clearMissingGVKWarningLocked forgets a previously recorded "missing" warning
+// for the given GVK so that a future disappearance is logged again. The caller
+// must hold the cache lock.
+func (r *CRDiscoverer) clearMissingGVKWarningLocked(gvk schema.GroupVersionKind) {
+	delete(r.warnedMissingGVKs, gvk.String())
 }
 
 // AppendToMap appends the given GVKs to the cache.

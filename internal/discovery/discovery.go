@@ -144,74 +144,86 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	}
 	hasVersion := v != "" && v != "*"
 	hasKind := k != "" && k != "*"
-	// No need to resolve, return.
-	if hasVersion && hasKind {
-		for _, el := range r.Map[g][v] {
-			if el.Kind == k {
-				r.clearMissingGVKWarning(gvk)
-				return []groupVersionKindPlural{
-					{
-						GroupVersionKind: schema.GroupVersionKind{
-							Group:   g,
-							Version: v,
-							Kind:    k,
-						},
-						Plural: el.Plural,
-					},
-				}, nil
-			}
-		}
-		if r.markMissingGVKWarned(gvk) {
-			klog.InfoS("Configured custom resource was not found in the cluster, no metrics will be generated for it until a CRD serving this version is installed", "gvk", gvk)
-		}
-		return nil, nil
-	}
-	if hasVersion && !hasKind {
-		kinds := r.Map[g][v]
-		for _, el := range kinds {
-			resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-				GroupVersionKind: schema.GroupVersionKind{
-					Group:   g,
-					Version: v,
-					Kind:    el.Kind,
-				},
-				Plural: el.Plural,
-			})
-		}
-	}
-	if !hasVersion && hasKind {
-		versions := r.Map[g]
-		for version, kinds := range versions {
-			for _, el := range kinds {
+
+	// The cache is written by the CRD informer's event handlers, so reading it
+	// has to hold the lock. The whole body takes the lock once rather than
+	// locking each read: the warning bookkeeping writes to the cache as well,
+	// and sync.RWMutex is not reentrant, so a nested Safe* call from inside a
+	// held lock would deadlock. The logging is deliberately left outside.
+	warnMissing := false
+	r.SafeWrite(func() {
+		// No need to resolve, return.
+		if hasVersion && hasKind {
+			for _, el := range r.Map[g][v] {
 				if el.Kind == k {
-					resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-						GroupVersionKind: schema.GroupVersionKind{
-							Group:   g,
-							Version: version,
-							Kind:    k,
+					r.clearMissingGVKWarningLocked(gvk)
+					resolvedGVKPs = []groupVersionKindPlural{
+						{
+							GroupVersionKind: schema.GroupVersionKind{
+								Group:   g,
+								Version: v,
+								Kind:    k,
+							},
+							Plural: el.Plural,
 						},
-						Plural: el.Plural,
-					})
+					}
+					return
 				}
 			}
+			warnMissing = r.markMissingGVKWarnedLocked(gvk)
+			return
 		}
-	}
-	if !hasVersion && !hasKind {
-		versions := r.Map[g]
-		for version, kinds := range versions {
+		if hasVersion && !hasKind {
+			kinds := r.Map[g][v]
 			for _, el := range kinds {
 				resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
 					GroupVersionKind: schema.GroupVersionKind{
 						Group:   g,
-						Version: version,
+						Version: v,
 						Kind:    el.Kind,
 					},
 					Plural: el.Plural,
 				})
 			}
 		}
+		if !hasVersion && hasKind {
+			versions := r.Map[g]
+			for version, kinds := range versions {
+				for _, el := range kinds {
+					if el.Kind == k {
+						resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+							GroupVersionKind: schema.GroupVersionKind{
+								Group:   g,
+								Version: version,
+								Kind:    k,
+							},
+							Plural: el.Plural,
+						})
+					}
+				}
+			}
+		}
+		if !hasVersion && !hasKind {
+			versions := r.Map[g]
+			for version, kinds := range versions {
+				for _, el := range kinds {
+					resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
+						GroupVersionKind: schema.GroupVersionKind{
+							Group:   g,
+							Version: version,
+							Kind:    el.Kind,
+						},
+						Plural: el.Plural,
+					})
+				}
+			}
+		}
+	})
+
+	if warnMissing {
+		klog.InfoS("Configured custom resource was not found in the cluster, no metrics will be generated for it until a CRD serving this version is installed", "gvk", gvk)
 	}
-	return
+	return resolvedGVKPs, nil
 }
 
 // PollForCacheUpdates polls the cache for updates and updates the stores accordingly.

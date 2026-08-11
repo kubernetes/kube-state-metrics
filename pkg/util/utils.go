@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,28 +35,29 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 )
 
-var config *rest.Config
-var currentKubeClient clientset.Interface
-var currentDiscoveryClient *discovery.DiscoveryClient
-
-// CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
-func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
-	if currentKubeClient != nil {
-		return currentKubeClient, nil
-	}
-
-	var err error
-
-	if config == nil {
-		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
-		if err != nil {
-			return nil, err
-		}
+// buildConfig reads the kubeconfig and applies the settings every client here
+// shares. It is deliberately not memoized: the kubeconfig is watched for
+// changes, and a rotation rewrites the file rather than changing its path, so a
+// cache keyed on the arguments would still hand back superseded credentials.
+func buildConfig(apiserver string, kubeconfig string) (*rest.Config, error) {
+	config, err := clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
+	if err != nil {
+		return nil, err
 	}
 
 	config.UserAgent = fmt.Sprintf("%s/%s (%s/%s) kubernetes/%s", "kube-state-metrics", version.Version, runtime.GOOS, runtime.GOARCH, version.Revision)
 	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 	config.ContentType = "application/vnd.kubernetes.protobuf"
+
+	return config, nil
+}
+
+// CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
+func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
+	config, err := buildConfig(apiserver, kubeconfig)
+	if err != nil {
+		return nil, err
+	}
 
 	kubeClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -75,19 +75,15 @@ func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	klog.InfoS("Run with Kubernetes cluster version", "major", v.Major, "minor", v.Minor, "gitVersion", v.GitVersion, "gitTreeState", v.GitTreeState, "gitCommit", v.GitCommit, "platform", v.Platform)
 	klog.InfoS("Communication with server successful")
 
-	currentKubeClient = kubeClient
 	return kubeClient, nil
 }
 
 // CreateCustomResourceClients creates a custom resource clientset.
 func CreateCustomResourceClients(apiserver string, kubeconfig string, factories ...customresource.RegistryFactory) (map[string]interface{}, error) {
 	// Not relying on memoized clients here because the factories are subject to change.
-	var err error
-	if config == nil {
-		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
-		if err != nil {
-			return nil, err
-		}
+	config, err := buildConfig(apiserver, kubeconfig)
+	if err != nil {
+		return nil, err
 	}
 	customResourceClients := make(map[string]interface{}, len(factories))
 	for _, f := range factories {
@@ -108,23 +104,6 @@ func CreateCustomResourceClients(apiserver string, kubeconfig string, factories 
 		customResourceClients[gvrString] = customResourceClient
 	}
 	return customResourceClients, nil
-}
-
-// CreateDiscoveryClient creates a Kubernetes discovery client.
-func CreateDiscoveryClient(apiserver string, kubeconfig string) (*discovery.DiscoveryClient, error) {
-	if currentDiscoveryClient != nil {
-		return currentDiscoveryClient, nil
-	}
-	var err error
-	if config == nil {
-		var err error
-		config, err = clientcmd.BuildConfigFromFlags(apiserver, kubeconfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-	currentDiscoveryClient, err = discovery.NewDiscoveryClientForConfig(config)
-	return currentDiscoveryClient, err
 }
 
 // GVRFromType returns the GroupVersionResource for a given type.

@@ -27,6 +27,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -318,4 +319,46 @@ func (w *countingWatch) closeResult() {
 
 func (w *countingWatch) ResultChan() <-chan watch.Event {
 	return w.result
+}
+
+// The reflector pages through large lists, so the continue token has to survive
+// the shard filtering: without it the pager stops after the first page and the
+// relist is silently truncated.
+func TestShardedListWatchPreservesPaginationMetadata(t *testing.T) {
+	remaining := int64(7)
+	upstream := &cache.ListWatch{
+		ListFunc: func(_ metav1.ListOptions) (runtime.Object, error) {
+			return &v1.ConfigMapList{
+				ListMeta: metav1.ListMeta{
+					ResourceVersion:    "123",
+					Continue:           "next-page-token",
+					RemainingItemCount: &remaining,
+				},
+				Items: []v1.ConfigMap{
+					{ObjectMeta: metav1.ObjectMeta{Name: "cm1", Namespace: "ns1", UID: types.UID("test_uid")}},
+				},
+			}, nil
+		},
+	}
+
+	slw := NewShardedListWatch(0, 2, upstream)
+	// shardedListWatch implements only the deprecated List method.
+	list, err := slw.List(metav1.ListOptions{}) //nolint:staticcheck
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+
+	m, err := meta.ListAccessor(list)
+	if err != nil {
+		t.Fatalf("ListAccessor: %v", err)
+	}
+	if got := m.GetResourceVersion(); got != "123" {
+		t.Errorf("resource version: got %q, want %q", got, "123")
+	}
+	if got := m.GetContinue(); got != "next-page-token" {
+		t.Errorf("continue token: got %q, want %q", got, "next-page-token")
+	}
+	if got := m.GetRemainingItemCount(); got == nil || *got != remaining {
+		t.Errorf("remaining item count: got %v, want %d", got, remaining)
+	}
 }

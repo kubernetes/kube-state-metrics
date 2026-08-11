@@ -216,6 +216,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
 				writer = gzip.NewWriter(writer)
 				resHeader.Set("Content-Encoding", "gzip")
+				// Stop at the first match, as the upstream implementation does.
+				// Wrapping twice would leave the inner writer unclosed, so its
+				// stream would never be finalised and the body would be unusable.
+				break
 			}
 		}
 	}

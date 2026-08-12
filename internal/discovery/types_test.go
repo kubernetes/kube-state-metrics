@@ -250,6 +250,29 @@ func TestAppendToMapReturnsWhetherChanged(t *testing.T) {
 	}
 }
 
+func TestAppendToMapRefreshesPlural(t *testing.T) {
+	gvkp := groupVersionKindPlural{
+		GroupVersionKind: schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"},
+		Plural:           "foos",
+	}
+	updated := gvkp
+	updated.Plural = "fooes"
+
+	r := &CRDiscoverer{}
+	r.AppendToMap(gvkp)
+	revision := r.cacheRevision
+
+	if !r.AppendToMap(updated) {
+		t.Fatal("plural refresh should report change")
+	}
+	if got := r.Map[gvkp.Group][gvkp.Version][0].Plural; got != "fooes" {
+		t.Fatalf("expected refreshed plural, got %q", got)
+	}
+	if r.cacheRevision <= revision {
+		t.Fatalf("expected revision to advance on plural refresh: before=%d after=%d", revision, r.cacheRevision)
+	}
+}
+
 func TestRemoveFromMapReturnsWhetherChanged(t *testing.T) {
 	gvkp := groupVersionKindPlural{
 		GroupVersionKind: schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"},

@@ -30,6 +30,10 @@ func (g groupVersionKindPlural) String() string {
 	return fmt.Sprintf("%s/%s, Kind=%s, Plural=%s", g.Group, g.Version, g.Kind, g.Plural)
 }
 
+func gvkpKey(gvkp groupVersionKindPlural) string {
+	return gvkp.GroupVersionKind.String() + "\x00" + gvkp.Plural
+}
+
 type kindPlural struct {
 	Kind   string
 	Plural string
@@ -128,9 +132,13 @@ func (r *CRDiscoverer) AppendToMap(gvkps ...groupVersionKindPlural) bool {
 			r.Map[gvkp.Group][gvkp.Version] = []kindPlural{}
 		}
 		alreadyExists := false
-		for _, existing := range r.Map[gvkp.Group][gvkp.Version] {
+		for i, existing := range r.Map[gvkp.Group][gvkp.Version] {
 			if existing.Kind == gvkp.Kind {
 				alreadyExists = true
+				if existing.Plural != gvkp.Plural {
+					r.Map[gvkp.Group][gvkp.Version][i].Plural = gvkp.Plural
+					changed = true
+				}
 				break
 			}
 		}
@@ -220,10 +228,10 @@ func equalGVKPSet(a, b []groupVersionKindPlural) bool {
 	}
 	counts := make(map[string]int, len(a))
 	for _, gvkp := range a {
-		counts[gvkp.String()]++
+		counts[gvkpKey(gvkp)]++
 	}
 	for _, gvkp := range b {
-		key := gvkp.String()
+		key := gvkpKey(gvkp)
 		if counts[key] == 0 {
 			return false
 		}
@@ -237,10 +245,10 @@ func diffGVKPs(oldGVKPs, newGVKPs []groupVersionKindPlural) (removed, added []gr
 	oldSet := make(map[string]groupVersionKindPlural, len(oldGVKPs))
 	newSet := make(map[string]groupVersionKindPlural, len(newGVKPs))
 	for _, gvkp := range oldGVKPs {
-		oldSet[gvkp.String()] = gvkp
+		oldSet[gvkpKey(gvkp)] = gvkp
 	}
 	for _, gvkp := range newGVKPs {
-		newSet[gvkp.String()] = gvkp
+		newSet[gvkpKey(gvkp)] = gvkp
 	}
 	for key, gvkp := range oldSet {
 		if _, ok := newSet[key]; !ok {

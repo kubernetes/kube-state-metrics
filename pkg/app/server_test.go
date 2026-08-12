@@ -259,6 +259,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # HELP kube_pod_spec_volumes_persistentvolumeclaims_readonly [STABLE] Describes whether a persistentvolumeclaim is mounted read only. Ephemeral volumes always report 0 since the ephemeral volume source does not support a read-only flag.
 # HELP kube_pod_start_time [STABLE] Start time in unix timestamp for a pod.
 # HELP kube_pod_status_container_ready_time Readiness achieved time in unix timestamp for a pod containers.
+# HELP kube_pod_status_disruption_reason The pod disruption condition reason
 # HELP kube_pod_status_initialized_time Initialized time in unix timestamp for a pod.
 # HELP kube_pod_status_qos_class The pods current qosClass.
 # HELP kube_pod_status_phase [STABLE] The pods current phase.
@@ -317,6 +318,7 @@ func TestFullScrapeCycle(t *testing.T) {
 # TYPE kube_pod_spec_volumes_persistentvolumeclaims_readonly gauge
 # TYPE kube_pod_start_time gauge
 # TYPE kube_pod_status_container_ready_time gauge
+# TYPE kube_pod_status_disruption_reason gauge
 # TYPE kube_pod_status_initialized_time gauge
 # TYPE kube_pod_status_phase gauge
 # TYPE kube_pod_status_qos_class gauge

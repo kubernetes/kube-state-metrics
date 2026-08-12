@@ -1418,6 +1418,74 @@ func TestPodStore(t *testing.T) {
 		{
 			Obj: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod5",
+					Namespace: "ns5",
+					UID:       "uid5",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.DisruptionTarget,
+							Reason: "EvictionByEvictionAPI",
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_disruption_reason The pod disruption condition reason
+				# TYPE kube_pod_status_disruption_reason gauge
+				kube_pod_status_disruption_reason{namespace="ns5",pod="pod5",reason="EvictionByEvictionAPI",uid="uid5"} 1
+`,
+			MetricNames: []string{"kube_pod_status_disruption_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod6",
+					Namespace: "ns6",
+					UID:       "uid6",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodReady,
+							Reason: "EvictionByEvictionAPI",
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_disruption_reason The pod disruption condition reason
+				# TYPE kube_pod_status_disruption_reason gauge
+`,
+			MetricNames: []string{"kube_pod_status_disruption_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod7disruption",
+					Namespace: "ns7",
+					UID:       "uid7",
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.DisruptionTarget,
+							Reason: "SomeFutureReason",
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_disruption_reason The pod disruption condition reason
+				# TYPE kube_pod_status_disruption_reason gauge
+				kube_pod_status_disruption_reason{namespace="ns7",pod="pod7disruption",reason="Other",uid="uid7"} 1
+`,
+			MetricNames: []string{"kube_pod_status_disruption_reason"},
+		},
+		{
+			Obj: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:              "pod4",
 					Namespace:         "ns4",
 					UID:               "uid4",
@@ -2558,7 +2626,7 @@ func BenchmarkPodStore(b *testing.B) {
 		},
 	}
 
-	expectedFamilies := 59
+	expectedFamilies := 60
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {
@@ -2734,5 +2802,94 @@ func TestKubePodTolerations_DeduplicatesDuplicateEntries_WithTolerationSeconds(t
 	wantMetricCount := 4 // key1@3600, key1@1800, key2@0, key2@nil
 	if got := len(metricsSeen); got != wantMetricCount {
 		t.Errorf("expected %d unique toleration metrics, got %d", wantMetricCount, got)
+	}
+}
+
+func TestPodStatusDisruptionReasonFamilyGenerator(t *testing.T) {
+	cases := []struct {
+		name       string
+		conditions []v1.PodCondition
+		wantReason string
+	}{
+		{
+			name:       "no conditions",
+			conditions: nil,
+		},
+		{
+			name: "known disruption target reason: PreemptionByScheduler",
+			conditions: []v1.PodCondition{
+				{Type: v1.DisruptionTarget, Reason: "PreemptionByScheduler"},
+			},
+			wantReason: "PreemptionByScheduler",
+		},
+		{
+			name: "known disruption target reason: DeletionByTaintManager",
+			conditions: []v1.PodCondition{
+				{Type: v1.DisruptionTarget, Reason: "DeletionByTaintManager"},
+			},
+			wantReason: "DeletionByTaintManager",
+		},
+		{
+			name: "known disruption target reason: EvictionByEvictionAPI",
+			conditions: []v1.PodCondition{
+				{Type: v1.DisruptionTarget, Reason: "EvictionByEvictionAPI"},
+			},
+			wantReason: "EvictionByEvictionAPI",
+		},
+		{
+			name: "known disruption target reason: DeletionByPodGC",
+			conditions: []v1.PodCondition{
+				{Type: v1.DisruptionTarget, Reason: "DeletionByPodGC"},
+			},
+			wantReason: "DeletionByPodGC",
+		},
+		{
+			name: "known disruption target reason: TerminationByKubelet",
+			conditions: []v1.PodCondition{
+				{Type: v1.DisruptionTarget, Reason: "TerminationByKubelet"},
+			},
+			wantReason: "TerminationByKubelet",
+		},
+		{
+			name: "unknown disruption target reason falls back to Other",
+			conditions: []v1.PodCondition{
+				{Type: v1.DisruptionTarget, Reason: "SomeFutureReason"},
+			},
+			wantReason: "Other",
+		},
+		{
+			name: "matching reason on a different condition type",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Reason: "EvictionByEvictionAPI"},
+			},
+		},
+	}
+
+	g := createPodStatusDisruptionReasonFamilyGenerator()
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p := &v1.Pod{Status: v1.PodStatus{Conditions: c.conditions}}
+			family := g.Generate(p)
+
+			if c.wantReason == "" {
+				if len(family.Metrics) != 0 {
+					t.Errorf("expected no metrics, got %d", len(family.Metrics))
+				}
+				return
+			}
+
+			if len(family.Metrics) != 1 {
+				t.Fatalf("expected 1 metric, got %d", len(family.Metrics))
+			}
+			m := family.Metrics[0]
+			lbls := map[string]string{}
+			for i, k := range m.LabelKeys {
+				lbls[k] = m.LabelValues[i]
+			}
+			if m.Value != 1 || lbls["reason"] != c.wantReason {
+				t.Errorf("got reason=%s value=%v, want reason=%s value=1", lbls["reason"], m.Value, c.wantReason)
+			}
+		})
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -1357,14 +1358,7 @@ func TestPodStore(t *testing.T) {
 				kube_pod_status_phase{namespace="ns4",phase="Running",pod="pod4",uid="uid4"} 1
 				kube_pod_status_phase{namespace="ns4",phase="Succeeded",pod="pod4",uid="uid4"} 0
 				kube_pod_status_phase{namespace="ns4",phase="Unknown",pod="pod4",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 1
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_phase", "kube_pod_status_reason"},
 		},
@@ -1405,13 +1399,6 @@ func TestPodStore(t *testing.T) {
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 1
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -1499,13 +1486,6 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 1
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
@@ -1526,14 +1506,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 1
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -1553,14 +1526,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 1
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -1580,14 +1546,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 1
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -1607,14 +1566,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 1
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -1634,14 +1586,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
-			kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Other",uid="uid4"} 1
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -1666,14 +1611,7 @@ func TestPodStore(t *testing.T) {
 			Want: `
 				# HELP kube_pod_status_reason The pod status reasons
 				# TYPE kube_pod_status_reason gauge
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Evicted",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeAffinity",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="NodeLost",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="PreemptionByScheduler",uid="uid4"} 0
 				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="SchedulingGated",uid="uid4"} 1
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="Shutdown",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TerminationByKubelet",uid="uid4"} 0
-				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="UnexpectedAdmissionError",uid="uid4"} 0
 `,
 			MetricNames: []string{"kube_pod_status_reason"},
 		},
@@ -2635,13 +2573,13 @@ func BenchmarkPodStore(b *testing.B) {
 	}
 }
 
-func TestGetPodStatusReasonValue(t *testing.T) {
+func TestHasPodStatusReason(t *testing.T) {
 	reason := "TestReason"
 
 	tests := []struct {
 		name string
 		pod  *v1.Pod
-		want float64
+		want bool
 	}{
 		{
 			name: "matches Status.Reason",
@@ -2650,7 +2588,7 @@ func TestGetPodStatusReasonValue(t *testing.T) {
 					Reason: "TestReason",
 				},
 			},
-			want: 1,
+			want: true,
 		},
 		{
 			name: "matches condition Reason",
@@ -2663,7 +2601,7 @@ func TestGetPodStatusReasonValue(t *testing.T) {
 					},
 				},
 			},
-			want: 1,
+			want: true,
 		},
 		{
 			name: "matches container terminated Reason",
@@ -2680,10 +2618,10 @@ func TestGetPodStatusReasonValue(t *testing.T) {
 					},
 				},
 			},
-			want: 1,
+			want: true,
 		},
 		{
-			name: "no match returns 0",
+			name: "no match returns false",
 			pod: &v1.Pod{
 				Status: v1.PodStatus{
 					Reason: "OtherReason",
@@ -2703,19 +2641,87 @@ func TestGetPodStatusReasonValue(t *testing.T) {
 					},
 				},
 			},
-			want: 0,
+			want: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getPodStatusReasonValue(tt.pod, reason)
+			got := hasPodStatusReason(tt.pod, reason)
 			if got != tt.want {
-				t.Errorf("getPodStatusReasonValue() = %v, want %v", got, tt.want)
+				t.Errorf("hasPodStatusReason() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
+
+func TestPodStatusReasonFamilyGeneratorOtherFallback(t *testing.T) {
+	cases := []struct {
+		name        string
+		statusField string
+		condition   string
+		container   string
+		wantReasons []string
+	}{
+		{
+			name:        "empty Status.Reason emits nothing",
+			statusField: "",
+			wantReasons: nil,
+		},
+		{
+			name:        "known Status.Reason is unaffected",
+			statusField: "Evicted",
+			wantReasons: []string{"Evicted"},
+		},
+		{
+			name:        "unrecognized Status.Reason falls back to Other",
+			statusField: "SomeFutureReason",
+			wantReasons: []string{"Other"},
+		},
+		{
+			name:      "unrecognized condition reason does not trigger Other",
+			condition: "SomeFutureConditionReason",
+		},
+		{
+			name:      "unrecognized container terminated reason does not trigger Other",
+			container: "OOMKilled",
+		},
+	}
+
+	g := createPodStatusReasonFamilyGenerator()
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p := &v1.Pod{Status: v1.PodStatus{Reason: c.statusField}}
+			if c.condition != "" {
+				p.Status.Conditions = []v1.PodCondition{{Reason: c.condition}}
+			}
+			if c.container != "" {
+				p.Status.ContainerStatuses = []v1.ContainerStatus{
+					{State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{Reason: c.container}}},
+				}
+			}
+
+			family := g.Generate(p)
+
+			got := []string{}
+			for _, m := range family.Metrics {
+				for i, k := range m.LabelKeys {
+					if k == "reason" {
+						got = append(got, m.LabelValues[i])
+					}
+				}
+			}
+			slices.Sort(got)
+			want := append([]string{}, c.wantReasons...)
+			slices.Sort(want)
+			if !slices.Equal(got, want) {
+				t.Errorf("got reasons %v, want %v", got, want)
+			}
+		})
+	}
+}
+
 func TestKubePodTolerations_DeduplicatesDuplicateEntries_WithTolerationSeconds(t *testing.T) {
 	seconds1 := int64(3600)
 	seconds2 := int64(3600)

@@ -1707,12 +1707,22 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 			ms := []*metric.Metric{}
 
 			for _, reason := range podStatusReasons {
-				m := &metric.Metric{
+				if !hasPodStatusReason(p, reason) {
+					continue
+				}
+				ms = append(ms, &metric.Metric{
 					LabelKeys:   []string{"reason"},
 					LabelValues: []string{reason},
-					Value:       getPodStatusReasonValue(p, reason),
-				}
-				ms = append(ms, m)
+					Value:       1,
+				})
+			}
+
+			if p.Status.Reason != "" && !slices.Contains(podStatusReasons, p.Status.Reason) {
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"reason"},
+					LabelValues: []string{"Other"},
+					Value:       1,
+				})
 			}
 
 			return &metric.Family{
@@ -1722,21 +1732,21 @@ func createPodStatusReasonFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-func getPodStatusReasonValue(p *v1.Pod, reason string) float64 {
+func hasPodStatusReason(p *v1.Pod, reason string) bool {
 	if p.Status.Reason == reason {
-		return 1
+		return true
 	}
 	for _, cond := range p.Status.Conditions {
 		if cond.Reason == reason {
-			return 1
+			return true
 		}
 	}
 	for _, cs := range p.Status.ContainerStatuses {
 		if cs.State.Terminated != nil && cs.State.Terminated.Reason == reason {
-			return 1
+			return true
 		}
 	}
-	return 0
+	return false
 }
 
 func createPodStatusDisruptionReasonFamilyGenerator() generator.FamilyGenerator {

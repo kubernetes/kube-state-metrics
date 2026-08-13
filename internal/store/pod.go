@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 	"net/netip"
+	"slices"
 	"strconv"
 
 	basemetrics "k8s.io/component-base/metrics"
@@ -37,9 +38,10 @@ import (
 )
 
 var (
-	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
-	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
-	descPodIPsLabelKeys        = []string{"ip", "ip_family"}
+	descPodLabelsDefaultLabels    = []string{"namespace", "pod", "uid"}
+	podStatusReasons              = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
+	podDisruptionConditionReasons = []string{v1.PodReasonPreemptionByScheduler, "DeletionByTaintManager", "EvictionByEvictionAPI", "DeletionByPodGC", v1.PodReasonTerminationByKubelet}
+	descPodIPsLabelKeys           = []string{"ip", "ip_family"}
 )
 
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -95,6 +97,7 @@ func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createPodStatusInitializedTimeFamilyGenerator(),
 		createPodStatusContainerReadyTimeFamilyGenerator(),
 		createPodStatusReasonFamilyGenerator(),
+		createPodStatusDisruptionReasonFamilyGenerator(),
 		createPodStatusScheduledFamilyGenerator(),
 		createPodStatusScheduledTimeFamilyGenerator(),
 		createPodStatusUnschedulableFamilyGenerator(),
@@ -1734,6 +1737,38 @@ func getPodStatusReasonValue(p *v1.Pod, reason string) float64 {
 		}
 	}
 	return 0
+}
+
+func createPodStatusDisruptionReasonFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_pod_status_disruption_reason",
+		"The pod disruption condition reason",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapPodFunc(func(p *v1.Pod) *metric.Family {
+			ms := []*metric.Metric{}
+
+			for _, cond := range p.Status.Conditions {
+				if cond.Type != v1.DisruptionTarget {
+					continue
+				}
+				reason := cond.Reason
+				if !slices.Contains(podDisruptionConditionReasons, reason) {
+					reason = "Other"
+				}
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"reason"},
+					LabelValues: []string{reason},
+					Value:       1,
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
 }
 
 func createPodStatusScheduledFamilyGenerator() generator.FamilyGenerator {

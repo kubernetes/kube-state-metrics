@@ -405,7 +405,7 @@ kube_pod_status_reason{namespace="default",pod="pod0",uid="abc-0",reason="Unexpe
 		}
 	}
 
-	telemetryMux := buildTelemetryServer(reg, false, nil)
+	telemetryMux := buildTelemetryServer(reg, handler, false, nil)
 
 	req2 := httptest.NewRequest("GET", "http://localhost:8081/metrics", nil)
 
@@ -479,7 +479,8 @@ func TestPprofRouting(t *testing.T) {
 		}
 
 		reg := prometheus.NewRegistry()
-		telemetryMux := buildTelemetryServer(reg, authEnabled, cfg)
+		telemetryHandler := metricshandler.New(options.NewOptions(), fake.NewSimpleClientset(), nil, false)
+		telemetryMux := buildTelemetryServer(reg, telemetryHandler, authEnabled, cfg)
 		for _, path := range pprofPaths {
 			req := httptest.NewRequest("GET", "http://localhost:8081"+path, nil)
 			_, pattern := telemetryMux.Handler(req)
@@ -1100,7 +1101,7 @@ func TestBuildServersServeLandingPage(t *testing.T) {
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 
 	for name, mux := range map[string]*http.ServeMux{
-		"telemetry": buildTelemetryServer(prometheus.NewRegistry(), false, nil),
+		"telemetry": buildTelemetryServer(prometheus.NewRegistry(), handler, false, nil),
 		"metrics":   buildMetricsServer(handler, durationVec, kubeClient, false, nil),
 	} {
 		req := httptest.NewRequest("GET", "/", nil)

@@ -40,6 +40,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -92,6 +93,11 @@ type Builder struct {
 	objectLimit        int64
 
 	GetGVKStopChan func(gvk string) chan struct{}
+
+	// reflectorsMu guards reflectors, which Build() replaces while
+	// WaitForStoresSync() reads it outside the caller's own lock.
+	reflectorsMu sync.Mutex
+	reflectors   []*cache.Reflector
 }
 
 // NewBuilder returns a new builder.
@@ -295,6 +301,10 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 	if b.familyGeneratorFilter == nil {
 		panic("familyGeneratorFilter should not be nil")
 	}
+
+	b.reflectorsMu.Lock()
+	b.reflectors = nil
+	b.reflectorsMu.Unlock()
 
 	var metricsWriters metricsstore.MetricsWriterList
 	var activeStoreNames []string
@@ -723,12 +733,37 @@ func (b *Builder) startReflector(
 ) {
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit, client)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
+	b.reflectorsMu.Lock()
+	b.reflectors = append(b.reflectors, reflector)
+	b.reflectorsMu.Unlock()
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
 		gvkStopCh := b.GetGVKStopChan(cr.GroupVersionKind().String())
 		go reflector.Run(newCRReflectorStopCh(b.ctx, gvkStopCh))
 	} else {
 		go reflector.Run(b.ctx.Done())
 	}
+}
+
+// WaitForStoresSync blocks until every reflector started by the latest Build() has
+// completed its initial list, or until ctx/timeout elapses.
+func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) bool {
+	b.reflectorsMu.Lock()
+	reflectors := slices.Clone(b.reflectors)
+	b.reflectorsMu.Unlock()
+
+	if len(reflectors) == 0 {
+		return true
+	}
+
+	err := wait.PollUntilContextTimeout(ctx, ResourceDiscoveryInterval, timeout, true, func(context.Context) (bool, error) {
+		for _, reflector := range reflectors {
+			if reflector.LastSyncResourceVersion() == "" {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	return err == nil
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

@@ -139,7 +139,10 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 
 // WaitForStoresSync blocks until reflectors from the latest Build() have listed once.
 func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) bool {
-	return b.internal.WaitForStoresSync(ctx, timeout)
+	if syncer, ok := b.internal.(ksmtypes.StoreSyncBuilder); ok {
+		return syncer.WaitForStoresSync(ctx, timeout)
+	}
+	return true
 }
 
 // BuildStores initializes and registers all enabled stores.

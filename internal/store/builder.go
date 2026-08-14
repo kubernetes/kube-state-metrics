@@ -65,6 +65,8 @@ const ResourceDiscoveryInterval = 100 * time.Millisecond
 // New Builder methods should be added to the public BuilderInterface.
 var _ ksmtypes.BuilderInterface = &Builder{}
 
+var _ ksmtypes.StoreSyncBuilder = &Builder{}
+
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {

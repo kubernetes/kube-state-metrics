@@ -108,10 +108,6 @@ func (m *MetricsHandler) rebuildLoop(initialCtx context.Context) {
 	for {
 		synced := m.doRebuild(ctx)
 
-		m.mtx.RLock()
-		noWriterGeneration := !m.writersInstalled
-		m.mtx.RUnlock()
-
 		m.rebuildMu.Lock()
 		if m.pendingRebuild {
 			m.pendingRebuild = false
@@ -121,7 +117,8 @@ func (m *MetricsHandler) rebuildLoop(initialCtx context.Context) {
 		}
 		m.rebuildRunning = false
 		var retryDelay time.Duration
-		if !synced && noWriterGeneration {
+		// Retry every failed sync. Previous writers stay active during backoff.
+		if !synced {
 			m.syncRetryDelay = nextStoreSyncRetryDelay(m.syncRetryDelay)
 			retryDelay = m.syncRetryDelay
 		} else {

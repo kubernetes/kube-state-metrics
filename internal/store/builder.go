@@ -67,6 +67,8 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 
 var _ ksmtypes.StoreSyncBuilder = &Builder{}
 
+var _ ksmtypes.CustomResourceReplacer = &Builder{}
+
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {

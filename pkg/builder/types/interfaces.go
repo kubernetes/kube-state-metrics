@@ -35,6 +35,7 @@ import (
 type BuilderInterface interface {
 	WithMetrics(r prometheus.Registerer)
 	WithEnabledResources(c []string) error
+	ReplaceEnabledCustomResources(c []string) error
 	WithNamespaces(n options.NamespaceList)
 	WithFieldSelectorFilter(fieldSelectors string)
 	WithSharding(shard int32, totalShards int)

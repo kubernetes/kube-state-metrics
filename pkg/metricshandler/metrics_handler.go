@@ -226,16 +226,21 @@ func (m *MetricsHandler) Ready() bool {
 // ConfigureStore applies storeBuilder configuration under mtx, then rebuilds
 // writers. Runtime callers that mutate the shared builder (for example CR
 // discovery) must use this instead of calling builder With* methods directly,
-// so configuration cannot race with Build().
-func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface)) {
+// so configuration cannot race with Build(). Returns an error without rebuilding
+// when configuration fails.
+func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error {
 	if configure == nil {
 		m.BuildWriters(ctx)
-		return
+		return nil
 	}
 	m.mtx.Lock()
-	configure(m.storeBuilder)
+	err := configure(m.storeBuilder)
 	m.mtx.Unlock()
+	if err != nil {
+		return err
+	}
 	m.BuildWriters(ctx)
+	return nil
 }
 
 // ConfigureSharding configures sharding. Configuration can be used multiple times and
@@ -244,10 +249,11 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	if totalShards != 1 {
 		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
 	}
-	m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) {
+	m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) error {
 		m.curShard = shard
 		m.curTotalShards = totalShards
 		b.WithSharding(shard, totalShards)
+		return nil
 	})
 }
 

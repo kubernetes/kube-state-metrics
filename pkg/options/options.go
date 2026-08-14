@@ -40,7 +40,7 @@ var (
 
 // DefaultStoreSyncTimeout is the default maximum time to wait for reflector
 // stores to complete their initial list before swapping metrics writers.
-var DefaultStoreSyncTimeout = 120 * time.Second
+const DefaultStoreSyncTimeout = 120 * time.Second
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {

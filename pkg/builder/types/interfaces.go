@@ -18,6 +18,7 @@ package types
 
 import (
 	"context"
+	"time"
 
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
@@ -49,6 +50,7 @@ type BuilderInterface interface {
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc
 	WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory)
 	Build() metricsstore.MetricsWriterList
+	WaitForStoresSync(ctx context.Context, timeout time.Duration) bool
 	BuildStores() [][]cache.Store
 	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 }

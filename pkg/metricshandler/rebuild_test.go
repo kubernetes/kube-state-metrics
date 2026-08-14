@@ -153,6 +153,22 @@ func TestBuildWriters_SwapsWritersWhenSyncSucceeds(t *testing.T) {
 	if len(got) != 1 || got[0].ResourceName != "next" {
 		t.Fatalf("expected writers to swap after successful sync, got %+v", got)
 	}
+	if !h.Ready() {
+		t.Fatal("expected handler to report ready after successful sync")
+	}
+}
+
+func TestBuildWriters_ReadyAfterEmptyGenerationSyncs(t *testing.T) {
+	stub := &stubStoreBuilder{buildWriters: metricsstore.MetricsWriterList{}}
+	stub.syncOK.Store(true)
+	h := New(options.NewOptions(), nil, stub, false)
+
+	h.BuildWriters(context.Background())
+	waitForRebuildIdle(t, h)
+
+	if !h.Ready() {
+		t.Fatal("expected handler to report ready after a successful sync with zero writers")
+	}
 }
 
 func TestBuildWriters_RetriesWhenInitialSyncFails(t *testing.T) {

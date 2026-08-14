@@ -520,7 +520,8 @@ func buildTelemetryServer(registry prometheus.Gatherer, m *metricshandler.Metric
 		mux.Handle(path, h)
 	}
 
-	// Add readyzPath
+	// Add readyzPath on the telemetry server. Readiness probes must target
+	// opts.TelemetryPort (default 8081), not the main metrics port.
 	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if !m.Ready() {
 			w.WriteHeader(http.StatusServiceUnavailable)

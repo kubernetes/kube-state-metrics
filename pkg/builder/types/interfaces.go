@@ -50,9 +50,15 @@ type BuilderInterface interface {
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc
 	WithCustomResourceStoreFactories(fs ...customresource.RegistryFactory)
 	Build() metricsstore.MetricsWriterList
-	WaitForStoresSync(ctx context.Context, timeout time.Duration) bool
 	BuildStores() [][]cache.Store
 	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
+}
+
+// StoreSyncBuilder can wait for reflector stores to sync after Build().
+// It is implemented by the internal store builder but is not part of the
+// stable BuilderInterface contract for downstream library users.
+type StoreSyncBuilder interface {
+	WaitForStoresSync(ctx context.Context, timeout time.Duration) bool
 }
 
 // BuildStoresFunc function signature that is used to return a list of cache.Store

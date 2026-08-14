@@ -33,6 +33,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -54,6 +55,7 @@ type MetricsHandler struct {
 	// mtx protects metricsWriters, curShard, and curTotalShards
 	mtx                *sync.RWMutex
 	metricsWriters     metricsstore.MetricsWriterList
+	writersInstalled   bool
 	curTotalShards     int
 	curShard           int32
 	enableGZIPEncoding bool
@@ -150,13 +152,19 @@ func (m *MetricsHandler) scheduleSyncRetry(ctx context.Context, delay time.Durat
 }
 
 func nextStoreSyncRetryDelay(current time.Duration) time.Duration {
+	var base time.Duration
 	if current <= 0 {
-		return initialStoreSyncRetryDelay
+		base = initialStoreSyncRetryDelay
+	} else if next := current * 2; next < maxStoreSyncRetryDelay {
+		base = next
+	} else {
+		base = maxStoreSyncRetryDelay
 	}
-	if next := current * 2; next < maxStoreSyncRetryDelay {
-		return next
+	jittered := wait.Jitter(base, 0.1)
+	if jittered > maxStoreSyncRetryDelay {
+		return maxStoreSyncRetryDelay
 	}
-	return maxStoreSyncRetryDelay
+	return jittered
 }
 
 func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
@@ -175,7 +183,10 @@ func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
 	// for the whole sync window. Rebuilds are already serialized by rebuildMu, so
 	// no other Build() can run concurrently with the wait.
 	syncStart := time.Now()
-	synced := m.storeBuilder.WaitForStoresSync(newCtx, syncTimeout)
+	synced := true
+	if syncer, ok := m.storeBuilder.(ksmtypes.StoreSyncBuilder); ok {
+		synced = syncer.WaitForStoresSync(newCtx, syncTimeout)
+	}
 	syncWaitDuration := time.Since(syncStart)
 
 	if synced {
@@ -183,6 +194,7 @@ func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
 		oldCancel := m.cancel
 		m.metricsWriters = newWriters
 		m.cancel = newCancel
+		m.writersInstalled = true
 		m.mtx.Unlock()
 		if oldCancel != nil {
 			oldCancel()
@@ -200,13 +212,13 @@ func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
 	return false
 }
 
-// Ready reports whether at least one metrics writer generation has been swapped
-// in after a successful store sync. Until then /metrics may return HTTP 200 with
-// an empty body; /readyz uses this to withhold readiness.
+// Ready reports whether a metrics writer generation has been swapped in after a
+// successful store sync. Until then /metrics may return HTTP 200 with an empty
+// body; /readyz on the telemetry port uses this to withhold readiness.
 func (m *MetricsHandler) Ready() bool {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
-	return len(m.metricsWriters) > 0
+	return m.writersInstalled
 }
 
 // ConfigureSharding configures sharding. Configuration can be used multiple times and

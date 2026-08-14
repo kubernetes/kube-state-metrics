@@ -177,6 +177,34 @@ func TestCRDUpdateNoopDoesNotCloseStopChannel(t *testing.T) {
 	}
 }
 
+func TestCRDUpdateSkipsUnreadableNewGVKPs(t *testing.T) {
+	gvkp := groupVersionKindPlural{
+		GroupVersionKind: schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"},
+		Plural:           "foos",
+	}
+	r := &CRDiscoverer{
+		GVKToReflectorStopChanMap: make(map[string]chan struct{}),
+	}
+	if !r.AppendToMap(gvkp) {
+		t.Fatal("expected AppendToMap to register GVKP")
+	}
+	ch := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]
+	revision := r.cacheRevision
+
+	if r.applyCRDUpdate([]groupVersionKindPlural{gvkp}, nil) {
+		t.Fatal("expected unreadable new GVKP set to be ignored")
+	}
+	if r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()] != ch {
+		t.Fatal("stop channel changed on unreadable update")
+	}
+	if r.cacheRevision != revision {
+		t.Fatalf("cache revision changed on unreadable update: got %d, want %d", r.cacheRevision, revision)
+	}
+	if r.WasUpdated {
+		t.Fatal("WasUpdated set on unreadable update")
+	}
+}
+
 func TestCRDUpdateAddsVersionWithoutClosingKeptChannel(t *testing.T) {
 	v1 := groupVersionKindPlural{
 		GroupVersionKind: schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"},

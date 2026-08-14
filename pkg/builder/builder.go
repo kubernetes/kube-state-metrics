@@ -18,6 +18,7 @@ package builder
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -63,7 +64,11 @@ func (b *Builder) WithEnabledResources(c []string) error {
 // ReplaceEnabledCustomResources replaces discovered custom resources while
 // preserving built-in enabled resource names.
 func (b *Builder) ReplaceEnabledCustomResources(c []string) error {
-	return b.internal.ReplaceEnabledCustomResources(c)
+	replacer, ok := b.internal.(ksmtypes.CustomResourceReplacer)
+	if !ok {
+		return fmt.Errorf("builder does not support replacing custom resources")
+	}
+	return replacer.ReplaceEnabledCustomResources(c)
 }
 
 // WithNamespaces sets the namespaces property of a Builder.

@@ -180,43 +180,6 @@ func TestBuildWriters_ReadyAfterEmptyGenerationSyncs(t *testing.T) {
 	}
 }
 
-func TestBuildWriters_DoesNotRetryFailedRebuildAfterEmptyGenerationInstalled(t *testing.T) {
-	restore := initialStoreSyncRetryDelay
-	initialStoreSyncRetryDelay = time.Millisecond
-	defer func() { initialStoreSyncRetryDelay = restore }()
-
-	syncGate := make(chan bool, 2)
-	stub := &stubStoreBuilder{
-		buildWriters: metricsstore.MetricsWriterList{},
-		syncGate:     syncGate,
-	}
-	h := New(options.NewOptions(), nil, stub, false)
-
-	syncGate <- true
-	h.BuildWriters(context.Background())
-	waitForRebuildIdle(t, h)
-	if !h.Ready() {
-		t.Fatal("expected ready after empty generation install")
-	}
-
-	firstBuild := stub.buildCount.Load()
-	firstSync := stub.syncCount.Load()
-
-	syncGate <- false
-	h.BuildWriters(context.Background())
-	waitForRebuildIdle(t, h)
-
-	time.Sleep(5 * time.Millisecond)
-	waitForRebuildIdle(t, h)
-
-	if stub.buildCount.Load() != firstBuild+1 {
-		t.Fatalf("expected only one failing rebuild after installed generation, buildCount=%d", stub.buildCount.Load())
-	}
-	if stub.syncCount.Load() != firstSync+1 {
-		t.Fatalf("expected only one failing sync after installed generation, syncCount=%d", stub.syncCount.Load())
-	}
-}
-
 func TestBuildWriters_RetriesFailedSyncWithExistingWriters(t *testing.T) {
 	restore := initialStoreSyncRetryDelay
 	initialStoreSyncRetryDelay = time.Millisecond

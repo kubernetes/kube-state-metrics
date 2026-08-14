@@ -344,17 +344,16 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		}
 		// Apply builder config under the same lock Build() uses, then rebuild.
 		// Mutating the shared builder directly would race async rebuilds.
-		var configErr error
-		m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) {
+		if err := m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) error {
 			b.WithCustomResourceClients(discoveredCustomResourceClients)
 			b.WithCustomResourceStoreFactories(customFactories...)
-			if err := b.WithEnabledResources(enabledCustomResources); err != nil {
+			if err := b.ReplaceEnabledCustomResources(enabledCustomResources); err != nil {
 				klog.ErrorS(err, "failed to update custom resource stores")
-				configErr = err
+				return err
 			}
 			b.WithGenerateCustomResourceStoresFunc(b.DefaultGenerateCustomResourceStoresFunc())
-		})
-		if configErr != nil {
+			return nil
+		}); err != nil {
 			// Preserve WasUpdated so the next tick retries.
 			return false
 		}

@@ -140,6 +140,35 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	return nil
 }
 
+// ReplaceEnabledCustomResources enables exactly the given discovered custom
+// resources while preserving built-in enabled resource names.
+func (b *Builder) ReplaceEnabledCustomResources(r []string) error {
+	for _, resource := range r {
+		if !resourceExists(resource) {
+			return fmt.Errorf("resource %s does not exist. Available resources: %s", resource, strings.Join(availableResources(), ","))
+		}
+	}
+
+	b.enabledResourcesMu.Lock()
+	defer b.enabledResourcesMu.Unlock()
+
+	var kept []string
+	for _, name := range b.enabledResources {
+		if !isCustomResourceEnabledName(name) {
+			kept = append(kept, name)
+		}
+	}
+	b.enabledResources = append(kept, r...)
+	slices.Sort(b.enabledResources)
+	b.enabledResources = slices.Compact(b.enabledResources)
+
+	return nil
+}
+
+func isCustomResourceEnabledName(name string) bool {
+	return strings.Contains(name, "/") || strings.Contains(name, ", Resource=")
+}
+
 // WithFieldSelectorFilter sets the fieldSelector property of a Builder.
 func (b *Builder) WithFieldSelectorFilter(fieldSelectorFilter string) {
 	b.fieldSelectorFilter = fieldSelectorFilter

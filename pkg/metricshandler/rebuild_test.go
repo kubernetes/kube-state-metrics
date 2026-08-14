@@ -18,6 +18,7 @@ package metricshandler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -54,6 +55,7 @@ type stubStoreBuilder struct {
 
 func (s *stubStoreBuilder) WithMetrics(_ prometheus.Registerer)                         {}
 func (s *stubStoreBuilder) WithEnabledResources(_ []string) error                       { return nil }
+func (s *stubStoreBuilder) ReplaceEnabledCustomResources(_ []string) error              { return nil }
 func (s *stubStoreBuilder) WithNamespaces(_ options.NamespaceList)                      {}
 func (s *stubStoreBuilder) WithFieldSelectorFilter(_ string)                            {}
 func (s *stubStoreBuilder) WithSharding(_ int32, _ int)                                 {}
@@ -418,11 +420,12 @@ func TestConfigureStore_AppliesConfigUnderLockThenRebuilds(t *testing.T) {
 	h.mtx.Unlock()
 
 	var configured atomic.Bool
-	h.ConfigureStore(context.Background(), func(b ksmtypes.BuilderInterface) {
+	h.ConfigureStore(context.Background(), func(b ksmtypes.BuilderInterface) error {
 		if b != stub {
 			t.Fatalf("expected ConfigureStore to pass the handler store builder")
 		}
 		configured.Store(true)
+		return nil
 	})
 	waitForRebuildIdle(t, h)
 
@@ -468,8 +471,9 @@ func TestConfigureStore_CoalescesWithInFlightRebuild(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		h.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) {
+		h.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) error {
 			configDuringWait.Add(1)
+			return nil
 		})
 	}()
 
@@ -484,5 +488,23 @@ func TestConfigureStore_CoalescesWithInFlightRebuild(t *testing.T) {
 	}
 	if stub.buildCount.Load() < 2 {
 		t.Fatalf("expected coalesced rebuild after ConfigureStore during wait; buildCount=%d", stub.buildCount.Load())
+	}
+}
+
+func TestConfigureStore_SkipsRebuildOnConfigError(t *testing.T) {
+	stub := &stubStoreBuilder{
+		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("next")},
+	}
+	stub.syncOK.Store(true)
+	h := New(options.NewOptions(), nil, stub, false)
+
+	err := h.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) error {
+		return fmt.Errorf("config failed")
+	})
+	if err == nil {
+		t.Fatal("expected ConfigureStore to return configuration error")
+	}
+	if stub.buildCount.Load() != 0 {
+		t.Fatalf("expected no rebuild after configuration error; buildCount=%d", stub.buildCount.Load())
 	}
 }

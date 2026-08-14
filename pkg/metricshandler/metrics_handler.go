@@ -107,7 +107,7 @@ func (m *MetricsHandler) rebuildLoop(initialCtx context.Context) {
 		synced := m.doRebuild(ctx)
 
 		m.mtx.RLock()
-		noWriters := len(m.metricsWriters) == 0
+		noWriterGeneration := !m.writersInstalled
 		m.mtx.RUnlock()
 
 		m.rebuildMu.Lock()
@@ -119,7 +119,7 @@ func (m *MetricsHandler) rebuildLoop(initialCtx context.Context) {
 		}
 		m.rebuildRunning = false
 		var retryDelay time.Duration
-		if !synced && noWriters {
+		if !synced && noWriterGeneration {
 			m.syncRetryDelay = nextStoreSyncRetryDelay(m.syncRetryDelay)
 			retryDelay = m.syncRetryDelay
 		} else {

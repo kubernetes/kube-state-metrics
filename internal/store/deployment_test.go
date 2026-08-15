@@ -40,6 +40,10 @@ var (
 
 	depl1MaxSurge = intstr.FromInt(10)
 	depl2MaxSurge = intstr.FromString("20%")
+
+	// Not a percentage, and a percentage whose number does not parse.
+	deplMalformedMaxUnavailable = intstr.FromString("not-a-percentage")
+	deplMalformedMaxSurge       = intstr.FromString("abc%")
 )
 
 func TestDeploymentStore(t *testing.T) {
@@ -338,6 +342,71 @@ func TestDeploymentStore(t *testing.T) {
 				# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
 				# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
 				# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+			`,
+			MetricNames: []string{
+				"kube_deployment_spec_replicas",
+				"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+				"kube_deployment_spec_strategy_rollingupdate_max_surge",
+			},
+		},
+		{
+			// A non-nil RollingUpdate whose MaxUnavailable/MaxSurge are unset:
+			// GetScaledValueFromIntOrPercent returns an error, which used to be
+			// re-raised as a panic and took down the whole exporter.
+			Obj: &v1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deployment-nil-rollingupdate-values",
+					Namespace: "ns7",
+				},
+				Spec: v1.DeploymentSpec{
+					Replicas: &depl3Replicas,
+					Strategy: v1.DeploymentStrategy{
+						RollingUpdate: &v1.RollingUpdateDeployment{},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
+				# TYPE kube_deployment_spec_replicas gauge
+				# HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable [STABLE] Maximum number of unavailable replicas during a rolling update of a deployment.
+				# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
+				# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
+				# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+				kube_deployment_spec_replicas{deployment="deployment-nil-rollingupdate-values",namespace="ns7"} 1
+			`,
+			MetricNames: []string{
+				"kube_deployment_spec_replicas",
+				"kube_deployment_spec_strategy_rollingupdate_max_unavailable",
+				"kube_deployment_spec_strategy_rollingupdate_max_surge",
+			},
+		},
+		{
+			// The other way GetScaledValueFromIntOrPercent fails: a string that
+			// is not a percentage at all, and a percentage whose number does not
+			// parse. Both used to panic.
+			Obj: &v1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deployment-malformed-rollingupdate-values",
+					Namespace: "ns8",
+				},
+				Spec: v1.DeploymentSpec{
+					Replicas: &depl3Replicas,
+					Strategy: v1.DeploymentStrategy{
+						RollingUpdate: &v1.RollingUpdateDeployment{
+							MaxUnavailable: &deplMalformedMaxUnavailable,
+							MaxSurge:       &deplMalformedMaxSurge,
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_deployment_spec_replicas [STABLE] Number of desired pods for a deployment.
+				# TYPE kube_deployment_spec_replicas gauge
+				# HELP kube_deployment_spec_strategy_rollingupdate_max_unavailable [STABLE] Maximum number of unavailable replicas during a rolling update of a deployment.
+				# TYPE kube_deployment_spec_strategy_rollingupdate_max_unavailable gauge
+				# HELP kube_deployment_spec_strategy_rollingupdate_max_surge [STABLE] Maximum number of replicas that can be scheduled above the desired number of replicas during a rolling update of a deployment.
+				# TYPE kube_deployment_spec_strategy_rollingupdate_max_surge gauge
+				kube_deployment_spec_replicas{deployment="deployment-malformed-rollingupdate-values",namespace="ns8"} 1
 			`,
 			MetricNames: []string{
 				"kube_deployment_spec_replicas",

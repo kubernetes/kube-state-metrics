@@ -1,12 +1,10 @@
 # The purpose of this config is to keep all versions in a single file and make them machine accessible
 
 # Marks the latest release
-version: "2.19.1"
+version: "2.20.0"
 
 # List at max 5 releases here + the main branch
 compat:
-  - version: "v2.15.0"
-    kubernetes: "1.32"
   - version: "v2.16.0"
     kubernetes: "1.32"
   - version: "v2.17.0"
@@ -15,5 +13,7 @@ compat:
     kubernetes: "1.34"
   - version: "v2.19.0"
     kubernetes: "1.35"
+  - version: "v2.20.0"
+    kubernetes: "1.36"
   - version: "main"
     kubernetes: "1.36"

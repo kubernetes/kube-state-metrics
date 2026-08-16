@@ -158,11 +158,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 				klog.InfoS("waiting for config to be fixed")
 				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
 				<-ctx.Done()
-				// The wait ended because the watcher cancelled this run to start a
-				// fresh one with the corrected config. Returning hands over to it;
-				// carrying on would build a second, half-configured instance on a
-				// context that is already done, racing the new run for the listen
-				// ports and for the options this one shares with it.
+				// The watcher cancelled this run to start a fresh one; hand over
+				// rather than race it for the listen ports and the shared options.
 				return nil
 			}
 

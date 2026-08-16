@@ -595,10 +595,8 @@ func mustCompilePath(t *testing.T, path ...string) valuePath {
 	return out
 }
 
-// Wildcard resolution produces one Resource copy per discovered GVK, all sharing
-// the CommonLabels map of the configured resource. Writing the GVK labels into
-// that shared map would have each copy overwrite the last one's values, and
-// would leak them back into the caller's configuration.
+// Wildcard resolution compiles one Resource copy per GVK off a shared
+// CommonLabels map, so writing GVK labels into it would clobber every copy.
 func Test_compile_doesNotShareCommonLabels(t *testing.T) {
 	configured := map[string]string{"team": "myteam"}
 	base := Resource{
@@ -619,12 +617,10 @@ func Test_compile_doesNotShareCommonLabels(t *testing.T) {
 	familiesV2, err := compile(v2)
 	assert.NoError(t, err)
 
-	// The first resolution must not have been rewritten by the second.
 	assert.Equal(t, "v1", familiesV1[0].Labels[customResourceState+"_version"])
 	assert.Equal(t, "Foo", familiesV1[0].Labels[customResourceState+"_kind"])
 	assert.Equal(t, "v2", familiesV2[0].Labels[customResourceState+"_version"])
 	assert.Equal(t, "Bar", familiesV2[0].Labels[customResourceState+"_kind"])
 
-	// And the configured map must be left as the user wrote it.
 	assert.Equal(t, map[string]string{"team": "myteam"}, configured)
 }

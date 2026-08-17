@@ -1,5 +1,63 @@
 # Changelog
 
+## v2.20.0 / 2026-08-16
+
+NOTE: Custom Resource State (CRS) metrics are now feature-frozen; no new CRS features will be accepted going forward. See [#3050](https://github.com/kubernetes/kube-state-metrics/pull/3050) for details.
+
+* This release builds with Go `v1.26.6`
+* This release builds with `k8s.io/client-go`: `v0.36.3`
+
+* [CHANGE] `kube_pod_status_reason` now emits a row only for the reason that is actually set, instead of one zero/one row per known reason for every pod by @bhope in [#3089](https://github.com/kubernetes/kube-state-metrics/pull/3089)
+
+* [FEATURE] Add `kube_pod_status_disruption_reason` metric for pods evicted via the Eviction API by @bhope in [#3088](https://github.com/kubernetes/kube-state-metrics/pull/3088)
+* [FEATURE] Add MutatingAdmissionPolicy and MutatingAdmissionPolicyBinding metrics by @mrueg in [#3019](https://github.com/kubernetes/kube-state-metrics/pull/3019)
+* [FEATURE] Add ValidatingAdmissionPolicy and ValidatingAdmissionPolicyBinding metrics by @mrueg in [#3014](https://github.com/kubernetes/kube-state-metrics/pull/3014)
+* [FEATURE] Add HPA scale up/down behavior tolerance metrics by @emmayusufu in [#3015](https://github.com/kubernetes/kube-state-metrics/pull/3015)
+* [FEATURE] Add `kube_node_spec_pod_cidrs` metric by @emmayusufu in [#3011](https://github.com/kubernetes/kube-state-metrics/pull/3011)
+* [FEATURE] Add `kube_pod_resourceclaim_info` metric for DRA ResourceClaim references by @cyber-slave-labs in [#3005](https://github.com/kubernetes/kube-state-metrics/pull/3005)
+* [FEATURE] Add `kube_pod_init_container_status_last_terminated_exitcode` metric by @emmayusufu in [#3000](https://github.com/kubernetes/kube-state-metrics/pull/3000)
+* [FEATURE] Add init container `state_started` and `last_terminated_timestamp` metrics by @emmayusufu in [#2997](https://github.com/kubernetes/kube-state-metrics/pull/2997)
+* [FEATURE] Shard only resource mutation watch events by @jfremy-openai in [#2993](https://github.com/kubernetes/kube-state-metrics/pull/2993)
+* [FEATURE] Add label generation support for ephemeral volumes in pods by @eminaktas in [#2891](https://github.com/kubernetes/kube-state-metrics/pull/2891)
+* [FEATURE] Allow wildcards in annotation and label allowlists by @skoef in [#2873](https://github.com/kubernetes/kube-state-metrics/pull/2873)
+* [FEATURE] Add access mode metric for PersistentVolumes by @viragvoros in [#2823](https://github.com/kubernetes/kube-state-metrics/pull/2823)
+
+* [ENHANCEMENT] Reduce allocations in metric generation and header sanitization by @mrueg in [#3060](https://github.com/kubernetes/kube-state-metrics/pull/3060)
+* [ENHANCEMENT] Implement `cache.Store` Bookmark and LastStoreSyncResourceVersion in MetricsStore for client-go 0.36 compatibility by @mrueg in [#2965](https://github.com/kubernetes/kube-state-metrics/pull/2965)
+
+* [BUGFIX] Don't panic on a Deployment with an unset `rollingUpdate` value by @mrueg in [#3083](https://github.com/kubernetes/kube-state-metrics/pull/3083)
+* [BUGFIX] Serialize config reloads so one does not strand another instance by @mrueg in [#3070](https://github.com/kubernetes/kube-state-metrics/pull/3070)
+* [BUGFIX] Rebuild clients from the current kubeconfig on reload by @mrueg in [#3080](https://github.com/kubernetes/kube-state-metrics/pull/3080)
+* [BUGFIX] Check CRD fields instead of asserting them during discovery by @mrueg in [#3078](https://github.com/kubernetes/kube-state-metrics/pull/3078)
+* [BUGFIX] Build each EndpointSlice hint's labels independently by @mrueg in [#3076](https://github.com/kubernetes/kube-state-metrics/pull/3076)
+* [BUGFIX] Guard the store builder state shared with discovery by @mrueg in [#3075](https://github.com/kubernetes/kube-state-metrics/pull/3075)
+* [BUGFIX] Read the discovery GVK cache under the lock by @mrueg in [#3074](https://github.com/kubernetes/kube-state-metrics/pull/3074)
+* [BUGFIX] Scope the metrics handler scrape lock to reading the writers by @mrueg in [#3073](https://github.com/kubernetes/kube-state-metrics/pull/3073)
+* [BUGFIX] Skip an HPA status metric whose source is not set by @mrueg in [#3071](https://github.com/kubernetes/kube-state-metrics/pull/3071)
+* [BUGFIX] Fix three issues in the server request and shutdown paths by @mrueg in [#3068](https://github.com/kubernetes/kube-state-metrics/pull/3068)
+* [BUGFIX] Escape reserved characters in metric help text by @mrueg in [#3067](https://github.com/kubernetes/kube-state-metrics/pull/3067)
+* [BUGFIX] Don't panic on a custom resource metric that fails to compile by @mrueg in [#3066](https://github.com/kubernetes/kube-state-metrics/pull/3066)
+* [BUGFIX] Preserve pagination metadata when filtering a sharded list by @mrueg in [#3065](https://github.com/kubernetes/kube-state-metrics/pull/3065)
+* [BUGFIX] Never emit the same label name twice by @mrueg in [#3064](https://github.com/kubernetes/kube-state-metrics/pull/3064)
+* [BUGFIX] Don't dereference an unset EndpointSlice port number by @mrueg in [#3063](https://github.com/kubernetes/kube-state-metrics/pull/3063)
+* [BUGFIX] Write headers when only a later store has metrics by @mrueg in [#3061](https://github.com/kubernetes/kube-state-metrics/pull/3061)
+* [BUGFIX] Don't emit nil metrics for unparseable pod IPs by @mrueg in [#3059](https://github.com/kubernetes/kube-state-metrics/pull/3059)
+* [BUGFIX] Fix wrong labels applied to the endpointslices metric by @odinuge in [#3058](https://github.com/kubernetes/kube-state-metrics/pull/3058)
+* [BUGFIX] Embed tzdata so named CronJob `spec.timeZone` values resolve by @SteeleND in [#3022](https://github.com/kubernetes/kube-state-metrics/pull/3022)
+* [BUGFIX] Prevent leaked goroutines on CRD updates by @jfremy-openai in [#3007](https://github.com/kubernetes/kube-state-metrics/pull/3007)
+* [BUGFIX] Start the zombie-process reaper only once by @mrueg in [#3079](https://github.com/kubernetes/kube-state-metrics/pull/3079)
+* [BUGFIX] Emit the default suspend metric value for CronJobs by @immanuwell in [#2999](https://github.com/kubernetes/kube-state-metrics/pull/2999)
+* [BUGFIX] Prevent duplicate cluster-scoped metrics when using `--namespaces` by @emmayusufu in [#2998](https://github.com/kubernetes/kube-state-metrics/pull/2998)
+* [BUGFIX] Log when a configured custom resource CRD is absent by @aryanputta in [#2996](https://github.com/kubernetes/kube-state-metrics/pull/2996)
+* [BUGFIX] Handle omitted `minReplicas` in HPA metrics by @immanuwell in [#2991](https://github.com/kubernetes/kube-state-metrics/pull/2991)
+* [BUGFIX] Stop the CRD discoverer when its context is canceled by @L3n41c in [#2977](https://github.com/kubernetes/kube-state-metrics/pull/2977)
+* [BUGFIX] Guard nil `Spec.Replicas` before dereferencing on Deployments by @immanuwell in [#2971](https://github.com/kubernetes/kube-state-metrics/pull/2971)
+* [BUGFIX] Guard nil suspend field in CronJob next-schedule metric by @immanuwell in [#2970](https://github.com/kubernetes/kube-state-metrics/pull/2970)
+* [BUGFIX] Ignore non-served CRD versions in discovery by @boomer41 in [#2940](https://github.com/kubernetes/kube-state-metrics/pull/2940)
+* [BUGFIX] Skip landing page registration on `NewLandingPage` error by @carterpewpew in [#2937](https://github.com/kubernetes/kube-state-metrics/pull/2937)
+* [BUGFIX] Log when a configured custom resource CRD is not installed in the cluster by @maksimp13 in [#2903](https://github.com/kubernetes/kube-state-metrics/pull/2903)
+* [BUGFIX] Handle nil path gracefully in StateSet metrics by @Br1an67 in [#2884](https://github.com/kubernetes/kube-state-metrics/pull/2884)
+
 ## v2.19.1 / 2026-06-10
 
 * This release builds with Go `v1.26.4`

@@ -107,7 +107,7 @@ jobs:
 
     - name: Verify stable metrics golden list
       run: |
-        hack/verify-stable-metrics.sh
+        make verify-stable-metrics
 
   ci-unit-tests:
     name: ci-unit-tests

@@ -81,11 +81,11 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 
 | kube-state-metrics | Kubernetes client-go Version |
 |--------------------|:----------------------------:|
-| **v2.15.0**        | v1.32                        |
 | **v2.16.0**        | v1.32                        |
 | **v2.17.0**        | v1.33                        |
 | **v2.18.0**        | v1.34                        |
 | **v2.19.0**        | v1.35                        |
+| **v2.20.0**        | v1.36                        |
 | **main**           | v1.36                        |
 
 #### Resource group version compatibility
@@ -98,8 +98,8 @@ release.
 
 The latest container image can be found at:
 
-* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
-* [Multi-architecture images](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.19.0)
+* `registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0` (arch: `amd64`, `arm`, `arm64`, `ppc64le` and `s390x`)
+* [Multi-architecture images](https://explore.ggcr.dev/?image=registry.k8s.io%2Fkube-state-metrics%2Fkube-state-metrics:v2.20.0)
 
 ### Metrics Documentation
 

@@ -119,16 +119,17 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				volumeAttributesClassName := ""
-				if p.Spec.VolumeAttributesClassName != nil {
-					volumeAttributesClassName = *p.Spec.VolumeAttributesClassName
+				if p.Spec.VolumeAttributesClassName == nil {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
 				}
 
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"volume_attributes_class"},
-							LabelValues: []string{volumeAttributesClassName},
+							LabelValues: []string{*p.Spec.VolumeAttributesClassName},
 							Value:       1,
 						},
 					},
@@ -142,16 +143,17 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			basemetrics.ALPHA,
 			"",
 			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
-				currentVolumeAttributesClassName := ""
-				if p.Status.CurrentVolumeAttributesClassName != nil {
-					currentVolumeAttributesClassName = *p.Status.CurrentVolumeAttributesClassName
+				if p.Status.CurrentVolumeAttributesClassName == nil {
+					return &metric.Family{
+						Metrics: []*metric.Metric{},
+					}
 				}
 
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"volume_attributes_class"},
-							LabelValues: []string{currentVolumeAttributesClassName},
+							LabelValues: []string{*p.Status.CurrentVolumeAttributesClassName},
 							Value:       1,
 						},
 					},

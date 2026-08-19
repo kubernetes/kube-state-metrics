@@ -112,7 +112,6 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="FileSystemResizePending"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="default",persistentvolumeclaim="mysql-data",status="unknown",condition="Resizing"} 0
 				kube_persistentvolumeclaim_volume_attributes_class{namespace="default",persistentvolumeclaim="mysql-data",volume_attributes_class="gold"} 1
-				kube_persistentvolumeclaim_status_current_volume_attributes_class{namespace="default",persistentvolumeclaim="mysql-data",volume_attributes_class=""} 1
 `,
 			MetricNames: []string{"kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_volume_attributes_class", "kube_persistentvolumeclaim_status_current_volume_attributes_class", "kube_persistentvolumeclaim_status_modify_volume_status"},
 		},
@@ -317,8 +316,6 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="CustomizedType"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="FileSystemResizePending"} 0
 				kube_persistentvolumeclaim_status_condition{namespace="",persistentvolumeclaim="mongo-data",status="unknown",condition="Resizing"} 0
-				kube_persistentvolumeclaim_volume_attributes_class{namespace="",persistentvolumeclaim="mongo-data",volume_attributes_class=""} 1
-				kube_persistentvolumeclaim_status_current_volume_attributes_class{namespace="",persistentvolumeclaim="mongo-data",volume_attributes_class=""} 1
 `,
 			MetricNames: []string{"kube_persistentvolumeclaim_created", "kube_persistentvolumeclaim_info", "kube_persistentvolumeclaim_status_phase", "kube_persistentvolumeclaim_resource_requests_storage_bytes", "kube_persistentvolumeclaim_annotations", "kube_persistentvolumeclaim_labels", "kube_persistentvolumeclaim_access_mode", "kube_persistentvolumeclaim_status_condition", "kube_persistentvolumeclaim_volume_attributes_class", "kube_persistentvolumeclaim_status_current_volume_attributes_class", "kube_persistentvolumeclaim_status_modify_volume_status"},
 		},

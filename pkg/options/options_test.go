@@ -17,8 +17,11 @@ limitations under the License.
 package options
 
 import (
+	"math"
 	"os"
 	"testing"
+
+	"github.com/spf13/cobra"
 
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
@@ -93,4 +96,101 @@ func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
 			t.Fatalf("expected deprecated field to retain its value, got %q", opts.CustomResourceConfigFileDeprecated)
 		}
 	})
+}
+
+// The node check used to return early, which left every validation below it
+// unreachable for the ordinary cluster-wide deployment.
+func TestValidate(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		mutate  func(*Options)
+		wantErr bool
+	}{
+		{
+			name:   "defaults are valid",
+			mutate: func(_ *Options) {},
+		},
+		{
+			name:    "gomemlimit ratio above 1 without node",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = 5.0 },
+			wantErr: true,
+		},
+		{
+			name:    "gomemlimit ratio of 0 without node",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = 0 },
+			wantErr: true,
+		},
+		{
+			// NaN parses as a valid float64 and compares false against every
+			// bound, so the range check alone lets it through.
+			name:    "gomemlimit ratio of NaN",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = math.NaN() },
+			wantErr: true,
+		},
+		{
+			name:    "negative object limit without node",
+			mutate:  func(o *Options) { o.ObjectLimit = -1 },
+			wantErr: true,
+		},
+		{
+			name:    "gomemlimit ratio above 1 with node",
+			mutate:  func(o *Options) { o.Node = "node-1"; o.AutoGoMemlimitRatio = 5.0 },
+			wantErr: true,
+		},
+		{
+			name:    "node scoped run with an unshardable resource",
+			mutate:  func(o *Options) { o.Node = "node-1"; o.Resources = ResourceSet{"deployments": struct{}{}} },
+			wantErr: true,
+		},
+		{
+			name:   "node scoped run with pods",
+			mutate: func(o *Options) { o.Node = "node-1"; o.Resources = ResourceSet{"pods": struct{}{}} },
+		},
+		{
+			// The resource restriction exists because --node filters by
+			// spec.nodeName, so it must stay scoped to node-mode runs.
+			name:   "non-node run with an unshardable resource",
+			mutate: func(o *Options) { o.Resources = ResourceSet{"deployments": struct{}{}} },
+		},
+		{
+			name:    "zero total shards",
+			mutate:  func(o *Options) { o.TotalShards = 0 },
+			wantErr: true,
+		},
+		{
+			name:    "negative total shards",
+			mutate:  func(o *Options) { o.TotalShards = -1 },
+			wantErr: true,
+		},
+		{
+			name:    "shard index beyond total shards",
+			mutate:  func(o *Options) { o.Shard = 3; o.TotalShards = 3 },
+			wantErr: true,
+		},
+		{
+			name:    "negative shard index",
+			mutate:  func(o *Options) { o.Shard = -1 },
+			wantErr: true,
+		},
+		{
+			name:   "last shard of a sharded set",
+			mutate: func(o *Options) { o.Shard = 2; o.TotalShards = 3 },
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := NewOptions()
+			// A fresh command per case: AddFlags panics if the same command has
+			// the flags registered twice, and it is what applies the defaults.
+			opts.AddFlags(&cobra.Command{})
+			tc.mutate(opts)
+
+			err := opts.Validate()
+			if tc.wantErr && err == nil {
+				t.Errorf("expected Validate() to fail, got nil")
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("expected Validate() to pass, got %v", err)
+			}
+		})
+	}
 }

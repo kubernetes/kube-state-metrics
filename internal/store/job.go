@@ -43,7 +43,20 @@ var (
 	jobFailureReasons          = []string{"BackoffLimitExceeded", "DeadlineExceeded", "Evicted"}
 )
 
+func wrapJobDefaultLabels(labels []string) []string {
+	return mergeKeys(descJobLabelsDefaultLabels, labels)
+}
+
+func wrapJobDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	statusFailedLabelKeys := []string{"reason"}
+	completeLabelKeys := []string{"condition"}
+	failedLabelKeys := []string{"condition"}
+	ownerLabelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
+
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			descJobAnnotationsName,
@@ -67,12 +80,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descJobLabelsName,
 			descJobLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels([]string{"label_JOB_LABEL"}),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -89,12 +103,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_info",
 			"Information about job.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(_ *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -105,12 +120,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -125,12 +141,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_spec_parallelism",
 			"The maximum desired number of pods the job should run at any given time.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -145,12 +162,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_spec_completions",
 			"The desired number of successfully finished pods the job should be run with.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -165,12 +183,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_spec_active_deadline_seconds",
 			"The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -185,12 +204,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_status_succeeded",
 			"The number of pods which reached Phase Succeeded.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -201,12 +221,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_status_failed",
 			"The number of pods which reached Phase Failed and the reason for failure.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(statusFailedLabelKeys),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				var ms []*metric.Metric
 
@@ -229,7 +250,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 
 							// for known reasons
 							ms = append(ms, &metric.Metric{
-								LabelKeys:   []string{"reason"},
+								LabelKeys:   statusFailedLabelKeys,
 								LabelValues: []string{reason},
 								Value:       boolFloat64(failureReason(&condition, reason)),
 							})
@@ -239,7 +260,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				// for unknown reasons
 				if !reasonKnown {
 					ms = append(ms, &metric.Metric{
-						LabelKeys:   []string{"reason"},
+						LabelKeys:   statusFailedLabelKeys,
 						LabelValues: []string{""},
 						Value:       float64(j.Status.Failed),
 					})
@@ -250,12 +271,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_status_active",
 			"The number of actively running pods.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -286,12 +308,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_complete",
 			"The job has completed its execution.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(completeLabelKeys),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, c := range j.Status.Conditions {
@@ -299,7 +322,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						metrics := addConditionMetrics(c.Status)
 						for _, m := range metrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = completeLabelKeys
 							ms = append(ms, metric)
 						}
 					}
@@ -310,12 +333,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_failed",
 			"The job has failed its execution.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(failedLabelKeys),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -324,7 +348,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 						metrics := addConditionMetrics(c.Status)
 						for _, m := range metrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = failedLabelKeys
 							ms = append(ms, metric)
 						}
 					}
@@ -335,12 +359,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_status_start_time",
 			"StartTime represents time when the job was acknowledged by the Job Manager.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -356,12 +381,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_status_completion_time",
 			"CompletionTime represents time when the job was completed.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(nil),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
 				ms := []*metric.Metric{}
 				if j.Status.CompletionTime != nil {
@@ -397,14 +423,14 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_job_owner",
 			"Information about the Job's owner.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapJobDefaultLabels(ownerLabelKeys),
 			wrapJobFunc(func(j *v1batch.Job) *metric.Family {
-				labelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
 
 				owners := j.GetOwnerReferences()
 
@@ -412,7 +438,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 					return &metric.Family{
 						Metrics: []*metric.Metric{
 							{
-								LabelKeys:   labelKeys,
+								LabelKeys:   ownerLabelKeys,
 								LabelValues: []string{"", "", ""},
 								Value:       1,
 							},
@@ -425,13 +451,13 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				for i, owner := range owners {
 					if owner.Controller != nil {
 						ms[i] = &metric.Metric{
-							LabelKeys:   labelKeys,
+							LabelKeys:   ownerLabelKeys,
 							LabelValues: []string{owner.Kind, owner.Name, strconv.FormatBool(*owner.Controller)},
 							Value:       1,
 						}
 					} else {
 						ms[i] = &metric.Metric{
-							LabelKeys:   labelKeys,
+							LabelKeys:   ownerLabelKeys,
 							LabelValues: []string{owner.Kind, owner.Name, "false"},
 							Value:       1,
 						}
@@ -453,7 +479,8 @@ func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.
 		metricFamily := f(job)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descJobLabelsDefaultLabels, []string{job.Namespace, job.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapJobDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapJobDefaultLabelValues(job.Namespace, job.Name, m.LabelValues)
 		}
 
 		return metricFamily

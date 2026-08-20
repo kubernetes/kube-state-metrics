@@ -8,6 +8,7 @@
 | kube_persistentvolumeclaim_labels                          | Gauge       | Kubernetes labels converted to Prometheus labels controlled via [--metric-labels-allowlist](../../developer/cli-arguments.md)           |                         | `persistentvolumeclaim`=&lt;persistentvolumeclaim-name&gt; <br> `namespace`=&lt;persistentvolumeclaim-namespace&gt; <br> `label_PERSISTENTVOLUMECLAIM_LABEL`=&lt;PERSISTENTVOLUMECLAIM_LABEL&gt;                                                             | STABLE       |
 | kube_persistentvolumeclaim_resource_requests_storage_bytes | Gauge       |                                                                                                                           |                         | `namespace`=&lt;persistentvolumeclaim-namespace&gt; <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-name&gt;                                                                                                                                          | STABLE       |
 | kube_persistentvolumeclaim_status_condition                | Gauge       |                                                                                                                           |                         | `namespace` =&lt;persistentvolumeclaim-namespace&gt; <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-name&gt; <br> `type`=&lt;persistentvolumeclaim-condition-type&gt; <br> `status`=&lt;true\false\unknown&gt;                                       | EXPERIMENTAL |
+| kube_persistentvolumeclaim_status_condition_last_transition_time | Gauge | Unix timestamp of last transition of a persistent volume claim condition. | seconds | `namespace`=&lt;persistentvolumeclaim-namespace&gt; <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-name&gt; <br> `condition`=&lt;persistentvolumeclaim-condition-type&gt; <br> `status`=&lt;true\false\unknown&gt; | EXPERIMENTAL |
 | kube_persistentvolumeclaim_status_phase                    | Gauge       |                                                                                                                           |                         | `namespace`=&lt;persistentvolumeclaim-namespace&gt; <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-name&gt; <br> `phase`=&lt;Pending\Bound\Lost&gt;                                                                                                  | STABLE       |
 | kube_persistentvolumeclaim_created                         | Gauge       | Unix creation timestamp                                                                                                   | seconds                 | `namespace`=&lt;persistentvolumeclaim-namespace&gt; <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-name&gt;                                                                                                                                          | EXPERIMENTAL |
 | kube_persistentvolumeclaim_deletion_timestamp              | Gauge       | Unix deletion timestamp                                                                                                   | seconds                 | `namespace`=&lt;persistentvolumeclaim-namespace&gt; <br> `persistentvolumeclaim`=&lt;persistentvolumeclaim-name&gt;                                                                                                                                          | EXPERIMENTAL |
@@ -17,6 +18,16 @@ Note:
 * An empty string will be used if PVC has no storage class.
 
 ## Useful metrics queries
+
+### How long a PVC has been unused
+
+KEP-5541 adds an `Unused` condition on PersistentVolumeClaims. The condition's `lastTransitionTime` is when the PVC last changed between used and unused. `timestamp()` on `kube_persistentvolumeclaim_status_condition` is scrape time, so it cannot reconstruct that value.
+
+The following query lists PVCs whose `Unused` condition has been true for more than 30 days:
+
+```promql
+(time() - kube_persistentvolumeclaim_status_condition_last_transition_time{condition="Unused",status="true"}) > 30 * 24 * 3600
+```
 
 ### How to retrieve non-standard PVC state
 

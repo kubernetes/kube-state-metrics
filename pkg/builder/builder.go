@@ -18,6 +18,8 @@ package builder
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	clientset "k8s.io/client-go/kubernetes"
@@ -57,6 +59,16 @@ func (b *Builder) WithMetrics(r prometheus.Registerer) {
 // WithEnabledResources sets the enabledResources property of a Builder.
 func (b *Builder) WithEnabledResources(c []string) error {
 	return b.internal.WithEnabledResources(c)
+}
+
+// ReplaceEnabledCustomResources replaces discovered custom resources while
+// preserving built-in enabled resource names.
+func (b *Builder) ReplaceEnabledCustomResources(c []string) error {
+	replacer, ok := b.internal.(ksmtypes.CustomResourceReplacer)
+	if !ok {
+		return fmt.Errorf("builder does not support replacing custom resources")
+	}
+	return replacer.ReplaceEnabledCustomResources(c)
 }
 
 // WithNamespaces sets the namespaces property of a Builder.
@@ -134,6 +146,14 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 // Returns metric writers.
 func (b *Builder) Build() metricsstore.MetricsWriterList {
 	return b.internal.Build()
+}
+
+// WaitForStoresSync blocks until reflectors from the latest Build() have listed once.
+func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) bool {
+	if syncer, ok := b.internal.(ksmtypes.StoreSyncBuilder); ok {
+		return syncer.WaitForStoresSync(ctx, timeout)
+	}
+	return true
 }
 
 // BuildStores initializes and registers all enabled stores.

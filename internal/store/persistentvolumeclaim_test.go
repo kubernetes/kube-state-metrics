@@ -313,8 +313,8 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
-		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Func = generator.ComposeMetricGenFuncs(persistentVolumeClaimMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList, "annotation", "label"))
+		c.Headers = generator.ExtractMetricFamilyHeaders(persistentVolumeClaimMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList, "annotation", "label"))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

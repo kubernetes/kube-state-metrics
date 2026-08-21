@@ -39,7 +39,7 @@ var (
 	descRoleLabelsDefaultLabels = []string{"namespace", "role"}
 )
 
-func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			descRoleAnnotationsName,
@@ -51,7 +51,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", r.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, r.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -73,7 +73,7 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", r.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, r.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

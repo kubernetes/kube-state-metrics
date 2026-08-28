@@ -218,8 +218,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Gzip response if requested. Taken from
 		// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
 		reqHeader := r.Header.Get("Accept-Encoding")
-		parts := strings.Split(reqHeader, ",")
-		for _, part := range parts {
+		for part := range strings.SplitSeq(reqHeader, ",") {
 			part = strings.TrimSpace(part)
 			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
 				writer = gzip.NewWriter(writer)
@@ -290,7 +289,7 @@ func parseResources(params []string) map[string]struct{} {
 	}
 	resMap := make(map[string]struct{})
 	for _, p := range params {
-		for _, res := range strings.Split(p, ",") {
+		for res := range strings.SplitSeq(p, ",") {
 			res = strings.TrimSpace(res)
 			if res != "" {
 				resMap[res] = struct{}{}

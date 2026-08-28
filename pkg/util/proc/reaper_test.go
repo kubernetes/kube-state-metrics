@@ -43,7 +43,7 @@ func withStubs(t *testing.T, pid int) *int {
 func TestStartReaperLaunchesOnce(t *testing.T) {
 	launched := withStubs(t, 1)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		StartReaper()
 	}
 

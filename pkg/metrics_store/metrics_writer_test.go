@@ -653,7 +653,7 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 
 	for _, benchmark := range benchmarks {
 		headers := []string{}
-		for j := 0; j < 10e4; j++ {
+		for j := range int(10e4) {
 			if benchmark.writersContainsDuplicates {
 				headers = append(headers, "# HELP foo foo_help\n# TYPE foo info\n")
 			} else {
@@ -674,11 +674,11 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 	const multiStoreN = 100
 	const multiStoreHeaders = 200
 	multiHeaders := make([]string, multiStoreHeaders)
-	for j := 0; j < multiStoreHeaders; j++ {
+	for j := range multiStoreHeaders {
 		multiHeaders[j] = fmt.Sprintf("# HELP ns_metric_%d help\n# TYPE ns_metric_%d gauge\n", j, j)
 	}
 	multiStores := make([]*MetricsStore, multiStoreN)
-	for k := 0; k < multiStoreN; k++ {
+	for k := range multiStoreN {
 		multiStores[k] = NewMetricsStore(multiHeaders, nil)
 	}
 	multiWriter := NewMetricsWriter("test", multiStores...)
@@ -696,14 +696,14 @@ func BenchmarkWriteAll(b *testing.B) {
 	const nFamilies = 10
 
 	headers := make([]string, nFamilies)
-	for j := 0; j < nFamilies; j++ {
+	for j := range nFamilies {
 		headers[j] = fmt.Sprintf("# HELP kube_bench_metric_%d benchmark metric %d\n# TYPE kube_bench_metric_%d gauge", j, j, j)
 	}
 
 	genFunc := func(obj any) []metric.FamilyInterface {
 		o, _ := meta.Accessor(obj)
 		families := make([]metric.FamilyInterface, nFamilies)
-		for j := 0; j < nFamilies; j++ {
+		for j := range nFamilies {
 			mf := &metric.Family{
 				Name: fmt.Sprintf("kube_bench_metric_%d", j),
 				Metrics: []*metric.Metric{
@@ -720,7 +720,7 @@ func BenchmarkWriteAll(b *testing.B) {
 	}
 
 	store := NewMetricsStore(headers, genFunc)
-	for k := 0; k < nObjects; k++ {
+	for k := range nObjects {
 		svc := &v1.Service{
 			UID:       types.UID(fmt.Sprintf("uid-%d", k)),
 			Name:      fmt.Sprintf("svc-%d", k),

@@ -388,14 +388,12 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Stand in for the informer's event handlers.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < iterations; i++ {
+	wg.Go(func() {
+		for range iterations {
 			r.SafeWrite(func() { r.AppendToMap(gvkp) })
 			r.SafeWrite(func() { r.RemoveFromMap(gvkp) })
 		}
-	}()
+	})
 
 	// Stand in for the discovery poll resolving configured resources, covering
 	// the fixed lookup and all three wildcard paths.
@@ -408,7 +406,7 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 		wg.Add(1)
 		go func(q schema.GroupVersionKind) {
 			defer wg.Done()
-			for i := 0; i < iterations; i++ {
+			for range iterations {
 				if _, err := r.ResolveGVKToGVKPs(q); err != nil {
 					t.Errorf("resolving %v: %v", q, err)
 					return

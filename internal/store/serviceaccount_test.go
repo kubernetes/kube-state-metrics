@@ -22,7 +22,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -36,7 +35,7 @@ func TestServiceAccountStore(t *testing.T) {
 				DeletionTimestamp:            &metav1.Time{Time: time.Unix(3000000000, 0)},
 				Namespace:                    "serviceAccountNS",
 				UID:                          "serviceAccountUID",
-				AutomountServiceAccountToken: ptr.To(true),
+				AutomountServiceAccountToken: new(true),
 				Secrets: []v1.ObjectReference{
 					{
 						APIVersion: "v1",

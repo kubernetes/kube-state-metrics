@@ -23,7 +23,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -252,7 +251,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						FC: &v1.FCVolumeSource{
-							Lun:        int32ptr(123),
+							Lun:        new(int32(123)),
 							TargetWWNs: []string{"0123456789abcdef", "abcdef0123456789"},
 						},
 					},
@@ -386,7 +385,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						Local: &v1.LocalVolumeSource{
-							FSType: ptr.To("ext4"),
+							FSType: new("ext4"),
 							Path:   "/mnt/data",
 						},
 					},
@@ -430,7 +429,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						HostPath: &v1.HostPathVolumeSource{
 							Path: "/mnt/data",
-							Type: hostPathTypePointer(v1.HostPathDirectory),
+							Type: new(v1.HostPathDirectory),
 						},
 					},
 				},
@@ -738,8 +737,4 @@ func TestPersistentVolumeStore(t *testing.T) {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
-}
-
-func hostPathTypePointer(p v1.HostPathType) *v1.HostPathType {
-	return &p
 }

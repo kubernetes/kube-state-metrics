@@ -67,15 +67,13 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Verify populating base metric.
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Generation:        2,
-					Name:              "hpa1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Namespace:         "ns1",
-					Labels: map[string]string{
-						"app": "foobar",
-					},
+				Generation:        2,
+				Name:              "hpa1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Namespace:         "ns1",
+				Labels: map[string]string{
+					"app": "foobar",
 				},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
@@ -262,10 +260,8 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Verify omitted minReplicas falls back to the API default.
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hpa-default-min-replicas",
-					Namespace: "ns1",
-				},
+				Name:      "hpa-default-min-replicas",
+				Namespace: "ns1",
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 3,
 					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
@@ -289,19 +285,17 @@ func TestHPAStore(t *testing.T) {
 				"app.k8s.io/owner",
 			},
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Generation:        2,
-					Name:              "hpa2",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Namespace:         "ns1",
-					Labels: map[string]string{
-						"app": "foobar",
-					},
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
+				Generation:        2,
+				Name:              "hpa2",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Namespace:         "ns1",
+				Labels: map[string]string{
+					"app": "foobar",
+				},
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
 				},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
@@ -468,12 +462,10 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Test case for multiple ContainerResource metrics with same resource name
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Generation:        1,
-					Name:              "hpa-container-resource",
-					Namespace:         "default",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-				},
+				Generation:        1,
+				Name:              "hpa-container-resource",
+				Namespace:         "default",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 10,
 					MinReplicas: int32ptr(1),
@@ -605,10 +597,8 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Verify spec.behavior scale up/down tolerance metrics.
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hpa1",
-					Namespace: "ns1",
-				},
+				Name:      "hpa1",
+				Namespace: "ns1",
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
 					Behavior: &autoscaling.HorizontalPodAutoscalerBehavior{
@@ -664,7 +654,7 @@ func TestHPAStatusTargetMetricWithNilSource(t *testing.T) {
 	} {
 		t.Run(string(metricType), func(t *testing.T) {
 			hpa := &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{Name: "hpa", Namespace: "ns"},
+				Name: "hpa", Namespace: "ns",
 				Status: autoscaling.HorizontalPodAutoscalerStatus{
 					// Type is set, but the matching source is not.
 					CurrentMetrics: []autoscaling.MetricStatus{{Type: metricType}},

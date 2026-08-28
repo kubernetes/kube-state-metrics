@@ -50,14 +50,12 @@ func TestServiceStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid1",
-					Labels: map[string]string{
-						"app": "example1",
-					},
+				Name:              "test-service1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid1",
+				Labels: map[string]string{
+					"app": "example1",
 				},
 				Spec: v1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
@@ -90,14 +88,12 @@ func TestServiceStore(t *testing.T) {
 		{
 
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service2",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid2",
-					Labels: map[string]string{
-						"app": "example2",
-					},
+				Name:              "test-service2",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid2",
+				Labels: map[string]string{
+					"app": "example2",
 				},
 				Spec: v1.ServiceSpec{
 					ClusterIP: "1.2.3.5",
@@ -112,14 +108,12 @@ func TestServiceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service3",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid3",
-					Labels: map[string]string{
-						"app": "example3",
-					},
+				Name:              "test-service3",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid3",
+				Labels: map[string]string{
+					"app": "example3",
 				},
 				Spec: v1.ServiceSpec{
 					ClusterIP:      "1.2.3.6",
@@ -135,14 +129,12 @@ func TestServiceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service4",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid4",
-					Labels: map[string]string{
-						"app": "example4",
-					},
+				Name:              "test-service4",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid4",
+				Labels: map[string]string{
+					"app": "example4",
 				},
 				Spec: v1.ServiceSpec{
 					ExternalName: "www.example.com",
@@ -157,14 +149,12 @@ func TestServiceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service5",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid5",
-					Labels: map[string]string{
-						"app": "example5",
-					},
+				Name:              "test-service5",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid5",
+				Labels: map[string]string{
+					"app": "example5",
 				},
 				Spec: v1.ServiceSpec{
 					Type: v1.ServiceTypeLoadBalancer,
@@ -189,14 +179,12 @@ func TestServiceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service6",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid6",
-					Labels: map[string]string{
-						"app": "example6",
-					},
+				Name:              "test-service6",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid6",
+				Labels: map[string]string{
+					"app": "example6",
 				},
 				Spec: v1.ServiceSpec{
 					Type: v1.ServiceTypeClusterIP,
@@ -216,14 +204,12 @@ func TestServiceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service7",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid7",
-					Labels: map[string]string{
-						"app": "example7",
-					},
+				Name:              "test-service7",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid7",
+				Labels: map[string]string{
+					"app": "example7",
 				},
 				Spec: v1.ServiceSpec{
 					ClusterIP:             "1.2.3.11",
@@ -239,14 +225,12 @@ func TestServiceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service8",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					UID:               "uid8",
-					Labels: map[string]string{
-						"app": "example8",
-					},
+				Name:              "test-service8",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				UID:               "uid8",
+				Labels: map[string]string{
+					"app": "example8",
 				},
 				Spec: v1.ServiceSpec{
 					ClusterIP:             "1.2.3.12",
@@ -263,15 +247,13 @@ func TestServiceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-service9",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Namespace:         "default",
-					UID:               "uid9",
-					Labels: map[string]string{
-						"app": "example9",
-					},
+				Name:              "test-service9",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Namespace:         "default",
+				UID:               "uid9",
+				Labels: map[string]string{
+					"app": "example9",
 				},
 				Spec: v1.ServiceSpec{
 					ClusterIP: "1.2.3.4",

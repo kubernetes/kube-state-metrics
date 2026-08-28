@@ -46,13 +46,11 @@ func TestEndpointStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-endpoint",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "foobar",
-					},
+				Name:              "test-endpoint",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				Labels: map[string]string{
+					"app": "foobar",
 				},
 				Subsets: []v1.EndpointSubset{
 					{
@@ -109,13 +107,11 @@ func TestEndpointStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "single-port-endpoint",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "single-foobar",
-					},
+				Name:              "single-port-endpoint",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				Labels: map[string]string{
+					"app": "single-foobar",
 				},
 				Subsets: []v1.EndpointSubset{
 					{
@@ -170,16 +166,14 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-endpoint",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Annotations: map[string]string{
-						"app": "foobar",
-					},
-					Labels: map[string]string{
-						"app": "foobar",
-					},
+				Name:              "test-endpoint",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				Annotations: map[string]string{
+					"app": "foobar",
+				},
+				Labels: map[string]string{
+					"app": "foobar",
 				},
 				Subsets: []v1.EndpointSubset{
 					{
@@ -238,16 +232,14 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		},
 		{
 			Obj: &v1.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "single-port-endpoint",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Annotations: map[string]string{
-						"app": "single-foobar",
-					},
-					Labels: map[string]string{
-						"app": "single-foobar",
-					},
+				Name:              "single-port-endpoint",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				Annotations: map[string]string{
+					"app": "single-foobar",
+				},
+				Labels: map[string]string{
+					"app": "single-foobar",
 				},
 				Subsets: []v1.EndpointSubset{
 					{

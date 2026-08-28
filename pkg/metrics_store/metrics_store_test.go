@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -56,11 +55,9 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 
 	for _, id := range serviceIDs {
 		s := v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "service",
-				Namespace: id,
-				UID:       types.UID(id),
-			},
+			Name:      "service",
+			Namespace: id,
+			UID:       types.UID(id),
 		}
 
 		err := ms.Add(&s)
@@ -89,10 +86,8 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 
 	// Test Add
 	s1 := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:             "uid1",
-			ResourceVersion: "123",
-		},
+		UID:             "uid1",
+		ResourceVersion: "123",
 	}
 	if err := ms.Add(s1); err != nil {
 		t.Fatal(err)
@@ -130,10 +125,8 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	s2 := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:             "uid2",
-			ResourceVersion: "1",
-		},
+		UID:             "uid2",
+		ResourceVersion: "1",
 	}
 	if err := ms.Replace([]any{s2}, "127"); err != nil {
 		t.Fatal(err)
@@ -167,11 +160,9 @@ func BenchmarkAdd(b *testing.B) {
 
 	store := NewMetricsStore(headers, genFunc)
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       types.UID("uid-0"),
-			Name:      "svc-0",
-			Namespace: "default",
-		},
+		UID:       types.UID("uid-0"),
+		Name:      "svc-0",
+		Namespace: "default",
 	}
 
 	b.ResetTimer()

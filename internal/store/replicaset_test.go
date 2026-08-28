@@ -63,21 +63,19 @@ func TestReplicaSetStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.ReplicaSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "rs1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Generation:        21,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind:       "Deployment",
-							Name:       "dp-name",
-							Controller: &test,
-						},
+				Name:              "rs1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				Generation:        21,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "Deployment",
+						Name:       "dp-name",
+						Controller: &test,
 					},
-					Labels: map[string]string{
-						"app": "example1",
-					},
+				},
+				Labels: map[string]string{
+					"app": "example1",
 				},
 				Status: v1.ReplicaSetStatus{
 					Replicas:             5,
@@ -104,14 +102,12 @@ func TestReplicaSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.ReplicaSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "rs2",
-					Namespace:  "ns2",
-					Generation: 14,
-					Labels: map[string]string{
-						"app": "example2",
-						"env": "ex",
-					},
+				Name:       "rs2",
+				Namespace:  "ns2",
+				Generation: 14,
+				Labels: map[string]string{
+					"app": "example2",
+					"env": "ex",
 				},
 				Status: v1.ReplicaSetStatus{
 					Replicas:             0,

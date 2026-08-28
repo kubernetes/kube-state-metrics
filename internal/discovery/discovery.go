@@ -113,12 +113,10 @@ func extractGVKPs(obj any) []groupVersionKindPlural {
 			}
 		}
 		gvkps = append(gvkps, groupVersionKindPlural{
-			GroupVersionKind: schema.GroupVersionKind{
-				Group:   g,
-				Version: v,
-				Kind:    k,
-			},
-			Plural: p,
+			Group:   g,
+			Version: v,
+			Kind:    k,
+			Plural:  p,
 		})
 	}
 	return gvkps
@@ -209,12 +207,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 					r.clearMissingGVKWarningLocked(gvk)
 					resolvedGVKPs = []groupVersionKindPlural{
 						{
-							GroupVersionKind: schema.GroupVersionKind{
-								Group:   g,
-								Version: v,
-								Kind:    k,
-							},
-							Plural: el.Plural,
+							Group:   g,
+							Version: v,
+							Kind:    k,
+							Plural:  el.Plural,
 						},
 					}
 					return
@@ -227,12 +223,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 			kinds := r.Map[g][v]
 			for _, el := range kinds {
 				resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-					GroupVersionKind: schema.GroupVersionKind{
-						Group:   g,
-						Version: v,
-						Kind:    el.Kind,
-					},
-					Plural: el.Plural,
+					Group:   g,
+					Version: v,
+					Kind:    el.Kind,
+					Plural:  el.Plural,
 				})
 			}
 		}
@@ -242,12 +236,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 				for _, el := range kinds {
 					if el.Kind == k {
 						resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-							GroupVersionKind: schema.GroupVersionKind{
-								Group:   g,
-								Version: version,
-								Kind:    k,
-							},
-							Plural: el.Plural,
+							Group:   g,
+							Version: version,
+							Kind:    k,
+							Plural:  el.Plural,
 						})
 					}
 				}
@@ -258,12 +250,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 			for version, kinds := range versions {
 				for _, el := range kinds {
 					resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-						GroupVersionKind: schema.GroupVersionKind{
-							Group:   g,
-							Version: version,
-							Kind:    el.Kind,
-						},
-						Plural: el.Plural,
+						Group:   g,
+						Version: version,
+						Kind:    el.Kind,
+						Plural:  el.Plural,
 					})
 				}
 			}

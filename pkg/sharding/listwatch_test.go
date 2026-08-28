@@ -37,11 +37,9 @@ import (
 
 func TestSharding(t *testing.T) {
 	cm := &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "configmap1",
-			Namespace: "ns1",
-			UID:       types.UID("test_uid"),
-		},
+		Name:      "configmap1",
+		Namespace: "ns1",
+		UID:       types.UID("test_uid"),
 	}
 
 	s1 := &sharding{
@@ -68,11 +66,9 @@ func TestSharding(t *testing.T) {
 
 func TestShardedListWatchFiltersOnlyResourceStateEvents(t *testing.T) {
 	obj := &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "configmap1",
-			Namespace: "ns1",
-			UID:       types.UID("test_uid"),
-		},
+		Name:      "configmap1",
+		Namespace: "ns1",
+		UID:       types.UID("test_uid"),
 	}
 
 	tests := []struct {
@@ -161,11 +157,9 @@ func TestShardedListWatchRejectsMutationEventsWithoutMetadata(t *testing.T) {
 
 func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T) {
 	bookmark := &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			ResourceVersion: "1",
-			Annotations: map[string]string{
-				metav1.InitialEventsAnnotationKey: "true",
-			},
+		ResourceVersion: "1",
+		Annotations: map[string]string{
+			metav1.InitialEventsAnnotationKey: "true",
 		},
 	}
 
@@ -329,13 +323,11 @@ func TestShardedListWatchPreservesPaginationMetadata(t *testing.T) {
 	upstream := &cache.ListWatch{
 		ListFunc: func(_ metav1.ListOptions) (runtime.Object, error) {
 			return &v1.ConfigMapList{
-				ListMeta: metav1.ListMeta{
-					ResourceVersion:    "123",
-					Continue:           "next-page-token",
-					RemainingItemCount: &remaining,
-				},
+				ResourceVersion:    "123",
+				Continue:           "next-page-token",
+				RemainingItemCount: &remaining,
 				Items: []v1.ConfigMap{
-					{ObjectMeta: metav1.ObjectMeta{Name: "cm1", Namespace: "ns1", UID: types.UID("test_uid")}},
+					{Name: "cm1", Namespace: "ns1", UID: types.UID("test_uid")},
 				},
 			}, nil
 		},

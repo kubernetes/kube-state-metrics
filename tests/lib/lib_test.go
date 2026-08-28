@@ -38,10 +38,8 @@ func TestAsLibrary(t *testing.T) {
 	kubeClient := fake.NewSimpleClientset()
 
 	service := v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-service",
-			ResourceVersion: "123456",
-		},
+		Name:            "my-service",
+		ResourceVersion: "123456",
 	}
 
 	_, err := kubeClient.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})

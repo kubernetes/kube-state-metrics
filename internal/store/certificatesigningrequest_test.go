@@ -40,15 +40,13 @@ func TestCsrStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &certv1.CertificateSigningRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "certificate-test",
-					Generation: 1,
-					Labels: map[string]string{
-						"cert": "test",
-					},
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Name:       "certificate-test",
+				Generation: 1,
+				Labels: map[string]string{
+					"cert": "test",
 				},
-				Status: certv1.CertificateSigningRequestStatus{},
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Status:            certv1.CertificateSigningRequestStatus{},
 				Spec: certv1.CertificateSigningRequestSpec{
 					SignerName: "signer",
 				},
@@ -64,14 +62,12 @@ func TestCsrStore(t *testing.T) {
 		},
 		{
 			Obj: &certv1.CertificateSigningRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "certificate-test",
-					Generation: 1,
-					Labels: map[string]string{
-						"cert": "test",
-					},
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Name:       "certificate-test",
+				Generation: 1,
+				Labels: map[string]string{
+					"cert": "test",
 				},
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Status: certv1.CertificateSigningRequestStatus{
 					Conditions: []certv1.CertificateSigningRequestCondition{
 						{
@@ -94,14 +90,12 @@ func TestCsrStore(t *testing.T) {
 		},
 		{
 			Obj: &certv1.CertificateSigningRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "certificate-test",
-					Generation: 1,
-					Labels: map[string]string{
-						"cert": "test",
-					},
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Name:       "certificate-test",
+				Generation: 1,
+				Labels: map[string]string{
+					"cert": "test",
 				},
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Status: certv1.CertificateSigningRequestStatus{
 					Conditions: []certv1.CertificateSigningRequestCondition{
 						{
@@ -124,14 +118,12 @@ func TestCsrStore(t *testing.T) {
 		},
 		{
 			Obj: &certv1.CertificateSigningRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "certificate-test",
-					Generation: 1,
-					Labels: map[string]string{
-						"cert": "test",
-					},
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Name:       "certificate-test",
+				Generation: 1,
+				Labels: map[string]string{
+					"cert": "test",
 				},
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Status: certv1.CertificateSigningRequestStatus{
 					Conditions: []certv1.CertificateSigningRequestCondition{
 						{
@@ -154,14 +146,12 @@ func TestCsrStore(t *testing.T) {
 		},
 		{
 			Obj: &certv1.CertificateSigningRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "certificate-test",
-					Generation: 1,
-					Labels: map[string]string{
-						"cert": "test",
-					},
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Name:       "certificate-test",
+				Generation: 1,
+				Labels: map[string]string{
+					"cert": "test",
 				},
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Spec: certv1.CertificateSigningRequestSpec{
 					SignerName: "signer",
 				},
@@ -185,14 +175,12 @@ func TestCsrStore(t *testing.T) {
 		},
 		{
 			Obj: &certv1.CertificateSigningRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "certificate-test",
-					Generation: 1,
-					Labels: map[string]string{
-						"cert": "test",
-					},
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Name:       "certificate-test",
+				Generation: 1,
+				Labels: map[string]string{
+					"cert": "test",
 				},
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Spec: certv1.CertificateSigningRequestSpec{
 					SignerName: "signer",
 				},
@@ -221,14 +209,12 @@ func TestCsrStore(t *testing.T) {
 		},
 		{
 			Obj: &certv1.CertificateSigningRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "certificate-test",
-					Generation: 1,
-					Labels: map[string]string{
-						"cert": "test",
-					},
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Name:       "certificate-test",
+				Generation: 1,
+				Labels: map[string]string{
+					"cert": "test",
 				},
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Spec: certv1.CertificateSigningRequestSpec{
 					SignerName: "signer",
 				},

@@ -54,14 +54,12 @@ func TestIngressStore(t *testing.T) {
 				"app.k8s.io/owner",
 			},
 			Obj: &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "ingress1",
-					Namespace:       "ns1",
-					ResourceVersion: "000000",
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
+				Name:            "ingress1",
+				Namespace:       "ns1",
+				ResourceVersion: "000000",
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
 				},
 			},
 			Want: `
@@ -86,12 +84,10 @@ func TestIngressStore(t *testing.T) {
 		},
 		{
 			Obj: &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ingress2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "123456",
-				},
+				Name:              "ingress2",
+				Namespace:         "ns2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "123456",
 			},
 			Want: metadata + `
 				kube_ingress_info{namespace="ns2",ingress="ingress2",ingressclass="_default"} 1
@@ -102,13 +98,11 @@ func TestIngressStore(t *testing.T) {
 		},
 		{
 			Obj: &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ingress3",
-					Namespace:         "ns3",
-					CreationTimestamp: metav1StartTime,
-					Labels:            map[string]string{"test-3": "test-3"},
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "ingress3",
+				Namespace:         "ns3",
+				CreationTimestamp: metav1StartTime,
+				Labels:            map[string]string{"test-3": "test-3"},
+				ResourceVersion:   "abcdef",
 			},
 			Want: metadata + `
 				kube_ingress_info{namespace="ns3",ingress="ingress3",ingressclass="_default"} 1
@@ -118,39 +112,35 @@ func TestIngressStore(t *testing.T) {
 		},
 		{
 			Obj: &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ingress4",
-					Namespace:         "ns4",
-					CreationTimestamp: metav1StartTime,
-					Labels:            map[string]string{"test-4": "test-4"},
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "ingress4",
+				Namespace:         "ns4",
+				CreationTimestamp: metav1StartTime,
+				Labels:            map[string]string{"test-4": "test-4"},
+				ResourceVersion:   "abcdef",
 				Spec: networkingv1.IngressSpec{
 					Rules: []networkingv1.IngressRule{
 						{
 							Host: "somehost",
-							IngressRuleValue: networkingv1.IngressRuleValue{
-								HTTP: &networkingv1.HTTPIngressRuleValue{
-									Paths: []networkingv1.HTTPIngressPath{
-										{
-											Path: "/somepath",
-											Backend: networkingv1.IngressBackend{
-												Service: &networkingv1.IngressServiceBackend{
-													Name: "someservice",
-													Port: networkingv1.ServiceBackendPort{
-														Number: 1234,
-													},
+							HTTP: &networkingv1.HTTPIngressRuleValue{
+								Paths: []networkingv1.HTTPIngressPath{
+									{
+										Path: "/somepath",
+										Backend: networkingv1.IngressBackend{
+											Service: &networkingv1.IngressServiceBackend{
+												Name: "someservice",
+												Port: networkingv1.ServiceBackendPort{
+													Number: 1234,
 												},
 											},
-											PathType: ptr.To(networkingv1.PathTypeExact),
 										},
-										{
-											Path: "/somepath2",
-											Backend: networkingv1.IngressBackend{
-												Resource: &v1.TypedLocalObjectReference{
-													Kind: "somekind",
-													Name: "somename",
-												},
+										PathType: ptr.To(networkingv1.PathTypeExact),
+									},
+									{
+										Path: "/somepath2",
+										Backend: networkingv1.IngressBackend{
+											Resource: &v1.TypedLocalObjectReference{
+												Kind: "somekind",
+												Name: "somename",
 											},
 										},
 									},
@@ -173,13 +163,11 @@ func TestIngressStore(t *testing.T) {
 		},
 		{
 			Obj: &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ingress5",
-					Namespace:         "ns5",
-					CreationTimestamp: metav1StartTime,
-					Labels:            map[string]string{"test-5": "test-5"},
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "ingress5",
+				Namespace:         "ns5",
+				CreationTimestamp: metav1StartTime,
+				Labels:            map[string]string{"test-5": "test-5"},
+				ResourceVersion:   "abcdef",
 				Spec: networkingv1.IngressSpec{
 					TLS: []networkingv1.IngressTLS{
 						{
@@ -199,12 +187,10 @@ func TestIngressStore(t *testing.T) {
 		},
 		{
 			Obj: &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ingress6",
-					Namespace:         "ns6",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "123456",
-				},
+				Name:              "ingress6",
+				Namespace:         "ns6",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "123456",
 				Spec: networkingv1.IngressSpec{
 					IngressClassName: &testIngressClass,
 				},
@@ -218,14 +204,12 @@ func TestIngressStore(t *testing.T) {
 		},
 		{
 			Obj: &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ingress7",
-					Namespace:         "ns7",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "123456",
-					Annotations: map[string]string{
-						"kubernetes.io/ingress.class": "test",
-					},
+				Name:              "ingress7",
+				Namespace:         "ns7",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "123456",
+				Annotations: map[string]string{
+					"kubernetes.io/ingress.class": "test",
 				},
 			},
 			Want: metadata + `

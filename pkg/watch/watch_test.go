@@ -33,14 +33,12 @@ import (
 // API server answers a paginated list that has more to give.
 func podList(n int, continueToken string) *v1.PodList {
 	list := &v1.PodList{
-		ListMeta: metav1.ListMeta{
-			ResourceVersion: "1",
-			Continue:        continueToken,
-		},
+		ResourceVersion: "1",
+		Continue:        continueToken,
 	}
 	for i := 0; i < n; i++ {
 		list.Items = append(list.Items, v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("pod-%d", i), Namespace: "ns"},
+			Name: fmt.Sprintf("pod-%d", i), Namespace: "ns",
 		})
 	}
 	return list

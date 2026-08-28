@@ -16,20 +16,16 @@ package discovery
 import (
 	"fmt"
 	"testing"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func makeGVKPs(n int) []groupVersionKindPlural {
 	gvkps := make([]groupVersionKindPlural, n)
 	for i := range n {
 		gvkps[i] = groupVersionKindPlural{
-			GroupVersionKind: schema.GroupVersionKind{
-				Group:   fmt.Sprintf("group%d.example.com", i),
-				Version: "v1",
-				Kind:    fmt.Sprintf("Kind%d", i),
-			},
-			Plural: fmt.Sprintf("kind%ds", i),
+			Group:   fmt.Sprintf("group%d.example.com", i),
+			Version: "v1",
+			Kind:    fmt.Sprintf("Kind%d", i),
+			Plural:  fmt.Sprintf("kind%ds", i),
 		}
 	}
 	return gvkps

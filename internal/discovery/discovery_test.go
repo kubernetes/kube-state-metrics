@@ -53,12 +53,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "apps", Version: "*", Kind: "*"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"},
-					Plural:           "deployments",
+					Group: "apps", Version: "v1", Kind: "Deployment",
+					Plural: "deployments",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"},
-					Plural:           "statefulsets",
+					Group: "apps", Version: "v1", Kind: "StatefulSet",
+					Plural: "statefulsets",
 				},
 			},
 		},
@@ -89,12 +89,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "*", Kind: "TestObject1"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1alpha1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1alpha1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 			},
 		},
@@ -125,12 +125,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "*"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject2"},
-					Plural:           "testobjects2",
+					Group: "testgroup", Version: "v1", Kind: "TestObject2",
+					Plural: "testobjects2",
 				},
 			},
 		},
@@ -161,8 +161,8 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 			},
 		},
@@ -265,8 +265,8 @@ func TestExtractGVKPs(t *testing.T) {
 	}
 	gvkp := func(v string) groupVersionKindPlural {
 		return groupVersionKindPlural{
-			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: v, Kind: "TestObject"},
-			Plural:           "testobjects",
+			Group: "testgroup", Version: v, Kind: "TestObject",
+			Plural: "testobjects",
 		}
 	}
 

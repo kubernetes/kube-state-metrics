@@ -79,13 +79,13 @@ func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 }
 
 // CreateCustomResourceClients creates a custom resource clientset.
-func CreateCustomResourceClients(apiserver string, kubeconfig string, factories ...customresource.RegistryFactory) (map[string]interface{}, error) {
+func CreateCustomResourceClients(apiserver string, kubeconfig string, factories ...customresource.RegistryFactory) (map[string]any, error) {
 	// Not relying on memoized clients here because the factories are subject to change.
 	config, err := buildConfig(apiserver, kubeconfig)
 	if err != nil {
 		return nil, err
 	}
-	customResourceClients := make(map[string]interface{}, len(factories))
+	customResourceClients := make(map[string]any, len(factories))
 	for _, f := range factories {
 		customResourceClient, err := f.CreateClient(config)
 		if err != nil {
@@ -107,7 +107,7 @@ func CreateCustomResourceClients(apiserver string, kubeconfig string, factories 
 }
 
 // GVRFromType returns the GroupVersionResource for a given type.
-func GVRFromType(resourceName string, expectedType interface{}) (*schema.GroupVersionResource, error) {
+func GVRFromType(resourceName string, expectedType any) (*schema.GroupVersionResource, error) {
 	if _, ok := expectedType.(*testUnstructuredMock.Foo); ok {
 		// testUnstructuredMock.Foo is a mock type for testing
 		return nil, nil

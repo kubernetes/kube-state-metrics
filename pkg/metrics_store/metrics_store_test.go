@@ -32,7 +32,7 @@ import (
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDs := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -85,7 +85,7 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 }
 
 func TestMetricsStoreResourceVersion(t *testing.T) {
-	ms := NewMetricsStore([]string{}, func(_ interface{}) []metric.FamilyInterface { return nil })
+	ms := NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface { return nil })
 
 	// Test Add
 	s1 := &v1.Service{
@@ -126,7 +126,7 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 	}
 
 	// Test Replace
-	if err := ms.Replace([]interface{}{}, "127"); err != nil {
+	if err := ms.Replace([]any{}, "127"); err != nil {
 		t.Fatal(err)
 	}
 	s2 := &v1.Service{
@@ -135,7 +135,7 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 			ResourceVersion: "1",
 		},
 	}
-	if err := ms.Replace([]interface{}{s2}, "127"); err != nil {
+	if err := ms.Replace([]any{s2}, "127"); err != nil {
 		t.Fatal(err)
 	}
 	if rv := ms.LastStoreSyncResourceVersion(); rv != "127" {
@@ -147,7 +147,7 @@ func BenchmarkAdd(b *testing.B) {
 	const nFamilies = 50
 
 	headers := make([]string, nFamilies)
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, _ := meta.Accessor(obj)
 		families := make([]metric.FamilyInterface, nFamilies)
 		for j := 0; j < nFamilies; j++ {

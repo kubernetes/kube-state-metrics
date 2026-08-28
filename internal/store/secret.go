@@ -204,8 +204,8 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 
 }
 
-func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		secret := obj.(*v1.Secret)
 
 		metricFamily := f(secret)

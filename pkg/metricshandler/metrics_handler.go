@@ -131,7 +131,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 		&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	i.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(o interface{}) {
+		AddFunc: func(o any) {
 			ss := o.(*appsv1.StatefulSet)
 			if ss.Name != statefulSetName {
 				return
@@ -153,7 +153,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 			m.ConfigureSharding(ctx, shard, totalShards)
 		},
-		UpdateFunc: func(oldo, curo interface{}) {
+		UpdateFunc: func(oldo, curo any) {
 			old := oldo.(*appsv1.StatefulSet)
 			cur := curo.(*appsv1.StatefulSet)
 			if cur.Name != statefulSetName {

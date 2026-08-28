@@ -39,7 +39,7 @@ type BuilderInterface interface {
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
-	WithCustomResourceClients(cs map[string]interface{})
+	WithCustomResourceClients(cs map[string]any)
 	WithUsingAPIServerCache(u bool)
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)
 	WithAllowAnnotations(a map[string][]string) error
@@ -55,7 +55,7 @@ type BuilderInterface interface {
 
 // BuildStoresFunc function signature that is used to return a list of cache.Store
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
+	expectedType any,
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
@@ -63,8 +63,8 @@ type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 // BuildCustomResourceStoresFunc function signature that is used to return a list of custom resource cache.Store
 type BuildCustomResourceStoresFunc func(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
-	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
+	expectedType any,
+	listWatchFunc func(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 

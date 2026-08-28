@@ -73,8 +73,8 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 	}
 }
 
-func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		hpa := obj.(*autoscaling.HorizontalPodAutoscaler)
 
 		metricFamily := f(hpa)

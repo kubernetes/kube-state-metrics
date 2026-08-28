@@ -43,7 +43,7 @@ type RegistryFactory interface {
 	// func (f *FooFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
 	// 	return clientset.NewForConfig(cfg)
 	// }
-	CreateClient(cfg *rest.Config) (interface{}, error)
+	CreateClient(cfg *rest.Config) (any, error)
 
 	// MetricFamilyGenerators returns the metric family generators to generate metric families with a
 	// Kubernetes custom resource object.
@@ -95,7 +95,7 @@ type RegistryFactory interface {
 	// func (f *FooFactory) ExpectedType() interface{} {
 	//	return &samplev1alpha1.Foo{}
 	// }
-	ExpectedType() interface{}
+	ExpectedType() any
 
 	// ListWatch constructs a cache.ListerWatcher of the custom resource object.
 	//
@@ -114,5 +114,5 @@ type RegistryFactory interface {
 	//		},
 	//	}
 	// }
-	ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher
+	ListWatch(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher
 }

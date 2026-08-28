@@ -244,11 +244,11 @@ func TestResolveGVKToGVKPsMissingWarnDedup(t *testing.T) {
 func TestExtractGVKPs(t *testing.T) {
 	// crd builds a minimal CRD object, one entry per version. A nil `served`
 	// leaves the field out entirely, mimicking an object that predates it.
-	crd := func(versions ...interface{}) *unstructured.Unstructured {
-		return &unstructured.Unstructured{Object: map[string]interface{}{
-			"spec": map[string]interface{}{
+	crd := func(versions ...any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"spec": map[string]any{
 				"group": "testgroup",
-				"names": map[string]interface{}{
+				"names": map[string]any{
 					"kind":   "TestObject",
 					"plural": "testobjects",
 				},
@@ -256,8 +256,8 @@ func TestExtractGVKPs(t *testing.T) {
 			},
 		}}
 	}
-	version := func(name string, served interface{}) interface{} {
-		v := map[string]interface{}{"name": name}
+	version := func(name string, served any) any {
+		v := map[string]any{"name": name}
 		if served != nil {
 			v["served"] = served
 		}
@@ -272,7 +272,7 @@ func TestExtractGVKPs(t *testing.T) {
 
 	testcases := []struct {
 		desc string
-		obj  interface{}
+		obj  any
 		want []groupVersionKindPlural
 	}{
 		{
@@ -319,48 +319,48 @@ func TestExtractGVKPs(t *testing.T) {
 		// unrecovered panic rather than a skipped object.
 		{
 			desc: "no spec",
-			obj:  &unstructured.Unstructured{Object: map[string]interface{}{}},
+			obj:  &unstructured.Unstructured{Object: map[string]any{}},
 			want: nil,
 		},
 		{
 			desc: "spec is not an object",
-			obj:  &unstructured.Unstructured{Object: map[string]interface{}{"spec": "nope"}},
+			obj:  &unstructured.Unstructured{Object: map[string]any{"spec": "nope"}},
 			want: nil,
 		},
 		{
 			desc: "no group",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{"names": map[string]interface{}{"kind": "K", "plural": "ks"}},
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{"names": map[string]any{"kind": "K", "plural": "ks"}},
 			}},
 			want: nil,
 		},
 		{
 			desc: "no names",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{"group": "g"},
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{"group": "g"},
 			}},
 			want: nil,
 		},
 		{
 			desc: "no versions",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{
 					"group": "g",
-					"names": map[string]interface{}{"kind": "K", "plural": "ks"},
+					"names": map[string]any{"kind": "K", "plural": "ks"},
 				},
 			}},
 			want: nil,
 		},
 		{
 			desc: "a malformed version is skipped, the rest are kept",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{
 					"group": "testgroup",
-					"names": map[string]interface{}{"kind": "TestObject", "plural": "testobjects"},
-					"versions": []interface{}{
+					"names": map[string]any{"kind": "TestObject", "plural": "testobjects"},
+					"versions": []any{
 						"not-an-object",
-						map[string]interface{}{"served": true},
-						map[string]interface{}{"name": "v1", "served": true},
+						map[string]any{"served": true},
+						map[string]any{"name": "v1", "served": true},
 					},
 				},
 			}},

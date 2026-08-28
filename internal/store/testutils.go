@@ -30,8 +30,8 @@ import (
 )
 
 type generateMetricsTestCase struct {
-	Obj                  interface{}
-	Func                 func(interface{}) []metric.FamilyInterface
+	Obj                  any
+	Func                 func(any) []metric.FamilyInterface
 	Want                 string
 	MetricNames          []string
 	AllowAnnotationsList []string

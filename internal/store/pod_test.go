@@ -24,7 +24,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -45,13 +44,13 @@ func TestPodStore(t *testing.T) {
 				UID:       "uid1",
 				Spec: v1.PodSpec{
 					ResourceClaims: []v1.PodResourceClaim{
-						{Name: "gpu", ResourceClaimName: ptr.To("shared-gpu-claim")},
-						{Name: "gpu-tmpl", ResourceClaimTemplateName: ptr.To("gpu-template")},
+						{Name: "gpu", ResourceClaimName: new("shared-gpu-claim")},
+						{Name: "gpu-tmpl", ResourceClaimTemplateName: new("gpu-template")},
 					},
 				},
 				Status: v1.PodStatus{
 					ResourceClaimStatuses: []v1.PodResourceClaimStatus{
-						{Name: "gpu-tmpl", ResourceClaimName: ptr.To("pod1-gpu-tmpl-abcde")},
+						{Name: "gpu-tmpl", ResourceClaimName: new("pod1-gpu-tmpl-abcde")},
 					},
 				},
 			},
@@ -72,7 +71,7 @@ func TestPodStore(t *testing.T) {
 					ResourceClaims: []v1.PodResourceClaim{
 						// Template-backed claim with no status resolution yet (pending):
 						// resourceclaim_name stays empty but the series is still emitted.
-						{Name: "pending", ResourceClaimTemplateName: ptr.To("gpu-template")},
+						{Name: "pending", ResourceClaimTemplateName: new("gpu-template")},
 						// Malformed entry with neither name nor template set -> skipped.
 						{Name: "bad"},
 					},

@@ -24,7 +24,6 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 )
 
 func TestNewCustomResourceMetrics(t *testing.T) {
@@ -128,7 +127,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						},
 					},
 				},
-				MetricNamePrefix: ptr.To("apps_deployment"),
+				MetricNamePrefix: new("apps_deployment"),
 			},
 			wantErr: false,
 			wantResult: &customResourceMetrics{
@@ -189,7 +188,7 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						},
 					},
 				},
-				MetricNamePrefix: ptr.To("apps_deployment"),
+				MetricNamePrefix: new("apps_deployment"),
 			},
 			wantErr: true,
 			wantResult: &customResourceMetrics{

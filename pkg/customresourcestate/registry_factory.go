@@ -533,9 +533,7 @@ type compiledFamily struct {
 
 func (f compiledFamily) BaseLabels(obj map[string]any) map[string]string {
 	result := make(map[string]string)
-	for k, v := range f.Labels {
-		result[k] = v
-	}
+	maps.Copy(result, f.Labels)
 	addPathLabels(obj, f.LabelFromPath, result)
 	return result
 }

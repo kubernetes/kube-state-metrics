@@ -36,7 +36,7 @@ func podList(n int, continueToken string) *v1.PodList {
 		ResourceVersion: "1",
 		Continue:        continueToken,
 	}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		list.Items = append(list.Items, v1.Pod{
 			Name: fmt.Sprintf("pod-%d", i), Namespace: "ns",
 		})

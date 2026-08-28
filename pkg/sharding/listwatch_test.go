@@ -167,7 +167,7 @@ func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T
 	t.Cleanup(source.Shutdown)
 
 	var shardedWatches []watch.Interface
-	for shard := int32(0); shard < 4; shard++ {
+	for shard := range int32(4) {
 		lw := &cache.ListWatch{
 			WatchFunc: func(metav1.ListOptions) (watch.Interface, error) {
 				return source.Watch()
@@ -245,7 +245,7 @@ func TestShardedWatchStopIsIdempotent(t *testing.T) {
 	const callers = 10
 	var wg sync.WaitGroup
 	wg.Add(callers)
-	for i := 0; i < callers; i++ {
+	for range callers {
 		go func() {
 			defer wg.Done()
 			filtered.Stop()

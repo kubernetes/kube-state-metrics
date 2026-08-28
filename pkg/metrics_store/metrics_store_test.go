@@ -143,7 +143,7 @@ func BenchmarkAdd(b *testing.B) {
 	genFunc := func(obj any) []metric.FamilyInterface {
 		o, _ := meta.Accessor(obj)
 		families := make([]metric.FamilyInterface, nFamilies)
-		for j := 0; j < nFamilies; j++ {
+		for j := range nFamilies {
 			families[j] = &metric.Family{
 				Name: fmt.Sprintf("kube_bench_metric_%d", j),
 				Metrics: []*metric.Metric{

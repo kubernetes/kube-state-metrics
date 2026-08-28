@@ -123,7 +123,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	b.Run("MakeRequests", func(b *testing.B) {
 		var accumulatedContentLength int
 
-		for i := 0; i < requestCount; i++ {
+		for range requestCount {
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, req)
 
@@ -158,8 +158,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatalf("failed to insert sample pod %v", err.Error())
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder()
 	builder.WithMetrics(reg)
@@ -393,7 +392,7 @@ kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Unknown"
 		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected, strings.Join(gotFiltered, "\n"))
 	}
 
-	for i := 0; i < len(expectedSplit); i++ {
+	for i := range expectedSplit {
 		if expectedSplit[i] != gotFiltered[i] {
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
@@ -441,7 +440,7 @@ kube_state_metrics_total_shards 1
 		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected2, strings.Join(gotFiltered2, "\n"))
 	}
 
-	for i := 0; i < len(expectedSplit2); i++ {
+	for i := range expectedSplit2 {
 		if expectedSplit2[i] != gotFiltered2[i] {
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit2[i], gotFiltered2[i])
 		}
@@ -507,15 +506,14 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 
 	kubeClient := fake.NewSimpleClientset()
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err := pod(kubeClient, i)
 		if err != nil {
 			t.Fatalf("failed to insert sample pod %v", err.Error())
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
 		t.Fatal(err)
@@ -689,8 +687,7 @@ func TestCustomResourceExtension(t *testing.T) {
 		customResourceClients[f.Name()] = customResourceClient
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder()
@@ -784,7 +781,7 @@ kube_foo_status_replicas_available{namespace="default",foo="foo9"} 9
 		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected, strings.Join(gotFiltered, "\n"))
 	}
 
-	for i := 0; i < len(expectedSplit); i++ {
+	for i := range expectedSplit {
 		if expectedSplit[i] != gotFiltered[i] {
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
@@ -799,7 +796,7 @@ func injectFixtures(client *fake.Clientset, multiplier int) error {
 	}
 
 	for _, c := range creators {
-		for i := 0; i < multiplier; i++ {
+		for i := range multiplier {
 			err := c(client, i)
 
 			if err != nil {
@@ -957,7 +954,7 @@ func (f *fooFactory) Name() string {
 // CreateClient use fake client set to establish 10 foos.
 func (f *fooFactory) CreateClient(_ *rest.Config) (any, error) {
 	fooClient := samplefake.NewSimpleClientset()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err := foo(fooClient, i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert sample pod %v", err)

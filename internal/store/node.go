@@ -243,10 +243,10 @@ func createNodeRoleFamilyGenerator() generator.FamilyGenerator {
 			const prefix = "node-role.kubernetes.io/"
 			ms := []*metric.Metric{}
 			for lbl := range n.Labels {
-				if strings.HasPrefix(lbl, prefix) {
+				if after, ok := strings.CutPrefix(lbl, prefix); ok {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"role"},
-						LabelValues: []string{strings.TrimPrefix(lbl, prefix)},
+						LabelValues: []string{after},
 						Value:       float64(1),
 					})
 				}

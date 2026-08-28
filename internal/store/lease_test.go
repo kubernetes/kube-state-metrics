@@ -38,16 +38,14 @@ func TestLeaseStore(t *testing.T) {
 		cases = []generateMetricsTestCase{
 			{
 				Obj: &coordinationv1.Lease{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation:        2,
-						Name:              "kube-master",
-						Namespace:         "default",
-						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Kind: "Node",
-								Name: leaseOwner,
-							},
+					Generation:        2,
+					Name:              "kube-master",
+					Namespace:         "default",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "Node",
+							Name: leaseOwner,
 						},
 					},
 					Spec: coordinationv1.LeaseSpec{
@@ -66,16 +64,14 @@ func TestLeaseStore(t *testing.T) {
 			},
 			{
 				Obj: &coordinationv1.Lease{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation:        2,
-						Name:              "kube-master",
-						Namespace:         "default",
-						CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Kind: "Node",
-								Name: leaseOwner,
-							},
+					Generation:        2,
+					Name:              "kube-master",
+					Namespace:         "default",
+					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "Node",
+							Name: leaseOwner,
 						},
 					},
 					Spec: coordinationv1.LeaseSpec{

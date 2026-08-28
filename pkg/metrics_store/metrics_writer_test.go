@@ -27,7 +27,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -67,18 +66,14 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 	store := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs := []v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a1",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a1",
+			Name:      "service",
+			Namespace: "a",
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a2",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a2",
+			Name:      "service",
+			Namespace: "a",
 		},
 	}
 	for _, s := range svcs {
@@ -155,18 +150,14 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 	s1 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs1 := []v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a1",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a1",
+			Name:      "service",
+			Namespace: "a",
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a2",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a2",
+			Name:      "service",
+			Namespace: "a",
 		},
 	}
 	for _, s := range svcs1 {
@@ -178,18 +169,14 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 	svcs2 := []v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "b1",
-				Name:      "service",
-				Namespace: "b",
-			},
+			UID:       "b1",
+			Name:      "service",
+			Namespace: "b",
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "b2",
-				Name:      "service",
-				Namespace: "b",
-			},
+			UID:       "b2",
+			Name:      "service",
+			Namespace: "b",
 		},
 	}
 	s2 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
@@ -297,11 +284,9 @@ func TestWriteAllWithEmptyFirstStore(t *testing.T) {
 	populatedStore := NewMetricsStore(headers, genFunc)
 
 	svc := v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       "b1",
-			Name:      "service",
-			Namespace: "b",
-		},
+		UID:       "b1",
+		Name:      "service",
+		Namespace: "b",
 	}
 	if err := populatedStore.Add(&svc); err != nil {
 		t.Fatal(err)
@@ -364,11 +349,9 @@ func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T)
 	}
 	store := NewMetricsStore(headers, genFunc)
 	if err := store.Add(&v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       "a1",
-			Name:      "service",
-			Namespace: "a",
-		},
+		UID:       "a1",
+		Name:      "service",
+		Namespace: "a",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -437,11 +420,9 @@ func TestWriteAllWithSanitizedDuplicateHeadersWithoutEmptyFamiliesPreservesLater
 	}
 	store := NewMetricsStore(headers, genFunc)
 	if err := store.Add(&v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       "a1",
-			Name:      "service",
-			Namespace: "a",
-		},
+		UID:       "a1",
+		Name:      "service",
+		Namespace: "a",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -741,11 +722,9 @@ func BenchmarkWriteAll(b *testing.B) {
 	store := NewMetricsStore(headers, genFunc)
 	for k := 0; k < nObjects; k++ {
 		svc := &v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       types.UID(fmt.Sprintf("uid-%d", k)),
-				Name:      fmt.Sprintf("svc-%d", k),
-				Namespace: "default",
-			},
+			UID:       types.UID(fmt.Sprintf("uid-%d", k)),
+			Name:      fmt.Sprintf("svc-%d", k),
+			Namespace: "default",
 		}
 		if err := store.Add(svc); err != nil {
 			b.Fatal(err)

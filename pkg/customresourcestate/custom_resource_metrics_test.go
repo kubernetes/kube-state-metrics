@@ -59,11 +59,9 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						Each: Metric{
 							Type: metric.Info,
 							Info: &MetricInfo{
-								MetricMeta: MetricMeta{
-									Path: []string{
-										"metadata",
-										"annotations",
-									},
+								Path: []string{
+									"metadata",
+									"annotations",
 								},
 								LabelFromKey: "test",
 							},
@@ -121,11 +119,9 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						Each: Metric{
 							Type: metric.Info,
 							Info: &MetricInfo{
-								MetricMeta: MetricMeta{
-									Path: []string{
-										"metadata",
-										"annotations",
-									},
+								Path: []string{
+									"metadata",
+									"annotations",
 								},
 								LabelFromKey: "test",
 							},
@@ -184,11 +180,9 @@ func TestNewCustomResourceMetrics(t *testing.T) {
 						Each: Metric{
 							Type: metric.Info,
 							Info: &MetricInfo{
-								MetricMeta: MetricMeta{
-									Path: []string{
-										"metadata",
-										"annotations",
-									},
+								Path: []string{
+									"metadata",
+									"annotations",
 								},
 								LabelFromKey: "test",
 							},

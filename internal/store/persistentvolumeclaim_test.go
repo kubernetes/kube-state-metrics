@@ -39,14 +39,12 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				"app.k8s.io/owner",
 			},
 			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "mysql-data",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
+				Name:              "mysql-data",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
 				},
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
@@ -122,13 +120,11 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 				"app",
 			},
 			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "mysql-data",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-					Labels: map[string]string{
-						"app": "mysql-server",
-					},
+				Name:              "mysql-data",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				Labels: map[string]string{
+					"app": "mysql-server",
 				},
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
@@ -203,11 +199,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "prometheus-data",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "default",
-				},
+				Name:              "prometheus-data",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						v1.ReadWriteOnce,
@@ -265,10 +259,8 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "mongo-data",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-				},
+				Name:              "mongo-data",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						v1.ReadWriteOnce,
@@ -329,11 +321,9 @@ func TestPersistentVolumeClaimStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "terminating-data",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-				},
+				Name:              "terminating-data",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						v1.ReadWriteOnce,

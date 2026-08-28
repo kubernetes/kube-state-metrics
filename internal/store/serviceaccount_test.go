@@ -31,13 +31,11 @@ func TestServiceAccountStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.ServiceAccount{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "serviceAccountName",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(3000000000, 0)},
-					Namespace:         "serviceAccountNS",
-					UID:               "serviceAccountUID",
-				},
+				Name:                         "serviceAccountName",
+				CreationTimestamp:            metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp:            &metav1.Time{Time: time.Unix(3000000000, 0)},
+				Namespace:                    "serviceAccountNS",
+				UID:                          "serviceAccountUID",
 				AutomountServiceAccountToken: ptr.To(true),
 				Secrets: []v1.ObjectReference{
 					{

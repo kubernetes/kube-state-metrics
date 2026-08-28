@@ -40,11 +40,9 @@ func TestPodStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					ResourceClaims: []v1.PodResourceClaim{
 						{Name: "gpu", ResourceClaimName: ptr.To("shared-gpu-claim")},
@@ -67,11 +65,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					ResourceClaims: []v1.PodResourceClaim{
 						// Template-backed claim with no status resolution yet (pending):
@@ -91,11 +87,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -123,11 +117,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -184,11 +176,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -214,11 +204,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -254,11 +242,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod3",
-					Namespace: "ns3",
-					UID:       "uid3",
-				},
+				Name:      "pod3",
+				Namespace: "ns3",
+				UID:       "uid3",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -314,11 +300,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -345,11 +329,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					InitContainers: []v1.Container{
 						{
@@ -376,11 +358,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -416,11 +396,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					InitContainers: []v1.Container{
 						{
@@ -456,11 +434,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -544,11 +520,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -602,11 +576,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -677,11 +649,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod3",
-					Namespace: "ns3",
-					UID:       "uid3",
-				},
+				Name:      "pod3",
+				Namespace: "ns3",
+				UID:       "uid3",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -744,11 +714,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod6",
-					Namespace: "ns6",
-					UID:       "uid6",
-				},
+				Name:      "pod6",
+				Namespace: "ns6",
+				UID:       "uid6",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -821,11 +789,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod7",
-					Namespace: "ns7",
-					UID:       "uid7",
-				},
+				Name:      "pod7",
+				Namespace: "ns7",
+				UID:       "uid7",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -898,11 +864,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod4",
-					Namespace: "ns4",
-					UID:       "uid4",
-				},
+				Name:      "pod4",
+				Namespace: "ns4",
+				UID:       "uid4",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -950,11 +914,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod5",
-					Namespace: "ns5",
-					UID:       "uid5",
-				},
+				Name:      "pod5",
+				Namespace: "ns5",
+				UID:       "uid5",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -1002,11 +964,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod7",
-					Namespace: "ns7",
-					UID:       "uid7",
-				},
+				Name:      "pod7",
+				Namespace: "ns7",
+				UID:       "uid7",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -1055,12 +1015,10 @@ func TestPodStore(t *testing.T) {
 		{
 
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					UID:               "abc-123-xxx",
-				},
+				Name:              "pod1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				UID:               "abc-123-xxx",
 				Spec: v1.PodSpec{
 					NodeName:          "node1",
 					PriorityClassName: "system-node-critical",
@@ -1114,13 +1072,11 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					UID:               "abc-123-xxx",
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-				},
+				Name:              "pod1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				UID:               "abc-123-xxx",
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
 				Spec: v1.PodSpec{
 					NodeName:          "node1",
 					PriorityClassName: "system-node-critical",
@@ -1140,11 +1096,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					RestartPolicy: v1.RestartPolicyAlways,
 				},
@@ -1158,11 +1112,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					RestartPolicy: v1.RestartPolicyOnFailure,
 				},
@@ -1176,16 +1128,14 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "abc-456-xxx",
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind:       "ReplicaSet",
-							Name:       "rs-name",
-							Controller: &test,
-						},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "abc-456-xxx",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "ReplicaSet",
+						Name:       "rs-name",
+						Controller: &test,
 					},
 				},
 				Spec: v1.PodSpec{
@@ -1270,11 +1220,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					Phase: v1.PodRunning,
 				},
@@ -1292,11 +1240,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 				},
@@ -1315,11 +1261,9 @@ func TestPodStore(t *testing.T) {
 		{
 
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod3",
-					Namespace: "ns3",
-					UID:       "uid3",
-				},
+				Name:      "pod3",
+				Namespace: "ns3",
+				UID:       "uid3",
 				Status: v1.PodStatus{
 					Phase: v1.PodUnknown,
 				},
@@ -1337,12 +1281,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "NodeLost",
@@ -1364,11 +1306,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					QOSClass: v1.PodQOSBestEffort,
 				},
@@ -1384,12 +1324,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "Evicted",
@@ -1404,11 +1342,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod5",
-					Namespace: "ns5",
-					UID:       "uid5",
-				},
+				Name:      "pod5",
+				Namespace: "ns5",
+				UID:       "uid5",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1427,11 +1363,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod6",
-					Namespace: "ns6",
-					UID:       "uid6",
-				},
+				Name:      "pod6",
+				Namespace: "ns6",
+				UID:       "uid6",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1449,11 +1383,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod7disruption",
-					Namespace: "ns7",
-					UID:       "uid7",
-				},
+				Name:      "pod7disruption",
+				Namespace: "ns7",
+				UID:       "uid7",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1472,12 +1404,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "UnexpectedAdmissionError",
@@ -1492,12 +1422,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "NodeAffinity",
@@ -1512,12 +1440,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "Shutdown",
@@ -1532,12 +1458,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "PreemptionByScheduler",
@@ -1552,12 +1476,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "TerminationByKubelet",
@@ -1572,12 +1494,10 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pod4",
-					Namespace:         "ns4",
-					UID:               "uid4",
-					DeletionTimestamp: &metav1.Time{},
-				},
+				Name:              "pod4",
+				Namespace:         "ns4",
+				UID:               "uid4",
+				DeletionTimestamp: &metav1.Time{},
 				Status: v1.PodStatus{
 					Phase:  v1.PodRunning,
 					Reason: "other reason",
@@ -1592,11 +1512,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod4",
-					Namespace: "ns4",
-					UID:       "uid4",
-				},
+				Name:      "pod4",
+				Namespace: "ns4",
+				UID:       "uid4",
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{
@@ -1617,11 +1535,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1643,11 +1559,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1668,11 +1582,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1694,11 +1606,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1719,11 +1629,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1750,11 +1658,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1780,11 +1686,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1811,11 +1715,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1838,11 +1740,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Status: v1.PodStatus{
 					Conditions: []v1.PodCondition{
 						{
@@ -1863,11 +1763,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -1973,11 +1871,9 @@ func TestPodStore(t *testing.T) {
 		{
 
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns2",
-					UID:       "uid2",
-				},
+				Name:      "pod2",
+				Namespace: "ns2",
+				UID:       "uid2",
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
@@ -2045,13 +1941,11 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-					Labels: map[string]string{
-						"app": "example",
-					},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
+				Labels: map[string]string{
+					"app": "example",
 				},
 				Spec: v1.PodSpec{},
 			},
@@ -2065,44 +1959,36 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-					Labels: map[string]string{
-						"app": "example",
-					},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
+				Labels: map[string]string{
+					"app": "example",
 				},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
 						{
 							Name: "myvol",
-							VolumeSource: v1.VolumeSource{
-								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "claim1",
-									ReadOnly:  false,
-								},
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "claim1",
+								ReadOnly:  false,
 							},
 						},
 						{
 							Name: "my-readonly-vol",
-							VolumeSource: v1.VolumeSource{
-								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "claim2",
-									ReadOnly:  true,
-								},
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "claim2",
+								ReadOnly:  true,
 							},
 						},
 						{
-							Name:         "my-ephemeral-vol",
-							VolumeSource: v1.VolumeSource{Ephemeral: &v1.EphemeralVolumeSource{}},
+							Name:      "my-ephemeral-vol",
+							Ephemeral: &v1.EphemeralVolumeSource{},
 						},
 						{
 							Name: "not-pvc-vol",
-							VolumeSource: v1.VolumeSource{
-								EmptyDir: &v1.EmptyDirVolumeSource{
-									Medium: "memory",
-								},
+							EmptyDir: &v1.EmptyDirVolumeSource{
+								Medium: "memory",
 							},
 						},
 					},
@@ -2128,13 +2014,11 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-					Labels: map[string]string{
-						"app": "example",
-					},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
+				Labels: map[string]string{
+					"app": "example",
 				},
 				Spec: v1.PodSpec{
 					RuntimeClassName: &runtimeclass,
@@ -2151,13 +2035,11 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-					Labels: map[string]string{
-						"app": "example",
-					},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
+				Labels: map[string]string{
+					"app": "example",
 				},
 				Spec: v1.PodSpec{},
 			},
@@ -2173,13 +2055,11 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-					Labels: map[string]string{
-						"app": "example",
-					},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
+				Labels: map[string]string{
+					"app": "example",
 				},
 				Spec: v1.PodSpec{},
 			},
@@ -2195,11 +2075,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					NodeSelector: map[string]string{
 						"a": "b",
@@ -2218,11 +2096,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod2",
-					Namespace: "ns1",
-					UID:       "uid6",
-				},
+				Name:      "pod2",
+				Namespace: "ns1",
+				UID:       "uid6",
 				Spec: v1.PodSpec{
 					NodeSelector: map[string]string{
 						"kubernetes.io/os":                 "linux",
@@ -2242,13 +2118,11 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-					Annotations: map[string]string{
-						"app": "example",
-					},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
+				Annotations: map[string]string{
+					"app": "example",
 				},
 				Spec: v1.PodSpec{},
 			},
@@ -2264,11 +2138,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					Tolerations: []v1.Toleration{
 						{
@@ -2312,11 +2184,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					ServiceAccountName: "service-account-name",
 				},
@@ -2332,11 +2202,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod1",
-					Namespace: "ns1",
-					UID:       "uid1",
-				},
+				Name:      "pod1",
+				Namespace: "ns1",
+				UID:       "uid1",
 				Spec: v1.PodSpec{
 					SchedulerName: "scheduler1",
 				},
@@ -2352,11 +2220,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod8",
-					Namespace: "ns8",
-					UID:       "uid8",
-				},
+				Name:      "pod8",
+				Namespace: "ns8",
+				UID:       "uid8",
 				Spec: v1.PodSpec{
 					InitContainers: []v1.Container{
 						{
@@ -2406,11 +2272,9 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod9",
-					Namespace: "ns9",
-					UID:       "uid9",
-				},
+				Name:      "pod9",
+				Namespace: "ns9",
+				UID:       "uid9",
 				Spec: v1.PodSpec{
 					InitContainers: []v1.Container{
 						{
@@ -2477,11 +2341,9 @@ func BenchmarkPodStore(b *testing.B) {
 	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil))
 
 	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod1",
-			Namespace: "ns1",
-			UID:       "uid1",
-		},
+		Name:      "pod1",
+		Namespace: "ns1",
+		UID:       "uid1",
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
@@ -2729,11 +2591,9 @@ func TestKubePodTolerations_DeduplicatesDuplicateEntries_WithTolerationSeconds(t
 	secondsKey2 := int64(0)
 
 	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dup-tolerations-pod-ts",
-			Namespace: "default",
-			UID:       "testuid-ts",
-		},
+		Name:      "dup-tolerations-pod-ts",
+		Namespace: "default",
+		UID:       "testuid-ts",
 		Spec: v1.PodSpec{
 			Tolerations: []v1.Toleration{
 				{

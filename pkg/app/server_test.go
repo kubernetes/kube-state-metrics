@@ -815,11 +815,9 @@ func configMap(client *fake.Clientset, index int) error {
 	i := strconv.Itoa(index)
 
 	configMap := v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "configmap" + i,
-			ResourceVersion: "123456",
-			UID:             types.UID("abc-" + i),
-		},
+		Name:            "configmap" + i,
+		ResourceVersion: "123456",
+		UID:             types.UID("abc-" + i),
 	}
 	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(context.TODO(), &configMap, metav1.CreateOptions{})
 	return err
@@ -829,11 +827,9 @@ func service(client *fake.Clientset, index int) error {
 	i := strconv.Itoa(index)
 
 	service := v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "service" + i,
-			ResourceVersion: "123456",
-			UID:             types.UID("abc-" + i),
-		},
+		Name:            "service" + i,
+		ResourceVersion: "123456",
+		UID:             types.UID("abc-" + i),
 	}
 	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})
 	return err
@@ -843,12 +839,10 @@ func pod(client *fake.Clientset, index int) error {
 	i := strconv.Itoa(index)
 
 	pod := v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "pod" + i,
-			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-			Namespace:         "default",
-			UID:               types.UID("abc-" + i),
-		},
+		Name:              "pod" + i,
+		CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+		Namespace:         "default",
+		UID:               types.UID("abc-" + i),
 		Spec: v1.PodSpec{
 			SchedulerName: "scheduler1",
 			RestartPolicy: v1.RestartPolicyAlways,
@@ -934,11 +928,9 @@ func foo(client *samplefake.Clientset, index int) error {
 	desiredReplicas := int32(index) //nolint:gosec
 
 	foo := samplev1alpha1.Foo{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "foo" + i,
-			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-			UID:               types.UID("abc-" + i),
-		},
+		Name:              "foo" + i,
+		CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+		UID:               types.UID("abc-" + i),
 		Spec: samplev1alpha1.FooSpec{
 			DeploymentName: "foo" + i,
 			Replicas:       &desiredReplicas,

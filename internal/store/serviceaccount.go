@@ -221,8 +221,8 @@ func createServiceAccountLabelsGenerator(allowLabelsList []string) generator.Fam
 	)
 }
 
-func wrapServiceAccountFunc(f func(*v1.ServiceAccount) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapServiceAccountFunc(f func(*v1.ServiceAccount) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		serviceAccount := obj.(*v1.ServiceAccount)
 
 		metricFamily := f(serviceAccount)

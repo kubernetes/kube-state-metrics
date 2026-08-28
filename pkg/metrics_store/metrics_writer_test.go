@@ -34,7 +34,7 @@ import (
 )
 
 func TestWriteAllWithSingleStore(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -122,7 +122,7 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 }
 
 func TestWriteAllWithMultipleStores(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -239,7 +239,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 // TestWriteAllWithEmptyStores checks that nothing is printed if no metrics exist for metric families.
 func TestWriteAllWithEmptyStores(t *testing.T) {
-	genFunc := func(_ interface{}) []metric.FamilyInterface {
+	genFunc := func(_ any) []metric.FamilyInterface {
 		mf1 := metric.Family{
 			Name:    "kube_service_info_1",
 			Metrics: []*metric.Metric{},
@@ -272,7 +272,7 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 // later one holds objects. The headers describe the families of every store, so
 // they must still be written in that case.
 func TestWriteAllWithEmptyFirstStore(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -320,7 +320,7 @@ func TestWriteAllWithEmptyFirstStore(t *testing.T) {
 }
 
 func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -388,7 +388,7 @@ func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T)
 }
 
 func TestWriteAllWithSanitizedDuplicateHeadersWithoutEmptyFamiliesPreservesLaterFamily(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -719,7 +719,7 @@ func BenchmarkWriteAll(b *testing.B) {
 		headers[j] = fmt.Sprintf("# HELP kube_bench_metric_%d benchmark metric %d\n# TYPE kube_bench_metric_%d gauge", j, j, j)
 	}
 
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, _ := meta.Accessor(obj)
 		families := make([]metric.FamilyInterface, nFamilies)
 		for j := 0; j < nFamilies; j++ {

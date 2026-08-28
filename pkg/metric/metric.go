@@ -31,7 +31,7 @@ const (
 
 var (
 	numBufPool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			b := make([]byte, 0, initialNumBufSize)
 			return &b
 		},

@@ -28,11 +28,11 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
-var cr map[string]interface{}
+var cr map[string]any
 
 func init() {
-	type Obj map[string]interface{}
-	type Array []interface{}
+	type Obj map[string]any
+	type Array []any
 	bytes, err := json.Marshal(Obj{
 		"spec": Obj{
 			"replicas": 1,
@@ -110,7 +110,7 @@ func init() {
 
 func Test_addPathLabels(t *testing.T) {
 	type args struct {
-		obj    interface{}
+		obj    any
 		labels map[string]valuePath
 		want   map[string]string
 	}
@@ -585,9 +585,9 @@ func Test_valuePath_Get(t *testing.T) {
 	type testCase struct {
 		name string
 		p    []string
-		want interface{}
+		want any
 	}
-	tt := func(name string, want interface{}, path ...string) testCase {
+	tt := func(name string, want any, path ...string) testCase {
 		return testCase{
 			name: name,
 			p:    path,

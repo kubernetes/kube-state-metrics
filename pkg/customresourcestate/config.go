@@ -166,7 +166,7 @@ type Metric struct {
 
 // ConfigDecoder is for use with FromConfig.
 type ConfigDecoder interface {
-	Decode(v interface{}) (err error)
+	Decode(v any) (err error)
 }
 
 // FromConfig decodes a configuration source into a slice of `customresource.RegistryFactory` that are ready to use.

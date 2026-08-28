@@ -63,7 +63,7 @@ func (s customResourceMetrics) Name() string {
 	return s.ResourceName
 }
 
-func (s customResourceMetrics) CreateClient(cfg *rest.Config) (interface{}, error) {
+func (s customResourceMetrics) CreateClient(cfg *rest.Config) (any, error) {
 	c, err := dynamic.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -84,13 +84,13 @@ func (s customResourceMetrics) MetricFamilyGenerators() (result []generator.Fami
 	return result
 }
 
-func (s customResourceMetrics) ExpectedType() interface{} {
+func (s customResourceMetrics) ExpectedType() any {
 	u := unstructured.Unstructured{}
 	u.SetGroupVersionKind(s.GroupVersionKind)
 	return &u
 }
 
-func (s customResourceMetrics) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher {
+func (s customResourceMetrics) ListWatch(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher {
 	api := customResourceClient.(dynamic.NamespaceableResourceInterface).Namespace(ns)
 	ctx := context.Background()
 	return &cache.ListWatch{

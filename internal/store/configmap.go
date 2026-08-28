@@ -147,8 +147,8 @@ func createConfigMapListWatch(kubeClient clientset.Interface, ns string, fieldSe
 	}
 }
 
-func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		configMap := obj.(*v1.ConfigMap)
 
 		metricFamily := f(configMap)

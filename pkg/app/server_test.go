@@ -678,7 +678,7 @@ func TestCustomResourceExtension(t *testing.T) {
 	kubeClient := fake.NewSimpleClientset()
 	factories := []customresource.RegistryFactory{new(fooFactory)}
 	resources := options.DefaultResources.AsSlice()
-	customResourceClients := make(map[string]interface{}, len(factories))
+	customResourceClients := make(map[string]any, len(factories))
 	// enable custom resource
 	for _, f := range factories {
 		resources = append(resources, f.Name())
@@ -963,7 +963,7 @@ func (f *fooFactory) Name() string {
 }
 
 // CreateClient use fake client set to establish 10 foos.
-func (f *fooFactory) CreateClient(_ *rest.Config) (interface{}, error) {
+func (f *fooFactory) CreateClient(_ *rest.Config) (any, error) {
 	fooClient := samplefake.NewSimpleClientset()
 	for i := 0; i < 10; i++ {
 		err := foo(fooClient, i)
@@ -1011,8 +1011,8 @@ func (f *fooFactory) MetricFamilyGenerators() []generator.FamilyGenerator {
 	}
 }
 
-func wrapFooFunc(f func(*samplev1alpha1.Foo) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapFooFunc(f func(*samplev1alpha1.Foo) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		foo := obj.(*samplev1alpha1.Foo)
 
 		metricFamily := f(foo)
@@ -1026,11 +1026,11 @@ func wrapFooFunc(f func(*samplev1alpha1.Foo) *metric.Family) func(interface{}) *
 	}
 }
 
-func (f *fooFactory) ExpectedType() interface{} {
+func (f *fooFactory) ExpectedType() any {
 	return &samplev1alpha1.Foo{}
 }
 
-func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher {
+func (f *fooFactory) ListWatch(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher {
 	client := customResourceClient.(*samplefake.Clientset)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {

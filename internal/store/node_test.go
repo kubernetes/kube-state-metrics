@@ -37,7 +37,6 @@ func TestNodeStore(t *testing.T) {
 					NodeInfo: v1.NodeSystemInfo{
 						KernelVersion:           "kernel",
 						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
 						OSImage:                 "osimage",
 						ContainerRuntimeVersion: "rkt",
 						SystemUUID:              "6a934e21-5207-4a84-baea-3a952d926c80",
@@ -94,7 +93,6 @@ func TestNodeStore(t *testing.T) {
 					NodeInfo: v1.NodeSystemInfo{
 						KernelVersion:           "kernel",
 						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
 						OSImage:                 "osimage",
 						ContainerRuntimeVersion: "rkt",
 						SystemUUID:              "6a934e21-5207-4a84-baea-3a952d926c80",
@@ -317,7 +315,6 @@ func TestNodeStore(t *testing.T) {
 					NodeInfo: v1.NodeSystemInfo{
 						KernelVersion:           "kernel",
 						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
 						OSImage:                 "osimage",
 						ContainerRuntimeVersion: "rkt",
 						SystemUUID:              "6a934e21-5207-4a84-baea-3a952d926c80",

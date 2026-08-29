@@ -33,13 +33,12 @@ linters:
       # This needs to stay as long as we support exposing v1.endpoints metrics
       - linters:
           - staticcheck
-        text: 'SA1019: v1.Endpoint'
-        path: 'internal/store/endpoint.*.go|internal/store/builder.go'
+        text: 'SA1019: k8s\.io/api/core/v1\.Endpoint'
+        path: 'internal/store/endpoint.*\.go|internal/store/builder.go'
       # TODO: Use functions with context https://github.com/kubernetes/kube-state-metrics/issues/2721
       - linters:
           - staticcheck
-        text: 'SA1019: .*List|Watch'
-        path: 'pkg/sharding/listwatch.go|pkg/watch/watch.*\.go'
+        text: 'SA1019: .*cache\.(ListWatch|ListerWatcher)\)\.(List|Watch)(Func)? is deprecated'
 
     paths:
       - third_party$

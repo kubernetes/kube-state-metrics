@@ -38,7 +38,19 @@ jobs:
 
     - name: Lint
       run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+        # Installed directly rather than through the upstream install.sh: its
+        # checksum lookup greps checksums.txt for the archive name unanchored,
+        # which became ambiguous once releases started shipping .sbom.json
+        # entries alongside the archives.
+        version="${GOLANGCI_LINT_VERSION#v}"
+        base="https://github.com/golangci/golangci-lint/releases/download/${GOLANGCI_LINT_VERSION}"
+        tarball="golangci-lint-${version}-linux-amd64.tar.gz"
+        curl -sSfL -o "${tarball}" "${base}/${tarball}"
+        curl -sSfL -o checksums.txt "${base}/golangci-lint-${version}-checksums.txt"
+        grep -E "  ${tarball}$" checksums.txt | sha256sum -c -
+        tar -xzf "${tarball}"
+        install -D "golangci-lint-${version}-linux-amd64/golangci-lint" "$(go env GOPATH)/bin/golangci-lint"
+        rm -rf "${tarball}" "golangci-lint-${version}-linux-amd64" checksums.txt
         make lint
 
   ci-validate-manifests:

@@ -268,8 +268,8 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 	}
 }
 
-func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		persistentVolumeClaim := obj.(*v1.PersistentVolumeClaim)
 
 		metricFamily := f(persistentVolumeClaim)

@@ -290,8 +290,8 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 	}
 }
 
-func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		daemonSet := obj.(*v1.DaemonSet)
 
 		metricFamily := f(daemonSet)

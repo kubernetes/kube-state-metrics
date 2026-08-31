@@ -53,12 +53,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "apps", Version: "*", Kind: "*"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"},
-					Plural:           "deployments",
+					Group: "apps", Version: "v1", Kind: "Deployment",
+					Plural: "deployments",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"},
-					Plural:           "statefulsets",
+					Group: "apps", Version: "v1", Kind: "StatefulSet",
+					Plural: "statefulsets",
 				},
 			},
 		},
@@ -89,12 +89,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "*", Kind: "TestObject1"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1alpha1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1alpha1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 			},
 		},
@@ -125,12 +125,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "*"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject2"},
-					Plural:           "testobjects2",
+					Group: "testgroup", Version: "v1", Kind: "TestObject2",
+					Plural: "testobjects2",
 				},
 			},
 		},
@@ -161,8 +161,8 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 			},
 		},
@@ -244,11 +244,11 @@ func TestResolveGVKToGVKPsMissingWarnDedup(t *testing.T) {
 func TestExtractGVKPs(t *testing.T) {
 	// crd builds a minimal CRD object, one entry per version. A nil `served`
 	// leaves the field out entirely, mimicking an object that predates it.
-	crd := func(versions ...interface{}) *unstructured.Unstructured {
-		return &unstructured.Unstructured{Object: map[string]interface{}{
-			"spec": map[string]interface{}{
+	crd := func(versions ...any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"spec": map[string]any{
 				"group": "testgroup",
-				"names": map[string]interface{}{
+				"names": map[string]any{
 					"kind":   "TestObject",
 					"plural": "testobjects",
 				},
@@ -256,8 +256,8 @@ func TestExtractGVKPs(t *testing.T) {
 			},
 		}}
 	}
-	version := func(name string, served interface{}) interface{} {
-		v := map[string]interface{}{"name": name}
+	version := func(name string, served any) any {
+		v := map[string]any{"name": name}
 		if served != nil {
 			v["served"] = served
 		}
@@ -265,14 +265,14 @@ func TestExtractGVKPs(t *testing.T) {
 	}
 	gvkp := func(v string) groupVersionKindPlural {
 		return groupVersionKindPlural{
-			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: v, Kind: "TestObject"},
-			Plural:           "testobjects",
+			Group: "testgroup", Version: v, Kind: "TestObject",
+			Plural: "testobjects",
 		}
 	}
 
 	testcases := []struct {
 		desc string
-		obj  interface{}
+		obj  any
 		want []groupVersionKindPlural
 	}{
 		{
@@ -319,48 +319,48 @@ func TestExtractGVKPs(t *testing.T) {
 		// unrecovered panic rather than a skipped object.
 		{
 			desc: "no spec",
-			obj:  &unstructured.Unstructured{Object: map[string]interface{}{}},
+			obj:  &unstructured.Unstructured{Object: map[string]any{}},
 			want: nil,
 		},
 		{
 			desc: "spec is not an object",
-			obj:  &unstructured.Unstructured{Object: map[string]interface{}{"spec": "nope"}},
+			obj:  &unstructured.Unstructured{Object: map[string]any{"spec": "nope"}},
 			want: nil,
 		},
 		{
 			desc: "no group",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{"names": map[string]interface{}{"kind": "K", "plural": "ks"}},
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{"names": map[string]any{"kind": "K", "plural": "ks"}},
 			}},
 			want: nil,
 		},
 		{
 			desc: "no names",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{"group": "g"},
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{"group": "g"},
 			}},
 			want: nil,
 		},
 		{
 			desc: "no versions",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{
 					"group": "g",
-					"names": map[string]interface{}{"kind": "K", "plural": "ks"},
+					"names": map[string]any{"kind": "K", "plural": "ks"},
 				},
 			}},
 			want: nil,
 		},
 		{
 			desc: "a malformed version is skipped, the rest are kept",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{
 					"group": "testgroup",
-					"names": map[string]interface{}{"kind": "TestObject", "plural": "testobjects"},
-					"versions": []interface{}{
+					"names": map[string]any{"kind": "TestObject", "plural": "testobjects"},
+					"versions": []any{
 						"not-an-object",
-						map[string]interface{}{"served": true},
-						map[string]interface{}{"name": "v1", "served": true},
+						map[string]any{"served": true},
+						map[string]any{"name": "v1", "served": true},
 					},
 				},
 			}},
@@ -388,14 +388,12 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Stand in for the informer's event handlers.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < iterations; i++ {
+	wg.Go(func() {
+		for range iterations {
 			r.SafeWrite(func() { r.AppendToMap(gvkp) })
 			r.SafeWrite(func() { r.RemoveFromMap(gvkp) })
 		}
-	}()
+	})
 
 	// Stand in for the discovery poll resolving configured resources, covering
 	// the fixed lookup and all three wildcard paths.
@@ -408,7 +406,7 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 		wg.Add(1)
 		go func(q schema.GroupVersionKind) {
 			defer wg.Done()
-			for i := 0; i < iterations; i++ {
+			for range iterations {
 				if _, err := r.ResolveGVKToGVKPs(q); err != nil {
 					t.Errorf("resolving %v: %v", q, err)
 					return

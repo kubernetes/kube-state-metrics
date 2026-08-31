@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -32,7 +31,7 @@ import (
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDs := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -56,11 +55,9 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 
 	for _, id := range serviceIDs {
 		s := v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "service",
-				Namespace: id,
-				UID:       types.UID(id),
-			},
+			Name:      "service",
+			Namespace: id,
+			UID:       types.UID(id),
 		}
 
 		err := ms.Add(&s)
@@ -85,14 +82,12 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 }
 
 func TestMetricsStoreResourceVersion(t *testing.T) {
-	ms := NewMetricsStore([]string{}, func(_ interface{}) []metric.FamilyInterface { return nil })
+	ms := NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface { return nil })
 
 	// Test Add
 	s1 := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:             "uid1",
-			ResourceVersion: "123",
-		},
+		UID:             "uid1",
+		ResourceVersion: "123",
 	}
 	if err := ms.Add(s1); err != nil {
 		t.Fatal(err)
@@ -126,16 +121,14 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 	}
 
 	// Test Replace
-	if err := ms.Replace([]interface{}{}, "127"); err != nil {
+	if err := ms.Replace([]any{}, "127"); err != nil {
 		t.Fatal(err)
 	}
 	s2 := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:             "uid2",
-			ResourceVersion: "1",
-		},
+		UID:             "uid2",
+		ResourceVersion: "1",
 	}
-	if err := ms.Replace([]interface{}{s2}, "127"); err != nil {
+	if err := ms.Replace([]any{s2}, "127"); err != nil {
 		t.Fatal(err)
 	}
 	if rv := ms.LastStoreSyncResourceVersion(); rv != "127" {
@@ -147,10 +140,10 @@ func BenchmarkAdd(b *testing.B) {
 	const nFamilies = 50
 
 	headers := make([]string, nFamilies)
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, _ := meta.Accessor(obj)
 		families := make([]metric.FamilyInterface, nFamilies)
-		for j := 0; j < nFamilies; j++ {
+		for j := range nFamilies {
 			families[j] = &metric.Family{
 				Name: fmt.Sprintf("kube_bench_metric_%d", j),
 				Metrics: []*metric.Metric{
@@ -167,11 +160,9 @@ func BenchmarkAdd(b *testing.B) {
 
 	store := NewMetricsStore(headers, genFunc)
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       types.UID("uid-0"),
-			Name:      "svc-0",
-			Namespace: "default",
-		},
+		UID:       types.UID("uid-0"),
+		Name:      "svc-0",
+		Namespace: "default",
 	}
 
 	b.ResetTimer()

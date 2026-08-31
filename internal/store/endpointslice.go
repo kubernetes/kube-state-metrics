@@ -291,8 +291,8 @@ func createEndpointsSliceLabels(allowLabelsList []string) generator.FamilyGenera
 	)
 }
 
-func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		endpointSlice := obj.(*discoveryv1.EndpointSlice)
 
 		metricFamily := f(endpointSlice)

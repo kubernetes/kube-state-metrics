@@ -300,8 +300,7 @@ func TestCRReflectorStopChanRespondsToContextCancel(t *testing.T) {
 }
 
 func TestCRReflectorStopChanRespondsToGVKStop(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	gvkStopCh := make(chan struct{})
 	stopCh := newCRReflectorStopCh(ctx, gvkStopCh)
@@ -322,8 +321,7 @@ func TestCRReflectorStopChanRespondsToGVKStop(t *testing.T) {
 }
 
 func TestClusterScopedStoresNotDuplicatedPerNamespace(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -363,38 +361,32 @@ func TestBuilderSharedStateIsRaceFree(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Stand in for discovery registering factories for discovered CRDs.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < iterations; i++ {
+	wg.Go(func() {
+		for i := range iterations {
 			registerStore(fmt.Sprintf("testgroup/v1, Resource=test%d", i), func(*Builder) []cache.Store { return nil })
 		}
-	}()
+	})
 
 	// Stand in for discovery updating the enabled set.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < iterations; i++ {
+	wg.Go(func() {
+		for range iterations {
 			if err := b.WithEnabledResources([]string{"pods"}); err != nil {
 				t.Errorf("enabling resources: %v", err)
 				return
 			}
 		}
-	}()
+	})
 
 	// Stand in for the rebuild reading both.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < iterations; i++ {
+	wg.Go(func() {
+		for range iterations {
 			for _, name := range b.enabledResourcesSnapshot() {
 				lookupStore(name) //nolint:errcheck
 			}
 			availableResources()
 			resourceExists("pods")
 		}
-	}()
+	})
 
 	wg.Wait()
 }

@@ -19,6 +19,7 @@ package customresourcestate
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -146,7 +147,7 @@ type eachValue struct {
 }
 
 type compiledMetric interface {
-	Values(v interface{}) (result []eachValue, err []error)
+	Values(v any) (result []eachValue, err []error)
 	Path() valuePath
 	LabelFromPath() map[string]valuePath
 	Type() metric.Type
@@ -224,13 +225,13 @@ type compiledGauge struct {
 	NilIsZero    bool
 }
 
-func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error) {
+func (c *compiledGauge) Values(v any) (result []eachValue, errs []error) {
 	onError := func(err error) {
 		errs = append(errs, fmt.Errorf("%s: %w", c.Path(), err))
 	}
 
 	switch iter := v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for key, it := range iter {
 			// TODO: Handle multi-length valueFrom paths (https://github.com/kubernetes/kube-state-metrics/pull/1958#discussion_r1099243161).
 			// Try to deduce `valueFrom`'s value from the current element.
@@ -283,7 +284,7 @@ func (c *compiledGauge) Values(v interface{}) (result []eachValue, errs []error)
 			addPathLabels(v, c.LabelFromPath(), ev.Labels)
 			result = append(result, *ev)
 		}
-	case []interface{}:
+	case []any:
 		for i, it := range iter {
 			value, err := c.value(it)
 			if err != nil {
@@ -316,13 +317,13 @@ type compiledInfo struct {
 	labelFromKey string
 }
 
-func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) {
+func (c *compiledInfo) Values(v any) (result []eachValue, errs []error) {
 	onError := func(err ...error) {
 		errs = append(errs, fmt.Errorf("%s: %w", c.Path(), errors.Join(err...)))
 	}
 
 	switch iter := v.(type) {
-	case []interface{}:
+	case []any:
 		for _, obj := range iter {
 			ev, err := c.values(obj)
 			if len(err) > 0 {
@@ -331,7 +332,7 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 			}
 			result = append(result, ev...)
 		}
-	case map[string]interface{}:
+	case map[string]any:
 		value, err := c.values(v)
 		if err != nil {
 			onError(err...)
@@ -370,7 +371,7 @@ func (c *compiledInfo) Values(v interface{}) (result []eachValue, errs []error) 
 	return
 }
 
-func (c *compiledInfo) values(v interface{}) (result []eachValue, err []error) {
+func (c *compiledInfo) values(v any) (result []eachValue, err []error) {
 	if v == nil {
 		return
 	}
@@ -389,8 +390,8 @@ type compiledStateSet struct {
 	List      []string
 }
 
-func (c *compiledStateSet) Values(v interface{}) (result []eachValue, errs []error) {
-	if vs, isArray := v.([]interface{}); isArray {
+func (c *compiledStateSet) Values(v any) (result []eachValue, errs []error) {
+	if vs, isArray := v.([]any); isArray {
 		for _, obj := range vs {
 			ev, err := c.values(obj)
 			if len(err) > 0 {
@@ -414,7 +415,7 @@ func (c *compiledStateSet) fullValuePath() valuePath {
 	return append(append(valuePath{}, c.path...), c.ValueFrom...)
 }
 
-func (c *compiledStateSet) values(v interface{}) (result []eachValue, errs []error) {
+func (c *compiledStateSet) values(v any) (result []eachValue, errs []error) {
 	comparable := c.ValueFrom.Get(v)
 	if comparable == nil {
 		// The path does not resolve to a value, which is expected for status fields
@@ -462,7 +463,7 @@ func compareLabels(a, b map[string]string) int {
 	return len(aKeys) - len(bKeys)
 }
 
-func (c compiledGauge) value(it interface{}) (*eachValue, error) {
+func (c compiledGauge) value(it any) (*eachValue, error) {
 	labels := make(map[string]string)
 	got := c.ValueFrom.Get(it)
 	// If `valueFrom` was not resolved, respect `NilIsZero` and return.
@@ -524,16 +525,14 @@ type compiledFamily struct {
 	ErrorLogV     klog.Level
 }
 
-func (f compiledFamily) BaseLabels(obj map[string]interface{}) map[string]string {
+func (f compiledFamily) BaseLabels(obj map[string]any) map[string]string {
 	result := make(map[string]string)
-	for k, v := range f.Labels {
-		result[k] = v
-	}
+	maps.Copy(result, f.Labels)
 	addPathLabels(obj, f.LabelFromPath, result)
 	return result
 }
 
-func addPathLabels(obj interface{}, labels map[string]valuePath, result map[string]string) {
+func addPathLabels(obj any, labels map[string]valuePath, result map[string]string) {
 	// *prefixed is a special case, it means copy an object
 	// always do that first so other labels can override
 	var stars []string
@@ -545,7 +544,7 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 	slices.Sort(stars)
 	for _, star := range stars {
 		m := labels[star].Get(obj)
-		if kv, ok := m.(map[string]interface{}); ok {
+		if kv, ok := m.(map[string]any); ok {
 			for k, v := range kv {
 				if strings.HasSuffix(star, "*") {
 					k = star[:len(star)-1] + k
@@ -568,13 +567,13 @@ func addPathLabels(obj interface{}, labels map[string]valuePath, result map[stri
 }
 
 type pathOp struct {
-	op   func(interface{}) interface{}
+	op   func(any) any
 	part string
 }
 
 type valuePath []pathOp
 
-func (p valuePath) Get(obj interface{}) interface{} {
+func (p valuePath) Get(obj any) any {
 	for _, op := range p {
 		if obj == nil {
 			return nil
@@ -611,10 +610,10 @@ func compilePath(path []string) (out valuePath, _ error) {
 			boolVal, notBool := strconv.ParseBool(val)
 			out = append(out, pathOp{
 				part: part,
-				op: func(m interface{}) interface{} {
-					if s, ok := m.([]interface{}); ok {
+				op: func(m any) any {
+					if s, ok := m.([]any); ok {
 						for _, v := range s {
-							if m, ok := v.(map[string]interface{}); ok {
+							if m, ok := v.(map[string]any); ok {
 								candidate, set := m[key]
 								if !set {
 									continue
@@ -645,8 +644,8 @@ func compilePath(path []string) (out valuePath, _ error) {
 		} else {
 			out = append(out, pathOp{
 				part: part,
-				op: func(m interface{}) interface{} {
-					if mp, ok := m.(map[string]interface{}); ok {
+				op: func(m any) any {
+					if mp, ok := m.(map[string]any); ok {
 						kv := strings.Split(part, "=")
 						if len(kv) == 2 /* k=v */ {
 							key := kv[0]
@@ -658,7 +657,7 @@ func compilePath(path []string) (out valuePath, _ error) {
 							}
 						}
 						return mp[part]
-					} else if s, ok := m.([]interface{}); ok {
+					} else if s, ok := m.([]any); ok {
 						i, err := strconv.Atoi(part)
 						if err != nil {
 							// This means we are here: [ <string>, <int>, ... ] (eg., [ "foo", "0", ... ], i.e., <path>.foo[0]...
@@ -694,7 +693,7 @@ func famGen(f compiledFamily) generator.FamilyGenerator {
 		Name: f.Name,
 		Type: f.Each.Type(),
 		Help: f.Help,
-		GenerateFunc: func(obj interface{}) *metric.Family {
+		GenerateFunc: func(obj any) *metric.Family {
 			if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
 				obj = d.Obj
 			}
@@ -730,7 +729,7 @@ func generate(u *unstructured.Unstructured, f compiledFamily, errLog klog.Verbos
 	}
 }
 
-func scrapeValuesFor(e compiledEach, obj map[string]interface{}) ([]eachValue, []error) {
+func scrapeValuesFor(e compiledEach, obj map[string]any) ([]eachValue, []error) {
 	v := e.Path().Get(obj)
 	result, errs := e.Values(v)
 
@@ -742,7 +741,7 @@ func scrapeValuesFor(e compiledEach, obj map[string]interface{}) ([]eachValue, [
 }
 
 // toFloat64 converts the value to a float64 which is the value type for any metric.
-func toFloat64(value interface{}, nilIsZero bool) (float64, error) {
+func toFloat64(value any, nilIsZero bool) (float64, error) {
 	var v float64
 	// same as bool==false but for bool pointers
 	if value == nil {

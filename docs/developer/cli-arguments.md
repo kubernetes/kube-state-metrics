@@ -84,7 +84,7 @@ Flags:
       --stderrthreshold severity                             logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true unless -legacy_stderr_threshold_behavior=false) (default 2)
       --store-sync-timeout duration                          Maximum time to wait for reflector stores to complete their initial list before swapping metrics writers during a rebuild. (default 2m0s)
       --telemetry-host string                                Host to expose kube-state-metrics self metrics on. (default "::")
-      --telemetry-port int                                   Port to expose kube-state-metrics self metrics on. Readiness is reported at /readyz on this port. (default 8081)
+      --telemetry-port int                                   Port to expose kube-state-metrics self metrics on. (default 8081)
       --tls-config string                                    Path to the TLS configuration file
       --total-shards int                                     The total number of shards. Sharding is disabled when total shards is set to 1. (default 1)
       --track-unscheduled-pods                               This configuration is used in conjunction with node configuration. When this configuration is true, node configuration is empty and the metric of unscheduled pods is fetched from the Kubernetes API Server. This is experimental.

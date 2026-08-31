@@ -633,3 +633,33 @@ func mustCompilePath(t *testing.T, path ...string) valuePath {
 	}
 	return out
 }
+
+// Wildcard resolution compiles one Resource copy per GVK off a shared
+// CommonLabels map, so writing GVK labels into it would clobber every copy.
+func Test_compile_doesNotShareCommonLabels(t *testing.T) {
+	configured := map[string]string{"team": "myteam"}
+	base := Resource{
+		Labels: Labels{CommonLabels: configured},
+		Metrics: []Generator{{
+			Name: "foo",
+			Each: Metric{Type: metric.Gauge, Gauge: &MetricGauge{MetricMeta: MetricMeta{Path: []string{"status"}}}},
+		}},
+	}
+
+	v1 := base
+	v1.GroupVersionKind = GroupVersionKind{Group: "myteam.io", Version: "v1", Kind: "Foo"}
+	familiesV1, err := compile(v1)
+	assert.NoError(t, err)
+
+	v2 := base
+	v2.GroupVersionKind = GroupVersionKind{Group: "myteam.io", Version: "v2", Kind: "Bar"}
+	familiesV2, err := compile(v2)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "v1", familiesV1[0].Labels[customResourceState+"_version"])
+	assert.Equal(t, "Foo", familiesV1[0].Labels[customResourceState+"_kind"])
+	assert.Equal(t, "v2", familiesV2[0].Labels[customResourceState+"_version"])
+	assert.Equal(t, "Bar", familiesV2[0].Labels[customResourceState+"_kind"])
+
+	assert.Equal(t, map[string]string{"team": "myteam"}, configured)
+}

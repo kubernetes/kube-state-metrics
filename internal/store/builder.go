@@ -160,7 +160,8 @@ func (b *Builder) ReplaceEnabledCustomResources(r []string) error {
 			kept = append(kept, name)
 		}
 	}
-	b.enabledResources = append(kept, r...)
+	b.enabledResources = kept
+	b.enabledResources = append(b.enabledResources, r...)
 	slices.Sort(b.enabledResources)
 	b.enabledResources = slices.Compact(b.enabledResources)
 

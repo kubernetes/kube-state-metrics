@@ -407,8 +407,8 @@ func TestReplaceEnabledCustomResources(t *testing.T) {
 
 	customA := "example.com/v1, Resource=foos"
 	customB := "example.com/v1, Resource=bars"
-	registerStore(customA, func(b *Builder) []cache.Store { return nil })
-	registerStore(customB, func(b *Builder) []cache.Store { return nil })
+	registerStore(customA, func(*Builder) []cache.Store { return nil })
+	registerStore(customB, func(*Builder) []cache.Store { return nil })
 	t.Cleanup(func() {
 		availableStoresMu.Lock()
 		delete(availableStores, customA)

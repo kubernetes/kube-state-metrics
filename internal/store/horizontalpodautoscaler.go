@@ -53,7 +53,7 @@ var (
 	targetMetricLabels = []string{"metric_name", "metric_target_type", "container"}
 )
 
-func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createHPAInfo(),
 		createHPAMetaDataGeneration(),
@@ -65,8 +65,8 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 		createHPAStatusTargetMetric(),
 		createHPAStatusCurrentReplicas(),
 		createHPAStatusDesiredReplicas(),
-		createHPAAnnotations(allowAnnotationsList),
-		createHPALabels(allowLabelsList),
+		createHPAAnnotations(allowAnnotationsList, annotationsPrefix),
+		createHPALabels(allowLabelsList, labelsPrefix),
 		createHPAStatusCondition(),
 		createHPACreated(),
 		createHPADeletionTimestamp(),
@@ -368,7 +368,7 @@ func createHPAStatusDesiredReplicas() generator.FamilyGenerator {
 	)
 }
 
-func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerator {
+func createHPAAnnotations(allowAnnotationsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descHorizontalPodAutoscalerAnnotationsName,
 		descHorizontalPodAutoscalerAnnotationsHelp,
@@ -379,7 +379,7 @@ func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerat
 			if len(allowAnnotationsList) == 0 {
 				return &metric.Family{}
 			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", a.Annotations, allowAnnotationsList)
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues(prefix, a.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
@@ -393,7 +393,7 @@ func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerat
 	)
 }
 
-func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
+func createHPALabels(allowLabelsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descHorizontalPodAutoscalerLabelsName,
 		descHorizontalPodAutoscalerLabelsHelp,
@@ -404,7 +404,7 @@ func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
 			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", a.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues(prefix, a.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{

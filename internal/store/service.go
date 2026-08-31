@@ -39,7 +39,7 @@ var (
 	descServiceLabelsDefaultLabels = []string{"namespace", "service", "uid"}
 )
 
-func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_service_info",
@@ -100,7 +100,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, s.Annotations, allowAnnotationsList)
 				m := metric.Metric{
 					LabelKeys:   annotationKeys,
 					LabelValues: annotationValues,
@@ -119,7 +119,7 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, s.Labels, allowLabelsList)
 				m := metric.Metric{
 					LabelKeys:   labelKeys,
 					LabelValues: labelValues,

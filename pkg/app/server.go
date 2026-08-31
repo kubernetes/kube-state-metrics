@@ -170,7 +170,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 
 	if opts.AutoGoMemlimit {
-		if _, err := memlimit.SetGoMemLimitWithOpts(
+		if _, err := memlimit.Set(
 			memlimit.WithRatio(opts.AutoGoMemlimitRatio),
 			memlimit.WithProvider(
 				memlimit.ApplyFallback(

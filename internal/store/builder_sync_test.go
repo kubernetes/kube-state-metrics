@@ -43,7 +43,9 @@ func TestWaitForStoresSync_Timeout(t *testing.T) {
 		},
 	}
 	reflector := cache.NewReflectorWithOptions(lw, &v1.Pod{}, store, cache.ReflectorOptions{})
+	b.reflectorsMu.Lock()
 	b.reflectors = []*cache.Reflector{reflector}
+	b.reflectorsMu.Unlock()
 
 	if b.WaitForStoresSync(context.Background(), 50*time.Millisecond) {
 		t.Fatal("expected sync to time out before reflector runs")

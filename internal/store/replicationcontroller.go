@@ -36,12 +36,13 @@ var (
 	descReplicationControllerLabelsDefaultLabels = []string{"namespace", "replicationcontroller"}
 
 	replicationControllerMetricFamilies = []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -56,12 +57,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_status_replicas",
 			"The number of replicas per ReplicationController.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -72,12 +74,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_status_fully_labeled_replicas",
 			"The number of fully labeled replicas per ReplicationController.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -88,12 +91,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_status_ready_replicas",
 			"The number of ready replicas per ReplicationController.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -104,12 +108,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_status_available_replicas",
 			"The number of available replicas per ReplicationController.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -120,12 +125,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_status_observed_generation",
 			"The generation observed by the ReplicationController controller.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -136,12 +142,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_spec_replicas",
 			"Number of desired pods for a ReplicationController.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -156,12 +163,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_replicationcontroller_metadata_generation",
 			"Sequence number representing a specific generation of the desired state.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapReplicationControllerDefaultLabels(nil),
 			wrapReplicationControllerFunc(func(r *v1.ReplicationController) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -212,6 +220,14 @@ var (
 	}
 )
 
+func wrapReplicationControllerDefaultLabels(labels []string) []string {
+	return mergeKeys(descReplicationControllerLabelsDefaultLabels, labels)
+}
+
+func wrapReplicationControllerDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		replicationController := obj.(*v1.ReplicationController)
@@ -219,7 +235,8 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Fam
 		metricFamily := f(replicationController)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descReplicationControllerLabelsDefaultLabels, []string{replicationController.Namespace, replicationController.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapReplicationControllerDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapReplicationControllerDefaultLabelValues(replicationController.Namespace, replicationController.Name, m.LabelValues)
 		}
 
 		return metricFamily

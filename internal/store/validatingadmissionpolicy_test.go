@@ -80,6 +80,7 @@ func TestValidatingAdmissionPolicyStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(validatingAdmissionPolicyMetricFamilies)
 		c.Headers = generator.ExtractMetricFamilyHeaders(validatingAdmissionPolicyMetricFamilies)
+		c.FamilyGens = validatingAdmissionPolicyMetricFamilies
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

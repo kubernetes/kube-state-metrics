@@ -96,6 +96,7 @@ func TestLeaseStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(leaseMetricFamilies)
 		c.Headers = generator.ExtractMetricFamilyHeaders(leaseMetricFamilies)
+		c.FamilyGens = leaseMetricFamilies
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%v", i, err)
 		}

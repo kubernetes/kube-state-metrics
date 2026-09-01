@@ -83,6 +83,7 @@ func TestLimitRangeStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(limitRangeMetricFamilies)
 		c.Headers = generator.ExtractMetricFamilyHeaders(limitRangeMetricFamilies)
+		c.FamilyGens = limitRangeMetricFamilies
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

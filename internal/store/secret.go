@@ -40,14 +40,25 @@ var (
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 )
 
+func wrapSecretDefaultLabels(labels []string) []string {
+	return mergeKeys(descSecretLabelsDefaultLabels, labels)
+}
+
+func wrapSecretDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	typeLabelKeys := []string{"type"}
+
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_secret_info",
 			"Information about secret.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapSecretDefaultLabels(nil),
 			wrapSecretFunc(func(_ *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -58,17 +69,18 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_secret_type",
 			"Type about secret.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapSecretDefaultLabels(typeLabelKeys),
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"type"},
+							LabelKeys:   typeLabelKeys,
 							LabelValues: []string{string(s.Type)},
 							Value:       1,
 						},
@@ -99,12 +111,13 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descSecretLabelsName,
 			descSecretLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapSecretDefaultLabels([]string{"label_SECRET_LABEL"}),
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -122,12 +135,13 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_secret_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapSecretDefaultLabels(nil),
 			wrapSecretFunc(func(s *v1.Secret) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -211,7 +225,8 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(interface{}) *metric
 		metricFamily := f(secret)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descSecretLabelsDefaultLabels, []string{secret.Namespace, secret.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapSecretDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapSecretDefaultLabelValues(secret.Namespace, secret.Name, m.LabelValues)
 		}
 
 		return metricFamily

@@ -198,7 +198,7 @@ docker images -a
 # Use Docker's machine-readable output - the human table columns/spacing can change between Docker versions.
 KUBE_STATE_METRICS_IMAGE_TAG="$(
     docker images --format '{{.Repository}} {{.Tag}}' \
-        | awk -v repo="${KUBE_STATE_METRICS_IMAGE_NAME}" '$1 == repo && $2 != "latest" { print $2; exit }'
+        | awk -v repo="${KUBE_STATE_METRICS_IMAGE_NAME}" '$1 == repo && $2 != "latest" { if (!found) { print $2; found=1 } }'
 )"
 if [[ -z "${KUBE_STATE_METRICS_IMAGE_TAG}" ]]; then
     echo "ERROR: could not determine a local image tag for ${KUBE_STATE_METRICS_IMAGE_NAME} (excluding 'latest')." >&2
@@ -247,18 +247,9 @@ echo "start e2e test for kube-state-metrics"
 KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy'
 KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
 
-go test -v ./tests/e2e/main_test.go --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
+echo "running metrics stability test..."
+go test -v ./tests/e2e --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL} -run TestMetricsStability
 
-# TODO: re-implement the following test cases in Go with the goal of removing this file.
-echo "access kube-state-metrics metrics endpoint"
-curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/metrics" >${KUBE_STATE_METRICS_LOG_DIR}/metrics
-
-KUBE_STATE_METRICS_STATUS=$(curl -s "http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:http-metrics/proxy/healthz")
-if [[ "${KUBE_STATE_METRICS_STATUS}" == "OK" ]]; then
-    echo "kube-state-metrics is still running after accessing metrics endpoint"
-fi
-
-# wait for klog to flush to log file
 sleep 33
 klog_err=E$(date +%m%d)
 echo "check for errors in logs"

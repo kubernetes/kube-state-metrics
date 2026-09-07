@@ -98,6 +98,7 @@ func TestRoleStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(roleMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		c.Headers = generator.ExtractMetricFamilyHeaders(roleMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = roleMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

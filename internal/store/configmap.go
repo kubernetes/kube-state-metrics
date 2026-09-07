@@ -35,6 +35,14 @@ var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 )
 
+func wrapConfigMapDefaultLabels(labels []string) []string {
+	return mergeKeys(descConfigMapLabelsDefaultLabels, labels)
+}
+
+func wrapConfigMapDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -59,12 +67,13 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_configmap_labels",
 			"Kubernetes labels converted to Prometheus labels.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapConfigMapDefaultLabels([]string{"label_CONFIGMAP_LABEL"}),
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -81,12 +90,13 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_configmap_info",
 			"Information about configmap.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapConfigMapDefaultLabels(nil),
 			wrapConfigMapFunc(func(_ *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
@@ -97,12 +107,13 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_configmap_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapConfigMapDefaultLabels(nil),
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -154,7 +165,8 @@ func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(interface{}) *
 		metricFamily := f(configMap)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descConfigMapLabelsDefaultLabels, []string{configMap.Namespace, configMap.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapConfigMapDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapConfigMapDefaultLabelValues(configMap.Namespace, configMap.Name, m.LabelValues)
 		}
 
 		return metricFamily

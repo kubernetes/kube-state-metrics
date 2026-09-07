@@ -33,14 +33,16 @@ import (
 
 var (
 	descLimitRangeLabelsDefaultLabels = []string{"namespace", "limitrange"}
+	descLimitRangeLabels              = []string{"resource", "type", "constraint"}
 
 	limitRangeMetricFamilies = []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_limitrange",
 			"Information about limit range.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapLimitRangeDefaultLabels(descLimitRangeLabels),
 			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -83,7 +85,7 @@ var (
 				}
 
 				for _, m := range ms {
-					m.LabelKeys = []string{"resource", "type", "constraint"}
+					m.LabelKeys = descLimitRangeLabels
 				}
 
 				return &metric.Family{
@@ -91,12 +93,13 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_limitrange_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapLimitRangeDefaultLabels(nil),
 			wrapLimitRangeFunc(func(r *v1.LimitRange) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -122,11 +125,20 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(interface{})
 		metricFamily := f(limitRange)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descLimitRangeLabelsDefaultLabels, []string{limitRange.Namespace, limitRange.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapLimitRangeDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapLimitRangeDefaultLabelValues(limitRange.Namespace, limitRange.Name, m.LabelValues)
 		}
 
 		return metricFamily
 	}
+}
+
+func wrapLimitRangeDefaultLabels(labels []string) []string {
+	return mergeKeys(descLimitRangeLabelsDefaultLabels, labels)
+}
+
+func wrapLimitRangeDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
 }
 
 func createLimitRangeListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {

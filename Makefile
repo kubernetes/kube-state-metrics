@@ -83,6 +83,16 @@ test-unit:
 test-rules:
 	${PROMTOOL_CLI} test rules tests/rules/alerts-test.yaml
 
+# Regenerates the golden list of STABLE metrics. Run this when you
+# intentionally add, remove, or rename a STABLE metric, then commit the
+# updated golden file.
+update-stable-metrics:
+	hack/update-stable-metrics.sh
+
+# Verifies that the golden list of STABLE metrics is up to date. Runs in CI.
+verify-stable-metrics:
+	hack/verify-stable-metrics.sh
+
 shellcheck:
 	${DOCKER_CLI} run -v "${PWD}:/mnt" koalaman/shellcheck:stable $(shell find . -type f -name "*.sh" -not -path "*vendor*")
 
@@ -190,4 +200,4 @@ install-promtool:
 	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" |\
 	tar xvz --strip-components=1 prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}/promtool
 
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template 
+.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-rules test-benchmark-compare update-stable-metrics verify-stable-metrics clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template 

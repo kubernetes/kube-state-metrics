@@ -41,14 +41,29 @@ var (
 	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
 )
 
+func wrapIngressDefaultLabels(labels []string) []string {
+	return mergeKeys(descIngressLabelsDefaultLabels, labels)
+}
+
+func wrapIngressDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	infoLabelKeys := []string{"ingressclass"}
+	pathLabelKeys := []string{"host", "path", "path_type", "service_name", "service_port", "resource_api_group", "resource_kind", "resource_name"}
+	servicePathLabelKeys := []string{"host", "path", "path_type", "service_name", "service_port"}
+	resourcePathLabelKeys := []string{"host", "path", "path_type", "resource_api_group", "resource_kind", "resource_name"}
+	tlsLabelKeys := []string{"tls_host", "secret"}
+
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_ingress_info",
 			"Information about ingress.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapIngressDefaultLabels(infoLabelKeys),
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ingressClassName := "_default"
 				if i.Spec.IngressClassName != nil {
@@ -61,7 +76,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"ingressclass"},
+							LabelKeys:   infoLabelKeys,
 							LabelValues: []string{ingressClassName},
 							Value:       1,
 						},
@@ -90,12 +105,13 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descIngressLabelsName,
 			descIngressLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapIngressDefaultLabels([]string{"label_INGRESS_LABEL"}),
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -112,12 +128,13 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_ingress_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapIngressDefaultLabels(nil),
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -144,12 +161,13 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_ingress_path",
 			"Ingress host, paths and backend service information.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapIngressDefaultLabels(pathLabelKeys),
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, rule := range i.Spec.Rules {
@@ -161,7 +179,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 							}
 							if path.Backend.Service != nil {
 								ms = append(ms, &metric.Metric{
-									LabelKeys:   []string{"host", "path", "path_type", "service_name", "service_port"},
+									LabelKeys:   servicePathLabelKeys,
 									LabelValues: []string{rule.Host, path.Path, pathType, path.Backend.Service.Name, strconv.Itoa(int(path.Backend.Service.Port.Number))},
 									Value:       1,
 								})
@@ -171,7 +189,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 									apiGroup = *path.Backend.Resource.APIGroup
 								}
 								ms = append(ms, &metric.Metric{
-									LabelKeys:   []string{"host", "path", "path_type", "resource_api_group", "resource_kind", "resource_name"},
+									LabelKeys:   resourcePathLabelKeys,
 									LabelValues: []string{rule.Host, path.Path, pathType, apiGroup, path.Backend.Resource.Kind, path.Backend.Resource.Name},
 									Value:       1,
 								})
@@ -184,18 +202,19 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_ingress_tls",
 			"Ingress TLS host and secret information.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapIngressDefaultLabels(tlsLabelKeys),
 			wrapIngressFunc(func(i *networkingv1.Ingress) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, tls := range i.Spec.TLS {
 					for _, host := range tls.Hosts {
 						ms = append(ms, &metric.Metric{
-							LabelKeys:   []string{"tls_host", "secret"},
+							LabelKeys:   tlsLabelKeys,
 							LabelValues: []string{host, tls.SecretName},
 							Value:       1,
 						})
@@ -216,7 +235,8 @@ func wrapIngressFunc(f func(*networkingv1.Ingress) *metric.Family) func(interfac
 		metricFamily := f(ingress)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descIngressLabelsDefaultLabels, []string{ingress.Namespace, ingress.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapIngressDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapIngressDefaultLabelValues(ingress.Namespace, ingress.Name, m.LabelValues)
 		}
 
 		return metricFamily

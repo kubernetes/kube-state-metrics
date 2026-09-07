@@ -168,6 +168,7 @@ func TestResourceQuotaStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(resourceQuotaMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		c.Headers = generator.ExtractMetricFamilyHeaders(resourceQuotaMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = resourceQuotaMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

@@ -39,14 +39,23 @@ var (
 	descDaemonSetLabelsDefaultLabels = []string{"namespace", "daemonset"}
 )
 
+func wrapDaemonSetDefaultLabels(labels []string) []string {
+	return mergeKeys(descDaemonSetLabelsDefaultLabels, labels)
+}
+
+func wrapDaemonSetDefaultLabelValues(namespace, name string, values []string) []string {
+	return mergeValues([]string{namespace, name}, values)
+}
+
 func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -63,12 +72,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_current_number_scheduled",
 			"The number of nodes running at least one daemon pod and are supposed to.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -81,12 +91,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_desired_number_scheduled",
 			"The number of nodes that should be running the daemon pod.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -99,12 +110,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_number_available",
 			"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -117,12 +129,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_number_misscheduled",
 			"The number of nodes running a daemon pod but are not supposed to.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -135,12 +148,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_number_ready",
 			"The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -153,12 +167,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_number_unavailable",
 			"The number of nodes that should be running the daemon pod and have none of the daemon pod running and available",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -171,12 +186,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_observed_generation",
 			"The most recent generation observed by the daemon set controller.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -189,12 +205,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_status_updated_number_scheduled",
 			"The total number of nodes that are running updated daemon pod",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -205,12 +222,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_daemonset_metadata_generation",
 			"Sequence number representing a specific generation of the desired state.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels(nil),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -265,12 +283,13 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descDaemonSetLabelsName,
 			descDaemonSetLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapDaemonSetDefaultLabels([]string{"label_DAEMONSET_LABEL"}),
 			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -297,7 +316,8 @@ func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(interface{}) *
 		metricFamily := f(daemonSet)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descDaemonSetLabelsDefaultLabels, []string{daemonSet.Namespace, daemonSet.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapDaemonSetDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapDaemonSetDefaultLabelValues(daemonSet.Namespace, daemonSet.Name, m.LabelValues)
 		}
 
 		return metricFamily

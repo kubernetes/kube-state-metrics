@@ -34,6 +34,7 @@ type FamilyGenerator struct {
 	Name              string
 	Help              string
 	Type              metric.Type
+	Labels            []string
 	DeprecatedVersion string
 	StabilityLevel    basemetrics.StabilityLevel
 	OptIn             bool
@@ -42,10 +43,17 @@ type FamilyGenerator struct {
 // NewFamilyGeneratorWithStability creates new FamilyGenerator instances with metric
 // stabilityLevel.
 func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+	return NewFamilyGeneratorWithLabels(name, help, metricType, stabilityLevel, deprecatedVersion, nil, generateFunc)
+}
+
+// NewFamilyGeneratorWithLabels creates new FamilyGenerator instances with metric
+// stabilityLevel and the complete set of label names emitted by the metric.
+func NewFamilyGeneratorWithLabels(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, labels []string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
 	f := &FamilyGenerator{
 		Name:              name,
 		Type:              metricType,
 		Help:              help,
+		Labels:            labels,
 		OptIn:             false,
 		StabilityLevel:    stabilityLevel,
 		DeprecatedVersion: deprecatedVersion,

@@ -260,6 +260,7 @@ func TestDaemonSetStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		c.Headers = generator.ExtractMetricFamilyHeaders(daemonSetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.FamilyGens = daemonSetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList)
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

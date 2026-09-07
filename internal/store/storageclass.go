@@ -40,14 +40,25 @@ var (
 	defaultVolumeBindingMode            = storagev1.VolumeBindingImmediate
 )
 
+func wrapStorageClassDefaultLabels(labels []string) []string {
+	return mergeKeys(descStorageClassLabelsDefaultLabels, labels)
+}
+
+func wrapStorageClassDefaultLabelValues(name string, values []string) []string {
+	return mergeValues([]string{name}, values)
+}
+
 func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	infoLabelKeys := []string{"provisioner", "reclaim_policy", "volume_binding_mode"}
+
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_storageclass_info",
 			"Information about storageclass.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapStorageClassDefaultLabels(infoLabelKeys),
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 
 				// Add default values if missing.
@@ -60,19 +71,20 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				}
 
 				m := metric.Metric{
-					LabelKeys:   []string{"provisioner", "reclaim_policy", "volume_binding_mode"},
+					LabelKeys:   infoLabelKeys,
 					LabelValues: []string{s.Provisioner, string(*s.ReclaimPolicy), string(*s.VolumeBindingMode)},
 					Value:       1,
 				}
 				return &metric.Family{Metrics: []*metric.Metric{&m}}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_storageclass_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapStorageClassDefaultLabels(nil),
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				ms := []*metric.Metric{}
 				if !s.CreationTimestamp.IsZero() {
@@ -107,12 +119,13 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descStorageClassLabelsName,
 			descStorageClassLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapStorageClassDefaultLabels([]string{"label_STORAGECLASS_LABEL"}),
 			wrapStorageClassFunc(func(s *storagev1.StorageClass) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -139,7 +152,8 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(i
 		metricFamily := f(storageClass)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descStorageClassLabelsDefaultLabels, []string{storageClass.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys = wrapStorageClassDefaultLabels(m.LabelKeys)
+			m.LabelValues = wrapStorageClassDefaultLabelValues(storageClass.Name, m.LabelValues)
 		}
 
 		return metricFamily

@@ -317,7 +317,7 @@ func TestCatastrophicBacktrackTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	var exp = "Lorem ipsum dolor sit amet, consectetur adipiscing elit"
-	exp = strings.Repeat(exp, 2^10)
+	exp = strings.Repeat(exp, 1024)
 
 	timeout := regexpDefaultTimeout
 	t.Logf("regexp.DefaultMatchTimeout set to: %v", timeout)

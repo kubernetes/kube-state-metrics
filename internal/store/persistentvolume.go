@@ -47,11 +47,11 @@ var (
 	descPersistentVolumeCSIAttributesHelp = "CSI attributes of the Persistent Volume."
 )
 
-func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createPersistentVolumeClaimRef(),
-		createPersistentVolumeAnnotations(allowAnnotationsList),
-		createPersistentVolumeLabels(allowLabelsList),
+		createPersistentVolumeAnnotations(allowAnnotationsList, annotationsPrefix),
+		createPersistentVolumeLabels(allowLabelsList, labelsPrefix),
 		createPersistentVolumeStatusPhase(),
 		createPersistentVolumeInfo(),
 		createPersistentVolumeCapacityBytes(),
@@ -122,7 +122,7 @@ func createPersistentVolumeClaimRef() generator.FamilyGenerator {
 	)
 }
 
-func createPersistentVolumeAnnotations(allowAnnotationsList []string) generator.FamilyGenerator {
+func createPersistentVolumeAnnotations(allowAnnotationsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descPersistentVolumeAnnotationsName,
 		descPersistentVolumeAnnotationsHelp,
@@ -133,7 +133,7 @@ func createPersistentVolumeAnnotations(allowAnnotationsList []string) generator.
 			if len(allowAnnotationsList) == 0 {
 				return &metric.Family{}
 			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues(prefix, p.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
@@ -147,7 +147,7 @@ func createPersistentVolumeAnnotations(allowAnnotationsList []string) generator.
 	)
 }
 
-func createPersistentVolumeLabels(allowLabelsList []string) generator.FamilyGenerator {
+func createPersistentVolumeLabels(allowLabelsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descPersistentVolumeLabelsName,
 		descPersistentVolumeLabelsHelp,
@@ -158,7 +158,7 @@ func createPersistentVolumeLabels(allowLabelsList []string) generator.FamilyGene
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
 			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues(prefix, p.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{

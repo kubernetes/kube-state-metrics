@@ -141,7 +141,11 @@ func nextFreeLabelName(base string, count *int, used map[string]int) string {
 }
 
 func labelName(prefix, labelName string) string {
-	return prefix + "_" + lintLabelName(SanitizeLabelName(labelName))
+	sanitized := lintLabelName(SanitizeLabelName(labelName))
+	if prefix == "" {
+		return sanitized
+	}
+	return prefix + "_" + sanitized
 }
 
 // SanitizeLabelName replaces all invalid characters with an underscore.

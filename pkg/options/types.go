@@ -301,6 +301,9 @@ func (l *LabelsAllowList) Set(value string) error {
 			firstWordPos = i + 1
 		}
 	}
+	if value != "" && !strings.HasSuffix(value, "]") {
+		return errLabelsAllowListFormat
+	}
 
 	// check amount of wildcards per label
 	for _, group := range m {

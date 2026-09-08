@@ -133,6 +133,20 @@ func (rm *resourceManager) writeResourceFiles(t *testing.T) {
 	klog.InfoS("created initial and new CR and CRD manifests")
 }
 
+func waitForCRDEstablished(t *testing.T, name string) {
+	t.Helper()
+	err := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		cmd := exec.CommandContext(ctx, "kubectl", "wait", "--for=condition=Established", "crd/"+name, "--timeout=1s") //nolint:gosec
+		if err := cmd.Run(); err != nil {
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		t.Fatalf("timed out waiting for CRD %q to be established: %v", name, err)
+	}
+}
+
 func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	// populateTimeout is the timeout on populating the cache for the first time.
 	const populateTimeout = 10 * time.Second
@@ -190,6 +204,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to apply initial crd: %v", err)
 	}
+	waitForCRDEstablished(t, "myplatforms.contoso.com")
 	err = exec.Command("kubectl", "apply", "-f", rm.initCrFile.Name()).Run() //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to apply initial cr: %v", err)
@@ -234,6 +249,7 @@ func TestVariableVKsDiscoveryAndResolution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to apply new crd: %v", err)
 	}
+	waitForCRDEstablished(t, "updates.contoso.com")
 	err = exec.Command("kubectl", "apply", "-f", rm.newCrFile.Name()).Run() //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to apply new cr: %v", err)

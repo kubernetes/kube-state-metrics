@@ -54,12 +54,10 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &policyv1.PodDisruptionBudget{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pdb1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Generation:        21,
-				},
+				Name:              "pdb1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				Generation:        21,
 				Status: policyv1.PodDisruptionBudgetStatus{
 					CurrentHealthy:     12,
 					DesiredHealthy:     10,
@@ -79,11 +77,9 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 		},
 		{
 			Obj: &policyv1.PodDisruptionBudget{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "pdb2",
-					Namespace:  "ns2",
-					Generation: 14,
-				},
+				Name:       "pdb2",
+				Namespace:  "ns2",
+				Generation: 14,
 				Status: policyv1.PodDisruptionBudgetStatus{
 					CurrentHealthy:     8,
 					DesiredHealthy:     9,
@@ -108,17 +104,15 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 				"app",
 			},
 			Obj: &policyv1.PodDisruptionBudget{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pdb_with_allowed_labels_and_annotations",
-					Namespace: "ns",
-					Annotations: map[string]string{
-						"app.k8s.io/owner": "mysql-server",
-						"foo":              "bar",
-					},
-					Labels: map[string]string{
-						"app":   "mysql-server",
-						"hello": "world",
-					},
+				Name:      "pdb_with_allowed_labels_and_annotations",
+				Namespace: "ns",
+				Annotations: map[string]string{
+					"app.k8s.io/owner": "mysql-server",
+					"foo":              "bar",
+				},
+				Labels: map[string]string{
+					"app":   "mysql-server",
+					"hello": "world",
 				},
 			},
 			Want: labelsAndAnnotationsMetaData + `
@@ -132,12 +126,10 @@ func TestPodDisruptionBudgetStore(t *testing.T) {
 		},
 		{
 			Obj: &policyv1.PodDisruptionBudget{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pdb3",
-					Namespace:         "ns3",
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Generation:        14,
-				},
+				Name:              "pdb3",
+				Namespace:         "ns3",
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Generation:        14,
 				Status: policyv1.PodDisruptionBudgetStatus{
 					CurrentHealthy: 8,
 					DesiredHealthy: 9,

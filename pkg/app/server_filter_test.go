@@ -17,7 +17,6 @@ limitations under the License.
 package app
 
 import (
-	"context"
 	"io"
 	"net/http/httptest"
 	"strings"
@@ -49,8 +48,7 @@ func TestResourceFiltering(t *testing.T) {
 		t.Fatalf("failed to insert sample service %v", err.Error())
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder()
 	builder.WithMetrics(reg)

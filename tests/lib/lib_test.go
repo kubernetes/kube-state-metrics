@@ -38,10 +38,8 @@ func TestAsLibrary(t *testing.T) {
 	kubeClient := fake.NewSimpleClientset()
 
 	service := v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-service",
-			ResourceVersion: "123456",
-		},
+		Name:            "my-service",
+		ResourceVersion: "123456",
 	}
 
 	_, err := kubeClient.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})
@@ -86,7 +84,7 @@ func serviceCollector(kubeClient clientset.Interface) *metricsstore.MetricsStore
 	return store
 }
 
-func generateServiceMetrics(obj interface{}) []metric.FamilyInterface {
+func generateServiceMetrics(obj any) []metric.FamilyInterface {
 	sPointer := obj.(*v1.Service)
 	s := *sPointer
 

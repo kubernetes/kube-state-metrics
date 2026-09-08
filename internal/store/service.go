@@ -206,8 +206,8 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 	}
 }
 
-func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		svc := obj.(*v1.Service)
 
 		metricFamily := f(svc)

@@ -151,8 +151,8 @@ func createRoleListWatch(kubeClient clientset.Interface, ns string, fieldSelecto
 	}
 }
 
-func wrapRoleFunc(f func(*rbacv1.Role) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapRoleFunc(f func(*rbacv1.Role) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		role := obj.(*rbacv1.Role)
 
 		metricFamily := f(role)

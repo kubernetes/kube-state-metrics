@@ -33,11 +33,9 @@ func TestValidatingAdmissionPolicyBindingStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &admissionregistrationv1.ValidatingAdmissionPolicyBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "validatingadmissionpolicybinding1",
-					Namespace:       "ns1",
-					ResourceVersion: "123456",
-				},
+				Name:            "validatingadmissionpolicybinding1",
+				Namespace:       "ns1",
+				ResourceVersion: "123456",
 				Spec: admissionregistrationv1.ValidatingAdmissionPolicyBindingSpec{
 					PolicyName: "validatingadmissionpolicy1",
 					ParamRef: &admissionregistrationv1.ParamRef{
@@ -64,12 +62,10 @@ func TestValidatingAdmissionPolicyBindingStore(t *testing.T) {
 		},
 		{
 			Obj: &admissionregistrationv1.ValidatingAdmissionPolicyBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "validatingadmissionpolicybinding2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "validatingadmissionpolicybinding2",
+				Namespace:         "ns2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "abcdef",
 				Spec: admissionregistrationv1.ValidatingAdmissionPolicyBindingSpec{
 					PolicyName: "validatingadmissionpolicy2",
 				},

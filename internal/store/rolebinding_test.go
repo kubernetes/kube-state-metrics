@@ -38,18 +38,16 @@ func TestRoleBindingStore(t *testing.T) {
 				"app",
 			},
 			Obj: &rbacv1.RoleBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "rolebinding1",
-					Namespace:       "ns1",
-					ResourceVersion: "BBBBB",
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
-					Labels: map[string]string{
-						"excluded": "me",
-						"app":      "mysql-server",
-					},
+				Name:            "rolebinding1",
+				Namespace:       "ns1",
+				ResourceVersion: "BBBBB",
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
+				},
+				Labels: map[string]string{
+					"excluded": "me",
+					"app":      "mysql-server",
 				},
 				RoleRef: rbacv1.RoleRef{
 					APIGroup: "rbac.authorization.k8s.io",
@@ -79,12 +77,10 @@ func TestRoleBindingStore(t *testing.T) {
 		},
 		{
 			Obj: &rbacv1.RoleBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "rolebinding2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "10596",
-				},
+				Name:              "rolebinding2",
+				Namespace:         "ns2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "10596",
 				RoleRef: rbacv1.RoleRef{
 					APIGroup: "rbac.authorization.k8s.io",
 					Kind:     "Role",

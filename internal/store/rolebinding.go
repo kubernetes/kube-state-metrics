@@ -153,8 +153,8 @@ func createRoleBindingListWatch(kubeClient clientset.Interface, ns string, field
 	}
 }
 
-func wrapRoleBindingFunc(f func(*rbacv1.RoleBinding) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapRoleBindingFunc(f func(*rbacv1.RoleBinding) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		rolebinding := obj.(*rbacv1.RoleBinding)
 
 		metricFamily := f(rolebinding)

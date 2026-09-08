@@ -38,17 +38,15 @@ func TestClusterRoleBindingStore(t *testing.T) {
 				"app",
 			},
 			Obj: &rbacv1.ClusterRoleBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "clusterrolebinding1",
-					ResourceVersion: "BBBBB",
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
-					Labels: map[string]string{
-						"excluded": "me",
-						"app":      "mysql-server",
-					},
+				Name:            "clusterrolebinding1",
+				ResourceVersion: "BBBBB",
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
+				},
+				Labels: map[string]string{
+					"excluded": "me",
+					"app":      "mysql-server",
 				},
 				RoleRef: rbacv1.RoleRef{
 					APIGroup: "rbac.authorization.k8s.io",
@@ -78,11 +76,9 @@ func TestClusterRoleBindingStore(t *testing.T) {
 		},
 		{
 			Obj: &rbacv1.ClusterRoleBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "clusterrolebinding2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "10596",
-				},
+				Name:              "clusterrolebinding2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "10596",
 				RoleRef: rbacv1.RoleRef{
 					APIGroup: "rbac.authorization.k8s.io",
 					Kind:     "Role",

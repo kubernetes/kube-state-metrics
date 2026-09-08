@@ -153,8 +153,8 @@ var (
 	}
 )
 
-func wrapVolumeAttachmentFunc(f func(*storagev1.VolumeAttachment) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapVolumeAttachmentFunc(f func(*storagev1.VolumeAttachment) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		va := obj.(*storagev1.VolumeAttachment)
 
 		metricFamily := f(va)

@@ -41,7 +41,7 @@ func TestGenerateHeaderEscapesHelp(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewFamilyGeneratorWithStability(
 				"kube_test_metric", tc.help, metric.Gauge, basemetrics.ALPHA, "",
-				func(interface{}) *metric.Family { return &metric.Family{} },
+				func(any) *metric.Family { return &metric.Family{} },
 			)
 
 			got := g.generateHeader()
@@ -63,7 +63,7 @@ func TestGenerateHeaderEscapesHelp(t *testing.T) {
 func TestGenerateHeaderEscapesHelpForStableMetrics(t *testing.T) {
 	g := NewFamilyGeneratorWithStability(
 		"kube_test_metric", `matches \d+ digits`, metric.Gauge, basemetrics.STABLE, "",
-		func(interface{}) *metric.Family { return &metric.Family{} },
+		func(any) *metric.Family { return &metric.Family{} },
 	)
 
 	got := g.generateHeader()

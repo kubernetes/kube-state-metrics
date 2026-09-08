@@ -140,8 +140,8 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 	}
 }
 
-func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		resourceQuota := obj.(*v1.ResourceQuota)
 
 		metricFamily := f(resourceQuota)

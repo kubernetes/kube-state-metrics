@@ -41,11 +41,9 @@ func TestLimitRangeStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.LimitRange{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "quotaTest",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "testNS",
-				},
+				Name:              "quotaTest",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "testNS",
 				Spec: v1.LimitRangeSpec{
 					Limits: []v1.LimitRangeItem{
 						{

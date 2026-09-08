@@ -344,8 +344,8 @@ func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 	}
 }
 
-func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		statefulSet := obj.(*v1.StatefulSet)
 
 		metricFamily := f(statefulSet)

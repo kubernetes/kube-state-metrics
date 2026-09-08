@@ -38,18 +38,16 @@ func TestRoleStore(t *testing.T) {
 				"app",
 			},
 			Obj: &rbacv1.Role{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "role1",
-					Namespace:       "ns1",
-					ResourceVersion: "BBBBB",
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
-					Labels: map[string]string{
-						"excluded": "me",
-						"app":      "mysql-server",
-					},
+				Name:            "role1",
+				Namespace:       "ns1",
+				ResourceVersion: "BBBBB",
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
+				},
+				Labels: map[string]string{
+					"excluded": "me",
+					"app":      "mysql-server",
 				},
 			},
 			Want: `
@@ -74,12 +72,10 @@ func TestRoleStore(t *testing.T) {
 		},
 		{
 			Obj: &rbacv1.Role{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "role2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "10596",
-				},
+				Name:              "role2",
+				Namespace:         "ns2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "10596",
 			},
 			Want: `
 				# HELP kube_role_created Unix creation timestamp

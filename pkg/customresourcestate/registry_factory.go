@@ -19,6 +19,7 @@ package customresourcestate
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -38,12 +39,18 @@ import (
 func compile(resource Resource) ([]compiledFamily, error) {
 	var families []compiledFamily
 	// Explicitly add GVK labels to all CR metrics.
-	if resource.CommonLabels == nil {
-		resource.CommonLabels = map[string]string{}
-	}
-	resource.CommonLabels[customResourceState+"_group"] = resource.GroupVersionKind.Group
-	resource.CommonLabels[customResourceState+"_version"] = resource.GroupVersionKind.Version
-	resource.CommonLabels[customResourceState+"_kind"] = resource.GroupVersionKind.Kind
+	//
+	// resource is a copy, but CommonLabels is a map, so it is shared with the
+	// configured resource and with every other copy made from it -- wildcard
+	// resolution produces one per discovered GVK. Writing the GVK labels in
+	// place would have each copy overwrite the last one's values in a map they
+	// all point at. Build a new map instead.
+	commonLabels := make(map[string]string, len(resource.CommonLabels)+3)
+	maps.Copy(commonLabels, resource.CommonLabels)
+	commonLabels[customResourceState+"_group"] = resource.GroupVersionKind.Group
+	commonLabels[customResourceState+"_version"] = resource.GroupVersionKind.Version
+	commonLabels[customResourceState+"_kind"] = resource.GroupVersionKind.Kind
+	resource.CommonLabels = commonLabels
 	for _, f := range resource.Metrics {
 		family, err := compileFamily(f, resource)
 		if err != nil {

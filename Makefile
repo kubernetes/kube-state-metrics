@@ -1,6 +1,5 @@
 FLAGS =
 TESTENVVAR =
-REGISTRY ?= gcr.io/k8s-staging-kube-state-metrics
 TAG_PREFIX = v
 VERSION = $(shell grep '^version:' data.yaml | grep -oE "[0-9]+.[0-9]+.[0-9]+")
 TAG ?= $(TAG_PREFIX)$(VERSION)
@@ -10,17 +9,21 @@ ARCH ?= $(shell go env GOARCH)
 BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+USER ?= $(shell id -u -n)
+HOST ?= $(shell hostname)
 PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 3.9.1
 GO_VERSION = $(shell cat .go-version)
-IMAGE = $(REGISTRY)/kube-state-metrics
-MULTI_ARCH_IMG = $(IMAGE)-$(ARCH)
-USER ?= $(shell id -u -n)
-HOST ?= $(shell hostname)
+GORELEASER_VERSION = 2.17.1
 MARKDOWNLINT_CLI2_VERSION = 0.21.0
 CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
 KSM_MODULE = $(shell go list -m)
+
+# Release assets are named after `uname -s`/`uname -m`, except that goreleaser
+# publishes arm64 where Linux reports aarch64.
+GORELEASER_OS = $(shell uname -s)
+GORELEASER_ARCH = $(patsubst aarch64,arm64,$(shell uname -m))
+GORELEASER_INSTALL_DIR ?= /usr/local/bin
 
 DOCKER_CLI ?= docker
 PROMTOOL_CLI ?= promtool
@@ -28,8 +31,6 @@ GOMPLATE_CLI ?= go tool github.com/hairyhenderson/gomplate/v4/cmd/gomplate
 GOJQ_CLI ?= go tool github.com/itchyny/gojq/cmd/gojq
 JSONNET_CLI ?= go tool github.com/google/go-jsonnet/cmd/jsonnet
 JB_CLI ?= go tool github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
-
-export DOCKER_CLI_EXPERIMENTAL=enabled
 
 validate-modules:
 	@echo "- Verifying that the dependencies have expected content..."
@@ -68,14 +69,14 @@ doccheck: generate validate-template
 	@cd docs; for doc in $$(find metrics/* -name '*.md' | sed 's/.*\///'); do if [ "$$doc" != "README.md" ] && ! grep -q "$$doc" *.md; then echo "ERROR: No link to documentation file $${doc} detected"; exit 1; fi; done
 	@echo OK
 
+# build produces the release artifact via goreleaser, matching what ships in the
+# container image. build-local produces a binary for the host, which is what the
+# docs generation and local development need.
+build:
+	GOOS=linux GOARCH=$(ARCH) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser build --single-target --clean --snapshot
+
 build-local:
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${KSM_MODULE}/pkg/app.ClientGoVersion=${CLIENT_GO_VERSION}" -o kube-state-metrics
-
-build: kube-state-metrics
-
-kube-state-metrics:
-	# Need to update git setting to prevent failing builds due to https://github.com/docker-library/golang/issues/452
-	${DOCKER_CLI} run --rm -v "${PWD}:/go/src/k8s.io/kube-state-metrics" -w /go/src/k8s.io/kube-state-metrics -e GOOS=$(OS) -e GOARCH=$(ARCH) golang:${GO_VERSION} git config --global --add safe.directory "*" && make build-local
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${KSM_MODULE}/pkg/app.ClientGoVersion=${CLIENT_GO_VERSION}" -o kube-state-metrics
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
@@ -113,34 +114,20 @@ test-benchmark-compare-release:
 
 all: all-container
 
-# Container build for multiple architectures as defined in ALL_ARCH
+# Container build and push using goreleaser / ko
 
-container: container-$(ARCH)
+all-container: container
 
-container-%:
-	${DOCKER_CLI} build --pull -t $(IMAGE)-$*:$(TAG) --build-arg GOVERSION=$(GO_VERSION) --build-arg GOARCH=$* .
+container:
+	K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --snapshot --clean --skip=archive,announce,publish
 
-sub-container-%:
-	$(MAKE) --no-print-directory ARCH=$* container
-
-all-container: $(addprefix sub-container-,$(ALL_ARCH))
-
-# Container push, push is the target to push for multiple architectures as defined in ALL_ARCH
-
-push: $(addprefix sub-push-,$(ALL_ARCH)) push-multi-arch;
-
-sub-push-%: container-% do-push-% ;
-
-do-push-%:
-	${DOCKER_CLI} push $(IMAGE)-$*:$(TAG)
-
-push-multi-arch:
-	${DOCKER_CLI} manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do ${DOCKER_CLI} manifest annotate --arch $${arch} $(IMAGE):$(TAG) $(IMAGE)-$${arch}:$(TAG); done
-	${DOCKER_CLI} manifest push --purge $(IMAGE):$(TAG)
+# Pushes the container images only. The GitHub release is published separately
+# by the pre-release workflow, which is the runner that holds a GITHUB_TOKEN.
+push:
+	GORELEASER_SKIP_GITHUB_RELEASE=true GORELEASER_CURRENT_TAG=$(TAG) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean --skip=announce
 
 clean:
-	rm -f kube-state-metrics
+	rm -rf dist kube-state-metrics
 	git clean -Xfd .
 
 e2e:
@@ -190,4 +177,9 @@ install-promtool:
 	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" |\
 	tar xvz --strip-components=1 prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}/promtool
 
-.PHONY: all build build-local all-push all-container container container-* do-push-* sub-push-* push push-multi-arch test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template 
+install-goreleaser:
+	@echo Installing goreleaser v${GORELEASER_VERSION} to ${GORELEASER_INSTALL_DIR}
+	@curl -sSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_${GORELEASER_OS}_${GORELEASER_ARCH}.tar.gz" |\
+	tar xz -C ${GORELEASER_INSTALL_DIR} goreleaser
+
+.PHONY: all build all-container container push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template install-promtool install-goreleaser

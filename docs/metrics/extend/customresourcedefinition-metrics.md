@@ -1,0 +1,10 @@
+# CustomResourceDefinition Metrics
+
+| Metric name                                 | Metric type | Description                                       | Labels/tags                                                                                                                                                        | Status       |
+| ------------------------------------------- | ----------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| kube_customresourcedefinition_info          | Gauge       | Information about a CustomResourceDefinition.     | `customresourcedefinition`=&lt;customresourcedefinition-name&gt; <br> `group`=&lt;crd-group&gt; <br> `kind`=&lt;crd-kind&gt; <br> `scope`=&lt;crd-scope&gt;         | EXPERIMENTAL |
+| kube_customresourcedefinition_created       | Gauge       | Unix creation timestamp.                          | `customresourcedefinition`=&lt;customresourcedefinition-name&gt;                                                                                                    | EXPERIMENTAL |
+| kube_customresourcedefinition_annotations   | Gauge       | Kubernetes annotations converted to Prometheus labels. | `customresourcedefinition`=&lt;customresourcedefinition-name&gt; <br> `annotation_CRD_ANNOTATION`=&lt;CRD_ANNOTATION&gt;                                       | EXPERIMENTAL |
+| kube_customresourcedefinition_labels        | Gauge       | Kubernetes labels converted to Prometheus labels. | `customresourcedefinition`=&lt;customresourcedefinition-name&gt; <br> `label_CRD_LABEL`=&lt;CRD_LABEL&gt;                                                           | EXPERIMENTAL |
+
+`kube_customresourcedefinition_annotations` and `kube_customresourcedefinition_labels` only expose the annotations and labels allowed by the `--metric-annotations-allowlist` and `--metric-labels-allowlist` flags.

@@ -248,7 +248,7 @@ KSM_HTTP_METRICS_URL='http://localhost:8001/api/v1/namespaces/kube-system/servic
 KSM_TELEMETRY_URL='http://localhost:8001/api/v1/namespaces/kube-system/services/kube-state-metrics:telemetry/proxy'
 
 echo "running metrics stability test..."
-go test -v ./tests/e2e --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL} -run TestMetricsStability
+go test -v ./tests/e2e/main_test.go ./tests/e2e/metrics_stability_test.go --ksm-http-metrics-url=${KSM_HTTP_METRICS_URL} --ksm-telemetry-url=${KSM_TELEMETRY_URL}
 
 sleep 33
 klog_err=E$(date +%m%d)

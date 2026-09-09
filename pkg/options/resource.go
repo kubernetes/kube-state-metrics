@@ -58,5 +58,16 @@ var (
 		"validatingadmissionpolicybindings": struct{}{},
 		"validatingwebhookconfigurations":   struct{}{},
 		"volumeattachments":                 struct{}{},
+		"volumeattributesclasses":           struct{}{},
+	}
+
+	// DefaultVolumeAttributesClassParametersAllowList is the default set of VolumeAttributesClass
+	// parameter keys exposed via kube_volumeattributesclass_parameters. It covers the AWS EBS, GCP PD,
+	// and Azure Disk CSI drivers out of the box; other drivers' parameter keys require explicit
+	// configuration via --metric-volumeattributesclass-parameters-allowlist.
+	DefaultVolumeAttributesClassParametersAllowList = []string{
+		"iops", "throughput", "type",
+		"provisioned-iops", "provisioned-throughput",
+		"skuName", "iopsReadWrite", "bandwidthMBps",
 	}
 )

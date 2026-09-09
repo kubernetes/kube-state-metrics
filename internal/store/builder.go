@@ -67,17 +67,18 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
-	kubeClient                    clientset.Interface
-	ctx                           context.Context
-	familyGeneratorFilter         generator.FamilyGeneratorFilter
-	customResourceClients         map[string]interface{}
-	listWatchMetrics              *watch.ListWatchMetrics
-	shardingMetrics               *sharding.Metrics
-	buildStoresFunc               ksmtypes.BuildStoresFunc
-	buildCustomResourceStoresFunc ksmtypes.BuildCustomResourceStoresFunc
-	allowAnnotationsList          map[string][]string
-	allowLabelsList               map[string][]string
-	utilOptions                   *options.Options
+	kubeClient                               clientset.Interface
+	ctx                                      context.Context
+	familyGeneratorFilter                    generator.FamilyGeneratorFilter
+	customResourceClients                    map[string]interface{}
+	listWatchMetrics                         *watch.ListWatchMetrics
+	shardingMetrics                          *sharding.Metrics
+	buildStoresFunc                          ksmtypes.BuildStoresFunc
+	buildCustomResourceStoresFunc            ksmtypes.BuildCustomResourceStoresFunc
+	allowAnnotationsList                     map[string][]string
+	allowLabelsList                          map[string][]string
+	allowVolumeAttributesClassParametersList []string
+	utilOptions                              *options.Options
 	// namespaceFilter is inside fieldSelectorFilter
 	fieldSelectorFilter string
 	namespaces          options.NamespaceList
@@ -278,6 +279,12 @@ func (b *Builder) WithAllowLabels(labels map[string][]string) error {
 	return err
 }
 
+// WithAllowVolumeAttributesClassParameters configures which VolumeAttributesClass
+// parameters can be returned for the kube_volumeattributesclass_parameters metric.
+func (b *Builder) WithAllowVolumeAttributesClassParameters(params []string) {
+	b.allowVolumeAttributesClassParametersList = params
+}
+
 // enabledResourcesSnapshot returns a copy of the enabled resources. Callers take
 // a copy rather than holding the lock for the whole build: the store
 // constructors mutate the builder as they run, so holding it across them would
@@ -388,6 +395,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"validatingadmissionpolicybindings": func(b *Builder) []cache.Store { return b.buildValidatingAdmissionPolicyBindingStores() },
 	"validatingwebhookconfigurations":   func(b *Builder) []cache.Store { return b.buildValidatingWebhookConfigurationStores() },
 	"volumeattachments":                 func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
+	"volumeattributesclasses":           func(b *Builder) []cache.Store { return b.buildVolumeAttributesClassStores() },
 }
 
 // lookupStore returns the store constructor registered for name.
@@ -553,6 +561,10 @@ func (b *Builder) buildValidatingWebhookConfigurationStores() []cache.Store {
 
 func (b *Builder) buildVolumeAttachmentStores() []cache.Store {
 	return b.buildClusterScopedStores(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildVolumeAttributesClassStores() []cache.Store {
+	return b.buildClusterScopedStores(volumeAttributesClassMetricFamilies(b.allowAnnotationsList["volumeattributesclasses"], b.allowLabelsList["volumeattributesclasses"], b.allowVolumeAttributesClassParametersList), &storagev1.VolumeAttributesClass{}, createVolumeAttributesClassListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildLeasesStores() []cache.Store {

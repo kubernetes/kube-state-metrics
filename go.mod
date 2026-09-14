@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/KimMachineGun/automemlimit v1.0.0
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
-	github.com/dlclark/regexp2/v2 v2.7.1
+	github.com/dlclark/regexp2/v2 v2.8.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-logr/logr v1.4.4
 	github.com/gobuffalo/flect v1.0.3

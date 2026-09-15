@@ -38,18 +38,16 @@ func TestConfigMapStore(t *testing.T) {
 				"app",
 			},
 			Obj: &v1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "configmap1",
-					Namespace:       "ns1",
-					ResourceVersion: "BBBBB",
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
-					Labels: map[string]string{
-						"excluded": "me",
-						"app":      "mysql-server",
-					},
+				Name:            "configmap1",
+				Namespace:       "ns1",
+				ResourceVersion: "BBBBB",
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
+				},
+				Labels: map[string]string{
+					"excluded": "me",
+					"app":      "mysql-server",
 				},
 			},
 			Want: `
@@ -74,12 +72,10 @@ func TestConfigMapStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "configmap2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "10596",
-				},
+				Name:              "configmap2",
+				Namespace:         "ns2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "10596",
 			},
 			Want: `
 				# HELP kube_configmap_created [STABLE] Unix creation timestamp

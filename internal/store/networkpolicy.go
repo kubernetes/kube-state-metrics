@@ -142,8 +142,8 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 	}
 }
 
-func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		networkPolicy := obj.(*networkingv1.NetworkPolicy)
 
 		metricFamily := f(networkPolicy)

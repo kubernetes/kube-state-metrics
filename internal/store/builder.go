@@ -70,7 +70,7 @@ type Builder struct {
 	kubeClient                    clientset.Interface
 	ctx                           context.Context
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
-	customResourceClients         map[string]interface{}
+	customResourceClients         map[string]any
 	listWatchMetrics              *watch.ListWatchMetrics
 	shardingMetrics               *sharding.Metrics
 	buildStoresFunc               ksmtypes.BuildStoresFunc
@@ -168,7 +168,7 @@ func (b *Builder) WithKubeClient(c clientset.Interface) {
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
-func (b *Builder) WithCustomResourceClients(cs map[string]interface{}) {
+func (b *Builder) WithCustomResourceClients(cs map[string]any) {
 	b.customResourceClients = cs
 }
 
@@ -588,7 +588,7 @@ func (b *Builder) buildIngressClassStores() []cache.Store {
 // number of namespaces the caller originally configured.
 func (b *Builder) buildClusterScopedStores(
 	metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
+	expectedType any,
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
@@ -605,7 +605,7 @@ func (b *Builder) buildClusterScopedStores(
 
 func (b *Builder) buildStores(
 	metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
+	expectedType any,
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
@@ -646,8 +646,8 @@ func (b *Builder) buildStores(
 // TODO(Garrybest): Merge `buildStores` and `buildCustomResourceStores`
 func (b *Builder) buildCustomResourceStores(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
-	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
+	expectedType any,
+	listWatchFunc func(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
@@ -714,7 +714,7 @@ func newCRReflectorStopCh(ctx context.Context, gvkStopCh chan struct{}) chan str
 // startReflector starts a Kubernetes client-go reflector with the given
 // listWatcher and registers it with the given store.
 func (b *Builder) startReflector(
-	expectedType interface{},
+	expectedType any,
 	store cache.Store,
 	listWatcher cache.ListerWatcher,
 	useAPIServerCache bool,

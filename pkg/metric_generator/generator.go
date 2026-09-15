@@ -30,7 +30,7 @@ import (
 // DeprecatedVersion is defined only if the metric for which this options applies is,
 // in fact, deprecated.
 type FamilyGenerator struct {
-	GenerateFunc      func(obj interface{}) *metric.Family
+	GenerateFunc      func(obj any) *metric.Family
 	Name              string
 	Help              string
 	Type              metric.Type
@@ -41,7 +41,7 @@ type FamilyGenerator struct {
 
 // NewFamilyGeneratorWithStability creates new FamilyGenerator instances with metric
 // stabilityLevel.
-func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+func NewFamilyGeneratorWithStability(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj any) *metric.Family) *FamilyGenerator {
 	f := &FamilyGenerator{
 		Name:              name,
 		Type:              metricType,
@@ -58,7 +58,7 @@ func NewFamilyGeneratorWithStability(name string, help string, metricType metric
 }
 
 // NewOptInFamilyGenerator creates new FamilyGenerator instances for opt-in metric families.
-func NewOptInFamilyGenerator(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj interface{}) *metric.Family) *FamilyGenerator {
+func NewOptInFamilyGenerator(name string, help string, metricType metric.Type, stabilityLevel basemetrics.StabilityLevel, deprecatedVersion string, generateFunc func(obj any) *metric.Family) *FamilyGenerator {
 	f := NewFamilyGeneratorWithStability(name, help, metricType, stabilityLevel,
 		deprecatedVersion, generateFunc)
 	f.OptIn = true
@@ -69,7 +69,7 @@ func NewOptInFamilyGenerator(name string, help string, metricType metric.Type, s
 // name. The reasoning behind injecting the name at such a late point in time is
 // deduplication in the code, preventing typos made by developers as
 // well as saving memory.
-func (g *FamilyGenerator) Generate(obj interface{}) *metric.Family {
+func (g *FamilyGenerator) Generate(obj any) *metric.Family {
 	family := g.GenerateFunc(obj)
 	family.Name = g.Name
 	family.Type = g.Type
@@ -115,8 +115,8 @@ func ExtractMetricFamilyHeaders(families []FamilyGenerator) []string {
 
 // ComposeMetricGenFuncs takes a slice of metric families and returns a function
 // that composes their metric generation functions into a single one.
-func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj interface{}) []metric.FamilyInterface {
-	return func(obj interface{}) []metric.FamilyInterface {
+func ComposeMetricGenFuncs(familyGens []FamilyGenerator) func(obj any) []metric.FamilyInterface {
+	return func(obj any) []metric.FamilyInterface {
 		families := make([]metric.FamilyInterface, len(familyGens))
 
 		for i, gen := range familyGens {

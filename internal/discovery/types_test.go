@@ -15,8 +15,6 @@ package discovery
 
 import (
 	"testing"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TestAppendToMapIdempotency verifies that calling AppendToMap repeatedly with
@@ -26,12 +24,10 @@ func TestAppendToMapIdempotency(t *testing.T) {
 	const iterations = 10
 
 	gvkp := groupVersionKindPlural{
-		GroupVersionKind: schema.GroupVersionKind{
-			Group:   "example.com",
-			Version: "v1",
-			Kind:    "Foo",
-		},
-		Plural: "foos",
+		Group:   "example.com",
+		Version: "v1",
+		Kind:    "Foo",
+		Plural:  "foos",
 	}
 
 	r := &CRDiscoverer{}
@@ -61,12 +57,10 @@ func TestAppendToMapIdempotency(t *testing.T) {
 // the stop channel for the deleted GVK.
 func TestRemoveFromMapClosesChannel(t *testing.T) {
 	gvkp := groupVersionKindPlural{
-		GroupVersionKind: schema.GroupVersionKind{
-			Group:   "example.com",
-			Version: "v1",
-			Kind:    "Bar",
-		},
-		Plural: "bars",
+		Group:   "example.com",
+		Version: "v1",
+		Kind:    "Bar",
+		Plural:  "bars",
 	}
 
 	r := &CRDiscoverer{}

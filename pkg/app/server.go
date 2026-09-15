@@ -23,6 +23,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -446,16 +447,12 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 
 		if len(config.LabelsAllowList) > 0 {
 			opts.LabelsAllowList = options.LabelsAllowList{}
-			for label, value := range config.LabelsAllowList {
-				opts.LabelsAllowList[label] = value
-			}
+			maps.Copy(opts.LabelsAllowList, config.LabelsAllowList)
 		}
 
 		if len(config.AnnotationsAllowList) > 0 {
 			opts.AnnotationsAllowList = options.LabelsAllowList{}
-			for annotation, value := range config.AnnotationsAllowList {
-				opts.AnnotationsAllowList[annotation] = value
-			}
+			maps.Copy(opts.AnnotationsAllowList, config.AnnotationsAllowList)
 		}
 	} else {
 		klog.ErrorS(err, "failed to unmarshal configFile")

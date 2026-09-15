@@ -32,9 +32,7 @@ func TestStorageClassStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &storagev1.StorageClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test_storageclass-info",
-				},
+				Name:              "test_storageclass-info",
 				Provisioner:       "kubernetes.io/rbd",
 				ReclaimPolicy:     &reclaimPolicy,
 				VolumeBindingMode: &volumeBindingMode,
@@ -50,9 +48,7 @@ func TestStorageClassStore(t *testing.T) {
 		},
 		{
 			Obj: &storagev1.StorageClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test_storageclass-default-info",
-				},
+				Name:              "test_storageclass-default-info",
 				Provisioner:       "kubernetes.io/rbd",
 				ReclaimPolicy:     nil,
 				VolumeBindingMode: nil,
@@ -68,10 +64,8 @@ func TestStorageClassStore(t *testing.T) {
 		},
 		{
 			Obj: &storagev1.StorageClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test_kube_storageclass-created",
-					CreationTimestamp: metav1StartTime,
-				},
+				Name:              "test_kube_storageclass-created",
+				CreationTimestamp: metav1StartTime,
 				Provisioner:       "kubernetes.io/rbd",
 				ReclaimPolicy:     &reclaimPolicy,
 				VolumeBindingMode: &volumeBindingMode,
@@ -87,11 +81,9 @@ func TestStorageClassStore(t *testing.T) {
 		},
 		{
 			Obj: &storagev1.StorageClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test_storageclass-labels",
-					Labels: map[string]string{
-						"foo": "bar",
-					},
+				Name: "test_storageclass-labels",
+				Labels: map[string]string{
+					"foo": "bar",
 				},
 				Provisioner:       "kubernetes.io/rbd",
 				ReclaimPolicy:     &reclaimPolicy,

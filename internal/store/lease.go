@@ -102,8 +102,8 @@ var (
 	}
 )
 
-func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		lease := obj.(*coordinationv1.Lease)
 
 		metricFamily := f(lease)

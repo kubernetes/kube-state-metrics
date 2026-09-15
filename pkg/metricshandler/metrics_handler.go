@@ -131,7 +131,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 		&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	i.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(o interface{}) {
+		AddFunc: func(o any) {
 			ss := o.(*appsv1.StatefulSet)
 			if ss.Name != statefulSetName {
 				return
@@ -153,7 +153,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 			m.ConfigureSharding(ctx, shard, totalShards)
 		},
-		UpdateFunc: func(oldo, curo interface{}) {
+		UpdateFunc: func(oldo, curo any) {
 			old := oldo.(*appsv1.StatefulSet)
 			cur := curo.(*appsv1.StatefulSet)
 			if cur.Name != statefulSetName {
@@ -218,8 +218,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Gzip response if requested. Taken from
 		// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
 		reqHeader := r.Header.Get("Accept-Encoding")
-		parts := strings.Split(reqHeader, ",")
-		for _, part := range parts {
+		for part := range strings.SplitSeq(reqHeader, ",") {
 			part = strings.TrimSpace(part)
 			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
 				writer = gzip.NewWriter(writer)
@@ -290,7 +289,7 @@ func parseResources(params []string) map[string]struct{} {
 	}
 	resMap := make(map[string]struct{})
 	for _, p := range params {
-		for _, res := range strings.Split(p, ",") {
+		for res := range strings.SplitSeq(p, ",") {
 			res = strings.TrimSpace(res)
 			if res != "" {
 				resMap[res] = struct{}{}

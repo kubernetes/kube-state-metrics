@@ -116,8 +116,8 @@ func createValidatingAdmissionPolicyBindingListWatch(kubeClient clientset.Interf
 	}
 }
 
-func wrapValidatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.ValidatingAdmissionPolicyBinding) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapValidatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.ValidatingAdmissionPolicyBinding) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		vapb := obj.(*admissionregistrationv1.ValidatingAdmissionPolicyBinding)
 
 		metricFamily := f(vapb)

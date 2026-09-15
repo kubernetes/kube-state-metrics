@@ -62,7 +62,7 @@ func (a Labels) Allowed(metric string, labels, values []string) ([]string, []str
 }
 
 func labelSet(lists ...[]string) []string {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	var set []string
 	for _, list := range lists {
 		for _, e := range list {

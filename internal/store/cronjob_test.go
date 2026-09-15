@@ -127,18 +127,16 @@ func TestCronJobStore(t *testing.T) {
 				"app.k8s.io/owner",
 			},
 			Obj: &batchv1.CronJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "ActiveRunningCronJobWithTZ1",
-					Namespace:       "ns1",
-					Generation:      1,
-					ResourceVersion: "11111",
-					Labels: map[string]string{
-						"app": "example-active-running-with-tz-1",
-					},
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
+				Name:            "ActiveRunningCronJobWithTZ1",
+				Namespace:       "ns1",
+				Generation:      1,
+				ResourceVersion: "11111",
+				Labels: map[string]string{
+					"app": "example-active-running-with-tz-1",
+				},
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
 				},
 				Status: batchv1.CronJobStatus{
 					Active:             []v1.ObjectReference{{Name: "FakeJob1"}, {Name: "FakeJob2"}},
@@ -211,18 +209,16 @@ func TestCronJobStore(t *testing.T) {
 				"app.k8s.io/owner",
 			},
 			Obj: &batchv1.CronJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "ActiveRunningCronJob1",
-					Namespace:       "ns1",
-					Generation:      1,
-					ResourceVersion: "11111",
-					Labels: map[string]string{
-						"app": "example-active-running-1",
-					},
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
+				Name:            "ActiveRunningCronJob1",
+				Namespace:       "ns1",
+				Generation:      1,
+				ResourceVersion: "11111",
+				Labels: map[string]string{
+					"app": "example-active-running-1",
+				},
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
 				},
 				Status: batchv1.CronJobStatus{
 					Active:             []v1.ObjectReference{{Name: "FakeJob1"}, {Name: "FakeJob2"}},
@@ -291,14 +287,12 @@ func TestCronJobStore(t *testing.T) {
 		},
 		{
 			Obj: &batchv1.CronJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "SuspendedCronJob1",
-					Namespace:       "ns1",
-					Generation:      1,
-					ResourceVersion: "22222",
-					Labels: map[string]string{
-						"app": "example-suspended-1",
-					},
+				Name:            "SuspendedCronJob1",
+				Namespace:       "ns1",
+				Generation:      1,
+				ResourceVersion: "22222",
+				Labels: map[string]string{
+					"app": "example-suspended-1",
 				},
 				Status: batchv1.CronJobStatus{
 					Active:             []v1.ObjectReference{},
@@ -351,14 +345,12 @@ func TestCronJobStore(t *testing.T) {
 		},
 		{
 			Obj: &batchv1.CronJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "SuspendedCronJob1",
-					Namespace:       "ns1",
-					Generation:      1,
-					ResourceVersion: "22222",
-					Labels: map[string]string{
-						"app": "example-suspended-1",
-					},
+				Name:            "SuspendedCronJob1",
+				Namespace:       "ns1",
+				Generation:      1,
+				ResourceVersion: "22222",
+				Labels: map[string]string{
+					"app": "example-suspended-1",
 				},
 				Status: batchv1.CronJobStatus{
 					Active:             []v1.ObjectReference{},
@@ -411,15 +403,13 @@ func TestCronJobStore(t *testing.T) {
 		},
 		{
 			Obj: &batchv1.CronJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ActiveCronJob1NoLastScheduled",
-					CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
-					Namespace:         "ns1",
-					Generation:        1,
-					ResourceVersion:   "33333",
-					Labels: map[string]string{
-						"app": "example-active-no-last-scheduled-1",
-					},
+				Name:              "ActiveCronJob1NoLastScheduled",
+				CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
+				Namespace:         "ns1",
+				Generation:        1,
+				ResourceVersion:   "33333",
+				Labels: map[string]string{
+					"app": "example-active-no-last-scheduled-1",
 				},
 				Status: batchv1.CronJobStatus{
 					Active:             []v1.ObjectReference{},
@@ -474,15 +464,13 @@ func TestCronJobStore(t *testing.T) {
 		{
 			// Verify omitted suspend falls back to the API default.
 			Obj: &batchv1.CronJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ActiveCronJobNilSuspend",
-					CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
-					Namespace:         "ns1",
-					Generation:        1,
-					ResourceVersion:   "44444",
-					Labels: map[string]string{
-						"app": "example-active-nil-suspend",
-					},
+				Name:              "ActiveCronJobNilSuspend",
+				CreationTimestamp: metav1.Time{Time: ActiveCronJob1NoLastScheduledCreationTimestamp},
+				Namespace:         "ns1",
+				Generation:        1,
+				ResourceVersion:   "44444",
+				Labels: map[string]string{
+					"app": "example-active-nil-suspend",
 				},
 				Status: batchv1.CronJobStatus{
 					Active:             []v1.ObjectReference{},
@@ -580,10 +568,8 @@ func TestGetNextScheduledTime(t *testing.T) {
 func TestCronJobStoreScheduleParsing(t *testing.T) {
 	newCronJob := func(name, schedule string) *batchv1.CronJob {
 		return &batchv1.CronJob{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: "ns1",
-			},
+			Name:      name,
+			Namespace: "ns1",
 			Status: batchv1.CronJobStatus{
 				LastScheduleTime: &metav1.Time{Time: ActiveRunningCronJob1LastScheduleTime},
 			},

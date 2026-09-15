@@ -96,8 +96,8 @@ func createMutatingAdmissionPolicyBindingListWatch(kubeClient clientset.Interfac
 	}
 }
 
-func wrapMutatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.MutatingAdmissionPolicyBinding) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapMutatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.MutatingAdmissionPolicyBinding) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		mapb := obj.(*admissionregistrationv1.MutatingAdmissionPolicyBinding)
 
 		metricFamily := f(mapb)

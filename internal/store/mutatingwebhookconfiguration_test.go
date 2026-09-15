@@ -33,11 +33,9 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &admissionregistrationv1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "mutatingwebhookconfiguration1",
-					Namespace:       "ns1",
-					ResourceVersion: "123456",
-				},
+				Name:            "mutatingwebhookconfiguration1",
+				Namespace:       "ns1",
+				ResourceVersion: "123456",
 			},
 			Want: `
 				# HELP kube_mutatingwebhookconfiguration_info Information about the MutatingWebhookConfiguration.
@@ -51,12 +49,10 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 		},
 		{
 			Obj: &admissionregistrationv1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "mutatingwebhookconfiguration2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "mutatingwebhookconfiguration2",
+				Namespace:         "ns2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "abcdef",
 			},
 			Want: `
 			# HELP kube_mutatingwebhookconfiguration_created Unix creation timestamp.
@@ -72,12 +68,10 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 		},
 		{
 			Obj: &admissionregistrationv1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "mutatingwebhookconfiguration3",
-					Namespace:         "ns3",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "mutatingwebhookconfiguration3",
+				Namespace:         "ns3",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "abcdef",
 				Webhooks: []admissionregistrationv1.MutatingWebhook{
 					{
 						Name: "webhook_with_service",

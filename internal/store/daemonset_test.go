@@ -33,18 +33,16 @@ func TestDaemonSetStore(t *testing.T) {
 				"app.k8s.io/owner",
 			},
 			Obj: &v1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ds1",
-					Namespace: "ns1",
-					Labels: map[string]string{
-						"app": "example1",
-					},
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
-					Generation: 21,
+				Name:      "ds1",
+				Namespace: "ns1",
+				Labels: map[string]string{
+					"app": "example1",
 				},
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
+				},
+				Generation: 21,
 				Status: v1.DaemonSetStatus{
 					CurrentNumberScheduled: 15,
 					NumberMisscheduled:     10,
@@ -103,15 +101,13 @@ func TestDaemonSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ds2",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns2",
-					Labels: map[string]string{
-						"app": "example2",
-					},
-					Generation: 14,
+				Name:              "ds2",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns2",
+				Labels: map[string]string{
+					"app": "example2",
 				},
+				Generation: 14,
 				Status: v1.DaemonSetStatus{
 					CurrentNumberScheduled: 10,
 					NumberMisscheduled:     5,
@@ -165,15 +161,13 @@ func TestDaemonSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ds3",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns3",
-					Labels: map[string]string{
-						"app": "example3",
-					},
-					Generation: 15,
+				Name:              "ds3",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns3",
+				Labels: map[string]string{
+					"app": "example3",
 				},
+				Generation: 15,
 				Status: v1.DaemonSetStatus{
 					CurrentNumberScheduled: 10,
 					NumberMisscheduled:     5,
@@ -230,16 +224,14 @@ func TestDaemonSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ds4",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Namespace:         "ns4",
-					Labels: map[string]string{
-						"app": "example4",
-					},
-					Generation: 14,
+				Name:              "ds4",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Namespace:         "ns4",
+				Labels: map[string]string{
+					"app": "example4",
 				},
+				Generation: 14,
 				Status: v1.DaemonSetStatus{
 					CurrentNumberScheduled: 10,
 					NumberMisscheduled:     5,

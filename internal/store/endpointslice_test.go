@@ -41,10 +41,8 @@ func TestEndpointSliceStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test_endpointslice-info",
-					Namespace: "test",
-				},
+				Name:        "test_endpointslice-info",
+				Namespace:   "test",
 				AddressType: "IPv4",
 			},
 			Want: `
@@ -58,12 +56,10 @@ func TestEndpointSliceStore(t *testing.T) {
 		},
 		{
 			Obj: &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test_kube_endpointslice-created",
-					Namespace:         "test",
-					CreationTimestamp: metav1StartTime,
-				},
-				AddressType: "IPv4",
+				Name:              "test_kube_endpointslice-created",
+				Namespace:         "test",
+				CreationTimestamp: metav1StartTime,
+				AddressType:       "IPv4",
 			},
 			Want: `
 					# HELP kube_endpointslice_created Unix creation timestamp
@@ -76,10 +72,8 @@ func TestEndpointSliceStore(t *testing.T) {
 		},
 		{
 			Obj: &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test_endpointslice-ports",
-					Namespace: "test",
-				},
+				Name:        "test_endpointslice-ports",
+				Namespace:   "test",
 				AddressType: "IPv4",
 				Ports: []discoveryv1.EndpointPort{
 					{Name: &portname,
@@ -102,10 +96,8 @@ func TestEndpointSliceStore(t *testing.T) {
 			// the API server: an EndpointSlice that is not used for routing
 			// traffic may omit it.
 			Obj: &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test_endpointslice-ports-without-number",
-					Namespace: "test",
-				},
+				Name:        "test_endpointslice-ports-without-number",
+				Namespace:   "test",
 				AddressType: "IPv4",
 				Ports: []discoveryv1.EndpointPort{
 					{Name: &portname,
@@ -124,10 +116,8 @@ func TestEndpointSliceStore(t *testing.T) {
 		},
 		{
 			Obj: &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test_endpointslice-endpoints",
-					Namespace: "test",
-				},
+				Name:        "test_endpointslice-endpoints",
+				Namespace:   "test",
 				AddressType: "IPv4",
 				Endpoints: []discoveryv1.Endpoint{
 					{
@@ -158,10 +148,8 @@ func TestEndpointSliceStore(t *testing.T) {
 		},
 		{
 			Obj: &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test_endpointslice-endpoints",
-					Namespace: "test",
-				},
+				Name:        "test_endpointslice-endpoints",
+				Namespace:   "test",
 				AddressType: "IPv4",
 				Endpoints: []discoveryv1.Endpoint{
 					{
@@ -201,15 +189,13 @@ func TestEndpointSliceStore(t *testing.T) {
 				"foo",
 			},
 			Obj: &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test_endpointslice-labels",
-					Namespace: "test",
-					Annotations: map[string]string{
-						"foo": "baz",
-					},
-					Labels: map[string]string{
-						"foo": "bar",
-					},
+				Name:      "test_endpointslice-labels",
+				Namespace: "test",
+				Annotations: map[string]string{
+					"foo": "baz",
+				},
+				Labels: map[string]string{
+					"foo": "bar",
 				},
 				AddressType: "IPv4",
 			},
@@ -240,7 +226,7 @@ func TestEndpointSliceStore(t *testing.T) {
 // the last one.
 func TestEndpointSliceHintsPerZone(t *testing.T) {
 	es := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "es", Namespace: "ns"},
+		Name: "es", Namespace: "ns",
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{{
 			Addresses: []string{"10.0.0.1"},
@@ -275,7 +261,7 @@ func TestEndpointSliceHintsPerZone(t *testing.T) {
 // future relaxation rather than a reachable panic.
 func TestEndpointSliceHintsWithoutAddresses(t *testing.T) {
 	es := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "es", Namespace: "ns"},
+		Name: "es", Namespace: "ns",
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{{
 			Hints: &discoveryv1.EndpointHints{ForZones: []discoveryv1.ForZone{{Name: "zone-a"}}},

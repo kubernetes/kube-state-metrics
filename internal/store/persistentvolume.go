@@ -63,8 +63,8 @@ func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []stri
 	}
 }
 
-func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		persistentVolume := obj.(*v1.PersistentVolume)
 
 		metricFamily := f(persistentVolume)

@@ -23,16 +23,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/ptr"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
-var cr map[string]interface{}
+var cr map[string]any
 
 func init() {
-	type Obj map[string]interface{}
-	type Array []interface{}
+	type Obj map[string]any
+	type Array []any
 	bytes, err := json.Marshal(Obj{
 		"spec": Obj{
 			"replicas": 1,
@@ -110,7 +109,7 @@ func init() {
 
 func Test_addPathLabels(t *testing.T) {
 	type args struct {
-		obj    interface{}
+		obj    any
 		labels map[string]valuePath
 		want   map[string]string
 	}
@@ -204,25 +203,19 @@ func Test_values(t *testing.T) {
 
 	tests := []tc{
 		{name: "single", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "spec", "replicas"),
-			},
+			path: mustCompilePath(t, "spec", "replicas"),
 		}, wantResult: []eachValue{newEachValue(t, 1)}},
 		{name: "obj", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "active"),
-			},
+			path:         mustCompilePath(t, "status", "active"),
 			labelFromKey: "type",
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "type", "type-a"),
 			newEachValue(t, 3, "type", "type-b"),
 		}},
 		{name: "deep obj", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "sub"),
-				labelFromPath: map[string]valuePath{
-					"active": mustCompilePath(t, "active"),
-				},
+			path: mustCompilePath(t, "status", "sub"),
+			labelFromPath: map[string]valuePath{
+				"active": mustCompilePath(t, "active"),
 			},
 			labelFromKey: "type",
 			ValueFrom:    mustCompilePath(t, "ready"),
@@ -231,50 +224,40 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 4, "type", "type-b", "active", "3"),
 		}},
 		{name: "path-relative valueFrom value", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "metadata"),
-				labelFromPath: map[string]valuePath{
-					"name": mustCompilePath(t, "name"),
-				},
+			path: mustCompilePath(t, "metadata"),
+			labelFromPath: map[string]valuePath{
+				"name": mustCompilePath(t, "name"),
 			},
 			ValueFrom: mustCompilePath(t, "creationTimestamp"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 1.6563744e+09, "name", "foo"),
 		}},
 		{name: "non-existent path", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "foo"),
-				labelFromPath: map[string]valuePath{
-					"name": mustCompilePath(t, "name"),
-				},
+			path: mustCompilePath(t, "foo"),
+			labelFromPath: map[string]valuePath{
+				"name": mustCompilePath(t, "name"),
 			},
 			ValueFrom: mustCompilePath(t, "creationTimestamp"),
 		}, wantResult: nil, wantErrors: []error{
 			errors.New("[foo]: got nil while resolving path"),
 		}},
 		{name: "exist path but valueFrom path is non-existent single", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "spec", "replicas"),
-			},
+			path:      mustCompilePath(t, "spec", "replicas"),
 			ValueFrom: mustCompilePath(t, "non-existent"),
 		}, wantResult: nil, wantErrors: nil,
 		},
 		{name: "exist path but valueFrom path non-existent array", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "condition_values"),
-				labelFromPath: map[string]valuePath{
-					"name": mustCompilePath(t, "name"),
-				},
+			path: mustCompilePath(t, "status", "condition_values"),
+			labelFromPath: map[string]valuePath{
+				"name": mustCompilePath(t, "name"),
 			},
 			ValueFrom: mustCompilePath(t, "non-existent"),
 		}, wantResult: nil, wantErrors: nil,
 		},
 		{name: "array", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "condition_values"),
-				labelFromPath: map[string]valuePath{
-					"name": mustCompilePath(t, "name"),
-				},
+			path: mustCompilePath(t, "status", "condition_values"),
+			labelFromPath: map[string]valuePath{
+				"name": mustCompilePath(t, "name"),
 			},
 			ValueFrom: mustCompilePath(t, "value"),
 		}, wantResult: []eachValue{
@@ -282,90 +265,68 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 66, "name", "b"),
 		}},
 		{name: "timestamp", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "metadata", "creationTimestamp"),
-			},
+			path: mustCompilePath(t, "metadata", "creationTimestamp"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 1656374400),
 		}},
 		{name: "quantity_milli", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "quantity_milli"),
-			},
+			path: mustCompilePath(t, "status", "quantity_milli"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 0.25),
 		}},
 		{name: "quantity_binarySI", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "quantity_binarySI"),
-			},
+			path: mustCompilePath(t, "status", "quantity_binarySI"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 5.36870912e+09),
 		}},
 		{name: "percentage", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "percentage"),
-			},
+			path: mustCompilePath(t, "status", "percentage"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 0.28),
 		}},
 		{name: "path-relative valueFrom percentage", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "metadata"),
-				labelFromPath: map[string]valuePath{
-					"name": mustCompilePath(t, "name"),
-				},
+			path: mustCompilePath(t, "metadata"),
+			labelFromPath: map[string]valuePath{
+				"name": mustCompilePath(t, "name"),
 			},
 			ValueFrom: mustCompilePath(t, "percentage"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 0.39, "name", "foo"),
 		}},
 		{name: "boolean_string", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "spec", "paused"),
-			},
+			path:      mustCompilePath(t, "spec", "paused"),
 			NilIsZero: true,
 		}, wantResult: []eachValue{
 			newEachValue(t, 0),
 		}},
 		{name: "info", each: &compiledInfo{
-			compiledCommon: compiledCommon{
-				labelFromPath: map[string]valuePath{
-					"version": mustCompilePath(t, "spec", "version"),
-				},
+			labelFromPath: map[string]valuePath{
+				"version": mustCompilePath(t, "spec", "version"),
 			},
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "version", "v0.0.0"),
 		}},
 		{name: "info nil path", each: &compiledInfo{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "does", "not", "exist"),
-			},
+			path: mustCompilePath(t, "does", "not", "exist"),
 		}, wantResult: nil},
 		{name: "info label from key", each: &compiledInfo{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "active"),
-			},
+			path:         mustCompilePath(t, "status", "active"),
 			labelFromKey: "type",
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "type", "type-a"),
 			newEachValue(t, 1, "type", "type-b"),
 		}},
 		{name: "info label from path", each: &compiledInfo{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "sub"),
-				labelFromPath: map[string]valuePath{
-					"active": mustCompilePath(t, "active"),
-				},
+			path: mustCompilePath(t, "status", "sub"),
+			labelFromPath: map[string]valuePath{
+				"active": mustCompilePath(t, "active"),
 			},
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "active", "1"),
 			newEachValue(t, 1, "active", "3"),
 		}},
 		{name: "stateset", each: &compiledStateSet{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "phase"),
-			},
+			path:      mustCompilePath(t, "status", "phase"),
 			LabelName: "phase",
 			List:      []string{"foo", "bar"},
 		}, wantResult: []eachValue{
@@ -373,33 +334,25 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 1, "phase", "foo"),
 		}},
 		{name: "stateset nil path", each: &compiledStateSet{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "does", "not", "exist"),
-			},
+			path:      mustCompilePath(t, "does", "not", "exist"),
 			LabelName: "phase",
 			List:      []string{"foo", "bar"},
 		}, wantResult: nil, wantErrors: nil},
 		{name: "stateset nil valueFrom", each: &compiledStateSet{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status"),
-			},
+			path:      mustCompilePath(t, "status"),
 			ValueFrom: mustCompilePath(t, "does", "not", "exist"),
 			LabelName: "phase",
 			List:      []string{"foo", "bar"},
 		}, wantResult: nil, wantErrors: nil},
 		{name: "stateset non-string value", each: &compiledStateSet{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "spec", "replicas"),
-			},
+			path:      mustCompilePath(t, "spec", "replicas"),
 			LabelName: "phase",
 			List:      []string{"1", "2"},
 		}, wantResult: nil, wantErrors: []error{
 			errors.New("[spec,replicas]: expected value for path to be string, got float64"),
 		}},
 		{name: "stateset non-string valueFrom", each: &compiledStateSet{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status"),
-			},
+			path:      mustCompilePath(t, "status"),
 			ValueFrom: mustCompilePath(t, "uptime"),
 			LabelName: "phase",
 			List:      []string{"foo", "bar"},
@@ -407,18 +360,14 @@ func Test_values(t *testing.T) {
 			errors.New("[status,uptime]: expected value for path to be string, got float64"),
 		}},
 		{name: "status_conditions", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "conditions", "[type=Ready]", "status"),
-			},
+			path: mustCompilePath(t, "status", "conditions", "[type=Ready]", "status"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 1),
 		}},
 		{name: "status_conditions_all", each: &compiledGauge{
-			compiledCommon: compiledCommon{
-				path: mustCompilePath(t, "status", "conditions"),
-				labelFromPath: map[string]valuePath{
-					"type": mustCompilePath(t, "type"),
-				},
+			path: mustCompilePath(t, "status", "conditions"),
+			labelFromPath: map[string]valuePath{
+				"type": mustCompilePath(t, "type"),
 			},
 			ValueFrom: mustCompilePath(t, "status"),
 		}, wantResult: []eachValue{
@@ -426,10 +375,8 @@ func Test_values(t *testing.T) {
 			newEachValue(t, 1, "type", "Ready"),
 		}},
 		{name: "= expression matching", each: &compiledInfo{
-			compiledCommon: compiledCommon{
-				labelFromPath: map[string]valuePath{
-					"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
-				},
+			labelFromPath: map[string]valuePath{
+				"bar": mustCompilePath(t, "metadata", "annotations", "bar=baz"),
 			},
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "bar", "baz"),
@@ -545,7 +492,7 @@ func Test_fullName(t *testing.T) {
 		{
 			name: "no prefix",
 			args: args{
-				resource: r(ptr.To("")),
+				resource: r(new("")),
 				f:        count,
 			},
 			want: "count",
@@ -553,7 +500,7 @@ func Test_fullName(t *testing.T) {
 		{
 			name: "custom",
 			args: args{
-				resource: r(ptr.To("bar_baz")),
+				resource: r(new("bar_baz")),
 				f:        count,
 			},
 			want: "bar_baz_count",
@@ -585,9 +532,9 @@ func Test_valuePath_Get(t *testing.T) {
 	type testCase struct {
 		name string
 		p    []string
-		want interface{}
+		want any
 	}
-	tt := func(name string, want interface{}, path ...string) testCase {
+	tt := func(name string, want any, path ...string) testCase {
 		return testCase{
 			name: name,
 			p:    path,

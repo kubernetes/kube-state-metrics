@@ -149,8 +149,8 @@ func createClusterRoleListWatch(kubeClient clientset.Interface, _ string, _ stri
 	}
 }
 
-func wrapClusterRoleFunc(f func(*rbacv1.ClusterRole) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapClusterRoleFunc(f func(*rbacv1.ClusterRole) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		clusterrole := obj.(*rbacv1.ClusterRole)
 
 		metricFamily := f(clusterrole)

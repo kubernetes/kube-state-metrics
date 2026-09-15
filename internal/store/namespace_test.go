@@ -45,9 +45,7 @@ func TestNamespaceStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nsActiveTest",
-				},
+				Name: "nsActiveTest",
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
 				},
@@ -62,9 +60,7 @@ func TestNamespaceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nsTerminateTest",
-				},
+				Name: "nsTerminateTest",
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
 				},
@@ -79,9 +75,7 @@ func TestNamespaceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nsTerminateWithConditionTest",
-				},
+				Name: "nsTerminateWithConditionTest",
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
 				},
@@ -111,12 +105,10 @@ func TestNamespaceStore(t *testing.T) {
 		{
 
 			Obj: &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ns1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Labels: map[string]string{
-						"app": "example1",
-					},
+				Name:              "ns1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Labels: map[string]string{
+					"app": "example1",
 				},
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
@@ -133,12 +125,10 @@ func TestNamespaceStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns2",
-					Labels: map[string]string{
-						"app": "example2",
-						"l2":  "label2",
-					},
+				Name: "ns2",
+				Labels: map[string]string{
+					"app": "example2",
+					"l2":  "label2",
 				},
 				Spec: v1.NamespaceSpec{
 					Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},

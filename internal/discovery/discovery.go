@@ -287,9 +287,13 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 	// The interval at which we will check the cache for updates.
 	t := time.NewTicker(Interval)
 	generateMetrics := func() {
+		// Tracks whether anything went wrong, so the update can be retried on the
+		// next tick instead of being dropped.
+		failed := false
 		// Get families for discovered factories.
 		customFactories, err := factoryGenerator()
 		if err != nil {
+			failed = true
 			klog.ErrorS(err, "failed to update custom resource stores")
 		}
 		// Update the list of enabled custom resources.
@@ -297,6 +301,7 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		for _, factory := range customFactories {
 			gvr, err := util.GVRFromType(factory.Name(), factory.ExpectedType())
 			if err != nil {
+				failed = true
 				klog.ErrorS(err, "failed to update custom resource stores")
 			}
 			var gvrString string
@@ -310,6 +315,7 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		// Create clients for discovered factories.
 		discoveredCustomResourceClients, err := util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
 		if err != nil {
+			failed = true
 			klog.ErrorS(err, "failed to update custom resource stores")
 		}
 		// Update the store builder with the new clients.
@@ -318,15 +324,19 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		storeBuilder.WithCustomResourceStoreFactories(customFactories...)
 		// Update the store builder with the new custom resources.
 		if err := storeBuilder.WithEnabledResources(enabledCustomResources); err != nil {
+			failed = true
 			klog.ErrorS(err, "failed to update custom resource stores")
 		}
 		// Configure the generation function for the custom resource stores.
 		storeBuilder.WithGenerateCustomResourceStoresFunc(storeBuilder.DefaultGenerateCustomResourceStoresFunc())
-		// Reset the flag, if there were no errors. Else, we'll try again on the next tick.
-		// Keep retrying if there were errors.
-		r.SafeWrite(func() {
-			r.WasUpdated = false
-		})
+		// Reset the flag only if there were no errors, so a failed update is
+		// retried on the next tick rather than waiting for an unrelated CRD event
+		// to set the flag again.
+		if !failed {
+			r.SafeWrite(func() {
+				r.WasUpdated = false
+			})
+		}
 		// Update metric handler with the new configs.
 		m.BuildWriters(ctx)
 	}

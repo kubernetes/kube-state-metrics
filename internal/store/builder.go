@@ -39,6 +39,8 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -68,6 +70,7 @@ var _ ksmtypes.BuilderInterface = &Builder{}
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
 	kubeClient                    clientset.Interface
+	apiextensionsClient           apiextensionsclientset.Interface
 	ctx                           context.Context
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
 	customResourceClients         map[string]interface{}
@@ -165,6 +168,11 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.kubeClient = c
+}
+
+// WithApiextensionsClient sets the apiextensionsClient property of a Builder.
+func (b *Builder) WithApiextensionsClient(c apiextensionsclientset.Interface) {
+	b.apiextensionsClient = c
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
@@ -354,6 +362,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"configmaps":                        func(b *Builder) []cache.Store { return b.buildConfigMapStores() },
 	"clusterrolebindings":               func(b *Builder) []cache.Store { return b.buildClusterRoleBindingStores() },
 	"cronjobs":                          func(b *Builder) []cache.Store { return b.buildCronJobStores() },
+	"customresourcedefinitions":         func(b *Builder) []cache.Store { return b.buildCustomResourceDefinitionStores() },
 	"daemonsets":                        func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
 	"deployments":                       func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
 	"endpoints":                         func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
@@ -517,6 +526,22 @@ func (b *Builder) buildServiceStores() []cache.Store {
 
 func (b *Builder) buildStatefulSetStores() []cache.Store {
 	return b.buildStoresFunc(statefulSetMetricFamilies(b.allowAnnotationsList["statefulsets"], b.allowLabelsList["statefulsets"]), &appsv1.StatefulSet{}, createStatefulSetListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildCustomResourceDefinitionStores() []cache.Store {
+	if b.apiextensionsClient == nil {
+		klog.ErrorS(nil, "Cannot build customresourcedefinitions store: no apiextensions client, set one with WithApiextensionsClient")
+		return nil
+	}
+	return b.buildClusterScopedStores(
+		customResourceDefinitionMetricFamilies(b.allowAnnotationsList["customresourcedefinitions"], b.allowLabelsList["customresourcedefinitions"]),
+		&apiextensionsv1.CustomResourceDefinition{},
+		func(_ clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+			return createCustomResourceDefinitionListWatch(b.apiextensionsClient, fieldSelector)
+		},
+		b.useAPIServerCache,
+		b.objectLimit,
+	)
 }
 
 func (b *Builder) buildStorageClassStores() []cache.Store {

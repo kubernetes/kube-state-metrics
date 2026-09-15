@@ -108,14 +108,12 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	builder.WithAllowAnnotations(map[string][]string{})
 	builder.WithAllowLabels(map[string][]string{})
 
-	// This test is not suitable to be compared in terms of time, as it includes
-	// a one second wait. Use for memory allocation comparisons, profiling, ...
+	// This test is not suitable to be compared in terms of time, as it waits for
+	// the initial writer generation. Use for memory allocation comparisons, profiling, ...
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
-	b.Run("GenerateMetrics", func(_ *testing.B) {
+	b.Run("GenerateMetrics", func(b *testing.B) {
 		handler.ConfigureSharding(ctx, 0, 1)
-
-		// Wait for caches to fill
-		time.Sleep(time.Second)
+		waitForHandlerReady(b, handler)
 	})
 
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
@@ -144,6 +142,18 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 
 		b.SetBytes(int64(accumulatedContentLength))
 	})
+}
+
+// waitForHandlerReady blocks until the handler has installed a writer generation.
+func waitForHandlerReady(tb testing.TB, handler *metricshandler.MetricsHandler) {
+	tb.Helper()
+	deadline := time.Now().Add(30 * time.Second)
+	for !handler.Ready() {
+		if time.Now().After(deadline) {
+			tb.Fatal("metrics handler did not become ready before deadline")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 // TestFullScrapeCycle is a simple smoke test covering the entire cycle from
@@ -197,8 +207,7 @@ func TestFullScrapeCycle(t *testing.T) {
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
 
-	// Wait for caches to fill
-	time.Sleep(time.Second)
+	waitForHandlerReady(t, handler)
 
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
@@ -399,7 +408,7 @@ kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Unknown"
 		}
 	}
 
-	telemetryMux := buildTelemetryServer(reg, false, nil)
+	telemetryMux := buildTelemetryServer(reg, handler, false, nil)
 
 	req2 := httptest.NewRequest("GET", "http://localhost:8081/metrics", nil)
 
@@ -473,7 +482,8 @@ func TestPprofRouting(t *testing.T) {
 		}
 
 		reg := prometheus.NewRegistry()
-		telemetryMux := buildTelemetryServer(reg, authEnabled, cfg)
+		telemetryHandler := metricshandler.New(options.NewOptions(), fake.NewSimpleClientset(), nil, false)
+		telemetryMux := buildTelemetryServer(reg, telemetryHandler, authEnabled, cfg)
 		for _, path := range pprofPaths {
 			req := httptest.NewRequest("GET", "http://localhost:8081"+path, nil)
 			_, pattern := telemetryMux.Handler(req)
@@ -569,8 +579,9 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
 	shardedHandler2.ConfigureSharding(ctx, 1, 2)
 
-	// Wait for caches to fill
-	time.Sleep(time.Second)
+	waitForHandlerReady(t, unshardedHandler)
+	waitForHandlerReady(t, shardedHandler1)
+	waitForHandlerReady(t, shardedHandler2)
 
 	// unsharded request as the controlled environment
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
@@ -723,8 +734,7 @@ func TestCustomResourceExtension(t *testing.T) {
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
 
-	// Wait for caches to fill
-	time.Sleep(time.Second)
+	waitForHandlerReady(t, handler)
 
 	req := httptest.NewRequest("GET", "http://localhost:8080/metrics", nil)
 
@@ -1094,7 +1104,7 @@ func TestBuildServersServeLandingPage(t *testing.T) {
 	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
 
 	for name, mux := range map[string]*http.ServeMux{
-		"telemetry": buildTelemetryServer(prometheus.NewRegistry(), false, nil),
+		"telemetry": buildTelemetryServer(prometheus.NewRegistry(), handler, false, nil),
 		"metrics":   buildMetricsServer(handler, durationVec, kubeClient, false, nil),
 	} {
 		req := httptest.NewRequest("GET", "/", nil)

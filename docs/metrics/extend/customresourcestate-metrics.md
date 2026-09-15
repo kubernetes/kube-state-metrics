@@ -330,49 +330,55 @@ kube_customresource_verticalpodautoscaler_status_recommendation_containerrecomme
 
 #### VerticalPodAutoscaler
 
-In v2.9.0 the `vericalpodautoscalers` resource was removed from the list of default resources. In order to generate metrics for `verticalpodautoscalers`, you can use the following Custom Resource State config:
+In v2.9.0 the `verticalpodautoscalers` resource was removed from the list of default resources.
+Passing `--resources=verticalpodautoscalers` no longer works.
+To keep collecting VPA metrics after upgrading, configure Custom Resource State (CRS) metrics as shown below.
+
+##### Differences from the old built-in collector
+
+The configuration below is intended as a drop-in replacement for the metrics that existed before v2.9.0.
+A few differences remain:
+
+* CRS always adds `customresource_group`, `customresource_kind`, and `customresource_version` labels.
+* Resource recommendation gauges are exposed as separate `_cpu` / `_memory` metric names.
+  The old collector used a single metric name with `resource` and `unit` labels.
+  Both `resource` and `unit` are still present via `commonLabels` so queries can filter the same way.
+  Using one metric name for both CPU and memory is possible (see [Same Metrics with Different Labels](#same-metrics-with-different-labels)),
+  but produces two `# HELP` lines for the same series name, which some scrapers reject.
+* Quantity parsing is handled by CRS (for example `100m` CPU and memory sizes).
+  Values should match the old collector for common cases, but edge cases may differ.
+* Labels and annotations metrics use the `Info` type instead of `Gauge`.
+  The series value is still `1`.
+
+`metricNamePrefix: "kube"` keeps metric names close to the historical
+`kube_verticalpodautoscaler_*` names. Without it, names are prefixed with
+`kube_customresource_` by default.
+
+##### RBAC
+
+kube-state-metrics needs permission to list and watch VerticalPodAutoscalers.
+When CRS is enabled, list/watch on CustomResourceDefinitions is also commonly required
+(the upstream Helm chart adds these when custom resource state is enabled):
 
 ```yaml
-# Using --resource=verticalpodautoscalers, we get the following output:
-# HELP kube_verticalpodautoscaler_annotations Kubernetes annotations converted to Prometheus labels.
-# TYPE kube_verticalpodautoscaler_annotations gauge
-# kube_verticalpodautoscaler_annotations{namespace="default",verticalpodautoscaler="hamster-vpa",target_api_version="apps/v1",target_kind="Deployment",target_name="hamster"} 1
-# A similar result can be achieved by specifying the following in --custom-resource-state-config:
-kind: CustomResourceStateMetrics
-spec:
-  resources:
-    - groupVersionKind:
-        group: autoscaling.k8s.io
-        kind: "VerticalPodAutoscaler"
-        version: "v1"
-      labelsFromPath:
-        verticalpodautoscaler: [metadata, name]
-        namespace: [metadata, namespace]
-        target_api_version: [apiVersion]
-        target_kind: [spec, targetRef, kind]
-        target_name: [spec, targetRef, name]
-      metrics:
-        - name: "annotations"
-          help: "Kubernetes annotations converted to Prometheus labels."
-          each:
-            type: Gauge
-            gauge:
-              path: [metadata, annotations]
-# This will output the following metric:
-# HELP kube_customresource_autoscaling_annotations Kubernetes annotations converted to Prometheus labels.
-# TYPE kube_customresource_autoscaling_annotations gauge
-# kube_customresource_autoscaling_annotations{customresource_group="autoscaling.k8s.io", customresource_kind="VerticalPodAutoscaler", customresource_version="v1", namespace="default",target_api_version="autoscaling.k8s.io/v1",target_kind="Deployment",target_name="hamster",verticalpodautoscaler="hamster-vpa"} 123
+- apiGroups: ["autoscaling.k8s.io"]
+  resources: ["verticalpodautoscalers"]
+  verbs: ["list", "watch"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["list", "watch"]
 ```
 
-The above configuration was tested on [this](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml) VPA configuration, with an added annotation (`foo: 123`).
+##### Complete replacement config
 
-#### All VerticalPodAutoscaler Metrics
-
-As an addition for the above configuration, here's the complete `CustomResourceStateMetrics` spec to re-enable all of the VPA metrics which are removed from the list of the default resources:
+Pass the YAML below with `--custom-resource-state-config` (inline) or
+`--custom-resource-state-config-file` (file path).
+It covers the same metrics the built-in collector used to expose:
+labels, annotations, update mode, resource policy bounds, and recommendation bounds/targets.
 
 <details>
 
- <summary>VPA CustomResourceStateMetrics</summary>
+<summary>VPA CustomResourceStateMetrics (full replacement)</summary>
 
 ```yaml
 kind: CustomResourceStateMetrics
@@ -398,7 +404,6 @@ spec:
             info:
               labelsFromPath:
                 annotation_*: [metadata, annotations]
-                name: [metadata, name]
         # kube_verticalpodautoscaler_labels
         - name: "verticalpodautoscaler_labels"
           help: "Kubernetes labels converted to Prometheus labels."
@@ -407,7 +412,6 @@ spec:
             info:
               labelsFromPath:
                 label_*: [metadata, labels]
-                name: [metadata, name]
         # kube_verticalpodautoscaler_spec_updatepolicy_updatemode
         - name: "verticalpodautoscaler_spec_updatepolicy_updatemode"
           help: "Update mode of the VerticalPodAutoscaler."
@@ -417,7 +421,7 @@ spec:
               labelName: "update_mode"
               path: [spec, updatePolicy, updateMode]
               list: ["Auto", "Initial", "Off", "Recreate"]
-        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_memory
+        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed
         - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_memory"
           help: "Minimum memory resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
@@ -430,7 +434,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [minAllowed, memory]
-        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_cpu
+        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed
         - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed_cpu"
           help: "Minimum cpu resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
@@ -443,7 +447,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [minAllowed, cpu]
-        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_memory
+        # Memory kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed
         - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_memory"
           help: "Maximum memory resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
@@ -456,7 +460,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [maxAllowed, memory]
-        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_cpu
+        # CPU kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed
         - name: "verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed_cpu"
           help: "Maximum cpu resources the VerticalPodAutoscaler can set for containers matching the name."
           commonLabels:
@@ -469,7 +473,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [maxAllowed, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory"
           help: "Minimum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
@@ -482,7 +486,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [lowerBound, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu"
           help: "Minimum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
@@ -495,7 +499,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [lowerBound, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory"
           help: "Maximum memory resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
@@ -508,7 +512,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [upperBound, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu"
           help: "Maximum cpu resources the container can use before the VerticalPodAutoscaler updater evicts it."
           commonLabels:
@@ -521,7 +525,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [upperBound, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory"
           help: "Target memory resources the VerticalPodAutoscaler recommends for the container."
           commonLabels:
@@ -534,7 +538,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [target, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu"
           help: "Target cpu resources the VerticalPodAutoscaler recommends for the container."
           commonLabels:
@@ -547,7 +551,7 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [target, cpu]
-        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory
+        # Memory kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory"
           help: "Target memory resources the VerticalPodAutoscaler recommends for the container ignoring bounds."
           commonLabels:
@@ -560,9 +564,9 @@ spec:
               labelsFromPath:
                 container: [containerName]
               valueFrom: [uncappedTarget, memory]
-        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu
+        # CPU kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget
         - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu"
-          help: "Target memory resources the VerticalPodAutoscaler recommends for the container ignoring bounds."
+          help: "Target cpu resources the VerticalPodAutoscaler recommends for the container ignoring bounds."
           commonLabels:
             unit: "core"
             resource: "cpu"
@@ -576,6 +580,36 @@ spec:
 ```
 
 </details>
+
+##### Metric name mapping
+
+| Before v2.9.0 (built-in) | CRS with `metricNamePrefix: "kube"` |
+| --- | --- |
+| `kube_verticalpodautoscaler_annotations` | `kube_verticalpodautoscaler_annotations` |
+| `kube_verticalpodautoscaler_labels` | `kube_verticalpodautoscaler_labels` |
+| `kube_verticalpodautoscaler_spec_updatepolicy_updatemode` | `kube_verticalpodautoscaler_spec_updatepolicy_updatemode` |
+| `kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed` | `..._minallowed_cpu` / `..._minallowed_memory` |
+| `kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed` | `..._maxallowed_cpu` / `..._maxallowed_memory` |
+| `kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound` | `..._lowerbound_cpu` / `..._lowerbound_memory` |
+| `kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound` | `..._upperbound_cpu` / `..._upperbound_memory` |
+| `kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target` | `..._target_cpu` / `..._target_memory` |
+| `kube_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget` | `..._uncappedtarget_cpu` / `..._uncappedtarget_memory` |
+
+Example series for a target recommendation:
+
+```prometheus
+# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu Target cpu resources the VerticalPodAutoscaler recommends for the container.
+# TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu gauge
+kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{container="hamster",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="default",resource="cpu",target_api_version="apps/v1",target_kind="Deployment",target_name="hamster",unit="core",verticalpodautoscaler="hamster-vpa"} 0.1
+# HELP kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory Target memory resources the VerticalPodAutoscaler recommends for the container.
+# TYPE kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory gauge
+kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{container="hamster",customresource_group="autoscaling.k8s.io",customresource_kind="VerticalPodAutoscaler",customresource_version="v1",namespace="default",resource="memory",target_api_version="apps/v1",target_kind="Deployment",target_name="hamster",unit="byte",verticalpodautoscaler="hamster-vpa"} 1.048576e+08
+```
+
+The configuration above was validated against the
+[hamster VPA example](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml).
+A production-oriented variant is also used by OpenShift's cluster-monitoring-operator
+[CRS ConfigMap](https://github.com/openshift/cluster-monitoring-operator/blob/main/assets/kube-state-metrics/custom-resource-state-configmap.yaml).
 
 ### Metric types
 

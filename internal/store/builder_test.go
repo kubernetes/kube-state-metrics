@@ -398,3 +398,35 @@ func TestBuilderSharedStateIsRaceFree(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestReplaceEnabledCustomResources(t *testing.T) {
+	b := NewBuilder()
+	if err := b.WithEnabledResources([]string{"pods", "deployments"}); err != nil {
+		t.Fatal(err)
+	}
+
+	customA := "example.com/v1, Resource=foos"
+	customB := "example.com/v1, Resource=bars"
+	registerStore(customA, func(*Builder) []cache.Store { return nil })
+	registerStore(customB, func(*Builder) []cache.Store { return nil })
+	t.Cleanup(func() {
+		availableStoresMu.Lock()
+		delete(availableStores, customA)
+		delete(availableStores, customB)
+		availableStoresMu.Unlock()
+	})
+
+	if err := b.ReplaceEnabledCustomResources([]string{customA, customB}); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(b.enabledResources, []string{"deployments", customB, customA, "pods"}) {
+		t.Fatalf("unexpected enabled resources after replace: %#v", b.enabledResources)
+	}
+
+	if err := b.ReplaceEnabledCustomResources([]string{customB}); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(b.enabledResources, []string{"deployments", customB, "pods"}) {
+		t.Fatalf("expected removed custom resource to be dropped: %#v", b.enabledResources)
+	}
+}

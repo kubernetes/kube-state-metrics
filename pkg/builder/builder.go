@@ -110,6 +110,16 @@ func (b *Builder) WithAllowLabels(l map[string][]string) error {
 	return b.internal.WithAllowLabels(l)
 }
 
+// WithLabelsPrefix sets the labelsPrefix property of a Builder.
+func (b *Builder) WithLabelsPrefix(prefix string) {
+	b.internal.WithLabelsPrefix(prefix)
+}
+
+// WithAnnotationsPrefix sets the annotationsPrefix property of a Builder.
+func (b *Builder) WithAnnotationsPrefix(prefix string) {
+	b.internal.WithAnnotationsPrefix(prefix)
+}
+
 // WithGenerateStoresFunc configures a custom generate store function
 func (b *Builder) WithGenerateStoresFunc(f ksmtypes.BuildStoresFunc) {
 	b.internal.WithGenerateStoresFunc(f)

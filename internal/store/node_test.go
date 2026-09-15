@@ -406,8 +406,8 @@ func TestNodeStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(nodeMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(nodeMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(nodeMetricFamilies(nil, nil, "annotation", "label"))
+		c.Headers = generator.ExtractMetricFamilyHeaders(nodeMetricFamilies(nil, nil, "annotation", "label"))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

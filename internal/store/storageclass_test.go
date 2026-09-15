@@ -107,8 +107,8 @@ func TestStorageClassStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(storageClassMetricFamilies(nil, nil, "annotation", "label"))
+		c.Headers = generator.ExtractMetricFamilyHeaders(storageClassMetricFamilies(nil, nil, "annotation", "label"))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

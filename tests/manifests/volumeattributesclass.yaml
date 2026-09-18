@@ -1,0 +1,8 @@
+apiVersion: storage.k8s.io/v1
+kind: VolumeAttributesClass
+metadata:
+  name: volumeattributesclass
+driverName: ebs.csi.aws.com
+parameters:
+  iops: "6000"
+  throughput: "250"

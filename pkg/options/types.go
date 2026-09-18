@@ -234,6 +234,31 @@ func (n *NamespaceList) Type() string {
 	return "string"
 }
 
+// VolumeAttributesClassParametersAllowList represents a flat list of VolumeAttributesClass
+// parameter keys allowed to be converted to Prometheus labels on kube_volumeattributesclass_parameters.
+type VolumeAttributesClassParametersAllowList []string
+
+func (v *VolumeAttributesClassParametersAllowList) String() string {
+	return strings.Join(*v, ",")
+}
+
+// Set converts a comma-separated string of parameter keys into a slice and appends it to the VolumeAttributesClassParametersAllowList.
+func (v *VolumeAttributesClassParametersAllowList) Set(value string) error {
+	splitParameters := strings.Split(value, ",")
+	for _, p := range splitParameters {
+		p = strings.TrimSpace(p)
+		if len(p) != 0 {
+			*v = append(*v, p)
+		}
+	}
+	return nil
+}
+
+// Type returns a descriptive string about the VolumeAttributesClassParametersAllowList type.
+func (v *VolumeAttributesClassParametersAllowList) Type() string {
+	return "string"
+}
+
 // LabelWildcard allowlists any label
 const LabelWildcard = "*"
 

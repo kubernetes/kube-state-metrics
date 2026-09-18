@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog/v2"
@@ -35,8 +36,6 @@ import (
 )
 
 var (
-	invalidLabelCharRE    = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-	matchAllCap           = regexp.MustCompile("([a-z0-9])([A-Z])")
 	conditionStatuses     = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 	allowListPatternCache sync.Map
 )
@@ -144,18 +143,101 @@ func labelName(prefix, labelName string) string {
 	return prefix + "_" + lintLabelName(SanitizeLabelName(labelName))
 }
 
+// isValidLabelChar reports whether c may appear in a Prometheus label name,
+// i.e. matches [a-zA-Z0-9_].
+func isValidLabelChar(c byte) bool {
+	return c == '_' ||
+		(c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		(c >= '0' && c <= '9')
+}
+
 // SanitizeLabelName replaces all invalid characters with an underscore.
+//
+// It is equivalent to replacing every match of [^a-zA-Z0-9_] with "_", but
+// runs a plain byte loop instead of the regexp engine: it is called for every
+// label and annotation of every object event, and the regexp version
+// dominated that path. When nothing needs replacing s is returned as is,
+// without allocating.
 func SanitizeLabelName(s string) string {
-	return invalidLabelCharRE.ReplaceAllString(s, "_")
+	i := 0
+	for i < len(s) && isValidLabelChar(s[i]) {
+		i++
+	}
+	if i == len(s) {
+		return s
+	}
+	// Replace per rune, not per byte, as the regexp did: a multi-byte
+	// character becomes a single underscore.
+	b := make([]byte, 0, len(s))
+	b = append(b, s[:i]...)
+	for i < len(s) {
+		_, width := utf8.DecodeRuneInString(s[i:])
+		if width == 1 && isValidLabelChar(s[i]) {
+			b = append(b, s[i])
+		} else {
+			b = append(b, '_')
+		}
+		i += width
+	}
+	return string(b)
 }
 
 func lintLabelName(s string) string {
 	return toSnakeCase(s)
 }
 
+// toSnakeCase inserts an underscore between a lower-case letter or digit and
+// a directly following upper-case letter, then lower-cases the result.
+//
+// It mirrors the regexp `([a-z0-9])([A-Z])` -> `${1}_${2}` it replaced,
+// including that regexp's non-overlapping matching: a match consumes both
+// characters and the scan resumes after them, so "aBC" becomes "a_bc", not
+// "a_b_c". Strings without upper-case letters, the common case for Kubernetes
+// label keys, are returned as is without allocating.
 func toSnakeCase(s string) string {
-	snake := matchAllCap.ReplaceAllString(s, "${1}_${2}")
-	return strings.ToLower(snake)
+	// First pass: find out whether anything changes and how many underscores
+	// get inserted, so the result is built in exactly one allocation.
+	hasUpper := false
+	inserts := 0
+	for i := 0; i < len(s); i++ {
+		if isUpper(s[i]) {
+			hasUpper = true
+		}
+		if i+1 < len(s) && isSnakeBoundaryStart(s[i]) && isUpper(s[i+1]) {
+			hasUpper = true
+			inserts++
+			i++
+		}
+	}
+	if !hasUpper {
+		return s
+	}
+
+	b := make([]byte, 0, len(s)+inserts)
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if i+1 < len(s) && isSnakeBoundaryStart(c) && isUpper(s[i+1]) {
+			b = append(b, c, '_', s[i+1]+('a'-'A'))
+			i++
+			continue
+		}
+		if isUpper(c) {
+			c += 'a' - 'A'
+		}
+		b = append(b, c)
+	}
+	return string(b)
+}
+
+func isUpper(c byte) bool {
+	return c >= 'A' && c <= 'Z'
+}
+
+// isSnakeBoundaryStart reports whether c can be the first character of a
+// `([a-z0-9])([A-Z])` match.
+func isSnakeBoundaryStart(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
 }
 
 func labelConflictSuffix(label string, count int) string {

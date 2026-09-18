@@ -46,6 +46,16 @@ var (
 			return make(map[string]struct{})
 		},
 	}
+
+	// snapshotPool recycles the per-scrape slice WriteAll collects each
+	// store's rendered objects into, so a large store does not allocate a
+	// fresh slice of that size on every scrape.
+	snapshotPool = sync.Pool{
+		New: func() interface{} {
+			s := make([][][]byte, 0, 1024)
+			return &s
+		},
+	}
 )
 
 // MetricsWriterList represent a list of MetricsWriter
@@ -80,25 +90,36 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		return nil
 	}
 
-	// Headers describe the families written below, so they are emitted only when
-	// there is at least one object to describe. That has to consider every store,
-	// not just the first: there is one store per namespace, so the first can be
-	// empty while a later one holds objects whose families are still written.
-	// The answer is the same for every header, so determine it once.
-	hasMetrics := false
+	// Collect every store's rendered objects once, up front. The output is
+	// grouped by family, so the objects are walked once per header: ranging
+	// over the sync.Map that many times re-traverses its hash trie for every
+	// family, whereas a flat slice is a sequential scan. The snapshot also
+	// keeps one scrape self-consistent -- an object added or removed while
+	// the response is being written is either in every family or in none.
+	// The rendered byte slices are immutable, so holding on to them is safe.
+	snapshot := snapshotPool.Get().(*[][][]byte)
+	objects := (*snapshot)[:0]
+	defer func() {
+		// Drop the references so pooled slices do not keep deleted objects'
+		// rendered bytes alive.
+		clear(objects)
+		*snapshot = objects[:0]
+		snapshotPool.Put(snapshot)
+	}()
 	for _, s := range m.stores {
-		s.metrics.Range(func(_ interface{}, _ interface{}) bool {
-			hasMetrics = true
-			return false
+		s.metrics.Range(func(_ interface{}, value interface{}) bool {
+			objects = append(objects, value.([][]byte))
+			return true
 		})
-		if hasMetrics {
-			break
-		}
 	}
 
-	for i, help := range m.stores[0].headers {
-		var err error
+	// Headers describe the families written below, so they are emitted only
+	// when there is at least one object to describe, across all stores: there
+	// is one store per namespace, so the first can be empty while a later one
+	// holds objects whose families are still written.
+	hasMetrics := len(objects) > 0
 
+	for i, help := range m.stores[0].headers {
 		// SanitizeHeaders blanks duplicate headers to preserve header/family
 		// index alignment. An empty header means suppress the header text but
 		// still emit the metric family bytes at this index.
@@ -106,30 +127,26 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 			// Avoid allocating a new string if the header lacks a trailing newline:
 			// check once and emit "\n" as a second write if needed.
 			needsNewline := help[len(help)-1] != '\n'
-			_, err = io.WriteString(w, help)
-			if err != nil {
+			if _, err := io.WriteString(w, help); err != nil {
 				return fmt.Errorf("failed to write help text: %w", err)
 			}
 			if needsNewline {
-				_, err = io.WriteString(w, "\n")
-				if err != nil {
+				if _, err := io.WriteString(w, "\n"); err != nil {
 					return fmt.Errorf("failed to write help text: %w", err)
 				}
 			}
 		}
 
-		for _, s := range m.stores {
-			s.metrics.Range(func(_ interface{}, value interface{}) bool {
-				metricFamilies := value.([][]byte)
-				_, err = w.Write(metricFamilies[i])
-				if err != nil {
-					err = fmt.Errorf("failed to write metrics family: %w", err)
-					return false
-				}
-				return true
-			})
-			if err != nil {
-				return err
+		for _, families := range objects {
+			family := families[i]
+			// Families with no metrics render to nothing. Skipping them saves
+			// a call through the (possibly gzip-wrapped) response writer per
+			// object, which adds up for families most objects do not have.
+			if len(family) == 0 {
+				continue
+			}
+			if _, err := w.Write(family); err != nil {
+				return fmt.Errorf("failed to write metrics family: %w", err)
 			}
 		}
 	}

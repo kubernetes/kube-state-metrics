@@ -18,12 +18,8 @@ package sharding
 
 import (
 	"fmt"
-	"hash/fnv"
-	"sync"
+	"math"
 
-	jump "github.com/dgryski/go-jump"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -33,79 +29,6 @@ import (
 type shardedListWatch struct {
 	sharding *sharding
 	lw       cache.ListerWatcher
-}
-
-// shardedWatch filters events from an upstream watch while allowing Stop to
-// interrupt both receiving and forwarding. This is intentionally local to the
-// sharding implementation: once its consumer stops, an in-flight event may be
-// discarded so the forwarding goroutine can terminate promptly. This avoids
-// the blocked-send leak in watch.Filter documented in:
-// https://github.com/kubernetes/kubernetes/issues/113254.
-type shardedWatch struct {
-	incoming watch.Interface
-	result   chan watch.Event
-	filter   watch.FilterFunc
-	stopCh   chan struct{}
-	doneCh   chan struct{}
-	stopOnce sync.Once
-}
-
-var _ watch.Interface = &shardedWatch{}
-
-func newShardedWatch(incoming watch.Interface, filter watch.FilterFunc) *shardedWatch {
-	w := &shardedWatch{
-		incoming: incoming,
-		result:   make(chan watch.Event),
-		filter:   filter,
-		stopCh:   make(chan struct{}),
-		doneCh:   make(chan struct{}),
-	}
-	go w.run()
-	return w
-}
-
-// ResultChan returns the filtered event stream.
-func (w *shardedWatch) ResultChan() <-chan watch.Event {
-	return w.result
-}
-
-// Stop stops the upstream watch and unblocks the forwarding goroutine.
-func (w *shardedWatch) Stop() {
-	w.stopOnce.Do(func() {
-		// Close stopCh first so forwarding can stop independently of upstream
-		// watcher shutdown.
-		close(w.stopCh)
-		w.incoming.Stop()
-	})
-}
-
-func (w *shardedWatch) run() {
-	defer close(w.doneCh)
-	defer close(w.result)
-	defer w.Stop()
-
-	incoming := w.incoming.ResultChan()
-	for {
-		select {
-		case <-w.stopCh:
-			return
-		case event, ok := <-incoming:
-			if !ok {
-				return
-			}
-
-			filtered, keep := w.filter(event)
-			if !keep {
-				continue
-			}
-
-			select {
-			case <-w.stopCh:
-				return
-			case w.result <- filtered:
-			}
-		}
-	}
 }
 
 // NewShardedListWatch returns a new shardedListWatch via the cache.ListerWatcher interface.
@@ -121,86 +44,13 @@ func NewShardedListWatch(shard int32, totalShards int, lw cache.ListerWatcher) c
 }
 
 func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, error) {
-	list, err := s.lw.List(options)
-	if err != nil {
-		return nil, err
-	}
-	// Shard items outlive the source list. ExtractListWithAlloc shallow-copies
-	// non-pointer items so retained objects cannot keep the source Items backing
-	// array reachable.
-	items, err := meta.ExtractListWithAlloc(list)
-	if err != nil {
-		return nil, err
-	}
-	metaObj, err := meta.ListAccessor(list)
-	if err != nil {
-		return nil, err
-	}
-	res := &metav1.List{
-		Items: []runtime.RawExtension{},
-	}
-	for _, item := range items {
-		a, err := meta.Accessor(item)
-		if err != nil {
-			return nil, err
-		}
-		if s.sharding.keep(a) {
-			res.Items = append(res.Items, runtime.RawExtension{Object: item})
-		}
-	}
-	res.ResourceVersion = metaObj.GetResourceVersion()
-	// The reflector pages through large lists. Dropping the continue token would
-	// end the pager after the first page and silently truncate the relist, so it
-	// has to survive the shard filtering along with the resource version.
-	res.Continue = metaObj.GetContinue()
-	res.RemainingItemCount = metaObj.GetRemainingItemCount()
-
-	return res, nil
+	options.ShardSelector = s.sharding.selector()
+	return s.lw.List(options)
 }
 
 func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, error) {
-	w, err := s.lw.Watch(options)
-	if err != nil {
-		return nil, err
-	}
-
-	return newShardedWatch(w, s.filterWatchEvent), nil
-}
-
-// filterWatchEvent shards resource state changes, passes control events through,
-// and rejects unknown events so new mutation types cannot bypass sharding.
-func (s *shardedListWatch) filterWatchEvent(in watch.Event) (out watch.Event, keep bool) {
-	switch in.Type {
-	case watch.Added, watch.Modified, watch.Deleted:
-		a, err := meta.Accessor(in.Object)
-		if err != nil {
-			return internalErrorEvent(fmt.Errorf("sharded list watch failed to access object metadata for event type %q: %w", in.Type, err)), true
-		}
-
-		return in, s.sharding.keep(a)
-	case watch.Bookmark, watch.Error:
-		return in, true
-	default:
-		return internalErrorEvent(fmt.Errorf("sharded list watch failed to recognize event type %q", in.Type)), true
-	}
-}
-
-func internalErrorEvent(err error) watch.Event {
-	return watch.Event{
-		Type:   watch.Error,
-		Object: &apierrors.NewInternalError(err).ErrStatus,
-	}
-}
-
-// IsWatchListSemanticsUnSupported delegates to the underlying ListerWatcher if it implements this interface.
-func (s *shardedListWatch) IsWatchListSemanticsUnSupported() bool {
-	type unsupported interface {
-		IsWatchListSemanticsUnSupported() bool
-	}
-	if u, ok := s.lw.(unsupported); ok {
-		return u.IsWatchListSemanticsUnSupported()
-	}
-	return false
+	options.ShardSelector = s.sharding.selector()
+	return s.lw.Watch(options)
 }
 
 type sharding struct {
@@ -208,8 +58,13 @@ type sharding struct {
 	totalShards int
 }
 
-func (s *sharding) keep(o metav1.Object) bool {
-	h := fnv.New64a()
-	h.Write([]byte(o.GetUID()))
-	return jump.Hash(h.Sum64(), s.totalShards) == s.shard
+func (s *sharding) selector() string {
+	step := uint64(math.MaxUint64)/uint64(s.totalShards) + 1
+	start := step * uint64(s.shard)
+	// end overflows uint64
+	if s.shard+1 == int32(s.totalShards) {
+		return fmt.Sprintf("shardRange(object.metadata.uid, '0x%016x', '0x10000000000000000')", start)
+	}
+	end := start + step
+	return fmt.Sprintf("shardRange(object.metadata.uid, '0x%016x', '0x%16x')", start, end)
 }

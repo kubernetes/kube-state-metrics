@@ -19,6 +19,7 @@ package sharding
 import (
 	"fmt"
 	"hash/fnv"
+	"math"
 	"sync"
 
 	jump "github.com/dgryski/go-jump"
@@ -121,10 +122,20 @@ func NewShardedListWatch(shard int32, totalShards int, lw cache.ListerWatcher) c
 }
 
 func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, error) {
+	options.ShardSelector = s.sharding.selector()
 	list, err := s.lw.List(options)
 	if err != nil {
 		return nil, err
 	}
+
+	// Verifying server support. If shardInfo is absent, the server did not honor the shard selector
+	// and the client received the complete, unfiltered collection.
+	getter, ok := list.(metav1.ShardedListInterface)
+	if ok && getter.GetShardInfo() != nil {
+		s.sharding.serverSide = true
+		return list, nil
+	}
+
 	// Shard items outlive the source list. ExtractListWithAlloc shallow-copies
 	// non-pointer items so retained objects cannot keep the source Items backing
 	// array reachable.
@@ -159,6 +170,15 @@ func (s *shardedListWatch) List(options metav1.ListOptions) (runtime.Object, err
 }
 
 func (s *shardedListWatch) Watch(options metav1.ListOptions) (watch.Interface, error) {
+	// Verifying server side sharding support by the side effect of List method
+	listOptions := options
+	listOptions.Limit = 1
+	_, err := s.List(listOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	options.ShardSelector = s.sharding.selector()
 	w, err := s.lw.Watch(options)
 	if err != nil {
 		return nil, err
@@ -206,10 +226,25 @@ func (s *shardedListWatch) IsWatchListSemanticsUnSupported() bool {
 type sharding struct {
 	shard       int32
 	totalShards int
+	serverSide  bool
 }
 
 func (s *sharding) keep(o metav1.Object) bool {
+	if s.serverSide {
+		return true
+	}
 	h := fnv.New64a()
 	h.Write([]byte(o.GetUID()))
 	return jump.Hash(h.Sum64(), s.totalShards) == s.shard
+}
+
+func (s *sharding) selector() string {
+	step := uint64(math.MaxUint64)/uint64(s.totalShards) + 1
+	start := step * uint64(s.shard)
+	// end overflows uint64
+	if s.shard+1 == int32(s.totalShards) {
+		return fmt.Sprintf("shardRange(object.metadata.uid, '0x%016x', '0x10000000000000000')", start)
+	}
+	end := start + step
+	return fmt.Sprintf("shardRange(object.metadata.uid, '0x%016x', '0x%016x')", start, end)
 }

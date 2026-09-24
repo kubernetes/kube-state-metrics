@@ -41,6 +41,22 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
+// negotiableFormats lists the exposition formats considered during content
+// negotiation, in order of preference. It matches the list used by the
+// deprecated expfmt.NegotiateIncludingOpenMetrics so negotiation is unchanged;
+// anything other than OpenMetrics is served as plain text below.
+var negotiableFormats = func() []expfmt.Format {
+	openMetrics001, _ := expfmt.NewOpenMetricsFormat(expfmt.OpenMetricsVersion_0_0_1)
+	return []expfmt.Format{
+		expfmt.NewFormat(expfmt.TypeOpenMetrics),
+		openMetrics001,
+		expfmt.NewFormat(expfmt.TypeProtoDelim),
+		expfmt.NewFormat(expfmt.TypeProtoText),
+		expfmt.NewFormat(expfmt.TypeProtoCompact),
+		expfmt.NewFormat(expfmt.TypeTextPlain),
+	}
+}()
+
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
 // /metrics endpoint. It allows concurrent reconfiguration at runtime.
 type MetricsHandler struct {
@@ -205,7 +221,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resHeader := w.Header()
 	var writer io.Writer = w
 
-	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
+	contentType := expfmt.NegotiateAccept(r.Header, negotiableFormats...)
 
 	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022.
 

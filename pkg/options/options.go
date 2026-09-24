@@ -38,6 +38,10 @@ var (
 	defaultServerReadHeaderTimeout = 5 * time.Second
 )
 
+// DefaultStoreSyncTimeout is the default maximum time to wait for reflector
+// stores to complete their initial list before swapping metrics writers.
+const DefaultStoreSyncTimeout = 120 * time.Second
+
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
 	AnnotationsAllowList LabelsAllowList `yaml:"annotations_allow_list"`
@@ -78,6 +82,7 @@ type Options struct {
 	ServerWriteTimeout      time.Duration `yaml:"server_write_timeout"`
 	ServerIdleTimeout       time.Duration `yaml:"server_idle_timeout"`
 	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
+	StoreSyncTimeout        time.Duration `yaml:"store_sync_timeout"`
 
 	Shard                int32 `yaml:"shard"`
 	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
@@ -191,6 +196,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")
 	o.cmd.Flags().DurationVar(&o.ServerIdleTimeout, "server-idle-timeout", defaultServerIdleTimeout, "The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients.")
 	o.cmd.Flags().DurationVar(&o.ServerReadHeaderTimeout, "server-read-header-timeout", defaultServerReadHeaderTimeout, "The maximum duration for reading the header of requests.")
+	o.cmd.Flags().DurationVar(&o.StoreSyncTimeout, "store-sync-timeout", DefaultStoreSyncTimeout, "Maximum time to wait for reflector stores to complete their initial list before swapping metrics writers during a rebuild.")
 }
 
 // Parse parses the flag definitions from the argument list.

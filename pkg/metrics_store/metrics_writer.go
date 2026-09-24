@@ -42,7 +42,7 @@ var (
 	gaugeNewline = gaugeTypeString + "\n"
 
 	seenPool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return make(map[string]struct{})
 		},
 	}
@@ -87,7 +87,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 	// The answer is the same for every header, so determine it once.
 	hasMetrics := false
 	for _, s := range m.stores {
-		s.metrics.Range(func(_ interface{}, _ interface{}) bool {
+		s.metrics.Range(func(_ any, _ any) bool {
 			hasMetrics = true
 			return false
 		})
@@ -119,7 +119,7 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		}
 
 		for _, s := range m.stores {
-			s.metrics.Range(func(_ interface{}, value interface{}) bool {
+			s.metrics.Range(func(_ any, value any) bool {
 				metricFamilies := value.([][]byte)
 				_, err = w.Write(metricFamilies[i])
 				if err != nil {

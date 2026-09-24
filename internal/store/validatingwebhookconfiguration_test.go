@@ -33,11 +33,9 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "validatingwebhookconfiguration1",
-					Namespace:       "ns1",
-					ResourceVersion: "123456",
-				},
+				Name:            "validatingwebhookconfiguration1",
+				Namespace:       "ns1",
+				ResourceVersion: "123456",
 			},
 			Want: `
 				# HELP kube_validatingwebhookconfiguration_info Information about the ValidatingWebhookConfiguration.
@@ -51,12 +49,10 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 		},
 		{
 			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "validatingwebhookconfiguration2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "validatingwebhookconfiguration2",
+				Namespace:         "ns2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "abcdef",
 			},
 			Want: `
 			# HELP kube_validatingwebhookconfiguration_created Unix creation timestamp.
@@ -72,12 +68,10 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 		},
 		{
 			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "validatingwebhookconfiguration3",
-					Namespace:         "ns3",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "validatingwebhookconfiguration3",
+				Namespace:         "ns3",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "abcdef",
 				Webhooks: []admissionregistrationv1.ValidatingWebhook{
 					{
 						Name: "webhook_with_service",

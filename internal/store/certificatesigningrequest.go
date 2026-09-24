@@ -140,8 +140,8 @@ func csrMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 	}
 }
 
-func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		csr := obj.(*certv1.CertificateSigningRequest)
 		metricFamily := f(csr)
 

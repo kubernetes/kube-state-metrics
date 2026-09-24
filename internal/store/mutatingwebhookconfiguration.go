@@ -122,8 +122,8 @@ func createMutatingWebhookConfigurationListWatch(kubeClient clientset.Interface,
 	}
 }
 
-func wrapMutatingWebhookConfigurationFunc(f func(*admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapMutatingWebhookConfigurationFunc(f func(*admissionregistrationv1.MutatingWebhookConfiguration) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		mutatingWebhookConfiguration := obj.(*admissionregistrationv1.MutatingWebhookConfiguration)
 
 		metricFamily := f(mutatingWebhookConfiguration)

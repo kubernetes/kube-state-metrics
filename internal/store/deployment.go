@@ -439,8 +439,8 @@ func deploymentMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 	}
 }
 
-func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		deployment := obj.(*v1.Deployment)
 
 		metricFamily := f(deployment)

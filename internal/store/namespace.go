@@ -162,8 +162,8 @@ func namespaceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 	}
 }
 
-func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		namespace := obj.(*v1.Namespace)
 
 		metricFamily := f(namespace)

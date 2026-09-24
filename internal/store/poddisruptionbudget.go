@@ -208,8 +208,8 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 	}
 }
 
-func wrapPodDisruptionBudgetFunc(f func(*policyv1.PodDisruptionBudget) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapPodDisruptionBudgetFunc(f func(*policyv1.PodDisruptionBudget) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		podDisruptionBudget := obj.(*policyv1.PodDisruptionBudget)
 
 		metricFamily := f(podDisruptionBudget)

@@ -85,7 +85,7 @@ func (b *Builder) WithKubeClient(c clientset.Interface) {
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
-func (b *Builder) WithCustomResourceClients(cs map[string]interface{}) {
+func (b *Builder) WithCustomResourceClients(cs map[string]any) {
 	b.internal.WithCustomResourceClients(cs)
 }
 

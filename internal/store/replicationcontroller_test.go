@@ -60,17 +60,15 @@ func TestReplicationControllerStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.ReplicationController{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "rc1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Generation:        21,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind:       "DeploymentConfig",
-							Name:       "dc-name",
-							Controller: &trueValue,
-						},
+				Name:              "rc1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				Generation:        21,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "DeploymentConfig",
+						Name:       "dc-name",
+						Controller: &trueValue,
 					},
 				},
 				Status: v1.ReplicationControllerStatus{
@@ -98,11 +96,9 @@ func TestReplicationControllerStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.ReplicationController{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "rc2",
-					Namespace:  "ns2",
-					Generation: 14,
-				},
+				Name:       "rc2",
+				Namespace:  "ns2",
+				Generation: 14,
 				Status: v1.ReplicationControllerStatus{
 					Replicas:             0,
 					FullyLabeledReplicas: 5,
@@ -127,16 +123,14 @@ func TestReplicationControllerStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.ReplicationController{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "rc3",
-					Namespace:  "ns3",
-					Generation: 5,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind:       "DeploymentConfig",
-							Name:       "dc-test",
-							Controller: nil,
-						},
+				Name:       "rc3",
+				Namespace:  "ns3",
+				Generation: 5,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "DeploymentConfig",
+						Name:       "dc-test",
+						Controller: nil,
 					},
 				},
 				Status: v1.ReplicationControllerStatus{

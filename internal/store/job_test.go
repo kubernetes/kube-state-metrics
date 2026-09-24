@@ -89,20 +89,18 @@ func TestJobStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "RunningJob1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Generation:        1,
-					Labels: map[string]string{
-						"app": "example-running-1",
-					},
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind:       "CronJob",
-							Name:       "cronjob-name",
-							Controller: &trueValue,
-						},
+				Name:              "RunningJob1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				Generation:        1,
+				Labels: map[string]string{
+					"app": "example-running-1",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "CronJob",
+						Name:       "cronjob-name",
+						Controller: &trueValue,
 					},
 				},
 				Status: v1batch.JobStatus{
@@ -134,13 +132,11 @@ func TestJobStore(t *testing.T) {
 		},
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "SuccessfulJob1",
-					Namespace:  "ns1",
-					Generation: 1,
-					Labels: map[string]string{
-						"app": "example-successful-1",
-					},
+				Name:       "SuccessfulJob1",
+				Namespace:  "ns1",
+				Generation: 1,
+				Labels: map[string]string{
+					"app": "example-successful-1",
 				},
 				Status: v1batch.JobStatus{
 					Active:         0,
@@ -177,13 +173,11 @@ func TestJobStore(t *testing.T) {
 		},
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "FailedJob1",
-					Namespace:  "ns1",
-					Generation: 1,
-					Labels: map[string]string{
-						"app": "example-failed-1",
-					},
+				Name:       "FailedJob1",
+				Namespace:  "ns1",
+				Generation: 1,
+				Labels: map[string]string{
+					"app": "example-failed-1",
 				},
 				Status: v1batch.JobStatus{
 					Active:         0,
@@ -222,10 +216,8 @@ func TestJobStore(t *testing.T) {
 		},
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "FailedJobWithNoConditions",
-					Namespace: "ns1",
-				},
+				Name:      "FailedJobWithNoConditions",
+				Namespace: "ns1",
 				Status: v1batch.JobStatus{
 					Failed: 1,
 				},
@@ -245,13 +237,11 @@ func TestJobStore(t *testing.T) {
 		},
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "SuccessfulJob2NoActiveDeadlineSeconds",
-					Namespace:  "ns1",
-					Generation: 1,
-					Labels: map[string]string{
-						"app": "example-successful-2",
-					},
+				Name:       "SuccessfulJob2NoActiveDeadlineSeconds",
+				Namespace:  "ns1",
+				Generation: 1,
+				Labels: map[string]string{
+					"app": "example-successful-2",
 				},
 				Status: v1batch.JobStatus{
 					Active:         0,
@@ -288,11 +278,9 @@ func TestJobStore(t *testing.T) {
 		},
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "SuspendedNoActiveDeadlineSeconds",
-					Namespace:  "ns1",
-					Generation: 1,
-				},
+				Name:       "SuspendedNoActiveDeadlineSeconds",
+				Namespace:  "ns1",
+				Generation: 1,
 				Status: v1batch.JobStatus{
 					Active:    0,
 					Failed:    0,
@@ -323,11 +311,9 @@ func TestJobStore(t *testing.T) {
 		},
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "UnsuspendedNoActiveDeadlineSeconds",
-					Namespace:  "ns1",
-					Generation: 1,
-				},
+				Name:       "UnsuspendedNoActiveDeadlineSeconds",
+				Namespace:  "ns1",
+				Generation: 1,
 				Status: v1batch.JobStatus{
 					Active:    0,
 					Failed:    0,
@@ -359,11 +345,9 @@ func TestJobStore(t *testing.T) {
 		// Test cases for ready pods metric
 		{
 			Obj: &v1batch.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "job-with-ready-pods",
-					Namespace: "ns1",
-					UID:       "job-123",
-				},
+				Name:      "job-with-ready-pods",
+				Namespace: "ns1",
+				UID:       "job-123",
 				Status: v1batch.JobStatus{
 					Active: 2,
 					Ready:  &readyValue,

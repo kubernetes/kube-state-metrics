@@ -55,6 +55,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
@@ -117,6 +118,13 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			Name: "kube_state_metrics_last_config_reload_success_timestamp_seconds",
 			Help: "Timestamp of the last successful configuration reload.",
 		}, []string{"type", "filename"})
+	configErrors := promauto.With(ksmMetricsRegistry).NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "kube_state_metrics_config_errors_total",
+			Help: "Total number of configuration error encountered.",
+		},
+		[]string{"type"},
+	)
 
 	// Register self-metrics to track the state of the cache.
 	crdsAddEventsCounter := promauto.With(ksmMetricsRegistry).NewCounter(prometheus.CounterOpts{
@@ -153,6 +161,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 				// DO NOT end the process.
 				// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
 				klog.ErrorS(err, "failed to unmarshal opts config file")
+				configErrors.WithLabelValues("config").Inc()
 				// Wait for the next reload.
 				klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
 				klog.InfoS("waiting for config to be fixed")
@@ -334,7 +343,16 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		// FromConfig will return different behaviours when a G**-based config is supplied (since that is subject to change based on the resources present in the cluster).
 		fn, err := customresourcestate.FromConfig(config, discovererInstance)
 		if err != nil {
+			configErrors.WithLabelValues("customresourceconfig").Inc()
 			return err
+		}
+		instrumentedFn := func() ([]customresource.RegistryFactory, error) {
+			factories, err := fn()
+			if err != nil {
+				configErrors.WithLabelValues("customresourceconfig").Inc()
+				return nil, err
+			}
+			return factories, nil
 		}
 		// This starts a goroutine that will keep the cache up to date.
 		discovererInstance.PollForCacheUpdates(
@@ -342,7 +360,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			opts,
 			storeBuilder,
 			m,
-			fn,
+			instrumentedFn,
 		)
 	}
 

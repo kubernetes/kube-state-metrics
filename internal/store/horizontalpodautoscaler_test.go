@@ -685,3 +685,39 @@ func TestHPAStatusTargetMetricWithNilSource(t *testing.T) {
 		})
 	}
 }
+
+// spec.metrics is validated by validateMetricSpec, so the source matching Type
+// is populated for anything the API server accepted. The generator still must
+// not depend on that: it runs against whatever the reflector hands it, and a
+// nil deref there takes down every metric the exporter serves.
+func TestHPASpecTargetMetricWithNilSource(t *testing.T) {
+	for _, metricType := range []autoscaling.MetricSourceType{
+		autoscaling.ObjectMetricSourceType,
+		autoscaling.PodsMetricSourceType,
+		autoscaling.ResourceMetricSourceType,
+		autoscaling.ContainerResourceMetricSourceType,
+		autoscaling.ExternalMetricSourceType,
+	} {
+		t.Run(string(metricType), func(t *testing.T) {
+			hpa := &autoscaling.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{Name: "hpa", Namespace: "ns"},
+				Spec: autoscaling.HorizontalPodAutoscalerSpec{
+					// Type is set, but the matching source is not.
+					Metrics: []autoscaling.MetricSpec{{Type: metricType}},
+				},
+			}
+
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("panic generating metrics for a %s spec with no source: %v", metricType, r)
+				}
+			}()
+
+			g := createHPASpecTargetMetric()
+			family := g.Generate(hpa)
+			if len(family.Metrics) != 0 {
+				t.Errorf("expected the entry to be skipped, got %d metrics", len(family.Metrics))
+			}
+		})
+	}
+}

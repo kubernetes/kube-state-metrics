@@ -239,10 +239,10 @@ func (s *sharding) keep(o metav1.Object) bool {
 }
 
 func (s *sharding) selector() string {
-	step := uint64(math.MaxUint64)/uint64(s.totalShards) + 1
-	start := step * uint64(s.shard)
+	step := uint64(math.MaxUint64)/uint64(s.totalShards) + 1 //nolint:gosec // G115: totalShards is always non-negative
+	start := step * uint64(s.shard)                          //nolint:gosec // G115: shard is always non-negative
 	// end overflows uint64
-	if s.shard+1 == int32(s.totalShards) {
+	if int(s.shard+1) == s.totalShards {
 		return fmt.Sprintf("shardRange(object.metadata.uid, '0x%016x', '0x10000000000000000')", start)
 	}
 	end := start + step

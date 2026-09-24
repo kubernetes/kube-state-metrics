@@ -158,12 +158,16 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 				klog.InfoS("waiting for config to be fixed")
 				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
 				<-ctx.Done()
-			} else {
-				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
-				configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
-				hash := md5HashAsMetricValue(configFile)
-				configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+				// The watcher cancelled this run to start a fresh one; hand over
+				// rather than race it for the listen ports and the shared options.
+				return nil
 			}
+
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
+			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
+			hash := md5HashAsMetricValue(configFile)
+			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+
 			opts = configureResourcesAndMetrics(opts, configFile)
 			klog.InfoS("Using config file", "file", got)
 		}

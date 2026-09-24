@@ -9,4 +9,5 @@ steps:
     - TAG=$_PULL_BASE_REF
     - GIT_COMMIT=$_PULL_BASE_SHA
     args:
+    - install-goreleaser
     - push

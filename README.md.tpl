@@ -346,6 +346,38 @@ Example:
 If both `resources` and `exclude_resources` are provided, the `resources` parameter acts as an allowlist, and `exclude_resources` acts as a denylist, filtering out any resources specified in the `exclude_resources` parameter from the allowed resources.
 The exclude_resources takes precedence here and you can only filter on resources that are enabled in kube-state-metrics.
 
+#### High availability
+
+kube-state-metrics does not implement leader election. Each process is a full
+exporter built from the Kubernetes API, so availability is about keeping at least
+one healthy instance reachable for scrapes, not about electing a single writer.
+
+A typical multi-replica Deployment looks like any other HA in-cluster service:
+
+* **Two or more replicas** of the same configuration (same resource allow/deny lists).
+* **Pod anti-affinity** on hostname (prefer hard anti-affinity) so a single node
+  outage does not take down every instance.
+* **Rolling updates** with `maxUnavailable: 1` so one Pod stays Ready during upgrades.
+* A **PodDisruptionBudget** with `minAvailable: 1` (or higher for larger replica counts).
+
+Prometheus (or another scraper) should discover **each** Pod or the headless
+Service endpoints as separate targets. Series then differ by the usual
+`instance` / pod labels. Do **not** point a single scrape job at a load-balanced
+Service VIP if that collapses replicas into one target — you would only ever
+scrape one Pod and lose the HA benefit during rollouts.
+
+Because both replicas derive gauges and counters from the same apiserver state,
+values stay aligned under normal conditions. Brief skew can still appear while
+one instance is still catching up after a restart. For SLI-style queries over a
+small set of metrics, aggregating with `avg` (or `max`) across instances is a
+common approach; reject-or-skip out-of-order samples if your TSDB enforces
+ordering.
+
+Use [horizontal sharding](#horizontal-sharding) when a single instance is too
+large for the cluster, not only as an HA tool. Shards partition object ownership;
+replicas of the **same** shard still need the anti-affinity / PDB pattern above
+if you want that shard to survive a node drain.
+
 ### Setup
 
 Install this project to your `$GOPATH` using `go get`:

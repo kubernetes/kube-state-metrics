@@ -66,6 +66,105 @@ func TestOptionsParse(t *testing.T) {
 	}
 }
 
+func TestValidateLabelPrefix(t *testing.T) {
+	tests := []struct {
+		prefix    string
+		wantError bool
+	}{
+		// valid
+		{prefix: "", wantError: false},
+		{prefix: "label", wantError: false},
+		{prefix: "annotation", wantError: false},
+		{prefix: "my_prefix", wantError: false},
+		{prefix: "L", wantError: false},
+		// single underscore followed by letters is fine
+		{prefix: "_a", wantError: false},
+		// invalid: produces __<key> labels (reserved by Prometheus)
+		{prefix: "_", wantError: true},
+		{prefix: "__", wantError: true},
+		{prefix: "__foo", wantError: true},
+		// invalid characters
+		{prefix: "foo.bar", wantError: true},
+		{prefix: "foo-bar", wantError: true},
+		{prefix: "foo bar", wantError: true},
+		// starts with digit
+		{prefix: "123bad", wantError: true},
+	}
+
+	for _, tc := range tests {
+		t.Run("prefix="+tc.prefix, func(t *testing.T) {
+			err := validateLabelPrefix(tc.prefix, "metric-labels-prefix")
+			if tc.wantError && err == nil {
+				t.Errorf("expected error for prefix %q, got nil", tc.prefix)
+			}
+			if !tc.wantError && err != nil {
+				t.Errorf("unexpected error for prefix %q: %v", tc.prefix, err)
+			}
+		})
+	}
+}
+
+func TestValidatePrefixViaOptions(t *testing.T) {
+	tests := []struct {
+		desc              string
+		labelsPrefix      string
+		annotationsPrefix string
+		wantError         bool
+	}{
+		{
+			desc:              "defaults are valid",
+			labelsPrefix:      "label",
+			annotationsPrefix: "annotation",
+			wantError:         false,
+		},
+		{
+			desc:              "empty prefixes are valid",
+			labelsPrefix:      "",
+			annotationsPrefix: "",
+			wantError:         false,
+		},
+		{
+			desc:              "invalid labels prefix rejected",
+			labelsPrefix:      "foo.bar",
+			annotationsPrefix: "annotation",
+			wantError:         true,
+		},
+		{
+			desc:              "invalid annotations prefix rejected",
+			labelsPrefix:      "label",
+			annotationsPrefix: "__reserved",
+			wantError:         true,
+		},
+		{
+			desc:              "underscore-only labels prefix rejected",
+			labelsPrefix:      "_",
+			annotationsPrefix: "annotation",
+			wantError:         true,
+		},
+		{
+			desc:              "underscore-only annotations prefix rejected",
+			labelsPrefix:      "label",
+			annotationsPrefix: "_",
+			wantError:         true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			opts := NewOptions()
+			opts.LabelsPrefix = tc.labelsPrefix
+			opts.AnnotationsPrefix = tc.annotationsPrefix
+			err := opts.Validate()
+			if tc.wantError && err == nil {
+				t.Error("expected validation error, got nil")
+			}
+			if !tc.wantError && err != nil {
+				t.Errorf("unexpected validation error: %v", err)
+			}
+		})
+	}
+}
+
 func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
 	t.Run("deprecated key populates alias field", func(t *testing.T) {
 		opts := NewOptions()

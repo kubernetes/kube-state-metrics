@@ -39,7 +39,7 @@ var (
 	descNetworkPolicyLabelsDefaultLabels = []string{"namespace", "networkpolicy"}
 )
 
-func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_networkpolicy_created",
@@ -69,7 +69,7 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, n.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -91,7 +91,7 @@ func networkPolicyMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, n.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

@@ -292,6 +292,13 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 	klog.InfoS("Using labels allowlist", "labelsAllowList", opts.LabelsAllowList)
 
+	volumeAttributesClassParametersAllowList := opts.VolumeAttributesClassParametersAllowList
+	if len(volumeAttributesClassParametersAllowList) == 0 {
+		volumeAttributesClassParametersAllowList = options.DefaultVolumeAttributesClassParametersAllowList
+	}
+	storeBuilder.WithAllowVolumeAttributesClassParameters(volumeAttributesClassParametersAllowList)
+	klog.InfoS("Using volumeattributesclass parameters allowlist", "volumeAttributesClassParametersAllowList", volumeAttributesClassParametersAllowList)
+
 	ksmMetricsRegistry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		collectors.NewGoCollector(),

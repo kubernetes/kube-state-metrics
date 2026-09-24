@@ -126,6 +126,7 @@
         resources: [
           'storageclasses',
           'volumeattachments',
+          'volumeattributesclasses',
         ],
         verbs: ['list', 'watch'],
       },

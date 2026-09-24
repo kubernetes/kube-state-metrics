@@ -346,7 +346,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		)
 	}
 
-	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, kubeConfig)
+	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, m, opts.AuthFilter, kubeConfig)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
 	telemetryServer := http.Server{
 		Handler:           telemetryMux,
@@ -463,7 +463,7 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 	return opts
 }
 
-func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
+func buildTelemetryServer(registry prometheus.Gatherer, m *metricshandler.MetricsHandler, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	loghandler := logr.ToSlogHandler(klog.Background())
@@ -520,8 +520,14 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 		mux.Handle(path, h)
 	}
 
-	// Add readyzPath
+	// Add readyzPath on the telemetry server. Readiness probes must target
+	// opts.TelemetryPort (default 8081), not the main metrics port.
 	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if !m.Ready() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
+			return
+		}
 		count, err := util.GatherAndCount(registry)
 		if err != nil || count == 0 {
 			w.WriteHeader(http.StatusServiceUnavailable)

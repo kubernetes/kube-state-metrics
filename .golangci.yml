@@ -39,6 +39,7 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: .*cache\.(ListWatch|ListerWatcher)\)\.(List|Watch)(Func)? is deprecated'
+        path: 'internal/store/|pkg/(app|customresourcestate|sharding|watch)/|tests/lib/'
 
     paths:
       - third_party$

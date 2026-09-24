@@ -64,6 +64,14 @@ func TestSharding(t *testing.T) {
 	if s2.keep(cm) {
 		t.Fatal("Shard two should not pick up the object.")
 	}
+
+	if s1.selector() != "shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')" {
+		t.Fatal("Shard selector of shard one must equal to shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000').")
+	}
+
+	if s2.selector() != "shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')" {
+		t.Fatal("Shard selector of shard one must equal to shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000').")
+	}
 }
 
 func TestShardedListWatchFiltersOnlyResourceStateEvents(t *testing.T) {
@@ -175,6 +183,12 @@ func TestShardedListWatchPassesInitialEventsEndBookmarkToEveryShard(t *testing.T
 	var shardedWatches []watch.Interface
 	for shard := int32(0); shard < 4; shard++ {
 		lw := &cache.ListWatch{
+			ListFunc: func(_ metav1.ListOptions) (runtime.Object, error) {
+				return &v1.ConfigMapList{
+					ListMeta: metav1.ListMeta{},
+					Items:    []v1.ConfigMap{},
+				}, nil
+			},
 			WatchFunc: func(metav1.ListOptions) (watch.Interface, error) {
 				return source.Watch()
 			},

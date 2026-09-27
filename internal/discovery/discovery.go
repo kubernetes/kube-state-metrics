@@ -122,6 +122,48 @@ func extractGVKPs(obj any) []groupVersionKindPlural {
 	return gvkps
 }
 
+// sameGVKPs reports whether the two served-GVK sets are the same, ignoring order.
+func sameGVKPs(a, b []groupVersionKindPlural) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	seen := make(map[groupVersionKindPlural]int, len(a))
+	for _, gvkp := range a {
+		seen[gvkp]++
+	}
+	for _, gvkp := range b {
+		seen[gvkp]--
+		if seen[gvkp] < 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// applyCRDUpdate records an informer update. A CRD write that does not change
+// the served group/version/kind/plural set is counted, but it does not mark the
+// cache dirty. Rebuilding on those writes drops every custom resource store
+// until the new reflectors finish listing, so scrapes in that window come back
+// short.
+func (r *CRDiscoverer) applyCRDUpdate(oldObj, newObj interface{}) {
+	oldGVKPs := extractGVKPs(oldObj)
+	newGVKPs := extractGVKPs(newObj)
+	if sameGVKPs(oldGVKPs, newGVKPs) {
+		r.SafeWrite(func() {
+			r.CRDsUpdateEventsCounter.Inc()
+		})
+		return
+	}
+	r.SafeWrite(func() {
+		r.RemoveFromMap(oldGVKPs...)
+		r.AppendToMap(newGVKPs...)
+		r.WasUpdated = true
+	})
+	r.SafeWrite(func() {
+		r.CRDsUpdateEventsCounter.Inc()
+	})
+}
+
 // StartDiscovery starts the discovery process, fetching all the objects that can be listed from the apiserver, every `Interval` seconds.
 // resolveGVK needs to be called after StartDiscovery to generate factories.
 func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) error {
@@ -146,16 +188,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 			})
 		},
 		UpdateFunc: func(oldObj, newObj any) {
-			oldGVKPs := extractGVKPs(oldObj)
-			newGVKPs := extractGVKPs(newObj)
-			r.SafeWrite(func() {
-				r.RemoveFromMap(oldGVKPs...)
-				r.AppendToMap(newGVKPs...)
-				r.WasUpdated = true
-			})
-			r.SafeWrite(func() {
-				r.CRDsUpdateEventsCounter.Inc()
-			})
+			r.applyCRDUpdate(oldObj, newObj)
 		},
 		DeleteFunc: func(obj any) {
 			gvkps := extractGVKPs(obj)

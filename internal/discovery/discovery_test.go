@@ -19,6 +19,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
@@ -416,4 +419,63 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestApplyCRDUpdateSkipsUnchangedServedSet(t *testing.T) {
+	version := func(name string, served bool) interface{} {
+		return map[string]interface{}{"name": name, "served": served}
+	}
+	crd := func(versions ...interface{}) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]interface{}{
+			"spec": map[string]interface{}{
+				"group": "testgroup",
+				"names": map[string]interface{}{
+					"kind":   "TestObject",
+					"plural": "testobjects",
+				},
+				"versions": versions,
+			},
+		}}
+	}
+
+	original := crd(version("v1", true), version("v1beta1", false))
+	r := &CRDiscoverer{
+		CRDsUpdateEventsCounter: prometheus.NewCounter(prometheus.CounterOpts{Name: "crd_updates_total"}),
+	}
+	r.AppendToMap(extractGVKPs(original)...)
+
+	bumped := original.DeepCopy()
+	bumped.Object["metadata"] = map[string]interface{}{"resourceVersion": "9"}
+	bumped.Object["status"] = map[string]interface{}{"acceptedNames": map[string]interface{}{"kind": "TestObject"}}
+	r.applyCRDUpdate(original, bumped)
+	if r.WasUpdated {
+		t.Fatal("status-only CRD update marked the cache dirty")
+	}
+
+	// Same served versions, listed in the other order.
+	r.applyCRDUpdate(bumped, crd(version("v1beta1", false), version("v1", true)))
+	if r.WasUpdated {
+		t.Fatal("reordered versions with the same served set marked the cache dirty")
+	}
+	if got := testutil.ToFloat64(r.CRDsUpdateEventsCounter); got != 2 {
+		t.Fatalf("update counter = %v, want 2", got)
+	}
+
+	r.applyCRDUpdate(original, crd(version("v1", true), version("v1beta1", true)))
+	if !r.WasUpdated {
+		t.Fatal("serving an additional version did not mark the cache dirty")
+	}
+	got, err := r.ResolveGVKToGVKPs(schema.GroupVersionKind{Group: "testgroup", Version: "*", Kind: "TestObject"})
+	if err != nil {
+		t.Fatalf("resolving updated GVK: %v", err)
+	}
+	want := []string{"v1", "v1beta1"}
+	var gotVersions []string
+	for _, gvkp := range got {
+		gotVersions = append(gotVersions, gvkp.Version)
+	}
+	slices.Sort(gotVersions)
+	if !slices.Equal(gotVersions, want) {
+		t.Fatalf("served versions = %v, want %v", gotVersions, want)
+	}
 }

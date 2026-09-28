@@ -39,6 +39,7 @@ var (
 	descVolumeAttributesClassLabelsDefaultLabels = []string{"volumeattributesclass"}
 )
 
+// volumeAttributesClassMetricFamilies returns the family generators for VolumeAttributesClass metrics.
 func volumeAttributesClassMetricFamilies(allowAnnotationsList, allowLabelsList, allowParametersList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -143,6 +144,7 @@ func volumeAttributesClassMetricFamilies(allowAnnotationsList, allowLabelsList, 
 	}
 }
 
+// wrapVolumeAttributesClassFunc wraps a VolumeAttributesClass metric function for use as a generator.FamilyGenerator's GenerateFunc.
 func wrapVolumeAttributesClassFunc(f func(*storagev1.VolumeAttributesClass) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		volumeAttributesClass := obj.(*storagev1.VolumeAttributesClass)
@@ -157,6 +159,7 @@ func wrapVolumeAttributesClassFunc(f func(*storagev1.VolumeAttributesClass) *met
 	}
 }
 
+// createVolumeAttributesClassListWatch returns a ListerWatcher for VolumeAttributesClass objects.
 func createVolumeAttributesClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {

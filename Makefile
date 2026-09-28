@@ -123,8 +123,12 @@ container:
 
 # Pushes the container images only. The GitHub release is published separately
 # by the pre-release workflow, which is the runner that holds a GITHUB_TOKEN.
+# Only pin the tag for goreleaser when TAG is a release tag. A push to a branch
+# sets TAG to the branch name (e.g. main), which goreleaser would reject.
+GORELEASER_TAG_ENV = $(if $(filter v%,$(TAG)),GORELEASER_CURRENT_TAG=$(TAG))
+
 push:
-	GORELEASER_SKIP_GITHUB_RELEASE=true GORELEASER_CURRENT_TAG=$(TAG) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean --skip=announce
+	GORELEASER_SKIP_GITHUB_RELEASE=true $(GORELEASER_TAG_ENV) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean --skip=announce
 
 clean:
 	rm -rf dist kube-state-metrics

@@ -69,8 +69,8 @@ type MetricsHandler struct {
 	syncRetryDelay   time.Duration
 }
 
-// Backoff bounds for retrying a failed store sync while no metrics writers are
-// available. Declared as variables so tests can shorten them.
+// Backoff bounds for retrying a failed store sync. Previous writers stay
+// active during backoff. Declared as variables so tests can shorten them.
 var (
 	initialStoreSyncRetryDelay = 5 * time.Second
 	maxStoreSyncRetryDelay     = 2 * time.Minute

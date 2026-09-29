@@ -17,8 +17,8 @@ package discovery
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -85,16 +85,22 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 		klog.ErrorS(nil, "CRD spec has no versions list", "crd", u.GetName())
 		return nil
 	}
-	var gvkps []groupVersionKindPlural
+	// Non-nil empty means every version was successfully read as unserved.
+	// Nil (below) means a version-level parse failure, so callers must not
+	// treat the result as "all versions removed".
+	gvkps := make([]groupVersionKindPlural, 0, len(versions))
+	parseFailed := false
 	for _, version := range versions {
 		versionSpec, ok := version.(map[string]interface{})
 		if !ok {
 			klog.ErrorS(nil, "CRD version is not an object", "crd", u.GetName())
+			parseFailed = true
 			continue
 		}
 		v, ok := versionSpec["name"].(string)
 		if !ok {
 			klog.ErrorS(nil, "CRD version has no name", "crd", u.GetName())
+			parseFailed = true
 			continue
 		}
 		// Versions that are not served by the API server cannot be listed or
@@ -107,6 +113,7 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 			served, ok := rawServed.(bool)
 			if !ok {
 				klog.ErrorS(nil, "CRD version has a non-boolean served field", "crd", u.GetName(), "version", v)
+				parseFailed = true
 				continue
 			}
 			if !served {
@@ -122,6 +129,9 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 			},
 			Plural: p,
 		})
+	}
+	if len(gvkps) == 0 && parseFailed {
+		return nil
 	}
 	return gvkps
 }
@@ -291,10 +301,10 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 ) {
 	// The interval at which we will check the cache for updates.
 	t := time.NewTicker(Interval)
-	// The key and cache revision jointly skip no-op rebuilds. The revision is
-	// needed because a CRD can be deleted and re-added between ticks with the
-	// same GVR while its reflector stop channel changes identity.
-	var lastAppliedEnabledKey string
+	// The enabled CR set and cache revision jointly skip no-op rebuilds. The
+	// revision is needed because a CRD can be deleted and re-added between ticks
+	// with the same GVR while its reflector stop channel changes identity.
+	var lastAppliedEnabled []string
 	var lastAppliedRevision uint64
 	generateMetrics := func() (applied bool) {
 		var observedRevision uint64
@@ -324,8 +334,7 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 			enabledCustomResources = append(enabledCustomResources, gvrString)
 		}
 		sort.Strings(enabledCustomResources)
-		enabledKey := strings.Join(enabledCustomResources, ",")
-		if enabledKey == lastAppliedEnabledKey && observedRevision == lastAppliedRevision {
+		if slices.Equal(enabledCustomResources, lastAppliedEnabled) && observedRevision == lastAppliedRevision {
 			r.SafeWrite(func() {
 				if r.cacheRevision == observedRevision {
 					r.WasUpdated = false
@@ -361,7 +370,7 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 			// Preserve WasUpdated so the next tick retries.
 			return false
 		}
-		lastAppliedEnabledKey = enabledKey
+		lastAppliedEnabled = slices.Clone(enabledCustomResources)
 		lastAppliedRevision = observedRevision
 		// Clear only the revision we applied. If discovery changed while clients
 		// were being created, leave the flag set for another reconciliation.

@@ -288,6 +288,21 @@ func TestExtractGVKPs(t *testing.T) {
 		{
 			desc: "no served versions",
 			obj:  crd(version("v1alpha1", false), version("v1beta1", false)),
+			want: []groupVersionKindPlural{},
+		},
+		{
+			desc: "empty versions list",
+			obj:  crd(),
+			want: []groupVersionKindPlural{},
+		},
+		{
+			desc: "all versions malformed yields nil",
+			obj:  crd("not-an-object", map[string]interface{}{"served": true}),
+			want: nil,
+		},
+		{
+			desc: "unserved version mixed with malformed yields nil",
+			obj:  crd(version("v1alpha1", false), "not-an-object"),
 			want: nil,
 		},
 		{
@@ -369,9 +384,109 @@ func TestExtractGVKPs(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		got := extractGVKPs(tc.obj)
+		if (got == nil) != (tc.want == nil) {
+			t.Errorf("testcase: %s: got nil=%v, want nil=%v (got %v)", tc.desc, got == nil, tc.want == nil, got)
+			continue
+		}
 		if !slices.Equal(got, tc.want) {
 			t.Errorf("testcase: %s: got %v, want %v", tc.desc, got, tc.want)
 		}
+	}
+}
+
+func testCRD(versions ...interface{}) *unstructured.Unstructured {
+	return &unstructured.Unstructured{Object: map[string]interface{}{
+		"spec": map[string]interface{}{
+			"group": "example.com",
+			"names": map[string]interface{}{
+				"kind":   "Foo",
+				"plural": "foos",
+			},
+			"versions": versions,
+		},
+	}}
+}
+
+func testCRDVersion(name string, served interface{}) interface{} {
+	v := map[string]interface{}{"name": name}
+	if served != nil {
+		v["served"] = served
+	}
+	return v
+}
+
+func TestCRDUpdateAllUnservedVersionsTearsDown(t *testing.T) {
+	gvkp := groupVersionKindPlural{
+		GroupVersionKind: schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"},
+		Plural:           "foos",
+	}
+	r := &CRDiscoverer{}
+	if !r.AppendToMap(gvkp) {
+		t.Fatal("expected AppendToMap to register GVKP")
+	}
+	ch := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]
+	revision := r.cacheRevision
+
+	newGVKPs := extractGVKPs(testCRD(testCRDVersion("v1", false)))
+	if newGVKPs == nil {
+		t.Fatal("all-unserved extract must return a non-nil empty slice")
+	}
+	if len(newGVKPs) != 0 {
+		t.Fatalf("all-unserved extract must be empty, got %#v", newGVKPs)
+	}
+
+	if !r.applyCRDUpdate([]groupVersionKindPlural{gvkp}, newGVKPs) {
+		t.Fatal("expected all-unserved update to tear down cached GVKs")
+	}
+	if _, ok := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]; ok {
+		t.Fatal("expected stop channel to be removed")
+	}
+	select {
+	case <-ch:
+	default:
+		t.Fatal("expected stop channel to be closed")
+	}
+	if r.cacheRevision <= revision {
+		t.Fatalf("expected revision to advance: before=%d after=%d", revision, r.cacheRevision)
+	}
+	if !r.WasUpdated {
+		t.Fatal("expected WasUpdated after all-unserved teardown")
+	}
+}
+
+func TestCRDUpdateUnservedPlusMalformedSkipsTeardown(t *testing.T) {
+	gvkp := groupVersionKindPlural{
+		GroupVersionKind: schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"},
+		Plural:           "foos",
+	}
+	r := &CRDiscoverer{}
+	if !r.AppendToMap(gvkp) {
+		t.Fatal("expected AppendToMap to register GVKP")
+	}
+	ch := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]
+	revision := r.cacheRevision
+
+	newGVKPs := extractGVKPs(testCRD(testCRDVersion("v1", false), "not-an-object"))
+	if newGVKPs != nil {
+		t.Fatalf("mixed unserved+malformed extract must be nil, got %#v", newGVKPs)
+	}
+
+	if r.applyCRDUpdate([]groupVersionKindPlural{gvkp}, newGVKPs) {
+		t.Fatal("expected mixed unserved+malformed update to be ignored")
+	}
+	if r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()] != ch {
+		t.Fatal("stop channel changed on mixed unserved+malformed update")
+	}
+	select {
+	case <-ch:
+		t.Fatal("stop channel was closed on mixed unserved+malformed update")
+	default:
+	}
+	if r.cacheRevision != revision {
+		t.Fatalf("cache revision changed: got %d, want %d", r.cacheRevision, revision)
+	}
+	if r.WasUpdated {
+		t.Fatal("WasUpdated set on mixed unserved+malformed update")
 	}
 }
 

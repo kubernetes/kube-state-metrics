@@ -197,6 +197,11 @@ func TestCRDUpdateSkipsUnreadableNewGVKPs(t *testing.T) {
 	if r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()] != ch {
 		t.Fatal("stop channel changed on unreadable update")
 	}
+	select {
+	case <-ch:
+		t.Fatal("stop channel was closed on unreadable update")
+	default:
+	}
 	if r.cacheRevision != revision {
 		t.Fatalf("cache revision changed on unreadable update: got %d, want %d", r.cacheRevision, revision)
 	}

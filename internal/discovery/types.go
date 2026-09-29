@@ -206,10 +206,12 @@ func (r *CRDiscoverer) RemoveFromMap(gvkps ...groupVersionKindPlural) bool {
 // or metadata-only updates preserve existing reflector stop channels.
 // The caller must hold r.m for writing.
 func (r *CRDiscoverer) applyCRDUpdate(oldGVKPs, newGVKPs []groupVersionKindPlural) bool {
-	// extractGVKPs returns nil for objects it cannot read. Treating that as
-	// "all versions removed" would close live reflector channels for a CRD
-	// that still exists, so skip the event instead.
-	if len(newGVKPs) == 0 {
+	// nil means extractGVKPs could not read the object, or a version-level parse
+	// failure left an otherwise empty result. Treating that as "all versions
+	// removed" would close live reflector channels for a CRD that still exists,
+	// so skip the event. A non-nil empty slice means every version was
+	// successfully read as unserved; tear those GVKs down.
+	if newGVKPs == nil {
 		return false
 	}
 	if equalGVKPSet(oldGVKPs, newGVKPs) {

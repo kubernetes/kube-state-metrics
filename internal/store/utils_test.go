@@ -559,6 +559,47 @@ func TestExpandWildcard(t *testing.T) {
 	}
 }
 
+func TestSanitizeLabelName(t *testing.T) {
+	cases := map[string]string{
+		"":                       "",
+		"simple":                 "simple",
+		"already_valid_Name9":    "already_valid_Name9",
+		"app.kubernetes.io/name": "app_kubernetes_io_name",
+		"foo-bar":                "foo_bar",
+		"-leading":               "_leading",
+		"trailing/":              "trailing_",
+		"ünïcode":                "_n_code",
+	}
+	for in, want := range cases {
+		if got := SanitizeLabelName(in); got != want {
+			t.Errorf("SanitizeLabelName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestToSnakeCase(t *testing.T) {
+	// Expected values mirror the regexp `([a-z0-9])([A-Z])` -> `${1}_${2}`
+	// followed by lower-casing, including its non-overlapping matches.
+	cases := map[string]string{
+		"":             "",
+		"lower":        "lower",
+		"fooBar":       "foo_bar",
+		"fooBarBaz":    "foo_bar_baz",
+		"aBC":          "a_bc",
+		"aBcD":         "a_bc_d",
+		"ABC":          "abc",
+		"a_B":          "a_b",
+		"9A":           "9_a",
+		"_A":           "_a",
+		"fooBar_Baz9X": "foo_bar_baz9_x",
+	}
+	for in, want := range cases {
+		if got := toSnakeCase(in); got != want {
+			t.Errorf("toSnakeCase(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 func BenchmarkMapToPrometheusLabels(b *testing.B) {
 	for _, n := range []int{4, 8, 32} {
 		labels := make(map[string]string, n)

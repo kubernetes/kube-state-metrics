@@ -54,17 +54,12 @@ type BuilderInterface interface {
 	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 }
 
-// CustomResourceReplacer can replace the discovered custom resource set while
-// preserving built-in enabled resource names. It is implemented by the internal
-// store builder but is not part of the stable BuilderInterface contract for
-// downstream library users.
+// CustomResourceReplacer replaces the discovered custom resource set while preserving built-in names.
 type CustomResourceReplacer interface {
 	ReplaceEnabledCustomResources(c []string) error
 }
 
-// StoreSyncBuilder can wait for reflector stores to sync after Build().
-// It is implemented by the internal store builder but is not part of the
-// stable BuilderInterface contract for downstream library users.
+// StoreSyncBuilder waits for reflector stores to sync after Build().
 type StoreSyncBuilder interface {
 	WaitForStoresSync(ctx context.Context, timeout time.Duration) bool
 }

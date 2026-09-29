@@ -115,8 +115,8 @@ var (
 	}
 )
 
-func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		limitRange := obj.(*v1.LimitRange)
 
 		metricFamily := f(limitRange)

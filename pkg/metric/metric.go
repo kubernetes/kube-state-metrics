@@ -31,7 +31,7 @@ const (
 
 var (
 	numBufPool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			b := make([]byte, 0, initialNumBufSize)
 			return &b
 		},
@@ -83,7 +83,7 @@ func labelsToString(m *bytes.Buffer, keys, values []string) {
 	if len(keys) > 0 {
 		var separator byte = '{'
 
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			m.WriteByte(separator)
 			m.WriteString(keys[i])
 			m.WriteString("=\"")

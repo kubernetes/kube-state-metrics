@@ -603,7 +603,7 @@ func TestToSnakeCase(t *testing.T) {
 func BenchmarkMapToPrometheusLabels(b *testing.B) {
 	for _, n := range []int{4, 8, 32} {
 		labels := make(map[string]string, n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			labels[fmt.Sprintf("app.kubernetes.io/component-%d", i)] = fmt.Sprintf("value-%d", i)
 		}
 

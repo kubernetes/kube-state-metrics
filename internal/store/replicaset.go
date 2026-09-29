@@ -276,8 +276,8 @@ func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []
 	}
 }
 
-func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		replicaSet := obj.(*v1.ReplicaSet)
 
 		metricFamily := f(replicaSet)

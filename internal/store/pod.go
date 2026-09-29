@@ -2033,8 +2033,8 @@ func createPodSchedulerNameFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		pod := obj.(*v1.Pod)
 
 		metricFamily := f(pod)

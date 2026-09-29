@@ -18,6 +18,7 @@ package customresourcestate
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -113,18 +114,10 @@ func (l Labels) Merge(other Labels) Labels {
 	common := make(map[string]string)
 	paths := make(map[string][]string)
 
-	for k, v := range l.CommonLabels {
-		common[k] = v
-	}
-	for k, v := range l.LabelsFromPath {
-		paths[k] = v
-	}
-	for k, v := range other.CommonLabels {
-		common[k] = v
-	}
-	for k, v := range other.LabelsFromPath {
-		paths[k] = v
-	}
+	maps.Copy(common, l.CommonLabels)
+	maps.Copy(paths, l.LabelsFromPath)
+	maps.Copy(common, other.CommonLabels)
+	maps.Copy(paths, other.LabelsFromPath)
 	return Labels{
 		CommonLabels:   common,
 		LabelsFromPath: paths,
@@ -166,7 +159,7 @@ type Metric struct {
 
 // ConfigDecoder is for use with FromConfig.
 type ConfigDecoder interface {
-	Decode(v interface{}) (err error)
+	Decode(v any) (err error)
 }
 
 // FromConfig decodes a configuration source into a slice of `customresource.RegistryFactory` that are ready to use.

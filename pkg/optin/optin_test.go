@@ -52,7 +52,7 @@ func TestFilter(t *testing.T) {
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			func(_ interface{}) *metric.Family {
+			func(_ any) *metric.Family {
 				return nil
 			},
 		)

@@ -53,6 +53,11 @@ type BuilderInterface interface {
 	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
 }
 
+// CustomResourceReplacer replaces the discovered custom resource set while preserving built-in names.
+type CustomResourceReplacer interface {
+	ReplaceEnabledCustomResources(c []string) error
+}
+
 // BuildStoresFunc function signature that is used to return a list of cache.Store
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType any,

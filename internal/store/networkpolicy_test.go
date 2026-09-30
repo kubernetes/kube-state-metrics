@@ -32,11 +32,9 @@ func TestNetworkPolicyStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &networkingv1.NetworkPolicy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "netpol1",
-					Namespace:         "ns1",
-					CreationTimestamp: metav1StartTime,
-				},
+				Name:              "netpol1",
+				Namespace:         "ns1",
+				CreationTimestamp: metav1StartTime,
 				Spec: networkingv1.NetworkPolicySpec{
 					Ingress: []networkingv1.NetworkPolicyIngressRule{
 						{},

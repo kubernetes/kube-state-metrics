@@ -51,7 +51,7 @@ func TestObjectLimits(t *testing.T) {
 	klog.InfoS("parsed options", "options", opts)
 
 	// Create ConfigMaps as Test Objects
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		err := exec.Command("kubectl", "create", "configmap", fmt.Sprintf("testcm%v", i)).Run() //nolint:gosec
 		if err != nil {
 			t.Fatalf("failed to create configmap : %v", err)
@@ -106,7 +106,7 @@ func TestObjectLimits(t *testing.T) {
 	}
 
 	// Delete ConfigMaps as Test Objects
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		err := exec.Command("kubectl", "delete", "configmap", fmt.Sprintf("testcm%v", i)).Run() //nolint:gosec
 		if err != nil {
 			t.Fatalf("failed to delete configmap : %v", err)

@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
 
@@ -312,6 +313,32 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_persistentvolumeclaim_status_condition_last_transition_timestamp_seconds",
+			"Unix timestamp of last transition of a persistent volume claim condition.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapPersistentVolumeClaimFunc(func(p *v1.PersistentVolumeClaim) *metric.Family {
+				ms := make([]*metric.Metric, 0, len(p.Status.Conditions))
+
+				for _, c := range p.Status.Conditions {
+					if c.LastTransitionTime.IsZero() {
+						continue
+					}
+
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"condition", "status"},
+						LabelValues: []string{string(c.Type), strings.ToLower(string(c.Status))},
+						Value:       float64(c.LastTransitionTime.Unix()),
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_persistentvolumeclaim_created",
 			"Unix creation timestamp",
 			metric.Gauge,
@@ -358,8 +385,8 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 	}
 }
 
-func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		persistentVolumeClaim := obj.(*v1.PersistentVolumeClaim)
 
 		metricFamily := f(persistentVolumeClaim)

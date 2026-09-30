@@ -41,6 +41,22 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
+// negotiableFormats lists the exposition formats considered during content
+// negotiation, in order of preference. It matches the list used by the
+// deprecated expfmt.NegotiateIncludingOpenMetrics so negotiation is unchanged;
+// anything other than OpenMetrics is served as plain text below.
+var negotiableFormats = func() []expfmt.Format {
+	openMetrics001, _ := expfmt.NewOpenMetricsFormat(expfmt.OpenMetricsVersion_0_0_1)
+	return []expfmt.Format{
+		expfmt.NewFormat(expfmt.TypeOpenMetrics),
+		openMetrics001,
+		expfmt.NewFormat(expfmt.TypeProtoDelim),
+		expfmt.NewFormat(expfmt.TypeProtoText),
+		expfmt.NewFormat(expfmt.TypeProtoCompact),
+		expfmt.NewFormat(expfmt.TypeTextPlain),
+	}
+}()
+
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
 // /metrics endpoint. It allows concurrent reconfiguration at runtime.
 type MetricsHandler struct {
@@ -131,7 +147,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 		&appsv1.StatefulSet{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	i.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(o interface{}) {
+		AddFunc: func(o any) {
 			ss := o.(*appsv1.StatefulSet)
 			if ss.Name != statefulSetName {
 				return
@@ -153,7 +169,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 			m.ConfigureSharding(ctx, shard, totalShards)
 		},
-		UpdateFunc: func(oldo, curo interface{}) {
+		UpdateFunc: func(oldo, curo any) {
 			old := oldo.(*appsv1.StatefulSet)
 			cur := curo.(*appsv1.StatefulSet)
 			if cur.Name != statefulSetName {
@@ -205,7 +221,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resHeader := w.Header()
 	var writer io.Writer = w
 
-	contentType := expfmt.NegotiateIncludingOpenMetrics(r.Header)
+	contentType := expfmt.NegotiateAccept(r.Header, negotiableFormats...)
 
 	// We do not support protobuf at the moment. Fall back to FmtText if the negotiated exposition format is not FmtOpenMetrics See: https://github.com/kubernetes/kube-state-metrics/issues/2022.
 
@@ -218,8 +234,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Gzip response if requested. Taken from
 		// github.com/prometheus/client_golang/prometheus/promhttp.decorateWriter.
 		reqHeader := r.Header.Get("Accept-Encoding")
-		parts := strings.Split(reqHeader, ",")
-		for _, part := range parts {
+		for part := range strings.SplitSeq(reqHeader, ",") {
 			part = strings.TrimSpace(part)
 			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
 				writer = gzip.NewWriter(writer)
@@ -290,7 +305,7 @@ func parseResources(params []string) map[string]struct{} {
 	}
 	resMap := make(map[string]struct{})
 	for _, p := range params {
-		for _, res := range strings.Split(p, ",") {
+		for res := range strings.SplitSeq(p, ",") {
 			res = strings.TrimSpace(res)
 			if res != "" {
 				resMap[res] = struct{}{}

@@ -27,14 +27,13 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 func TestWriteAllWithSingleStore(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -67,18 +66,14 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 	store := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs := []v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a1",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a1",
+			Name:      "service",
+			Namespace: "a",
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a2",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a2",
+			Name:      "service",
+			Namespace: "a",
 		},
 	}
 	for _, s := range svcs {
@@ -122,7 +117,7 @@ func TestWriteAllWithSingleStore(t *testing.T) {
 }
 
 func TestWriteAllWithMultipleStores(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -155,18 +150,14 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 	s1 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
 	svcs1 := []v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a1",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a1",
+			Name:      "service",
+			Namespace: "a",
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "a2",
-				Name:      "service",
-				Namespace: "a",
-			},
+			UID:       "a2",
+			Name:      "service",
+			Namespace: "a",
 		},
 	}
 	for _, s := range svcs1 {
@@ -178,18 +169,14 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 	svcs2 := []v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "b1",
-				Name:      "service",
-				Namespace: "b",
-			},
+			UID:       "b1",
+			Name:      "service",
+			Namespace: "b",
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       "b2",
-				Name:      "service",
-				Namespace: "b",
-			},
+			UID:       "b2",
+			Name:      "service",
+			Namespace: "b",
 		},
 	}
 	s2 := NewMetricsStore([]string{"Info 1 about services\n", "Info 2 about services\n"}, genFunc)
@@ -239,7 +226,7 @@ func TestWriteAllWithMultipleStores(t *testing.T) {
 
 // TestWriteAllWithEmptyStores checks that nothing is printed if no metrics exist for metric families.
 func TestWriteAllWithEmptyStores(t *testing.T) {
-	genFunc := func(_ interface{}) []metric.FamilyInterface {
+	genFunc := func(_ any) []metric.FamilyInterface {
 		mf1 := metric.Family{
 			Name:    "kube_service_info_1",
 			Metrics: []*metric.Metric{},
@@ -272,7 +259,7 @@ func TestWriteAllWithEmptyStores(t *testing.T) {
 // later one holds objects. The headers describe the families of every store, so
 // they must still be written in that case.
 func TestWriteAllWithEmptyFirstStore(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -297,11 +284,9 @@ func TestWriteAllWithEmptyFirstStore(t *testing.T) {
 	populatedStore := NewMetricsStore(headers, genFunc)
 
 	svc := v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       "b1",
-			Name:      "service",
-			Namespace: "b",
-		},
+		UID:       "b1",
+		Name:      "service",
+		Namespace: "b",
 	}
 	if err := populatedStore.Add(&svc); err != nil {
 		t.Fatal(err)
@@ -320,7 +305,7 @@ func TestWriteAllWithEmptyFirstStore(t *testing.T) {
 }
 
 func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -364,11 +349,9 @@ func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T)
 	}
 	store := NewMetricsStore(headers, genFunc)
 	if err := store.Add(&v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       "a1",
-			Name:      "service",
-			Namespace: "a",
-		},
+		UID:       "a1",
+		Name:      "service",
+		Namespace: "a",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -388,7 +371,7 @@ func TestWriteAllWithSanitizedDuplicateHeadersPreservesFamilyOrder(t *testing.T)
 }
 
 func TestWriteAllWithSanitizedDuplicateHeadersWithoutEmptyFamiliesPreservesLaterFamily(t *testing.T) {
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -437,11 +420,9 @@ func TestWriteAllWithSanitizedDuplicateHeadersWithoutEmptyFamiliesPreservesLater
 	}
 	store := NewMetricsStore(headers, genFunc)
 	if err := store.Add(&v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       "a1",
-			Name:      "service",
-			Namespace: "a",
-		},
+		UID:       "a1",
+		Name:      "service",
+		Namespace: "a",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -672,7 +653,7 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 
 	for _, benchmark := range benchmarks {
 		headers := []string{}
-		for j := 0; j < 10e4; j++ {
+		for j := range int(10e4) {
 			if benchmark.writersContainsDuplicates {
 				headers = append(headers, "# HELP foo foo_help\n# TYPE foo info\n")
 			} else {
@@ -693,11 +674,11 @@ func BenchmarkSanitizeHeaders(b *testing.B) {
 	const multiStoreN = 100
 	const multiStoreHeaders = 200
 	multiHeaders := make([]string, multiStoreHeaders)
-	for j := 0; j < multiStoreHeaders; j++ {
+	for j := range multiStoreHeaders {
 		multiHeaders[j] = fmt.Sprintf("# HELP ns_metric_%d help\n# TYPE ns_metric_%d gauge\n", j, j)
 	}
 	multiStores := make([]*MetricsStore, multiStoreN)
-	for k := 0; k < multiStoreN; k++ {
+	for k := range multiStoreN {
 		multiStores[k] = NewMetricsStore(multiHeaders, nil)
 	}
 	multiWriter := NewMetricsWriter("test", multiStores...)
@@ -715,14 +696,14 @@ func BenchmarkWriteAll(b *testing.B) {
 	const nFamilies = 10
 
 	headers := make([]string, nFamilies)
-	for j := 0; j < nFamilies; j++ {
+	for j := range nFamilies {
 		headers[j] = fmt.Sprintf("# HELP kube_bench_metric_%d benchmark metric %d\n# TYPE kube_bench_metric_%d gauge", j, j, j)
 	}
 
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, _ := meta.Accessor(obj)
 		families := make([]metric.FamilyInterface, nFamilies)
-		for j := 0; j < nFamilies; j++ {
+		for j := range nFamilies {
 			mf := &metric.Family{
 				Name: fmt.Sprintf("kube_bench_metric_%d", j),
 				Metrics: []*metric.Metric{
@@ -739,13 +720,11 @@ func BenchmarkWriteAll(b *testing.B) {
 	}
 
 	store := NewMetricsStore(headers, genFunc)
-	for k := 0; k < nObjects; k++ {
+	for k := range nObjects {
 		svc := &v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				UID:       types.UID(fmt.Sprintf("uid-%d", k)),
-				Name:      fmt.Sprintf("svc-%d", k),
-				Namespace: "default",
-			},
+			UID:       types.UID(fmt.Sprintf("uid-%d", k)),
+			Name:      fmt.Sprintf("svc-%d", k),
+			Namespace: "default",
 		}
 		if err := store.Add(svc); err != nil {
 			b.Fatal(err)

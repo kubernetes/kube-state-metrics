@@ -41,7 +41,7 @@ type MetricsStore struct {
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []metric.FamilyInterface
+	generateMetricsFunc func(any) []metric.FamilyInterface
 	// headers contains the header (TYPE and HELP) of each metric family. It is
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
@@ -53,7 +53,7 @@ type MetricsStore struct {
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(any) []metric.FamilyInterface) *MetricsStore {
 	rv := ""
 	headersOpenMetrics, headersTextPlain, metricNames := precomputeHeaders(headers)
 	return &MetricsStore{
@@ -90,7 +90,7 @@ func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, 
 
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
-func (s *MetricsStore) Add(obj interface{}) error {
+func (s *MetricsStore) Add(obj any) error {
 	o, err := meta.Accessor(obj)
 	if err != nil {
 		return err
@@ -158,13 +158,13 @@ func renderFamilies(families []metric.FamilyInterface) [][]byte {
 }
 
 // Update updates the existing entry in the MetricsStore.
-func (s *MetricsStore) Update(obj interface{}) error {
+func (s *MetricsStore) Update(obj any) error {
 	// TODO: For now, just call Add, in the future one could check if the resource version changed?
 	return s.Add(obj)
 }
 
 // Delete deletes an existing entry in the MetricsStore.
-func (s *MetricsStore) Delete(obj interface{}) error {
+func (s *MetricsStore) Delete(obj any) error {
 
 	o, err := meta.Accessor(obj)
 	if err != nil {
@@ -179,7 +179,7 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 }
 
 // List implements the List method of the store interface.
-func (s *MetricsStore) List() []interface{} {
+func (s *MetricsStore) List() []any {
 	return nil
 }
 
@@ -189,18 +189,18 @@ func (s *MetricsStore) ListKeys() []string {
 }
 
 // Get implements the Get method of the store interface.
-func (s *MetricsStore) Get(_ interface{}) (item interface{}, exists bool, err error) {
+func (s *MetricsStore) Get(_ any) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
 // GetByKey implements the GetByKey method of the store interface.
-func (s *MetricsStore) GetByKey(_ string) (item interface{}, exists bool, err error) {
+func (s *MetricsStore) GetByKey(_ string) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
 // Replace will delete the contents of the store, using instead the given list,
 // and records the provided resourceVersion as the last sync resource version.
-func (s *MetricsStore) Replace(list []interface{}, resourceVersion string) error {
+func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 	s.metrics.Clear()
 
 	for _, o := range list {

@@ -67,15 +67,13 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Verify populating base metric.
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Generation:        2,
-					Name:              "hpa1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Namespace:         "ns1",
-					Labels: map[string]string{
-						"app": "foobar",
-					},
+				Generation:        2,
+				Name:              "hpa1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Namespace:         "ns1",
+				Labels: map[string]string{
+					"app": "foobar",
 				},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
@@ -88,8 +86,8 @@ func TestHPAStore(t *testing.T) {
 									Name: "hits",
 								},
 								Target: autoscaling.MetricTarget{
-									Value:        resourcePtr(resource.MustParse("10")),
-									AverageValue: resourcePtr(resource.MustParse("12")),
+									Value:        new(resource.MustParse("10")),
+									AverageValue: new(resource.MustParse("12")),
 								},
 							},
 						},
@@ -100,8 +98,8 @@ func TestHPAStore(t *testing.T) {
 									Name: "connections",
 								},
 								Target: autoscaling.MetricTarget{
-									Value:        resourcePtr(resource.MustParse("0.5")),
-									AverageValue: resourcePtr(resource.MustParse("0.7")),
+									Value:        new(resource.MustParse("0.5")),
+									AverageValue: new(resource.MustParse("0.7")),
 								},
 							},
 						},
@@ -112,7 +110,7 @@ func TestHPAStore(t *testing.T) {
 									Name: "transactions_processed",
 								},
 								Target: autoscaling.MetricTarget{
-									AverageValue: resourcePtr(resource.MustParse("33")),
+									AverageValue: new(resource.MustParse("33")),
 								},
 							},
 						},
@@ -121,7 +119,7 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricSource{
 								Name: "cpu",
 								Target: autoscaling.MetricTarget{
-									AverageUtilization: int32ptr(80),
+									AverageUtilization: new(int32(80)),
 								},
 							},
 						},
@@ -130,8 +128,8 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricSource{
 								Name: "memory",
 								Target: autoscaling.MetricTarget{
-									AverageValue:       resourcePtr(resource.MustParse("800Ki")),
-									AverageUtilization: int32ptr(80),
+									AverageValue:       new(resource.MustParse("800Ki")),
+									AverageUtilization: new(int32(80)),
 								},
 							},
 						},
@@ -141,7 +139,7 @@ func TestHPAStore(t *testing.T) {
 								Name:      "cpu",
 								Container: "container1",
 								Target: autoscaling.MetricTarget{
-									AverageUtilization: int32ptr(80),
+									AverageUtilization: new(int32(80)),
 								},
 							},
 						},
@@ -159,7 +157,7 @@ func TestHPAStore(t *testing.T) {
 									Name: "sqs_jobs",
 								},
 								Target: autoscaling.MetricTarget{
-									Value: resourcePtr(resource.MustParse("30")),
+									Value: new(resource.MustParse("30")),
 								},
 							},
 						},
@@ -170,7 +168,7 @@ func TestHPAStore(t *testing.T) {
 									Name: "events",
 								},
 								Target: autoscaling.MetricTarget{
-									AverageValue: resourcePtr(resource.MustParse("30")),
+									AverageValue: new(resource.MustParse("30")),
 								},
 							},
 						},
@@ -197,8 +195,8 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricStatus{
 								Name: "cpu",
 								Current: autoscaling.MetricValueStatus{
-									AverageValue:       resourcePtr(resource.MustParse("7m")),
-									AverageUtilization: int32ptr(80),
+									AverageValue:       new(resource.MustParse("7m")),
+									AverageUtilization: new(int32(80)),
 								},
 							},
 						},
@@ -207,8 +205,8 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricStatus{
 								Name: "memory",
 								Current: autoscaling.MetricValueStatus{
-									AverageValue:       resourcePtr(resource.MustParse("26335914666m")),
-									AverageUtilization: int32ptr(80),
+									AverageValue:       new(resource.MustParse("26335914666m")),
+									AverageUtilization: new(int32(80)),
 								},
 							},
 						},
@@ -262,10 +260,8 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Verify omitted minReplicas falls back to the API default.
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hpa-default-min-replicas",
-					Namespace: "ns1",
-				},
+				Name:      "hpa-default-min-replicas",
+				Namespace: "ns1",
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 3,
 					ScaleTargetRef: autoscaling.CrossVersionObjectReference{
@@ -289,19 +285,17 @@ func TestHPAStore(t *testing.T) {
 				"app.k8s.io/owner",
 			},
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Generation:        2,
-					Name:              "hpa2",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Namespace:         "ns1",
-					Labels: map[string]string{
-						"app": "foobar",
-					},
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
+				Generation:        2,
+				Name:              "hpa2",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Namespace:         "ns1",
+				Labels: map[string]string{
+					"app": "foobar",
+				},
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
 				},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
@@ -312,7 +306,7 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricSource{
 								Name: "memory",
 								Target: autoscaling.MetricTarget{
-									AverageUtilization: int32ptr(75),
+									AverageUtilization: new(int32(75)),
 								},
 							},
 						},
@@ -321,7 +315,7 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricSource{
 								Name: "cpu",
 								Target: autoscaling.MetricTarget{
-									AverageUtilization: int32ptr(80),
+									AverageUtilization: new(int32(80)),
 								},
 							},
 						},
@@ -332,7 +326,7 @@ func TestHPAStore(t *testing.T) {
 									Name: "traefik_backend_requests_per_second",
 								},
 								Target: autoscaling.MetricTarget{
-									Value: resourcePtr(resource.MustParse("100")),
+									Value: new(resource.MustParse("100")),
 								},
 							},
 						},
@@ -343,7 +337,7 @@ func TestHPAStore(t *testing.T) {
 									Name: "traefik_backend_errors_per_second",
 								},
 								Target: autoscaling.MetricTarget{
-									Value: resourcePtr(resource.MustParse("100")),
+									Value: new(resource.MustParse("100")),
 								},
 							},
 						},
@@ -369,8 +363,8 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricStatus{
 								Name: "memory",
 								Current: autoscaling.MetricValueStatus{
-									AverageValue:       resourcePtr(resource.MustParse("847775744")),
-									AverageUtilization: int32ptr(28),
+									AverageValue:       new(resource.MustParse("847775744")),
+									AverageUtilization: new(int32(28)),
 								},
 							},
 						},
@@ -379,8 +373,8 @@ func TestHPAStore(t *testing.T) {
 							Resource: &autoscaling.ResourceMetricStatus{
 								Name: "cpu",
 								Current: autoscaling.MetricValueStatus{
-									AverageValue:       resourcePtr(resource.MustParse("62m")),
-									AverageUtilization: int32ptr(6),
+									AverageValue:       new(resource.MustParse("62m")),
+									AverageUtilization: new(int32(6)),
 								},
 							},
 						},
@@ -390,8 +384,8 @@ func TestHPAStore(t *testing.T) {
 								Name:      "cpu",
 								Container: "container1",
 								Current: autoscaling.MetricValueStatus{
-									AverageValue:       resourcePtr(resource.MustParse("80m")),
-									AverageUtilization: int32ptr(10),
+									AverageValue:       new(resource.MustParse("80m")),
+									AverageUtilization: new(int32(10)),
 								},
 							},
 						},
@@ -402,8 +396,8 @@ func TestHPAStore(t *testing.T) {
 									Name: "traefik_backend_requests_per_second",
 								},
 								Current: autoscaling.MetricValueStatus{
-									Value:        resourcePtr(resource.MustParse("0")),
-									AverageValue: resourcePtr(resource.MustParse("2900m")),
+									Value:        new(resource.MustParse("0")),
+									AverageValue: new(resource.MustParse("2900m")),
 								},
 							},
 						},
@@ -414,7 +408,7 @@ func TestHPAStore(t *testing.T) {
 									Name: "traefik_backend_errors_per_second",
 								},
 								Current: autoscaling.MetricValueStatus{
-									Value: resourcePtr(resource.MustParse("0")),
+									Value: new(resource.MustParse("0")),
 								},
 							},
 						},
@@ -468,15 +462,13 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Test case for multiple ContainerResource metrics with same resource name
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Generation:        1,
-					Name:              "hpa-container-resource",
-					Namespace:         "default",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-				},
+				Generation:        1,
+				Name:              "hpa-container-resource",
+				Namespace:         "default",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 10,
-					MinReplicas: int32ptr(1),
+					MinReplicas: new(int32(1)),
 					Metrics: []autoscaling.MetricSpec{
 						{
 							Type: autoscaling.ContainerResourceMetricSourceType,
@@ -484,7 +476,7 @@ func TestHPAStore(t *testing.T) {
 								Name:      "cpu",
 								Container: "main",
 								Target: autoscaling.MetricTarget{
-									AverageUtilization: int32ptr(40),
+									AverageUtilization: new(int32(40)),
 								},
 							},
 						},
@@ -494,7 +486,7 @@ func TestHPAStore(t *testing.T) {
 								Name:      "cpu",
 								Container: "sidecar",
 								Target: autoscaling.MetricTarget{
-									AverageUtilization: int32ptr(90),
+									AverageUtilization: new(int32(90)),
 								},
 							},
 						},
@@ -504,7 +496,7 @@ func TestHPAStore(t *testing.T) {
 								Name:      "memory",
 								Container: "main",
 								Target: autoscaling.MetricTarget{
-									AverageUtilization: int32ptr(70),
+									AverageUtilization: new(int32(70)),
 								},
 							},
 						},
@@ -531,8 +523,8 @@ func TestHPAStore(t *testing.T) {
 								Name:      "cpu",
 								Container: "main",
 								Current: autoscaling.MetricValueStatus{
-									AverageUtilization: int32ptr(24),
-									AverageValue:       resourcePtr(resource.MustParse("1442m")),
+									AverageUtilization: new(int32(24)),
+									AverageValue:       new(resource.MustParse("1442m")),
 								},
 							},
 						},
@@ -542,8 +534,8 @@ func TestHPAStore(t *testing.T) {
 								Name:      "cpu",
 								Container: "sidecar",
 								Current: autoscaling.MetricValueStatus{
-									AverageUtilization: int32ptr(69),
-									AverageValue:       resourcePtr(resource.MustParse("836m")),
+									AverageUtilization: new(int32(69)),
+									AverageValue:       new(resource.MustParse("836m")),
 								},
 							},
 						},
@@ -605,18 +597,16 @@ func TestHPAStore(t *testing.T) {
 		{
 			// Verify spec.behavior scale up/down tolerance metrics.
 			Obj: &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hpa1",
-					Namespace: "ns1",
-				},
+				Name:      "hpa1",
+				Namespace: "ns1",
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
 					MaxReplicas: 4,
 					Behavior: &autoscaling.HorizontalPodAutoscalerBehavior{
 						ScaleUp: &autoscaling.HPAScalingRules{
-							Tolerance: resourcePtr(resource.MustParse("0.5")),
+							Tolerance: new(resource.MustParse("0.5")),
 						},
 						ScaleDown: &autoscaling.HPAScalingRules{
-							Tolerance: resourcePtr(resource.MustParse("0.25")),
+							Tolerance: new(resource.MustParse("0.25")),
 						},
 					},
 				},
@@ -641,14 +631,6 @@ func TestHPAStore(t *testing.T) {
 	}
 }
 
-func int32ptr(value int32) *int32 {
-	return &value
-}
-
-func resourcePtr(quantity resource.Quantity) *resource.Quantity {
-	return &quantity
-}
-
 // status.currentMetrics is not validated by the API server -- unlike
 // spec.metrics, ValidateHorizontalPodAutoscalerStatusUpdate checks only the
 // replica counts and the conditions -- so the source matching Type can be
@@ -664,7 +646,7 @@ func TestHPAStatusTargetMetricWithNilSource(t *testing.T) {
 	} {
 		t.Run(string(metricType), func(t *testing.T) {
 			hpa := &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{Name: "hpa", Namespace: "ns"},
+				Name: "hpa", Namespace: "ns",
 				Status: autoscaling.HorizontalPodAutoscalerStatus{
 					// Type is set, but the matching source is not.
 					CurrentMetrics: []autoscaling.MetricStatus{{Type: metricType}},

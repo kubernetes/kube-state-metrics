@@ -349,8 +349,8 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 	}
 }
 
-func wrapCronJobFunc(f func(*batchv1.CronJob) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapCronJobFunc(f func(*batchv1.CronJob) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		cronJob := obj.(*batchv1.CronJob)
 
 		metricFamily := f(cronJob)

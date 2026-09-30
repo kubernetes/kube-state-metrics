@@ -123,7 +123,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 	b.Run("MakeRequests", func(b *testing.B) {
 		var accumulatedContentLength int
 
-		for i := 0; i < requestCount; i++ {
+		for range requestCount {
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, req)
 
@@ -158,8 +158,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		t.Fatalf("failed to insert sample pod %v", err.Error())
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder()
 	builder.WithMetrics(reg)
@@ -393,7 +392,7 @@ kube_pod_status_phase{namespace="default",pod="pod0",uid="abc-0",phase="Unknown"
 		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected, strings.Join(gotFiltered, "\n"))
 	}
 
-	for i := 0; i < len(expectedSplit); i++ {
+	for i := range expectedSplit {
 		if expectedSplit[i] != gotFiltered[i] {
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
@@ -441,7 +440,7 @@ kube_state_metrics_total_shards 1
 		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected2, strings.Join(gotFiltered2, "\n"))
 	}
 
-	for i := 0; i < len(expectedSplit2); i++ {
+	for i := range expectedSplit2 {
 		if expectedSplit2[i] != gotFiltered2[i] {
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit2[i], gotFiltered2[i])
 		}
@@ -507,15 +506,14 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 
 	kubeClient := fake.NewSimpleClientset()
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err := pod(kubeClient, i)
 		if err != nil {
 			t.Fatalf("failed to insert sample pod %v", err.Error())
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
 		t.Fatal(err)
@@ -678,7 +676,7 @@ func TestCustomResourceExtension(t *testing.T) {
 	kubeClient := fake.NewSimpleClientset()
 	factories := []customresource.RegistryFactory{new(fooFactory)}
 	resources := options.DefaultResources.AsSlice()
-	customResourceClients := make(map[string]interface{}, len(factories))
+	customResourceClients := make(map[string]any, len(factories))
 	// enable custom resource
 	for _, f := range factories {
 		resources = append(resources, f.Name())
@@ -689,8 +687,7 @@ func TestCustomResourceExtension(t *testing.T) {
 		customResourceClients[f.Name()] = customResourceClient
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	reg := prometheus.NewRegistry()
 	builder := store.NewBuilder()
@@ -784,7 +781,7 @@ kube_foo_status_replicas_available{namespace="default",foo="foo9"} 9
 		t.Fatalf("expected different output length, expected \n\n%s\n\ngot\n\n%s", expected, strings.Join(gotFiltered, "\n"))
 	}
 
-	for i := 0; i < len(expectedSplit); i++ {
+	for i := range expectedSplit {
 		if expectedSplit[i] != gotFiltered[i] {
 			t.Fatalf("expected:\n\n%v\n, but got:\n\n%v", expectedSplit[i], gotFiltered[i])
 		}
@@ -799,7 +796,7 @@ func injectFixtures(client *fake.Clientset, multiplier int) error {
 	}
 
 	for _, c := range creators {
-		for i := 0; i < multiplier; i++ {
+		for i := range multiplier {
 			err := c(client, i)
 
 			if err != nil {
@@ -815,11 +812,9 @@ func configMap(client *fake.Clientset, index int) error {
 	i := strconv.Itoa(index)
 
 	configMap := v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "configmap" + i,
-			ResourceVersion: "123456",
-			UID:             types.UID("abc-" + i),
-		},
+		Name:            "configmap" + i,
+		ResourceVersion: "123456",
+		UID:             types.UID("abc-" + i),
 	}
 	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(context.TODO(), &configMap, metav1.CreateOptions{})
 	return err
@@ -829,11 +824,9 @@ func service(client *fake.Clientset, index int) error {
 	i := strconv.Itoa(index)
 
 	service := v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "service" + i,
-			ResourceVersion: "123456",
-			UID:             types.UID("abc-" + i),
-		},
+		Name:            "service" + i,
+		ResourceVersion: "123456",
+		UID:             types.UID("abc-" + i),
 	}
 	_, err := client.CoreV1().Services(metav1.NamespaceDefault).Create(context.TODO(), &service, metav1.CreateOptions{})
 	return err
@@ -843,12 +836,10 @@ func pod(client *fake.Clientset, index int) error {
 	i := strconv.Itoa(index)
 
 	pod := v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "pod" + i,
-			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-			Namespace:         "default",
-			UID:               types.UID("abc-" + i),
-		},
+		Name:              "pod" + i,
+		CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+		Namespace:         "default",
+		UID:               types.UID("abc-" + i),
 		Spec: v1.PodSpec{
 			SchedulerName: "scheduler1",
 			RestartPolicy: v1.RestartPolicyAlways,
@@ -934,11 +925,9 @@ func foo(client *samplefake.Clientset, index int) error {
 	desiredReplicas := int32(index) //nolint:gosec
 
 	foo := samplev1alpha1.Foo{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "foo" + i,
-			CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-			UID:               types.UID("abc-" + i),
-		},
+		Name:              "foo" + i,
+		CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+		UID:               types.UID("abc-" + i),
 		Spec: samplev1alpha1.FooSpec{
 			DeploymentName: "foo" + i,
 			Replicas:       &desiredReplicas,
@@ -963,9 +952,9 @@ func (f *fooFactory) Name() string {
 }
 
 // CreateClient use fake client set to establish 10 foos.
-func (f *fooFactory) CreateClient(_ *rest.Config) (interface{}, error) {
+func (f *fooFactory) CreateClient(_ *rest.Config) (any, error) {
 	fooClient := samplefake.NewSimpleClientset()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err := foo(fooClient, i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert sample pod %v", err)
@@ -1011,8 +1000,8 @@ func (f *fooFactory) MetricFamilyGenerators() []generator.FamilyGenerator {
 	}
 }
 
-func wrapFooFunc(f func(*samplev1alpha1.Foo) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapFooFunc(f func(*samplev1alpha1.Foo) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		foo := obj.(*samplev1alpha1.Foo)
 
 		metricFamily := f(foo)
@@ -1026,11 +1015,11 @@ func wrapFooFunc(f func(*samplev1alpha1.Foo) *metric.Family) func(interface{}) *
 	}
 }
 
-func (f *fooFactory) ExpectedType() interface{} {
+func (f *fooFactory) ExpectedType() any {
 	return &samplev1alpha1.Foo{}
 }
 
-func (f *fooFactory) ListWatch(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher {
+func (f *fooFactory) ListWatch(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher {
 	client := customResourceClient.(*samplefake.Clientset)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {

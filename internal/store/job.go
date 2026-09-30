@@ -446,8 +446,8 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 	}
 }
 
-func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		job := obj.(*v1batch.Job)
 
 		metricFamily := f(job)

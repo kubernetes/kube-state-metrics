@@ -39,7 +39,7 @@ const Interval = 3 * time.Second
 
 // extractGVKPs returns the GVKPs defined by the given CRD, skipping any version
 // that the API server does not serve.
-func extractGVKPs(obj interface{}) []groupVersionKindPlural {
+func extractGVKPs(obj any) []groupVersionKindPlural {
 	if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
 		obj = d.Obj
 	}
@@ -53,7 +53,7 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 	// this runs on the informer goroutine, where a failed assertion is an
 	// unrecovered panic that takes the process down, and the cost of being wrong
 	// about the shape of one object should be that object being skipped.
-	objSpec, ok := u.Object["spec"].(map[string]interface{})
+	objSpec, ok := u.Object["spec"].(map[string]any)
 	if !ok {
 		klog.ErrorS(nil, "CRD has no spec object", "crd", u.GetName())
 		return nil
@@ -63,7 +63,7 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 		klog.ErrorS(nil, "CRD spec has no group", "crd", u.GetName())
 		return nil
 	}
-	names, ok := objSpec["names"].(map[string]interface{})
+	names, ok := objSpec["names"].(map[string]any)
 	if !ok {
 		klog.ErrorS(nil, "CRD spec has no names object", "crd", u.GetName())
 		return nil
@@ -78,14 +78,14 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 		klog.ErrorS(nil, "CRD spec has no plural", "crd", u.GetName())
 		return nil
 	}
-	versions, ok := objSpec["versions"].([]interface{})
+	versions, ok := objSpec["versions"].([]any)
 	if !ok {
 		klog.ErrorS(nil, "CRD spec has no versions list", "crd", u.GetName())
 		return nil
 	}
 	var gvkps []groupVersionKindPlural
 	for _, version := range versions {
-		versionSpec, ok := version.(map[string]interface{})
+		versionSpec, ok := version.(map[string]any)
 		if !ok {
 			klog.ErrorS(nil, "CRD version is not an object", "crd", u.GetName())
 			continue
@@ -113,12 +113,10 @@ func extractGVKPs(obj interface{}) []groupVersionKindPlural {
 			}
 		}
 		gvkps = append(gvkps, groupVersionKindPlural{
-			GroupVersionKind: schema.GroupVersionKind{
-				Group:   g,
-				Version: v,
-				Kind:    k,
-			},
-			Plural: p,
+			Group:   g,
+			Version: v,
+			Kind:    k,
+			Plural:  p,
 		})
 	}
 	return gvkps
@@ -136,7 +134,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 	informer := factory.Informer()
 	stopper := make(chan struct{})
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			gvkps := extractGVKPs(obj)
 			r.SafeWrite(func() {
 				r.AppendToMap(gvkps...)
@@ -147,7 +145,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 				r.CRDsCacheCountGauge.Inc()
 			})
 		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
+		UpdateFunc: func(oldObj, newObj any) {
 			oldGVKPs := extractGVKPs(oldObj)
 			newGVKPs := extractGVKPs(newObj)
 			r.SafeWrite(func() {
@@ -159,7 +157,7 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 				r.CRDsUpdateEventsCounter.Inc()
 			})
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			gvkps := extractGVKPs(obj)
 			r.SafeWrite(func() {
 				r.RemoveFromMap(gvkps...)
@@ -209,12 +207,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 					r.clearMissingGVKWarningLocked(gvk)
 					resolvedGVKPs = []groupVersionKindPlural{
 						{
-							GroupVersionKind: schema.GroupVersionKind{
-								Group:   g,
-								Version: v,
-								Kind:    k,
-							},
-							Plural: el.Plural,
+							Group:   g,
+							Version: v,
+							Kind:    k,
+							Plural:  el.Plural,
 						},
 					}
 					return
@@ -227,12 +223,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 			kinds := r.Map[g][v]
 			for _, el := range kinds {
 				resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-					GroupVersionKind: schema.GroupVersionKind{
-						Group:   g,
-						Version: v,
-						Kind:    el.Kind,
-					},
-					Plural: el.Plural,
+					Group:   g,
+					Version: v,
+					Kind:    el.Kind,
+					Plural:  el.Plural,
 				})
 			}
 		}
@@ -242,12 +236,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 				for _, el := range kinds {
 					if el.Kind == k {
 						resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-							GroupVersionKind: schema.GroupVersionKind{
-								Group:   g,
-								Version: version,
-								Kind:    k,
-							},
-							Plural: el.Plural,
+							Group:   g,
+							Version: version,
+							Kind:    k,
+							Plural:  el.Plural,
 						})
 					}
 				}
@@ -258,12 +250,10 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 			for version, kinds := range versions {
 				for _, el := range kinds {
 					resolvedGVKPs = append(resolvedGVKPs, groupVersionKindPlural{
-						GroupVersionKind: schema.GroupVersionKind{
-							Group:   g,
-							Version: version,
-							Kind:    el.Kind,
-						},
-						Plural: el.Plural,
+						Group:   g,
+						Version: version,
+						Kind:    el.Kind,
+						Plural:  el.Plural,
 					})
 				}
 			}

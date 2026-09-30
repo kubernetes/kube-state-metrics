@@ -18,6 +18,7 @@ package types
 
 import (
 	"context"
+	"time"
 
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
@@ -51,6 +52,16 @@ type BuilderInterface interface {
 	Build() metricsstore.MetricsWriterList
 	BuildStores() [][]cache.Store
 	WithGenerateCustomResourceStoresFunc(f BuildCustomResourceStoresFunc)
+}
+
+// CustomResourceReplacer replaces the discovered custom resource set while preserving built-in names.
+type CustomResourceReplacer interface {
+	ReplaceEnabledCustomResources(c []string) error
+}
+
+// StoreSyncBuilder waits for reflector stores to sync after Build().
+type StoreSyncBuilder interface {
+	WaitForStoresSync(ctx context.Context, timeout time.Duration) bool
 }
 
 // BuildStoresFunc function signature that is used to return a list of cache.Store

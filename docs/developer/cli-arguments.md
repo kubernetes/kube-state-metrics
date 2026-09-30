@@ -82,6 +82,7 @@ Flags:
       --skip_headers                                         If true, avoid header prefixes in the log messages
       --skip_log_headers                                     If true, avoid headers when opening log files (no effect when -logtostderr=true)
       --stderrthreshold severity                             logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true unless -legacy_stderr_threshold_behavior=false) (default 2)
+      --store-sync-timeout duration                          Maximum time to wait for reflector stores to complete their initial list before swapping metrics writers during a rebuild. (default 2m0s)
       --telemetry-host string                                Host to expose kube-state-metrics self metrics on. (default "::")
       --telemetry-port int                                   Port to expose kube-state-metrics self metrics on. (default 8081)
       --tls-config string                                    Path to the TLS configuration file

@@ -17,6 +17,8 @@ package discovery
 import (
 	"context"
 	"fmt"
+	"slices"
+	"sort"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -27,7 +29,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
-	"k8s.io/kube-state-metrics/v2/internal/store"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -36,6 +38,19 @@ import (
 
 // Interval is the time interval between two cache sync checks.
 const Interval = 3 * time.Second
+
+// maxRetryBackoff caps the delay between retries of a failed store rebuild.
+const maxRetryBackoff = 5 * time.Minute
+
+// retryBackoff returns the delay before retrying a store rebuild that has
+// failed the given number of consecutive times.
+func retryBackoff(failures int) time.Duration {
+	backoff := Interval
+	for i := 1; i < failures && backoff < maxRetryBackoff; i++ {
+		backoff *= 2
+	}
+	return min(backoff, maxRetryBackoff)
+}
 
 // extractGVKPs returns the GVKPs defined by the given CRD, skipping any version
 // that the API server does not serve.
@@ -83,16 +98,22 @@ func extractGVKPs(obj any) []groupVersionKindPlural {
 		klog.ErrorS(nil, "CRD spec has no versions list", "crd", u.GetName())
 		return nil
 	}
-	var gvkps []groupVersionKindPlural
+	// Non-nil empty means every version was successfully read as unserved.
+	// Nil (below) means a version-level parse failure, so callers must not
+	// treat the result as "all versions removed".
+	gvkps := make([]groupVersionKindPlural, 0, len(versions))
+	parseFailed := false
 	for _, version := range versions {
 		versionSpec, ok := version.(map[string]any)
 		if !ok {
 			klog.ErrorS(nil, "CRD version is not an object", "crd", u.GetName())
+			parseFailed = true
 			continue
 		}
 		v, ok := versionSpec["name"].(string)
 		if !ok {
 			klog.ErrorS(nil, "CRD version has no name", "crd", u.GetName())
+			parseFailed = true
 			continue
 		}
 		// Versions that are not served by the API server cannot be listed or
@@ -105,6 +126,7 @@ func extractGVKPs(obj any) []groupVersionKindPlural {
 			served, ok := rawServed.(bool)
 			if !ok {
 				klog.ErrorS(nil, "CRD version has a non-boolean served field", "crd", u.GetName(), "version", v)
+				parseFailed = true
 				continue
 			}
 			if !served {
@@ -118,6 +140,9 @@ func extractGVKPs(obj any) []groupVersionKindPlural {
 			Kind:    k,
 			Plural:  p,
 		})
+	}
+	if len(gvkps) == 0 && parseFailed {
+		return nil
 	}
 	return gvkps
 }
@@ -137,8 +162,11 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 		AddFunc: func(obj any) {
 			gvkps := extractGVKPs(obj)
 			r.SafeWrite(func() {
-				r.AppendToMap(gvkps...)
-				r.WasUpdated = true
+				// Only flag a store rebuild when the cache gains a new GVK/plural.
+				// Re-adds of an already-known CRD are no-ops for metrics writers.
+				if r.AppendToMap(gvkps...) {
+					r.WasUpdated = true
+				}
 			})
 			r.SafeWrite(func() {
 				r.CRDsAddEventsCounter.Inc()
@@ -148,20 +176,21 @@ func (r *CRDiscoverer) StartDiscovery(ctx context.Context, config *rest.Config) 
 		UpdateFunc: func(oldObj, newObj any) {
 			oldGVKPs := extractGVKPs(oldObj)
 			newGVKPs := extractGVKPs(newObj)
+			// CRD status/metadata churn is common and does not change the
+			// discoverable GVK/plural set. Applying Remove+Append for those
+			// events previously closed active reflector stop channels and
+			// forced full metrics rebuilds for unchanged stores.
 			r.SafeWrite(func() {
-				r.RemoveFromMap(oldGVKPs...)
-				r.AppendToMap(newGVKPs...)
-				r.WasUpdated = true
-			})
-			r.SafeWrite(func() {
+				r.applyCRDUpdate(oldGVKPs, newGVKPs)
 				r.CRDsUpdateEventsCounter.Inc()
 			})
 		},
 		DeleteFunc: func(obj any) {
 			gvkps := extractGVKPs(obj)
 			r.SafeWrite(func() {
-				r.RemoveFromMap(gvkps...)
-				r.WasUpdated = true
+				if r.RemoveFromMap(gvkps...) {
+					r.WasUpdated = true
+				}
 			})
 			r.SafeWrite(func() {
 				r.CRDsDeleteEventsCounter.Inc()
@@ -270,17 +299,22 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 func (r *CRDiscoverer) PollForCacheUpdates(
 	ctx context.Context,
 	opts *options.Options,
-	storeBuilder *store.Builder,
 	m *metricshandler.MetricsHandler,
 	factoryGenerator func() ([]customresource.RegistryFactory, error),
 ) {
 	// The interval at which we will check the cache for updates.
 	t := time.NewTicker(Interval)
-	generateMetrics := func() {
+	// The enabled CR set and cache revision jointly skip no-op rebuilds. The
+	// revision is needed because a CRD can be deleted and re-added between ticks
+	// with the same GVR while its reflector stop channel changes identity.
+	var lastAppliedEnabled []string
+	var lastAppliedRevision uint64
+	generateMetrics := func(observedRevision uint64) (applied bool, err error) {
 		// Get families for discovered factories.
 		customFactories, err := factoryGenerator()
 		if err != nil {
-			klog.ErrorS(err, "failed to update custom resource stores")
+			// Preserve WasUpdated so a later tick retries.
+			return false, err
 		}
 		// Update the list of enabled custom resources.
 		var enabledCustomResources []string
@@ -297,29 +331,58 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 			}
 			enabledCustomResources = append(enabledCustomResources, gvrString)
 		}
-		// Create clients for discovered factories.
+		sort.Strings(enabledCustomResources)
+		if slices.Equal(enabledCustomResources, lastAppliedEnabled) && observedRevision == lastAppliedRevision {
+			r.SafeWrite(func() {
+				if r.cacheRevision == observedRevision {
+					r.WasUpdated = false
+				}
+			})
+			klog.V(2).InfoS("discovery cache changed but enabled custom resources are unchanged; skipping store rebuild")
+			return false, nil
+		}
+		// Create clients for discovered factories. Keep this outside ConfigureStore:
+		// client construction is slow and must not hold the metrics handler lock.
 		discoveredCustomResourceClients, err := util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
 		if err != nil {
-			klog.ErrorS(err, "failed to update custom resource stores")
+			// Preserve WasUpdated so a later tick retries.
+			return false, err
 		}
-		// Update the store builder with the new clients.
-		storeBuilder.WithCustomResourceClients(discoveredCustomResourceClients)
-		// Inject families' constructors to the existing set of stores.
-		storeBuilder.WithCustomResourceStoreFactories(customFactories...)
-		// Update the store builder with the new custom resources.
-		if err := storeBuilder.WithEnabledResources(enabledCustomResources); err != nil {
-			klog.ErrorS(err, "failed to update custom resource stores")
+		// Apply builder config under the same lock Build() uses, then rebuild.
+		// Mutating the shared builder directly would race ConfigureSharding / BuildWriters.
+		if err := m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) error {
+			replacer, ok := b.(ksmtypes.CustomResourceReplacer)
+			if !ok {
+				return fmt.Errorf("builder does not support replacing custom resources")
+			}
+			b.WithCustomResourceClients(discoveredCustomResourceClients)
+			b.WithCustomResourceStoreFactories(customFactories...)
+			if err := replacer.ReplaceEnabledCustomResources(enabledCustomResources); err != nil {
+				return err
+			}
+			b.WithGenerateCustomResourceStoresFunc(b.DefaultGenerateCustomResourceStoresFunc())
+			return nil
+		}); err != nil {
+			// Preserve WasUpdated so a later tick retries.
+			return false, err
 		}
-		// Configure the generation function for the custom resource stores.
-		storeBuilder.WithGenerateCustomResourceStoresFunc(storeBuilder.DefaultGenerateCustomResourceStoresFunc())
-		// Reset the flag, if there were no errors. Else, we'll try again on the next tick.
-		// Keep retrying if there were errors.
+		lastAppliedEnabled = slices.Clone(enabledCustomResources)
+		lastAppliedRevision = observedRevision
+		// Clear only the revision we applied. If discovery changed while clients
+		// were being created, leave the flag set for another reconciliation.
 		r.SafeWrite(func() {
-			r.WasUpdated = false
+			if r.cacheRevision == observedRevision {
+				r.WasUpdated = false
+			}
 		})
-		// Update metric handler with the new configs.
-		m.BuildWriters(ctx)
+		return true, nil
 	}
+	// Failed rebuilds are retried with exponential backoff so a persistent error
+	// (e.g. an invalid custom resource state config) does not retry and log on
+	// every tick. A new discovery revision resets the backoff.
+	var consecutiveFailures int
+	var failedRevision uint64
+	var nextRetry time.Time
 	go func() {
 		for range t.C {
 			select {
@@ -330,11 +393,31 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 			default:
 				// Check if cache has been updated.
 				shouldGenerateMetrics := false
+				var observedRevision uint64
 				r.SafeRead(func() {
 					shouldGenerateMetrics = r.WasUpdated
+					observedRevision = r.cacheRevision
 				})
-				if shouldGenerateMetrics {
-					generateMetrics()
+				if !shouldGenerateMetrics {
+					continue
+				}
+				if consecutiveFailures > 0 && observedRevision == failedRevision && time.Now().Before(nextRetry) {
+					continue
+				}
+				if observedRevision != failedRevision {
+					consecutiveFailures = 0
+				}
+				applied, err := generateMetrics(observedRevision)
+				if err != nil {
+					consecutiveFailures++
+					failedRevision = observedRevision
+					backoff := retryBackoff(consecutiveFailures)
+					nextRetry = time.Now().Add(backoff)
+					klog.ErrorS(err, "failed to update custom resource stores", "retryIn", backoff, "consecutiveFailures", consecutiveFailures)
+					continue
+				}
+				consecutiveFailures = 0
+				if applied {
 					klog.InfoS("discovery finished, cache updated")
 				}
 			}

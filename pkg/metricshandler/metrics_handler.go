@@ -66,7 +66,7 @@ type MetricsHandler struct {
 
 	cancel func()
 
-	// mtx protects metricsWriters, curShard, and curTotalShards
+	// mtx protects metricsWriters, curShard, curTotalShards, and storeBuilder config.
 	mtx                *sync.RWMutex
 	metricsWriters     metricsstore.MetricsWriterList
 	curTotalShards     int
@@ -97,6 +97,22 @@ func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	ctx, m.cancel = context.WithCancel(ctx)
 	m.storeBuilder.WithContext(ctx)
 	m.metricsWriters = m.storeBuilder.Build()
+}
+
+// ConfigureStore applies storeBuilder configuration under mtx, then rebuilds writers.
+func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error {
+	if configure == nil {
+		m.BuildWriters(ctx)
+		return nil
+	}
+	m.mtx.Lock()
+	err := configure(m.storeBuilder)
+	m.mtx.Unlock()
+	if err != nil {
+		return err
+	}
+	m.BuildWriters(ctx)
+	return nil
 }
 
 // ConfigureSharding configures sharding. Configuration can be used multiple times and

@@ -18,6 +18,7 @@ package builder
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
 	clientset "k8s.io/client-go/kubernetes"
@@ -57,6 +58,16 @@ func (b *Builder) WithMetrics(r prometheus.Registerer) {
 // WithEnabledResources sets the enabledResources property of a Builder.
 func (b *Builder) WithEnabledResources(c []string) error {
 	return b.internal.WithEnabledResources(c)
+}
+
+// ReplaceEnabledCustomResources replaces discovered custom resources while
+// preserving built-in enabled resource names.
+func (b *Builder) ReplaceEnabledCustomResources(c []string) error {
+	replacer, ok := b.internal.(ksmtypes.CustomResourceReplacer)
+	if !ok {
+		return fmt.Errorf("builder does not support replacing custom resources")
+	}
+	return replacer.ReplaceEnabledCustomResources(c)
 }
 
 // WithNamespaces sets the namespaces property of a Builder.

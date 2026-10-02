@@ -36,15 +36,15 @@ var (
 	descServiceAccountLabelsDefaultLabels = []string{"namespace", "serviceaccount", "uid"}
 )
 
-func serviceAccountMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func serviceAccountMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createServiceAccountInfoFamilyGenerator(),
 		createServiceAccountCreatedFamilyGenerator(),
 		createServiceAccountDeletedFamilyGenerator(),
 		createServiceAccountSecretFamilyGenerator(),
 		createServiceAccountImagePullSecretFamilyGenerator(),
-		createServiceAccountAnnotationsGenerator(allowAnnotationsList),
-		createServiceAccountLabelsGenerator(allowLabelsList),
+		createServiceAccountAnnotationsGenerator(allowAnnotationsList, annotationsPrefix),
+		createServiceAccountLabelsGenerator(allowLabelsList, labelsPrefix),
 	}
 }
 
@@ -173,7 +173,7 @@ func createServiceAccountImagePullSecretFamilyGenerator() generator.FamilyGenera
 	)
 }
 
-func createServiceAccountAnnotationsGenerator(allowAnnotations []string) generator.FamilyGenerator {
+func createServiceAccountAnnotationsGenerator(allowAnnotations []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_annotations",
 		"Kubernetes annotations converted to Prometheus labels.",
@@ -184,7 +184,7 @@ func createServiceAccountAnnotationsGenerator(allowAnnotations []string) generat
 			if len(allowAnnotations) == 0 {
 				return &metric.Family{}
 			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", sa.Annotations, allowAnnotations)
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues(prefix, sa.Annotations, allowAnnotations)
 			m := metric.Metric{
 				LabelKeys:   annotationKeys,
 				LabelValues: annotationValues,
@@ -197,7 +197,7 @@ func createServiceAccountAnnotationsGenerator(allowAnnotations []string) generat
 	)
 }
 
-func createServiceAccountLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
+func createServiceAccountLabelsGenerator(allowLabelsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_serviceaccount_labels",
 		"Kubernetes labels converted to Prometheus labels.",
@@ -208,7 +208,7 @@ func createServiceAccountLabelsGenerator(allowLabelsList []string) generator.Fam
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
 			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", sa.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues(prefix, sa.Labels, allowLabelsList)
 			m := metric.Metric{
 				LabelKeys:   labelKeys,
 				LabelValues: labelValues,

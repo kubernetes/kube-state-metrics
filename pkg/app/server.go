@@ -80,7 +80,7 @@ const (
 func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) error {
 	err := RunKubeStateMetrics(ctx, opts)
 	if ctx.Err() == context.Canceled {
-		klog.Infoln("Restarting: kube-state-metrics, metrics will be reset")
+		klog.InfoS("Restarting: kube-state-metrics, metrics will be reset")
 		return nil
 	}
 	return err
@@ -568,7 +568,7 @@ func handleClusterDelegationForProber(client kubernetes.Interface, probeType str
 		if got.Error() != nil {
 			var statusCode int
 			got.StatusCode(&statusCode)
-			klog.Warningf("Failed to contact API server for %s: got %d", probeType, statusCode)
+			klog.InfoS("Failed to contact API server for probe", "probeType", probeType, "statusCode", statusCode, "err", got.Error())
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
 			return
@@ -659,7 +659,7 @@ func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.Con
 		data, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			if opts.ContinueWithoutCustomResourceConfigFile && os.IsNotExist(err) {
-				klog.Warningf("Failed to open Custom Resource State Metrics file %s: %v, ignoring", file, err)
+				klog.InfoS("Failed to open Custom Resource State Metrics file, ignoring", "file", file, "err", err)
 				return nil, nil
 			}
 			return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %w", err)

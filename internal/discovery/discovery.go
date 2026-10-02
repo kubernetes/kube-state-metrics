@@ -39,6 +39,19 @@ import (
 // Interval is the time interval between two cache sync checks.
 const Interval = 3 * time.Second
 
+// maxRetryBackoff caps the delay between retries of a failed store rebuild.
+const maxRetryBackoff = 5 * time.Minute
+
+// retryBackoff returns the delay before retrying a store rebuild that has
+// failed the given number of consecutive times.
+func retryBackoff(failures int) time.Duration {
+	backoff := Interval
+	for i := 1; i < failures && backoff < maxRetryBackoff; i++ {
+		backoff *= 2
+	}
+	return min(backoff, maxRetryBackoff)
+}
+
 // extractGVKPs returns the GVKPs defined by the given CRD, skipping any version
 // that the API server does not serve.
 func extractGVKPs(obj any) []groupVersionKindPlural {
@@ -296,17 +309,12 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 	// with the same GVR while its reflector stop channel changes identity.
 	var lastAppliedEnabled []string
 	var lastAppliedRevision uint64
-	generateMetrics := func() (applied bool) {
-		var observedRevision uint64
-		r.SafeRead(func() {
-			observedRevision = r.cacheRevision
-		})
+	generateMetrics := func(observedRevision uint64) (applied bool, err error) {
 		// Get families for discovered factories.
 		customFactories, err := factoryGenerator()
 		if err != nil {
-			klog.ErrorS(err, "failed to update custom resource stores")
-			// Preserve WasUpdated so the next tick retries.
-			return false
+			// Preserve WasUpdated so a later tick retries.
+			return false, err
 		}
 		// Update the list of enabled custom resources.
 		var enabledCustomResources []string
@@ -331,15 +339,14 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 				}
 			})
 			klog.V(2).InfoS("discovery cache changed but enabled custom resources are unchanged; skipping store rebuild")
-			return false
+			return false, nil
 		}
 		// Create clients for discovered factories. Keep this outside ConfigureStore:
 		// client construction is slow and must not hold the metrics handler lock.
 		discoveredCustomResourceClients, err := util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
 		if err != nil {
-			klog.ErrorS(err, "failed to update custom resource stores")
-			// Preserve WasUpdated so the next tick retries.
-			return false
+			// Preserve WasUpdated so a later tick retries.
+			return false, err
 		}
 		// Apply builder config under the same lock Build() uses, then rebuild.
 		// Mutating the shared builder directly would race ConfigureSharding / BuildWriters.
@@ -351,14 +358,13 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 			b.WithCustomResourceClients(discoveredCustomResourceClients)
 			b.WithCustomResourceStoreFactories(customFactories...)
 			if err := replacer.ReplaceEnabledCustomResources(enabledCustomResources); err != nil {
-				klog.ErrorS(err, "failed to update custom resource stores")
 				return err
 			}
 			b.WithGenerateCustomResourceStoresFunc(b.DefaultGenerateCustomResourceStoresFunc())
 			return nil
 		}); err != nil {
-			// Preserve WasUpdated so the next tick retries.
-			return false
+			// Preserve WasUpdated so a later tick retries.
+			return false, err
 		}
 		lastAppliedEnabled = slices.Clone(enabledCustomResources)
 		lastAppliedRevision = observedRevision
@@ -369,8 +375,14 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 				r.WasUpdated = false
 			}
 		})
-		return true
+		return true, nil
 	}
+	// Failed rebuilds are retried with exponential backoff so a persistent error
+	// (e.g. an invalid custom resource state config) does not retry and log on
+	// every tick. A new discovery revision resets the backoff.
+	var consecutiveFailures int
+	var failedRevision uint64
+	var nextRetry time.Time
 	go func() {
 		for range t.C {
 			select {
@@ -381,13 +393,32 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 			default:
 				// Check if cache has been updated.
 				shouldGenerateMetrics := false
+				var observedRevision uint64
 				r.SafeRead(func() {
 					shouldGenerateMetrics = r.WasUpdated
+					observedRevision = r.cacheRevision
 				})
-				if shouldGenerateMetrics {
-					if generateMetrics() {
-						klog.InfoS("discovery finished, cache updated")
-					}
+				if !shouldGenerateMetrics {
+					continue
+				}
+				if consecutiveFailures > 0 && observedRevision == failedRevision && time.Now().Before(nextRetry) {
+					continue
+				}
+				if observedRevision != failedRevision {
+					consecutiveFailures = 0
+				}
+				applied, err := generateMetrics(observedRevision)
+				if err != nil {
+					consecutiveFailures++
+					failedRevision = observedRevision
+					backoff := retryBackoff(consecutiveFailures)
+					nextRetry = time.Now().Add(backoff)
+					klog.ErrorS(err, "failed to update custom resource stores", "retryIn", backoff, "consecutiveFailures", consecutiveFailures)
+					continue
+				}
+				consecutiveFailures = 0
+				if applied {
+					klog.InfoS("discovery finished, cache updated")
 				}
 			}
 		}

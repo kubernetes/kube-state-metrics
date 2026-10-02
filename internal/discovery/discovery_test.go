@@ -18,6 +18,7 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
@@ -577,5 +578,24 @@ func TestApplyCRDUpdateSkipsUnchangedServedSet(t *testing.T) {
 	slices.Sort(gotVersions)
 	if !slices.Equal(gotVersions, want) {
 		t.Fatalf("served versions = %v, want %v", gotVersions, want)
+	}
+}
+
+func TestRetryBackoff(t *testing.T) {
+	tests := []struct {
+		failures int
+		want     time.Duration
+	}{
+		{failures: 1, want: Interval},
+		{failures: 2, want: 2 * Interval},
+		{failures: 3, want: 4 * Interval},
+		{failures: 7, want: 64 * Interval},
+		{failures: 8, want: maxRetryBackoff},
+		{failures: 1000, want: maxRetryBackoff},
+	}
+	for _, tc := range tests {
+		if got := retryBackoff(tc.failures); got != tc.want {
+			t.Errorf("retryBackoff(%d) = %v, want %v", tc.failures, got, tc.want)
+		}
 	}
 }

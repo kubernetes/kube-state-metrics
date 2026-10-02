@@ -25,6 +25,7 @@ import (
 
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
+	logsapi "k8s.io/component-base/logs/api/v1"
 	"k8s.io/klog/v2"
 )
 
@@ -66,6 +67,7 @@ type Options struct {
 	TelemetryHost                           string   `yaml:"telemetry_host"`
 
 	Config                string
+	LoggingFormat         string
 	ContinueWithoutConfig bool `yaml:"continue_without_config"`
 
 	Namespaces              NamespaceList `yaml:"namespaces"`
@@ -163,6 +165,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().IntVar(&o.TelemetryPort, "telemetry-port", 8081, `Port to expose kube-state-metrics self metrics on.`)
 	o.cmd.Flags().IntVar(&o.TotalShards, "total-shards", 1, "The total number of shards. Sharding is disabled when total shards is set to 1.")
 	o.cmd.Flags().StringVar(&o.Apiserver, "apiserver", "", `The URL of the apiserver to use as a master`)
+	o.cmd.Flags().StringVar(&o.LoggingFormat, "logging-format", "text", `Sets the logging format. Supported formats: "text" and "json"`)
 	o.cmd.Flags().BoolVar(&o.AuthFilter, "auth-filter", false, "If true, requires authentication and authorization through Kubernetes API to access metrics endpoints")
 	o.cmd.Flags().BoolVar(&o.AutoGoMemlimit, "auto-gomemlimit", false, "Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)")
 	o.cmd.Flags().Float64Var(&o.AutoGoMemlimitRatio, "auto-gomemlimit-ratio", float64(0.9), "The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental)")
@@ -202,6 +205,23 @@ func (o *Options) Parse() error {
 // Usage is the function called when an error occurs while parsing flags.
 func (o *Options) Usage() {
 	_ = o.cmd.Flags().FlagUsages()
+}
+
+// ApplyLoggingFormat switches klog to the format set by --logging-format. The
+// default text format is left to klog itself so that the klog flags
+// (--log_dir, --logtostderr, ...) keep working.
+func (o *Options) ApplyLoggingFormat() error {
+	if o.LoggingFormat == logsapi.DefaultLogFormat {
+		return nil
+	}
+	c := logsapi.NewLoggingConfiguration()
+	c.Format = o.LoggingFormat
+	// ValidateAndApply overwrites klog's -v with c.Verbosity, so seed it with
+	// the value the user passed.
+	if err := logsapi.VerbosityLevelPflag(&c.Verbosity).Set(o.cmd.Flags().Lookup("v").Value.String()); err != nil {
+		return err
+	}
+	return logsapi.ValidateAndApply(c, nil)
 }
 
 // Validate validates arguments

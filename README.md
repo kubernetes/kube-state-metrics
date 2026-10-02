@@ -255,7 +255,7 @@ Sharding should be used carefully and additional monitoring should be set up in 
 
 #### Automated sharding
 
-Automatic sharding allows each shard to discover its nominal position when deployed in a StatefulSet which is useful for automatically configuring sharding. This is an experimental feature and may be broken or removed without notice.
+Automatic sharding allows each shard to discover its nominal position when deployed in a StatefulSet which is useful for automatically configuring sharding.
 
 To enable automated sharding, kube-state-metrics must be run by a `StatefulSet` and the pod name and namespace must be handed to the kube-state-metrics process via the `--pod` and `--pod-namespace` flags. Example manifests demonstrating the autosharding functionality can be found in [`/examples/autosharding`](./examples/autosharding).
 

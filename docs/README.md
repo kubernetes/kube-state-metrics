@@ -65,6 +65,7 @@ See each file for specific documentation about the exposed metrics:
 * [ValidatingAdmissionPolicyBinding Metrics](metrics/extend/validatingadmissionpolicybinding-metrics.md)
 * [ValidatingWebhookConfiguration Metrics](metrics/extend/validatingwebhookconfiguration-metrics.md)
 * [VolumeAttachment Metrics](metrics/storage/volumeattachment-metrics.md)
+* [VolumeAttributesClass Metrics](metrics/storage/volumeattributesclass-metrics.md)
 
 ### Optional Resources
 

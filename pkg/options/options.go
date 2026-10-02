@@ -40,12 +40,13 @@ var (
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
-	AnnotationsAllowList LabelsAllowList `yaml:"annotations_allow_list"`
-	LabelsAllowList      LabelsAllowList `yaml:"labels_allow_list"`
-	MetricAllowlist      MetricSet       `yaml:"metric_allowlist"`
-	MetricDenylist       MetricSet       `yaml:"metric_denylist"`
-	MetricOptInList      MetricSet       `yaml:"metric_opt_in_list"`
-	Resources            ResourceSet     `yaml:"resources"`
+	AnnotationsAllowList                     LabelsAllowList                          `yaml:"annotations_allow_list"`
+	LabelsAllowList                          LabelsAllowList                          `yaml:"labels_allow_list"`
+	MetricAllowlist                          MetricSet                                `yaml:"metric_allowlist"`
+	MetricDenylist                           MetricSet                                `yaml:"metric_denylist"`
+	MetricOptInList                          MetricSet                                `yaml:"metric_opt_in_list"`
+	Resources                                ResourceSet                              `yaml:"resources"`
+	VolumeAttributesClassParametersAllowList VolumeAttributesClassParametersAllowList `yaml:"volumeattributesclass_parameters_allow_list"`
 
 	cmd                      *cobra.Command
 	Apiserver                string `yaml:"apiserver"`
@@ -186,6 +187,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().Var(&o.Namespaces, "namespaces", fmt.Sprintf("Comma-separated list of namespaces to be enabled. Defaults to %q", &DefaultNamespaces))
 	o.cmd.Flags().Var(&o.NamespacesDenylist, "namespaces-denylist", "Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set, only namespaces that are excluded in namespaces-denylist will be used.")
 	o.cmd.Flags().Var(&o.Resources, "resources", fmt.Sprintf("Comma-separated list of resources to be enabled. Defaults to %q", &DefaultResources))
+	o.cmd.Flags().Var(&o.VolumeAttributesClassParametersAllowList, "metric-volumeattributesclass-parameters-allowlist", fmt.Sprintf("Comma-separated list of VolumeAttributesClass parameter keys that will be used in the kube_volumeattributesclass_parameters metric. Defaults to %q", strings.Join(DefaultVolumeAttributesClassParametersAllowList, ",")))
 
 	o.cmd.Flags().DurationVar(&o.ServerReadTimeout, "server-read-timeout", defaultServerReadTimeout, "The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients. ")
 	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")

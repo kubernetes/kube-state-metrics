@@ -214,6 +214,11 @@ func (o *Options) ApplyLoggingFormat() error {
 	if o.LoggingFormat == logsapi.DefaultLogFormat {
 		return nil
 	}
+
+	if o.cmd.Flags().Lookup("log_dir").Value.String() != "" {
+		return fmt.Errorf("--log_dir is not supported with --logging-format=%s", o.LoggingFormat)
+	}
+
 	c := logsapi.NewLoggingConfiguration()
 	c.Format = o.LoggingFormat
 	// ValidateAndApply overwrites klog's -v with c.Verbosity, so seed it with

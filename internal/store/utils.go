@@ -338,7 +338,7 @@ func expandWildcard(pattern string, limit uint) string {
 // compile error so the operator can fix the configuration.
 func cachedCompileAllowListPattern(pattern string) *regexp.Regexp {
 	if strings.Count(pattern, options.LabelWildcard) > options.MaxPartialWildcardsPerLabel {
-		klog.Warningf("kube-state-metrics: ignoring allowlist pattern %q: exceeds maximum of %d wildcard(s)", pattern, options.MaxPartialWildcardsPerLabel)
+		klog.InfoS("Ignoring allowlist pattern because it exceeds the maximum wildcard count", "pattern", pattern, "maxWildcards", options.MaxPartialWildcardsPerLabel)
 		return nil
 	}
 	expanded := expandWildcard(pattern, options.MaxPartialWildcardsPerLabel)
@@ -350,7 +350,7 @@ func cachedCompileAllowListPattern(pattern string) *regexp.Regexp {
 	}
 	re, err := regexp.Compile(expanded)
 	if err != nil {
-		klog.Warningf("kube-state-metrics: ignoring invalid allowlist pattern %q: %v", pattern, err)
+		klog.InfoS("Ignoring invalid allowlist pattern", "pattern", pattern, "err", err)
 		allowListPatternCache.Store(expanded, nil)
 		return nil
 	}

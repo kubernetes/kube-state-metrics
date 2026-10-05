@@ -18,6 +18,7 @@ package main
 
 import (
 	"github.com/spf13/cobra"
+	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/internal"
@@ -28,6 +29,10 @@ func main() {
 	opts := options.NewOptions()
 	cmd := options.InitCommand
 	cmd.Run = func(_ *cobra.Command, _ []string) {
+		if err := opts.ApplyLoggingFormat(); err != nil {
+			klog.ErrorS(err, "Failed to apply logging format")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
 		internal.RunKubeStateMetricsWrapper(opts)
 	}
 	opts.AddFlags(cmd)

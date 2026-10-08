@@ -111,6 +111,14 @@ func NewOptions() *Options {
 func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd = cmd
 
+	// Validate from PreRunE rather than from the caller: cmd.Run blocks for the
+	// lifetime of the process, so anything the caller does after Execute() is
+	// unreachable. Returning here aborts before Run and surfaces the error
+	// through Execute().
+	o.cmd.PreRunE = func(_ *cobra.Command, _ []string) error {
+		return o.Validate()
+	}
+
 	completionCommand.SetHelpFunc(func(_ *cobra.Command, _ []string) {
 		if shellPath, ok := os.LookupEnv("SHELL"); ok {
 			shell := shellPath[strings.LastIndex(shellPath, "/")+1:]

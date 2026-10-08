@@ -17,9 +17,11 @@ limitations under the License.
 package options
 
 import (
+	"io"
 	"os"
 	"testing"
 
+	"github.com/spf13/cobra"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
@@ -61,6 +63,65 @@ func TestOptionsParse(t *testing.T) {
 
 			if test.ExpectsError && err == nil {
 				t.Errorf("Expected error for test with description: %s", test.Desc)
+			}
+		})
+	}
+}
+
+// Validate used to be called by main after Parse returned, which never happens:
+// Parse runs cmd.Execute, and cmd.Run only returns once the process is shutting
+// down. It is wired into the command's PreRunE instead, so a rejected option
+// aborts before anything is started.
+func TestValidateRunsBeforeRun(t *testing.T) {
+	tests := []struct {
+		Desc         string
+		Args         []string
+		ExpectsError bool
+	}{
+		{
+			Desc:         "node sharding rejects a resource without a spec.nodeName field selector",
+			Args:         []string{"--node=node-1", "--resources=deployments"},
+			ExpectsError: true,
+		},
+		{
+			Desc:         "node sharding accepts pods",
+			Args:         []string{"--node=node-1", "--resources=pods"},
+			ExpectsError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Desc, func(t *testing.T) {
+			ran := false
+			cmd := &cobra.Command{
+				Use:          "kube-state-metrics",
+				Args:         cobra.NoArgs,
+				SilenceUsage: true,
+				Run:          func(_ *cobra.Command, _ []string) { ran = true },
+			}
+
+			opts := NewOptions()
+			opts.AddFlags(cmd)
+			cmd.SetArgs(test.Args)
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+
+			err := opts.Parse()
+
+			if test.ExpectsError {
+				if err == nil {
+					t.Fatal("expected Parse to surface the validation error, got nil")
+				}
+				if ran {
+					t.Error("command ran despite failing validation")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !ran {
+				t.Error("command did not run")
 			}
 		})
 	}

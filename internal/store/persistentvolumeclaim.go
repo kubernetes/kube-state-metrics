@@ -41,7 +41,7 @@ var (
 	descPersistentVolumeClaimLabelsDefaultLabels = []string{"namespace", "persistentvolumeclaim"}
 )
 
-func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			descPersistentVolumeClaimLabelsName,
@@ -53,7 +53,7 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -75,7 +75,7 @@ func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList [
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, p.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

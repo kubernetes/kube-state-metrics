@@ -39,7 +39,7 @@ var (
 	descPodDisruptionBudgetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 )
 
-func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			descPodDisruptionBudgetAnnotationsName,
@@ -51,7 +51,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", p.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, p.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -73,7 +73,7 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", p.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, p.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

@@ -39,7 +39,7 @@ var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 )
 
-func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourcequota_created",
@@ -103,7 +103,7 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", d.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, d.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -125,7 +125,7 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", d.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, d.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

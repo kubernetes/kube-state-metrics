@@ -69,9 +69,20 @@ type MetricsHandler struct {
 	// mtx protects metricsWriters, curShard, curTotalShards, and storeBuilder config.
 	mtx                *sync.RWMutex
 	metricsWriters     metricsstore.MetricsWriterList
+	writersInstalled   bool
 	curTotalShards     int
 	curShard           int32
 	enableGZIPEncoding bool
+
+	rebuildMu        sync.Mutex
+	rebuildRunning   bool
+	pendingRebuild   bool
+	rebuildParentCtx context.Context
+	activeCancel     context.CancelFunc
+	// beforeSwap, when set, runs after a generation's sync wait returns and
+	// before that generation is installed. Tests use it to publish another
+	// rebuild request in that window.
+	beforeSwap func()
 }
 
 // New creates and returns a new MetricsHandler with the given options.
@@ -85,18 +96,129 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 	}
 }
 
-// BuildWriters builds the metrics writers, cancelling any previous context and passing a new one on every build.
-// Build can be used multiple times and concurrently.
+// BuildWriters rebuilds metrics writers after store configuration changes.
+// Rebuilds are coalesced. A generation is installed after its stores sync, or
+// when the configured sync timeout elapses or a reflector stops before listing.
+// Superseded and canceled generations are not installed. A timed-out install
+// can expose partial metrics while reflectors that are still running continue
+// to fill their stores.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-
-	if m.cancel != nil {
-		m.cancel()
+	m.rebuildMu.Lock()
+	m.rebuildParentCtx = ctx
+	if m.rebuildRunning {
+		m.pendingRebuild = true
+		if m.activeCancel != nil {
+			m.activeCancel()
+		}
+		m.rebuildMu.Unlock()
+		return
 	}
-	ctx, m.cancel = context.WithCancel(ctx)
-	m.storeBuilder.WithContext(ctx)
-	m.metricsWriters = m.storeBuilder.Build()
+	// Register cancellation and mark the rebuild running before the goroutine
+	// starts, so a request that arrives once the rebuild is visible can cancel it.
+	genCtx, genCancel := context.WithCancel(ctx)
+	m.activeCancel = genCancel
+	m.rebuildRunning = true
+	m.rebuildMu.Unlock()
+
+	go m.rebuildLoop(genCtx, genCancel)
+}
+
+func (m *MetricsHandler) rebuildLoop(genCtx context.Context, genCancel context.CancelFunc) {
+	for {
+		writers, waitErr := m.doRebuild(genCtx)
+		if m.beforeSwap != nil {
+			m.beforeSwap()
+		}
+
+		m.rebuildMu.Lock()
+		superseded := m.pendingRebuild || genCtx.Err() != nil
+		// This generation still owns the handle: a newer request can call it,
+		// but cannot replace it until this critical section starts the next one.
+		m.activeCancel = nil
+		if !superseded && installableSync(waitErr) {
+			m.installWriters(writers, genCancel)
+			if waitErr != nil {
+				klog.InfoS("Installed metrics writers after bounded store sync; live reflectors continue filling stores",
+					"writerCount", len(writers),
+					"reason", waitErr,
+				)
+			} else {
+				klog.InfoS("Installed metrics writers after store sync", "writerCount", len(writers))
+			}
+		} else {
+			genCancel()
+			if !m.pendingRebuild {
+				klog.ErrorS(waitErr, "Store sync canceled during metrics writer rebuild; keeping previous writers",
+					"writerCount", len(writers),
+				)
+			}
+		}
+		if m.pendingRebuild {
+			m.pendingRebuild = false
+			genCtx, genCancel = context.WithCancel(m.rebuildParentCtx)
+			m.activeCancel = genCancel
+			m.rebuildMu.Unlock()
+			continue
+		}
+		m.rebuildRunning = false
+		m.rebuildMu.Unlock()
+		return
+	}
+}
+
+// installableSync reports whether a WaitForStoresSync result may be installed.
+// Only success, the configured sync timeout, and a stopped reflector qualify.
+// A canceled or deadline-exceeded generation context does not.
+func installableSync(err error) bool {
+	return err == nil || errors.Is(err, ksmtypes.ErrStoreSyncTimeout) || errors.Is(err, ksmtypes.ErrReflectorStopped)
+}
+
+func (m *MetricsHandler) installWriters(writers metricsstore.MetricsWriterList, cancel context.CancelFunc) {
+	m.mtx.Lock()
+	oldCancel := m.cancel
+	m.metricsWriters = writers
+	m.cancel = cancel
+	m.writersInstalled = true
+	m.mtx.Unlock()
+	if oldCancel != nil {
+		oldCancel()
+	}
+}
+
+func (m *MetricsHandler) doRebuild(genCtx context.Context) (metricsstore.MetricsWriterList, error) {
+	m.mtx.Lock()
+	m.storeBuilder.WithContext(genCtx)
+	writers := m.storeBuilder.Build()
+	m.mtx.Unlock()
+
+	if err := genCtx.Err(); err != nil {
+		return writers, err
+	}
+	syncTimeout := m.opts.StoreSyncTimeout
+	if syncTimeout < 0 {
+		return writers, fmt.Errorf("invalid store sync timeout %s", syncTimeout)
+	}
+	// Zero skips the wait and installs immediately, still subject to the
+	// generation-context check above and again before installation.
+	if syncTimeout == 0 {
+		return writers, nil
+	}
+	syncer, ok := m.storeBuilder.(ksmtypes.StoreSyncBuilder)
+	if !ok {
+		return writers, nil
+	}
+	err := syncer.WaitForStoresSync(genCtx, syncTimeout)
+	if ctxErr := genCtx.Err(); ctxErr != nil {
+		return writers, ctxErr
+	}
+	return writers, err
+}
+
+// Ready reports whether a writer generation has been installed.
+func (m *MetricsHandler) Ready() bool {
+	m.mtx.RLock()
+	defer m.mtx.RUnlock()
+	return m.writersInstalled
 }
 
 // ConfigureStore applies storeBuilder configuration under mtx, then rebuilds writers.
@@ -118,18 +240,15 @@ func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmt
 // ConfigureSharding configures sharding. Configuration can be used multiple times and
 // concurrently.
 func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
-	m.mtx.Lock()
-
 	if totalShards != 1 {
 		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
 	}
-	m.curShard = shard
-	m.curTotalShards = totalShards
-	m.storeBuilder.WithSharding(shard, totalShards)
-
-	// unlock because BuildWriters will hold a lock again
-	m.mtx.Unlock()
-	m.BuildWriters(ctx)
+	m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) error {
+		m.curShard = shard
+		m.curTotalShards = totalShards
+		b.WithSharding(shard, totalShards)
+		return nil
+	})
 }
 
 // Run configures the MetricsHandler's sharding and if autosharding is enabled
@@ -231,8 +350,13 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// rather than mutated, so a snapshot stays readable and self-consistent even
 	// if it is rebuilt mid-response.
 	m.mtx.RLock()
+	installed := m.writersInstalled
 	writers := m.metricsWriters
 	m.mtx.RUnlock()
+	if !installed {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
 
 	resHeader := w.Header()
 	var writer io.Writer = w

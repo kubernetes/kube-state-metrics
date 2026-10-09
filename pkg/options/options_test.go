@@ -19,6 +19,7 @@ package options
 import (
 	"os"
 	"testing"
+	"time"
 
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
@@ -63,6 +64,22 @@ func TestOptionsParse(t *testing.T) {
 				t.Errorf("Expected error for test with description: %s", test.Desc)
 			}
 		})
+	}
+}
+
+func TestValidateStoreSyncTimeout(t *testing.T) {
+	negative := NewOptions()
+	negative.StoreSyncTimeout = -time.Second
+	if err := negative.Validate(); err == nil {
+		t.Fatal("expected a negative store sync timeout to fail validation")
+	}
+
+	for _, timeout := range []time.Duration{0, time.Second} {
+		opts := NewOptions()
+		opts.StoreSyncTimeout = timeout
+		if err := opts.Validate(); err != nil {
+			t.Fatalf("timeout %s: %v", timeout, err)
+		}
 	}
 }
 

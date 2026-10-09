@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -40,6 +41,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -63,6 +65,8 @@ const ResourceDiscoveryInterval = 100 * time.Millisecond
 // Make sure the internal Builder implements the public BuilderInterface.
 // New Builder methods should be added to the public BuilderInterface.
 var _ ksmtypes.BuilderInterface = &Builder{}
+
+var _ ksmtypes.StoreSyncBuilder = &Builder{}
 
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
@@ -92,6 +96,18 @@ type Builder struct {
 	objectLimit        int64
 
 	GetGVKStopChan func(gvk string) chan struct{}
+
+	// reflectorsMu guards reflectors, which Build() replaces while
+	// WaitForStoresSync() reads it outside the caller's own lock.
+	reflectorsMu sync.Mutex
+	reflectors   []startedReflector
+}
+
+// startedReflector is a reflector from the latest Build and the stop channel
+// passed to Run. A closed stop channel with an empty last sync will never list.
+type startedReflector struct {
+	reflector *cache.Reflector
+	stopCh    <-chan struct{}
 }
 
 // NewBuilder returns a new builder.
@@ -325,6 +341,10 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 	if b.familyGeneratorFilter == nil {
 		panic("familyGeneratorFilter should not be nil")
 	}
+
+	b.reflectorsMu.Lock()
+	b.reflectors = nil
+	b.reflectorsMu.Unlock()
 
 	var metricsWriters metricsstore.MetricsWriterList
 	var activeStoreNames []string
@@ -753,11 +773,86 @@ func (b *Builder) startReflector(
 ) {
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit, client)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
+	var stopCh <-chan struct{}
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
 		gvkStopCh := b.GetGVKStopChan(cr.GroupVersionKind().String())
-		go reflector.Run(newCRReflectorStopCh(b.ctx, gvkStopCh))
+		stopCh = newCRReflectorStopCh(b.ctx, gvkStopCh)
 	} else {
-		go reflector.Run(b.ctx.Done())
+		stopCh = b.ctx.Done()
+	}
+	b.reflectorsMu.Lock()
+	b.reflectors = append(b.reflectors, startedReflector{reflector: reflector, stopCh: stopCh})
+	b.reflectorsMu.Unlock()
+	go reflector.Run(stopCh)
+}
+
+// WaitForStoresSync blocks until every reflector started by the latest Build() has
+// completed its initial list, the configured timeout elapses, a reflector stops
+// before listing, or ctx is canceled. The sync timer is not a child of ctx, so a
+// parent deadline is returned as ctx.Err() rather than ErrStoreSyncTimeout.
+func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	b.reflectorsMu.Lock()
+	reflectors := slices.Clone(b.reflectors)
+	b.reflectorsMu.Unlock()
+
+	if len(reflectors) == 0 {
+		return nil
+	}
+
+	syncCtx, syncCancel := context.WithCancel(ctx)
+	defer syncCancel()
+
+	timedOut := make(chan struct{})
+	if timeout > 0 {
+		timer := time.AfterFunc(timeout, func() {
+			close(timedOut)
+			syncCancel()
+		})
+		defer timer.Stop()
+	}
+
+	err := wait.PollUntilContextCancel(syncCtx, ResourceDiscoveryInterval, true, func(context.Context) (bool, error) {
+		select {
+		case <-timedOut:
+			return false, ksmtypes.ErrStoreSyncTimeout
+		default:
+		}
+		allSynced := true
+		for _, started := range reflectors {
+			if started.reflector.LastSyncResourceVersion() != "" {
+				continue
+			}
+			select {
+			case <-started.stopCh:
+				if started.reflector.LastSyncResourceVersion() == "" {
+					return false, ksmtypes.ErrReflectorStopped
+				}
+			default:
+				allSynced = false
+			}
+		}
+		return allSynced, nil
+	})
+	if err == nil {
+		return nil
+	}
+	// Parent cancellation and the sync timer both stop syncCtx. The parent wins
+	// so a generation deadline is never reported as the configured sync timeout.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if errors.Is(err, ksmtypes.ErrStoreSyncTimeout) || errors.Is(err, ksmtypes.ErrReflectorStopped) {
+		return err
+	}
+	select {
+	case <-timedOut:
+		return ksmtypes.ErrStoreSyncTimeout
+	default:
+		return err
 	}
 }
 

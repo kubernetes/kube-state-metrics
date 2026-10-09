@@ -19,6 +19,7 @@ package builder
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	clientset "k8s.io/client-go/kubernetes"
@@ -145,6 +146,15 @@ func (b *Builder) WithCustomResourceStoreFactories(fs ...customresource.Registry
 // Returns metric writers.
 func (b *Builder) Build() metricsstore.MetricsWriterList {
 	return b.internal.Build()
+}
+
+// WaitForStoresSync blocks until reflectors from the latest Build() have listed once.
+// A builder that does not track reflectors reports success.
+func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) error {
+	if syncer, ok := b.internal.(ksmtypes.StoreSyncBuilder); ok {
+		return syncer.WaitForStoresSync(ctx, timeout)
+	}
+	return nil
 }
 
 // BuildStores initializes and registers all enabled stores.

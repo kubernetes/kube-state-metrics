@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -215,6 +216,68 @@ func TestMetricsStoreTransformerDuringWatchList(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `uid="uid-p"`) {
 		t.Errorf("expected the metric of the synced object to be written, got %q", out.String())
+	}
+}
+
+func TestReplaceRemovesUnlistedObjects(t *testing.T) {
+	ms := NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface { return nil })
+
+	for _, uid := range []types.UID{"keep", "drop"} {
+		if err := ms.Add(&v1.Service{UID: uid}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A WatchList initial sync passes objects already rendered by Transformer.
+	list := []any{&v1.Service{UID: "keep"}, &v1.Service{UID: "new"}, &renderedObject{uid: "rendered"}}
+	if err := ms.Replace(list, "1"); err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[types.UID]struct{}{}
+	ms.metrics.Range(func(key, _ any) bool {
+		got[key.(types.UID)] = struct{}{}
+		return true
+	})
+	want := map[types.UID]struct{}{"keep": {}, "new": {}, "rendered": {}}
+	if !maps.Equal(got, want) {
+		t.Fatalf("expected store keys %v, got %v", want, got)
+	}
+}
+
+// A relist of unchanged objects must never expose a partially filled store to
+// a concurrent scrape. The metrics generator runs inside Replace for every
+// object, so counting the store from there checks each intermediate state.
+func TestReplaceDoesNotExposePartialStore(t *testing.T) {
+	const nObjects = 100
+
+	var ms *MetricsStore
+	checking := false
+	ms = NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface {
+		if !checking {
+			return nil
+		}
+		n := 0
+		ms.metrics.Range(func(_, _ any) bool {
+			n++
+			return true
+		})
+		if n != nObjects {
+			t.Fatalf("expected %d objects during relist, observed %d", nObjects, n)
+		}
+		return nil
+	})
+
+	list := make([]any, nObjects)
+	for i := range list {
+		list[i] = &v1.Service{UID: types.UID(fmt.Sprintf("uid-%d", i))}
+	}
+	if err := ms.Replace(list, "1"); err != nil {
+		t.Fatal(err)
+	}
+
+	checking = true
+	if err := ms.Replace(list, "2"); err != nil {
+		t.Fatal(err)
 	}
 }
 

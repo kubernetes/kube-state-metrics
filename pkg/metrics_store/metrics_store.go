@@ -95,27 +95,34 @@ func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, 
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj any) error {
+	_, err := s.add(obj)
+	return err
+}
+
+// add implements Add and returns the UID the object is stored under.
+func (s *MetricsStore) add(obj any) (types.UID, error) {
 	// Objects rendered by Transformer only arrive through Replace at the end of
 	// a WatchList initial sync, which records the resource version itself.
 	// WatchList is disabled when --object-limit is set, so no per-object
 	// bookkeeping is skipped here.
 	if r, ok := obj.(*renderedObject); ok {
 		s.metrics.Store(r.uid, r.families)
-		return nil
+		return r.uid, nil
 	}
 
 	o, err := meta.Accessor(obj)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	s.setLastResourceVersion(o.GetResourceVersion())
 
 	families := s.generateMetricsFunc(obj)
 
-	s.metrics.Store(o.GetUID(), renderFamilies(families))
+	uid := o.GetUID()
+	s.metrics.Store(uid, renderFamilies(families))
 
-	return nil
+	return uid, nil
 }
 
 // byteAppender is implemented by families that can render themselves into a
@@ -213,15 +220,27 @@ func (s *MetricsStore) GetByKey(_ string) (item any, exists bool, err error) {
 
 // Replace will delete the contents of the store, using instead the given list,
 // and records the provided resourceVersion as the last sync resource version.
+//
+// The store is read concurrently by WriteAll, so it is never emptied: every
+// listed object is upserted first, and only then are the objects missing from
+// the list deleted. A scrape during a relist therefore sees each surviving
+// object, rather than whatever subset had been re-added so far.
 func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
-	s.metrics.Clear()
-
+	listed := make(map[types.UID]struct{}, len(list))
 	for _, o := range list {
-		err := s.Add(o)
+		uid, err := s.add(o)
 		if err != nil {
 			return err
 		}
+		listed[uid] = struct{}{}
 	}
+
+	s.metrics.Range(func(key, _ any) bool {
+		if _, ok := listed[key.(types.UID)]; !ok {
+			s.metrics.Delete(key)
+		}
+		return true
+	})
 
 	s.setLastResourceVersion(resourceVersion)
 

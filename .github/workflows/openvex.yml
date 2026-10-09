@@ -2,6 +2,11 @@ name: openvex
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to generate the OpenVEX document for and attach it to
+        required: true
+        type: string
   release:
     types:
       - released
@@ -16,12 +21,15 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      RELEASE_VERSION: ${{ github.event.release.tag_name || inputs.tag }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set environment variables
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        with:
+          ref: ${{ env.RELEASE_VERSION }}
+          persist-credentials: false
 
       - uses: openvex/generate-vex@c59881b41451d7ccba5c3b74cd195382b8971fcd
         # Refer: https://github.com/openvex/vexctl#operational-model
@@ -34,4 +42,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ env.RELEASE_VERSION }} kube-state-metrics.openvex.json
+          gh release upload "$RELEASE_VERSION" kube-state-metrics.openvex.json

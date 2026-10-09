@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -200,15 +201,31 @@ func (s *MetricsStore) GetByKey(_ string) (item any, exists bool, err error) {
 
 // Replace will delete the contents of the store, using instead the given list,
 // and records the provided resourceVersion as the last sync resource version.
+//
+// The store is read concurrently by WriteAll, so it is never emptied: every
+// listed object is upserted first, and only then are the objects missing from
+// the list deleted. A scrape during a relist therefore sees each surviving
+// object, rather than whatever subset had been re-added so far.
 func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
-	s.metrics.Clear()
-
+	listed := make(map[types.UID]struct{}, len(list))
 	for _, o := range list {
-		err := s.Add(o)
+		acc, err := meta.Accessor(o)
 		if err != nil {
 			return err
 		}
+		listed[acc.GetUID()] = struct{}{}
+
+		if err := s.Add(o); err != nil {
+			return err
+		}
 	}
+
+	s.metrics.Range(func(key, _ any) bool {
+		if _, ok := listed[key.(types.UID)]; !ok {
+			s.metrics.Delete(key)
+		}
+		return true
+	})
 
 	s.setLastResourceVersion(resourceVersion)
 

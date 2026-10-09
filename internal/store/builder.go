@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -99,8 +100,17 @@ type Builder struct {
 	// reflectorsMu guards reflectors, which Build() replaces while
 	// WaitForStoresSync() reads it outside the caller's own lock.
 	reflectorsMu sync.Mutex
-	reflectors   []*cache.Reflector
+	reflectors   []startedReflector
 }
+
+// startedReflector is a reflector from the latest Build and the stop channel
+// passed to Run. A closed stop channel with an empty last sync will never list.
+type startedReflector struct {
+	reflector *cache.Reflector
+	stopCh    <-chan struct{}
+}
+
+var errReflectorStopped = errors.New("reflector stopped before initial sync")
 
 // NewBuilder returns a new builder.
 func NewBuilder() *Builder {
@@ -765,15 +775,17 @@ func (b *Builder) startReflector(
 ) {
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit, client)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
-	b.reflectorsMu.Lock()
-	b.reflectors = append(b.reflectors, reflector)
-	b.reflectorsMu.Unlock()
+	var stopCh <-chan struct{}
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
 		gvkStopCh := b.GetGVKStopChan(cr.GroupVersionKind().String())
-		go reflector.Run(newCRReflectorStopCh(b.ctx, gvkStopCh))
+		stopCh = newCRReflectorStopCh(b.ctx, gvkStopCh)
 	} else {
-		go reflector.Run(b.ctx.Done())
+		stopCh = b.ctx.Done()
 	}
+	b.reflectorsMu.Lock()
+	b.reflectors = append(b.reflectors, startedReflector{reflector: reflector, stopCh: stopCh})
+	b.reflectorsMu.Unlock()
+	go reflector.Run(stopCh)
 }
 
 // WaitForStoresSync blocks until every reflector started by the latest Build() has
@@ -788,12 +800,21 @@ func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) 
 	}
 
 	err := wait.PollUntilContextTimeout(ctx, ResourceDiscoveryInterval, timeout, true, func(context.Context) (bool, error) {
-		for _, reflector := range reflectors {
-			if reflector.LastSyncResourceVersion() == "" {
-				return false, nil
+		allSynced := true
+		for _, started := range reflectors {
+			if started.reflector.LastSyncResourceVersion() != "" {
+				continue
+			}
+			select {
+			case <-started.stopCh:
+				if started.reflector.LastSyncResourceVersion() == "" {
+					return false, errReflectorStopped
+				}
+			default:
+				allSynced = false
 			}
 		}
-		return true, nil
+		return allSynced, nil
 	})
 	return err == nil
 }

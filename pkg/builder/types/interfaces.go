@@ -59,9 +59,7 @@ type CustomResourceReplacer interface {
 	ReplaceEnabledCustomResources(c []string) error
 }
 
-// StoreSyncBuilder can wait for reflector stores to sync after Build().
-// It is implemented by the internal store builder but is not part of the
-// stable BuilderInterface contract for downstream library users.
+// StoreSyncBuilder waits for reflector stores to sync after Build().
 type StoreSyncBuilder interface {
 	WaitForStoresSync(ctx context.Context, timeout time.Duration) bool
 }

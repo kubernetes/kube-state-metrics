@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -26,12 +27,24 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 )
 
 func TestWaitForStoresSync_NoReflectors(t *testing.T) {
 	b := NewBuilder()
-	if !b.WaitForStoresSync(context.Background(), time.Millisecond) {
-		t.Fatal("expected sync success with no reflectors")
+	if err := b.WaitForStoresSync(context.Background(), time.Millisecond); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWaitForStoresSync_NoReflectorsCanceled(t *testing.T) {
+	b := NewBuilder()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := b.WaitForStoresSync(ctx, time.Second)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected canceled context with no reflectors, got %v", err)
 	}
 }
 
@@ -39,8 +52,27 @@ func TestWaitForStoresSync_Timeout(t *testing.T) {
 	b := NewBuilder()
 	b.setReflectors(startedReflector{reflector: newUnstartedReflector(), stopCh: make(chan struct{})})
 
-	if b.WaitForStoresSync(context.Background(), 50*time.Millisecond) {
-		t.Fatal("expected sync to time out before reflector runs")
+	err := b.WaitForStoresSync(context.Background(), 50*time.Millisecond)
+	if !errors.Is(err, ksmtypes.ErrStoreSyncTimeout) {
+		t.Fatalf("expected sync timeout, got %v", err)
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("configured sync timeout must not be a context deadline")
+	}
+}
+
+func TestWaitForStoresSync_ParentDeadline(t *testing.T) {
+	b := NewBuilder()
+	b.setReflectors(startedReflector{reflector: newUnstartedReflector(), stopCh: make(chan struct{})})
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancel()
+
+	err := b.WaitForStoresSync(ctx, 5*time.Second)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected parent deadline, got %v", err)
+	}
+	if errors.Is(err, ksmtypes.ErrStoreSyncTimeout) {
+		t.Fatal("parent deadline must not be reported as the configured sync timeout")
 	}
 }
 
@@ -50,8 +82,8 @@ func TestWaitForStoresSync_StoppedBeforeList(t *testing.T) {
 	close(stopCh)
 	b.setReflectors(startedReflector{reflector: newUnstartedReflector(), stopCh: stopCh})
 
-	if ok, elapsed := waitForSync(b, 5*time.Second); ok || elapsed > time.Second {
-		t.Fatalf("expected prompt sync failure, ok=%v elapsed=%s", ok, elapsed)
+	if err, elapsed := waitForSync(b, 5*time.Second); !errors.Is(err, ksmtypes.ErrReflectorStopped) || elapsed > time.Second {
+		t.Fatalf("expected prompt stopped reflector, err=%v elapsed=%s", err, elapsed)
 	}
 }
 
@@ -64,8 +96,8 @@ func TestWaitForStoresSync_StoppedReflectorAfterOpenOne(t *testing.T) {
 		startedReflector{reflector: newUnstartedReflector(), stopCh: stopCh},
 	)
 
-	if ok, elapsed := waitForSync(b, 5*time.Second); ok || elapsed > time.Second {
-		t.Fatalf("expected prompt sync failure when a later reflector is stopped, ok=%v elapsed=%s", ok, elapsed)
+	if err, elapsed := waitForSync(b, 5*time.Second); !errors.Is(err, ksmtypes.ErrReflectorStopped) || elapsed > time.Second {
+		t.Fatalf("expected prompt stopped reflector when a later reflector is stopped, err=%v elapsed=%s", err, elapsed)
 	}
 }
 
@@ -108,8 +140,8 @@ func TestWaitForStoresSync_SyncedReflectorIgnoresClosedStop(t *testing.T) {
 	close(stopCh)
 	b.setReflectors(startedReflector{reflector: reflector, stopCh: stopCh})
 
-	if ok, elapsed := waitForSync(b, 5*time.Second); !ok || elapsed > time.Second {
-		t.Fatalf("expected synced reflector to succeed after stop, ok=%v elapsed=%s", ok, elapsed)
+	if err, elapsed := waitForSync(b, 5*time.Second); err != nil || elapsed > time.Second {
+		t.Fatalf("expected synced reflector to succeed after stop, err=%v elapsed=%s", err, elapsed)
 	}
 }
 
@@ -159,24 +191,24 @@ func (b *Builder) setReflectors(started ...startedReflector) {
 	b.reflectorsMu.Unlock()
 }
 
-func waitForSync(b *Builder, timeout time.Duration) (bool, time.Duration) {
+func waitForSync(b *Builder, timeout time.Duration) (error, time.Duration) {
 	start := time.Now()
-	ok := b.WaitForStoresSync(context.Background(), timeout)
-	return ok, time.Since(start)
+	err := b.WaitForStoresSync(context.Background(), timeout)
+	return err, time.Since(start)
 }
 
 func assertFailsPromptlyAfter(t *testing.T, b *Builder, closeStop func()) {
 	t.Helper()
-	done := make(chan bool, 1)
+	done := make(chan error, 1)
 	go func() {
 		done <- b.WaitForStoresSync(context.Background(), 5*time.Second)
 	}()
 	time.Sleep(150 * time.Millisecond)
 	closeStop()
 	select {
-	case ok := <-done:
-		if ok {
-			t.Fatal("expected sync to fail after stop")
+	case err := <-done:
+		if !errors.Is(err, ksmtypes.ErrReflectorStopped) {
+			t.Fatalf("expected stopped reflector, got %v", err)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("sync did not fail promptly after stop")

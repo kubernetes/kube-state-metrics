@@ -110,8 +110,6 @@ type startedReflector struct {
 	stopCh    <-chan struct{}
 }
 
-var errReflectorStopped = errors.New("reflector stopped before initial sync")
-
 // NewBuilder returns a new builder.
 func NewBuilder() *Builder {
 	b := &Builder{}
@@ -789,17 +787,40 @@ func (b *Builder) startReflector(
 }
 
 // WaitForStoresSync blocks until every reflector started by the latest Build() has
-// completed its initial list, or until ctx/timeout elapses.
-func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) bool {
+// completed its initial list, the configured timeout elapses, a reflector stops
+// before listing, or ctx is canceled. The sync timer is not a child of ctx, so a
+// parent deadline is returned as ctx.Err() rather than ErrStoreSyncTimeout.
+func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	b.reflectorsMu.Lock()
 	reflectors := slices.Clone(b.reflectors)
 	b.reflectorsMu.Unlock()
 
 	if len(reflectors) == 0 {
-		return true
+		return nil
 	}
 
-	err := wait.PollUntilContextTimeout(ctx, ResourceDiscoveryInterval, timeout, true, func(context.Context) (bool, error) {
+	syncCtx, syncCancel := context.WithCancel(ctx)
+	defer syncCancel()
+
+	timedOut := make(chan struct{})
+	if timeout > 0 {
+		timer := time.AfterFunc(timeout, func() {
+			close(timedOut)
+			syncCancel()
+		})
+		defer timer.Stop()
+	}
+
+	err := wait.PollUntilContextCancel(syncCtx, ResourceDiscoveryInterval, true, func(context.Context) (bool, error) {
+		select {
+		case <-timedOut:
+			return false, ksmtypes.ErrStoreSyncTimeout
+		default:
+		}
 		allSynced := true
 		for _, started := range reflectors {
 			if started.reflector.LastSyncResourceVersion() != "" {
@@ -808,7 +829,7 @@ func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) 
 			select {
 			case <-started.stopCh:
 				if started.reflector.LastSyncResourceVersion() == "" {
-					return false, errReflectorStopped
+					return false, ksmtypes.ErrReflectorStopped
 				}
 			default:
 				allSynced = false
@@ -816,7 +837,23 @@ func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) 
 		}
 		return allSynced, nil
 	})
-	return err == nil
+	if err == nil {
+		return nil
+	}
+	// Parent cancellation and the sync timer both stop syncCtx. The parent wins
+	// so a generation deadline is never reported as the configured sync timeout.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if errors.Is(err, ksmtypes.ErrStoreSyncTimeout) || errors.Is(err, ksmtypes.ErrReflectorStopped) {
+		return err
+	}
+	select {
+	case <-timedOut:
+		return ksmtypes.ErrStoreSyncTimeout
+	default:
+		return err
+	}
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

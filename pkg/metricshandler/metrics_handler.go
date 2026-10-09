@@ -26,14 +26,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/prometheus/common/expfmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -80,15 +78,12 @@ type MetricsHandler struct {
 	rebuildRunning   bool
 	pendingRebuild   bool
 	rebuildParentCtx context.Context
-	syncRetryDelay   time.Duration
+	activeCancel     context.CancelFunc
+	// beforeSwap, when set, runs after a generation's sync wait returns and
+	// before that generation is installed. Tests use it to publish another
+	// rebuild request in that window.
+	beforeSwap func()
 }
-
-// Backoff bounds for retrying a failed store sync while no metrics writers are
-// available. Declared as variables so tests can shorten them.
-var (
-	initialStoreSyncRetryDelay = 5 * time.Second
-	maxStoreSyncRetryDelay     = 2 * time.Minute
-)
 
 // New creates and returns a new MetricsHandler with the given options.
 func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
@@ -102,123 +97,124 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 }
 
 // BuildWriters rebuilds metrics writers after store configuration changes.
-// Rebuilds are coalesced and swap in the new writer set only after reflector stores sync.
+// Rebuilds are coalesced. A generation is installed after its stores sync, or
+// when the configured sync timeout elapses or a reflector stops before listing.
+// Superseded and canceled generations are not installed. A timed-out install
+// can expose partial metrics while reflectors that are still running continue
+// to fill their stores.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.rebuildMu.Lock()
 	m.rebuildParentCtx = ctx
 	if m.rebuildRunning {
 		m.pendingRebuild = true
+		if m.activeCancel != nil {
+			m.activeCancel()
+		}
 		m.rebuildMu.Unlock()
 		return
 	}
+	// Register cancellation and mark the rebuild running before the goroutine
+	// starts, so a request that arrives once the rebuild is visible can cancel it.
+	genCtx, genCancel := context.WithCancel(ctx)
+	m.activeCancel = genCancel
 	m.rebuildRunning = true
 	m.rebuildMu.Unlock()
 
-	go m.rebuildLoop(ctx)
+	go m.rebuildLoop(genCtx, genCancel)
 }
 
-func (m *MetricsHandler) rebuildLoop(initialCtx context.Context) {
-	ctx := initialCtx
+func (m *MetricsHandler) rebuildLoop(genCtx context.Context, genCancel context.CancelFunc) {
 	for {
-		synced := m.doRebuild(ctx)
+		writers, waitErr := m.doRebuild(genCtx)
+		if m.beforeSwap != nil {
+			m.beforeSwap()
+		}
 
 		m.rebuildMu.Lock()
+		superseded := m.pendingRebuild || genCtx.Err() != nil
+		// This generation still owns the handle: a newer request can call it,
+		// but cannot replace it until this critical section starts the next one.
+		m.activeCancel = nil
+		if !superseded && installableSync(waitErr) {
+			m.installWriters(writers, genCancel)
+			if waitErr != nil {
+				klog.InfoS("Installed metrics writers after bounded store sync; live reflectors continue filling stores",
+					"writerCount", len(writers),
+					"reason", waitErr,
+				)
+			} else {
+				klog.InfoS("Installed metrics writers after store sync", "writerCount", len(writers))
+			}
+		} else {
+			genCancel()
+			if !m.pendingRebuild {
+				klog.ErrorS(waitErr, "Store sync canceled during metrics writer rebuild; keeping previous writers",
+					"writerCount", len(writers),
+				)
+			}
+		}
 		if m.pendingRebuild {
 			m.pendingRebuild = false
-			ctx = m.rebuildParentCtx
+			genCtx, genCancel = context.WithCancel(m.rebuildParentCtx)
+			m.activeCancel = genCancel
 			m.rebuildMu.Unlock()
 			continue
 		}
 		m.rebuildRunning = false
-		var retryDelay time.Duration
-		// Retry every failed sync. Previous writers stay active during backoff.
-		if !synced {
-			m.syncRetryDelay = nextStoreSyncRetryDelay(m.syncRetryDelay)
-			retryDelay = m.syncRetryDelay
-		} else {
-			m.syncRetryDelay = 0
-		}
 		m.rebuildMu.Unlock()
-
-		if retryDelay > 0 {
-			m.scheduleSyncRetry(ctx, retryDelay)
-		}
 		return
 	}
 }
 
-// scheduleSyncRetry re-runs a failed rebuild after a bounded backoff.
-func (m *MetricsHandler) scheduleSyncRetry(ctx context.Context, delay time.Duration) {
-	klog.ErrorS(nil, "Store sync failed; scheduling rebuild retry", "retryDelay", delay)
-	go func() {
-		timer := time.NewTimer(delay)
-		defer timer.Stop()
-		select {
-		case <-ctx.Done():
-		case <-timer.C:
-			m.BuildWriters(ctx)
-		}
-	}()
+// installableSync reports whether a WaitForStoresSync result may be installed.
+// Only success, the configured sync timeout, and a stopped reflector qualify.
+// A canceled or deadline-exceeded generation context does not.
+func installableSync(err error) bool {
+	return err == nil || errors.Is(err, ksmtypes.ErrStoreSyncTimeout) || errors.Is(err, ksmtypes.ErrReflectorStopped)
 }
 
-func nextStoreSyncRetryDelay(current time.Duration) time.Duration {
-	var base time.Duration
-	if current <= 0 {
-		base = initialStoreSyncRetryDelay
-	} else if next := current * 2; next < maxStoreSyncRetryDelay {
-		base = next
-	} else {
-		base = maxStoreSyncRetryDelay
-	}
-	jittered := wait.Jitter(base, 0.1)
-	if jittered > maxStoreSyncRetryDelay {
-		return maxStoreSyncRetryDelay
-	}
-	return jittered
-}
-
-func (m *MetricsHandler) doRebuild(parentCtx context.Context) bool {
+func (m *MetricsHandler) installWriters(writers metricsstore.MetricsWriterList, cancel context.CancelFunc) {
 	m.mtx.Lock()
-	newCtx, newCancel := context.WithCancel(parentCtx)
-	m.storeBuilder.WithContext(newCtx)
-	newWriters := m.storeBuilder.Build()
+	oldCancel := m.cancel
+	m.metricsWriters = writers
+	m.cancel = cancel
+	m.writersInstalled = true
+	m.mtx.Unlock()
+	if oldCancel != nil {
+		oldCancel()
+	}
+}
+
+func (m *MetricsHandler) doRebuild(genCtx context.Context) (metricsstore.MetricsWriterList, error) {
+	m.mtx.Lock()
+	m.storeBuilder.WithContext(genCtx)
+	writers := m.storeBuilder.Build()
 	m.mtx.Unlock()
 
+	if err := genCtx.Err(); err != nil {
+		return writers, err
+	}
 	syncTimeout := m.opts.StoreSyncTimeout
-	if syncTimeout <= 0 {
-		syncTimeout = options.DefaultStoreSyncTimeout
+	if syncTimeout < 0 {
+		return writers, fmt.Errorf("invalid store sync timeout %s", syncTimeout)
 	}
-	syncStart := time.Now()
-	synced := true
-	if syncer, ok := m.storeBuilder.(ksmtypes.StoreSyncBuilder); ok {
-		synced = syncer.WaitForStoresSync(newCtx, syncTimeout)
+	// Zero skips the wait and installs immediately, still subject to the
+	// generation-context check above and again before installation.
+	if syncTimeout == 0 {
+		return writers, nil
 	}
-	syncWaitDuration := time.Since(syncStart)
-
-	if synced {
-		m.mtx.Lock()
-		oldCancel := m.cancel
-		m.metricsWriters = newWriters
-		m.cancel = newCancel
-		m.writersInstalled = true
-		m.mtx.Unlock()
-		if oldCancel != nil {
-			oldCancel()
-		}
-		klog.InfoS("Swapped metrics writers after store sync", "writerCount", len(newWriters), "syncWaitDuration", syncWaitDuration)
-		return true
+	syncer, ok := m.storeBuilder.(ksmtypes.StoreSyncBuilder)
+	if !ok {
+		return writers, nil
 	}
-
-	newCancel()
-	klog.ErrorS(nil, "Store sync failed during metrics writer rebuild; keeping previous writers",
-		"syncWaitDuration", syncWaitDuration,
-		"syncTimeout", syncTimeout,
-		"writerCount", len(newWriters),
-	)
-	return false
+	err := syncer.WaitForStoresSync(genCtx, syncTimeout)
+	if ctxErr := genCtx.Err(); ctxErr != nil {
+		return writers, ctxErr
+	}
+	return writers, err
 }
 
-// Ready reports whether a writer generation has been swapped in after a successful store sync.
+// Ready reports whether a writer generation has been installed.
 func (m *MetricsHandler) Ready() bool {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
@@ -354,8 +350,13 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// rather than mutated, so a snapshot stays readable and self-consistent even
 	// if it is rebuilt mid-response.
 	m.mtx.RLock()
+	installed := m.writersInstalled
 	writers := m.metricsWriters
 	m.mtx.RUnlock()
+	if !installed {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
 
 	resHeader := w.Header()
 	var writer io.Writer = w

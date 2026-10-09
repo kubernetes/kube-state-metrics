@@ -94,6 +94,9 @@ func TestServeHTTPGzipWrapsOnce(t *testing.T) {
 	// No writers are needed: the response is wrapped before any are consulted,
 	// and an empty gzip stream is still a valid one.
 	handler := New(&options.Options{}, fake.NewSimpleClientset(), store.NewBuilder(), true)
+	handler.mtx.Lock()
+	handler.writersInstalled = true
+	handler.mtx.Unlock()
 
 	for _, acceptEncoding := range []string{"gzip", "gzip, gzip", "gzip;q=1.0, gzip"} {
 		t.Run(acceptEncoding, func(t *testing.T) {

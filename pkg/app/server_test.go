@@ -110,7 +110,7 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 
 	// This test is not suitable to be compared in terms of time, as it waits for
 	// the initial writer generation. Use for memory allocation comparisons, profiling, ...
-	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler := metricshandler.New(syncedHandlerOptions(), kubeClient, builder, false)
 	b.Run("GenerateMetrics", func(b *testing.B) {
 		handler.ConfigureSharding(ctx, 0, 1)
 		waitForHandlerReady(b, handler)
@@ -142,6 +142,12 @@ func BenchmarkKubeStateMetrics(b *testing.B) {
 
 		b.SetBytes(int64(accumulatedContentLength))
 	})
+}
+
+// syncedHandlerOptions waits for reflector lists before installing writers.
+// A zero StoreSyncTimeout installs immediately, before the fake client has listed.
+func syncedHandlerOptions() *options.Options {
+	return &options.Options{StoreSyncTimeout: options.DefaultStoreSyncTimeout}
 }
 
 // waitForHandlerReady blocks until the handler has installed a writer generation.
@@ -203,7 +209,7 @@ func TestFullScrapeCycle(t *testing.T) {
 		},
 	})
 
-	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler := metricshandler.New(syncedHandlerOptions(), kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
 
 	waitForHandlerReady(t, handler)
@@ -542,7 +548,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	unshardedBuilder.WithAllowLabels(map[string][]string{})
 	unshardedBuilder.WithGenerateStoresFunc(unshardedBuilder.DefaultGenerateStoresFunc())
 
-	unshardedHandler := metricshandler.New(&options.Options{}, kubeClient, unshardedBuilder, false)
+	unshardedHandler := metricshandler.New(syncedHandlerOptions(), kubeClient, unshardedBuilder, false)
 	unshardedHandler.ConfigureSharding(ctx, 0, 1)
 
 	regShard1 := prometheus.NewRegistry()
@@ -558,7 +564,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder1.WithAllowLabels(map[string][]string{})
 	shardedBuilder1.WithGenerateStoresFunc(shardedBuilder1.DefaultGenerateStoresFunc())
 
-	shardedHandler1 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder1, false)
+	shardedHandler1 := metricshandler.New(syncedHandlerOptions(), kubeClient, shardedBuilder1, false)
 	shardedHandler1.ConfigureSharding(ctx, 0, 2)
 
 	regShard2 := prometheus.NewRegistry()
@@ -574,7 +580,7 @@ func TestShardingEquivalenceScrapeCycle(t *testing.T) {
 	shardedBuilder2.WithAllowLabels(map[string][]string{})
 	shardedBuilder2.WithGenerateStoresFunc(shardedBuilder2.DefaultGenerateStoresFunc())
 
-	shardedHandler2 := metricshandler.New(&options.Options{}, kubeClient, shardedBuilder2, false)
+	shardedHandler2 := metricshandler.New(syncedHandlerOptions(), kubeClient, shardedBuilder2, false)
 	shardedHandler2.ConfigureSharding(ctx, 1, 2)
 
 	waitForHandlerReady(t, unshardedHandler)
@@ -728,7 +734,7 @@ func TestCustomResourceExtension(t *testing.T) {
 		},
 	})
 
-	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler := metricshandler.New(syncedHandlerOptions(), kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
 
 	waitForHandlerReady(t, handler)
@@ -1090,7 +1096,7 @@ func TestBuildServersServeLandingPage(t *testing.T) {
 
 	builder := store.NewBuilder()
 	builder.WithMetrics(prometheus.NewRegistry())
-	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler := metricshandler.New(syncedHandlerOptions(), kubeClient, builder, false)
 
 	for name, mux := range map[string]*http.ServeMux{
 		"telemetry": buildTelemetryServer(prometheus.NewRegistry(), handler, false, nil),

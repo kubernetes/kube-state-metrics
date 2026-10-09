@@ -39,7 +39,9 @@ var (
 )
 
 // DefaultStoreSyncTimeout is the default maximum time to wait for reflector
-// stores to complete their initial list before swapping metrics writers.
+// stores to complete their initial list before installing metrics writers.
+// When it elapses, the new writers are installed and reflectors that are still
+// running continue to fill their stores.
 const DefaultStoreSyncTimeout = 120 * time.Second
 
 // Options are the configurable parameters for kube-state-metrics.
@@ -196,7 +198,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")
 	o.cmd.Flags().DurationVar(&o.ServerIdleTimeout, "server-idle-timeout", defaultServerIdleTimeout, "The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients.")
 	o.cmd.Flags().DurationVar(&o.ServerReadHeaderTimeout, "server-read-header-timeout", defaultServerReadHeaderTimeout, "The maximum duration for reading the header of requests.")
-	o.cmd.Flags().DurationVar(&o.StoreSyncTimeout, "store-sync-timeout", DefaultStoreSyncTimeout, "Maximum time to wait for reflector stores to complete their initial list before swapping metrics writers during a rebuild.")
+	o.cmd.Flags().DurationVar(&o.StoreSyncTimeout, "store-sync-timeout", DefaultStoreSyncTimeout, "Maximum time to wait for reflector stores to complete their initial list before installing metrics writers. When the timeout elapses, or a reflector stops before listing, the new writers are installed and reflectors that are still running continue to fill their stores, which can expose partial metrics. A value of 0 installs writers immediately. A negative value is invalid.")
 }
 
 // Parse parses the flag definitions from the argument list.
@@ -212,6 +214,9 @@ func (o *Options) Usage() {
 
 // Validate validates arguments
 func (o *Options) Validate() error {
+	if o.StoreSyncTimeout < 0 {
+		return fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", o.StoreSyncTimeout)
+	}
 	shardableResource := "pods"
 	if o.Node == "" {
 		return nil

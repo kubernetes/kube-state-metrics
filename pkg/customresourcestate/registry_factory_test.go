@@ -154,6 +154,63 @@ func Test_addPathLabels(t *testing.T) {
 	}
 }
 
+// Keys copied with a "*" label come from the object, so they must not produce
+// label names that break the scrape or spoof labels that are already set.
+func Test_addPathLabels_wildcardKeys(t *testing.T) {
+	obj := map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{
+				"":                     "empty",
+				"1password.com/vault":  "a",
+				"__name__":             "evil",
+				"customresource_kind":  "Spoofed",
+				"customresource.group": "spoofed.io",
+				"team":                 "copied",
+				"a.b":                  "first",
+				"a_b":                  "second",
+				"ok":                   "yes",
+			},
+		},
+	}
+	m := map[string]string{"team": "common"}
+	addPathLabels(obj, map[string]valuePath{
+		"*": mustCompilePath(t, "metadata", "labels"),
+	}, m)
+	assert.Equal(t, map[string]string{
+		"team": "common",
+		"a_b":  "second",
+		"ok":   "yes",
+	}, m)
+
+	// A prefix makes names valid that would not be on their own.
+	m = map[string]string{}
+	addPathLabels(obj, map[string]valuePath{
+		"p_*": mustCompilePath(t, "metadata", "labels"),
+	}, m)
+	assert.Equal(t, map[string]string{
+		"p_":                     "empty",
+		"p_1password_com_vault":  "a",
+		"p___name__":             "evil",
+		"p_customresource_kind":  "Spoofed",
+		"p_customresource_group": "spoofed.io",
+		"p_team":                 "copied",
+		"p_a_b":                  "second",
+		"p_ok":                   "yes",
+	}, m)
+
+	// Of two "*" entries copying the same key, the later sorted one wins, and
+	// an explicit label wins over both.
+	obj["metadata"].(map[string]any)["annotations"] = map[string]any{"ok": "annotation", "a_b": "annotation"}
+	m = map[string]string{}
+	addPathLabels(obj, map[string]valuePath{
+		"*":   mustCompilePath(t, "metadata", "labels"),
+		"*2":  mustCompilePath(t, "metadata", "annotations"),
+		"a_b": mustCompilePath(t, "metadata", "labels", "ok"),
+	}, m)
+	assert.Equal(t, "annotation", m["ok"])
+	assert.Equal(t, "yes", m["a_b"])
+}
+
 // An index past the end of a list does not resolve, so it must be skipped like
 // any other unresolvable path rather than surfacing as a label value.
 func Test_addPathLabels_indexOutOfRange(t *testing.T) {

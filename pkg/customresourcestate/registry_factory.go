@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -47,9 +48,9 @@ func compile(resource Resource) ([]compiledFamily, error) {
 	// all point at. Build a new map instead.
 	commonLabels := make(map[string]string, len(resource.CommonLabels)+3)
 	maps.Copy(commonLabels, resource.CommonLabels)
-	commonLabels[customResourceState+"_group"] = resource.GroupVersionKind.Group
-	commonLabels[customResourceState+"_version"] = resource.GroupVersionKind.Version
-	commonLabels[customResourceState+"_kind"] = resource.GroupVersionKind.Kind
+	commonLabels[gvkGroupLabel] = resource.GroupVersionKind.Group
+	commonLabels[gvkVersionLabel] = resource.GroupVersionKind.Version
+	commonLabels[gvkKindLabel] = resource.GroupVersionKind.Kind
 	resource.CommonLabels = commonLabels
 	for _, f := range resource.Metrics {
 		family, err := compileFamily(f, resource)
@@ -548,15 +549,26 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 	}
 	slices.Sort(stars)
-	for _, star := range stars {
-		m := labels[star].Get(obj)
-		if kv, ok := m.(map[string]any); ok {
-			for k, v := range kv {
-				if strings.HasSuffix(star, "*") {
-					k = star[:len(star)-1] + k
-				}
-				result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
+	// The copied keys come from the object, so whoever can edit it controls
+	// them. They never override a label that is already set, and otherwise
+	// later stars and keys win. Walking both in reverse and keeping the first
+	// write does that, and makes keys that sanitize to the same name resolve
+	// the same way every scrape.
+	for _, star := range slices.Backward(stars) {
+		kv, ok := labels[star].Get(obj).(map[string]any)
+		if !ok {
+			continue
+		}
+		var prefix string
+		if strings.HasSuffix(star, "*") {
+			prefix = star[:len(star)-1]
+		}
+		for _, k := range slices.Backward(slices.Sorted(maps.Keys(kv))) {
+			name := store.SanitizeLabelName(prefix + k)
+			if _, ok := result[name]; ok || !isCopiableLabelName(name) {
+				continue
 			}
+			result[name] = fmt.Sprintf("%v", kv[k])
 		}
 	}
 	for k, v := range labels {
@@ -570,6 +582,18 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 		result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", value)
 	}
+}
+
+// isCopiableLabelName reports whether a label name copied from an object may be
+// emitted. Invalid and reserved names make the whole scrape fail to parse. The
+// GVK labels are checked explicitly because some metrics resolve their labels
+// before the common labels are applied.
+func isCopiableLabelName(name string) bool {
+	switch name {
+	case gvkGroupLabel, gvkVersionLabel, gvkKindLabel:
+		return false
+	}
+	return model.LegacyValidation.IsValidLabelName(name) && !strings.HasPrefix(name, model.ReservedLabelPrefix)
 }
 
 type pathOp struct {

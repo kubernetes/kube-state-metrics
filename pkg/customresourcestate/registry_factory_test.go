@@ -610,3 +610,33 @@ func Test_compile_doesNotShareCommonLabels(t *testing.T) {
 
 	assert.Equal(t, map[string]string{"team": "myteam"}, configured)
 }
+
+func Test_values_reportsValueFromErrorsForMaps(t *testing.T) {
+	obj := map[string]any{
+		"status": map[string]any{
+			"byKey":  map[string]any{"a": map[string]any{"v": "notanumber"}},
+			"byList": []any{map[string]any{"v": "notanumber"}},
+		},
+	}
+	tests := []struct {
+		path    string
+		wantErr string
+	}{
+		{"byList", `[status,byList]: [0]: [v]: strconv.ParseFloat: parsing "notanumber": invalid syntax`},
+		{"byKey", `[status,byKey]: [a]: [v]: strconv.ParseFloat: parsing "notanumber": invalid syntax`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			gauge := &compiledGauge{
+				compiledCommon: compiledCommon{path: mustCompilePath(t, "status", tt.path)},
+				ValueFrom:      mustCompilePath(t, "v"),
+				labelFromKey:   "key",
+			}
+			gotResult, gotErrors := scrapeValuesFor(gauge, obj)
+			assert.Empty(t, gotResult)
+			if assert.Len(t, gotErrors, 1) {
+				assert.EqualError(t, gotErrors[0], tt.wantErr)
+			}
+		})
+	}
+}

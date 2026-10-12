@@ -20,6 +20,20 @@
     if !std.setMember(labelName, ['app.kubernetes.io/version'])
   },
 
+  // Lets --auth-filter create token and subject access reviews.
+  authFilterRules:: [
+    {
+      apiGroups: ['authentication.k8s.io'],
+      resources: ['tokenreviews'],
+      verbs: ['create'],
+    },
+    {
+      apiGroups: ['authorization.k8s.io'],
+      resources: ['subjectaccessreviews'],
+      verbs: ['create'],
+    },
+  ],
+
   clusterRoleBinding:
     {
       apiVersion: 'rbac.authorization.k8s.io/v1',
@@ -86,20 +100,7 @@
         ],
         verbs: ['list', 'watch'],
       },
-      {
-        apiGroups: ['authentication.k8s.io'],
-        resources: [
-          'tokenreviews',
-        ],
-        verbs: ['create'],
-      },
-      {
-        apiGroups: ['authorization.k8s.io'],
-        resources: [
-          'subjectaccessreviews',
-        ],
-        verbs: ['create'],
-      },
+    ] + ksm.authFilterRules + [
       {
         apiGroups: ['policy'],
         resources: [
@@ -348,6 +349,37 @@
   },
   daemonsetsharding:: {
     local shardksmname = ksm.name + '-shard',
+    // The pod shards only collect pod metrics, so they run under their own
+    // ServiceAccount that may only list and watch pods (and --auth-filter).
+    shardServiceAccount: std.mergePatch(
+      ksm.serviceAccount,
+      { metadata: { name: shardksmname } },
+    ),
+    shardClusterRole: std.mergePatch(
+      ksm.clusterRole,
+      {
+        metadata: { name: shardksmname },
+        rules: [
+          {
+            apiGroups: [''],
+            resources: ['pods'],
+            verbs: ['list', 'watch'],
+          },
+        ] + ksm.authFilterRules,
+      },
+    ),
+    shardClusterRoleBinding: std.mergePatch(
+      ksm.clusterRoleBinding,
+      {
+        metadata: { name: shardksmname },
+        roleRef: { name: shardksmname },
+        subjects: [{
+          kind: 'ServiceAccount',
+          name: shardksmname,
+          namespace: ksm.namespace,
+        }],
+      },
+    ),
     daemonsetService: std.mergePatch(
       ksm.service,
       {
@@ -406,6 +438,7 @@
               },
               spec: {
                 containers: [c],
+                serviceAccountName: ksm.daemonsetsharding.shardServiceAccount.metadata.name,
               },
             },
           },
@@ -467,7 +500,7 @@
             },
             spec: {
               containers: [c],
-              serviceAccountName: ksm.serviceAccount.metadata.name,
+              serviceAccountName: shardksmname,
               automountServiceAccountToken: true,
               nodeSelector: { 'kubernetes.io/os': 'linux' },
             },

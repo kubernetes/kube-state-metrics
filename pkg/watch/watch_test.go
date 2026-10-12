@@ -17,16 +17,25 @@ limitations under the License.
 package watch
 
 import (
+	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 )
 
 // podList returns a PodList of n pods carrying a continue token, the way the
@@ -182,5 +191,82 @@ func TestListUseAPIServerCache(t *testing.T) {
 	}
 	if fake.gotOptions.ResourceVersion != "0" {
 		t.Errorf("resourceVersion: want %q, got %q", "0", fake.gotOptions.ResourceVersion)
+	}
+}
+
+// listThenWatchAdds lists listN pods, then its first watch delivers watchN
+// Added events for pods created after the list.
+type listThenWatchAdds struct {
+	listN, watchN int
+	watchCalls    atomic.Int32
+}
+
+func uidPod(i int) *v1.Pod {
+	return &v1.Pod{
+		Name: fmt.Sprintf("pod-%d", i), Namespace: "ns",
+		UID: types.UID(fmt.Sprintf("uid-%d", i)), ResourceVersion: strconv.Itoa(i + 1),
+	}
+}
+
+func (l *listThenWatchAdds) List(_ metav1.ListOptions) (runtime.Object, error) {
+	list := &v1.PodList{ResourceVersion: "1"}
+	for i := range l.listN {
+		list.Items = append(list.Items, *uidPod(i))
+	}
+	return list, nil
+}
+
+func (l *listThenWatchAdds) Watch(_ metav1.ListOptions) (watch.Interface, error) {
+	if l.watchCalls.Add(1) > 1 {
+		return watch.NewFake(), nil
+	}
+	fw := watch.NewFakeWithChanSize(l.watchN, false)
+	for i := l.listN; i < l.listN+l.watchN; i++ {
+		fw.Add(uidPod(i))
+	}
+	return fw, nil
+}
+
+func TestObjectLimitAppliesToWatch(t *testing.T) {
+	const limit, listN, watchN = 5, 50, 200
+
+	var dropped atomic.Int64
+	store := metricsstore.NewMetricsStore(
+		[]string{"# HELP kube_pod_test test\n# TYPE kube_pod_test gauge"},
+		func(obj any) []metric.FamilyInterface {
+			o, err := meta.Accessor(obj)
+			if err != nil {
+				t.Error(err)
+				return nil
+			}
+			return []metric.FamilyInterface{&metric.Family{
+				Name:    "kube_pod_test",
+				Type:    metric.Gauge,
+				Metrics: []*metric.Metric{{LabelKeys: []string{"uid"}, LabelValues: []string{string(o.GetUID())}, Value: 1}},
+			}}
+		},
+		metricsstore.WithObjectLimit(limit, func() { dropped.Add(1) }),
+	)
+
+	lw := newTestListerWatcher(&listThenWatchAdds{listN: listN, watchN: watchN}, limit)
+	reflector := cache.NewReflectorWithOptions(lw, &v1.Pod{}, store, cache.ReflectorOptions{})
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	go reflector.Run(ctx.Done())
+
+	for dropped.Load() < watchN {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("timed out waiting for watch events, dropped %d of %d", dropped.Load(), watchN)
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+
+	var buf strings.Builder
+	if err := metricsstore.NewMetricsWriter("pods", store).WriteAll(&buf); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(buf.String(), "kube_pod_test{"); got != limit {
+		t.Fatalf("store holds %d objects, want %d", got, limit)
 	}
 }

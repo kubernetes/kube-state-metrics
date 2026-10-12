@@ -82,7 +82,7 @@ func TestWaitForStoresSync_StoppedBeforeList(t *testing.T) {
 	close(stopCh)
 	b.setReflectors(startedReflector{reflector: newUnstartedReflector(), stopCh: stopCh})
 
-	if err, elapsed := waitForSync(b, 5*time.Second); !errors.Is(err, ksmtypes.ErrReflectorStopped) || elapsed > time.Second {
+	if elapsed, err := waitForSync(b, 5*time.Second); !errors.Is(err, ksmtypes.ErrReflectorStopped) || elapsed > time.Second {
 		t.Fatalf("expected prompt stopped reflector, err=%v elapsed=%s", err, elapsed)
 	}
 }
@@ -96,7 +96,7 @@ func TestWaitForStoresSync_StoppedReflectorAfterOpenOne(t *testing.T) {
 		startedReflector{reflector: newUnstartedReflector(), stopCh: stopCh},
 	)
 
-	if err, elapsed := waitForSync(b, 5*time.Second); !errors.Is(err, ksmtypes.ErrReflectorStopped) || elapsed > time.Second {
+	if elapsed, err := waitForSync(b, 5*time.Second); !errors.Is(err, ksmtypes.ErrReflectorStopped) || elapsed > time.Second {
 		t.Fatalf("expected prompt stopped reflector when a later reflector is stopped, err=%v elapsed=%s", err, elapsed)
 	}
 }
@@ -140,7 +140,7 @@ func TestWaitForStoresSync_SyncedReflectorIgnoresClosedStop(t *testing.T) {
 	close(stopCh)
 	b.setReflectors(startedReflector{reflector: reflector, stopCh: stopCh})
 
-	if err, elapsed := waitForSync(b, 5*time.Second); err != nil || elapsed > time.Second {
+	if elapsed, err := waitForSync(b, 5*time.Second); err != nil || elapsed > time.Second {
 		t.Fatalf("expected synced reflector to succeed after stop, err=%v elapsed=%s", err, elapsed)
 	}
 }
@@ -191,10 +191,10 @@ func (b *Builder) setReflectors(started ...startedReflector) {
 	b.reflectorsMu.Unlock()
 }
 
-func waitForSync(b *Builder, timeout time.Duration) (error, time.Duration) {
+func waitForSync(b *Builder, timeout time.Duration) (time.Duration, error) {
 	start := time.Now()
 	err := b.WaitForStoresSync(context.Background(), timeout)
-	return err, time.Since(start)
+	return time.Since(start), err
 }
 
 func assertFailsPromptlyAfter(t *testing.T, b *Builder, closeStop func()) {

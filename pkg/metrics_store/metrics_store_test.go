@@ -18,11 +18,13 @@ package metricsstore
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -171,5 +173,96 @@ func BenchmarkAdd(b *testing.B) {
 		if err := store.Add(svc); err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func TestMetricsStoreObjectLimit(t *testing.T) {
+	genFunc := func(obj any) []metric.FamilyInterface {
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return []metric.FamilyInterface{&metric.Family{
+			Name: "kube_service_info",
+			Metrics: []*metric.Metric{{
+				LabelKeys:   []string{"uid", "resource_version"},
+				LabelValues: []string{string(o.GetUID()), o.GetResourceVersion()},
+				Value:       1,
+			}},
+		}}
+	}
+	service := func(id, rv string) *v1.Service {
+		return &v1.Service{ObjectMeta: metav1.ObjectMeta{Name: id, Namespace: "default", UID: types.UID(id), ResourceVersion: rv}}
+	}
+	stored := func(ms *MetricsStore) []string {
+		var uids []string
+		ms.metrics.Range(func(k, _ any) bool {
+			uids = append(uids, string(k.(types.UID)))
+			return true
+		})
+		slices.Sort(uids)
+		return uids
+	}
+
+	dropped := 0
+	ms := NewMetricsStore([]string{"Information about service."}, genFunc, WithObjectLimit(2, func() { dropped++ }))
+
+	// The initial list is capped.
+	if err := ms.Replace([]any{service("a", "1"), service("b", "1"), service("c", "1")}, "1"); err != nil {
+		t.Fatal(err)
+	}
+	if got := stored(ms); !slices.Equal(got, []string{"a", "b"}) {
+		t.Fatalf("after Replace: got %v, want [a b]", got)
+	}
+
+	// New objects from the watch are not stored once the limit is reached, and
+	// neither are updates to objects that were dropped.
+	for _, obj := range []*v1.Service{service("d", "2"), service("c", "2")} {
+		if err := ms.Add(obj); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := ms.Update(service("c", "3")); err != nil {
+		t.Fatal(err)
+	}
+	if got := stored(ms); !slices.Equal(got, []string{"a", "b"}) {
+		t.Fatalf("after watch events: got %v, want [a b]", got)
+	}
+	if dropped != 4 {
+		t.Fatalf("got %d dropped objects, want 4", dropped)
+	}
+
+	// Updates to stored objects are still applied.
+	if err := ms.Update(service("a", "4")); err != nil {
+		t.Fatal(err)
+	}
+	var buf strings.Builder
+	if err := NewMetricsWriter("services", ms).WriteAll(&buf); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), `uid="a",resource_version="4"`) {
+		t.Fatalf("update to stored object not applied:\n%s", buf.String())
+	}
+
+	// Deleting an object frees a slot for a new one.
+	if err := ms.Delete(service("b", "5")); err != nil {
+		t.Fatal(err)
+	}
+	if err := ms.Add(service("d", "6")); err != nil {
+		t.Fatal(err)
+	}
+	if got := stored(ms); !slices.Equal(got, []string{"a", "d"}) {
+		t.Fatalf("after Delete and Add: got %v, want [a d]", got)
+	}
+
+	// Deleting an object that was never stored does not free a slot.
+	if err := ms.Delete(service("c", "7")); err != nil {
+		t.Fatal(err)
+	}
+	if err := ms.Add(service("e", "8")); err != nil {
+		t.Fatal(err)
+	}
+	if got := stored(ms); !slices.Equal(got, []string{"a", "d"}) {
+		t.Fatalf("after deleting a dropped object: got %v, want [a d]", got)
 	}
 }

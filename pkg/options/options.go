@@ -19,8 +19,10 @@ package options
 import (
 	"flag"
 	"fmt"
+	"maps"
 	"math"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -106,6 +108,32 @@ func NewOptions() *Options {
 		AnnotationsAllowList: LabelsAllowList{},
 		LabelsAllowList:      LabelsAllowList{},
 	}
+}
+
+// Clone returns a deep copy of the Options, so that a config reload can start
+// again from the command line values instead of the previously merged config.
+func (o *Options) Clone() *Options {
+	c := *o
+	c.AnnotationsAllowList = cloneLabelsAllowList(o.AnnotationsAllowList)
+	c.LabelsAllowList = cloneLabelsAllowList(o.LabelsAllowList)
+	c.MetricAllowlist = maps.Clone(o.MetricAllowlist)
+	c.MetricDenylist = maps.Clone(o.MetricDenylist)
+	c.MetricOptInList = maps.Clone(o.MetricOptInList)
+	c.Resources = maps.Clone(o.Resources)
+	c.Namespaces = slices.Clone(o.Namespaces)
+	c.NamespacesDenylist = slices.Clone(o.NamespacesDenylist)
+	return &c
+}
+
+func cloneLabelsAllowList(in LabelsAllowList) LabelsAllowList {
+	if in == nil {
+		return nil
+	}
+	out := make(LabelsAllowList, len(in))
+	for k, v := range in {
+		out[k] = slices.Clone(v)
+	}
+	return out
 }
 
 // AddFlags populated the Options struct from the command line arguments passed.

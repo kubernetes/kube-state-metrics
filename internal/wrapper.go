@@ -35,9 +35,14 @@ import (
 
 // RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
 func RunKubeStateMetricsWrapper(opts *options.Options) {
+	// Snapshot the command line options before any config file is merged in.
+	// RunKubeStateMetrics decodes the config file onto the options it is given,
+	// so every run, including each reload, has to start from a fresh copy.
+	// Otherwise keys removed from the config file keep their previous values.
+	baseOpts := opts.Clone()
 
 	KSMRunOrDie := func(ctx context.Context) {
-		if err := app.RunKubeStateMetricsWrapper(ctx, opts); err != nil {
+		if err := app.RunKubeStateMetricsWrapper(ctx, baseOpts.Clone()); err != nil {
 			klog.ErrorS(err, "Failed to run kube-state-metrics")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}

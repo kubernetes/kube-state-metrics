@@ -348,6 +348,50 @@
   },
   daemonsetsharding:: {
     local shardksmname = ksm.name + '-shard',
+    // The pod shards only collect pod metrics, so they run under their own
+    // ServiceAccount that is only allowed to list and watch pods.
+    shardServiceAccount: std.mergePatch(
+      ksm.serviceAccount,
+      { metadata: { name: shardksmname } },
+    ),
+    shardClusterRole:
+      {
+        apiVersion: 'rbac.authorization.k8s.io/v1',
+        kind: 'ClusterRole',
+        metadata: {
+          name: shardksmname,
+          labels: ksm.commonLabels + ksm.extraRecommendedLabels,
+        },
+        rules: [
+          {
+            apiGroups: [''],
+            resources: ['pods'],
+            verbs: ['list', 'watch'],
+          },
+          {
+            apiGroups: ['authentication.k8s.io'],
+            resources: ['tokenreviews'],
+            verbs: ['create'],
+          },
+          {
+            apiGroups: ['authorization.k8s.io'],
+            resources: ['subjectaccessreviews'],
+            verbs: ['create'],
+          },
+        ],
+      },
+    shardClusterRoleBinding: std.mergePatch(
+      ksm.clusterRoleBinding,
+      {
+        metadata: { name: shardksmname },
+        roleRef: { name: shardksmname },
+        subjects: [{
+          kind: 'ServiceAccount',
+          name: shardksmname,
+          namespace: ksm.namespace,
+        }],
+      },
+    ),
     daemonsetService: std.mergePatch(
       ksm.service,
       {
@@ -406,6 +450,7 @@
               },
               spec: {
                 containers: [c],
+                serviceAccountName: ksm.name + '-shard',
               },
             },
           },
@@ -467,7 +512,7 @@
             },
             spec: {
               containers: [c],
-              serviceAccountName: ksm.serviceAccount.metadata.name,
+              serviceAccountName: shardksmname,
               automountServiceAccountToken: true,
               nodeSelector: { 'kubernetes.io/os': 'linux' },
             },

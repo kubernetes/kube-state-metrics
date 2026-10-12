@@ -36,6 +36,13 @@ import (
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
 
+// Labels identifying the group, version and kind of a custom resource.
+const (
+	gvkGroupLabel   = customResourceState + "_group"
+	gvkVersionLabel = customResourceState + "_version"
+	gvkKindLabel    = customResourceState + "_kind"
+)
+
 func compile(resource Resource) ([]compiledFamily, error) {
 	var families []compiledFamily
 	// Explicitly add GVK labels to all CR metrics.
@@ -47,9 +54,9 @@ func compile(resource Resource) ([]compiledFamily, error) {
 	// all point at. Build a new map instead.
 	commonLabels := make(map[string]string, len(resource.CommonLabels)+3)
 	maps.Copy(commonLabels, resource.CommonLabels)
-	commonLabels[customResourceState+"_group"] = resource.GroupVersionKind.Group
-	commonLabels[customResourceState+"_version"] = resource.GroupVersionKind.Version
-	commonLabels[customResourceState+"_kind"] = resource.GroupVersionKind.Kind
+	commonLabels[gvkGroupLabel] = resource.GroupVersionKind.Group
+	commonLabels[gvkVersionLabel] = resource.GroupVersionKind.Version
+	commonLabels[gvkKindLabel] = resource.GroupVersionKind.Kind
 	resource.CommonLabels = commonLabels
 	for _, f := range resource.Metrics {
 		family, err := compileFamily(f, resource)
@@ -548,6 +555,18 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 	}
 	slices.Sort(stars)
+	// Keys copied from the object must not replace labels that are already set,
+	// such as the group, version and kind labels.
+	var preset map[string]struct{}
+	if len(stars) > 0 {
+		preset = make(map[string]struct{}, len(result)+3)
+		for k := range result {
+			preset[k] = struct{}{}
+		}
+		preset[gvkGroupLabel] = struct{}{}
+		preset[gvkVersionLabel] = struct{}{}
+		preset[gvkKindLabel] = struct{}{}
+	}
 	for _, star := range stars {
 		m := labels[star].Get(obj)
 		if kv, ok := m.(map[string]any); ok {
@@ -555,7 +574,14 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 				if strings.HasSuffix(star, "*") {
 					k = star[:len(star)-1] + k
 				}
-				result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
+				name, ok := objectKeyLabelName(k)
+				if !ok {
+					continue
+				}
+				if _, exists := preset[name]; exists {
+					continue
+				}
+				result[name] = fmt.Sprintf("%v", v)
 			}
 		}
 	}
@@ -570,6 +596,21 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 		result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", value)
 	}
+}
+
+// objectKeyLabelName turns a key copied from an object into a valid label
+// name. Sanitizing alone is not enough: it keeps a leading digit (e.g. the
+// Kubernetes label key "0team") and an empty key, neither of which is a valid
+// label name and either of which would make the whole exposition unparseable.
+func objectKeyLabelName(key string) (string, bool) {
+	name := store.SanitizeLabelName(key)
+	if name == "" {
+		return "", false
+	}
+	if name[0] >= '0' && name[0] <= '9' {
+		name = "_" + name
+	}
+	return name, true
 }
 
 type pathOp struct {

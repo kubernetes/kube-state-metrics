@@ -207,7 +207,8 @@ func (b *Builder) WithUsingAPIServerCache(u bool) {
 	b.useAPIServerCache = u
 }
 
-// WithObjectLimit sets a limit on how many objects you can list from the APIServer.
+// WithObjectLimit sets a limit on how many objects of each resource are listed from the APIServer
+// and kept in each store, including objects that arrive later through the watch.
 // This is to protect kube-state-metrics from running out of memory if the APIServer has a lot of objects.
 func (b *Builder) WithObjectLimit(l int64) {
 	b.objectLimit = l
@@ -653,6 +654,7 @@ func (b *Builder) buildStores(
 		store := metricsstore.NewMetricsStore(
 			familyHeaders,
 			composedMetricGenFuncs,
+			b.objectLimitOption(expectedType, objectLimit),
 		)
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
@@ -667,6 +669,7 @@ func (b *Builder) buildStores(
 		store := metricsstore.NewMetricsStore(
 			familyHeaders,
 			composedMetricGenFuncs,
+			b.objectLimitOption(expectedType, objectLimit),
 		)
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
@@ -711,6 +714,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 		store := metricsstore.NewMetricsStore(
 			familyHeaders,
 			composedMetricGenFuncs,
+			b.objectLimitOption(expectedType, objectLimit),
 		)
 		if b.fieldSelectorFilter != "" {
 			klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
@@ -725,6 +729,7 @@ func (b *Builder) buildCustomResourceStores(resourceName string,
 		store := metricsstore.NewMetricsStore(
 			familyHeaders,
 			composedMetricGenFuncs,
+			b.objectLimitOption(expectedType, objectLimit),
 		)
 		klog.InfoS("FieldSelector is used", "fieldSelector", b.fieldSelectorFilter)
 		listWatcher := listWatchFunc(customResourceClient, ns, b.fieldSelectorFilter)
@@ -745,6 +750,17 @@ func newCRReflectorStopCh(ctx context.Context, gvkStopCh chan struct{}) chan str
 		}
 	}()
 	return stopCh
+}
+
+// objectLimitOption limits the number of objects a store keeps and counts the
+// objects it drops once the limit is reached.
+func (b *Builder) objectLimitOption(expectedType any, objectLimit int64) metricsstore.Option {
+	resource := reflect.TypeOf(expectedType).String()
+	return metricsstore.WithObjectLimit(objectLimit, func() {
+		if b.listWatchMetrics != nil {
+			b.listWatchMetrics.ObjectsDropped.WithLabelValues(resource).Inc()
+		}
+	})
 }
 
 // startReflector starts a Kubernetes client-go reflector with the given

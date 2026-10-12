@@ -18,6 +18,7 @@ package metricsstore
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
@@ -54,13 +55,36 @@ type MetricsStore struct {
 	headersOpenMetrics []string
 	headersTextPlain   []string
 	metricNames        []string
+
+	// objectLimit is the maximum number of objects kept in the store, 0 means
+	// no limit. objectCount tracks the number of objects currently stored and
+	// is only maintained when a limit is set.
+	objectLimit int64
+	objectCount atomic.Int64
+	// onObjectDropped is called for every new object that is not stored
+	// because objectLimit was reached.
+	onObjectDropped func()
+}
+
+// Option configures a MetricsStore.
+type Option func(*MetricsStore)
+
+// WithObjectLimit limits the number of objects the store keeps. Once the limit
+// is reached, new objects are not stored until existing ones are deleted;
+// updates to objects already in the store are still applied. onDropped, if not
+// nil, is called for every object that is not stored. A limit of 0 disables it.
+func WithObjectLimit(limit int64, onDropped func()) Option {
+	return func(s *MetricsStore) {
+		s.objectLimit = limit
+		s.onObjectDropped = onDropped
+	}
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(any) []metric.FamilyInterface) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(any) []metric.FamilyInterface, opts ...Option) *MetricsStore {
 	rv := ""
 	headersOpenMetrics, headersTextPlain, metricNames := precomputeHeaders(headers)
-	return &MetricsStore{
+	s := &MetricsStore{
 		generateMetricsFunc:   generateFunc,
 		headers:               headers,
 		headersOpenMetrics:    headersOpenMetrics,
@@ -70,6 +94,10 @@ func NewMetricsStore(headers []string, generateFunc func(any) []metric.FamilyInt
 		lastResourceVersion:   &rv,
 		lastResourceVersionMu: &sync.RWMutex{},
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // precomputeHeaders parses each header once at store construction, returning the
@@ -110,6 +138,21 @@ func (s *MetricsStore) Add(obj any) error {
 	}
 
 	s.setLastResourceVersion(o.GetResourceVersion())
+
+	// The object limit has to be enforced here and not only on List: objects
+	// created after the initial List, and updates to objects the List dropped,
+	// arrive through the watch.
+	if s.objectLimit > 0 {
+		if _, exists := s.metrics.Load(o.GetUID()); !exists {
+			if s.objectCount.Load() >= s.objectLimit {
+				if s.onObjectDropped != nil {
+					s.onObjectDropped()
+				}
+				return nil
+			}
+			s.objectCount.Add(1)
+		}
+	}
 
 	families := s.generateMetricsFunc(obj)
 
@@ -198,7 +241,9 @@ func (s *MetricsStore) Delete(obj any) error {
 
 	s.setLastResourceVersion(o.GetResourceVersion())
 
-	s.metrics.Delete(o.GetUID())
+	if _, loaded := s.metrics.LoadAndDelete(o.GetUID()); loaded && s.objectLimit > 0 {
+		s.objectCount.Add(-1)
+	}
 
 	return nil
 }
@@ -241,12 +286,20 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 		listed[uid] = struct{}{}
 	}
 
+	var kept int64
 	s.metrics.Range(func(key, _ any) bool {
-		if _, ok := listed[key.(types.UID)]; !ok {
+		if _, ok := listed[key.(types.UID)]; ok {
+			kept++
+		} else {
 			s.metrics.Delete(key)
 		}
 		return true
 	})
+	// The objects kept are the ones counted against the limit; the upsert
+	// below admits new ones while there is room.
+	if s.objectLimit > 0 {
+		s.objectCount.Store(kept)
+	}
 
 	for _, o := range list {
 		if err := s.Add(o); err != nil {

@@ -19,6 +19,7 @@ package customresourcestate
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -710,4 +711,61 @@ func Test_generate_wildcardKeepsCommonLabels(t *testing.T) {
 		gvkVersionLabel: "v1",
 		gvkKindLabel:    "Foo",
 	}, labels)
+}
+
+func Test_addPathLabels_starLimit(t *testing.T) {
+	keys := map[string]any{}
+	for i := range maxStarPathLabels + 50 {
+		keys[fmt.Sprintf("key%03d", i)] = "value"
+	}
+	obj := map[string]any{"metadata": map[string]any{"labels": keys}}
+
+	result := map[string]string{}
+	addPathLabels(obj, map[string]valuePath{
+		"*": mustCompilePath(t, "metadata", "labels"),
+	}, nil, result)
+
+	assert.Len(t, result, maxStarPathLabels)
+	// The first keys in sorted order are kept, so the result is the same on every update.
+	for i := range maxStarPathLabels {
+		assert.Contains(t, result, fmt.Sprintf("key%03d", i))
+	}
+}
+
+func Test_generate_starLabelsAreBoundedPerValue(t *testing.T) {
+	const labelCount, itemCount = maxStarPathLabels * 4, 50
+	families, err := compile(Resource{
+		GroupVersionKind: GroupVersionKind{Group: "myteam.io", Version: "v1", Kind: "Foo"},
+		Labels: Labels{LabelsFromPath: map[string][]string{
+			"*": {"metadata", "labels"},
+		}},
+		Metrics: []Generator{{
+			Name: "item",
+			Each: Metric{Type: metric.Gauge, Gauge: &MetricGauge{
+				MetricMeta:   MetricMeta{Path: []string{"spec", "items"}},
+				LabelFromKey: "item",
+			}},
+		}},
+	})
+	assert.NoError(t, err)
+
+	objLabels := map[string]any{}
+	for i := range labelCount {
+		objLabels[fmt.Sprintf("l%04d", i)] = "v"
+	}
+	items := map[string]any{}
+	for i := range itemCount {
+		items[fmt.Sprintf("i%04d", i)] = int64(1)
+	}
+	u := &unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{"name": "foo", "labels": objLabels},
+		"spec":     map[string]any{"items": items},
+	}}
+
+	family := generate(u, families[0], klog.V(0))
+	assert.Len(t, family.Metrics, itemCount)
+	for _, m := range family.Metrics {
+		// copied labels, the item label and the group, version and kind labels
+		assert.Len(t, m.LabelKeys, maxStarPathLabels+1+3)
+	}
 }

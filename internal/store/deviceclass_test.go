@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -37,12 +37,12 @@ func TestDeviceClassStore(t *testing.T) {
 
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &resourcev1beta1.DeviceClass{
+			Obj: &resourcev1.DeviceClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "nvidia-gpu",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				},
-				Spec: resourcev1beta1.DeviceClassSpec{
+				Spec: resourcev1.DeviceClassSpec{
 					ExtendedResourceName: &extendedResourceName,
 				},
 			},

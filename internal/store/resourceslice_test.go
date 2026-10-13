@@ -20,8 +20,10 @@ import (
 	"testing"
 	"time"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	v1 "k8s.io/api/core/v1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -32,27 +34,24 @@ func TestResourceSliceStore(t *testing.T) {
 		# TYPE kube_resourceslice_created gauge
 		# HELP kube_resourceslice_info Information about resource slice.
 		# TYPE kube_resourceslice_info gauge
-		# HELP kube_resourceslice_devices_total The total count of devices published by this resource slice.
-		# TYPE kube_resourceslice_devices_total gauge
-		# HELP kube_resourceslice_device_info Details of individual devices inside the resource slice.
-		# TYPE kube_resourceslice_device_info gauge
+		# HELP kube_resourceslice_devices The total count of devices published by this resource slice.
+		# TYPE kube_resourceslice_devices gauge
 	`
 
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &resourcev1beta1.ResourceSlice{
+			Obj: &resourcev1.ResourceSlice{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "slice-1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				},
-				Spec: resourcev1beta1.ResourceSliceSpec{
+				Spec: resourcev1.ResourceSliceSpec{
 					Driver:   "driver-1",
-					NodeName: "node-1",
-					AllNodes: false,
-					Pool: resourcev1beta1.ResourcePool{
+					NodeName: ptr.To("node-1"),
+					Pool: resourcev1.ResourcePool{
 						Name: "pool-1",
 					},
-					Devices: []resourcev1beta1.Device{
+					Devices: []resourcev1.Device{
 						{
 							Name: "device-1",
 						},
@@ -64,17 +63,62 @@ func TestResourceSliceStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_resourceslice_created{resourceslice="slice-1"} 1.5e+09
-				kube_resourceslice_info{all_nodes="false",driver="driver-1",node_name="node-1",pool_name="pool-1",resourceslice="slice-1"} 1
-				kube_resourceslice_devices_total{driver="driver-1",node_name="node-1",pool_name="pool-1",resourceslice="slice-1"} 2
-				kube_resourceslice_device_info{device_name="device-1",driver="driver-1",node_name="node-1",pool_name="pool-1",resourceslice="slice-1"} 1
-				kube_resourceslice_device_info{device_name="device-2",driver="driver-1",node_name="node-1",pool_name="pool-1",resourceslice="slice-1"} 1
+				kube_resourceslice_info{driver="driver-1",node_name="node-1",node_selection="node_name",pool_name="pool-1",resourceslice="slice-1"} 1
+				kube_resourceslice_devices{driver="driver-1",node_name="node-1",pool_name="pool-1",resourceslice="slice-1"} 2
 			`,
 			MetricNames: []string{
 				"kube_resourceslice_created",
 				"kube_resourceslice_info",
-				"kube_resourceslice_devices_total",
-				"kube_resourceslice_device_info",
+				"kube_resourceslice_devices",
 			},
+		},
+		{
+			Obj: &resourcev1.ResourceSlice{
+				ObjectMeta: metav1.ObjectMeta{Name: "slice-selector"},
+				Spec: resourcev1.ResourceSliceSpec{
+					Driver:       "driver-1",
+					NodeSelector: &v1.NodeSelector{},
+					Pool:         resourcev1.ResourcePool{Name: "pool-1"},
+				},
+			},
+			Want: `
+				# HELP kube_resourceslice_info Information about resource slice.
+				# TYPE kube_resourceslice_info gauge
+				kube_resourceslice_info{driver="driver-1",node_name="",node_selection="node_selector",pool_name="pool-1",resourceslice="slice-selector"} 1
+			`,
+			MetricNames: []string{"kube_resourceslice_info"},
+		},
+		{
+			Obj: &resourcev1.ResourceSlice{
+				ObjectMeta: metav1.ObjectMeta{Name: "slice-all"},
+				Spec: resourcev1.ResourceSliceSpec{
+					Driver:   "driver-1",
+					AllNodes: ptr.To(true),
+					Pool:     resourcev1.ResourcePool{Name: "pool-1"},
+				},
+			},
+			Want: `
+				# HELP kube_resourceslice_info Information about resource slice.
+				# TYPE kube_resourceslice_info gauge
+				kube_resourceslice_info{driver="driver-1",node_name="",node_selection="all_nodes",pool_name="pool-1",resourceslice="slice-all"} 1
+			`,
+			MetricNames: []string{"kube_resourceslice_info"},
+		},
+		{
+			Obj: &resourcev1.ResourceSlice{
+				ObjectMeta: metav1.ObjectMeta{Name: "slice-per-device"},
+				Spec: resourcev1.ResourceSliceSpec{
+					Driver:                 "driver-1",
+					PerDeviceNodeSelection: ptr.To(true),
+					Pool:                   resourcev1.ResourcePool{Name: "pool-1"},
+				},
+			},
+			Want: `
+				# HELP kube_resourceslice_info Information about resource slice.
+				# TYPE kube_resourceslice_info gauge
+				kube_resourceslice_info{driver="driver-1",node_name="",node_selection="per_device",pool_name="pool-1",resourceslice="slice-per-device"} 1
+			`,
+			MetricNames: []string{"kube_resourceslice_info"},
 		},
 	}
 

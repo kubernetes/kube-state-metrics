@@ -18,15 +18,15 @@ package store
 
 import (
 	"context"
-	"strconv"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/utils/ptr"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -42,7 +42,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceSliceFunc(func(rs *resourcev1beta1.ResourceSlice) *metric.Family {
+			wrapResourceSliceFunc(func(rs *resourcev1.ResourceSlice) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !rs.CreationTimestamp.IsZero() {
@@ -62,12 +62,12 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceSliceFunc(func(rs *resourcev1beta1.ResourceSlice) *metric.Family {
+			wrapResourceSliceFunc(func(rs *resourcev1.ResourceSlice) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"driver", "pool_name", "node_name", "all_nodes"},
-							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, rs.Spec.NodeName, strconv.FormatBool(rs.Spec.AllNodes)},
+							LabelKeys:   []string{"driver", "pool_name", "node_name", "node_selection"},
+							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, ptr.Deref(rs.Spec.NodeName, ""), resourceSliceNodeSelection(rs)},
 							Value:       1,
 						},
 					},
@@ -75,49 +75,29 @@ var (
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
-			"kube_resourceslice_devices_total",
+			"kube_resourceslice_devices",
 			"The total count of devices published by this resource slice.",
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceSliceFunc(func(rs *resourcev1beta1.ResourceSlice) *metric.Family {
+			wrapResourceSliceFunc(func(rs *resourcev1.ResourceSlice) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"driver", "pool_name", "node_name"},
-							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, rs.Spec.NodeName},
+							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, ptr.Deref(rs.Spec.NodeName, "")},
 							Value:       float64(len(rs.Spec.Devices)),
 						},
 					},
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_resourceslice_device_info",
-			"Details of individual devices inside the resource slice.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapResourceSliceFunc(func(rs *resourcev1beta1.ResourceSlice) *metric.Family {
-				ms := make([]*metric.Metric, len(rs.Spec.Devices))
-				for i, dev := range rs.Spec.Devices {
-					ms[i] = &metric.Metric{
-						LabelKeys:   []string{"driver", "pool_name", "node_name", "device_name"},
-						LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, rs.Spec.NodeName, dev.Name},
-						Value:       1,
-					}
-				}
-				return &metric.Family{
-					Metrics: ms,
-				}
-			}),
-		),
 	}
 )
 
-func wrapResourceSliceFunc(f func(*resourcev1beta1.ResourceSlice) *metric.Family) func(interface{}) *metric.Family {
+func wrapResourceSliceFunc(f func(*resourcev1.ResourceSlice) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		rs := obj.(*resourcev1beta1.ResourceSlice)
+		rs := obj.(*resourcev1.ResourceSlice)
 
 		metricFamily := f(rs)
 
@@ -129,15 +109,32 @@ func wrapResourceSliceFunc(f func(*resourcev1beta1.ResourceSlice) *metric.Family
 	}
 }
 
+// resourceSliceNodeSelection reports which of the mutually exclusive node
+// selection fields is set on the slice.
+func resourceSliceNodeSelection(rs *resourcev1.ResourceSlice) string {
+	switch {
+	case ptr.Deref(rs.Spec.NodeName, "") != "":
+		return "node_name"
+	case rs.Spec.NodeSelector != nil:
+		return "node_selector"
+	case ptr.Deref(rs.Spec.AllNodes, false):
+		return "all_nodes"
+	case ptr.Deref(rs.Spec.PerDeviceNodeSelection, false):
+		return "per_device"
+	default:
+		return ""
+	}
+}
+
 func createResourceSliceListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().ResourceSlices().List(context.TODO(), opts)
+			return kubeClient.ResourceV1().ResourceSlices().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().ResourceSlices().Watch(context.TODO(), opts)
+			return kubeClient.ResourceV1().ResourceSlices().Watch(context.TODO(), opts)
 		},
 	}
 }

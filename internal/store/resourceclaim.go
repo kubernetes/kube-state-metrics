@@ -19,7 +19,7 @@ package store
 import (
 	"context"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceClaimFunc(func(rc *resourcev1beta1.ResourceClaim) *metric.Family {
+			wrapResourceClaimFunc(func(rc *resourcev1.ResourceClaim) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !rc.CreationTimestamp.IsZero() {
@@ -56,28 +56,12 @@ var (
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
-			"kube_resourceclaim_info",
-			"Information about resource claim.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapResourceClaimFunc(func(_ *resourcev1beta1.ResourceClaim) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourceclaim_status_allocated",
 			"Indicates whether the resource claim has been allocated.",
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceClaimFunc(func(rc *resourcev1beta1.ResourceClaim) *metric.Family {
+			wrapResourceClaimFunc(func(rc *resourcev1.ResourceClaim) *metric.Family {
 				isAllocated := rc.Status.Allocation != nil
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -94,7 +78,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceClaimFunc(func(rc *resourcev1beta1.ResourceClaim) *metric.Family {
+			wrapResourceClaimFunc(func(rc *resourcev1.ResourceClaim) *metric.Family {
 				ms := make([]*metric.Metric, len(rc.Status.ReservedFor))
 				for i, res := range rc.Status.ReservedFor {
 					ms[i] = &metric.Metric{
@@ -114,7 +98,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceClaimFunc(func(rc *resourcev1beta1.ResourceClaim) *metric.Family {
+			wrapResourceClaimFunc(func(rc *resourcev1.ResourceClaim) *metric.Family {
 				if rc.Status.Allocation == nil {
 					return &metric.Family{}
 				}
@@ -135,9 +119,9 @@ var (
 	}
 )
 
-func wrapResourceClaimFunc(f func(*resourcev1beta1.ResourceClaim) *metric.Family) func(interface{}) *metric.Family {
+func wrapResourceClaimFunc(f func(*resourcev1.ResourceClaim) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		rc := obj.(*resourcev1beta1.ResourceClaim)
+		rc := obj.(*resourcev1.ResourceClaim)
 
 		metricFamily := f(rc)
 
@@ -153,11 +137,11 @@ func createResourceClaimListWatch(kubeClient clientset.Interface, ns string, fie
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().ResourceClaims(ns).List(context.TODO(), opts)
+			return kubeClient.ResourceV1().ResourceClaims(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().ResourceClaims(ns).Watch(context.TODO(), opts)
+			return kubeClient.ResourceV1().ResourceClaims(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

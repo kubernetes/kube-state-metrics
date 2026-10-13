@@ -19,7 +19,7 @@ package store
 import (
 	"context"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapDeviceClassFunc(func(dc *resourcev1beta1.DeviceClass) *metric.Family {
+			wrapDeviceClassFunc(func(dc *resourcev1.DeviceClass) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !dc.CreationTimestamp.IsZero() {
@@ -61,7 +61,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapDeviceClassFunc(func(dc *resourcev1beta1.DeviceClass) *metric.Family {
+			wrapDeviceClassFunc(func(dc *resourcev1.DeviceClass) *metric.Family {
 				extendedResourceName := ""
 				if dc.Spec.ExtendedResourceName != nil {
 					extendedResourceName = *dc.Spec.ExtendedResourceName
@@ -80,9 +80,9 @@ var (
 	}
 )
 
-func wrapDeviceClassFunc(f func(*resourcev1beta1.DeviceClass) *metric.Family) func(interface{}) *metric.Family {
+func wrapDeviceClassFunc(f func(*resourcev1.DeviceClass) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		dc := obj.(*resourcev1beta1.DeviceClass)
+		dc := obj.(*resourcev1.DeviceClass)
 
 		metricFamily := f(dc)
 
@@ -98,11 +98,11 @@ func createDeviceClassListWatch(kubeClient clientset.Interface, _ string, fieldS
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().DeviceClasses().List(context.TODO(), opts)
+			return kubeClient.ResourceV1().DeviceClasses().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().DeviceClasses().Watch(context.TODO(), opts)
+			return kubeClient.ResourceV1().DeviceClasses().Watch(context.TODO(), opts)
 		},
 	}
 }

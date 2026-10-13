@@ -38,7 +38,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clientset "k8s.io/client-go/kubernetes"
@@ -773,19 +773,19 @@ func (b *Builder) startReflector(
 }
 
 func (b *Builder) buildDeviceClassStores() []cache.Store {
-	return b.buildClusterScopedStores(deviceClassMetricFamilies, &resourcev1beta1.DeviceClass{}, createDeviceClassListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(deviceClassMetricFamilies, &resourcev1.DeviceClass{}, createDeviceClassListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildResourceClaimStores() []cache.Store {
-	return b.buildStoresFunc(resourceClaimMetricFamilies, &resourcev1beta1.ResourceClaim{}, createResourceClaimListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildStoresFunc(resourceClaimMetricFamilies, &resourcev1.ResourceClaim{}, createResourceClaimListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildResourceClaimTemplateStores() []cache.Store {
-	return b.buildStoresFunc(resourceClaimTemplateMetricFamilies, &resourcev1beta1.ResourceClaimTemplate{}, createResourceClaimTemplateListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildStoresFunc(resourceClaimTemplateMetricFamilies, &resourcev1.ResourceClaimTemplate{}, createResourceClaimTemplateListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildResourceSliceStores() []cache.Store {
-	return b.buildClusterScopedStores(resourceSliceMetricFamilies, &resourcev1beta1.ResourceSlice{}, createResourceSliceListWatch, b.useAPIServerCache, b.objectLimit)
+	return b.buildClusterScopedStores(resourceSliceMetricFamilies, &resourcev1.ResourceSlice{}, createResourceSliceListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

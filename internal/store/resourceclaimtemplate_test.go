@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -30,27 +30,23 @@ func TestResourceClaimTemplateStore(t *testing.T) {
 	const metadata = `
 		# HELP kube_resourceclaimtemplate_created Unix creation timestamp
 		# TYPE kube_resourceclaimtemplate_created gauge
-		# HELP kube_resourceclaimtemplate_info Information about resource claim template.
-		# TYPE kube_resourceclaimtemplate_info gauge
 	`
 
 	cases := []generateMetricsTestCase{
 		{
-			Obj: &resourcev1beta1.ResourceClaimTemplate{
+			Obj: &resourcev1.ResourceClaimTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "template-1",
 					Namespace:         "ns-1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				},
-				Spec: resourcev1beta1.ResourceClaimTemplateSpec{},
+				Spec: resourcev1.ResourceClaimTemplateSpec{},
 			},
 			Want: metadata + `
 				kube_resourceclaimtemplate_created{namespace="ns-1",resourceclaimtemplate="template-1"} 1.5e+09
-				kube_resourceclaimtemplate_info{namespace="ns-1",resourceclaimtemplate="template-1"} 1
 			`,
 			MetricNames: []string{
 				"kube_resourceclaimtemplate_created",
-				"kube_resourceclaimtemplate_info",
 			},
 		},
 	}

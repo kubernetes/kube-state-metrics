@@ -19,7 +19,7 @@ package store
 import (
 	"context"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ var (
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
-			wrapResourceClaimTemplateFunc(func(rct *resourcev1beta1.ResourceClaimTemplate) *metric.Family {
+			wrapResourceClaimTemplateFunc(func(rct *resourcev1.ResourceClaimTemplate) *metric.Family {
 				ms := []*metric.Metric{}
 
 				if !rct.CreationTimestamp.IsZero() {
@@ -55,28 +55,12 @@ var (
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
-			"kube_resourceclaimtemplate_info",
-			"Information about resource claim template.",
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapResourceClaimTemplateFunc(func(_ *resourcev1beta1.ResourceClaimTemplate) *metric.Family {
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							Value: 1,
-						},
-					},
-				}
-			}),
-		),
 	}
 )
 
-func wrapResourceClaimTemplateFunc(f func(*resourcev1beta1.ResourceClaimTemplate) *metric.Family) func(interface{}) *metric.Family {
+func wrapResourceClaimTemplateFunc(f func(*resourcev1.ResourceClaimTemplate) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
-		rct := obj.(*resourcev1beta1.ResourceClaimTemplate)
+		rct := obj.(*resourcev1.ResourceClaimTemplate)
 
 		metricFamily := f(rct)
 
@@ -92,11 +76,11 @@ func createResourceClaimTemplateListWatch(kubeClient clientset.Interface, ns str
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().ResourceClaimTemplates(ns).List(context.TODO(), opts)
+			return kubeClient.ResourceV1().ResourceClaimTemplates(ns).List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.ResourceV1beta1().ResourceClaimTemplates(ns).Watch(context.TODO(), opts)
+			return kubeClient.ResourceV1().ResourceClaimTemplates(ns).Watch(context.TODO(), opts)
 		},
 	}
 }

@@ -165,9 +165,8 @@ func runReflectorUntilListed(t *testing.T) (*cache.Reflector, chan struct{}) {
 	return reflector, stopCh
 }
 
-// listWatchWithoutWatchList forces the reflector down the list path. client-go
-// enables WatchList by default, and that path does not set LastSyncResourceVersion
-// until it sees an initial-events bookmark.
+// listWatchWithoutWatchList forces the list path. WatchList leaves
+// LastSyncResourceVersion empty until the initial-events bookmark.
 type listWatchWithoutWatchList struct {
 	*cache.ListWatch
 }

@@ -786,10 +786,8 @@ func (b *Builder) startReflector(
 	go reflector.Run(stopCh)
 }
 
-// WaitForStoresSync blocks until every reflector started by the latest Build() has
-// completed its initial list, the configured timeout elapses, a reflector stops
-// before listing, or ctx is canceled. The sync timer is not a child of ctx, so a
-// parent deadline is returned as ctx.Err() rather than ErrStoreSyncTimeout.
+// WaitForStoresSync waits for the latest Build's reflectors to list.
+// The sync timer is separate from ctx, so a parent deadline is ctx.Err(), not ErrStoreSyncTimeout.
 func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -840,8 +838,7 @@ func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) 
 	if err == nil {
 		return nil
 	}
-	// Parent cancellation and the sync timer both stop syncCtx. The parent wins
-	// so a generation deadline is never reported as the configured sync timeout.
+	// The parent and the sync timer both stop syncCtx. Prefer the parent error.
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

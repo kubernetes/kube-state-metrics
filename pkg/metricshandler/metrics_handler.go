@@ -79,9 +79,7 @@ type MetricsHandler struct {
 	pendingRebuild   bool
 	rebuildParentCtx context.Context
 	activeCancel     context.CancelFunc
-	// beforeSwap, when set, runs after a generation's sync wait returns and
-	// before that generation is installed. Tests use it to publish another
-	// rebuild request in that window.
+	// beforeSwap runs after the sync wait and before install. Tests use it to inject another rebuild.
 	beforeSwap func()
 }
 
@@ -96,12 +94,8 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 	}
 }
 
-// BuildWriters rebuilds metrics writers after store configuration changes.
-// Rebuilds are coalesced. A generation is installed after its stores sync, or
-// when the configured sync timeout elapses or a reflector stops before listing.
-// Superseded and canceled generations are not installed. A timed-out install
-// can expose partial metrics while reflectors that are still running continue
-// to fill their stores.
+// BuildWriters coalesces rebuilds and installs after sync, timeout, or a stopped reflector.
+// Canceled or superseded generations are dropped. A timeout may serve partial metrics.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.rebuildMu.Lock()
 	m.rebuildParentCtx = ctx
@@ -113,8 +107,7 @@ func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 		m.rebuildMu.Unlock()
 		return
 	}
-	// Register cancellation and mark the rebuild running before the goroutine
-	// starts, so a request that arrives once the rebuild is visible can cancel it.
+	// Publish cancel before the goroutine starts, so a later request can cancel this generation.
 	genCtx, genCancel := context.WithCancel(ctx)
 	m.activeCancel = genCancel
 	m.rebuildRunning = true
@@ -132,8 +125,7 @@ func (m *MetricsHandler) rebuildLoop(genCtx context.Context, genCancel context.C
 
 		m.rebuildMu.Lock()
 		superseded := m.pendingRebuild || genCtx.Err() != nil
-		// This generation still owns the handle: a newer request can call it,
-		// but cannot replace it until this critical section starts the next one.
+		// Clear the handle while this generation still owns it. The next one is created below.
 		m.activeCancel = nil
 		if !superseded && installableSync(waitErr) {
 			m.installWriters(writers, genCancel)
@@ -166,9 +158,8 @@ func (m *MetricsHandler) rebuildLoop(genCtx context.Context, genCancel context.C
 	}
 }
 
-// installableSync reports whether a WaitForStoresSync result may be installed.
-// Only success, the configured sync timeout, and a stopped reflector qualify.
-// A canceled or deadline-exceeded generation context does not.
+// installableSync reports whether err allows installing the generation.
+// Success, sync timeout, and a stopped reflector do. Context cancel and deadline do not.
 func installableSync(err error) bool {
 	return err == nil || errors.Is(err, ksmtypes.ErrStoreSyncTimeout) || errors.Is(err, ksmtypes.ErrReflectorStopped)
 }
@@ -198,8 +189,7 @@ func (m *MetricsHandler) doRebuild(genCtx context.Context) (metricsstore.Metrics
 	if syncTimeout < 0 {
 		return writers, fmt.Errorf("invalid store sync timeout %s", syncTimeout)
 	}
-	// Zero skips the wait and installs immediately, still subject to the
-	// generation-context check above and again before installation.
+	// Zero skips the wait. A canceled generation is still rejected before install.
 	if syncTimeout == 0 {
 		return writers, nil
 	}

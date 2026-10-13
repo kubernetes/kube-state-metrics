@@ -60,24 +60,18 @@ type CustomResourceReplacer interface {
 	ReplaceEnabledCustomResources(c []string) error
 }
 
-// ErrStoreSyncTimeout is returned when the configured store sync timeout elapses
-// before every reflector has completed its initial list. It is distinct from a
-// deadline on the generation context: only this error permits installing the
-// generation that timed out.
+// ErrStoreSyncTimeout means the store-sync timeout elapsed before every reflector listed.
+// A deadline on the caller's context is a different error.
 var ErrStoreSyncTimeout = errors.New("store sync timed out")
 
-// ErrReflectorStopped is returned when a reflector stops before its initial list.
-// The generation may still be installed; reflectors that are still running keep
-// filling their stores.
+// ErrReflectorStopped means a reflector stopped before its initial list.
+// That generation may still be installed.
 var ErrReflectorStopped = errors.New("reflector stopped before initial sync")
 
 // StoreSyncBuilder waits for reflector stores to sync after Build().
 type StoreSyncBuilder interface {
-	// WaitForStoresSync blocks until every reflector from the latest Build has
-	// completed its initial list. A nil error means every reflector listed.
-	// ErrStoreSyncTimeout and ErrReflectorStopped are the only non-nil results
-	// that still describe a generation eligible for installation. A canceled or
-	// expired ctx is returned as ctx.Err() and must not be installed.
+	// WaitForStoresSync waits for the latest Build's reflectors to list.
+	// nil, ErrStoreSyncTimeout, and ErrReflectorStopped may be installed; ctx cancel returns ctx.Err().
 	WaitForStoresSync(ctx context.Context, timeout time.Duration) error
 }
 

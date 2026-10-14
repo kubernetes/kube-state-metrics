@@ -580,13 +580,61 @@ type pathOp struct {
 type valuePath []pathOp
 
 func (p valuePath) Get(obj any) any {
-	for _, op := range p {
-		if obj == nil {
-			return nil
-		}
-		obj = op.op(obj)
+	return p.getRecursive(obj, 0)
+}
+
+// getRecursive walks the path operations, expanding arrays when the next
+// operation is a plain map key (not a filter expression like [key=val] nor a
+// numeric index). This allows nested array structures such as
+// status.parents[].conditions[].lastTransitionTime to be resolved by
+// flattening intermediate arrays and continuing the walk per element.
+func (p valuePath) getRecursive(obj any, idx int) any {
+	if idx >= len(p) {
+		return obj
 	}
-	return obj
+	if obj == nil {
+		return nil
+	}
+
+	op := p[idx]
+	result := op.op(obj)
+
+	if idx+1 < len(p) {
+		if arr, ok := result.([]any); ok {
+			nextPart := p[idx+1].part
+
+			// Next op expects an array input, do not expand.
+			// Filter expressions like [key=val] operate on the whole array.
+			isFilter := strings.HasPrefix(nextPart, "[") &&
+				strings.HasSuffix(nextPart, "]") &&
+				strings.Contains(nextPart, "=")
+			// Numeric indices also expect the array as input.
+			_, isNumeric := strconv.Atoi(nextPart)
+
+			if isFilter || isNumeric == nil {
+				return p.getRecursive(result, idx+1)
+			}
+
+			// Otherwise, expand the array: run the rest of the path per element
+			// and flatten any nested arrays produced deeper in the walk.
+			var flattened []any
+			for _, item := range arr {
+				subResult := p.getRecursive(item, idx+1)
+				if subResult == nil {
+					continue
+				}
+				if subArr, ok := subResult.([]any); ok {
+					flattened = append(flattened, subArr...)
+				} else {
+					flattened = append(flattened, subResult)
+				}
+			}
+			return flattened
+		}
+		return p.getRecursive(result, idx+1)
+	}
+
+	return result
 }
 
 func (p valuePath) String() string {

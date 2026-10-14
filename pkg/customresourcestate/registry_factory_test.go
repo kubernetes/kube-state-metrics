@@ -87,6 +87,34 @@ func init() {
 					"status": "False",
 				},
 			},
+			// Nested arrays (issue #2368): status.parents[].conditions[].lastTransitionTime
+			"parents": Array{
+				Obj{
+					"name": "parent1",
+					"conditions": Array{
+						Obj{
+							"type":               "Ready",
+							"status":             "True",
+							"lastTransitionTime": "2024-01-01T00:00:00Z",
+						},
+						Obj{
+							"type":               "Provisioned",
+							"status":             "False",
+							"lastTransitionTime": "2024-01-02T00:00:00Z",
+						},
+					},
+				},
+				Obj{
+					"name": "parent2",
+					"conditions": Array{
+						Obj{
+							"type":               "Ready",
+							"status":             "True",
+							"lastTransitionTime": "2024-01-03T00:00:00Z",
+						},
+					},
+				},
+			},
 		},
 		"metadata": Obj{
 			"name": "foo",
@@ -381,6 +409,32 @@ func Test_values(t *testing.T) {
 		}, wantResult: []eachValue{
 			newEachValue(t, 1, "bar", "baz"),
 		}},
+		// Nested arrays (issue #2368): StateSet traversing status.parents[].conditions[]
+		{name: "nested array stateset conditions", each: &compiledStateSet{
+			path:      mustCompilePath(t, "status", "parents", "conditions"),
+			ValueFrom: mustCompilePath(t, "status"),
+			LabelName: "status",
+			List:      []string{"True", "False"},
+		}, wantResult: []eachValue{
+			newEachValue(t, 0, "status", "False"),
+			newEachValue(t, 1, "status", "False"),
+			newEachValue(t, 0, "status", "False"),
+			newEachValue(t, 1, "status", "True"),
+			newEachValue(t, 0, "status", "True"),
+			newEachValue(t, 1, "status", "True"),
+		}},
+		// Nested array gauge with label
+		{name: "nested array gauge with type label", each: &compiledGauge{
+			path: mustCompilePath(t, "status", "parents", "conditions"),
+			labelFromPath: map[string]valuePath{
+				"type": mustCompilePath(t, "type"),
+			},
+			ValueFrom: mustCompilePath(t, "lastTransitionTime"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 1.7041536e+09, "type", "Provisioned"), // 2024-01-02T00:00:00Z
+			newEachValue(t, 1.7040672e+09, "type", "Ready"),       // 2024-01-01T00:00:00Z
+			newEachValue(t, 1.70424e+09, "type", "Ready"),         // 2024-01-03T00:00:00Z
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -548,6 +602,21 @@ func Test_valuePath_Get(t *testing.T) {
 		tt("string", "bar", "metadata", "labels", "foo"),
 		tt("match number", false, "spec", "order", "[id=3]", "value"),
 		tt("match bool", float64(3), "spec", "order", "[value=false]", "id"),
+		// Nested arrays (issue #2368)
+		tt("nested array one level expand", []any{
+			map[string]any{"type": "Ready", "status": "True", "lastTransitionTime": "2024-01-01T00:00:00Z"},
+			map[string]any{"type": "Provisioned", "status": "False", "lastTransitionTime": "2024-01-02T00:00:00Z"},
+			map[string]any{"type": "Ready", "status": "True", "lastTransitionTime": "2024-01-03T00:00:00Z"},
+		}, "status", "parents", "conditions"),
+		tt("nested array deep value", []any{
+			"2024-01-01T00:00:00Z",
+			"2024-01-02T00:00:00Z",
+			"2024-01-03T00:00:00Z",
+		}, "status", "parents", "conditions", "lastTransitionTime"),
+		tt("nested array with filter still works", []any{
+			map[string]any{"type": "Ready", "status": "True", "lastTransitionTime": "2024-01-01T00:00:00Z"},
+			map[string]any{"type": "Ready", "status": "True", "lastTransitionTime": "2024-01-03T00:00:00Z"},
+		}, "status", "parents", "conditions", "[type=Ready]"),
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

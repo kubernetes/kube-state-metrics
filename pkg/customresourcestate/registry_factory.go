@@ -629,6 +629,9 @@ func (p valuePath) getRecursive(obj any, idx int) any {
 					flattened = append(flattened, subResult)
 				}
 			}
+			if len(flattened) == 0 {
+				return nil
+			}
 			return flattened
 		}
 		return p.getRecursive(result, idx+1)

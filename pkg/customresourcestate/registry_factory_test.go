@@ -624,6 +624,30 @@ func Test_valuePath_Get(t *testing.T) {
 			assert.Equal(t, tt.want, p.Get(cr))
 		})
 	}
+
+	// Edge cases: empty intermediate arrays produce untyped nil, not typed nil slice.
+	t.Run("empty intermediate array returns untyped nil", func(t *testing.T) {
+		obj := map[string]any{
+			"status": map[string]any{
+				"parents": []any{},
+			},
+		}
+		p := mustCompilePath(t, "status", "parents", "conditions")
+		assert.Nil(t, p.Get(obj))
+	})
+
+	t.Run("array elements missing next key return nil", func(t *testing.T) {
+		obj := map[string]any{
+			"status": map[string]any{
+				"parents": []any{
+					map[string]any{"name": "p1"}, // no "conditions" key
+					map[string]any{"name": "p2"}, // no "conditions" key
+				},
+			},
+		}
+		p := mustCompilePath(t, "status", "parents", "conditions")
+		assert.Nil(t, p.Get(obj))
+	})
 }
 
 func newEachValue(t *testing.T, value float64, labels ...string) eachValue {

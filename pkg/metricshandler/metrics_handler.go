@@ -66,9 +66,13 @@ type MetricsHandler struct {
 
 	cancel func()
 
-	// mtx protects metricsWriters, curShard, curTotalShards, and storeBuilder config.
-	mtx                *sync.RWMutex
-	metricsWriters     metricsstore.MetricsWriterList
+	// mtx protects metricsWriters, writersBuilt, curShard, curTotalShards, and storeBuilder config.
+	mtx            *sync.RWMutex
+	metricsWriters metricsstore.MetricsWriterList
+	// writersBuilt is set once the writers have been built for the first time.
+	// Until then sharding is not configured, e.g. because autosharding could not
+	// derive it from the StatefulSet, and there is nothing meaningful to serve.
+	writersBuilt       bool
 	curTotalShards     int
 	curShard           int32
 	enableGZIPEncoding bool
@@ -97,6 +101,7 @@ func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	ctx, m.cancel = context.WithCancel(ctx)
 	m.storeBuilder.WithContext(ctx)
 	m.metricsWriters = m.storeBuilder.Build()
+	m.writersBuilt = true
 }
 
 // ConfigureStore applies storeBuilder configuration under mtx, then rebuilds writers.
@@ -148,7 +153,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 	klog.InfoS("Autosharding enabled with pod", "pod", klog.KRef(m.opts.Namespace, m.opts.Pod))
 	klog.InfoS("Auto detecting sharding settings")
-	ss, err := detectStatefulSet(m.kubeClient, m.opts.Pod, m.opts.Namespace)
+	ss, err := detectStatefulSet(ctx, m.kubeClient, m.opts.Pod, m.opts.Namespace)
 	if err != nil {
 		return fmt.Errorf("detect StatefulSet: %w", err)
 	}
@@ -232,7 +237,15 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if it is rebuilt mid-response.
 	m.mtx.RLock()
 	writers := m.metricsWriters
+	built := m.writersBuilt
 	m.mtx.RUnlock()
+
+	// An empty 200 would be recorded as every series of this instance going
+	// stale; a failed scrape makes the problem visible as up == 0 instead.
+	if !built {
+		http.Error(w, "metrics are not available yet: sharding is not configured", http.StatusServiceUnavailable)
+		return
+	}
 
 	resHeader := w.Header()
 	var writer io.Writer = w
@@ -356,8 +369,8 @@ func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 	return int32(nominal), nil //nolint:gosec
 }
 
-func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {
-	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(context.TODO(), podName, metav1.GetOptions{})
+func detectStatefulSet(ctx context.Context, kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {
+	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("retrieve pod %s for sharding: %w", podName, err)
 	}
@@ -368,7 +381,7 @@ func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName s
 			continue
 		}
 
-		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(context.TODO(), o.Name, metav1.GetOptions{})
+		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(ctx, o.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("retrieve shard's StatefulSet: %s/%s: %w", namespaceName, o.Name, err)
 		}

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -42,13 +43,14 @@ func (s *stubStoreBuilder) WithMetrics(prometheus.Registerer) {}
 func (s *stubStoreBuilder) WithEnabledResources([]string) error {
 	return nil
 }
-func (s *stubStoreBuilder) WithNamespaces(options.NamespaceList)     {}
-func (s *stubStoreBuilder) WithFieldSelectorFilter(string)           {}
-func (s *stubStoreBuilder) WithSharding(int32, int)                  {}
-func (s *stubStoreBuilder) WithContext(context.Context)              {}
-func (s *stubStoreBuilder) WithKubeClient(clientset.Interface)       {}
-func (s *stubStoreBuilder) WithCustomResourceClients(map[string]any) {}
-func (s *stubStoreBuilder) WithUsingAPIServerCache(bool)             {}
+func (s *stubStoreBuilder) WithNamespaces(options.NamespaceList)                     {}
+func (s *stubStoreBuilder) WithFieldSelectorFilter(string)                           {}
+func (s *stubStoreBuilder) WithSharding(int32, int)                                  {}
+func (s *stubStoreBuilder) WithContext(context.Context)                              {}
+func (s *stubStoreBuilder) WithKubeClient(clientset.Interface)                       {}
+func (s *stubStoreBuilder) WithApiextensionsClient(apiextensionsclientset.Interface) {}
+func (s *stubStoreBuilder) WithCustomResourceClients(map[string]any)                 {}
+func (s *stubStoreBuilder) WithUsingAPIServerCache(bool)                             {}
 func (s *stubStoreBuilder) WithFamilyGeneratorFilter(generator.FamilyGeneratorFilter) {
 }
 func (s *stubStoreBuilder) WithAllowAnnotations(map[string][]string) error  { return nil }

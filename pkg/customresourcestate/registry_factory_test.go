@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -609,4 +611,80 @@ func Test_compile_doesNotShareCommonLabels(t *testing.T) {
 	assert.Equal(t, "Bar", familiesV2[0].Labels[customResourceState+"_kind"])
 
 	assert.Equal(t, map[string]string{"team": "myteam"}, configured)
+}
+
+func Test_addPathLabels_starKeysAreValidLabelNames(t *testing.T) {
+	obj := map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{
+				"0team":                  "a",
+				"":                       "empty",
+				"app.kubernetes.io/name": "web",
+				gvkKindLabel:             "Spoofed",
+				gvkGroupLabel:            "spoofed.io",
+				"team":                   "tenant",
+			},
+		},
+	}
+	result := map[string]string{
+		gvkGroupLabel:   "myteam.io",
+		gvkVersionLabel: "v1",
+		gvkKindLabel:    "Foo",
+		"team":          "myteam",
+	}
+	addPathLabels(obj, map[string]valuePath{
+		"*":       mustCompilePath(t, "metadata", "labels"),
+		"label_*": mustCompilePath(t, "metadata", "labels"),
+	}, result)
+
+	assert.Equal(t, map[string]string{
+		gvkGroupLabel:                  "myteam.io",
+		gvkVersionLabel:                "v1",
+		gvkKindLabel:                   "Foo",
+		"team":                         "myteam",
+		"_0team":                       "a",
+		"app_kubernetes_io_name":       "web",
+		"label_0team":                  "a",
+		"label_":                       "empty",
+		"label_app_kubernetes_io_name": "web",
+		"label_" + gvkKindLabel:        "Spoofed",
+		"label_" + gvkGroupLabel:       "spoofed.io",
+		"label_team":                   "tenant",
+	}, result)
+}
+
+func Test_generate_starLabelsDoNotOverrideGVK(t *testing.T) {
+	families, err := compile(Resource{
+		GroupVersionKind: GroupVersionKind{Group: "myteam.io", Version: "v1", Kind: "Foo"},
+		Metrics: []Generator{{
+			Name: "info",
+			Each: Metric{Type: metric.Info, Info: &MetricInfo{MetricMeta: MetricMeta{
+				LabelsFromPath: map[string][]string{"*": {"metadata", "labels"}},
+			}}},
+		}},
+	})
+	assert.NoError(t, err)
+
+	u := &unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{
+			"name": "foo",
+			"labels": map[string]any{
+				"0team":      "a",
+				gvkKindLabel: "Spoofed",
+			},
+		},
+	}}
+	family := generate(u, families[0], klog.V(0))
+	if assert.Len(t, family.Metrics, 1) {
+		labels := map[string]string{}
+		for i, k := range family.Metrics[0].LabelKeys {
+			labels[k] = family.Metrics[0].LabelValues[i]
+		}
+		assert.Equal(t, map[string]string{
+			gvkGroupLabel:   "myteam.io",
+			gvkVersionLabel: "v1",
+			gvkKindLabel:    "Foo",
+			"_0team":        "a",
+		}, labels)
+	}
 }

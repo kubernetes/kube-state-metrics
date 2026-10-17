@@ -78,7 +78,7 @@ func TestResourceFiltering(t *testing.T) {
 	))
 	builder.WithAllowLabels(map[string][]string{})
 
-	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler := metricshandler.New(syncedHandlerOptions(), kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
 
 	// Wait for caches to fill

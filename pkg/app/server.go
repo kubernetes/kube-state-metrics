@@ -456,6 +456,11 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 	} else {
 		klog.ErrorS(err, "failed to unmarshal configFile")
 	}
+
+	// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
+	if opts.CustomResourceConfigFile == "" && opts.CustomResourceConfigFileDeprecated != "" {
+		opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
+	}
 	return opts
 }
 

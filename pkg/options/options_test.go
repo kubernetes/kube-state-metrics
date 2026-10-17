@@ -94,3 +94,47 @@ func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
 		}
 	})
 }
+
+func TestOptionsClone(t *testing.T) {
+	opts := NewOptions()
+	opts.AnnotationsAllowList = LabelsAllowList{"pods": {"team"}}
+	opts.LabelsAllowList = LabelsAllowList{"pods": {"app"}}
+	opts.MetricAllowlist = MetricSet{"kube_pod_info": {}}
+	opts.MetricDenylist = MetricSet{"kube_pod_labels": {}}
+	opts.MetricOptInList = MetricSet{"kube_pod_ips": {}}
+	opts.Resources = ResourceSet{"pods": {}}
+	opts.Namespaces = NamespaceList{"team-a"}
+	opts.NamespacesDenylist = NamespaceList{"team-b"}
+	opts.Port = 8080
+
+	c := opts.Clone()
+	c.AnnotationsAllowList["secrets"] = []string{"*"}
+	c.AnnotationsAllowList["pods"][0] = "changed"
+	c.LabelsAllowList["secrets"] = []string{"*"}
+	c.MetricAllowlist["changed"] = struct{}{}
+	c.MetricDenylist["changed"] = struct{}{}
+	c.MetricOptInList["changed"] = struct{}{}
+	c.Resources["secrets"] = struct{}{}
+	c.Namespaces[0] = "changed"
+	c.NamespacesDenylist[0] = "changed"
+	c.Port = 9090
+
+	if len(opts.AnnotationsAllowList) != 1 || opts.AnnotationsAllowList["pods"][0] != "team" {
+		t.Errorf("AnnotationsAllowList shared with clone: %v", opts.AnnotationsAllowList)
+	}
+	if len(opts.LabelsAllowList) != 1 {
+		t.Errorf("LabelsAllowList shared with clone: %v", opts.LabelsAllowList)
+	}
+	if len(opts.MetricAllowlist) != 1 || len(opts.MetricDenylist) != 1 || len(opts.MetricOptInList) != 1 {
+		t.Errorf("metric lists shared with clone: %v %v %v", opts.MetricAllowlist, opts.MetricDenylist, opts.MetricOptInList)
+	}
+	if len(opts.Resources) != 1 {
+		t.Errorf("Resources shared with clone: %v", opts.Resources)
+	}
+	if opts.Namespaces[0] != "team-a" || opts.NamespacesDenylist[0] != "team-b" {
+		t.Errorf("namespace lists shared with clone: %v %v", opts.Namespaces, opts.NamespacesDenylist)
+	}
+	if opts.Port != 8080 {
+		t.Errorf("Port changed through clone: %d", opts.Port)
+	}
+}

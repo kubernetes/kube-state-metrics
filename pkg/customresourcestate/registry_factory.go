@@ -548,14 +548,31 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 	}
 	slices.Sort(stars)
+	// Copied keys never override a label that was already set, such as a
+	// common label.
+	preset := make(map[string]struct{}, len(result))
+	for k := range result {
+		preset[k] = struct{}{}
+	}
 	for _, star := range stars {
 		m := labels[star].Get(obj)
 		if kv, ok := m.(map[string]any); ok {
-			for k, v := range kv {
+			// The keys come from the object, not from the config, so whoever can
+			// edit the object controls them. Visit them in a fixed order so that
+			// keys sanitizing to the same name resolve the same way every scrape.
+			for _, k := range slices.Sorted(maps.Keys(kv)) {
+				name := k
 				if strings.HasSuffix(star, "*") {
-					k = star[:len(star)-1] + k
+					name = star[:len(star)-1] + k
 				}
-				result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
+				name = store.SanitizeLabelName(name)
+				if !isCopiableLabelName(name) {
+					continue
+				}
+				if _, ok := preset[name]; ok {
+					continue
+				}
+				result[name] = fmt.Sprintf("%v", kv[k])
 			}
 		}
 	}
@@ -570,6 +587,22 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 		result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", value)
 	}
+}
+
+// isCopiableLabelName reports whether a sanitized label name copied from an
+// object may be emitted. A name starting with a digit is invalid and one
+// starting with "__" is reserved, and either makes the whole scrape fail to
+// parse. The GVK labels identify the resource and must not be spoofed, even
+// in metrics whose labels are resolved before the common labels are applied.
+func isCopiableLabelName(name string) bool {
+	if name == "" || (name[0] >= '0' && name[0] <= '9') || strings.HasPrefix(name, "__") {
+		return false
+	}
+	switch name {
+	case customResourceState + "_group", customResourceState + "_version", customResourceState + "_kind":
+		return false
+	}
+	return true
 }
 
 type pathOp struct {

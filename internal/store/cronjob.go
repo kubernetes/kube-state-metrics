@@ -270,7 +270,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_cronjob_schedule_invalid",
-			"Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.",
+			"Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed or never fires.",
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
@@ -384,6 +384,11 @@ func parseSchedule(schedule string, timeZone *string) (cron.Schedule, error) {
 	sched, err := cron.ParseStandard(schedule)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse cron job schedule '%s': %w", schedule, err)
+	}
+	// A schedule can parse and still never fire, e.g. "0 0 30 2 *" (Feb 30).
+	// Next then returns the zero time, which would be exported as year 1.
+	if sched.Next(time.Now()).IsZero() {
+		return nil, fmt.Errorf("cron job schedule '%s' never fires", schedule)
 	}
 	return sched, nil
 }

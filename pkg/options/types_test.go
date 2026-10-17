@@ -314,6 +314,18 @@ func TestLabelsAllowListSet(t *testing.T) {
 			Wanted: LabelsAllowList(map[string][]string{}),
 			err:    errLabelsAllowListFormat,
 		},
+		{
+			Desc:   "[invalid] missing closing bracket",
+			Value:  "pods=[app",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "[invalid] unstructured value",
+			Value:  "pods",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
 
 		{
 			Desc:   "[invalid] no comma between metrics",

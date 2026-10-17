@@ -38,6 +38,16 @@ import (
 var (
 	conditionStatuses     = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
 	allowListPatternCache sync.Map
+
+	// wildcardExcludedKeys are labels/annotations that full and partial
+	// wildcards in an allow list never match; they are only exposed when listed
+	// by their exact name. kubectl.kubernetes.io/last-applied-configuration holds
+	// a copy of the whole object as applied by client-side kubectl apply, which
+	// makes for a very large label value that changes on every apply and can
+	// contain the object's data.
+	wildcardExcludedKeys = map[string]struct{}{
+		"kubectl.kubernetes.io/last-applied-configuration": {},
+	}
 )
 
 func resourceVersionMetric(rv string) []*metric.Metric {
@@ -284,7 +294,7 @@ func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]strin
 		// only the first label can be the wildcard label
 		if l == options.LabelWildcard {
 			if i == 0 {
-				return kubeMapToPrometheusLabels(prefix, allKubeData)
+				return kubeMapToPrometheusLabels(prefix, withoutWildcardExcludedKeys(allKubeData))
 			}
 			continue
 		}
@@ -303,6 +313,9 @@ func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]strin
 			continue
 		}
 		for k, v := range allKubeData {
+			if _, excluded := wildcardExcludedKeys[k]; excluded {
+				continue
+			}
 			if re.MatchString(k) {
 				allowedKubeData[k] = v
 			}
@@ -310,6 +323,28 @@ func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]strin
 	}
 
 	return kubeMapToPrometheusLabels(prefix, allowedKubeData)
+}
+
+// withoutWildcardExcludedKeys returns kubeData without the keys a wildcard never
+// matches. kubeData is returned as is when it contains none of them.
+func withoutWildcardExcludedKeys(kubeData map[string]string) map[string]string {
+	found := false
+	for k := range wildcardExcludedKeys {
+		if _, ok := kubeData[k]; ok {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return kubeData
+	}
+	filtered := make(map[string]string, len(kubeData))
+	for k, v := range kubeData {
+		if _, excluded := wildcardExcludedKeys[k]; !excluded {
+			filtered[k] = v
+		}
+	}
+	return filtered
 }
 
 // expandWildcard expands wildcards (*) to regular expressions, up to a limited number of wildcards

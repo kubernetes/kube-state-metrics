@@ -140,7 +140,11 @@ func nextFreeLabelName(base string, count *int, used map[string]int) string {
 }
 
 func labelName(prefix, labelName string) string {
-	return prefix + "_" + lintLabelName(SanitizeLabelName(labelName))
+	sanitized := lintLabelName(SanitizeLabelName(labelName))
+	if prefix == "" {
+		return sanitized
+	}
+	return prefix + "_" + sanitized
 }
 
 // isValidLabelChar reports whether c may appear in a Prometheus label name,

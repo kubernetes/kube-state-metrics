@@ -42,13 +42,13 @@ var (
 	descNodeLabelsDefaultLabels = []string{"node"}
 )
 
-func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
-		createNodeAnnotationsGenerator(allowAnnotationsList),
+		createNodeAnnotationsGenerator(allowAnnotationsList, annotationsPrefix),
 		createNodeCreatedFamilyGenerator(),
 		createNodeDeletionTimestampFamilyGenerator(),
 		createNodeInfoFamilyGenerator(),
-		createNodeLabelsGenerator(allowLabelsList),
+		createNodeLabelsGenerator(allowLabelsList, labelsPrefix),
 		createNodeRoleFamilyGenerator(),
 		createNodeSpecPodCIDRFamilyGenerator(),
 		createNodeSpecTaintFamilyGenerator(),
@@ -182,7 +182,7 @@ func createNodeInfoFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.FamilyGenerator {
+func createNodeAnnotationsGenerator(allowAnnotationsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descNodeAnnotationsName,
 		descNodeAnnotationsHelp,
@@ -193,7 +193,7 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 			if len(allowAnnotationsList) == 0 {
 				return &metric.Family{}
 			}
-			annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", n.Annotations, allowAnnotationsList)
+			annotationKeys, annotationValues := createPrometheusLabelKeysValues(prefix, n.Annotations, allowAnnotationsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{
@@ -207,7 +207,7 @@ func createNodeAnnotationsGenerator(allowAnnotationsList []string) generator.Fam
 	)
 }
 
-func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerator {
+func createNodeLabelsGenerator(allowLabelsList []string, prefix string) generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		descNodeLabelsName,
 		descNodeLabelsHelp,
@@ -218,7 +218,7 @@ func createNodeLabelsGenerator(allowLabelsList []string) generator.FamilyGenerat
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
 			}
-			labelKeys, labelValues := createPrometheusLabelKeysValues("label", n.Labels, allowLabelsList)
+			labelKeys, labelValues := createPrometheusLabelKeysValues(prefix, n.Labels, allowLabelsList)
 			return &metric.Family{
 				Metrics: []*metric.Metric{
 					{

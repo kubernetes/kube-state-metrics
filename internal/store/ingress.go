@@ -41,7 +41,7 @@ var (
 	descIngressLabelsDefaultLabels = []string{"namespace", "ingress"}
 )
 
-func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_ingress_info",
@@ -78,7 +78,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", i.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, i.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -100,7 +100,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", i.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, i.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

@@ -136,6 +136,71 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 	}
 }
 
+func TestReplaceRemovesUnlistedObjects(t *testing.T) {
+	ms := NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface { return nil })
+
+	for _, uid := range []types.UID{"keep", "drop"} {
+		if err := ms.Add(&v1.Service{UID: uid}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := ms.Replace([]any{&v1.Service{UID: "keep"}, &v1.Service{UID: "new"}}, "1"); err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[types.UID]bool{}
+	ms.metrics.Range(func(key, _ any) bool {
+		got[key.(types.UID)] = true
+		return true
+	})
+	want := map[types.UID]bool{"keep": true, "new": true}
+	if len(got) != len(want) || !got["keep"] || !got["new"] {
+		t.Fatalf("expected store keys %v, got %v", want, got)
+	}
+}
+
+// A relist of unchanged objects must never be observed as a partially filled
+// store by a concurrent reader.
+func TestReplaceDoesNotExposePartialStore(t *testing.T) {
+	const nObjects = 500
+
+	ms := NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface { return nil })
+	list := make([]any, nObjects)
+	for i := range list {
+		list[i] = &v1.Service{UID: types.UID(fmt.Sprintf("uid-%d", i))}
+	}
+	if err := ms.Replace(list, "1"); err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 50 {
+			if err := ms.Replace(list, "1"); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}()
+
+	for {
+		select {
+		case <-done:
+			return
+		default:
+		}
+		n := 0
+		ms.metrics.Range(func(_, _ any) bool {
+			n++
+			return true
+		})
+		if n != nObjects {
+			t.Fatalf("expected %d objects during relist, observed %d", nObjects, n)
+		}
+	}
+}
+
 func BenchmarkAdd(b *testing.B) {
 	const nFamilies = 50
 

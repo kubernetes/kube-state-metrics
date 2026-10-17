@@ -399,6 +399,51 @@ func TestLabelsAllowListSet(t *testing.T) {
 			Wanted: LabelsAllowList(map[string][]string{}),
 			err:    errLabelsAllowListMultipleWildcards,
 		},
+		{
+			// Used to panic: index out of range [12] with length 12.
+			Desc:  "multi-byte rune inside a label",
+			Value: "pods=[naïve]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"pods": {
+					"naïve",
+				},
+			}),
+		},
+		{
+			// Used to yield "ö]" — the closing bracket was swallowed into the
+			// label because firstWordPos was a byte offset.
+			Desc:  "multi-byte rune in the last label",
+			Value: "pods=[a,ö]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"pods": {
+					"a",
+					"ö",
+				},
+			}),
+		},
+		{
+			// Used to be rejected as malformed: the lookahead from '=' read one
+			// rune too far and saw 'a' instead of '['.
+			Desc:  "multi-byte rune in the resource name",
+			Value: "pöds=[a,b]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"pöds": {
+					"a",
+					"b",
+				},
+			}),
+		},
+		{
+			// Same spurious rejection, triggered from the label side.
+			Desc:  "multi-byte rune in the first label",
+			Value: "pods=[ö,a]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"pods": {
+					"ö",
+					"a",
+				},
+			}),
+		},
 	}
 
 	for _, test := range tests {

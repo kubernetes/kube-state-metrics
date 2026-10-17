@@ -76,6 +76,8 @@ func TestJobStore(t *testing.T) {
 		# TYPE kube_job_status_completion_time gauge
 		# HELP kube_job_status_failed [STABLE] The number of pods which reached Phase Failed and the reason for failure.
 		# TYPE kube_job_status_failed gauge
+		# HELP kube_job_status_failure_reason The reason a Job's Failed condition is currently set, if any. Emitted only for the reason that is actually set; a missing series does not mean the reason is false. An unrecognized reason is reported as Other.
+		# TYPE kube_job_status_failure_reason gauge
 		# HELP kube_job_status_start_time [STABLE] StartTime represents time when the job was acknowledged by the Job Manager.
 		# TYPE kube_job_status_start_time gauge
 		# HELP kube_job_status_succeeded [STABLE] The number of pods which reached Phase Succeeded.
@@ -209,6 +211,7 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded"} 1
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="DeadlineExceeded"} 0
 				kube_job_status_failed{job_name="FailedJob1",namespace="ns1",reason="Evicted"} 0
+				kube_job_status_failure_reason{job_name="FailedJob1",namespace="ns1",reason="BackoffLimitExceeded"} 1
 				kube_job_status_ready{job_name="FailedJob1",namespace="ns1"} 0
 				kube_job_status_start_time{job_name="FailedJob1",namespace="ns1"} 1.495807207e+09
 				kube_job_status_succeeded{job_name="FailedJob1",namespace="ns1"} 0
@@ -360,6 +363,35 @@ func TestJobStore(t *testing.T) {
 				kube_job_status_failed{job_name="job-with-ready-pods",namespace="ns1"} 0
 				kube_job_status_succeeded{job_name="job-with-ready-pods",namespace="ns1"} 0
 				kube_job_status_ready{job_name="job-with-ready-pods",namespace="ns1"} 1
+`,
+		},
+		{
+			Obj: &v1batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "FailedJobUnknownReason",
+					Namespace: "ns1",
+				},
+				Status: v1batch.JobStatus{
+					Failed: 1,
+					Conditions: []v1batch.JobCondition{
+						{Type: v1batch.JobFailed, Status: v1.ConditionTrue, Reason: "PodInitializing"},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_job_owner{job_name="FailedJobUnknownReason",namespace="ns1",owner_is_controller="",owner_kind="",owner_name=""} 1
+				kube_job_failed{condition="false",job_name="FailedJobUnknownReason",namespace="ns1"} 0
+				kube_job_failed{condition="true",job_name="FailedJobUnknownReason",namespace="ns1"} 1
+				kube_job_failed{condition="unknown",job_name="FailedJobUnknownReason",namespace="ns1"} 0
+				kube_job_info{job_name="FailedJobUnknownReason",namespace="ns1"} 1
+				kube_job_status_active{job_name="FailedJobUnknownReason",namespace="ns1"} 0
+				kube_job_status_failed{job_name="FailedJobUnknownReason",namespace="ns1",reason="BackoffLimitExceeded"} 0
+				kube_job_status_failed{job_name="FailedJobUnknownReason",namespace="ns1",reason="DeadlineExceeded"} 0
+				kube_job_status_failed{job_name="FailedJobUnknownReason",namespace="ns1",reason="Evicted"} 0
+				kube_job_status_failed{job_name="FailedJobUnknownReason",namespace="ns1",reason=""} 1
+				kube_job_status_failure_reason{job_name="FailedJobUnknownReason",namespace="ns1",reason="Other"} 1
+				kube_job_status_ready{job_name="FailedJobUnknownReason",namespace="ns1"} 0
+				kube_job_status_succeeded{job_name="FailedJobUnknownReason",namespace="ns1"} 0
 `,
 		},
 	}

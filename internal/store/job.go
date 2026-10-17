@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"slices"
 	"strconv"
 
 	basemetrics "k8s.io/component-base/metrics"
@@ -250,6 +251,7 @@ func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 				}
 			}),
 		),
+		createJobStatusFailureReasonFamilyGenerator(),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_job_status_active",
 			"The number of actively running pods.",
@@ -478,4 +480,44 @@ func failureReason(jc *v1batch.JobCondition, reason string) bool {
 		return false
 	}
 	return jc.Reason == reason
+}
+
+// createJobStatusFailureReasonFamilyGenerator builds kube_job_status_failure_reason,
+// which reports only the failure reason that is actually set (with an Other
+// fallback), unlike kube_job_status_failed's per-known-reason 0/1 breakdown.
+func createJobStatusFailureReasonFamilyGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_job_status_failure_reason",
+		"The reason a Job's Failed condition is currently set, if any. Emitted only for the reason that is actually set; a missing series does not mean the reason is false. An unrecognized reason is reported as Other.",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapJobFunc(func(j *v1batch.Job) *metric.Family {
+			var ms []*metric.Metric
+
+			seenReasons := map[string]bool{}
+			for _, c := range j.Status.Conditions {
+				if c.Type != v1batch.JobFailed || c.Reason == "" {
+					continue
+				}
+				reason := c.Reason
+				if !slices.Contains(jobFailureReasons, reason) {
+					reason = "Other"
+				}
+				if seenReasons[reason] {
+					continue
+				}
+				seenReasons[reason] = true
+				ms = append(ms, &metric.Metric{
+					LabelKeys:   []string{"reason"},
+					LabelValues: []string{reason},
+					Value:       1,
+				})
+			}
+
+			return &metric.Family{
+				Metrics: ms,
+			}
+		}),
+	)
 }

@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -198,6 +199,42 @@ func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 						Value: float64(s.DeletionTimestamp.Unix()),
 					})
 				}
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			"kube_service_spec_ports",
+			"Service ports. One series for each port",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapSvcFunc(func(s *v1.Service) *metric.Family {
+				ms := []*metric.Metric{}
+
+				keys := []string{"port_name", "port_protocol", "port_number", "node_port_number"}
+
+				for _, port := range s.Spec.Ports {
+					protocol := v1.ProtocolTCP
+					if port.Protocol != "" {
+						protocol = port.Protocol
+					}
+
+					nodePortNumber := ""
+					if port.NodePort > 0 {
+						nodePortNumber = strconv.FormatInt(int64(port.NodePort), 10)
+					}
+
+					values := []string{port.Name, string(protocol), strconv.FormatInt(int64(port.Port), 10), nodePortNumber}
+
+					ms = append(ms, &metric.Metric{
+						LabelValues: values,
+						LabelKeys:   keys,
+						Value:       1,
+					})
+				}
+
 				return &metric.Family{
 					Metrics: ms,
 				}

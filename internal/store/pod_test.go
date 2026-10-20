@@ -862,6 +862,67 @@ func TestPodStore(t *testing.T) {
 			},
 		},
 		{
+			// The kubelet reports a terminated state without timestamps when it
+			// lost track of a container; those must not be emitted as year 1.
+			Obj: &v1.Pod{
+				Name:      "pod_unknown",
+				Namespace: "ns",
+				UID:       "uid_unknown",
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "container",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason:   "ContainerStatusUnknown",
+									ExitCode: 137,
+								},
+							},
+							LastTerminationState: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason:   "ContainerStatusUnknown",
+									ExitCode: 137,
+								},
+							},
+						},
+					},
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "init",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason:   "ContainerStatusUnknown",
+									ExitCode: 137,
+								},
+							},
+							LastTerminationState: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									Reason:   "ContainerStatusUnknown",
+									ExitCode: 137,
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_container_state_started [STABLE] Start time in unix timestamp for a pod container.
+				# HELP kube_pod_container_status_last_terminated_timestamp Last terminated time for a pod container in unix timestamp.
+				# HELP kube_pod_init_container_state_started Start time in unix timestamp for a pod init container.
+				# HELP kube_pod_init_container_status_last_terminated_timestamp Last terminated time for a pod init container in unix timestamp.
+				# TYPE kube_pod_container_state_started gauge
+				# TYPE kube_pod_container_status_last_terminated_timestamp gauge
+				# TYPE kube_pod_init_container_state_started gauge
+				# TYPE kube_pod_init_container_status_last_terminated_timestamp gauge
+			`,
+			MetricNames: []string{
+				"kube_pod_container_state_started",
+				"kube_pod_container_status_last_terminated_timestamp",
+				"kube_pod_init_container_state_started",
+				"kube_pod_init_container_status_last_terminated_timestamp",
+			},
+		},
+		{
 			Obj: &v1.Pod{
 				Name:      "pod4",
 				Namespace: "ns4",

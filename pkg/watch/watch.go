@@ -33,6 +33,7 @@ type ListWatchMetrics struct {
 	ListRequestsTotal  *prometheus.CounterVec
 	ListObjectsLimit   *prometheus.GaugeVec
 	ListObjectsCurrent *prometheus.GaugeVec
+	ObjectsDropped     *prometheus.CounterVec
 }
 
 // NewListWatchMetrics takes in a prometheus registry and initializes
@@ -65,6 +66,13 @@ func NewListWatchMetrics(r prometheus.Registerer) *ListWatchMetrics {
 			prometheus.GaugeOpts{
 				Name: "kube_state_metrics_list_objects_limit",
 				Help: "Number of resource list limit in kube-state-metrics",
+			},
+			[]string{"resource"},
+		),
+		ObjectsDropped: promauto.With(r).NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "kube_state_metrics_object_limit_dropped_total",
+				Help: "Number of objects not tracked by kube-state-metrics because the object limit was reached",
 			},
 			[]string{"resource"},
 		),

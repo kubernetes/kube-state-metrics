@@ -20,6 +20,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/spf13/cobra"
+	_ "k8s.io/component-base/logs/json/register"
+	"k8s.io/klog/v2"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
@@ -93,4 +96,24 @@ func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
 			t.Fatalf("expected deprecated field to retain its value, got %q", opts.CustomResourceConfigFileDeprecated)
 		}
 	})
+}
+
+func TestApplyLoggingFormatKeepsVerbosity(t *testing.T) {
+	opts := NewOptions()
+	cmd := &cobra.Command{}
+	opts.AddFlags(cmd)
+	if err := cmd.Flags().Parse([]string{"--logging-format=json", "-v=3"}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := opts.ApplyLoggingFormat(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !klog.V(3).Enabled() {
+		t.Error("expected -v=3 to survive switching to the json format")
+	}
+	if klog.V(4).Enabled() {
+		t.Error("expected verbosity 4 to stay disabled")
+	}
 }

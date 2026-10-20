@@ -103,7 +103,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 					}
 					// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
 				} else if opts.CustomResourceConfigFileDeprecated != "" {
-					klog.Warning("The 'custom_resource_config_file' config key is deprecated and will be removed in a future release; use 'custom_resource_state_config_file' instead")
+					klog.InfoS("The 'custom_resource_config_file' config key is deprecated and will be removed in a future release; use 'custom_resource_state_config_file' instead")
 					if opts.CustomResourceConfigFile == "" {
 						opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
 					}

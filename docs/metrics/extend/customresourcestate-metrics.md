@@ -204,6 +204,8 @@ spec:
           labelsFromPath:
             # whole objects may be copied into labels by prefixing with "*"
             # *anything will be copied into labels, with the highest sorted * strings first
+            # copied keys are turned into valid label names (a leading digit gets a "_" prefix)
+            # and never replace the customresource_group, customresource_version and customresource_kind labels
             "*": [metadata, labels]
             # a prefix before the asterisk will be used as a label prefix
             "lorem_*": [metadata, annotations]

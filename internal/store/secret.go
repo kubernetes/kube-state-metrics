@@ -40,7 +40,7 @@ var (
 	descSecretLabelsDefaultLabels = []string{"namespace", "secret"}
 )
 
-func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string, annotationsPrefix, labelsPrefix string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_secret_info",
@@ -86,7 +86,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 				if len(allowAnnotationsList) == 0 {
 					return &metric.Family{}
 				}
-				annotationKeys, annotationValues := createPrometheusLabelKeysValues("annotation", s.Annotations, allowAnnotationsList)
+				annotationKeys, annotationValues := createPrometheusLabelKeysValues(annotationsPrefix, s.Annotations, allowAnnotationsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
@@ -109,7 +109,7 @@ func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gene
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
 				}
-				labelKeys, labelValues := createPrometheusLabelKeysValues("label", s.Labels, allowLabelsList)
+				labelKeys, labelValues := createPrometheusLabelKeysValues(labelsPrefix, s.Labels, allowLabelsList)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{

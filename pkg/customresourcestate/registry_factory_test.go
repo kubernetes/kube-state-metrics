@@ -154,6 +154,34 @@ func Test_addPathLabels(t *testing.T) {
 	}
 }
 
+// Keys copied with a "*" label come from the object, so they must not produce
+// label names that break the scrape or spoof labels that are already set.
+func Test_addPathLabels_wildcardKeys(t *testing.T) {
+	obj := map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{
+				"1password.com/vault":  "a",
+				"__name__":             "evil",
+				"customresource_kind":  "Spoofed",
+				"customresource.group": "spoofed.io",
+				"team":                 "copied",
+				"a.b":                  "first",
+				"a_b":                  "second",
+				"ok":                   "yes",
+			},
+		},
+	}
+	m := map[string]string{"team": "common"}
+	addPathLabels(obj, map[string]valuePath{
+		"*": mustCompilePath(t, "metadata", "labels"),
+	}, m)
+	assert.Equal(t, map[string]string{
+		"team": "common",
+		"a_b":  "second",
+		"ok":   "yes",
+	}, m)
+}
+
 // An index past the end of a list does not resolve, so it must be skipped like
 // any other unresolvable path rather than surfacing as a label value.
 func Test_addPathLabels_indexOutOfRange(t *testing.T) {

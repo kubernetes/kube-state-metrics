@@ -140,4 +140,7 @@ var InitCommand = &cobra.Command{
 	Short: "Add-on agent to generate and expose cluster-level metrics.",
 	Long:  "kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects.",
 	Args:  cobra.NoArgs,
+	// A rejected option is reported on its own; dumping the full flag usage
+	// after it buries the message.
+	SilenceUsage: true,
 }

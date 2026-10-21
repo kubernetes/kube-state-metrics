@@ -19,13 +19,13 @@ package internal
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
@@ -46,12 +46,12 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Every watched file gets its own viper instance, and viper runs each
-	// OnConfigChange callback on its own goroutine. They all restart KSM through
-	// the same ctx and cancel, and a ConfigMap holding more than one watched file
-	// updates them together, so the callbacks have to take turns. Otherwise one
-	// cancel is overwritten before it is used, the instance it belonged to is
-	// never stopped, and two of them contend for the listen ports.
+	// Every watched file gets its own watcher, and each watcher runs its
+	// callback on its own goroutine. They all restart KSM through the same ctx
+	// and cancel, and a ConfigMap holding more than one watched file updates
+	// them together, so the callbacks have to take turns. Otherwise one cancel
+	// is overwritten before it is used, the instance it belonged to is never
+	// stopped, and two of them contend for the listen ports.
 	var reloadMu sync.Mutex
 	restart := func(e fsnotify.Event) {
 		reloadMu.Lock()
@@ -66,86 +66,59 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	}
 
 	if file := options.GetConfigFile(*opts); file != "" {
-		cfgViper := viper.New()
-		cfgViper.SetConfigType("yaml")
-		cfgViper.SetConfigFile(file)
-		var cfgViperReadInConfigErr error
-		if cfgViperReadInConfigErr = cfgViper.ReadInConfig(); cfgViperReadInConfigErr != nil {
-			if errors.Is(cfgViperReadInConfigErr, viper.ConfigFileNotFoundError{}) {
-				klog.ErrorS(cfgViperReadInConfigErr, "Options configuration file not found at startup", "file", file)
-			} else if _, isNotExisterr := os.Stat(filepath.Clean(file)); isNotExisterr != nil {
-				// TODO: Remove this check once viper.ConfigFileNotFoundError is working as expected, see this issue -
-				// https://github.com/spf13/viper/issues/1783
-				klog.ErrorS(isNotExisterr, "Options configuration file not found at startup", "file", file)
+		// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
+		if configFile, err := os.ReadFile(filepath.Clean(file)); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				klog.ErrorS(err, "Options configuration file not found at startup", "file", file)
 			} else {
-				klog.ErrorS(cfgViperReadInConfigErr, "Error reading options configuration file", "file", file)
+				klog.ErrorS(err, "Error reading options configuration file", "file", file)
 			}
 			if !opts.ContinueWithoutConfig {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
-		}
-		cfgViper.OnConfigChange(restart)
-		cfgViper.WatchConfig()
-
-		if cfgViperReadInConfigErr == nil {
-			// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
-			configFile, err := os.ReadFile(filepath.Clean(file))
-			if err != nil {
-				klog.ErrorS(err, "failed to read options configuration file", "file", file)
-				if !opts.ContinueWithoutConfig {
-					klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-				}
-			} else {
-				if err := yaml.Unmarshal(configFile, opts); err != nil {
-					klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
-					if !opts.ContinueWithoutConfig {
-						klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-					}
-					// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
-				} else if opts.CustomResourceConfigFileDeprecated != "" {
-					klog.Warning("The 'custom_resource_config_file' config key is deprecated and will be removed in a future release; use 'custom_resource_state_config_file' instead")
-					if opts.CustomResourceConfigFile == "" {
-						opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
-					}
-				}
+		} else if err := yaml.Unmarshal(configFile, opts); err != nil {
+			klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
+			if !opts.ContinueWithoutConfig {
+				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
+			// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
+		} else if opts.CustomResourceConfigFileDeprecated != "" {
+			klog.Warning("The 'custom_resource_config_file' config key is deprecated and will be removed in a future release; use 'custom_resource_state_config_file' instead")
+			if opts.CustomResourceConfigFile == "" {
+				opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
+			}
+		}
+		if err := watchFile(file, restart); err != nil {
+			klog.ErrorS(err, "Failed to watch options configuration file", "file", file)
 		}
 	}
 	if opts.CustomResourceConfigFile != "" {
-		crcViper := viper.New()
-		crcViper.SetConfigType("yaml")
-		crcViper.SetConfigFile(opts.CustomResourceConfigFile)
-		if cfgViperReadInConfigErr := crcViper.ReadInConfig(); cfgViperReadInConfigErr != nil {
-			if errors.Is(cfgViperReadInConfigErr, viper.ConfigFileNotFoundError{}) {
-				klog.ErrorS(cfgViperReadInConfigErr, "Custom resource configuration file not found at startup", "file", opts.CustomResourceConfigFile)
-			} else if _, isNotExisterr := os.Stat(filepath.Clean(opts.CustomResourceConfigFile)); isNotExisterr != nil {
-				// Adding this check in addition to the above since viper.ConfigFileNotFoundError is not working as expected due to this issue -
-				// https://github.com/spf13/viper/issues/1783
-				klog.ErrorS(isNotExisterr, "Custom resource configuration file not found at startup", "file", opts.CustomResourceConfigFile)
+		if err := readYAMLFile(opts.CustomResourceConfigFile); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				klog.ErrorS(err, "Custom resource configuration file not found at startup", "file", opts.CustomResourceConfigFile)
 			} else {
-				klog.ErrorS(cfgViperReadInConfigErr, "Error reading Custom resource configuration file", "file", opts.CustomResourceConfigFile)
+				klog.ErrorS(err, "Error reading Custom resource configuration file", "file", opts.CustomResourceConfigFile)
 			}
 			if !opts.ContinueWithoutCustomResourceConfigFile {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
 		}
-		crcViper.OnConfigChange(restart)
-		crcViper.WatchConfig()
+		if err := watchFile(opts.CustomResourceConfigFile, restart); err != nil {
+			klog.ErrorS(err, "Failed to watch Custom resource configuration file", "file", opts.CustomResourceConfigFile)
+		}
 	}
 	if opts.Kubeconfig != "" {
-		kubecfgViper := viper.New()
-		kubecfgViper.SetConfigType("yaml")
-		kubecfgViper.SetConfigFile(opts.Kubeconfig)
-		if err := kubecfgViper.ReadInConfig(); err != nil {
-			if errors.Is(err, viper.ConfigFileNotFoundError{}) {
+		if err := readYAMLFile(opts.Kubeconfig); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
 				klog.ErrorS(err, "kubeconfig file not found", "file", opts.Kubeconfig)
 			} else {
 				klog.ErrorS(err, "Error reading kubeconfig file", "file", opts.Kubeconfig)
 			}
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
-		kubecfgViper.OnConfigChange(restart)
-		kubecfgViper.WatchConfig()
+		if err := watchFile(opts.Kubeconfig, restart); err != nil {
+			klog.ErrorS(err, "Failed to watch kubeconfig file", "file", opts.Kubeconfig)
+		}
 	}
 	klog.InfoS("Starting kube-state-metrics")
 	KSMRunOrDie(ctx)

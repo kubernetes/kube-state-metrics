@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -40,6 +41,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -60,9 +62,14 @@ const ResourceDiscoveryTimeout = 10 * time.Second
 // ResourceDiscoveryInterval is the interval for the resource discovery.
 const ResourceDiscoveryInterval = 100 * time.Millisecond
 
+// storeSyncPollInterval is how often a store sync wait checks reflector progress.
+const storeSyncPollInterval = 100 * time.Millisecond
+
 // Make sure the internal Builder implements the public BuilderInterface.
 // New Builder methods should be added to the public BuilderInterface.
 var _ ksmtypes.BuilderInterface = &Builder{}
+
+var _ ksmtypes.StoreSyncBuilder = &Builder{}
 
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
@@ -92,6 +99,20 @@ type Builder struct {
 	objectLimit        int64
 
 	GetGVKStopChan func(gvk string) chan struct{}
+
+	// reflectorsMu guards reflectors, which Build() replaces while
+	// WaitForStoresSync() reads it outside the caller's own lock.
+	reflectorsMu sync.Mutex
+	reflectors   []startedReflector
+	// beforeSyncPoll runs at the start of each sync poll. Tests cancel the wait context from it.
+	beforeSyncPoll func()
+}
+
+// startedReflector is a reflector from the latest Build and the stop channel
+// passed to Run. A closed stop channel with an empty last sync will never list.
+type startedReflector struct {
+	reflector *cache.Reflector
+	stopCh    <-chan struct{}
 }
 
 // NewBuilder returns a new builder.
@@ -326,6 +347,10 @@ func (b *Builder) Build() metricsstore.MetricsWriterList {
 		panic("familyGeneratorFilter should not be nil")
 	}
 
+	b.reflectorsMu.Lock()
+	b.reflectors = nil
+	b.reflectorsMu.Unlock()
+
 	var metricsWriters metricsstore.MetricsWriterList
 	var activeStoreNames []string
 
@@ -352,6 +377,10 @@ func (b *Builder) BuildStores() [][]cache.Store {
 	if b.familyGeneratorFilter == nil {
 		panic("familyGeneratorFilter should not be nil")
 	}
+
+	b.reflectorsMu.Lock()
+	b.reflectors = nil
+	b.reflectorsMu.Unlock()
 
 	var allStores [][]cache.Store
 	var activeStoreNames []string
@@ -753,12 +782,120 @@ func (b *Builder) startReflector(
 ) {
 	instrumentedListWatch := watch.NewInstrumentedListerWatcher(listWatcher, b.listWatchMetrics, reflect.TypeOf(expectedType).String(), useAPIServerCache, objectLimit, client)
 	reflector := cache.NewReflectorWithOptions(sharding.NewShardedListWatch(b.shard, b.totalShards, instrumentedListWatch), expectedType, store, cache.ReflectorOptions{ResyncPeriod: 0})
+	var stopCh <-chan struct{}
 	if cr, ok := expectedType.(*unstructured.Unstructured); ok {
 		gvkStopCh := b.GetGVKStopChan(cr.GroupVersionKind().String())
-		go reflector.Run(newCRReflectorStopCh(b.ctx, gvkStopCh))
+		stopCh = newCRReflectorStopCh(b.ctx, gvkStopCh)
 	} else {
-		go reflector.Run(b.ctx.Done())
+		stopCh = b.ctx.Done()
 	}
+	b.reflectorsMu.Lock()
+	b.reflectors = append(b.reflectors, startedReflector{reflector: reflector, stopCh: stopCh})
+	b.reflectorsMu.Unlock()
+	go reflector.Run(stopCh)
+}
+
+// WaitForStoresSync waits until each reflector has listed or stopped.
+// The sync timer is separate from ctx, so a parent deadline is ctx.Err(), not ErrStoreSyncTimeout.
+func (b *Builder) WaitForStoresSync(ctx context.Context, timeout time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if timeout <= 0 {
+		return ksmtypes.ErrStoreSyncTimeout
+	}
+
+	b.reflectorsMu.Lock()
+	reflectors := slices.Clone(b.reflectors)
+	b.reflectorsMu.Unlock()
+
+	if len(reflectors) == 0 {
+		return nil
+	}
+
+	syncCtx, syncCancel := context.WithTimeoutCause(ctx, timeout, ksmtypes.ErrStoreSyncTimeout)
+	defer syncCancel()
+
+	var stopped int
+	err := wait.PollUntilContextCancel(syncCtx, storeSyncPollInterval, true, func(context.Context) (bool, error) {
+		if b.beforeSyncPoll != nil {
+			b.beforeSyncPoll()
+		}
+		stopped = 0
+		allSynced := true
+		for _, started := range reflectors {
+			if started.reflector.LastSyncResourceVersion() != "" {
+				continue
+			}
+			select {
+			case <-started.stopCh:
+				if started.reflector.LastSyncResourceVersion() == "" {
+					stopped++
+				}
+			default:
+				allSynced = false
+			}
+		}
+		return allSynced, nil
+	})
+	// A canceled parent wins over a poll that found every reflector listed or stopped.
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	if err == nil {
+		if stopped > 0 {
+			klog.InfoS("Reflectors stopped before listing", "count", stopped)
+		}
+		return nil
+	}
+	if errors.Is(context.Cause(syncCtx), ksmtypes.ErrStoreSyncTimeout) {
+		return ksmtypes.ErrStoreSyncTimeout
+	}
+	return err
+}
+
+// WaitForStoreProgress returns when any reflector has listed, including an empty list,
+// when every reflector has stopped, or when the reflector set is empty.
+func (b *Builder) WaitForStoreProgress(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	b.reflectorsMu.Lock()
+	reflectors := slices.Clone(b.reflectors)
+	b.reflectorsMu.Unlock()
+
+	if len(reflectors) == 0 {
+		return nil
+	}
+
+	err := wait.PollUntilContextCancel(ctx, storeSyncPollInterval, true, func(context.Context) (bool, error) {
+		if b.beforeSyncPoll != nil {
+			b.beforeSyncPoll()
+		}
+		return reflectorProgress(reflectors), nil
+	})
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	return err
+}
+
+// reflectorProgress reports whether any reflector has finished a list or all have stopped.
+// A list of zero objects counts once LastSyncResourceVersion is set.
+func reflectorProgress(reflectors []startedReflector) bool {
+	stopped := 0
+	for _, started := range reflectors {
+		if started.reflector.LastSyncResourceVersion() != "" {
+			return true
+		}
+		select {
+		case <-started.stopCh:
+			stopped++
+		default:
+		}
+	}
+	return stopped == len(reflectors)
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

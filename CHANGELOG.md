@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* [CHANGE] `--store-sync-timeout` defaults to 30s. That value caps the wait for stores to finish their initial list, not all of startup. Process start and a config-file reload stay unready until the first writer install. An in-process rebuild keeps the previous writers during that wait, and a timeout can serve partial metrics. Rebuilds in one burst share a sync deadline so later requests cannot postpone install forever.
+
 ## v2.20.0 / 2026-08-16
 
 NOTE: Custom Resource State (CRS) metrics are now feature-frozen; no new CRS features will be accepted going forward. See [#3050](https://github.com/kubernetes/kube-state-metrics/pull/3050) for details.

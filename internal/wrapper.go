@@ -35,6 +35,8 @@ import (
 
 // RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
 func RunKubeStateMetricsWrapper(opts *options.Options) {
+	// Save the flag value before this wrapper unmarshals YAML into the same opts on every reload.
+	opts.CaptureStoreSyncTimeoutBaseline()
 
 	KSMRunOrDie := func(ctx context.Context) {
 		if err := app.RunKubeStateMetricsWrapper(ctx, opts); err != nil {

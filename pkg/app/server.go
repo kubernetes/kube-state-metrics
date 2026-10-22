@@ -138,7 +138,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	})
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
+	opts.CaptureStoreSyncTimeoutBaseline()
 	got := options.GetConfigFile(*opts)
+	var fileTimeout *time.Duration
 	if got != "" {
 		if _, err := os.Stat(filepath.Clean(got)); err != nil {
 			klog.ErrorS(err, "encountered error while processing the file", "file", got)
@@ -164,10 +166,27 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 				configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
 				hash := md5HashAsMetricValue(configFile)
 				configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+				parsed, err := storeSyncTimeoutFromFile(configFile)
+				if err != nil {
+					return err
+				}
+				fileTimeout = parsed
 			}
 			opts = configureResourcesAndMetrics(opts, configFile)
 			klog.InfoS("Using config file", "file", got)
 		}
+	}
+
+	opts.ResolveStoreSyncTimeout(fileTimeout)
+	if opts.StoreSyncTimeout < 0 {
+		if fileTimeout != nil {
+			klog.ErrorS(fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", opts.StoreSyncTimeout), "invalid store sync timeout in config file")
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
+			klog.InfoS("invalid store sync timeout, waiting for the config file to be corrected")
+			<-ctx.Done()
+			return ctx.Err()
+		}
+		return fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", opts.StoreSyncTimeout)
 	}
 
 	if opts.AutoGoMemlimit {
@@ -346,7 +365,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		)
 	}
 
-	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, kubeConfig)
+	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, m, opts.AuthFilter, kubeConfig)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
 	telemetryServer := http.Server{
 		Handler:           telemetryMux,
@@ -459,7 +478,7 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 	return opts
 }
 
-func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
+func buildTelemetryServer(registry prometheus.Gatherer, m *metricshandler.MetricsHandler, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	loghandler := logr.ToSlogHandler(klog.Background())
@@ -516,8 +535,14 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 		mux.Handle(path, h)
 	}
 
-	// Add readyzPath
+	// Add readyzPath on the telemetry server. Readiness probes must target
+	// opts.TelemetryPort (default 8081), not the main metrics port.
 	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if !m.Ready() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
+			return
+		}
 		count, err := util.GatherAndCount(registry)
 		if err != nil || count == 0 {
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -576,6 +601,17 @@ func handleClusterDelegationForProber(client kubernetes.Interface, probeType str
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(http.StatusText(http.StatusOK)))
 	}
+}
+
+// storeSyncTimeoutFromFile reports the file's store_sync_timeout when the key is present.
+func storeSyncTimeoutFromFile(content []byte) (*time.Duration, error) {
+	var parsed struct {
+		StoreSyncTimeout *time.Duration `yaml:"store_sync_timeout"`
+	}
+	if err := yaml.Unmarshal(content, &parsed); err != nil {
+		return nil, err
+	}
+	return parsed.StoreSyncTimeout, nil
 }
 
 func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {

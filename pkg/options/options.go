@@ -38,6 +38,10 @@ var (
 	defaultServerReadHeaderTimeout = 5 * time.Second
 )
 
+// DefaultStoreSyncTimeout caps how long a rebuild waits for stores to list.
+// Process start and config reload stay unready until the first install; an in-process rebuild keeps the previous writers.
+const DefaultStoreSyncTimeout = 30 * time.Second
+
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
 	AnnotationsAllowList LabelsAllowList `yaml:"annotations_allow_list"`
@@ -78,6 +82,10 @@ type Options struct {
 	ServerWriteTimeout      time.Duration `yaml:"server_write_timeout"`
 	ServerIdleTimeout       time.Duration `yaml:"server_idle_timeout"`
 	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
+	StoreSyncTimeout        time.Duration `yaml:"store_sync_timeout"`
+	// storeSyncTimeoutBaseline is the CLI or flag default, captured before the first YAML merge.
+	storeSyncTimeoutBaseline    time.Duration
+	storeSyncTimeoutBaselineSet bool
 
 	Shard                int32 `yaml:"shard"`
 	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
@@ -88,6 +96,27 @@ type Options struct {
 	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
 	ObjectLimit          int64 `yaml:"object_limit"`
 	AuthFilter           bool  `yaml:"auth_filter"`
+}
+
+// CaptureStoreSyncTimeoutBaseline records the CLI or flag default once.
+// Later YAML merges do not overwrite it.
+func (o *Options) CaptureStoreSyncTimeoutBaseline() {
+	if o.storeSyncTimeoutBaselineSet {
+		return
+	}
+	o.storeSyncTimeoutBaseline = o.StoreSyncTimeout
+	o.storeSyncTimeoutBaselineSet = true
+}
+
+// ResolveStoreSyncTimeout sets the effective timeout from the saved baseline.
+// fromFile is set only when the current file contains store_sync_timeout.
+func (o *Options) ResolveStoreSyncTimeout(fromFile *time.Duration) {
+	o.CaptureStoreSyncTimeoutBaseline()
+	if fromFile != nil {
+		o.StoreSyncTimeout = *fromFile
+		return
+	}
+	o.StoreSyncTimeout = o.storeSyncTimeoutBaseline
 }
 
 // GetConfigFile is the getter for --config value.
@@ -191,6 +220,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")
 	o.cmd.Flags().DurationVar(&o.ServerIdleTimeout, "server-idle-timeout", defaultServerIdleTimeout, "The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients.")
 	o.cmd.Flags().DurationVar(&o.ServerReadHeaderTimeout, "server-read-header-timeout", defaultServerReadHeaderTimeout, "The maximum duration for reading the header of requests.")
+	o.cmd.Flags().DurationVar(&o.StoreSyncTimeout, "store-sync-timeout", DefaultStoreSyncTimeout, "Time to wait for stores to finish their initial list before installing metrics writers. This bounds the sync wait, not all of startup. On timeout, startup installs writers and metrics may be partial. Once a generation is serving, a candidate that has not listed is not installed. Startup and a config reload stay unready until the first install. An in-process rebuild keeps the previous writers. 0 installs immediately. Negative values are invalid.")
 }
 
 // Parse parses the flag definitions from the argument list.
@@ -206,6 +236,9 @@ func (o *Options) Usage() {
 
 // Validate validates arguments
 func (o *Options) Validate() error {
+	if o.StoreSyncTimeout < 0 {
+		return fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", o.StoreSyncTimeout)
+	}
 	shardableResource := "pods"
 	if o.Node == "" {
 		return nil

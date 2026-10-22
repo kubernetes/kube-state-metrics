@@ -1011,6 +1011,7 @@ func TestBuildWriters_ReloadDoesNotRaceCanceledRebuild(t *testing.T) {
 		}
 	}()
 	for writes.Load() == 0 {
+		time.Sleep(time.Millisecond)
 	}
 	close(release)
 	waitForRebuildIdle(t, h)

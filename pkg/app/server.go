@@ -40,7 +40,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
@@ -56,6 +55,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/internal/discovery"
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/authfilter"
 	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/metricshandler"
@@ -487,26 +487,14 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 			klog.ErrorS(err, "failed to create HTTP client from config")
 			metricsHandler = unavailable
 			pprofHandlers = map[string]http.Handler{}
-		} else if metricsFilter, err := filters.WithAuthenticationAndAuthorization(kubeConfig, client); err != nil {
+		} else if filter, err := authfilter.New(kubeConfig, client); err != nil {
 			klog.ErrorS(err, "failed to create auth handler")
 			metricsHandler = unavailable
 			pprofHandlers = map[string]http.Handler{}
 		} else {
-			metricsHandler, err = metricsFilter(klog.Background(), metricsHandler)
-			if err != nil {
-				klog.ErrorS(err, "failed to apply metrics filter")
-				metricsHandler = unavailable
-				pprofHandlers = map[string]http.Handler{}
-			} else {
-				for path, h := range pprofHandlers {
-					protected, err := metricsFilter(klog.Background(), h)
-					if err != nil {
-						klog.ErrorS(err, "failed to apply auth filter to pprof handler", "path", path)
-						delete(pprofHandlers, path)
-						continue
-					}
-					pprofHandlers[path] = protected
-				}
+			metricsHandler = filter.Wrap(metricsHandler)
+			for path, h := range pprofHandlers {
+				pprofHandlers[path] = filter.Wrap(h)
 			}
 		}
 	}
@@ -594,14 +582,11 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 		if err != nil {
 			klog.ErrorS(err, "failed to create HTTP client from config")
 			metricsHandler = unavailable
-		} else if metricsFilter, err := filters.WithAuthenticationAndAuthorization(kubeConfig, client); err != nil {
+		} else if filter, err := authfilter.New(kubeConfig, client); err != nil {
 			klog.ErrorS(err, "failed to create auth handler")
 			metricsHandler = unavailable
-		} else if handler, err := metricsFilter(klog.Background(), metricsHandler); err != nil {
-			klog.ErrorS(err, "failed to apply metrics filter")
-			metricsHandler = unavailable
 		} else {
-			metricsHandler = handler
+			metricsHandler = filter.Wrap(metricsHandler)
 		}
 	}
 

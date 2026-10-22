@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -420,5 +421,36 @@ func TestReplaceEnabledCustomResources(t *testing.T) {
 	}
 	if !slices.Equal(b.enabledResources, []string{"deployments", customB, "pods"}) {
 		t.Fatalf("expected removed custom resource to be dropped: %#v", b.enabledResources)
+	}
+}
+
+type allowFamilyFilter struct{}
+
+func (allowFamilyFilter) Test(generator.FamilyGenerator) bool { return true }
+
+func TestBuildStoresReplacesReflectors(t *testing.T) {
+	b := NewBuilder()
+	b.WithMetrics(prometheus.NewRegistry())
+	b.WithKubeClient(fake.NewSimpleClientset())
+	b.WithContext(t.Context())
+	b.WithNamespaces(options.DefaultNamespaces)
+	b.WithFamilyGeneratorFilter(allowFamilyFilter{})
+	b.WithGenerateStoresFunc(b.DefaultGenerateStoresFunc())
+	if err := b.WithEnabledResources([]string{"pods"}); err != nil {
+		t.Fatal(err)
+	}
+
+	if stores := b.BuildStores(); len(stores) == 0 {
+		t.Fatal("expected pod stores from the first BuildStores")
+	}
+	first := len(b.reflectors)
+	if first == 0 {
+		t.Fatal("expected reflectors from the first BuildStores")
+	}
+	if stores := b.BuildStores(); len(stores) == 0 {
+		t.Fatal("expected pod stores from the second BuildStores")
+	}
+	if got := len(b.reflectors); got != first {
+		t.Fatalf("second BuildStores kept reflectors from both calls: first=%d second=%d", first, got)
 	}
 }

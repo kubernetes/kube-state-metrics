@@ -18,6 +18,8 @@ package types
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
@@ -56,6 +58,20 @@ type BuilderInterface interface {
 // CustomResourceReplacer replaces the discovered custom resource set while preserving built-in names.
 type CustomResourceReplacer interface {
 	ReplaceEnabledCustomResources(c []string) error
+}
+
+// ErrStoreSyncTimeout means the store-sync timeout elapsed before every running reflector listed.
+// A deadline on the caller's context is a different error.
+var ErrStoreSyncTimeout = errors.New("store sync timed out")
+
+// StoreSyncBuilder waits for reflector stores to sync after Build().
+type StoreSyncBuilder interface {
+	// WaitForStoresSync waits until each reflector has listed or stopped.
+	// nil and ErrStoreSyncTimeout may be installed; a canceled ctx returns ctx.Err().
+	WaitForStoresSync(ctx context.Context, timeout time.Duration) error
+	// WaitForStoreProgress returns when any reflector has listed, all have stopped, or none exist.
+	// A canceled ctx returns ctx.Err() and is not progress. There is no timeout.
+	WaitForStoreProgress(ctx context.Context) error
 }
 
 // BuildStoresFunc function signature that is used to return a list of cache.Store

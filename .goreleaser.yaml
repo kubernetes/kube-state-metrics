@@ -18,15 +18,14 @@ builds:
       - ppc64le
       - s390x
     goarm:
-      - "6"
       - "7"
     ldflags:
       - -s -w
-      - -X github.com/prometheus/common/version.Version={{if .Tag}}{{.Tag}}{{else}}{{.Version}}{{end}}
+      - -X github.com/prometheus/common/version.Version={{ with index .Env "IMAGE_TAG" }}{{ . }}{{ else }}{{ if .IsSnapshot }}{{ .Version }}{{ else }}{{ .Tag }}{{ end }}{{ end }}
       - -X github.com/prometheus/common/version.Revision={{.ShortCommit}}
       - -X github.com/prometheus/common/version.Branch={{.Branch}}
-      - -X github.com/prometheus/common/version.BuildDate={{.Date}}
-      - -X k8s.io/kube-state-metrics/v2/pkg/app.ClientGoVersion={{ index .Env "K8S_CLIENT_VERSION" }}
+      - -X github.com/prometheus/common/version.BuildDate={{.CommitDate}}
+      - -X k8s.io/kube-state-metrics/v2/pkg/app.ClientGoVersion={{ envOrDefault "K8S_CLIENT_VERSION" "unknown" }}
 
 kos:
   - 
@@ -39,14 +38,17 @@ kos:
     local_domain: "registry.k8s.io/kube-state-metrics/kube-state-metrics"
     platforms:
       - linux/amd64
-      - linux/arm/v6
       - linux/arm/v7
       - linux/arm64
       - linux/ppc64le
       - linux/s390x
+    # Snapshots are tagged with snapshot.version_template, so local builds never
+    # shadow a released tag. IMAGE_TAG is set by `make push` for branch pushes
+    # (e.g. main), which have no release tag of their own. latest is only moved
+    # by release tags.
     tags:
-      - '{{if .Tag}}{{.Tag}}{{else}}{{.Version}}{{end}}'
-      - '{{if not .IsSnapshot}}latest{{end}}'
+      - '{{ with index .Env "IMAGE_TAG" }}{{ . }}{{ else }}{{ if .IsSnapshot }}{{ .Version }}{{ else }}{{ .Tag }}{{ end }}{{ end }}'
+      - '{{if and (not .IsSnapshot) (not (index .Env "IMAGE_TAG"))}}latest{{end}}'
     creation_time: "{{.CommitTimestamp}}"
     ko_data_creation_time: "{{.CommitTimestamp}}"
     bare: true
@@ -63,6 +65,8 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 changelog:
+  # Cloud Build has no GITHUB_TOKEN, and `use: github` would call the GitHub API.
+  disable: '{{ envOrDefault "GORELEASER_SKIP_GITHUB_RELEASE" "false" }}'
   use: github
   sort: asc
   groups:

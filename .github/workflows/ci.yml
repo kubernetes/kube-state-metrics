@@ -210,20 +210,14 @@ jobs:
         go-version-file: '.go-version'
       id: go
 
-    - name: Extract versions
-      id: versions
-      run: |
-        CLIENT_GO_VERSION=$(go list -m -f '{{.Version}}' k8s.io/client-go)
-        echo "client-go-version=${CLIENT_GO_VERSION}" >> $GITHUB_OUTPUT
-
-    - name: Build
+    - name: Install GoReleaser
       uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
       with:
-        args: build --snapshot --clean --single-target
-      env:
-        GOOS: "linux"
-        GOARCH: "amd64"
-        K8S_CLIENT_VERSION: ${{ steps.versions.outputs.client-go-version }}
+        install-only: true
+
+    - name: Build
+      run: |
+        make build
 
   ci-e2e-tests:
     name: ci-e2e-tests

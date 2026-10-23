@@ -24,6 +24,7 @@ KSM_MODULE = $(shell go list -m)
 GORELEASER_OS = $(shell uname -s)
 GORELEASER_ARCH = $(patsubst aarch64,arm64,$(shell uname -m))
 GORELEASER_INSTALL_DIR ?= /usr/local/bin
+comma := ,
 
 DOCKER_CLI ?= docker
 PROMTOOL_CLI ?= promtool
@@ -116,6 +117,10 @@ all: all-container
 
 # Container build and push using goreleaser / ko
 
+# Build release artifacts with the Go version in .go-version, as the Docker
+# build did with golang:$(GO_VERSION), rather than whatever go.mod resolves to.
+build container push: export GOTOOLCHAIN = go$(GO_VERSION)
+
 all-container: container
 
 container:
@@ -124,11 +129,13 @@ container:
 # Pushes the container images only. The GitHub release is published separately
 # by the pre-release workflow, which is the runner that holds a GITHUB_TOKEN.
 # Only pin the tag for goreleaser when TAG is a release tag. A push to a branch
-# sets TAG to the branch name (e.g. main), which goreleaser would reject.
-GORELEASER_TAG_ENV = $(if $(filter v%,$(TAG)),GORELEASER_CURRENT_TAG=$(TAG))
+# sets TAG to the branch name (e.g. main), which goreleaser would reject, so the
+# images are tagged with it via IMAGE_TAG and the check that HEAD is tagged is skipped.
+GORELEASER_TAG_ENV = $(if $(filter v%,$(TAG)),GORELEASER_CURRENT_TAG=$(TAG),IMAGE_TAG=$(TAG))
+GORELEASER_PUSH_SKIP = announce,archive$(if $(filter v%,$(TAG)),,$(comma)validate)
 
 push:
-	GORELEASER_SKIP_GITHUB_RELEASE=true $(GORELEASER_TAG_ENV) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean --skip=announce
+	GORELEASER_SKIP_GITHUB_RELEASE=true $(GORELEASER_TAG_ENV) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean --skip=$(GORELEASER_PUSH_SKIP)
 
 clean:
 	rm -rf dist kube-state-metrics

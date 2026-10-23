@@ -192,17 +192,11 @@ set -e
 
 kubectl version
 
-# query kube-state-metrics image tag
+# build the kube-state-metrics image; goreleaser tags snapshots as "snapshot"
 make container
-docker images -a
-# Use Docker's machine-readable output - the human table columns/spacing can change between Docker versions.
-KUBE_STATE_METRICS_IMAGE_TAG="$(
-    docker images --format '{{.Repository}} {{.Tag}}' \
-        | awk -v repo="${KUBE_STATE_METRICS_IMAGE_NAME}" '$1 == repo && $2 != "latest" { print $2; exit }'
-)"
-if [[ -z "${KUBE_STATE_METRICS_IMAGE_TAG}" ]]; then
-    echo "ERROR: could not determine a local image tag for ${KUBE_STATE_METRICS_IMAGE_NAME} (excluding 'latest')." >&2
-    echo "Ensure the image was built successfully, then re-run. Debug output:" >&2
+KUBE_STATE_METRICS_IMAGE_TAG="snapshot"
+if ! docker image inspect "${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG}" >/dev/null; then
+    echo "ERROR: ${KUBE_STATE_METRICS_IMAGE_NAME}:${KUBE_STATE_METRICS_IMAGE_TAG} was not built." >&2
     docker images --format '{{.Repository}} {{.Tag}}' >&2
     exit 1
 fi

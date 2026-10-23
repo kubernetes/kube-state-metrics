@@ -116,6 +116,9 @@ all: all-container
 # build did with golang:$(GO_VERSION), rather than whatever go.mod resolves to.
 build container push: export GOTOOLCHAIN = go$(GO_VERSION)
 build container push: export BUILD_USER = $(USER)@$(HOST)
+# ko loads the image matching GOARCH from the multi-arch index into the local
+# Docker daemon, and defaults to amd64 rather than the host architecture.
+container: export GOARCH = $(ARCH)
 
 all-container: container
 
@@ -189,4 +192,4 @@ install-goreleaser:
 	@curl -sSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_${GORELEASER_OS}_${GORELEASER_ARCH}.tar.gz" |\
 	tar xz -C ${GORELEASER_INSTALL_DIR} goreleaser
 
-.PHONY: all build all-container container push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template install-promtool install-goreleaser
+.PHONY: all build build-local all-container container push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template install-promtool install-goreleaser

@@ -3,21 +3,16 @@ TESTENVVAR =
 TAG_PREFIX = v
 VERSION = $(shell grep '^version:' data.yaml | grep -oE "[0-9]+.[0-9]+.[0-9]+")
 TAG ?= $(TAG_PREFIX)$(VERSION)
-BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
 PKGS = $(shell go list ./... | grep -v /vendor/ | grep -v /tests/e2e)
 ARCH ?= $(shell go env GOARCH)
-BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 OS ?= $(shell uname -s | tr A-Z a-z)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
-PKG = github.com/prometheus/common
 PROMETHEUS_VERSION = 3.9.1
 GO_VERSION = $(shell cat .go-version)
 GORELEASER_VERSION = 2.19.0
 MARKDOWNLINT_CLI2_VERSION = 0.21.0
 CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
-KSM_MODULE = $(shell go list -m)
 
 # Release assets are named after `uname -s`/`uname -m`, except that goreleaser
 # publishes arm64 where Linux reports aarch64.
@@ -72,12 +67,12 @@ doccheck: generate validate-template
 
 # build produces the release artifact via goreleaser, matching what ships in the
 # container image. build-local produces a binary for the host, which is what the
-# docs generation and local development need.
+# docs generation needs; version information is only set by goreleaser.
 build:
 	GOOS=linux GOARCH=$(ARCH) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser build --single-target --clean --snapshot
 
 build-local:
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${KSM_MODULE}/pkg/app.ClientGoVersion=${CLIENT_GO_VERSION}" -o kube-state-metrics
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -o kube-state-metrics .
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
@@ -120,6 +115,7 @@ all: all-container
 # Build release artifacts with the Go version in .go-version, as the Docker
 # build did with golang:$(GO_VERSION), rather than whatever go.mod resolves to.
 build container push: export GOTOOLCHAIN = go$(GO_VERSION)
+build container push: export BUILD_USER = $(USER)@$(HOST)
 
 all-container: container
 

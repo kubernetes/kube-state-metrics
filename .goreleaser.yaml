@@ -24,6 +24,7 @@ builds:
       - -X github.com/prometheus/common/version.Version={{ with index .Env "IMAGE_TAG" }}{{ . }}{{ else }}{{ if .IsSnapshot }}{{ .Version }}{{ else }}{{ .Tag }}{{ end }}{{ end }}
       - -X github.com/prometheus/common/version.Revision={{.ShortCommit}}
       - -X github.com/prometheus/common/version.Branch={{.Branch}}
+      - -X github.com/prometheus/common/version.BuildUser={{ envOrDefault "BUILD_USER" "goreleaser" }}
       - -X github.com/prometheus/common/version.BuildDate={{.CommitDate}}
       - -X k8s.io/kube-state-metrics/v2/pkg/app.ClientGoVersion={{ envOrDefault "K8S_CLIENT_VERSION" "unknown" }}
 

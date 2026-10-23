@@ -217,7 +217,7 @@ jobs:
         echo "client-go-version=${CLIENT_GO_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Build
-      uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
+      uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
       with:
         args: build --snapshot --clean --single-target
       env:
@@ -242,7 +242,7 @@ jobs:
       id: go
 
     - name: Install GoReleaser
-      uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
+      uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
       with:
         install-only: true
 

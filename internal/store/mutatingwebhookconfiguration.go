@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descMutatingWebhookConfigurationDefaultLabels = []string{"namespace", "mutatingwebhookconfiguration"}
+	descMutatingWebhookConfigurationDefaultLabels = []string{"mutatingwebhookconfiguration"}
 
 	mutatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -129,7 +129,7 @@ func wrapMutatingWebhookConfigurationFunc(f func(*admissionregistrationv1.Mutati
 		metricFamily := f(mutatingWebhookConfiguration)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingWebhookConfigurationDefaultLabels, []string{mutatingWebhookConfiguration.Namespace, mutatingWebhookConfiguration.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingWebhookConfigurationDefaultLabels, []string{mutatingWebhookConfiguration.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

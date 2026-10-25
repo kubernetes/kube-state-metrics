@@ -34,7 +34,6 @@ func TestValidatingAdmissionPolicyBindingStore(t *testing.T) {
 		{
 			Obj: &admissionregistrationv1.ValidatingAdmissionPolicyBinding{
 				Name:            "validatingadmissionpolicybinding1",
-				Namespace:       "ns1",
 				ResourceVersion: "123456",
 				Spec: admissionregistrationv1.ValidatingAdmissionPolicyBindingSpec{
 					PolicyName: "validatingadmissionpolicy1",
@@ -54,16 +53,15 @@ func TestValidatingAdmissionPolicyBindingStore(t *testing.T) {
 				# HELP kube_validatingadmissionpolicybinding_validation_action Validation actions for the ValidatingAdmissionPolicyBinding.
 				# TYPE kube_validatingadmissionpolicybinding_info gauge
 				# TYPE kube_validatingadmissionpolicybinding_validation_action gauge
-				kube_validatingadmissionpolicybinding_info{namespace="ns1",param_name="param1",param_namespace="ns1",param_not_found_action="Deny",policy_name="validatingadmissionpolicy1",validatingadmissionpolicybinding="validatingadmissionpolicybinding1"} 1
-				kube_validatingadmissionpolicybinding_validation_action{action="Deny",namespace="ns1",validatingadmissionpolicybinding="validatingadmissionpolicybinding1"} 1
-				kube_validatingadmissionpolicybinding_validation_action{action="Warn",namespace="ns1",validatingadmissionpolicybinding="validatingadmissionpolicybinding1"} 1
+				kube_validatingadmissionpolicybinding_info{param_name="param1",param_namespace="ns1",param_not_found_action="Deny",policy_name="validatingadmissionpolicy1",validatingadmissionpolicybinding="validatingadmissionpolicybinding1"} 1
+				kube_validatingadmissionpolicybinding_validation_action{action="Deny",validatingadmissionpolicybinding="validatingadmissionpolicybinding1"} 1
+				kube_validatingadmissionpolicybinding_validation_action{action="Warn",validatingadmissionpolicybinding="validatingadmissionpolicybinding1"} 1
 				`,
 			MetricNames: []string{"kube_validatingadmissionpolicybinding_info", "kube_validatingadmissionpolicybinding_validation_action"},
 		},
 		{
 			Obj: &admissionregistrationv1.ValidatingAdmissionPolicyBinding{
 				Name:              "validatingadmissionpolicybinding2",
-				Namespace:         "ns2",
 				CreationTimestamp: metav1StartTime,
 				ResourceVersion:   "abcdef",
 				Spec: admissionregistrationv1.ValidatingAdmissionPolicyBindingSpec{
@@ -75,8 +73,8 @@ func TestValidatingAdmissionPolicyBindingStore(t *testing.T) {
 				# HELP kube_validatingadmissionpolicybinding_info Information about the ValidatingAdmissionPolicyBinding.
 				# TYPE kube_validatingadmissionpolicybinding_created gauge
 				# TYPE kube_validatingadmissionpolicybinding_info gauge
-				kube_validatingadmissionpolicybinding_created{namespace="ns2",validatingadmissionpolicybinding="validatingadmissionpolicybinding2"} 1.501569018e+09
-				kube_validatingadmissionpolicybinding_info{namespace="ns2",param_name="",param_namespace="",param_not_found_action="",policy_name="validatingadmissionpolicy2",validatingadmissionpolicybinding="validatingadmissionpolicybinding2"} 1
+				kube_validatingadmissionpolicybinding_created{validatingadmissionpolicybinding="validatingadmissionpolicybinding2"} 1.501569018e+09
+				kube_validatingadmissionpolicybinding_info{param_name="",param_namespace="",param_not_found_action="",policy_name="validatingadmissionpolicy2",validatingadmissionpolicybinding="validatingadmissionpolicybinding2"} 1
 				`,
 			MetricNames: []string{"kube_validatingadmissionpolicybinding_created", "kube_validatingadmissionpolicybinding_info"},
 		},

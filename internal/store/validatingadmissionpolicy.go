@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descValidatingAdmissionPolicyDefaultLabels = []string{"namespace", "validatingadmissionpolicy"}
+	descValidatingAdmissionPolicyDefaultLabels = []string{"validatingadmissionpolicy"}
 
 	validatingAdmissionPolicyMetricFamilies = []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -102,7 +102,7 @@ func wrapValidatingAdmissionPolicyFunc(f func(*admissionregistrationv1.Validatin
 		metricFamily := f(vap)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingAdmissionPolicyDefaultLabels, []string{vap.Namespace, vap.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingAdmissionPolicyDefaultLabels, []string{vap.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

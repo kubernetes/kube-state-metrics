@@ -34,7 +34,6 @@ func TestMutatingAdmissionPolicyBindingStore(t *testing.T) {
 		{
 			Obj: &admissionregistrationv1.MutatingAdmissionPolicyBinding{
 				Name:            "mutatingadmissionpolicybinding1",
-				Namespace:       "ns1",
 				ResourceVersion: "123456",
 				Spec: admissionregistrationv1.MutatingAdmissionPolicyBindingSpec{
 					PolicyName: "mutatingadmissionpolicy1",
@@ -48,14 +47,13 @@ func TestMutatingAdmissionPolicyBindingStore(t *testing.T) {
 			Want: `
 				# HELP kube_mutatingadmissionpolicybinding_info Information about the MutatingAdmissionPolicyBinding.
 				# TYPE kube_mutatingadmissionpolicybinding_info gauge
-				kube_mutatingadmissionpolicybinding_info{namespace="ns1",param_name="param1",param_namespace="ns1",param_not_found_action="Deny",policy_name="mutatingadmissionpolicy1",mutatingadmissionpolicybinding="mutatingadmissionpolicybinding1"} 1
+				kube_mutatingadmissionpolicybinding_info{param_name="param1",param_namespace="ns1",param_not_found_action="Deny",policy_name="mutatingadmissionpolicy1",mutatingadmissionpolicybinding="mutatingadmissionpolicybinding1"} 1
 				`,
 			MetricNames: []string{"kube_mutatingadmissionpolicybinding_info"},
 		},
 		{
 			Obj: &admissionregistrationv1.MutatingAdmissionPolicyBinding{
 				Name:              "mutatingadmissionpolicybinding2",
-				Namespace:         "ns2",
 				CreationTimestamp: metav1StartTime,
 				ResourceVersion:   "abcdef",
 				Spec: admissionregistrationv1.MutatingAdmissionPolicyBindingSpec{
@@ -67,8 +65,8 @@ func TestMutatingAdmissionPolicyBindingStore(t *testing.T) {
 				# HELP kube_mutatingadmissionpolicybinding_info Information about the MutatingAdmissionPolicyBinding.
 				# TYPE kube_mutatingadmissionpolicybinding_created gauge
 				# TYPE kube_mutatingadmissionpolicybinding_info gauge
-				kube_mutatingadmissionpolicybinding_created{namespace="ns2",mutatingadmissionpolicybinding="mutatingadmissionpolicybinding2"} 1.501569018e+09
-				kube_mutatingadmissionpolicybinding_info{namespace="ns2",param_name="",param_namespace="",param_not_found_action="",policy_name="mutatingadmissionpolicy2",mutatingadmissionpolicybinding="mutatingadmissionpolicybinding2"} 1
+				kube_mutatingadmissionpolicybinding_created{mutatingadmissionpolicybinding="mutatingadmissionpolicybinding2"} 1.501569018e+09
+				kube_mutatingadmissionpolicybinding_info{param_name="",param_namespace="",param_not_found_action="",policy_name="mutatingadmissionpolicy2",mutatingadmissionpolicybinding="mutatingadmissionpolicybinding2"} 1
 				`,
 			MetricNames: []string{"kube_mutatingadmissionpolicybinding_created", "kube_mutatingadmissionpolicybinding_info"},
 		},

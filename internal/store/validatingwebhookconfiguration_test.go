@@ -34,7 +34,6 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 		{
 			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				Name:            "validatingwebhookconfiguration1",
-				Namespace:       "ns1",
 				ResourceVersion: "123456",
 			},
 			Want: `
@@ -42,15 +41,14 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 				# HELP kube_validatingwebhookconfiguration_metadata_resource_version Resource version representing a specific version of the ValidatingWebhookConfiguration.
 				# TYPE kube_validatingwebhookconfiguration_info gauge
 				# TYPE kube_validatingwebhookconfiguration_metadata_resource_version gauge
-				kube_validatingwebhookconfiguration_info{validatingwebhookconfiguration="validatingwebhookconfiguration1",namespace="ns1"} 1
-				kube_validatingwebhookconfiguration_metadata_resource_version{validatingwebhookconfiguration="validatingwebhookconfiguration1",namespace="ns1"} 123456
+				kube_validatingwebhookconfiguration_info{validatingwebhookconfiguration="validatingwebhookconfiguration1"} 1
+				kube_validatingwebhookconfiguration_metadata_resource_version{validatingwebhookconfiguration="validatingwebhookconfiguration1"} 123456
 				`,
 			MetricNames: []string{"kube_validatingwebhookconfiguration_info", "kube_validatingwebhookconfiguration_metadata_resource_version"},
 		},
 		{
 			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				Name:              "validatingwebhookconfiguration2",
-				Namespace:         "ns2",
 				CreationTimestamp: metav1StartTime,
 				ResourceVersion:   "abcdef",
 			},
@@ -61,15 +59,14 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 			# TYPE kube_validatingwebhookconfiguration_created gauge
 			# TYPE kube_validatingwebhookconfiguration_info gauge
 			# TYPE kube_validatingwebhookconfiguration_metadata_resource_version gauge
-			kube_validatingwebhookconfiguration_created{validatingwebhookconfiguration="validatingwebhookconfiguration2",namespace="ns2"} 1.501569018e+09
-			kube_validatingwebhookconfiguration_info{validatingwebhookconfiguration="validatingwebhookconfiguration2",namespace="ns2"} 1
+			kube_validatingwebhookconfiguration_created{validatingwebhookconfiguration="validatingwebhookconfiguration2"} 1.501569018e+09
+			kube_validatingwebhookconfiguration_info{validatingwebhookconfiguration="validatingwebhookconfiguration2"} 1
 			`,
 			MetricNames: []string{"kube_validatingwebhookconfiguration_created", "kube_validatingwebhookconfiguration_info", "kube_validatingwebhookconfiguration_metadata_resource_version"},
 		},
 		{
 			Obj: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				Name:              "validatingwebhookconfiguration3",
-				Namespace:         "ns3",
 				CreationTimestamp: metav1StartTime,
 				ResourceVersion:   "abcdef",
 				Webhooks: []admissionregistrationv1.ValidatingWebhook{
@@ -90,8 +87,8 @@ func TestValidatingWebhookConfigurationStore(t *testing.T) {
 			Want: `
 			# HELP kube_validatingwebhookconfiguration_webhook_clientconfig_service Service used by the apiserver to connect to a validating webhook.
 			# TYPE kube_validatingwebhookconfiguration_webhook_clientconfig_service gauge
-			kube_validatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_external_url",namespace="ns3",service_name="",service_namespace="",validatingwebhookconfiguration="validatingwebhookconfiguration3"} 1
-			kube_validatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_service",namespace="ns3",service_name="svc",service_namespace="ns",validatingwebhookconfiguration="validatingwebhookconfiguration3"} 1
+			kube_validatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_external_url",service_name="",service_namespace="",validatingwebhookconfiguration="validatingwebhookconfiguration3"} 1
+			kube_validatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_service",service_name="svc",service_namespace="ns",validatingwebhookconfiguration="validatingwebhookconfiguration3"} 1
 			`,
 			MetricNames: []string{"kube_validatingwebhookconfiguration_webhook_clientconfig_service"},
 		},

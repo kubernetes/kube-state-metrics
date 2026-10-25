@@ -37,7 +37,6 @@ func TestMutatingAdmissionPolicyStore(t *testing.T) {
 		{
 			Obj: &admissionregistrationv1.MutatingAdmissionPolicy{
 				Name:            "mutatingadmissionpolicy1",
-				Namespace:       "ns1",
 				ResourceVersion: "123456",
 				Spec: admissionregistrationv1.MutatingAdmissionPolicySpec{
 					ParamKind: &admissionregistrationv1.ParamKind{
@@ -51,14 +50,13 @@ func TestMutatingAdmissionPolicyStore(t *testing.T) {
 			Want: `
 				# HELP kube_mutatingadmissionpolicy_info Information about the MutatingAdmissionPolicy.
 				# TYPE kube_mutatingadmissionpolicy_info gauge
-				kube_mutatingadmissionpolicy_info{failure_policy="Fail",namespace="ns1",param_api_version="rules.example.com/v1",param_kind="Rule",reinvocation_policy="Never",mutatingadmissionpolicy="mutatingadmissionpolicy1"} 1
+				kube_mutatingadmissionpolicy_info{failure_policy="Fail",param_api_version="rules.example.com/v1",param_kind="Rule",reinvocation_policy="Never",mutatingadmissionpolicy="mutatingadmissionpolicy1"} 1
 				`,
 			MetricNames: []string{"kube_mutatingadmissionpolicy_info"},
 		},
 		{
 			Obj: &admissionregistrationv1.MutatingAdmissionPolicy{
 				Name:              "mutatingadmissionpolicy2",
-				Namespace:         "ns2",
 				CreationTimestamp: metav1StartTime,
 				ResourceVersion:   "abcdef",
 				Spec: admissionregistrationv1.MutatingAdmissionPolicySpec{
@@ -71,8 +69,8 @@ func TestMutatingAdmissionPolicyStore(t *testing.T) {
 				# HELP kube_mutatingadmissionpolicy_info Information about the MutatingAdmissionPolicy.
 				# TYPE kube_mutatingadmissionpolicy_created gauge
 				# TYPE kube_mutatingadmissionpolicy_info gauge
-				kube_mutatingadmissionpolicy_created{namespace="ns2",mutatingadmissionpolicy="mutatingadmissionpolicy2"} 1.501569018e+09
-				kube_mutatingadmissionpolicy_info{failure_policy="Ignore",namespace="ns2",param_api_version="",param_kind="",reinvocation_policy="IfNeeded",mutatingadmissionpolicy="mutatingadmissionpolicy2"} 1
+				kube_mutatingadmissionpolicy_created{mutatingadmissionpolicy="mutatingadmissionpolicy2"} 1.501569018e+09
+				kube_mutatingadmissionpolicy_info{failure_policy="Ignore",param_api_version="",param_kind="",reinvocation_policy="IfNeeded",mutatingadmissionpolicy="mutatingadmissionpolicy2"} 1
 				`,
 			MetricNames: []string{"kube_mutatingadmissionpolicy_created", "kube_mutatingadmissionpolicy_info"},
 		},

@@ -83,37 +83,10 @@ func TestVolumeAttributesClassStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(volumeAttributesClassMetricFamilies(nil, nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttributesClassMetricFamilies(nil, nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(volumeAttributesClassMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttributesClassMetricFamilies(nil, nil))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
-	}
-
-	parametersCase := generateMetricsTestCase{
-		Obj: &storagev1.VolumeAttributesClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test_volumeattributesclass-parameters",
-			},
-			DriverName: "ebs.csi.aws.com",
-			Parameters: map[string]string{
-				"iops":       "6000",
-				"throughput": "250",
-				"unallowed":  "value",
-			},
-		},
-		Want: `
-				# HELP kube_volumeattributesclass_parameters VolumeAttributesClass parameters converted to Prometheus labels.
-				# TYPE kube_volumeattributesclass_parameters gauge
-				kube_volumeattributesclass_parameters{volumeattributesclass="test_volumeattributesclass-parameters",parameter_iops="6000",parameter_throughput="250"} 1
-			`,
-		MetricNames: []string{
-			"kube_volumeattributesclass_parameters",
-		},
-	}
-	parametersCase.Func = generator.ComposeMetricGenFuncs(volumeAttributesClassMetricFamilies(nil, nil, []string{"iops", "throughput"}))
-	parametersCase.Headers = generator.ExtractMetricFamilyHeaders(volumeAttributesClassMetricFamilies(nil, nil, []string{"iops", "throughput"}))
-	if err := parametersCase.run(); err != nil {
-		t.Errorf("unexpected collecting result in parameters allowlist run:\n%s", err)
 	}
 }

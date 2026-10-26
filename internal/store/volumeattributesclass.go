@@ -34,13 +34,11 @@ var (
 	descVolumeAttributesClassAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
 	descVolumeAttributesClassLabelsName          = "kube_volumeattributesclass_labels"
 	descVolumeAttributesClassLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descVolumeAttributesClassParametersName      = "kube_volumeattributesclass_parameters"
-	descVolumeAttributesClassParametersHelp      = "VolumeAttributesClass parameters converted to Prometheus labels."
 	descVolumeAttributesClassLabelsDefaultLabels = []string{"volumeattributesclass"}
 )
 
 // volumeAttributesClassMetricFamilies returns the family generators for VolumeAttributesClass metrics.
-func volumeAttributesClassMetricFamilies(allowAnnotationsList, allowLabelsList, allowParametersList []string) []generator.FamilyGenerator {
+func volumeAttributesClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_volumeattributesclass_info",
@@ -113,28 +111,6 @@ func volumeAttributesClassMetricFamilies(allowAnnotationsList, allowLabelsList, 
 						{
 							LabelKeys:   labelKeys,
 							LabelValues: labelValues,
-							Value:       1,
-						},
-					},
-				}
-			}),
-		),
-		*generator.NewFamilyGeneratorWithStability(
-			descVolumeAttributesClassParametersName,
-			descVolumeAttributesClassParametersHelp,
-			metric.Gauge,
-			basemetrics.ALPHA,
-			"",
-			wrapVolumeAttributesClassFunc(func(v *storagev1.VolumeAttributesClass) *metric.Family {
-				if len(allowParametersList) == 0 {
-					return &metric.Family{}
-				}
-				parameterKeys, parameterValues := createPrometheusLabelKeysValues("parameter", v.Parameters, allowParametersList)
-				return &metric.Family{
-					Metrics: []*metric.Metric{
-						{
-							LabelKeys:   parameterKeys,
-							LabelValues: parameterValues,
 							Value:       1,
 						},
 					},

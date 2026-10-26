@@ -42,6 +42,16 @@ These change during the lifecycle of the object.
 For example a pod can be in different states like "Pending", "Running" etc.
 These should be part of a "State Set" that includes labels that identify the object as well as the dynamic property.
 
+### Sparse reason / optional-condition properties
+
+Not every dynamic property is a State Set. A State Set (see above) fits a property where exactly one value out of a small, stable set is *always* true, like a pod's phase; every row carries information, since the object is always in exactly one of those states.
+
+Some properties instead model something that is usually **not** set at all: an optional reason field, a rarely-hit edge-case condition, or similar. For these, do not emit one row per known value with `0`/`1`. Emit a row only when the value is actually present, using `1`. Fold any value that isn't in your known list into a fallback `Other` value, so cardinality stays bounded even if the upstream API grows more possible values later; do not use an empty-string default here as [Optional properties](#optional-properties) suggests, since the point is to avoid a row existing at all when nothing applies. See `kube_pod_status_disruption_reason` and `kube_pod_status_reason` for the pattern.
+
+The test for which shape applies: if the property is a true partition (the object is always in exactly one of N states), use a State Set. If most objects will match none of the known values, use this pattern instead: emitting all-`0` rows for every object regardless of whether any reason ever applies is pure cardinality cost with no offsetting information.
+
+Applying this to an existing **stable** metric is a breaking change to which series exist, and needs the deprecation path in [Stability](#stability) below rather than a direct change.
+
 ### Linked properties
 
 If an object contains a substructure that links multiple properties together (e.g. endpoint address and port), those should be reported in the same metric.
@@ -60,6 +70,8 @@ Some object properties can cause cardinality issues if they can contain a lot of
 In this case it is better to limit the number of values that can be exposed within kube-state-metrics by allowing only a few of them and have a default for others.
 If for example the Kubernetes object contains a status field that contains an error message that can change a lot, it would be better to have a boolean `error="true"` label in case there is an error.
 If there are some error messages that are worth exposing, those could be exposed and for any other message, a default value could be provided.
+
+For a fixed list of known reason/condition values where most objects match none of them, see [Sparse reason / optional-condition properties](#sparse-reason--optional-condition-properties): emit a row only for the value that applies, not one padded row per known value.
 
 ## Stability
 

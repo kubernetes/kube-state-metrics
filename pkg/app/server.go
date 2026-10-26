@@ -341,7 +341,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		discovererInstance.PollForCacheUpdates(
 			ctx,
 			opts,
-			storeBuilder,
 			m,
 			fn,
 		)

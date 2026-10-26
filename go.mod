@@ -3,7 +3,7 @@ module k8s.io/kube-state-metrics/v2
 go 1.27.0
 
 require (
-	github.com/KimMachineGun/automemlimit v1.0.0
+	github.com/KimMachineGun/automemlimit v1.0.1
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
 	github.com/dlclark/regexp2/v2 v2.9.0
 	github.com/fsnotify/fsnotify v1.10.1

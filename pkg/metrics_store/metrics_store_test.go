@@ -17,16 +17,47 @@ limitations under the License.
 package metricsstore
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
+	clientfeatures "k8s.io/client-go/features"
+	clientfeaturestesting "k8s.io/client-go/features/testing"
+	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
+
+// countingGenFunc returns a metric generator that renders one metric per
+// object labelled with its uid, and counts how often it is called.
+func countingGenFunc(calls *atomic.Int64) func(any) []metric.FamilyInterface {
+	return func(obj any) []metric.FamilyInterface {
+		calls.Add(1)
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			return nil
+		}
+		return []metric.FamilyInterface{&metric.Family{
+			Name: "kube_test_info",
+			Metrics: []*metric.Metric{{
+				LabelKeys:   []string{"uid"},
+				LabelValues: []string{string(o.GetUID())},
+				Value:       1,
+			}},
+		}}
+	}
+}
 
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDs := []string{"a", "b"}
@@ -133,6 +164,66 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 	}
 	if rv := ms.LastStoreSyncResourceVersion(); rv != "127" {
 		t.Fatalf("expected resource version 127, got %v", rv)
+	}
+}
+
+func TestMetricsStoreTransformerDuringWatchList(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, true)
+
+	var calls atomic.Int64
+	ms := NewMetricsStore([]string{"Test info."}, countingGenFunc(&calls))
+
+	w := watch.NewFake()
+	lw := &cache.ListWatch{
+		ListWithContextFunc: func(context.Context, metav1.ListOptions) (runtime.Object, error) {
+			return nil, errors.New("unexpected list, the initial sync should use WatchList")
+		},
+		WatchFuncWithContext: func(context.Context, metav1.ListOptions) (watch.Interface, error) {
+			return w, nil
+		},
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	r := cache.NewReflectorWithOptions(lw, &v1.Pod{}, ms, cache.ReflectorOptions{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		r.RunWithContext(ctx)
+	}()
+	defer func() {
+		cancel()
+		<-done
+	}()
+
+	w.Add(&v1.Pod{Name: "pod", Namespace: "default", UID: "uid-p", ResourceVersion: "1"})
+
+	// The metrics are generated when the object reaches the temporary store,
+	// before the initial events end.
+	if err := wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, 5*time.Second, true, func(context.Context) (bool, error) {
+		return calls.Load() == 1, nil
+	}); err != nil {
+		t.Fatalf("expected the metrics to be generated before the initial events end: %v", err)
+	}
+
+	w.Action(watch.Bookmark, &v1.Pod{
+		ResourceVersion: "2",
+		Annotations:     map[string]string{metav1.InitialEventsAnnotationKey: "true"},
+	})
+	if err := wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, wait.ForeverTestTimeout, true, func(context.Context) (bool, error) {
+		return ms.LastStoreSyncResourceVersion() == "2", nil
+	}); err != nil {
+		t.Fatalf("initial sync did not complete: %v", err)
+	}
+	if n := calls.Load(); n != 1 {
+		t.Errorf("expected the metrics to be generated once, got %d calls", n)
+	}
+
+	out := strings.Builder{}
+	if err := NewMetricsWriter("test", ms).WriteAll(&out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `uid="uid-p"`) {
+		t.Errorf("expected the metric of the synced object to be written, got %q", out.String())
 	}
 }
 

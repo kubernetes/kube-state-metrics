@@ -20,9 +20,13 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
+
+var _ cache.TransformingStore = &MetricsStore{}
 
 // MetricsStore implements the k8s.io/client-go/tools/cache.Store
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
@@ -91,6 +95,13 @@ func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, 
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj any) error {
+	// Only Replace at the end of a WatchList initial sync passes rendered
+	// objects, and Replace records the resource version of the sync.
+	if p, ok := obj.(*renderedObject); ok {
+		s.metrics.Store(p.uid, p.families)
+		return nil
+	}
+
 	o, err := meta.Accessor(obj)
 	if err != nil {
 		return err
@@ -218,6 +229,32 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 // Resync implements the Resync method of the store interface.
 func (s *MetricsStore) Resync() error {
 	return nil
+}
+
+// Transformer implements the cache.TransformingStore interface. During a
+// WatchList initial sync, the reflector holds every object of the resource in
+// a temporary store until the initial events end, and applies this transform
+// to each object it puts there. Generating the metrics here lets the temporary
+// store hold the metrics this store keeps anyway instead of whole objects,
+// which lowers the memory peak of the initial sync.
+func (s *MetricsStore) Transformer() cache.TransformFunc {
+	return func(obj any) (any, error) {
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			return obj, nil
+		}
+		return &renderedObject{
+			uid:      o.GetUID(),
+			families: renderFamilies(s.generateMetricsFunc(obj)),
+		}, nil
+	}
+}
+
+// renderedObject stands in for an object in the reflector's temporary store and
+// holds the metrics already generated from it.
+type renderedObject struct {
+	uid      types.UID
+	families [][]byte
 }
 
 // Bookmark implements the Bookmark method of the store interface.

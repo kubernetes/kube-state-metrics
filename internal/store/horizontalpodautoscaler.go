@@ -205,12 +205,8 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
 
-				// validateMetricSpec requires the source named by Type to be set,
-				// so an object that reached etcd through the API server has it.
-				// Guard anyway: the cost is one comparison, and the alternative
-				// is a nil deref on the reflector goroutine, which takes down
-				// every metric the exporter serves rather than this one HPA.
-				// Mirrors createHPAStatusTargetMetric.
+				// validateMetricSpec requires the source named by Type, but don't
+				// rely on it: a nil deref here would panic the reflector goroutine.
 				switch m.Type {
 				case autoscaling.ObjectMetricSourceType:
 					if m.Object == nil {

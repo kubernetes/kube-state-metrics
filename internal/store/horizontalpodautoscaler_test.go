@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -631,12 +632,11 @@ func TestHPAStore(t *testing.T) {
 	}
 }
 
-// status.currentMetrics is not validated by the API server -- unlike
-// spec.metrics, ValidateHorizontalPodAutoscalerStatusUpdate checks only the
-// replica counts and the conditions -- so the source matching Type can be
-// absent. Generating metrics for such an entry must skip it rather than
-// dereference the nil source, which would panic on the reflector goroutine.
-func TestHPAStatusTargetMetricWithNilSource(t *testing.T) {
+// The source matching Type can be nil: status.currentMetrics is not validated
+// by the API server, and spec.metrics, though validated, reaches the generator
+// via the reflector regardless. Such an entry must be skipped without
+// panicking, and the entries after it must still be emitted.
+func TestHPATargetMetricWithNilSource(t *testing.T) {
 	for _, metricType := range []autoscaling.MetricSourceType{
 		autoscaling.ObjectMetricSourceType,
 		autoscaling.PodsMetricSourceType,
@@ -645,60 +645,48 @@ func TestHPAStatusTargetMetricWithNilSource(t *testing.T) {
 		autoscaling.ExternalMetricSourceType,
 	} {
 		t.Run(string(metricType), func(t *testing.T) {
+			valid := autoscaling.MetricIdentifier{Name: "valid"}
 			hpa := &autoscaling.HorizontalPodAutoscaler{
 				Name: "hpa", Namespace: "ns",
-				Status: autoscaling.HorizontalPodAutoscalerStatus{
-					// Type is set, but the matching source is not.
-					CurrentMetrics: []autoscaling.MetricStatus{{Type: metricType}},
-				},
-			}
-
-			defer func() {
-				if r := recover(); r != nil {
-					t.Fatalf("panic generating metrics for a %s status with no source: %v", metricType, r)
-				}
-			}()
-
-			g := createHPAStatusTargetMetric()
-			family := g.Generate(hpa)
-			if len(family.Metrics) != 0 {
-				t.Errorf("expected the entry to be skipped, got %d metrics", len(family.Metrics))
-			}
-		})
-	}
-}
-
-// spec.metrics is validated by validateMetricSpec, so the source matching Type
-// is populated for anything the API server accepted. The generator still must
-// not depend on that: it runs against whatever the reflector hands it, and a
-// nil deref there takes down every metric the exporter serves.
-func TestHPASpecTargetMetricWithNilSource(t *testing.T) {
-	for _, metricType := range []autoscaling.MetricSourceType{
-		autoscaling.ObjectMetricSourceType,
-		autoscaling.PodsMetricSourceType,
-		autoscaling.ResourceMetricSourceType,
-		autoscaling.ContainerResourceMetricSourceType,
-		autoscaling.ExternalMetricSourceType,
-	} {
-		t.Run(string(metricType), func(t *testing.T) {
-			hpa := &autoscaling.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{Name: "hpa", Namespace: "ns"},
 				Spec: autoscaling.HorizontalPodAutoscalerSpec{
-					// Type is set, but the matching source is not.
-					Metrics: []autoscaling.MetricSpec{{Type: metricType}},
+					Metrics: []autoscaling.MetricSpec{
+						{Type: metricType},
+						{
+							Type: autoscaling.ExternalMetricSourceType,
+							External: &autoscaling.ExternalMetricSource{
+								Metric: valid,
+								Target: autoscaling.MetricTarget{Value: new(resource.MustParse("1"))},
+							},
+						},
+					},
+				},
+				Status: autoscaling.HorizontalPodAutoscalerStatus{
+					CurrentMetrics: []autoscaling.MetricStatus{
+						{Type: metricType},
+						{
+							Type: autoscaling.ExternalMetricSourceType,
+							External: &autoscaling.ExternalMetricStatus{
+								Metric:  valid,
+								Current: autoscaling.MetricValueStatus{Value: new(resource.MustParse("1"))},
+							},
+						},
+					},
 				},
 			}
 
-			defer func() {
-				if r := recover(); r != nil {
-					t.Fatalf("panic generating metrics for a %s spec with no source: %v", metricType, r)
-				}
-			}()
+			for _, g := range []generator.FamilyGenerator{createHPASpecTargetMetric(), createHPAStatusTargetMetric()} {
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							t.Fatalf("%s: panic on a %s entry with no source: %v", g.Name, metricType, r)
+						}
+					}()
 
-			g := createHPASpecTargetMetric()
-			family := g.Generate(hpa)
-			if len(family.Metrics) != 0 {
-				t.Errorf("expected the entry to be skipped, got %d metrics", len(family.Metrics))
+					family := g.Generate(hpa)
+					if len(family.Metrics) != 1 || !slices.Contains(family.Metrics[0].LabelValues, "valid") {
+						t.Errorf("%s: expected only the well-formed entry to be emitted, got %d metrics", g.Name, len(family.Metrics))
+					}
+				}()
 			}
 		})
 	}

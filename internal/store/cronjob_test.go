@@ -565,6 +565,35 @@ func TestGetNextScheduledTime(t *testing.T) {
 
 }
 
+// TestParseScheduleRobfigCompat verifies that schedules are parsed and
+// scheduled like robfig/cron/v3, which the Kubernetes CronJob controller uses.
+func TestParseScheduleRobfigCompat(t *testing.T) {
+	from := time.Date(2018, 3, 11, 4, 34, 56, 0, time.UTC)
+	timeZone := "UTC"
+
+	testCases := []struct {
+		schedule string
+		expected time.Time
+	}{
+		// A step at or above the range size selects only the range start.
+		{schedule: "*/120 4-22 * * *", expected: time.Date(2018, 3, 11, 5, 0, 0, 0, time.UTC)},
+		// A restricted day of month and day of week match either, not both.
+		{schedule: "0 1 */32,1-7 * 3", expected: time.Date(2018, 3, 14, 1, 0, 0, 0, time.UTC)},
+		// An interval below one second rounds up to one second.
+		{schedule: "@every 500ms", expected: from.Add(time.Second)},
+	}
+
+	for _, tc := range testCases {
+		sched, err := parseSchedule(tc.schedule, &timeZone)
+		if err != nil {
+			t.Fatalf("%q: unexpected error: %v", tc.schedule, err)
+		}
+		if actual := sched.Next(from); !actual.Equal(tc.expected) {
+			t.Errorf("%q: expected %v, actual %v", tc.schedule, tc.expected, actual)
+		}
+	}
+}
+
 func TestCronJobStoreScheduleParsing(t *testing.T) {
 	newCronJob := func(name, schedule string) *batchv1.CronJob {
 		return &batchv1.CronJob{
@@ -605,8 +634,8 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
-			// Unparseable schedule (step >= range size): next_schedule_time omitted, schedule_invalid emitted, no panic.
-			Obj: newCronJob("UnparseableScheduleCronJob", "*/120 4-22 * * *"),
+			// Unparseable schedule (value above the field maximum): next_schedule_time omitted, schedule_invalid emitted, no panic.
+			Obj: newCronJob("UnparseableScheduleCronJob", "60 * * * *"),
 			Want: `
 				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 				# TYPE kube_cronjob_next_schedule_time gauge
@@ -620,8 +649,8 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
-			// Unparseable schedule (list with out-of-range step): next_schedule_time omitted, schedule_invalid emitted, no panic.
-			Obj: newCronJob("UnparseableScheduleCronJob", "0 1 */32,1-7 * 3"),
+			// Unparseable schedule (zero step): next_schedule_time omitted, schedule_invalid emitted, no panic.
+			Obj: newCronJob("UnparseableScheduleCronJob", "*/0 * * * *"),
 			Want: `
 				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
 				# TYPE kube_cronjob_next_schedule_time gauge

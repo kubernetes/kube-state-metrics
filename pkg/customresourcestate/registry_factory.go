@@ -422,16 +422,16 @@ func (c *compiledStateSet) fullValuePath() valuePath {
 }
 
 func (c *compiledStateSet) values(v any) (result []eachValue, errs []error) {
-	comparable := c.ValueFrom.Get(v)
-	if comparable == nil {
+	raw := c.ValueFrom.Get(v)
+	if raw == nil {
 		// The path does not resolve to a value, which is expected for status fields
 		// that do not exist yet at resource creation time. Report no metrics instead
 		// of an error, consistent with how the other metric types handle nil values.
 		return nil, nil
 	}
-	value, ok := comparable.(string)
+	value, ok := raw.(string)
 	if !ok {
-		return nil, []error{fmt.Errorf("%s: expected value for path to be string, got %T", c.fullValuePath(), comparable)}
+		return nil, []error{fmt.Errorf("%s: expected value for path to be string, got %T", c.fullValuePath(), raw)}
 	}
 
 	for _, entry := range c.List {

@@ -70,10 +70,7 @@ func TestOptionsParse(t *testing.T) {
 	}
 }
 
-// Validate used to be called by main after Parse returned, which never happens:
-// Parse runs cmd.Execute, and cmd.Run only returns once the process is shutting
-// down. It is wired into the command's PreRunE instead, so a rejected option
-// aborts before anything is started.
+// A rejected option must abort Execute before Run starts anything.
 func TestValidateRunsBeforeRun(t *testing.T) {
 	tests := []struct {
 		Desc         string
@@ -96,10 +93,9 @@ func TestValidateRunsBeforeRun(t *testing.T) {
 		t.Run(test.Desc, func(t *testing.T) {
 			ran := false
 			cmd := &cobra.Command{
-				Use:          "kube-state-metrics",
-				Args:         cobra.NoArgs,
-				SilenceUsage: true,
-				Run:          func(_ *cobra.Command, _ []string) { ran = true },
+				Use:  "kube-state-metrics",
+				Args: cobra.NoArgs,
+				Run:  func(_ *cobra.Command, _ []string) { ran = true },
 			}
 
 			opts := NewOptions()
@@ -109,21 +105,11 @@ func TestValidateRunsBeforeRun(t *testing.T) {
 			cmd.SetErr(io.Discard)
 
 			err := opts.Parse()
-
-			if test.ExpectsError {
-				if err == nil {
-					t.Fatal("expected Parse to surface the validation error, got nil")
-				}
-				if ran {
-					t.Error("command ran despite failing validation")
-				}
-				return
+			if (err != nil) != test.ExpectsError {
+				t.Fatalf("Parse() error = %v, expectsError %v", err, test.ExpectsError)
 			}
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if !ran {
-				t.Error("command did not run")
+			if ran == test.ExpectsError {
+				t.Errorf("Run called = %v, expectsError %v", ran, test.ExpectsError)
 			}
 		})
 	}

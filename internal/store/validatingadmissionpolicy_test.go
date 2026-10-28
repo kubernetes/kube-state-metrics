@@ -35,7 +35,6 @@ func TestValidatingAdmissionPolicyStore(t *testing.T) {
 		{
 			Obj: &admissionregistrationv1.ValidatingAdmissionPolicy{
 				Name:            "validatingadmissionpolicy1",
-				Namespace:       "ns1",
 				ResourceVersion: "123456",
 				Spec: admissionregistrationv1.ValidatingAdmissionPolicySpec{
 					ParamKind: &admissionregistrationv1.ParamKind{
@@ -48,14 +47,13 @@ func TestValidatingAdmissionPolicyStore(t *testing.T) {
 			Want: `
 				# HELP kube_validatingadmissionpolicy_info Information about the ValidatingAdmissionPolicy.
 				# TYPE kube_validatingadmissionpolicy_info gauge
-				kube_validatingadmissionpolicy_info{failure_policy="Fail",namespace="ns1",param_api_version="rules.example.com/v1",param_kind="Rule",validatingadmissionpolicy="validatingadmissionpolicy1"} 1
+				kube_validatingadmissionpolicy_info{failure_policy="Fail",param_api_version="rules.example.com/v1",param_kind="Rule",validatingadmissionpolicy="validatingadmissionpolicy1"} 1
 				`,
 			MetricNames: []string{"kube_validatingadmissionpolicy_info"},
 		},
 		{
 			Obj: &admissionregistrationv1.ValidatingAdmissionPolicy{
 				Name:              "validatingadmissionpolicy2",
-				Namespace:         "ns2",
 				CreationTimestamp: metav1StartTime,
 				ResourceVersion:   "abcdef",
 				Spec: admissionregistrationv1.ValidatingAdmissionPolicySpec{
@@ -67,8 +65,8 @@ func TestValidatingAdmissionPolicyStore(t *testing.T) {
 				# HELP kube_validatingadmissionpolicy_info Information about the ValidatingAdmissionPolicy.
 				# TYPE kube_validatingadmissionpolicy_created gauge
 				# TYPE kube_validatingadmissionpolicy_info gauge
-				kube_validatingadmissionpolicy_created{namespace="ns2",validatingadmissionpolicy="validatingadmissionpolicy2"} 1.501569018e+09
-				kube_validatingadmissionpolicy_info{failure_policy="Ignore",namespace="ns2",param_api_version="",param_kind="",validatingadmissionpolicy="validatingadmissionpolicy2"} 1
+				kube_validatingadmissionpolicy_created{validatingadmissionpolicy="validatingadmissionpolicy2"} 1.501569018e+09
+				kube_validatingadmissionpolicy_info{failure_policy="Ignore",param_api_version="",param_kind="",validatingadmissionpolicy="validatingadmissionpolicy2"} 1
 				`,
 			MetricNames: []string{"kube_validatingadmissionpolicy_created", "kube_validatingadmissionpolicy_info"},
 		},

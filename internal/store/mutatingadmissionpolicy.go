@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descMutatingAdmissionPolicyDefaultLabels = []string{"namespace", "mutatingadmissionpolicy"}
+	descMutatingAdmissionPolicyDefaultLabels = []string{"mutatingadmissionpolicy"}
 
 	mutatingAdmissionPolicyMetricFamilies = []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -103,7 +103,7 @@ func wrapMutatingAdmissionPolicyFunc(f func(*admissionregistrationv1.MutatingAdm
 		metricFamily := f(mapObj)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingAdmissionPolicyDefaultLabels, []string{mapObj.Namespace, mapObj.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingAdmissionPolicyDefaultLabels, []string{mapObj.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

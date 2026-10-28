@@ -44,6 +44,8 @@ type BuilderInterface interface {
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)
 	WithAllowAnnotations(a map[string][]string) error
 	WithAllowLabels(l map[string][]string) error
+	WithLabelsPrefix(prefix string)
+	WithAnnotationsPrefix(prefix string)
 	WithGenerateStoresFunc(f BuildStoresFunc)
 	DefaultGenerateStoresFunc() BuildStoresFunc
 	DefaultGenerateCustomResourceStoresFunc() BuildCustomResourceStoresFunc

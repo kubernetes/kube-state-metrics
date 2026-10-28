@@ -207,8 +207,6 @@ func (o *Options) Usage() {
 
 // Validate validates arguments
 func (o *Options) Validate() error {
-	// Only node-scoped runs are restricted to the shardable resource; the checks
-	// below apply to every run, so they must not sit behind this condition.
 	if o.Node != "" {
 		shardableResource := "pods"
 		for _, x := range o.Resources.AsSlice() {
@@ -218,8 +216,7 @@ func (o *Options) Validate() error {
 		}
 	}
 
-	// NaN parses as a valid float64 and compares false against every bound, so it
-	// has to be rejected explicitly rather than by the range check alone.
+	// NaN compares false against every bound, so reject it explicitly.
 	if math.IsNaN(o.AutoGoMemlimitRatio) || o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
 		return fmt.Errorf("value for --auto-gomemlimit-ratio=%f must be greater than 0 and less than or equal to 1", o.AutoGoMemlimitRatio)
 	}
@@ -228,16 +225,13 @@ func (o *Options) Validate() error {
 		return fmt.Errorf("value for --object-limit=%d must be equal or greater than 0", o.ObjectLimit)
 	}
 
-	// The shard an object belongs to is jump.Hash(hash(uid), totalShards). That
-	// returns -1 for a non-positive bucket count, and no shard index can match an
-	// out-of-range one, so either mistake filters out every object and serves an
-	// empty /metrics with no error anywhere.
+	// Out-of-range shard settings match no objects and silently serve an empty /metrics.
 	if o.TotalShards < 1 {
 		return fmt.Errorf("value for --total-shards=%d must be greater than 0", o.TotalShards)
 	}
 
 	if o.Shard < 0 || int(o.Shard) >= o.TotalShards {
-		return fmt.Errorf("value for --shard=%d must be between 0 and --total-shards=%d minus 1", o.Shard, o.TotalShards)
+		return fmt.Errorf("value for --shard=%d must be between 0 and %d (--total-shards minus 1)", o.Shard, o.TotalShards-1)
 	}
 
 	return nil

@@ -98,8 +98,6 @@ func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
 	})
 }
 
-// The node check used to return early, which left every validation below it
-// unreachable for the ordinary cluster-wide deployment.
 func TestValidate(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -121,8 +119,6 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			// NaN parses as a valid float64 and compares false against every
-			// bound, so the range check alone lets it through.
 			name:    "gomemlimit ratio of NaN",
 			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = math.NaN() },
 			wantErr: true,
@@ -179,17 +175,12 @@ func TestValidate(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			opts := NewOptions()
-			// A fresh command per case: AddFlags panics if the same command has
-			// the flags registered twice, and it is what applies the defaults.
+			// AddFlags applies the defaults; it panics if called twice on one command.
 			opts.AddFlags(&cobra.Command{})
 			tc.mutate(opts)
 
-			err := opts.Validate()
-			if tc.wantErr && err == nil {
-				t.Errorf("expected Validate() to fail, got nil")
-			}
-			if !tc.wantErr && err != nil {
-				t.Errorf("expected Validate() to pass, got %v", err)
+			if err := opts.Validate(); (err != nil) != tc.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tc.wantErr)
 			}
 		})
 	}

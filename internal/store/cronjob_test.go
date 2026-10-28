@@ -696,6 +696,8 @@ func TestCronJobParserParity(t *testing.T) {
 		name             string
 		schedule         string
 		expectedMismatch bool
+		wantKSMErr       bool
+		wantK8sErr       bool
 	}{
 		{
 			name:             "every six hours",
@@ -721,18 +723,22 @@ func TestCronJobParserParity(t *testing.T) {
 			name:             "four fields",
 			schedule:         "* * * *",
 			expectedMismatch: false,
+			wantKSMErr:       true,
+			wantK8sErr:       true,
 		},
 		{
 			// KSM rejects steps larger than the minute range; Kubernetes accepts them.
 			name:             "minute step larger than range",
 			schedule:         "*/120 4-22 * * *",
 			expectedMismatch: true,
+			wantKSMErr:       true,
 		},
 		{
 			// KSM rejects a step equal to the minute range.
 			name:             "minute step equal to range",
 			schedule:         "*/60 * * * *",
 			expectedMismatch: true,
+			wantKSMErr:       true,
 		},
 		{
 			// KSM uses AND semantics for DOM/DOW, while Kubernetes uses OR.
@@ -745,6 +751,7 @@ func TestCronJobParserParity(t *testing.T) {
 			name:             "sub-second every descriptor",
 			schedule:         "@every 500ms",
 			expectedMismatch: true,
+			wantKSMErr:       true,
 		},
 	}
 
@@ -752,6 +759,20 @@ func TestCronJobParserParity(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ksmSched, ksmErr := parseSchedule(test.schedule, nil)
 			k8sSched, k8sErr := robfigcron.ParseStandard(test.schedule)
+
+			if (ksmErr != nil) != test.wantKSMErr {
+				t.Errorf(
+					"schedule %q: unexpected KSM parse result: wantErr=%v, gotErr=%v",
+					test.schedule, test.wantKSMErr, ksmErr,
+				)
+			}
+
+			if (k8sErr != nil) != test.wantK8sErr {
+				t.Errorf(
+					"schedule %q: unexpected Kubernetes parse result: wantErr=%v, gotErr=%v",
+					test.schedule, test.wantK8sErr, k8sErr,
+				)
+			}
 
 			if ksmErr != nil || k8sErr != nil {
 				parseMismatch := (ksmErr == nil) != (k8sErr == nil)

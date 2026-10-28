@@ -251,10 +251,8 @@ func (l *LabelsAllowList) Set(value string) error {
 		firstWordPos int
 		name         string
 	)
-	// Scan over runes, not bytes. `range` on a string yields byte offsets, which
-	// stop addressing []rune(value) as soon as the value holds a multi-byte
-	// character — indexing the rune slice with them reads the wrong character or
-	// runs off the end.
+	// Index by rune, not byte: ranging over the string yields byte offsets,
+	// which don't address runes once value holds a multi-byte character.
 	runes := []rune(value)
 	firstWordPos = 0
 

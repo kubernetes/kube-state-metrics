@@ -444,6 +444,20 @@ func TestLabelsAllowListSet(t *testing.T) {
 				},
 			}),
 		},
+		{
+			// Offsets drift further with 3- and 4-byte runes across resources.
+			Desc:  "multi-byte runes across multiple resources",
+			Value: "日本=[語,🙂/*],pods=[app]",
+			Wanted: LabelsAllowList(map[string][]string{
+				"日本": {
+					"語",
+					"🙂/*",
+				},
+				"pods": {
+					"app",
+				},
+			}),
+		},
 	}
 
 	for _, test := range tests {

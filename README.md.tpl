@@ -356,8 +356,11 @@ go get k8s.io/kube-state-metrics/v2
 
 #### Building the Docker container
 
-Simply run the following command in this root folder, which will create a
-self-contained, statically-linked binary and build a Docker image:
+The image is built with [GoReleaser](https://goreleaser.com/) and
+[ko](https://ko.build/), so no Dockerfile is involved. Install GoReleaser (for
+example with `make install-goreleaser`), then run the following command in this
+root folder, which loads `registry.k8s.io/kube-state-metrics/kube-state-metrics:snapshot`
+for your architecture into the local Docker daemon:
 
 ```bash
 make container

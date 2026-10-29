@@ -37,6 +37,9 @@ kos:
     repositories:
       - gcr.io/k8s-staging-kube-state-metrics/kube-state-metrics
     base_image: gcr.io/distroless/static-debian13:nonroot
+    # Keep the UID/GID of the Dockerfile-based image (nobody), rather than the
+    # nonroot user (65532) of the base image.
+    user: "65534:65534"
     # In snapshot mode, ko publishes to the local Docker daemon using this domain.
     local_domain: "registry.k8s.io/kube-state-metrics/kube-state-metrics"
     platforms:

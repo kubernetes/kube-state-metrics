@@ -66,7 +66,7 @@ var (
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"driver", "pool_name", "node_name", "node_selection"},
+							LabelKeys:   []string{"driver", "pool", "node", "node_selection"},
 							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, ptr.Deref(rs.Spec.NodeName, ""), resourceSliceNodeSelection(rs)},
 							Value:       1,
 						},
@@ -84,7 +84,7 @@ var (
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"driver", "pool_name", "node_name"},
+							LabelKeys:   []string{"driver", "pool", "node"},
 							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, ptr.Deref(rs.Spec.NodeName, "")},
 							Value:       float64(len(rs.Spec.Devices)),
 						},

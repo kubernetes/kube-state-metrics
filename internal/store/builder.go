@@ -753,7 +753,7 @@ func newCRReflectorStopCh(ctx context.Context, gvkStopCh chan struct{}) chan str
 }
 
 // objectLimitOption limits the number of objects a store keeps and counts the
-// objects it drops once the limit is reached.
+// add/update events it drops once the limit is reached.
 func (b *Builder) objectLimitOption(expectedType any, objectLimit int64) metricsstore.Option {
 	resource := reflect.TypeOf(expectedType).String()
 	return metricsstore.WithObjectLimit(objectLimit, func() {

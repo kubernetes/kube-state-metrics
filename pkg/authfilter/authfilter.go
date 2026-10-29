@@ -44,9 +44,11 @@ import (
 )
 
 // These match the settings controller-runtime's metrics filter used for the
-// delegating authenticator and authorizer of k8s.io/apiserver.
+// delegating authenticator and authorizer of k8s.io/apiserver, which bounds
+// only the TokenReview. reviewTimeout bounds the SubjectAccessReview too, so a
+// hung API server cannot block a request forever.
 const (
-	tokenReviewTimeout  = 10 * time.Second
+	reviewTimeout       = 10 * time.Second
 	tokenCacheTTL       = 1 * time.Minute
 	allowCacheTTL       = 5 * time.Minute
 	denyCacheTTL        = 30 * time.Second
@@ -172,7 +174,7 @@ func (f *Filter) authenticate(ctx context.Context, token string) (authentication
 		return r.user, r.authenticated, nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, tokenReviewTimeout)
+	ctx, cancel := context.WithTimeout(ctx, reviewTimeout)
 	defer cancel()
 	review := &authenticationv1.TokenReview{Spec: authenticationv1.TokenReviewSpec{Token: token}}
 	var result *authenticationv1.TokenReview
@@ -207,6 +209,8 @@ func (f *Filter) authorize(ctx context.Context, spec authorizationv1.SubjectAcce
 	if v, ok := f.authCache.Get(key); ok {
 		status = v.(authorizationv1.SubjectAccessReviewStatus)
 	} else {
+		ctx, cancel := context.WithTimeout(ctx, reviewTimeout)
+		defer cancel()
 		review := &authorizationv1.SubjectAccessReview{Spec: spec}
 		var result *authorizationv1.SubjectAccessReview
 		if err := f.withRetry(ctx, func() (err error) {

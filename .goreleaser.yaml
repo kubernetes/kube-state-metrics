@@ -5,7 +5,9 @@ snapshot:
 
 builds:
   - id: kube-state-metrics
-    main: .
+    # The import path of the module root ends in /v2, which ko would use as the
+    # binary name in the image; cmd/kube-state-metrics yields /ko-app/kube-state-metrics.
+    main: ./cmd/kube-state-metrics
     binary: kube-state-metrics
     env:
       - CGO_ENABLED=0

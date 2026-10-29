@@ -94,7 +94,11 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
+	m.buildWritersLocked(ctx)
+}
 
+// buildWritersLocked rebuilds the writers; the caller must hold mtx.
+func (m *MetricsHandler) buildWritersLocked(ctx context.Context) {
 	if m.cancel != nil {
 		m.cancel()
 	}
@@ -126,6 +130,7 @@ func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmt
 // concurrently.
 func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
 	m.mtx.Lock()
+	defer m.mtx.Unlock()
 
 	if totalShards != 1 {
 		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
@@ -133,11 +138,10 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	m.curShard = shard
 	m.curTotalShards = totalShards
 	m.storeBuilder.WithSharding(shard, totalShards)
+	// Build under the same lock that marks sharding as configured, so a scrape
+	// never sees it configured before the writers exist.
+	m.buildWritersLocked(ctx)
 	m.shardingConfigured = true
-
-	// unlock because BuildWriters will hold a lock again
-	m.mtx.Unlock()
-	m.BuildWriters(ctx)
 }
 
 // Run configures the MetricsHandler's sharding and if autosharding is enabled

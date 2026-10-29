@@ -36,6 +36,7 @@ import (
 type stubStoreBuilder struct {
 	buildCount   atomic.Int64
 	buildWriters metricsstore.MetricsWriterList
+	onBuild      func()
 }
 
 func (s *stubStoreBuilder) WithMetrics(prometheus.Registerer) {}
@@ -67,6 +68,9 @@ func (s *stubStoreBuilder) WithGenerateCustomResourceStoresFunc(ksmtypes.BuildCu
 func (s *stubStoreBuilder) BuildStores() [][]cache.Store { return nil }
 func (s *stubStoreBuilder) Build() metricsstore.MetricsWriterList {
 	s.buildCount.Add(1)
+	if s.onBuild != nil {
+		s.onBuild()
+	}
 	return s.buildWriters
 }
 

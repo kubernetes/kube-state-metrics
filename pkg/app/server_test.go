@@ -1190,6 +1190,27 @@ func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
 	}
 }
 
+// TestRunKubeStateMetricsMalformedConfigReturnsOnCancel verifies that a run
+// waiting on a malformed config file returns once its context is cancelled
+// instead of continuing startup alongside the run that replaces it.
+func TestRunKubeStateMetricsMalformedConfigReturnsOnCancel(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(configPath, []byte("invalid: [unclosed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	opts := options.NewOptions()
+	opts.Config = configPath
+	// Continuing startup would fail here, so reaching it surfaces as an error.
+	opts.Kubeconfig = filepath.Join(t.TempDir(), "missing-kubeconfig")
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	if err := RunKubeStateMetrics(ctx, opts); err != nil {
+		t.Fatalf("expected the cancelled run to return without error, got: %v", err)
+	}
+}
+
 func TestResolveCustomResourceConfig(t *testing.T) {
 	validCRSConfig := `
 kind: CustomResourceStateMetrics

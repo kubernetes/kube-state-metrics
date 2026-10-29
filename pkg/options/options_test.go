@@ -17,6 +17,7 @@ limitations under the License.
 package options
 
 import (
+	"io"
 	"math"
 	"os"
 	"testing"
@@ -64,6 +65,51 @@ func TestOptionsParse(t *testing.T) {
 
 			if test.ExpectsError && err == nil {
 				t.Errorf("Expected error for test with description: %s", test.Desc)
+			}
+		})
+	}
+}
+
+// A rejected option must abort Execute before Run starts anything.
+func TestValidateRunsBeforeRun(t *testing.T) {
+	tests := []struct {
+		Desc         string
+		Args         []string
+		ExpectsError bool
+	}{
+		{
+			Desc:         "node sharding rejects a resource without a spec.nodeName field selector",
+			Args:         []string{"--node=node-1", "--resources=deployments"},
+			ExpectsError: true,
+		},
+		{
+			Desc:         "node sharding accepts pods",
+			Args:         []string{"--node=node-1", "--resources=pods"},
+			ExpectsError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Desc, func(t *testing.T) {
+			ran := false
+			cmd := &cobra.Command{
+				Use:  "kube-state-metrics",
+				Args: cobra.NoArgs,
+				Run:  func(_ *cobra.Command, _ []string) { ran = true },
+			}
+
+			opts := NewOptions()
+			opts.AddFlags(cmd)
+			cmd.SetArgs(test.Args)
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+
+			err := opts.Parse()
+			if (err != nil) != test.ExpectsError {
+				t.Fatalf("Parse() error = %v, expectsError %v", err, test.ExpectsError)
+			}
+			if ran == test.ExpectsError {
+				t.Errorf("Run called = %v, expectsError %v", ran, test.ExpectsError)
 			}
 		})
 	}

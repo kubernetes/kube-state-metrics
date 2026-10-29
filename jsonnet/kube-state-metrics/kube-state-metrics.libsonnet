@@ -372,10 +372,10 @@
       ksm.clusterRoleBinding,
       {
         metadata: { name: shardksmname },
-        roleRef: { name: shardksmname },
+        roleRef: { name: ksm.daemonsetsharding.shardClusterRole.metadata.name },
         subjects: [{
           kind: 'ServiceAccount',
-          name: shardksmname,
+          name: ksm.daemonsetsharding.shardServiceAccount.metadata.name,
           namespace: ksm.namespace,
         }],
       },
@@ -500,7 +500,7 @@
             },
             spec: {
               containers: [c],
-              serviceAccountName: shardksmname,
+              serviceAccountName: ksm.daemonsetsharding.shardServiceAccount.metadata.name,
               automountServiceAccountToken: true,
               nodeSelector: { 'kubernetes.io/os': 'linux' },
             },

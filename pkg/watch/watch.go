@@ -72,7 +72,7 @@ func NewListWatchMetrics(r prometheus.Registerer) *ListWatchMetrics {
 		ObjectsDropped: promauto.With(r).NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "kube_state_metrics_object_limit_dropped_total",
-				Help: "Number of objects not tracked by kube-state-metrics because the object limit was reached",
+				Help: "Number of add/update events for objects not stored because the object limit was reached",
 			},
 			[]string{"resource"},
 		),

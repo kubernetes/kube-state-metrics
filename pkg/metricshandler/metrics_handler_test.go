@@ -149,6 +149,25 @@ func TestServeHTTPUnavailableUntilShardingConfigured(t *testing.T) {
 	}
 }
 
+// A scrape must not see sharding as configured before the first writers are
+// built, or it would get an empty 200 instead of a 503.
+func TestConfigureShardingBuildsBeforeReady(t *testing.T) {
+	stub := &stubStoreBuilder{}
+	handler := New(&options.Options{}, fake.NewSimpleClientset(), stub, false)
+	// Build runs with mtx held, so the field can be read directly.
+	stub.onBuild = func() {
+		if handler.shardingConfigured {
+			t.Error("sharding marked as configured before the writers were built")
+		}
+	}
+
+	handler.ConfigureSharding(context.Background(), 0, 1)
+
+	if !handler.shardingConfigured {
+		t.Fatal("sharding not marked as configured after ConfigureSharding")
+	}
+}
+
 // With autosharding, custom resource discovery may reconfigure the store before
 // the shard is known. That must not build writers with the static default
 // sharding, which would serve every object and duplicate series across shards.

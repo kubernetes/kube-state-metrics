@@ -18,6 +18,7 @@ package store
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strconv"
@@ -294,7 +295,7 @@ func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]strin
 		// only the first label can be the wildcard label
 		if l == options.LabelWildcard {
 			if i == 0 {
-				return kubeMapToPrometheusLabels(prefix, withoutWildcardExcludedKeys(allKubeData))
+				return kubeMapToPrometheusLabels(prefix, withoutWildcardExcludedKeys(allKubeData, allowList[1:]))
 			}
 			continue
 		}
@@ -326,23 +327,21 @@ func createPrometheusLabelKeysValues(prefix string, allKubeData map[string]strin
 }
 
 // withoutWildcardExcludedKeys returns kubeData without the keys a wildcard never
-// matches. kubeData is returned as is when it contains none of them.
-func withoutWildcardExcludedKeys(kubeData map[string]string) map[string]string {
-	found := false
+// matches, unless they are listed by their exact key in allowList. kubeData is
+// returned as is when no key has to be removed.
+func withoutWildcardExcludedKeys(kubeData map[string]string, allowList []string) map[string]string {
+	var drop []string
 	for k := range wildcardExcludedKeys {
-		if _, ok := kubeData[k]; ok {
-			found = true
-			break
+		if _, ok := kubeData[k]; ok && !slices.Contains(allowList, k) {
+			drop = append(drop, k)
 		}
 	}
-	if !found {
+	if len(drop) == 0 {
 		return kubeData
 	}
-	filtered := make(map[string]string, len(kubeData))
-	for k, v := range kubeData {
-		if _, excluded := wildcardExcludedKeys[k]; !excluded {
-			filtered[k] = v
-		}
+	filtered := maps.Clone(kubeData)
+	for _, k := range drop {
+		delete(filtered, k)
 	}
 	return filtered
 }

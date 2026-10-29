@@ -21,6 +21,7 @@ import (
 	"math"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -67,6 +68,28 @@ func TestOptionsParse(t *testing.T) {
 				t.Errorf("Expected error for test with description: %s", test.Desc)
 			}
 		})
+	}
+}
+
+func TestValidateStoreSyncTimeout(t *testing.T) {
+	valid := func() *Options {
+		opts := NewOptions()
+		opts.AddFlags(&cobra.Command{})
+		return opts
+	}
+
+	negative := valid()
+	negative.StoreSyncTimeout = -time.Second
+	if err := negative.Validate(); err == nil {
+		t.Fatal("expected a negative store sync timeout to fail validation")
+	}
+
+	for _, timeout := range []time.Duration{0, time.Second} {
+		opts := valid()
+		opts.StoreSyncTimeout = timeout
+		if err := opts.Validate(); err != nil {
+			t.Fatalf("timeout %s: %v", timeout, err)
+		}
 	}
 }
 

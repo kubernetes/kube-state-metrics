@@ -17,6 +17,7 @@ limitations under the License.
 package authfilter
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -27,9 +28,12 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
+	authenticationv1client "k8s.io/client-go/kubernetes/typed/authentication/v1"
+	authorizationv1client "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	k8stesting "k8s.io/client-go/testing"
 )
 
@@ -198,4 +202,46 @@ func TestErrors(t *testing.T) {
 			t.Errorf("got status %d, want %d", got, http.StatusInternalServerError)
 		}
 	})
+}
+
+// deadlineTokenReviews and deadlineSubjectAccessReviews record whether Create
+// was called with a deadline.
+type deadlineTokenReviews struct {
+	authenticationv1client.TokenReviewInterface
+	hasDeadline *bool
+}
+
+func (d deadlineTokenReviews) Create(ctx context.Context, review *authenticationv1.TokenReview, opts metav1.CreateOptions) (*authenticationv1.TokenReview, error) {
+	_, *d.hasDeadline = ctx.Deadline()
+	return d.TokenReviewInterface.Create(ctx, review, opts)
+}
+
+type deadlineSubjectAccessReviews struct {
+	authorizationv1client.SubjectAccessReviewInterface
+	hasDeadline *bool
+}
+
+func (d deadlineSubjectAccessReviews) Create(ctx context.Context, review *authorizationv1.SubjectAccessReview, opts metav1.CreateOptions) (*authorizationv1.SubjectAccessReview, error) {
+	_, *d.hasDeadline = ctx.Deadline()
+	return d.SubjectAccessReviewInterface.Create(ctx, review, opts)
+}
+
+// A request context has no deadline of its own, so both reviews must set one
+// or a hung API server blocks the request until the client goes away.
+func TestReviewTimeout(t *testing.T) {
+	s := &fakeAPIServer{}
+	f := s.filter()
+	var tokenReviewDeadline, subjectAccessReviewDeadline bool
+	f.tokenReviews = deadlineTokenReviews{f.tokenReviews, &tokenReviewDeadline}
+	f.subjectAccessReviews = deadlineSubjectAccessReviews{f.subjectAccessReviews, &subjectAccessReviewDeadline}
+
+	if got := serve(t, f.Wrap(http.NotFoundHandler()), http.MethodGet, "/metrics", "Bearer "+validToken).Code; got != http.StatusNotFound {
+		t.Fatalf("got status %d, want %d", got, http.StatusNotFound)
+	}
+	if !tokenReviewDeadline {
+		t.Error("TokenReview was created without a deadline")
+	}
+	if !subjectAccessReviewDeadline {
+		t.Error("SubjectAccessReview was created without a deadline")
+	}
 }

@@ -206,7 +206,7 @@ spec:
             # *anything will be copied into labels, with the highest sorted * strings first
             "*": [metadata, labels]
             # a prefix before the asterisk will be used as a label prefix
-            # copied keys never override the customresource_* labels, nor commonLabels at this level,
+            # copied keys never override commonLabels, including the customresource_* labels,
             # and keys that sanitize to an invalid or reserved ("__") label name are dropped
             "lorem_*": [metadata, annotations]
             "**": [metadata, annotations]

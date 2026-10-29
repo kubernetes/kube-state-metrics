@@ -62,7 +62,7 @@ func compile(resource Resource) ([]compiledFamily, error) {
 	return families, nil
 }
 
-func compileCommon(c MetricMeta) (*compiledCommon, error) {
+func compileCommon(c MetricMeta, commonLabels map[string]string) (*compiledCommon, error) {
 	eachPath, err := compilePath(c.Path)
 	if err != nil {
 		return nil, fmt.Errorf("path: %w", err)
@@ -74,6 +74,7 @@ func compileCommon(c MetricMeta) (*compiledCommon, error) {
 	return &compiledCommon{
 		path:          eachPath,
 		labelFromPath: eachLabelsFromPath,
+		commonLabels:  commonLabels,
 	}, nil
 }
 
@@ -84,7 +85,7 @@ func compileFamily(f Generator, resource Resource) (*compiledFamily, error) {
 		klog.InfoS("Info metric does not have _info suffix", "gvk", resource.GroupVersionKind.String(), "name", f.Name)
 	}
 
-	metric, err := newCompiledMetric(f.Each)
+	metric, err := newCompiledMetric(f.Each, labels.CommonLabels)
 	if err != nil {
 		return nil, fmt.Errorf("compiling metric: %w", err)
 	}
@@ -132,8 +133,11 @@ type compiledEach compiledMetric
 
 type compiledCommon struct {
 	labelFromPath map[string]valuePath
-	t             metric.Type
-	path          valuePath
+	// commonLabels only fill in labels an each value has not set, so keys
+	// copied from the object must not take their names.
+	commonLabels map[string]string
+	t            metric.Type
+	path         valuePath
 }
 
 func (c compiledCommon) Path() valuePath {
@@ -161,13 +165,13 @@ type compiledMetric interface {
 }
 
 // newCompiledMetric returns a compiledMetric depending on the given metric type.
-func newCompiledMetric(m Metric) (compiledMetric, error) {
+func newCompiledMetric(m Metric, commonLabels map[string]string) (compiledMetric, error) {
 	switch m.Type {
 	case metric.Gauge:
 		if m.Gauge == nil {
 			return nil, errors.New("expected each.gauge to not be nil")
 		}
-		cc, err := compileCommon(m.Gauge.MetricMeta)
+		cc, err := compileCommon(m.Gauge.MetricMeta, commonLabels)
 		if err != nil {
 			// compileCommon returns a nil *compiledCommon alongside its error,
 			// so nothing may be assigned through cc before this check.
@@ -188,7 +192,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		if m.Info == nil {
 			return nil, errors.New("expected each.info to not be nil")
 		}
-		cc, err := compileCommon(m.Info.MetricMeta)
+		cc, err := compileCommon(m.Info.MetricMeta, commonLabels)
 		if err != nil {
 			// compileCommon returns a nil *compiledCommon alongside its error,
 			// so nothing may be assigned through cc before this check.
@@ -203,7 +207,7 @@ func newCompiledMetric(m Metric) (compiledMetric, error) {
 		if m.StateSet == nil {
 			return nil, errors.New("expected each.stateSet to not be nil")
 		}
-		cc, err := compileCommon(m.StateSet.MetricMeta)
+		cc, err := compileCommon(m.StateSet.MetricMeta, commonLabels)
 		if err != nil {
 			// compileCommon returns a nil *compiledCommon alongside its error,
 			// so nothing may be assigned through cc before this check.
@@ -286,9 +290,9 @@ func (c *compiledGauge) Values(v any) (result []eachValue, errs []error) {
 			if key != "" && c.labelFromKey != "" {
 				ev.Labels[c.labelFromKey] = key
 			}
-			addPathLabels(it, c.LabelFromPath(), ev.Labels)
+			addPathLabels(it, c.LabelFromPath(), c.commonLabels, ev.Labels)
 			// Evaluate path from parent's context as well (search w.r.t. the root element, not just specific fields).
-			addPathLabels(v, c.LabelFromPath(), ev.Labels)
+			addPathLabels(v, c.LabelFromPath(), c.commonLabels, ev.Labels)
 			result = append(result, *ev)
 		}
 	case []any:
@@ -301,7 +305,7 @@ func (c *compiledGauge) Values(v any) (result []eachValue, errs []error) {
 			if value == nil {
 				continue
 			}
-			addPathLabels(it, c.LabelFromPath(), value.Labels)
+			addPathLabels(it, c.LabelFromPath(), c.commonLabels, value.Labels)
 			result = append(result, *value)
 		}
 	default:
@@ -313,7 +317,7 @@ func (c *compiledGauge) Values(v any) (result []eachValue, errs []error) {
 		if value == nil {
 			break
 		}
-		addPathLabels(v, c.LabelFromPath(), value.Labels)
+		addPathLabels(v, c.LabelFromPath(), c.commonLabels, value.Labels)
 		result = append(result, *value)
 	}
 	return
@@ -360,7 +364,7 @@ func (c *compiledInfo) Values(v any) (result []eachValue, errs []error) {
 				labels[c.labelFromKey] = key
 			}
 
-			addPathLabels(it, c.LabelFromPath(), labels)
+			addPathLabels(it, c.LabelFromPath(), c.commonLabels, labels)
 
 			if len(labels) > 0 {
 				result = append(result, eachValue{
@@ -383,7 +387,7 @@ func (c *compiledInfo) values(v any) (result []eachValue, err []error) {
 		return
 	}
 	value := eachValue{Value: 1, Labels: map[string]string{}}
-	addPathLabels(v, c.labelFromPath, value.Labels)
+	addPathLabels(v, c.labelFromPath, c.commonLabels, value.Labels)
 	if len(value.Labels) != 0 {
 		result = append(result, value)
 	}
@@ -441,7 +445,7 @@ func (c *compiledStateSet) values(v any) (result []eachValue, errs []error) {
 			ev.Value = 1
 		}
 		ev.Labels[c.LabelName] = entry
-		addPathLabels(v, c.labelFromPath, ev.Labels)
+		addPathLabels(v, c.labelFromPath, c.commonLabels, ev.Labels)
 		result = append(result, ev)
 	}
 	return
@@ -535,11 +539,11 @@ type compiledFamily struct {
 func (f compiledFamily) BaseLabels(obj map[string]any) map[string]string {
 	result := make(map[string]string)
 	maps.Copy(result, f.Labels)
-	addPathLabels(obj, f.LabelFromPath, result)
+	addPathLabels(obj, f.LabelFromPath, f.Labels, result)
 	return result
 }
 
-func addPathLabels(obj any, labels map[string]valuePath, result map[string]string) {
+func addPathLabels(obj any, labels map[string]valuePath, protected, result map[string]string) {
 	// *prefixed is a special case, it means copy an object
 	// always do that first so other labels can override
 	var stars []string
@@ -550,10 +554,10 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 	}
 	slices.Sort(stars)
 	// The copied keys come from the object, so whoever can edit it controls
-	// them. They never override a label that is already set, and otherwise
-	// later stars and keys win. Walking both in reverse and keeping the first
-	// write does that, and makes keys that sanitize to the same name resolve
-	// the same way every scrape.
+	// them. They never override a label that is already set or protected, and
+	// otherwise later stars and keys win. Walking both in reverse and keeping
+	// the first write does that, and makes keys that sanitize to the same name
+	// resolve the same way every scrape.
 	for _, star := range slices.Backward(stars) {
 		kv, ok := labels[star].Get(obj).(map[string]any)
 		if !ok {
@@ -565,7 +569,9 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 		for _, k := range slices.Backward(slices.Sorted(maps.Keys(kv))) {
 			name := store.SanitizeLabelName(prefix + k)
-			if _, ok := result[name]; ok || !isCopiableLabelName(name) {
+			_, set := result[name]
+			_, isProtected := protected[name]
+			if set || isProtected || !isCopiableLabelName(name) {
 				continue
 			}
 			result[name] = fmt.Sprintf("%v", kv[k])
@@ -585,14 +591,8 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 }
 
 // isCopiableLabelName reports whether a label name copied from an object may be
-// emitted. Invalid and reserved names make the whole scrape fail to parse. The
-// GVK labels are checked explicitly because some metrics resolve their labels
-// before the common labels are applied.
+// emitted. Invalid and reserved names make the whole scrape fail to parse.
 func isCopiableLabelName(name string) bool {
-	switch name {
-	case gvkGroupLabel, gvkVersionLabel, gvkKindLabel:
-		return false
-	}
 	return model.LegacyValidation.IsValidLabelName(name) && !strings.HasPrefix(name, model.ReservedLabelPrefix)
 }
 

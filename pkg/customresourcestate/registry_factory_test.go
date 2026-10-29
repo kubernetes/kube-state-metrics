@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog/v2"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -148,14 +150,15 @@ func Test_addPathLabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := make(map[string]string)
-			addPathLabels(tt.args.obj, tt.args.labels, m)
+			addPathLabels(tt.args.obj, tt.args.labels, nil, m)
 			assert.Equal(t, tt.args.want, m)
 		})
 	}
 }
 
 // Keys copied with a "*" label come from the object, so they must not produce
-// label names that break the scrape or spoof labels that are already set.
+// label names that break the scrape or spoof labels that are already set or
+// protected.
 func Test_addPathLabels_wildcardKeys(t *testing.T) {
 	obj := map[string]any{
 		"metadata": map[string]any{
@@ -173,9 +176,10 @@ func Test_addPathLabels_wildcardKeys(t *testing.T) {
 		},
 	}
 	m := map[string]string{"team": "common"}
+	protected := map[string]string{gvkGroupLabel: "", gvkVersionLabel: "", gvkKindLabel: ""}
 	addPathLabels(obj, map[string]valuePath{
 		"*": mustCompilePath(t, "metadata", "labels"),
-	}, m)
+	}, protected, m)
 	assert.Equal(t, map[string]string{
 		"team": "common",
 		"a_b":  "second",
@@ -186,7 +190,7 @@ func Test_addPathLabels_wildcardKeys(t *testing.T) {
 	m = map[string]string{}
 	addPathLabels(obj, map[string]valuePath{
 		"p_*": mustCompilePath(t, "metadata", "labels"),
-	}, m)
+	}, protected, m)
 	assert.Equal(t, map[string]string{
 		"p_":                     "empty",
 		"p_1password_com_vault":  "a",
@@ -206,7 +210,7 @@ func Test_addPathLabels_wildcardKeys(t *testing.T) {
 		"*":   mustCompilePath(t, "metadata", "labels"),
 		"*2":  mustCompilePath(t, "metadata", "annotations"),
 		"a_b": mustCompilePath(t, "metadata", "labels", "ok"),
-	}, m)
+	}, nil, m)
 	assert.Equal(t, "annotation", m["ok"])
 	assert.Equal(t, "yes", m["a_b"])
 }
@@ -217,7 +221,7 @@ func Test_addPathLabels_indexOutOfRange(t *testing.T) {
 	m := make(map[string]string)
 	addPathLabels(cr, map[string]valuePath{
 		"idx": mustCompilePath(t, "spec", "order", "5"),
-	}, m)
+	}, nil, m)
 	assert.Equal(t, map[string]string{}, m)
 }
 
@@ -243,7 +247,7 @@ func Test_newCompiledMetric_compileError(t *testing.T) {
 		{name: "stateSet labelsFromPath", m: Metric{Type: metric.StateSet, StateSet: &MetricStateSet{MetricMeta: badLabels}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newCompiledMetric(tt.m)
+			got, err := newCompiledMetric(tt.m, nil)
 			assert.Nil(t, got)
 			assert.ErrorContains(t, err, "invalid list lookup: [Ready]")
 		})
@@ -666,4 +670,44 @@ func Test_compile_doesNotShareCommonLabels(t *testing.T) {
 	assert.Equal(t, "Bar", familiesV2[0].Labels[customResourceState+"_kind"])
 
 	assert.Equal(t, map[string]string{"team": "myteam"}, configured)
+}
+
+// commonLabels only fill in labels an each value has not set, so keys copied
+// by an each-level "*" must not replace them, while an explicit each-level
+// label still may.
+func Test_generate_wildcardKeepsCommonLabels(t *testing.T) {
+	obj := map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{"team": "copied", "env": "copied", "app": "foo"},
+		},
+	}
+	families, err := compile(Resource{
+		GroupVersionKind: GroupVersionKind{Group: "myteam.io", Version: "v1", Kind: "Foo"},
+		Labels:           Labels{CommonLabels: map[string]string{"team": "common", "env": "common"}},
+		Metrics: []Generator{{
+			Name: "foo_info",
+			Each: Metric{Type: metric.Info, Info: &MetricInfo{MetricMeta: MetricMeta{
+				LabelsFromPath: map[string][]string{
+					"*":   {"metadata", "labels"},
+					"env": {"metadata", "labels", "env"},
+				},
+			}}},
+		}},
+	})
+	assert.NoError(t, err)
+
+	got := generate(&unstructured.Unstructured{Object: obj}, families[0], klog.V(0))
+	assert.Len(t, got.Metrics, 1)
+	labels := map[string]string{}
+	for i, k := range got.Metrics[0].LabelKeys {
+		labels[k] = got.Metrics[0].LabelValues[i]
+	}
+	assert.Equal(t, map[string]string{
+		"team":          "common",
+		"env":           "copied",
+		"app":           "foo",
+		gvkGroupLabel:   "myteam.io",
+		gvkVersionLabel: "v1",
+		gvkKindLabel:    "Foo",
+	}, labels)
 }

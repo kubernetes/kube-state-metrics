@@ -66,13 +66,13 @@ type MetricsHandler struct {
 
 	cancel func()
 
-	// mtx protects metricsWriters, writersBuilt, curShard, curTotalShards, and storeBuilder config.
+	// mtx protects metricsWriters, shardingConfigured, curShard, curTotalShards, and storeBuilder config.
 	mtx            *sync.RWMutex
 	metricsWriters metricsstore.MetricsWriterList
-	// writersBuilt is set once the writers have been built for the first time.
-	// Until then sharding is not configured, e.g. because autosharding could not
-	// derive it from the StatefulSet, and there is nothing meaningful to serve.
-	writersBuilt       bool
+	// shardingConfigured is set once ConfigureSharding has run for the first time.
+	// Until then, e.g. because autosharding could not derive the shard from the
+	// StatefulSet, there is nothing meaningful to serve.
+	shardingConfigured bool
 	curTotalShards     int
 	curShard           int32
 	enableGZIPEncoding bool
@@ -101,19 +101,21 @@ func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	ctx, m.cancel = context.WithCancel(ctx)
 	m.storeBuilder.WithContext(ctx)
 	m.metricsWriters = m.storeBuilder.Build()
-	m.writersBuilt = true
 }
 
 // ConfigureStore applies storeBuilder configuration under mtx, then rebuilds writers.
+// With autosharding, the rebuild is skipped until sharding is configured, as the
+// builder still carries the static default sharding; ConfigureSharding builds the
+// writers with the applied configuration once the shard is known.
 func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error {
-	if configure == nil {
-		m.BuildWriters(ctx)
-		return nil
-	}
 	m.mtx.Lock()
-	err := configure(m.storeBuilder)
+	var err error
+	if configure != nil {
+		err = configure(m.storeBuilder)
+	}
+	skipBuild := m.autoSharding() && !m.shardingConfigured
 	m.mtx.Unlock()
-	if err != nil {
+	if err != nil || skipBuild {
 		return err
 	}
 	m.BuildWriters(ctx)
@@ -131,6 +133,7 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	m.curShard = shard
 	m.curTotalShards = totalShards
 	m.storeBuilder.WithSharding(shard, totalShards)
+	m.shardingConfigured = true
 
 	// unlock because BuildWriters will hold a lock again
 	m.mtx.Unlock()
@@ -141,9 +144,7 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 // re-configures sharding on re-sharding events. Run should only be called
 // once.
 func (m *MetricsHandler) Run(ctx context.Context) error {
-	autoSharding := len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
-
-	if !autoSharding {
+	if !m.autoSharding() {
 		klog.InfoS("Autosharding disabled")
 		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
 		// Wait for context to be done, metrics will be served until then.
@@ -226,6 +227,10 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+func (m *MetricsHandler) autoSharding() bool {
+	return len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
+}
+
 // ServeHTTP implements the http.Handler interface. It writes all generated metrics to the response body.
 // Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -237,12 +242,12 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if it is rebuilt mid-response.
 	m.mtx.RLock()
 	writers := m.metricsWriters
-	built := m.writersBuilt
+	configured := m.shardingConfigured
 	m.mtx.RUnlock()
 
 	// An empty 200 would be recorded as every series of this instance going
 	// stale; a failed scrape makes the problem visible as up == 0 instead.
-	if !built {
+	if !configured {
 		http.Error(w, "metrics are not available yet: sharding is not configured", http.StatusServiceUnavailable)
 		return
 	}

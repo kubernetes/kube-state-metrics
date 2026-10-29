@@ -19,6 +19,7 @@ package metricshandler
 import (
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -26,10 +27,13 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -98,7 +102,7 @@ func TestServeHTTPGzipWrapsOnce(t *testing.T) {
 	// No writers are needed: the response is wrapped before any are consulted,
 	// and an empty gzip stream is still a valid one.
 	handler := New(&options.Options{}, fake.NewSimpleClientset(), &stubStoreBuilder{}, true)
-	handler.BuildWriters(context.Background())
+	handler.ConfigureSharding(context.Background(), 0, 1)
 
 	for _, acceptEncoding := range []string{"gzip", "gzip, gzip", "gzip;q=1.0, gzip"} {
 		t.Run(acceptEncoding, func(t *testing.T) {
@@ -125,31 +129,86 @@ func TestServeHTTPGzipWrapsOnce(t *testing.T) {
 	}
 }
 
-// Until the writers are built, e.g. because autosharding could not derive the
+// Until sharding is configured, e.g. because autosharding could not derive the
 // shard from the StatefulSet, a scrape must fail rather than succeed empty.
-func TestServeHTTPUnavailableUntilWritersBuilt(t *testing.T) {
+func TestServeHTTPUnavailableUntilShardingConfigured(t *testing.T) {
 	handler := New(&options.Options{}, fake.NewSimpleClientset(), &stubStoreBuilder{}, false)
 
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
 	if w.Code != http.StatusServiceUnavailable {
-		t.Fatalf("before build: got status %d, want %d", w.Code, http.StatusServiceUnavailable)
+		t.Fatalf("before sharding: got status %d, want %d", w.Code, http.StatusServiceUnavailable)
 	}
 
-	handler.BuildWriters(context.Background())
+	handler.ConfigureSharding(context.Background(), 0, 1)
 
 	w = httptest.NewRecorder()
 	handler.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
 	if w.Code != http.StatusOK {
-		t.Fatalf("after build: got status %d, want %d", w.Code, http.StatusOK)
+		t.Fatalf("after sharding: got status %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// With autosharding, custom resource discovery may reconfigure the store before
+// the shard is known. That must not build writers with the static default
+// sharding, which would serve every object and duplicate series across shards.
+func TestConfigureStoreWaitsForAutosharding(t *testing.T) {
+	stub := &stubStoreBuilder{}
+	handler := New(&options.Options{Pod: "ksm-0", Namespace: "ns"}, fake.NewSimpleClientset(), stub, false)
+
+	if err := handler.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if got := stub.buildCount.Load(); got != 0 {
+		t.Fatalf("expected no build before sharding is configured, got %d", got)
+	}
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("before sharding: got status %d, want %d", w.Code, http.StatusServiceUnavailable)
+	}
+
+	handler.ConfigureSharding(context.Background(), 0, 2)
+
+	if got := stub.buildCount.Load(); got != 1 {
+		t.Fatalf("expected one build once sharding is configured, got %d", got)
+	}
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("after sharding: got status %d, want %d", w.Code, http.StatusOK)
 	}
 }
 
 // The StatefulSet lookup must give up when Run's context is cancelled instead
 // of blocking shutdown on an unresponsive API server.
 func TestRunHonoursContextDuringStatefulSetLookup(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		<-r.Context().Done()
+	controller := true
+	pod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ksm-0",
+			Namespace: "ns",
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "apps/v1",
+				Kind:       "StatefulSet",
+				Name:       "ksm",
+				Controller: &controller,
+			}},
+		},
+	}
+	statefulSetReached := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/namespaces/ns/pods/ksm-0":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(pod)
+		case "/apis/apps/v1/namespaces/ns/statefulsets/ksm":
+			close(statefulSetReached)
+			<-r.Context().Done()
+		default:
+			http.NotFound(w, r)
+		}
 	}))
 	defer srv.Close()
 	// Drop a request still hanging here, so a regression fails the test below
@@ -161,7 +220,7 @@ func TestRunHonoursContextDuringStatefulSetLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	handler := New(&options.Options{Pod: "ksm-0", Namespace: "ns"}, client, &stubStoreBuilder{}, false)
@@ -175,5 +234,10 @@ func TestRunHonoursContextDuringStatefulSetLookup(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("Run did not return after its context was cancelled")
+	}
+	select {
+	case <-statefulSetReached:
+	default:
+		t.Fatal("expected Run to reach the StatefulSet lookup")
 	}
 }

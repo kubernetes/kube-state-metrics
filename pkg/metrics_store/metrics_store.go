@@ -61,8 +61,8 @@ type MetricsStore struct {
 	// is only maintained when a limit is set.
 	objectLimit int64
 	objectCount atomic.Int64
-	// onObjectDropped is called for every new object that is not stored
-	// because objectLimit was reached.
+	// onObjectDropped is called for every add or update of an object that is
+	// not stored because objectLimit was reached.
 	onObjectDropped func()
 }
 
@@ -72,7 +72,8 @@ type Option func(*MetricsStore)
 // WithObjectLimit limits the number of objects the store keeps. Once the limit
 // is reached, new objects are not stored until existing ones are deleted;
 // updates to objects already in the store are still applied. onDropped, if not
-// nil, is called for every object that is not stored. A limit of 0 disables it.
+// nil, is called for every add or update of an object that is not stored. A
+// limit of 0 disables it.
 func WithObjectLimit(limit int64, onDropped func()) Option {
 	return func(s *MetricsStore) {
 		s.objectLimit = limit

@@ -401,7 +401,7 @@ func TestMetricsStoreObjectLimit(t *testing.T) {
 		t.Fatalf("after watch events: got %v, want [a b]", got)
 	}
 	if dropped != 4 {
-		t.Fatalf("got %d dropped objects, want 4", dropped)
+		t.Fatalf("got %d dropped events, want 4", dropped)
 	}
 
 	// Updates to stored objects are still applied.

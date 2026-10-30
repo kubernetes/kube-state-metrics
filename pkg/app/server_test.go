@@ -1323,14 +1323,14 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
 	base.TotalShards = 1
 
-	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
+	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_state_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
 	first := base.Clone()
 	_ = RunKubeStateMetricsWrapper(context.Background(), first)
 	if len(first.AnnotationsAllowList["secrets"]) != 1 || !slices.Equal(first.Namespaces, []string{"team-a"}) {
 		t.Fatalf("expected config values to be applied, got annotations=%v namespaces=%v", first.AnnotationsAllowList, first.Namespaces)
 	}
 	if first.CustomResourceConfigFile != filepath.Join(dir, "crs.yaml") {
-		t.Fatalf("expected deprecated custom_resource_config_file to be honored, got %q", first.CustomResourceConfigFile)
+		t.Fatalf("expected custom_resource_state_config_file to be applied, got %q", first.CustomResourceConfigFile)
 	}
 
 	writeConfig("enable_gzip_encoding: true\n")

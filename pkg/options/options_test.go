@@ -24,8 +24,6 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 func TestOptionsParse(t *testing.T) {
@@ -116,33 +114,33 @@ func TestValidateRunsBeforeRun(t *testing.T) {
 	}
 }
 
-func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
-	t.Run("deprecated key populates alias field", func(t *testing.T) {
-		opts := NewOptions()
-		if err := yaml.Unmarshal([]byte("custom_resource_config_file: /etc/ksm/crs.yaml\n"), opts); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if opts.CustomResourceConfigFileDeprecated != "/etc/ksm/crs.yaml" {
-			t.Fatalf("expected deprecated alias to be set, got %q", opts.CustomResourceConfigFileDeprecated)
-		}
-		if opts.CustomResourceConfigFile != "" {
-			t.Fatalf("expected canonical field to remain empty pre-merge, got %q", opts.CustomResourceConfigFile)
-		}
-	})
+func TestUnmarshalConfigFile(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		config  string
+		wantErr bool
+	}{
+		{name: "known keys", config: "custom_resource_state_config_file: /etc/ksm/crs.yaml\nport: 9090\n"},
+		{name: "empty file", config: ""},
+		{name: "removed key", config: "custom_resource_config_file: /etc/ksm/crs.yaml\n", wantErr: true},
+		{name: "misspelled key", config: "prot: 9090\n", wantErr: true},
+		{name: "invalid yaml", config: "port: [\n", wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := NewOptions()
+			if err := UnmarshalConfigFile([]byte(tc.config), opts); (err != nil) != tc.wantErr {
+				t.Fatalf("UnmarshalConfigFile() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
 
-	t.Run("canonical key takes precedence when both are set", func(t *testing.T) {
-		opts := NewOptions()
-		yamlIn := "custom_resource_config_file: /old.yaml\ncustom_resource_state_config_file: /new.yaml\n"
-		if err := yaml.Unmarshal([]byte(yamlIn), opts); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if opts.CustomResourceConfigFile != "/new.yaml" {
-			t.Fatalf("expected canonical field to win, got %q", opts.CustomResourceConfigFile)
-		}
-		if opts.CustomResourceConfigFileDeprecated != "/old.yaml" {
-			t.Fatalf("expected deprecated field to retain its value, got %q", opts.CustomResourceConfigFileDeprecated)
-		}
-	})
+	opts := NewOptions()
+	if err := UnmarshalConfigFile([]byte("custom_resource_state_config_file: /etc/ksm/crs.yaml\nport: 9090\n"), opts); err != nil {
+		t.Fatal(err)
+	}
+	if opts.CustomResourceConfigFile != "/etc/ksm/crs.yaml" || opts.Port != 9090 {
+		t.Fatalf("expected the config values to be applied, got crs=%q port=%d", opts.CustomResourceConfigFile, opts.Port)
+	}
 }
 
 func TestValidate(t *testing.T) {

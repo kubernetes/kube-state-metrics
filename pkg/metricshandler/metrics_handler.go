@@ -66,9 +66,13 @@ type MetricsHandler struct {
 
 	cancel func()
 
-	// mtx protects metricsWriters, curShard, curTotalShards, and storeBuilder config.
-	mtx                *sync.RWMutex
-	metricsWriters     metricsstore.MetricsWriterList
+	// mtx protects metricsWriters, shardingConfigured, curShard, curTotalShards, and storeBuilder config.
+	mtx            *sync.RWMutex
+	metricsWriters metricsstore.MetricsWriterList
+	// shardingConfigured is set once ConfigureSharding has run for the first time.
+	// Until then, e.g. because autosharding could not derive the shard from the
+	// StatefulSet, there is nothing meaningful to serve.
+	shardingConfigured bool
 	curTotalShards     int
 	curShard           int32
 	enableGZIPEncoding bool
@@ -90,7 +94,11 @@ func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ks
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
+	m.buildWritersLocked(ctx)
+}
 
+// buildWritersLocked rebuilds the writers; the caller must hold mtx.
+func (m *MetricsHandler) buildWritersLocked(ctx context.Context) {
 	if m.cancel != nil {
 		m.cancel()
 	}
@@ -100,15 +108,18 @@ func (m *MetricsHandler) BuildWriters(ctx context.Context) {
 }
 
 // ConfigureStore applies storeBuilder configuration under mtx, then rebuilds writers.
+// With autosharding, the rebuild is skipped until sharding is configured, as the
+// builder still carries the static default sharding; ConfigureSharding builds the
+// writers with the applied configuration once the shard is known.
 func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error {
-	if configure == nil {
-		m.BuildWriters(ctx)
-		return nil
-	}
 	m.mtx.Lock()
-	err := configure(m.storeBuilder)
+	var err error
+	if configure != nil {
+		err = configure(m.storeBuilder)
+	}
+	skipBuild := m.autoSharding() && !m.shardingConfigured
 	m.mtx.Unlock()
-	if err != nil {
+	if err != nil || skipBuild {
 		return err
 	}
 	m.BuildWriters(ctx)
@@ -119,6 +130,7 @@ func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmt
 // concurrently.
 func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
 	m.mtx.Lock()
+	defer m.mtx.Unlock()
 
 	if totalShards != 1 {
 		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
@@ -126,19 +138,17 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	m.curShard = shard
 	m.curTotalShards = totalShards
 	m.storeBuilder.WithSharding(shard, totalShards)
-
-	// unlock because BuildWriters will hold a lock again
-	m.mtx.Unlock()
-	m.BuildWriters(ctx)
+	// Build under the same lock that marks sharding as configured, so a scrape
+	// never sees it configured before the writers exist.
+	m.buildWritersLocked(ctx)
+	m.shardingConfigured = true
 }
 
 // Run configures the MetricsHandler's sharding and if autosharding is enabled
 // re-configures sharding on re-sharding events. Run should only be called
 // once.
 func (m *MetricsHandler) Run(ctx context.Context) error {
-	autoSharding := len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
-
-	if !autoSharding {
+	if !m.autoSharding() {
 		klog.InfoS("Autosharding disabled")
 		m.ConfigureSharding(ctx, m.opts.Shard, m.opts.TotalShards)
 		// Wait for context to be done, metrics will be served until then.
@@ -148,7 +158,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 
 	klog.InfoS("Autosharding enabled with pod", "pod", klog.KRef(m.opts.Namespace, m.opts.Pod))
 	klog.InfoS("Auto detecting sharding settings")
-	ss, err := detectStatefulSet(m.kubeClient, m.opts.Pod, m.opts.Namespace)
+	ss, err := detectStatefulSet(ctx, m.kubeClient, m.opts.Pod, m.opts.Namespace)
 	if err != nil {
 		return fmt.Errorf("detect StatefulSet: %w", err)
 	}
@@ -221,6 +231,10 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+func (m *MetricsHandler) autoSharding() bool {
+	return len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
+}
+
 // ServeHTTP implements the http.Handler interface. It writes all generated metrics to the response body.
 // Note that all operations defined within this procedure are performed at every request.
 func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -232,7 +246,15 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// if it is rebuilt mid-response.
 	m.mtx.RLock()
 	writers := m.metricsWriters
+	configured := m.shardingConfigured
 	m.mtx.RUnlock()
+
+	// An empty 200 would be recorded as every series of this instance going
+	// stale; a failed scrape makes the problem visible as up == 0 instead.
+	if !configured {
+		http.Error(w, "metrics are not available yet: sharding is not configured", http.StatusServiceUnavailable)
+		return
+	}
 
 	resHeader := w.Header()
 	var writer io.Writer = w
@@ -356,8 +378,8 @@ func detectNominalFromPod(statefulSetName, podName string) (int32, error) {
 	return int32(nominal), nil //nolint:gosec
 }
 
-func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {
-	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(context.TODO(), podName, metav1.GetOptions{})
+func detectStatefulSet(ctx context.Context, kubeClient kubernetes.Interface, podName, namespaceName string) (*appsv1.StatefulSet, error) {
+	p, err := kubeClient.CoreV1().Pods(namespaceName).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("retrieve pod %s for sharding: %w", podName, err)
 	}
@@ -368,7 +390,7 @@ func detectStatefulSet(kubeClient kubernetes.Interface, podName, namespaceName s
 			continue
 		}
 
-		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(context.TODO(), o.Name, metav1.GetOptions{})
+		ss, err := kubeClient.AppsV1().StatefulSets(namespaceName).Get(ctx, o.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("retrieve shard's StatefulSet: %s/%s: %w", namespaceName, o.Name, err)
 		}

@@ -27,7 +27,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"k8s.io/klog/v2"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -94,16 +93,10 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			if !opts.ContinueWithoutConfig {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
-		} else if err := yaml.Unmarshal(configFile, opts); err != nil {
+		} else if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
 			klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
 			if !opts.ContinueWithoutConfig {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-			}
-			// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
-		} else if opts.CustomResourceConfigFileDeprecated != "" {
-			klog.Warning("The 'custom_resource_config_file' config key is deprecated and will be removed in a future release; use 'custom_resource_state_config_file' instead")
-			if opts.CustomResourceConfigFile == "" {
-				opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
 			}
 		}
 		if _, err := watchFile(file, restart); err != nil {
@@ -183,13 +176,9 @@ func reloadedOptions(baseOpts *options.Options) (*options.Options, bool) {
 		if err != nil {
 			return nil, false
 		}
-		if err := yaml.Unmarshal(configFile, opts); err != nil {
+		if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
 			return nil, false
 		}
-	}
-	// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
-	if opts.CustomResourceConfigFile == "" {
-		opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
 	}
 	return opts, true
 }

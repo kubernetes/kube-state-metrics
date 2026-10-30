@@ -58,6 +58,5 @@ var (
 		"validatingadmissionpolicybindings": struct{}{},
 		"validatingwebhookconfigurations":   struct{}{},
 		"volumeattachments":                 struct{}{},
-		"volumeattributesclasses":           struct{}{},
 	}
 )

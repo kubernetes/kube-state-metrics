@@ -65,7 +65,6 @@ See each file for specific documentation about the exposed metrics:
 * [ValidatingAdmissionPolicyBinding Metrics](metrics/extend/validatingadmissionpolicybinding-metrics.md)
 * [ValidatingWebhookConfiguration Metrics](metrics/extend/validatingwebhookconfiguration-metrics.md)
 * [VolumeAttachment Metrics](metrics/storage/volumeattachment-metrics.md)
-* [VolumeAttributesClass Metrics](metrics/storage/volumeattributesclass-metrics.md)
 
 ### Optional Resources
 
@@ -76,6 +75,7 @@ See each file for specific documentation about the exposed metrics:
 * [Role Metrics](metrics/auth/role-metrics.md)
 * [RoleBinding Metrics](metrics/auth/rolebinding-metrics.md)
 * [ServiceAccount Metrics](metrics/auth/serviceaccount-metrics.md)
+* [VolumeAttributesClass Metrics](metrics/storage/volumeattributesclass-metrics.md)
 
 ## PromQL Queries
 

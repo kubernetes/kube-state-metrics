@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2026 The Kubernetes Authors All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -33,9 +33,6 @@ func TestVolumeAttributesClassStore(t *testing.T) {
 					Name: "test_volumeattributesclass-info",
 				},
 				DriverName: "ebs.csi.aws.com",
-				Parameters: map[string]string{
-					"iops": "6000",
-				},
 			},
 			Want: `
 					# HELP kube_volumeattributesclass_info Information about volumeattributesclass.
@@ -81,10 +78,40 @@ func TestVolumeAttributesClassStore(t *testing.T) {
 				"kube_volumeattributesclass_labels",
 			},
 		},
+		{
+			AllowAnnotationsList: []string{"app.k8s.io/owner"},
+			AllowLabelsList:      []string{"foo"},
+			Obj: &storagev1.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test_volumeattributesclass-allowlisted",
+					Annotations: map[string]string{
+						"app.k8s.io/owner": "storage",
+						"ignored":          "x",
+					},
+					Labels: map[string]string{
+						"foo":     "bar",
+						"ignored": "x",
+					},
+				},
+				DriverName: "ebs.csi.aws.com",
+			},
+			Want: `
+					# HELP kube_volumeattributesclass_annotations Kubernetes annotations converted to Prometheus labels.
+					# HELP kube_volumeattributesclass_labels Kubernetes labels converted to Prometheus labels.
+					# TYPE kube_volumeattributesclass_annotations gauge
+					# TYPE kube_volumeattributesclass_labels gauge
+					kube_volumeattributesclass_annotations{volumeattributesclass="test_volumeattributesclass-allowlisted",annotation_app_k8s_io_owner="storage"} 1
+					kube_volumeattributesclass_labels{volumeattributesclass="test_volumeattributesclass-allowlisted",label_foo="bar"} 1
+				`,
+			MetricNames: []string{
+				"kube_volumeattributesclass_annotations",
+				"kube_volumeattributesclass_labels",
+			},
+		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(volumeAttributesClassMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttributesClassMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(volumeAttributesClassMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(volumeAttributesClassMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

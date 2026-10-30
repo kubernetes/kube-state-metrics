@@ -21,10 +21,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/fsnotify/fsnotify"
+
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
-func TestCustomResourceConfigFile(t *testing.T) {
+func TestReloadedOptions(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config.yaml")
 	writeConfig := func(content string) {
@@ -37,36 +39,85 @@ func TestCustomResourceConfigFile(t *testing.T) {
 	base := options.NewOptions()
 	base.Config = configPath
 	base.CustomResourceConfigFile = "/etc/ksm/from-flag.yaml"
+	base.Kubeconfig = "/etc/ksm/kubeconfig-from-flag"
 
 	tests := []struct {
-		name   string
-		config string
-		want   string
-		wantOK bool
+		name           string
+		config         string
+		wantCRC        string
+		wantKubeconfig string
+		wantOK         bool
 	}{
-		{"config file overrides the flag", "custom_resource_state_config_file: /etc/ksm/from-config.yaml\n", "/etc/ksm/from-config.yaml", true},
-		{"override removed falls back to the flag", "port: 8080\n", "/etc/ksm/from-flag.yaml", true},
-		{"unparsable config file", "port: [\n", "", false},
+		{
+			name:           "config file overrides the flags",
+			config:         "custom_resource_state_config_file: /etc/ksm/from-config.yaml\nkubeconfig: /etc/ksm/kubeconfig-from-config\n",
+			wantCRC:        "/etc/ksm/from-config.yaml",
+			wantKubeconfig: "/etc/ksm/kubeconfig-from-config",
+			wantOK:         true,
+		},
+		{
+			name:           "override removed falls back to the flags",
+			config:         "port: 8080\n",
+			wantCRC:        "/etc/ksm/from-flag.yaml",
+			wantKubeconfig: "/etc/ksm/kubeconfig-from-flag",
+			wantOK:         true,
+		},
+		{name: "unparsable config file", config: "port: [\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			writeConfig(tt.config)
-			got, ok := customResourceConfigFile(base)
-			if got != tt.want || ok != tt.wantOK {
-				t.Errorf("got (%q, %v), want (%q, %v)", got, ok, tt.want, tt.wantOK)
+			got, ok := reloadedOptions(base)
+			if ok != tt.wantOK {
+				t.Fatalf("got ok %v, want %v", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got.CustomResourceConfigFile != tt.wantCRC || got.Kubeconfig != tt.wantKubeconfig {
+				t.Errorf("got (%q, %q), want (%q, %q)", got.CustomResourceConfigFile, got.Kubeconfig, tt.wantCRC, tt.wantKubeconfig)
 			}
 		})
 	}
-	if base.CustomResourceConfigFile != "/etc/ksm/from-flag.yaml" {
-		t.Errorf("the base options must not change, got %q", base.CustomResourceConfigFile)
+	if base.CustomResourceConfigFile != "/etc/ksm/from-flag.yaml" || base.Kubeconfig != "/etc/ksm/kubeconfig-from-flag" {
+		t.Errorf("the base options must not change, got (%q, %q)", base.CustomResourceConfigFile, base.Kubeconfig)
 	}
 
 	t.Run("deprecated key", func(t *testing.T) {
 		noFlag := options.NewOptions()
 		noFlag.Config = configPath
 		writeConfig("custom_resource_config_file: /etc/ksm/deprecated.yaml\n")
-		if got, ok := customResourceConfigFile(noFlag); got != "/etc/ksm/deprecated.yaml" || !ok {
-			t.Errorf("got (%q, %v), want the deprecated key's file", got, ok)
+		if got, ok := reloadedOptions(noFlag); !ok || got.CustomResourceConfigFile != "/etc/ksm/deprecated.yaml" {
+			t.Errorf("expected the deprecated key's file, got %v", got)
 		}
 	})
+}
+
+func TestMovableWatch(t *testing.T) {
+	dir := t.TempDir()
+	first := filepath.Join(dir, "first.yaml")
+	second := filepath.Join(dir, "second.yaml")
+	for _, f := range []string{first, second} {
+		if err := os.WriteFile(f, []byte("a: 1\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	events := make(chan fsnotify.Event, 16)
+	onChange := func(e fsnotify.Event) { events <- e }
+	w := &movableWatch{name: "test file"}
+	t.Cleanup(func() { w.watch("", onChange) })
+
+	w.watch(first, onChange)
+	w.watch(second, onChange)
+
+	if err := os.WriteFile(first, []byte("a: 2\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	expectNoEvent(t, events)
+
+	if err := os.WriteFile(second, []byte("a: 2\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	expectEvent(t, events)
 }

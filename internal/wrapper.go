@@ -51,30 +51,11 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// The custom resource config file can be set by the options config file,
-	// so the file in effect can change with each reload. watchedCRCFile is the
-	// file the watcher follows and stopCRCWatch stops that watcher.
-	var (
-		watchedCRCFile string
-		stopCRCWatch   func()
-	)
+	// The custom resource config file and the kubeconfig can be set by the
+	// options config file, so the files in effect can change with each reload.
 	var restart func(fsnotify.Event)
-	watchCRCFile := func(file string) {
-		if stopCRCWatch != nil {
-			stopCRCWatch()
-			stopCRCWatch = nil
-		}
-		watchedCRCFile = file
-		if file == "" {
-			return
-		}
-		stop, err := watchFile(file, restart)
-		if err != nil {
-			klog.ErrorS(err, "Failed to watch Custom resource configuration file", "file", file)
-			return
-		}
-		stopCRCWatch = stop
-	}
+	crcWatch := &movableWatch{name: "Custom resource configuration file"}
+	kubeconfigWatch := &movableWatch{name: "kubeconfig file"}
 
 	// Every watched file gets its own watcher, and each watcher runs its
 	// callback on its own goroutine. They all restart KSM through the same ctx
@@ -88,11 +69,12 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		defer reloadMu.Unlock()
 
 		klog.InfoS("Changes detected", "name", e.Name)
-		// Follow the custom resource config file the restarted run will use.
-		// A config file that cannot be read keeps the current watcher; the run
-		// waits for it to be fixed and the fix triggers another restart.
-		if file, ok := customResourceConfigFile(baseOpts); ok && file != watchedCRCFile {
-			watchCRCFile(file)
+		// Follow the files the restarted run will use. An options config file
+		// that cannot be read keeps the current watchers; the run waits for it
+		// to be fixed and the fix triggers another restart.
+		if next, ok := reloadedOptions(baseOpts); ok {
+			crcWatch.watch(next.CustomResourceConfigFile, restart)
+			kubeconfigWatch.watch(next.Kubeconfig, restart)
 		}
 		cancel()
 		// Wait for the ports to be released.
@@ -141,7 +123,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 		// The options file watcher is already running and may restart first.
 		reloadMu.Lock()
-		watchCRCFile(opts.CustomResourceConfigFile)
+		crcWatch.watch(opts.CustomResourceConfigFile, restart)
 		reloadMu.Unlock()
 	}
 	if opts.Kubeconfig != "" {
@@ -153,33 +135,61 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			}
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
-		if _, err := watchFile(opts.Kubeconfig, restart); err != nil {
-			klog.ErrorS(err, "Failed to watch kubeconfig file", "file", opts.Kubeconfig)
-		}
+		reloadMu.Lock()
+		kubeconfigWatch.watch(opts.Kubeconfig, restart)
+		reloadMu.Unlock()
 	}
 	klog.InfoS("Starting kube-state-metrics")
 	KSMRunOrDie(ctx)
 	select {}
 }
 
-// customResourceConfigFile returns the custom resource config file a run
-// starting from baseOpts uses: the one set in the options config file, if
-// any, otherwise the one from the command line. It returns false when the
-// options config file cannot be read or parsed.
-func customResourceConfigFile(baseOpts *options.Options) (string, bool) {
+// movableWatch watches one file whose path can change between runs.
+type movableWatch struct {
+	name string
+	file string
+	stop func()
+}
+
+// watch moves the watch to file, unless it already follows it. An empty file
+// stops the watch.
+func (w *movableWatch) watch(file string, onChange func(fsnotify.Event)) {
+	if file == w.file {
+		return
+	}
+	if w.stop != nil {
+		w.stop()
+		w.stop = nil
+	}
+	w.file = file
+	if file == "" {
+		return
+	}
+	stop, err := watchFile(file, onChange)
+	if err != nil {
+		klog.ErrorS(err, "Failed to watch "+w.name, "file", file)
+		return
+	}
+	w.stop = stop
+}
+
+// reloadedOptions returns the options a run starting from baseOpts uses, with
+// the options config file merged in. It returns false when the options config
+// file cannot be read or parsed.
+func reloadedOptions(baseOpts *options.Options) (*options.Options, bool) {
 	opts := baseOpts.Clone()
 	if file := options.GetConfigFile(*opts); file != "" {
 		configFile, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
-			return "", false
+			return nil, false
 		}
 		if err := yaml.Unmarshal(configFile, opts); err != nil {
-			return "", false
+			return nil, false
 		}
 	}
 	// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
 	if opts.CustomResourceConfigFile == "" {
-		return opts.CustomResourceConfigFileDeprecated, true
+		opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
 	}
-	return opts.CustomResourceConfigFile, true
+	return opts, true
 }

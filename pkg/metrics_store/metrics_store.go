@@ -95,34 +95,39 @@ func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, 
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj any) error {
-	_, err := s.add(obj)
-	return err
-}
-
-// add implements Add and returns the UID the object is stored under.
-func (s *MetricsStore) add(obj any) (types.UID, error) {
 	// Objects rendered by Transformer only arrive through Replace at the end of
 	// a WatchList initial sync, which records the resource version itself.
 	// WatchList is disabled when --object-limit is set, so no per-object
 	// bookkeeping is skipped here.
 	if r, ok := obj.(*renderedObject); ok {
 		s.metrics.Store(r.uid, r.families)
-		return r.uid, nil
+		return nil
 	}
 
 	o, err := meta.Accessor(obj)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	s.setLastResourceVersion(o.GetResourceVersion())
 
 	families := s.generateMetricsFunc(obj)
 
-	uid := o.GetUID()
-	s.metrics.Store(uid, renderFamilies(families))
+	s.metrics.Store(o.GetUID(), renderFamilies(families))
 
-	return uid, nil
+	return nil
+}
+
+// objectUID returns the UID an object is stored under.
+func objectUID(obj any) (types.UID, error) {
+	if r, ok := obj.(*renderedObject); ok {
+		return r.uid, nil
+	}
+	o, err := meta.Accessor(obj)
+	if err != nil {
+		return "", err
+	}
+	return o.GetUID(), nil
 }
 
 // byteAppender is implemented by families that can render themselves into a
@@ -221,14 +226,15 @@ func (s *MetricsStore) GetByKey(_ string) (item any, exists bool, err error) {
 // Replace will delete the contents of the store, using instead the given list,
 // and records the provided resourceVersion as the last sync resource version.
 //
-// The store is read concurrently by WriteAll, so it is never emptied: every
-// listed object is upserted first, and only then are the objects missing from
-// the list deleted. A scrape during a relist therefore sees each surviving
-// object, rather than whatever subset had been re-added so far.
+// The store is read concurrently by WriteAll, so it is never emptied: the
+// objects missing from the list are deleted first, and only then is every
+// listed object upserted. A scrape during a relist therefore sees each surviving
+// object, rather than whatever subset had been re-added so far, and never sees
+// a deleted object next to the objects that were created since.
 func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 	listed := make(map[types.UID]struct{}, len(list))
 	for _, o := range list {
-		uid, err := s.add(o)
+		uid, err := objectUID(o)
 		if err != nil {
 			return err
 		}
@@ -241,6 +247,12 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 		}
 		return true
 	})
+
+	for _, o := range list {
+		if err := s.Add(o); err != nil {
+			return err
+		}
+	}
 
 	s.setLastResourceVersion(resourceVersion)
 

@@ -281,6 +281,34 @@ func TestReplaceDoesNotExposePartialStore(t *testing.T) {
 	}
 }
 
+// Objects missing from a relist must be gone before the listed objects are
+// upserted, so a concurrent scrape never sees a deleted object next to the ones
+// created since.
+func TestReplaceDeletesUnlistedObjectsFirst(t *testing.T) {
+	var ms *MetricsStore
+	checking := false
+	ms = NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface {
+		if !checking {
+			return nil
+		}
+		if _, ok := ms.metrics.Load(types.UID("drop")); ok {
+			t.Fatal("expected the unlisted object to be deleted before the listed ones are upserted")
+		}
+		return nil
+	})
+
+	for _, uid := range []types.UID{"keep", "drop"} {
+		if err := ms.Add(&v1.Service{UID: uid}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	checking = true
+	if err := ms.Replace([]any{&v1.Service{UID: "keep"}, &v1.Service{UID: "new"}}, "1"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func BenchmarkAdd(b *testing.B) {
 	const nFamilies = 50
 

@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -113,6 +114,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			Name: "kube_state_metrics_last_config_reload_successful",
 			Help: "Whether the last configuration reload attempt was successful.",
 		}, []string{"type", "filename"})
+	activeConfigSuccess.Store(configSuccess)
 	configSuccessTime := promauto.With(ksmMetricsRegistry).NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "kube_state_metrics_last_config_reload_success_timestamp_seconds",
@@ -408,6 +410,17 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	klog.InfoS("Exited")
 	return nil
+}
+
+// activeConfigSuccess is the config reload status gauge of the running instance.
+var activeConfigSuccess atomic.Pointer[prometheus.GaugeVec]
+
+// ReportRejectedConfig marks a reload of the options config file as failed in
+// the running instance, which keeps serving its current configuration.
+func ReportRejectedConfig(file string) {
+	if g := activeConfigSuccess.Load(); g != nil {
+		g.WithLabelValues("config", filepath.Clean(file)).Set(0)
+	}
 }
 
 func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {

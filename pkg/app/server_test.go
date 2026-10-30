@@ -37,6 +37,7 @@ import (
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/exporter-toolkit/web"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1426,5 +1427,18 @@ func TestShutdownDelaySkippedOnReload(t *testing.T) {
 				t.Fatalf("shutdownDelay() = %s, want %s", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestReportRejectedConfig(t *testing.T) {
+	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "test_config_success"}, []string{"type", "filename"})
+	g.WithLabelValues("config", "/etc/ksm/config.yaml").Set(1)
+	activeConfigSuccess.Store(g)
+	t.Cleanup(func() { activeConfigSuccess.Store(nil) })
+
+	ReportRejectedConfig("/etc/ksm/config.yaml")
+
+	if got := testutil.ToFloat64(g.WithLabelValues("config", "/etc/ksm/config.yaml")); got != 0 {
+		t.Fatalf("expected the rejected config to be reported as failed, got %v", got)
 	}
 }

@@ -1303,3 +1303,43 @@ spec:
 		}
 	})
 }
+
+// TestConfigReloadStartsFromBaseline mirrors internal/wrapper.go: every run
+// gets a fresh clone of the command line options, so keys removed from the
+// config file on reload fall back to their command line values.
+func TestConfigReloadStartsFromBaseline(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "config.yaml")
+	writeConfig := func(content string) {
+		t.Helper()
+		if err := os.WriteFile(cfg, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	base := options.NewOptions()
+	base.Config = cfg
+	// A missing kubeconfig makes the run return right after the config merge.
+	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
+	base.TotalShards = 1
+
+	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
+	first := base.Clone()
+	_ = RunKubeStateMetricsWrapper(context.Background(), first)
+	if len(first.AnnotationsAllowList["secrets"]) != 1 || !slices.Equal(first.Namespaces, []string{"team-a"}) {
+		t.Fatalf("expected config values to be applied, got annotations=%v namespaces=%v", first.AnnotationsAllowList, first.Namespaces)
+	}
+	if first.CustomResourceConfigFile != filepath.Join(dir, "crs.yaml") {
+		t.Fatalf("expected deprecated custom_resource_config_file to be honored, got %q", first.CustomResourceConfigFile)
+	}
+
+	writeConfig("enable_gzip_encoding: true\n")
+	second := base.Clone()
+	_ = RunKubeStateMetricsWrapper(context.Background(), second)
+	if len(second.AnnotationsAllowList) != 0 || len(second.Namespaces) != 0 || second.CustomResourceConfigFile != "" {
+		t.Fatalf("expected removed keys to fall back to command line values, got annotations=%v namespaces=%v crs=%q", second.AnnotationsAllowList, second.Namespaces, second.CustomResourceConfigFile)
+	}
+	if len(base.AnnotationsAllowList) != 0 || len(base.Namespaces) != 0 {
+		t.Fatalf("baseline options were modified: annotations=%v namespaces=%v", base.AnnotationsAllowList, base.Namespaces)
+	}
+}

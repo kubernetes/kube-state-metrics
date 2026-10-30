@@ -95,10 +95,12 @@ func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, 
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj any) error {
-	// Only Replace at the end of a WatchList initial sync passes rendered
-	// objects, and Replace records the resource version of the sync.
-	if p, ok := obj.(*renderedObject); ok {
-		s.metrics.Store(p.uid, p.families)
+	// Objects rendered by Transformer only arrive through Replace at the end of
+	// a WatchList initial sync, which records the resource version itself.
+	// WatchList is disabled when --object-limit is set, so no per-object
+	// bookkeeping is skipped here.
+	if r, ok := obj.(*renderedObject); ok {
+		s.metrics.Store(r.uid, r.families)
 		return nil
 	}
 
@@ -237,6 +239,10 @@ func (s *MetricsStore) Resync() error {
 // to each object it puts there. Generating the metrics here lets the temporary
 // store hold the metrics this store keeps anyway instead of whole objects,
 // which lowers the memory peak of the initial sync.
+//
+// The rendered objects are not runtime.Objects, so client-go's WatchList data
+// consistency check (KUBE_WATCHLIST_INCONSISTENCY_DETECTOR) cannot be used with
+// this store.
 func (s *MetricsStore) Transformer() cache.TransformFunc {
 	return func(obj any) (any, error) {
 		o, err := meta.Accessor(obj)

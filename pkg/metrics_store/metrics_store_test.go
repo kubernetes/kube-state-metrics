@@ -39,26 +39,6 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
-// countingGenFunc returns a metric generator that renders one metric per
-// object labelled with its uid, and counts how often it is called.
-func countingGenFunc(calls *atomic.Int64) func(any) []metric.FamilyInterface {
-	return func(obj any) []metric.FamilyInterface {
-		calls.Add(1)
-		o, err := meta.Accessor(obj)
-		if err != nil {
-			return nil
-		}
-		return []metric.FamilyInterface{&metric.Family{
-			Name: "kube_test_info",
-			Metrics: []*metric.Metric{{
-				LabelKeys:   []string{"uid"},
-				LabelValues: []string{string(o.GetUID())},
-				Value:       1,
-			}},
-		}}
-	}
-}
-
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDs := []string{"a", "b"}
 
@@ -171,7 +151,18 @@ func TestMetricsStoreTransformerDuringWatchList(t *testing.T) {
 	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, true)
 
 	var calls atomic.Int64
-	ms := NewMetricsStore([]string{"Test info."}, countingGenFunc(&calls))
+	ms := NewMetricsStore([]string{"Test info."}, func(obj any) []metric.FamilyInterface {
+		calls.Add(1)
+		o, _ := meta.Accessor(obj)
+		return []metric.FamilyInterface{&metric.Family{
+			Name: "kube_test_info",
+			Metrics: []*metric.Metric{{
+				LabelKeys:   []string{"uid"},
+				LabelValues: []string{string(o.GetUID())},
+				Value:       1,
+			}},
+		}}
+	})
 
 	w := watch.NewFake()
 	lw := &cache.ListWatch{

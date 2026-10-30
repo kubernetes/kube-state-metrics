@@ -118,6 +118,18 @@ func (s *MetricsStore) Add(obj any) error {
 	return nil
 }
 
+// objectUID returns the UID an object is stored under.
+func objectUID(obj any) (types.UID, error) {
+	if r, ok := obj.(*renderedObject); ok {
+		return r.uid, nil
+	}
+	o, err := meta.Accessor(obj)
+	if err != nil {
+		return "", err
+	}
+	return o.GetUID(), nil
+}
+
 // byteAppender is implemented by families that can render themselves into a
 // caller-provided buffer, letting all families of one object share a single
 // allocation.
@@ -213,12 +225,31 @@ func (s *MetricsStore) GetByKey(_ string) (item any, exists bool, err error) {
 
 // Replace will delete the contents of the store, using instead the given list,
 // and records the provided resourceVersion as the last sync resource version.
+//
+// The store is read concurrently by WriteAll, so it is never emptied: the
+// objects missing from the list are deleted first, and only then is every
+// listed object upserted. A scrape during a relist therefore sees each surviving
+// object, rather than whatever subset had been re-added so far, and never sees
+// a deleted object next to the objects that were created since.
 func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
-	s.metrics.Clear()
+	listed := make(map[types.UID]struct{}, len(list))
+	for _, o := range list {
+		uid, err := objectUID(o)
+		if err != nil {
+			return err
+		}
+		listed[uid] = struct{}{}
+	}
+
+	s.metrics.Range(func(key, _ any) bool {
+		if _, ok := listed[key.(types.UID)]; !ok {
+			s.metrics.Delete(key)
+		}
+		return true
+	})
 
 	for _, o := range list {
-		err := s.Add(o)
-		if err != nil {
+		if err := s.Add(o); err != nil {
 			return err
 		}
 	}

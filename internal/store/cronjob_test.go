@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	robfigcron "github.com/robfig/cron/v3"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -684,5 +685,138 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
+	}
+}
+
+func TestCronJobParserParity(t *testing.T) {
+	start := time.Date(2026, time.October, 17, 12, 0, 0, 0, time.UTC)
+	const runsToCompare = 5
+
+	testCases := []struct {
+		name             string
+		schedule         string
+		expectedMismatch bool
+		wantKSMErr       bool
+		wantK8sErr       bool
+	}{
+		{
+			name:             "every six hours",
+			schedule:         "0 */6 * * *",
+			expectedMismatch: false,
+		},
+		{
+			name:             "every fifteen minutes",
+			schedule:         "*/15 * * * *",
+			expectedMismatch: false,
+		},
+		{
+			name:             "weekdays at nine",
+			schedule:         "0 9 * * 1-5",
+			expectedMismatch: false,
+		},
+		{
+			name:             "hourly descriptor",
+			schedule:         "@hourly",
+			expectedMismatch: false,
+		},
+		{
+			name:             "four fields",
+			schedule:         "* * * *",
+			expectedMismatch: false,
+			wantKSMErr:       true,
+			wantK8sErr:       true,
+		},
+		{
+			// KSM rejects steps larger than the minute range; Kubernetes accepts them.
+			name:             "minute step larger than range",
+			schedule:         "*/120 4-22 * * *",
+			expectedMismatch: true,
+			wantKSMErr:       true,
+		},
+		{
+			// KSM rejects a step equal to the minute range.
+			name:             "minute step equal to range",
+			schedule:         "*/60 * * * *",
+			expectedMismatch: true,
+			wantKSMErr:       true,
+		},
+		{
+			// KSM uses AND semantics for DOM/DOW, while Kubernetes uses OR.
+			name:             "day-of-month and day-of-week both restricted",
+			schedule:         "0 3 1 * 0",
+			expectedMismatch: true,
+		},
+		{
+			// KSM rejects sub-second intervals; Kubernetes rounds them to one second.
+			name:             "sub-second every descriptor",
+			schedule:         "@every 500ms",
+			expectedMismatch: true,
+			wantKSMErr:       true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			ksmSched, ksmErr := parseSchedule(test.schedule, nil)
+			k8sSched, k8sErr := robfigcron.ParseStandard(test.schedule)
+
+			if (ksmErr != nil) != test.wantKSMErr {
+				t.Errorf(
+					"schedule %q: unexpected KSM parse result: wantErr=%v, gotErr=%v",
+					test.schedule, test.wantKSMErr, ksmErr,
+				)
+			}
+
+			if (k8sErr != nil) != test.wantK8sErr {
+				t.Errorf(
+					"schedule %q: unexpected Kubernetes parse result: wantErr=%v, gotErr=%v",
+					test.schedule, test.wantK8sErr, k8sErr,
+				)
+			}
+
+			if ksmErr != nil || k8sErr != nil {
+				parseMismatch := (ksmErr == nil) != (k8sErr == nil)
+
+				if parseMismatch != test.expectedMismatch {
+					t.Errorf(
+						"schedule %q: unexpected parse parity: expectedMismatch=%v, ksmErr=%v, k8sErr=%v",
+						test.schedule, test.expectedMismatch, ksmErr, k8sErr,
+					)
+				} else if parseMismatch {
+					t.Logf(
+						"schedule %q: known parse divergence: ksmErr=%v, k8sErr=%v",
+						test.schedule, ksmErr, k8sErr,
+					)
+				}
+				return
+			}
+
+			ksmNext, k8sNext := start, start
+			nextMismatch := false
+			runsCompared := 0
+
+			for runsCompared < runsToCompare {
+				runsCompared++
+				ksmNext = ksmSched.Next(ksmNext)
+				k8sNext = k8sSched.Next(k8sNext)
+
+				if !ksmNext.Equal(k8sNext) {
+					nextMismatch = true
+					break
+				}
+			}
+
+			if nextMismatch != test.expectedMismatch {
+				t.Errorf(
+					"schedule %q: unexpected next-run parity after %d run(s): expectedMismatch=%v, ksmNext=%v, k8sNext=%v",
+					test.schedule, runsCompared, test.expectedMismatch, ksmNext, k8sNext,
+				)
+			} else if nextMismatch {
+				t.Logf(
+					"schedule %q: known next-run divergence on run %d: ksmNext=%v, k8sNext=%v",
+					test.schedule, runsCompared, ksmNext, k8sNext,
+				)
+			}
+		})
 	}
 }

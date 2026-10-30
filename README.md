@@ -86,7 +86,7 @@ Generally, it is recommended to use the latest release of kube-state-metrics. If
 | **v2.18.0**        | v1.34                        |
 | **v2.19.0**        | v1.35                        |
 | **v2.20.0**        | v1.36                        |
-| **main**           | v1.36                        |
+| **main**           | v1.37                        |
 
 #### Resource group version compatibility
 
@@ -255,7 +255,7 @@ Sharding should be used carefully and additional monitoring should be set up in 
 
 #### Automated sharding
 
-Automatic sharding allows each shard to discover its nominal position when deployed in a StatefulSet which is useful for automatically configuring sharding. This is an experimental feature and may be broken or removed without notice.
+Automatic sharding allows each shard to discover its nominal position when deployed in a StatefulSet which is useful for automatically configuring sharding.
 
 To enable automated sharding, kube-state-metrics must be run by a `StatefulSet` and the pod name and namespace must be handed to the kube-state-metrics process via the `--pod` and `--pod-namespace` flags. Example manifests demonstrating the autosharding functionality can be found in [`/examples/autosharding`](./examples/autosharding).
 

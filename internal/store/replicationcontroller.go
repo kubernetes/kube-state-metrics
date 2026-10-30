@@ -212,8 +212,8 @@ var (
 	}
 )
 
-func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		replicationController := obj.(*v1.ReplicationController)
 
 		metricFamily := f(replicationController)

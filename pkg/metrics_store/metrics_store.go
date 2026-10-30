@@ -20,9 +20,13 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
+
+var _ cache.TransformingStore = &MetricsStore{}
 
 // MetricsStore implements the k8s.io/client-go/tools/cache.Store
 // interface. Instead of storing entire Kubernetes objects, it stores metrics
@@ -41,7 +45,7 @@ type MetricsStore struct {
 
 	// generateMetricsFunc generates metrics based on a given Kubernetes object
 	// and returns them grouped by metric family.
-	generateMetricsFunc func(interface{}) []metric.FamilyInterface
+	generateMetricsFunc func(any) []metric.FamilyInterface
 	// headers contains the header (TYPE and HELP) of each metric family. It is
 	// later on zipped with with their corresponding metric families in
 	// MetricStore.WriteAll().
@@ -53,7 +57,7 @@ type MetricsStore struct {
 }
 
 // NewMetricsStore returns a new MetricsStore
-func NewMetricsStore(headers []string, generateFunc func(interface{}) []metric.FamilyInterface) *MetricsStore {
+func NewMetricsStore(headers []string, generateFunc func(any) []metric.FamilyInterface) *MetricsStore {
 	rv := ""
 	headersOpenMetrics, headersTextPlain, metricNames := precomputeHeaders(headers)
 	return &MetricsStore{
@@ -90,7 +94,16 @@ func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, 
 
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
-func (s *MetricsStore) Add(obj interface{}) error {
+func (s *MetricsStore) Add(obj any) error {
+	// Objects rendered by Transformer only arrive through Replace at the end of
+	// a WatchList initial sync, which records the resource version itself.
+	// WatchList is disabled when --object-limit is set, so no per-object
+	// bookkeeping is skipped here.
+	if r, ok := obj.(*renderedObject); ok {
+		s.metrics.Store(r.uid, r.families)
+		return nil
+	}
+
 	o, err := meta.Accessor(obj)
 	if err != nil {
 		return err
@@ -158,13 +171,13 @@ func renderFamilies(families []metric.FamilyInterface) [][]byte {
 }
 
 // Update updates the existing entry in the MetricsStore.
-func (s *MetricsStore) Update(obj interface{}) error {
+func (s *MetricsStore) Update(obj any) error {
 	// TODO: For now, just call Add, in the future one could check if the resource version changed?
 	return s.Add(obj)
 }
 
 // Delete deletes an existing entry in the MetricsStore.
-func (s *MetricsStore) Delete(obj interface{}) error {
+func (s *MetricsStore) Delete(obj any) error {
 
 	o, err := meta.Accessor(obj)
 	if err != nil {
@@ -179,7 +192,7 @@ func (s *MetricsStore) Delete(obj interface{}) error {
 }
 
 // List implements the List method of the store interface.
-func (s *MetricsStore) List() []interface{} {
+func (s *MetricsStore) List() []any {
 	return nil
 }
 
@@ -189,18 +202,18 @@ func (s *MetricsStore) ListKeys() []string {
 }
 
 // Get implements the Get method of the store interface.
-func (s *MetricsStore) Get(_ interface{}) (item interface{}, exists bool, err error) {
+func (s *MetricsStore) Get(_ any) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
 // GetByKey implements the GetByKey method of the store interface.
-func (s *MetricsStore) GetByKey(_ string) (item interface{}, exists bool, err error) {
+func (s *MetricsStore) GetByKey(_ string) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
 // Replace will delete the contents of the store, using instead the given list,
 // and records the provided resourceVersion as the last sync resource version.
-func (s *MetricsStore) Replace(list []interface{}, resourceVersion string) error {
+func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 	s.metrics.Clear()
 
 	for _, o := range list {
@@ -218,6 +231,36 @@ func (s *MetricsStore) Replace(list []interface{}, resourceVersion string) error
 // Resync implements the Resync method of the store interface.
 func (s *MetricsStore) Resync() error {
 	return nil
+}
+
+// Transformer implements the cache.TransformingStore interface. During a
+// WatchList initial sync, the reflector holds every object of the resource in
+// a temporary store until the initial events end, and applies this transform
+// to each object it puts there. Generating the metrics here lets the temporary
+// store hold the metrics this store keeps anyway instead of whole objects,
+// which lowers the memory peak of the initial sync.
+//
+// The rendered objects are not runtime.Objects, so client-go's WatchList data
+// consistency check (KUBE_WATCHLIST_INCONSISTENCY_DETECTOR) cannot be used with
+// this store.
+func (s *MetricsStore) Transformer() cache.TransformFunc {
+	return func(obj any) (any, error) {
+		o, err := meta.Accessor(obj)
+		if err != nil {
+			return obj, nil
+		}
+		return &renderedObject{
+			uid:      o.GetUID(),
+			families: renderFamilies(s.generateMetricsFunc(obj)),
+		}, nil
+	}
+}
+
+// renderedObject stands in for an object in the reflector's temporary store and
+// holds the metrics already generated from it.
+type renderedObject struct {
+	uid      types.UID
+	families [][]byte
 }
 
 // Bookmark implements the Bookmark method of the store interface.

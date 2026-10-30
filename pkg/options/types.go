@@ -53,8 +53,7 @@ func (ms *MetricSet) String() string {
 // Set converts a comma-separated string of metrics into a slice and appends it to the MetricSet.
 func (ms *MetricSet) Set(value string) error {
 	s := *ms
-	metrics := strings.Split(value, ",")
-	for _, metric := range metrics {
+	for metric := range strings.SplitSeq(value, ",") {
 		metric = strings.TrimSpace(metric)
 		if len(metric) != 0 {
 			s[metric] = struct{}{}
@@ -90,8 +89,7 @@ func (r *ResourceSet) String() string {
 // Set converts a comma-separated string of resources into a slice and appends it to the ResourceSet.
 func (r *ResourceSet) Set(value string) error {
 	s := *r
-	cols := strings.Split(value, ",")
-	for _, col := range cols {
+	for col := range strings.SplitSeq(value, ",") {
 		col = strings.TrimSpace(col)
 		if len(col) != 0 {
 			s[col] = struct{}{}
@@ -188,8 +186,7 @@ func (n *NamespaceList) IsAllNamespaces() bool {
 
 // Set converts a comma-separated string of namespaces into a slice and appends it to the NamespaceList
 func (n *NamespaceList) Set(value string) error {
-	splitNamespaces := strings.Split(value, ",")
-	for _, ns := range splitNamespaces {
+	for ns := range strings.SplitSeq(value, ",") {
 		ns = strings.TrimSpace(ns)
 		if len(ns) != 0 {
 			*n = append(*n, ns)

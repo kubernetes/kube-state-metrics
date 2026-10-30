@@ -40,15 +40,13 @@ func TestStatefulSetStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "statefulset1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Labels: map[string]string{
-						"app": "example1",
-					},
-					Generation: 3,
+				Name:              "statefulset1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				Labels: map[string]string{
+					"app": "example1",
 				},
+				Generation: 3,
 				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet1Replicas,
 					ServiceName: "statefulset1service",
@@ -120,14 +118,12 @@ func TestStatefulSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "statefulset2",
-					Namespace: "ns2",
-					Labels: map[string]string{
-						"app": "example2",
-					},
-					Generation: 21,
+				Name:      "statefulset2",
+				Namespace: "ns2",
+				Labels: map[string]string{
+					"app": "example2",
 				},
+				Generation: 21,
 				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet2Replicas,
 					ServiceName: "statefulset2service",
@@ -196,14 +192,12 @@ func TestStatefulSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "statefulset3",
-					Namespace: "ns3",
-					Labels: map[string]string{
-						"app": "example3",
-					},
-					Generation: 36,
+				Name:      "statefulset3",
+				Namespace: "ns3",
+				Labels: map[string]string{
+					"app": "example3",
 				},
+				Generation: 36,
 				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet3Replicas,
 					ServiceName: "statefulset2service",
@@ -264,14 +258,12 @@ func TestStatefulSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "statefulset4",
-					Namespace: "ns4",
-					Labels: map[string]string{
-						"app": "example4",
-					},
-					Generation: 1,
+				Name:      "statefulset4",
+				Namespace: "ns4",
+				Labels: map[string]string{
+					"app": "example4",
 				},
+				Generation: 1,
 				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet1Replicas,
 					ServiceName: "statefulset4service",
@@ -338,14 +330,12 @@ func TestStatefulSetStore(t *testing.T) {
 		{
 			// Validate kube_statefulset_ordinals_start metric.
 			Obj: &v1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "statefulset5",
-					Namespace: "ns5",
-					Labels: map[string]string{
-						"app": "example5",
-					},
-					Generation: 1,
+				Name:      "statefulset5",
+				Namespace: "ns5",
+				Labels: map[string]string{
+					"app": "example5",
 				},
+				Generation: 1,
 				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet1Replicas,
 					ServiceName: "statefulset5service",
@@ -413,15 +403,13 @@ func TestStatefulSetStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "statefulset6",
-					Namespace:         "ns6",
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Labels: map[string]string{
-						"app": "example6",
-					},
-					Generation: 1,
+				Name:              "statefulset6",
+				Namespace:         "ns6",
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Labels: map[string]string{
+					"app": "example6",
 				},
+				Generation: 1,
 				Spec: v1.StatefulSetSpec{
 					Replicas:    &statefulSet6Replicas,
 					ServiceName: "statefulset6service",

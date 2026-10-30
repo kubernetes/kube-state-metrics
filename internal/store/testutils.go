@@ -30,8 +30,8 @@ import (
 )
 
 type generateMetricsTestCase struct {
-	Obj                  interface{}
-	Func                 func(interface{}) []metric.FamilyInterface
+	Obj                  any
+	Func                 func(any) []metric.FamilyInterface
 	Want                 string
 	MetricNames          []string
 	AllowAnnotationsList []string
@@ -62,7 +62,7 @@ func (testCase *generateMetricsTestCase) run() error {
 func compareOutput(expected, actual string) error {
 	entities := []string{expected, actual}
 	// Align wanted and actual
-	for i := 0; i < len(entities); i++ {
+	for i := range entities {
 		for _, f := range []func(string) string{removeUnusedWhitespace, sortLabels, sortByLine} {
 			entities[i] = f(entities[i])
 		}
@@ -81,7 +81,7 @@ func compareOutput(expected, actual string) error {
 func sortLabels(s string) string {
 	sorted := []string{}
 
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		// skipping if its headers
 		if strings.HasPrefix(line, "# ") {
 			sorted = append(sorted, line)

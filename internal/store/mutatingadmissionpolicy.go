@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descMutatingAdmissionPolicyDefaultLabels = []string{"namespace", "mutatingadmissionpolicy"}
+	descMutatingAdmissionPolicyDefaultLabels = []string{"mutatingadmissionpolicy"}
 
 	mutatingAdmissionPolicyMetricFamilies = []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -96,14 +96,14 @@ func createMutatingAdmissionPolicyListWatch(kubeClient clientset.Interface, _ st
 	}
 }
 
-func wrapMutatingAdmissionPolicyFunc(f func(*admissionregistrationv1.MutatingAdmissionPolicy) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapMutatingAdmissionPolicyFunc(f func(*admissionregistrationv1.MutatingAdmissionPolicy) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		mapObj := obj.(*admissionregistrationv1.MutatingAdmissionPolicy)
 
 		metricFamily := f(mapObj)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingAdmissionPolicyDefaultLabels, []string{mapObj.Namespace, mapObj.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingAdmissionPolicyDefaultLabels, []string{mapObj.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

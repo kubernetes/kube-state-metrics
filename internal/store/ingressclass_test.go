@@ -29,9 +29,7 @@ func TestIngressClassStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &networkingv1.IngressClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test_ingressclass-info",
-				},
+				Name: "test_ingressclass-info",
 				Spec: networkingv1.IngressClassSpec{
 					Controller: "controller",
 				},
@@ -47,10 +45,8 @@ func TestIngressClassStore(t *testing.T) {
 		},
 		{
 			Obj: &networkingv1.IngressClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test_kube_ingressclass-created",
-					CreationTimestamp: metav1StartTime,
-				},
+				Name:              "test_kube_ingressclass-created",
+				CreationTimestamp: metav1StartTime,
 				Spec: networkingv1.IngressClassSpec{
 					Controller: "controller",
 				},
@@ -69,14 +65,12 @@ func TestIngressClassStore(t *testing.T) {
 				"ingressclass.kubernetes.io/is-default-class",
 			},
 			Obj: &networkingv1.IngressClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test_ingressclass-labels",
-					Annotations: map[string]string{
-						"ingressclass.kubernetes.io/is-default-class": "true",
-					},
-					Labels: map[string]string{
-						"foo": "bar",
-					},
+				Name: "test_ingressclass-labels",
+				Annotations: map[string]string{
+					"ingressclass.kubernetes.io/is-default-class": "true",
+				},
+				Labels: map[string]string{
+					"foo": "bar",
 				},
 				Spec: networkingv1.IngressClassSpec{
 					Controller: "controller",

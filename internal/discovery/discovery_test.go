@@ -18,7 +18,10 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
@@ -53,12 +56,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "apps", Version: "*", Kind: "*"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"},
-					Plural:           "deployments",
+					Group: "apps", Version: "v1", Kind: "Deployment",
+					Plural: "deployments",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"},
-					Plural:           "statefulsets",
+					Group: "apps", Version: "v1", Kind: "StatefulSet",
+					Plural: "statefulsets",
 				},
 			},
 		},
@@ -89,12 +92,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "*", Kind: "TestObject1"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1alpha1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1alpha1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 			},
 		},
@@ -125,12 +128,12 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "*"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject2"},
-					Plural:           "testobjects2",
+					Group: "testgroup", Version: "v1", Kind: "TestObject2",
+					Plural: "testobjects2",
 				},
 			},
 		},
@@ -161,8 +164,8 @@ func TestGVKMapsResolveGVK(t *testing.T) {
 			gvk: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
 			want: []groupVersionKindPlural{
 				{
-					GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject1"},
-					Plural:           "testobjects1",
+					Group: "testgroup", Version: "v1", Kind: "TestObject1",
+					Plural: "testobjects1",
 				},
 			},
 		},
@@ -244,11 +247,11 @@ func TestResolveGVKToGVKPsMissingWarnDedup(t *testing.T) {
 func TestExtractGVKPs(t *testing.T) {
 	// crd builds a minimal CRD object, one entry per version. A nil `served`
 	// leaves the field out entirely, mimicking an object that predates it.
-	crd := func(versions ...interface{}) *unstructured.Unstructured {
-		return &unstructured.Unstructured{Object: map[string]interface{}{
-			"spec": map[string]interface{}{
+	crd := func(versions ...any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"spec": map[string]any{
 				"group": "testgroup",
-				"names": map[string]interface{}{
+				"names": map[string]any{
 					"kind":   "TestObject",
 					"plural": "testobjects",
 				},
@@ -256,8 +259,8 @@ func TestExtractGVKPs(t *testing.T) {
 			},
 		}}
 	}
-	version := func(name string, served interface{}) interface{} {
-		v := map[string]interface{}{"name": name}
+	version := func(name string, served any) any {
+		v := map[string]any{"name": name}
 		if served != nil {
 			v["served"] = served
 		}
@@ -265,14 +268,14 @@ func TestExtractGVKPs(t *testing.T) {
 	}
 	gvkp := func(v string) groupVersionKindPlural {
 		return groupVersionKindPlural{
-			GroupVersionKind: schema.GroupVersionKind{Group: "testgroup", Version: v, Kind: "TestObject"},
-			Plural:           "testobjects",
+			Group: "testgroup", Version: v, Kind: "TestObject",
+			Plural: "testobjects",
 		}
 	}
 
 	testcases := []struct {
 		desc string
-		obj  interface{}
+		obj  any
 		want []groupVersionKindPlural
 	}{
 		{
@@ -288,7 +291,7 @@ func TestExtractGVKPs(t *testing.T) {
 		{
 			desc: "no served versions",
 			obj:  crd(version("v1alpha1", false), version("v1beta1", false)),
-			want: nil,
+			want: []groupVersionKindPlural{},
 		},
 		{
 			desc: "missing served field defaults to served",
@@ -319,48 +322,48 @@ func TestExtractGVKPs(t *testing.T) {
 		// unrecovered panic rather than a skipped object.
 		{
 			desc: "no spec",
-			obj:  &unstructured.Unstructured{Object: map[string]interface{}{}},
+			obj:  &unstructured.Unstructured{Object: map[string]any{}},
 			want: nil,
 		},
 		{
 			desc: "spec is not an object",
-			obj:  &unstructured.Unstructured{Object: map[string]interface{}{"spec": "nope"}},
+			obj:  &unstructured.Unstructured{Object: map[string]any{"spec": "nope"}},
 			want: nil,
 		},
 		{
 			desc: "no group",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{"names": map[string]interface{}{"kind": "K", "plural": "ks"}},
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{"names": map[string]any{"kind": "K", "plural": "ks"}},
 			}},
 			want: nil,
 		},
 		{
 			desc: "no names",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{"group": "g"},
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{"group": "g"},
 			}},
 			want: nil,
 		},
 		{
 			desc: "no versions",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{
 					"group": "g",
-					"names": map[string]interface{}{"kind": "K", "plural": "ks"},
+					"names": map[string]any{"kind": "K", "plural": "ks"},
 				},
 			}},
 			want: nil,
 		},
 		{
 			desc: "a malformed version is skipped, the rest are kept",
-			obj: &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{
+			obj: &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{
 					"group": "testgroup",
-					"names": map[string]interface{}{"kind": "TestObject", "plural": "testobjects"},
-					"versions": []interface{}{
+					"names": map[string]any{"kind": "TestObject", "plural": "testobjects"},
+					"versions": []any{
 						"not-an-object",
-						map[string]interface{}{"served": true},
-						map[string]interface{}{"name": "v1", "served": true},
+						map[string]any{"served": true},
+						map[string]any{"name": "v1", "served": true},
 					},
 				},
 			}},
@@ -388,14 +391,12 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Stand in for the informer's event handlers.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < iterations; i++ {
+	wg.Go(func() {
+		for range iterations {
 			r.SafeWrite(func() { r.AppendToMap(gvkp) })
 			r.SafeWrite(func() { r.RemoveFromMap(gvkp) })
 		}
-	}()
+	})
 
 	// Stand in for the discovery poll resolving configured resources, covering
 	// the fixed lookup and all three wildcard paths.
@@ -408,7 +409,7 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 		wg.Add(1)
 		go func(q schema.GroupVersionKind) {
 			defer wg.Done()
-			for i := 0; i < iterations; i++ {
+			for range iterations {
 				if _, err := r.ResolveGVKToGVKPs(q); err != nil {
 					t.Errorf("resolving %v: %v", q, err)
 					return
@@ -418,4 +419,183 @@ func TestResolveGVKToGVKPsIsRaceFree(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func testCRD(versions ...any) *unstructured.Unstructured {
+	return &unstructured.Unstructured{Object: map[string]any{
+		"spec": map[string]any{
+			"group": "example.com",
+			"names": map[string]any{
+				"kind":   "Foo",
+				"plural": "foos",
+			},
+			"versions": versions,
+		},
+	}}
+}
+
+func testCRDVersion(name string, served any) any {
+	v := map[string]any{"name": name}
+	if served != nil {
+		v["served"] = served
+	}
+	return v
+}
+
+func TestCRDUpdateAllUnservedVersionsTearsDown(t *testing.T) {
+	gvkp := groupVersionKindPlural{Group: "example.com", Version: "v1", Kind: "Foo", Plural: "foos"}
+	r := &CRDiscoverer{}
+	if !r.AppendToMap(gvkp) {
+		t.Fatal("expected AppendToMap to register GVKP")
+	}
+	ch := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]
+	revision := r.cacheRevision
+
+	newGVKPs := extractGVKPs(testCRD(testCRDVersion("v1", false)))
+	if newGVKPs == nil {
+		t.Fatal("all-unserved extract must return a non-nil empty slice")
+	}
+	if len(newGVKPs) != 0 {
+		t.Fatalf("all-unserved extract must be empty, got %#v", newGVKPs)
+	}
+
+	if !r.applyCRDUpdate([]groupVersionKindPlural{gvkp}, newGVKPs) {
+		t.Fatal("expected all-unserved update to tear down cached GVKs")
+	}
+	if _, ok := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]; ok {
+		t.Fatal("expected stop channel to be removed")
+	}
+	select {
+	case <-ch:
+	default:
+		t.Fatal("expected stop channel to be closed")
+	}
+	if r.cacheRevision <= revision {
+		t.Fatalf("expected revision to advance: before=%d after=%d", revision, r.cacheRevision)
+	}
+	if !r.WasUpdated {
+		t.Fatal("expected WasUpdated after all-unserved teardown")
+	}
+}
+
+func TestCRDUpdateUnservedPlusMalformedSkipsTeardown(t *testing.T) {
+	gvkp := groupVersionKindPlural{Group: "example.com", Version: "v1", Kind: "Foo", Plural: "foos"}
+	r := &CRDiscoverer{}
+	if !r.AppendToMap(gvkp) {
+		t.Fatal("expected AppendToMap to register GVKP")
+	}
+	ch := r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()]
+	revision := r.cacheRevision
+
+	newGVKPs := extractGVKPs(testCRD(testCRDVersion("v1", false), "not-an-object"))
+	if newGVKPs != nil {
+		t.Fatalf("mixed unserved+malformed extract must be nil, got %#v", newGVKPs)
+	}
+
+	if r.applyCRDUpdate([]groupVersionKindPlural{gvkp}, newGVKPs) {
+		t.Fatal("expected mixed unserved+malformed update to be ignored")
+	}
+	if r.GVKToReflectorStopChanMap[gvkp.GroupVersionKind.String()] != ch {
+		t.Fatal("stop channel changed on mixed unserved+malformed update")
+	}
+	select {
+	case <-ch:
+		t.Fatal("stop channel was closed on mixed unserved+malformed update")
+	default:
+	}
+	if r.cacheRevision != revision {
+		t.Fatalf("cache revision changed: got %d, want %d", r.cacheRevision, revision)
+	}
+	if r.WasUpdated {
+		t.Fatal("WasUpdated set on mixed unserved+malformed update")
+	}
+}
+
+func TestApplyCRDUpdateSkipsUnchangedServedSet(t *testing.T) {
+	version := func(name string, served bool) any {
+		return map[string]any{"name": name, "served": served}
+	}
+	crd := func(versions ...any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"spec": map[string]any{
+				"group": "testgroup",
+				"names": map[string]any{
+					"kind":   "TestObject",
+					"plural": "testobjects",
+				},
+				"versions": versions,
+			},
+		}}
+	}
+
+	original := crd(version("v1", true), version("v1beta1", false))
+	r := &CRDiscoverer{
+		CRDsUpdateEventsCounter: prometheus.NewCounter(prometheus.CounterOpts{Name: "crd_updates_total"}),
+	}
+	r.AppendToMap(extractGVKPs(original)...)
+	ch := r.GVKToReflectorStopChanMap[schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject"}.String()]
+
+	applyUpdate := func(oldObj, newObj *unstructured.Unstructured) {
+		r.SafeWrite(func() {
+			r.applyCRDUpdate(extractGVKPs(oldObj), extractGVKPs(newObj))
+			r.CRDsUpdateEventsCounter.Inc()
+		})
+	}
+
+	bumped := original.DeepCopy()
+	bumped.Object["metadata"] = map[string]any{"resourceVersion": "9"}
+	bumped.Object["status"] = map[string]any{"acceptedNames": map[string]any{"kind": "TestObject"}}
+	applyUpdate(original, bumped)
+	if r.WasUpdated {
+		t.Fatal("status-only CRD update marked the cache dirty")
+	}
+	if r.GVKToReflectorStopChanMap[schema.GroupVersionKind{Group: "testgroup", Version: "v1", Kind: "TestObject"}.String()] != ch {
+		t.Fatal("status-only update replaced the stop channel")
+	}
+
+	// Same served versions, listed in the other order.
+	applyUpdate(bumped, crd(version("v1beta1", false), version("v1", true)))
+	if r.WasUpdated {
+		t.Fatal("reordered versions with the same served set marked the cache dirty")
+	}
+	if got := testutil.ToFloat64(r.CRDsUpdateEventsCounter); got != 2 {
+		t.Fatalf("update counter = %v, want 2", got)
+	}
+
+	applyUpdate(original, crd(version("v1", true), version("v1beta1", true)))
+	if !r.WasUpdated {
+		t.Fatal("serving an additional version did not mark the cache dirty")
+	}
+	got, err := r.ResolveGVKToGVKPs(schema.GroupVersionKind{Group: "testgroup", Version: "*", Kind: "TestObject"})
+	if err != nil {
+		t.Fatalf("resolving updated GVK: %v", err)
+	}
+	want := []string{"v1", "v1beta1"}
+	var gotVersions []string
+	for _, gvkp := range got {
+		gotVersions = append(gotVersions, gvkp.Version)
+	}
+	slices.Sort(gotVersions)
+	if !slices.Equal(gotVersions, want) {
+		t.Fatalf("served versions = %v, want %v", gotVersions, want)
+	}
+}
+
+func TestRetryBackoff(t *testing.T) {
+	tests := []struct {
+		failures int
+		want     time.Duration
+	}{
+		{failures: 1, want: Interval},
+		{failures: 2, want: 2 * Interval},
+		{failures: 3, want: 4 * Interval},
+		{failures: 7, want: 64 * Interval},
+		{failures: 8, want: maxRetryBackoff},
+		{failures: 1000, want: maxRetryBackoff},
+	}
+	for _, tc := range tests {
+		if got := retryBackoff(tc.failures); got != tc.want {
+			t.Errorf("retryBackoff(%d) = %v, want %v", tc.failures, got, tc.want)
+		}
+	}
 }

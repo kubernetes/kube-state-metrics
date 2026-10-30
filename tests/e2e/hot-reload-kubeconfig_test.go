@@ -45,7 +45,7 @@ func TestKubeConfigHotReload(t *testing.T) {
 		// Assume $HOME is always defined.
 		originalKubeconfig = os.Getenv("HOME") + "/.kube/config"
 	}
-	originalKubeconfigFp, err := os.Open(filepath.Clean(originalKubeconfig))
+	originalKubeconfigFp, err := os.Open(filepath.Clean(originalKubeconfig)) //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to open kubeconfig: %v", err)
 	}

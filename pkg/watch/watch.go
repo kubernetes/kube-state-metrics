@@ -127,20 +127,35 @@ func (i *InstrumentedListerWatcher) List(options metav1.ListOptions) (runtime.Ob
 		return nil, err
 	}
 
+	i.metrics.ListRequestsTotal.WithLabelValues("success", i.resource).Inc()
+
+	if i.limit == 0 {
+		return res, nil
+	}
+
 	list, err := meta.ExtractList(res)
 	if err != nil {
 		return nil, err
 	}
-	i.metrics.ListRequestsTotal.WithLabelValues("success", i.resource).Inc()
 
-	if i.limit > 0 {
-		if int64(len(list)) > i.limit {
-			meta.SetList(res, list[0:i.limit])
-			i.metrics.ListObjectsCurrent.WithLabelValues(i.resource).Set(float64(i.limit))
-		} else {
-			i.metrics.ListObjectsCurrent.WithLabelValues(i.resource).Set(float64(len(list)))
+	if int64(len(list)) > i.limit {
+		list = list[0:i.limit]
+		if err := meta.SetList(res, list); err != nil {
+			return nil, err
 		}
 	}
+
+	// options.Limit is a page size, not a total. cache.Reflector lists through
+	// pager.ListPager, which keeps requesting pages while the response carries a
+	// Continue token and concatenates them -- so truncating a page while leaving
+	// the token in place caps nothing, it just makes the pager fetch more pages.
+	// Drop the token so this response terminates the list.
+	if listMeta, err := meta.ListAccessor(res); err == nil {
+		listMeta.SetContinue("")
+		listMeta.SetRemainingItemCount(nil)
+	}
+
+	i.metrics.ListObjectsCurrent.WithLabelValues(i.resource).Set(float64(len(list)))
 
 	return res, nil
 

@@ -120,8 +120,8 @@ func ingressClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 	}
 }
 
-func wrapIngressClassFunc(f func(*networkingv1.IngressClass) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapIngressClassFunc(f func(*networkingv1.IngressClass) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		ingressClass := obj.(*networkingv1.IngressClass)
 
 		metricFamily := f(ingressClass)

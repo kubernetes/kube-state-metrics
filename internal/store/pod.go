@@ -39,7 +39,7 @@ import (
 
 var (
 	descPodLabelsDefaultLabels    = []string{"namespace", "pod", "uid"}
-	podStatusReasons              = []string{"Evicted", "NodeAffinity", "NodeLost", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
+	podStatusReasons              = []string{"Evicted", "NodeAffinity", "NodeLost", "OutOfcpu", "OutOfmemory", "PreemptionByScheduler", "SchedulingGated", "Shutdown", "TerminationByKubelet", "UnexpectedAdmissionError"}
 	podDisruptionConditionReasons = []string{v1.PodReasonPreemptionByScheduler, "DeletionByTaintManager", "EvictionByEvictionAPI", "DeletionByPodGC", v1.PodReasonTerminationByKubelet}
 	descPodIPsLabelKeys           = []string{"ip", "ip_family"}
 )
@@ -2033,8 +2033,8 @@ func createPodSchedulerNameFamilyGenerator() generator.FamilyGenerator {
 	)
 }
 
-func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		pod := obj.(*v1.Pod)
 
 		metricFamily := f(pod)

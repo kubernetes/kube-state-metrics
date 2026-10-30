@@ -32,14 +32,11 @@ func TestNodeStore(t *testing.T) {
 		// Verify populating base metric and that metric for unset fields are skipped.
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
+				Name: "127.0.0.1",
 				Status: v1.NodeStatus{
 					NodeInfo: v1.NodeSystemInfo{
 						KernelVersion:           "kernel",
 						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
 						OSImage:                 "osimage",
 						ContainerRuntimeVersion: "rkt",
 						SystemUUID:              "6a934e21-5207-4a84-baea-3a952d926c80",
@@ -82,12 +79,10 @@ func TestNodeStore(t *testing.T) {
 		// Verify resource metric.
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "127.0.0.1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Labels: map[string]string{
-						"node-role.kubernetes.io/master": "",
-					},
+				Name:              "127.0.0.1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Labels: map[string]string{
+					"node-role.kubernetes.io/master": "",
 				},
 				Spec: v1.NodeSpec{
 					Unschedulable: true,
@@ -98,7 +93,6 @@ func TestNodeStore(t *testing.T) {
 					NodeInfo: v1.NodeSystemInfo{
 						KernelVersion:           "kernel",
 						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
 						OSImage:                 "osimage",
 						ContainerRuntimeVersion: "rkt",
 						SystemUUID:              "6a934e21-5207-4a84-baea-3a952d926c80",
@@ -169,9 +163,7 @@ func TestNodeStore(t *testing.T) {
 		// Verify StatusCondition
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
+				Name: "127.0.0.1",
 				Status: v1.NodeStatus{
 					Conditions: []v1.NodeCondition{
 						{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionTrue},
@@ -197,9 +189,7 @@ func TestNodeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.2",
-				},
+				Name: "127.0.0.2",
 				Status: v1.NodeStatus{
 					Conditions: []v1.NodeCondition{
 						{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionUnknown},
@@ -225,9 +215,7 @@ func TestNodeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.3",
-				},
+				Name: "127.0.0.3",
 				Status: v1.NodeStatus{
 					Conditions: []v1.NodeCondition{
 						{Type: v1.NodeNetworkUnavailable, Status: v1.ConditionFalse},
@@ -254,9 +242,7 @@ func TestNodeStore(t *testing.T) {
 		// Verify SpecTaints
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
+				Name: "127.0.0.1",
 				Spec: v1.NodeSpec{
 					Taints: []v1.Taint{
 						{Key: "node.kubernetes.io/memory-pressure", Value: "true", Effect: v1.TaintEffectPreferNoSchedule},
@@ -277,9 +263,7 @@ func TestNodeStore(t *testing.T) {
 		// Verify SpecPodCIDR
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
+				Name: "127.0.0.1",
 				Spec: v1.NodeSpec{
 					PodCIDRs: []string{"10.244.0.0/24", "2001:db8::/64"},
 				},
@@ -294,9 +278,7 @@ func TestNodeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "127.0.0.1",
-				},
+				Name: "127.0.0.1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: "InternalIP", Address: "1.2.3.4"},
@@ -319,12 +301,10 @@ func TestNodeStore(t *testing.T) {
 		// memory overflow test
 		{
 			Obj: &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "127.0.0.1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Labels: map[string]string{
-						"node-role.kubernetes.io/master": "",
-					},
+				Name:              "127.0.0.1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Labels: map[string]string{
+					"node-role.kubernetes.io/master": "",
 				},
 				Spec: v1.NodeSpec{
 					Unschedulable: true,
@@ -335,7 +315,6 @@ func TestNodeStore(t *testing.T) {
 					NodeInfo: v1.NodeSystemInfo{
 						KernelVersion:           "kernel",
 						KubeletVersion:          "kubelet",
-						KubeProxyVersion:        "kubeproxy",
 						OSImage:                 "osimage",
 						ContainerRuntimeVersion: "rkt",
 						SystemUUID:              "6a934e21-5207-4a84-baea-3a952d926c80",

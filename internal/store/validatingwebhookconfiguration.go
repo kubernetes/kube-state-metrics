@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descValidatingWebhookConfigurationDefaultLabels = []string{"namespace", "validatingwebhookconfiguration"}
+	descValidatingWebhookConfigurationDefaultLabels = []string{"validatingwebhookconfiguration"}
 
 	validatingWebhookConfigurationMetricFamilies = []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -122,14 +122,14 @@ func createValidatingWebhookConfigurationListWatch(kubeClient clientset.Interfac
 	}
 }
 
-func wrapValidatingWebhookConfigurationFunc(f func(*admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
-		mutatingWebhookConfiguration := obj.(*admissionregistrationv1.ValidatingWebhookConfiguration)
+func wrapValidatingWebhookConfigurationFunc(f func(*admissionregistrationv1.ValidatingWebhookConfiguration) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
+		validatingWebhookConfiguration := obj.(*admissionregistrationv1.ValidatingWebhookConfiguration)
 
-		metricFamily := f(mutatingWebhookConfiguration)
+		metricFamily := f(validatingWebhookConfiguration)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingWebhookConfigurationDefaultLabels, []string{mutatingWebhookConfiguration.Namespace, mutatingWebhookConfiguration.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingWebhookConfigurationDefaultLabels, []string{validatingWebhookConfiguration.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

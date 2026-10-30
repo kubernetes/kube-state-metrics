@@ -91,18 +91,16 @@ func TestDeploymentStore(t *testing.T) {
 		{
 			AllowAnnotationsList: []string{"company.io/team"},
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "depl1",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "ns1",
-					Annotations: map[string]string{
-						"company.io/team": "my-brilliant-team",
-					},
-					Labels: map[string]string{
-						"app": "example1",
-					},
-					Generation: 21,
+				Name:              "depl1",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "ns1",
+				Annotations: map[string]string{
+					"company.io/team": "my-brilliant-team",
 				},
+				Labels: map[string]string{
+					"app": "example1",
+				},
+				Generation: 21,
 				Status: v1.DeploymentStatus{
 					Replicas:            15,
 					ReadyReplicas:       10,
@@ -152,14 +150,12 @@ func TestDeploymentStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "depl2",
-					Namespace: "ns2",
-					Labels: map[string]string{
-						"app": "example2",
-					},
-					Generation: 14,
+				Name:      "depl2",
+				Namespace: "ns2",
+				Labels: map[string]string{
+					"app": "example2",
 				},
+				Generation: 14,
 				Status: v1.DeploymentStatus{
 					Replicas:            10,
 					ReadyReplicas:       5,
@@ -211,10 +207,8 @@ func TestDeploymentStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "depl3",
-					Namespace: "ns3",
-				},
+				Name:      "depl3",
+				Namespace: "ns3",
 				Status: v1.DeploymentStatus{
 					Conditions: []v1.DeploymentCondition{
 						{Type: v1.DeploymentAvailable, Status: corev1.ConditionFalse, Reason: "ThisReasonIsNotAllowed"},
@@ -246,16 +240,14 @@ func TestDeploymentStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "deployment-terminating",
-					Namespace:         "ns4",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1600000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-					Labels: map[string]string{
-						"app": "example4",
-					},
-					Generation: 22,
+				Name:              "deployment-terminating",
+				Namespace:         "ns4",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1600000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
+				Labels: map[string]string{
+					"app": "example4",
 				},
+				Generation: 22,
 				Spec: v1.DeploymentSpec{
 					Paused:   true,
 					Replicas: &depl4Replicas,
@@ -269,15 +261,13 @@ func TestDeploymentStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deployment-with-owner",
-					Namespace: "ns5",
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Kind:       "Application",
-							Name:       "my-app",
-							Controller: &[]bool{true}[0],
-						},
+				Name:      "deployment-with-owner",
+				Namespace: "ns5",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "Application",
+						Name:       "my-app",
+						Controller: &[]bool{true}[0],
 					},
 				},
 				Spec: v1.DeploymentSpec{
@@ -299,10 +289,8 @@ func TestDeploymentStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deployment-without-owner",
-					Namespace: "ns5",
-				},
+				Name:      "deployment-without-owner",
+				Namespace: "ns5",
 				Spec: v1.DeploymentSpec{
 					Replicas: &depl1Replicas,
 				},
@@ -322,10 +310,8 @@ func TestDeploymentStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deployment-nil-replicas",
-					Namespace: "ns6",
-				},
+				Name:      "deployment-nil-replicas",
+				Namespace: "ns6",
 				Spec: v1.DeploymentSpec{
 					Strategy: v1.DeploymentStrategy{
 						RollingUpdate: &v1.RollingUpdateDeployment{
@@ -354,10 +340,8 @@ func TestDeploymentStore(t *testing.T) {
 			// GetScaledValueFromIntOrPercent returns an error, which used to be
 			// re-raised as a panic and took down the whole exporter.
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deployment-nil-rollingupdate-values",
-					Namespace: "ns7",
-				},
+				Name:      "deployment-nil-rollingupdate-values",
+				Namespace: "ns7",
 				Spec: v1.DeploymentSpec{
 					Replicas: &depl3Replicas,
 					Strategy: v1.DeploymentStrategy{
@@ -385,10 +369,8 @@ func TestDeploymentStore(t *testing.T) {
 			// is not a percentage at all, and a percentage whose number does not
 			// parse. Both used to panic.
 			Obj: &v1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deployment-malformed-rollingupdate-values",
-					Namespace: "ns8",
-				},
+				Name:      "deployment-malformed-rollingupdate-values",
+				Namespace: "ns8",
 				Spec: v1.DeploymentSpec{
 					Replicas: &depl3Replicas,
 					Strategy: v1.DeploymentStrategy{

@@ -70,7 +70,7 @@ type Builder struct {
 	kubeClient                    clientset.Interface
 	ctx                           context.Context
 	familyGeneratorFilter         generator.FamilyGeneratorFilter
-	customResourceClients         map[string]interface{}
+	customResourceClients         map[string]any
 	listWatchMetrics              *watch.ListWatchMetrics
 	shardingMetrics               *sharding.Metrics
 	buildStoresFunc               ksmtypes.BuildStoresFunc
@@ -132,6 +132,36 @@ func (b *Builder) WithEnabledResources(r []string) error {
 	return nil
 }
 
+// ReplaceEnabledCustomResources enables exactly the given discovered custom
+// resources while preserving built-in enabled resource names.
+func (b *Builder) ReplaceEnabledCustomResources(r []string) error {
+	for _, resource := range r {
+		if !resourceExists(resource) {
+			return fmt.Errorf("resource %s does not exist. Available resources: %s", resource, strings.Join(availableResources(), ","))
+		}
+	}
+
+	b.enabledResourcesMu.Lock()
+	defer b.enabledResourcesMu.Unlock()
+
+	var kept []string
+	for _, name := range b.enabledResources {
+		if !isCustomResourceEnabledName(name) {
+			kept = append(kept, name)
+		}
+	}
+	b.enabledResources = kept
+	b.enabledResources = append(b.enabledResources, r...)
+	slices.Sort(b.enabledResources)
+	b.enabledResources = slices.Compact(b.enabledResources)
+
+	return nil
+}
+
+func isCustomResourceEnabledName(name string) bool {
+	return strings.Contains(name, "/") || strings.Contains(name, ", Resource=")
+}
+
 // WithFieldSelectorFilter sets the fieldSelector property of a Builder.
 func (b *Builder) WithFieldSelectorFilter(fieldSelectorFilter string) {
 	b.fieldSelectorFilter = fieldSelectorFilter
@@ -168,7 +198,7 @@ func (b *Builder) WithKubeClient(c clientset.Interface) {
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.
-func (b *Builder) WithCustomResourceClients(cs map[string]interface{}) {
+func (b *Builder) WithCustomResourceClients(cs map[string]any) {
 	b.customResourceClients = cs
 }
 
@@ -588,7 +618,7 @@ func (b *Builder) buildIngressClassStores() []cache.Store {
 // number of namespaces the caller originally configured.
 func (b *Builder) buildClusterScopedStores(
 	metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
+	expectedType any,
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
@@ -605,7 +635,7 @@ func (b *Builder) buildClusterScopedStores(
 
 func (b *Builder) buildStores(
 	metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
+	expectedType any,
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
@@ -646,8 +676,8 @@ func (b *Builder) buildStores(
 // TODO(Garrybest): Merge `buildStores` and `buildCustomResourceStores`
 func (b *Builder) buildCustomResourceStores(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
-	expectedType interface{},
-	listWatchFunc func(customResourceClient interface{}, ns string, fieldSelector string) cache.ListerWatcher,
+	expectedType any,
+	listWatchFunc func(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher,
 	useAPIServerCache bool, objectLimit int64,
 ) []cache.Store {
 	metricFamilies = generator.FilterFamilyGenerators(b.familyGeneratorFilter, metricFamilies)
@@ -714,7 +744,7 @@ func newCRReflectorStopCh(ctx context.Context, gvkStopCh chan struct{}) chan str
 // startReflector starts a Kubernetes client-go reflector with the given
 // listWatcher and registers it with the given store.
 func (b *Builder) startReflector(
-	expectedType interface{},
+	expectedType any,
 	store cache.Store,
 	listWatcher cache.ListerWatcher,
 	useAPIServerCache bool,

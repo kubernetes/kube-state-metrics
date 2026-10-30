@@ -23,7 +23,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -36,9 +35,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		// Verify phase enumerations.
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-pending",
-				},
+				Name: "test-pv-pending",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
 				},
@@ -58,9 +55,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -78,9 +73,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-bound",
-				},
+				Name: "test-pv-bound",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeBound,
 				},
@@ -98,9 +91,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-released",
-				},
+				Name: "test-pv-released",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeReleased,
 				},
@@ -119,9 +110,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		{
 
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-failed",
-				},
+				Name: "test-pv-failed",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeFailed,
 				},
@@ -139,9 +128,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-pending",
-				},
+				Name: "test-pv-pending",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
 				},
@@ -164,9 +151,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeReclaimPolicy: reclaimPolicy,
 				},
@@ -183,11 +168,9 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-					Labels: map[string]string{
-						"fc_lun": "456",
-					},
+				Name: "test-pv-available",
+				Labels: map[string]string{
+					"fc_lun": "456",
 				},
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
@@ -209,9 +192,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -232,9 +213,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -255,9 +234,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -274,14 +251,12 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						FC: &v1.FCVolumeSource{
-							Lun:        int32ptr(123),
+							Lun:        new(int32(123)),
 							TargetWWNs: []string{"0123456789abcdef", "abcdef0123456789"},
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -302,9 +277,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -327,9 +300,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -353,9 +324,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -377,9 +346,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -401,9 +368,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -420,14 +385,12 @@ func TestPersistentVolumeStore(t *testing.T) {
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						Local: &v1.LocalVolumeSource{
-							FSType: ptr.To("ext4"),
+							FSType: new("ext4"),
 							Path:   "/mnt/data",
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -448,9 +411,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -468,13 +429,11 @@ func TestPersistentVolumeStore(t *testing.T) {
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						HostPath: &v1.HostPathVolumeSource{
 							Path: "/mnt/data",
-							Type: hostPathTypePointer(v1.HostPathDirectory),
+							Type: new(v1.HostPathDirectory),
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -495,9 +454,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -511,11 +468,9 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-labeled-pv",
-					Labels: map[string]string{
-						"app": "mysql-server",
-					},
+				Name: "test-labeled-pv",
+				Labels: map[string]string{
+					"app": "mysql-server",
 				},
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
@@ -532,9 +487,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-unlabeled-pv",
-				},
+				Name: "test-unlabeled-pv",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -547,9 +500,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-claimed-pv",
-				},
+				Name: "test-claimed-pv",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
 				},
@@ -572,9 +523,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-unclaimed-pv",
-				},
+				Name: "test-unclaimed-pv",
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeAvailable,
 				},
@@ -587,9 +536,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv",
-				},
+				Name: "test-pv",
 				Spec: v1.PersistentVolumeSpec{
 					Capacity: v1.ResourceList{
 						v1.ResourceStorage: resource.MustParse("5Gi"),
@@ -611,16 +558,14 @@ func TestPersistentVolumeStore(t *testing.T) {
 				"app",
 			},
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-allowlisted-labels-annotations",
-					Annotations: map[string]string{
-						"app.k8s.io/owner": "mysql-server",
-						"foo":              "bar",
-					},
-					Labels: map[string]string{
-						"app":   "mysql-server",
-						"hello": "world",
-					},
+				Name: "test-allowlisted-labels-annotations",
+				Annotations: map[string]string{
+					"app.k8s.io/owner": "mysql-server",
+					"foo":              "bar",
+				},
+				Labels: map[string]string{
+					"app":   "mysql-server",
+					"hello": "world",
 				},
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
@@ -641,16 +586,14 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-defaul-labels-annotations",
-					Annotations: map[string]string{
-						"app.k8s.io/owner": "mysql-server",
-						"foo":              "bar",
-					},
-					Labels: map[string]string{
-						"app":   "mysql-server",
-						"hello": "world",
-					},
+				Name: "test-defaul-labels-annotations",
+				Annotations: map[string]string{
+					"app.k8s.io/owner": "mysql-server",
+					"foo":              "bar",
+				},
+				Labels: map[string]string{
+					"app":   "mysql-server",
+					"hello": "world",
 				},
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
@@ -669,10 +612,8 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-pv-created",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-				},
+				Name:              "test-pv-created",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumePending,
 				},
@@ -686,11 +627,9 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-pv-terminating",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
-				},
+				Name:              "test-pv-terminating",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(1800000000, 0)},
 				Status: v1.PersistentVolumeStatus{
 					Phase: v1.VolumeBound,
 				},
@@ -704,9 +643,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						CSI: &v1.CSIPersistentVolumeSource{
@@ -725,9 +662,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-available",
-				},
+				Name: "test-pv-available",
 				Spec: v1.PersistentVolumeSpec{
 					PersistentVolumeSource: v1.PersistentVolumeSource{
 						CSI: &v1.CSIPersistentVolumeSource{
@@ -750,9 +685,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-default-volumemode",
-				},
+				Name: "test-default-volumemode",
 				Spec: v1.PersistentVolumeSpec{
 					VolumeMode: nil,
 				},
@@ -766,9 +699,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-block-volumemode",
-				},
+				Name: "test-block-volumemode",
 				Spec: v1.PersistentVolumeSpec{
 					VolumeMode: &volumeMode,
 				},
@@ -782,9 +713,7 @@ func TestPersistentVolumeStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.PersistentVolume{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pv-access-modes",
-				},
+				Name: "test-pv-access-modes",
 				Spec: v1.PersistentVolumeSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						v1.ReadWriteOnce,
@@ -808,8 +737,4 @@ func TestPersistentVolumeStore(t *testing.T) {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
 	}
-}
-
-func hostPathTypePointer(p v1.HostPathType) *v1.HostPathType {
-	return &p
 }

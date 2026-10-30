@@ -19,6 +19,7 @@ package options
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -111,6 +112,14 @@ func NewOptions() *Options {
 func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd = cmd
 
+	// Validate from PreRunE rather than from the caller: cmd.Run blocks for the
+	// lifetime of the process, so anything the caller does after Execute() is
+	// unreachable. Returning here aborts before Run and surfaces the error
+	// through Execute().
+	o.cmd.PreRunE = func(_ *cobra.Command, _ []string) error {
+		return o.Validate()
+	}
+
 	completionCommand.SetHelpFunc(func(_ *cobra.Command, _ []string) {
 		if shellPath, ok := os.LookupEnv("SHELL"); ok {
 			shell := shellPath[strings.LastIndex(shellPath, "/")+1:]
@@ -150,7 +159,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	_ = klogFlags.Set("legacy_stderr_threshold_behavior", "false") //nolint:errcheck
 	_ = klogFlags.Set("stderrthreshold", "INFO")                   //nolint:errcheck
 
-	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding. This is experimental, it may be removed without notice."
+	autoshardingNotice := "When set, it is expected that --pod and --pod-namespace are both set. Most likely this should be passed via the downward API. This is used for auto-detecting sharding. If set, this has preference over statically configured sharding."
 
 	o.cmd.Flags().BoolVar(&o.CustomResourcesOnly, "custom-resource-state-only", false, "Only provide Custom Resource State metrics (experimental)")
 	o.cmd.Flags().BoolVar(&o.EnableGZIPEncoding, "enable-gzip-encoding", false, "Gzip responses when requested by clients via 'Accept-Encoding: gzip' header.")
@@ -206,22 +215,31 @@ func (o *Options) Usage() {
 
 // Validate validates arguments
 func (o *Options) Validate() error {
-	shardableResource := "pods"
-	if o.Node == "" {
-		return nil
-	}
-	for _, x := range o.Resources.AsSlice() {
-		if x != shardableResource {
-			return fmt.Errorf("resource %s can't be sharded by field selector spec.nodeName", x)
+	if o.Node != "" {
+		shardableResource := "pods"
+		for _, x := range o.Resources.AsSlice() {
+			if x != shardableResource {
+				return fmt.Errorf("resource %s can't be sharded by field selector spec.nodeName", x)
+			}
 		}
 	}
 
-	if o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
+	// NaN compares false against every bound, so reject it explicitly.
+	if math.IsNaN(o.AutoGoMemlimitRatio) || o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
 		return fmt.Errorf("value for --auto-gomemlimit-ratio=%f must be greater than 0 and less than or equal to 1", o.AutoGoMemlimitRatio)
 	}
 
 	if o.ObjectLimit < 0 {
 		return fmt.Errorf("value for --object-limit=%d must be equal or greater than 0", o.ObjectLimit)
+	}
+
+	// Out-of-range shard settings match no objects and silently serve an empty /metrics.
+	if o.TotalShards < 1 {
+		return fmt.Errorf("value for --total-shards=%d must be greater than 0", o.TotalShards)
+	}
+
+	if o.Shard < 0 || int(o.Shard) >= o.TotalShards {
+		return fmt.Errorf("value for --shard=%d must be between 0 and %d (--total-shards minus 1)", o.Shard, o.TotalShards-1)
 	}
 
 	return nil

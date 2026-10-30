@@ -132,8 +132,8 @@ func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) 
 	}
 }
 
-func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		storageClass := obj.(*storagev1.StorageClass)
 
 		metricFamily := f(storageClass)

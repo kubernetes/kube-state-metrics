@@ -17,14 +17,24 @@ limitations under the License.
 package metricsstore
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
+	clientfeatures "k8s.io/client-go/features"
+	clientfeaturestesting "k8s.io/client-go/features/testing"
+	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
@@ -32,7 +42,7 @@ import (
 func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 	serviceIDs := []string{"a", "b"}
 
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
 		if err != nil {
 			t.Fatal(err)
@@ -56,11 +66,9 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 
 	for _, id := range serviceIDs {
 		s := v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "service",
-				Namespace: id,
-				UID:       types.UID(id),
-			},
+			Name:      "service",
+			Namespace: id,
+			UID:       types.UID(id),
 		}
 
 		err := ms.Add(&s)
@@ -85,14 +93,12 @@ func TestObjectsSameNameDifferentNamespaces(t *testing.T) {
 }
 
 func TestMetricsStoreResourceVersion(t *testing.T) {
-	ms := NewMetricsStore([]string{}, func(_ interface{}) []metric.FamilyInterface { return nil })
+	ms := NewMetricsStore([]string{}, func(_ any) []metric.FamilyInterface { return nil })
 
 	// Test Add
 	s1 := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:             "uid1",
-			ResourceVersion: "123",
-		},
+		UID:             "uid1",
+		ResourceVersion: "123",
 	}
 	if err := ms.Add(s1); err != nil {
 		t.Fatal(err)
@@ -126,16 +132,14 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 	}
 
 	// Test Replace
-	if err := ms.Replace([]interface{}{}, "127"); err != nil {
+	if err := ms.Replace([]any{}, "127"); err != nil {
 		t.Fatal(err)
 	}
 	s2 := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:             "uid2",
-			ResourceVersion: "1",
-		},
+		UID:             "uid2",
+		ResourceVersion: "1",
 	}
-	if err := ms.Replace([]interface{}{s2}, "127"); err != nil {
+	if err := ms.Replace([]any{s2}, "127"); err != nil {
 		t.Fatal(err)
 	}
 	if rv := ms.LastStoreSyncResourceVersion(); rv != "127" {
@@ -143,14 +147,85 @@ func TestMetricsStoreResourceVersion(t *testing.T) {
 	}
 }
 
+func TestMetricsStoreTransformerDuringWatchList(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, true)
+
+	var calls atomic.Int64
+	ms := NewMetricsStore([]string{"Test info."}, func(obj any) []metric.FamilyInterface {
+		calls.Add(1)
+		o, _ := meta.Accessor(obj)
+		return []metric.FamilyInterface{&metric.Family{
+			Name: "kube_test_info",
+			Metrics: []*metric.Metric{{
+				LabelKeys:   []string{"uid"},
+				LabelValues: []string{string(o.GetUID())},
+				Value:       1,
+			}},
+		}}
+	})
+
+	w := watch.NewFake()
+	lw := &cache.ListWatch{
+		ListWithContextFunc: func(context.Context, metav1.ListOptions) (runtime.Object, error) {
+			return nil, errors.New("unexpected list, the initial sync should use WatchList")
+		},
+		WatchFuncWithContext: func(context.Context, metav1.ListOptions) (watch.Interface, error) {
+			return w, nil
+		},
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	r := cache.NewReflectorWithOptions(lw, &v1.Pod{}, ms, cache.ReflectorOptions{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		r.RunWithContext(ctx)
+	}()
+	defer func() {
+		cancel()
+		<-done
+	}()
+
+	w.Add(&v1.Pod{Name: "pod", Namespace: "default", UID: "uid-p", ResourceVersion: "1"})
+
+	// The metrics are generated when the object reaches the temporary store,
+	// before the initial events end.
+	if err := wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, 5*time.Second, true, func(context.Context) (bool, error) {
+		return calls.Load() == 1, nil
+	}); err != nil {
+		t.Fatalf("expected the metrics to be generated before the initial events end: %v", err)
+	}
+
+	w.Action(watch.Bookmark, &v1.Pod{
+		ResourceVersion: "2",
+		Annotations:     map[string]string{metav1.InitialEventsAnnotationKey: "true"},
+	})
+	if err := wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, wait.ForeverTestTimeout, true, func(context.Context) (bool, error) {
+		return ms.LastStoreSyncResourceVersion() == "2", nil
+	}); err != nil {
+		t.Fatalf("initial sync did not complete: %v", err)
+	}
+	if n := calls.Load(); n != 1 {
+		t.Errorf("expected the metrics to be generated once, got %d calls", n)
+	}
+
+	out := strings.Builder{}
+	if err := NewMetricsWriter("test", ms).WriteAll(&out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `uid="uid-p"`) {
+		t.Errorf("expected the metric of the synced object to be written, got %q", out.String())
+	}
+}
+
 func BenchmarkAdd(b *testing.B) {
 	const nFamilies = 50
 
 	headers := make([]string, nFamilies)
-	genFunc := func(obj interface{}) []metric.FamilyInterface {
+	genFunc := func(obj any) []metric.FamilyInterface {
 		o, _ := meta.Accessor(obj)
 		families := make([]metric.FamilyInterface, nFamilies)
-		for j := 0; j < nFamilies; j++ {
+		for j := range nFamilies {
 			families[j] = &metric.Family{
 				Name: fmt.Sprintf("kube_bench_metric_%d", j),
 				Metrics: []*metric.Metric{
@@ -167,11 +242,9 @@ func BenchmarkAdd(b *testing.B) {
 
 	store := NewMetricsStore(headers, genFunc)
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       types.UID("uid-0"),
-			Name:      "svc-0",
-			Namespace: "default",
-		},
+		UID:       types.UID("uid-0"),
+		Name:      "svc-0",
+		Namespace: "default",
 	}
 
 	b.ResetTimer()

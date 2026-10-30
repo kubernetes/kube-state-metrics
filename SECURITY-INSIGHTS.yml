@@ -1,7 +1,7 @@
 # Refer: https://github.com/ossf/security-insights-spec/blob/main/specification.md#specification
 header:
   schema-version: "1.0.0"
-  expiration-date: "2024-12-15T19:10:00.000Z"
+  expiration-date: "2027-10-09T00:00:00.000Z"
   project-url: https://github.com/kubernetes/kube-state-metrics
   changelog: https://github.com/kubernetes/kube-state-metrics/blob/main/CHANGELOG.md
   license: https://github.com/kubernetes/kube-state-metrics/blob/main/LICENSE
@@ -37,7 +37,7 @@ dependencies:
 documentation:
     - https://github.com/kubernetes/kube-state-metrics/tree/main/docs
 security-testing:
-- tool-type: dast
+- tool-type: sca
   tool-name: govulncheck
   tool-version: latest
   tool-url: https://go.googlesource.com/vuln

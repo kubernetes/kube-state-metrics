@@ -33,30 +33,24 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &admissionregistrationv1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "mutatingwebhookconfiguration1",
-					Namespace:       "ns1",
-					ResourceVersion: "123456",
-				},
+				Name:            "mutatingwebhookconfiguration1",
+				ResourceVersion: "123456",
 			},
 			Want: `
 				# HELP kube_mutatingwebhookconfiguration_info Information about the MutatingWebhookConfiguration.
 				# HELP kube_mutatingwebhookconfiguration_metadata_resource_version Resource version representing a specific version of the MutatingWebhookConfiguration.
 				# TYPE kube_mutatingwebhookconfiguration_info gauge
 				# TYPE kube_mutatingwebhookconfiguration_metadata_resource_version gauge
-				kube_mutatingwebhookconfiguration_info{mutatingwebhookconfiguration="mutatingwebhookconfiguration1",namespace="ns1"} 1
-				kube_mutatingwebhookconfiguration_metadata_resource_version{mutatingwebhookconfiguration="mutatingwebhookconfiguration1",namespace="ns1"} 123456
+				kube_mutatingwebhookconfiguration_info{mutatingwebhookconfiguration="mutatingwebhookconfiguration1"} 1
+				kube_mutatingwebhookconfiguration_metadata_resource_version{mutatingwebhookconfiguration="mutatingwebhookconfiguration1"} 123456
 				`,
 			MetricNames: []string{"kube_mutatingwebhookconfiguration_info", "kube_mutatingwebhookconfiguration_metadata_resource_version"},
 		},
 		{
 			Obj: &admissionregistrationv1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "mutatingwebhookconfiguration2",
-					Namespace:         "ns2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "mutatingwebhookconfiguration2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "abcdef",
 			},
 			Want: `
 			# HELP kube_mutatingwebhookconfiguration_created Unix creation timestamp.
@@ -65,19 +59,16 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 			# TYPE kube_mutatingwebhookconfiguration_created gauge
 			# TYPE kube_mutatingwebhookconfiguration_info gauge
 			# TYPE kube_mutatingwebhookconfiguration_metadata_resource_version gauge
-			kube_mutatingwebhookconfiguration_created{mutatingwebhookconfiguration="mutatingwebhookconfiguration2",namespace="ns2"} 1.501569018e+09
-			kube_mutatingwebhookconfiguration_info{mutatingwebhookconfiguration="mutatingwebhookconfiguration2",namespace="ns2"} 1
+			kube_mutatingwebhookconfiguration_created{mutatingwebhookconfiguration="mutatingwebhookconfiguration2"} 1.501569018e+09
+			kube_mutatingwebhookconfiguration_info{mutatingwebhookconfiguration="mutatingwebhookconfiguration2"} 1
 			`,
 			MetricNames: []string{"kube_mutatingwebhookconfiguration_created", "kube_mutatingwebhookconfiguration_info", "kube_mutatingwebhookconfiguration_metadata_resource_version"},
 		},
 		{
 			Obj: &admissionregistrationv1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "mutatingwebhookconfiguration3",
-					Namespace:         "ns3",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "abcdef",
-				},
+				Name:              "mutatingwebhookconfiguration3",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "abcdef",
 				Webhooks: []admissionregistrationv1.MutatingWebhook{
 					{
 						Name: "webhook_with_service",
@@ -96,8 +87,8 @@ func TestMutatingWebhookConfigurationStore(t *testing.T) {
 			Want: `
 			# HELP kube_mutatingwebhookconfiguration_webhook_clientconfig_service Service used by the apiserver to connect to a mutating webhook.
 			# TYPE kube_mutatingwebhookconfiguration_webhook_clientconfig_service gauge
-			kube_mutatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_external_url",namespace="ns3",service_name="",service_namespace="",mutatingwebhookconfiguration="mutatingwebhookconfiguration3"} 1
-			kube_mutatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_service",namespace="ns3",service_name="svc",service_namespace="ns",mutatingwebhookconfiguration="mutatingwebhookconfiguration3"} 1
+			kube_mutatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_external_url",service_name="",service_namespace="",mutatingwebhookconfiguration="mutatingwebhookconfiguration3"} 1
+			kube_mutatingwebhookconfiguration_webhook_clientconfig_service{webhook_name="webhook_with_service",service_name="svc",service_namespace="ns",mutatingwebhookconfiguration="mutatingwebhookconfiguration3"} 1
 			`,
 			MetricNames: []string{"kube_mutatingwebhookconfiguration_webhook_clientconfig_service"},
 		},

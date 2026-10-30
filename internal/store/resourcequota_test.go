@@ -44,12 +44,10 @@ func TestResourceQuotaStore(t *testing.T) {
 		// Verify populating base metric and that metric for unset fields are skipped.
 		{
 			Obj: &v1.ResourceQuota{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "quotaTest",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "testNS",
-				},
-				Status: v1.ResourceQuotaStatus{},
+				Name:              "quotaTest",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "testNS",
+				Status:            v1.ResourceQuotaStatus{},
 			},
 			Want: metadata + `
 			kube_resourcequota_created{namespace="testNS",resourcequota="quotaTest"} 1.5e+09
@@ -58,10 +56,8 @@ func TestResourceQuotaStore(t *testing.T) {
 		// Verify resource metric.
 		{
 			Obj: &v1.ResourceQuota{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "quotaTest",
-					Namespace: "testNS",
-				},
+				Name:      "quotaTest",
+				Namespace: "testNS",
 				Spec: v1.ResourceQuotaSpec{
 					Hard: v1.ResourceList{
 						v1.ResourceCPU:                    resource.MustParse("4.3"),
@@ -145,16 +141,14 @@ func TestResourceQuotaStore(t *testing.T) {
 				"hello",
 			},
 			Obj: &v1.ResourceQuota{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "quotaTest",
-					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
-					Namespace:         "testNS",
-					Annotations: map[string]string{
-						"foo": "bar",
-					},
-					Labels: map[string]string{
-						"hello": "world",
-					},
+				Name:              "quotaTest",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "testNS",
+				Annotations: map[string]string{
+					"foo": "bar",
+				},
+				Labels: map[string]string{
+					"hello": "world",
 				},
 				Status: v1.ResourceQuotaStatus{},
 			},

@@ -185,8 +185,8 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 	}
 }
 
-func wrapEndpointFunc(f func(*v1.Endpoints) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapEndpointFunc(f func(*v1.Endpoints) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		endpoint := obj.(*v1.Endpoints)
 
 		metricFamily := f(endpoint)

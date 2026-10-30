@@ -73,8 +73,8 @@ func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generat
 	}
 }
 
-func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		hpa := obj.(*autoscaling.HorizontalPodAutoscaler)
 
 		metricFamily := f(hpa)
@@ -205,21 +205,38 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 				// The variable maps the type of metric to the corresponding value
 				metricMap := make(map[metricTargetType]float64)
 
+				// validateMetricSpec requires the source named by Type, but don't
+				// rely on it: a nil deref here would panic the reflector goroutine.
 				switch m.Type {
 				case autoscaling.ObjectMetricSourceType:
+					if m.Object == nil {
+						continue
+					}
 					metricName = m.Object.Metric.Name
 					metricTarget = m.Object.Target
 				case autoscaling.PodsMetricSourceType:
+					if m.Pods == nil {
+						continue
+					}
 					metricName = m.Pods.Metric.Name
 					metricTarget = m.Pods.Target
 				case autoscaling.ResourceMetricSourceType:
+					if m.Resource == nil {
+						continue
+					}
 					metricName = string(m.Resource.Name)
 					metricTarget = m.Resource.Target
 				case autoscaling.ContainerResourceMetricSourceType:
+					if m.ContainerResource == nil {
+						continue
+					}
 					metricName = string(m.ContainerResource.Name)
 					metricTarget = m.ContainerResource.Target
 					containerName = m.ContainerResource.Container
 				case autoscaling.ExternalMetricSourceType:
+					if m.External == nil {
+						continue
+					}
 					metricName = m.External.Metric.Name
 					metricTarget = m.External.Target
 				default:

@@ -31,11 +31,9 @@ func main() {
 		internal.RunKubeStateMetricsWrapper(opts)
 	}
 	opts.AddFlags(cmd)
+	// Parse only returns on error or shutdown; options are validated in PreRunE.
 	if err := opts.Parse(); err != nil {
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
-	if err := opts.Validate(); err != nil {
-		klog.ErrorS(err, "Validating options error")
+		klog.ErrorS(err, "Running kube-state-metrics failed")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 }

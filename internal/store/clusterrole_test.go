@@ -38,17 +38,15 @@ func TestClusterRoleStore(t *testing.T) {
 				"app",
 			},
 			Obj: &rbacv1.ClusterRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "role1",
-					ResourceVersion: "BBBBB",
-					Annotations: map[string]string{
-						"app":              "mysql-server",
-						"app.k8s.io/owner": "@foo",
-					},
-					Labels: map[string]string{
-						"excluded": "me",
-						"app":      "mysql-server",
-					},
+				Name:            "role1",
+				ResourceVersion: "BBBBB",
+				Annotations: map[string]string{
+					"app":              "mysql-server",
+					"app.k8s.io/owner": "@foo",
+				},
+				Labels: map[string]string{
+					"excluded": "me",
+					"app":      "mysql-server",
 				},
 			},
 			Want: `
@@ -73,11 +71,9 @@ func TestClusterRoleStore(t *testing.T) {
 		},
 		{
 			Obj: &rbacv1.ClusterRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "role2",
-					CreationTimestamp: metav1StartTime,
-					ResourceVersion:   "10596",
-				},
+				Name:              "role2",
+				CreationTimestamp: metav1StartTime,
+				ResourceVersion:   "10596",
 			},
 			Want: `
 				# HELP kube_clusterrole_created Unix creation timestamp

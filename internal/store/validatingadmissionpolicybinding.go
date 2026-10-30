@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	descValidatingAdmissionPolicyBindingDefaultLabels = []string{"namespace", "validatingadmissionpolicybinding"}
+	descValidatingAdmissionPolicyBindingDefaultLabels = []string{"validatingadmissionpolicybinding"}
 
 	validatingAdmissionPolicyBindingMetricFamilies = []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -116,14 +116,14 @@ func createValidatingAdmissionPolicyBindingListWatch(kubeClient clientset.Interf
 	}
 }
 
-func wrapValidatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.ValidatingAdmissionPolicyBinding) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapValidatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.ValidatingAdmissionPolicyBinding) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		vapb := obj.(*admissionregistrationv1.ValidatingAdmissionPolicyBinding)
 
 		metricFamily := f(vapb)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingAdmissionPolicyBindingDefaultLabels, []string{vapb.Namespace, vapb.Name}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingAdmissionPolicyBindingDefaultLabels, []string{vapb.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

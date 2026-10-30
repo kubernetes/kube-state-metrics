@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	storagev1 "k8s.io/api/storage/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -46,12 +45,10 @@ func TestVolumeAttachmentStore(t *testing.T) {
 		cases      = []generateMetricsTestCase{
 			{
 				Obj: &storagev1.VolumeAttachment{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 2,
-						Name:       "csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224",
-						Labels: map[string]string{
-							"app": "foobar",
-						},
+					Generation: 2,
+					Name:       "csi-5ff16a1ad085261021e21c6cb3a6defb979a8794f25a4f90f6285664cff37224",
+					Labels: map[string]string{
+						"app": "foobar",
 					},
 					Spec: storagev1.VolumeAttachmentSpec{
 						Attacher: "cinder.csi.openstack.org",

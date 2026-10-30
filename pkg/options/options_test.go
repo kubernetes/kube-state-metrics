@@ -17,8 +17,12 @@ limitations under the License.
 package options
 
 import (
+	"io"
+	"math"
 	"os"
 	"testing"
+
+	"github.com/spf13/cobra"
 
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
@@ -66,6 +70,51 @@ func TestOptionsParse(t *testing.T) {
 	}
 }
 
+// A rejected option must abort Execute before Run starts anything.
+func TestValidateRunsBeforeRun(t *testing.T) {
+	tests := []struct {
+		Desc         string
+		Args         []string
+		ExpectsError bool
+	}{
+		{
+			Desc:         "node sharding rejects a resource without a spec.nodeName field selector",
+			Args:         []string{"--node=node-1", "--resources=deployments"},
+			ExpectsError: true,
+		},
+		{
+			Desc:         "node sharding accepts pods",
+			Args:         []string{"--node=node-1", "--resources=pods"},
+			ExpectsError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Desc, func(t *testing.T) {
+			ran := false
+			cmd := &cobra.Command{
+				Use:  "kube-state-metrics",
+				Args: cobra.NoArgs,
+				Run:  func(_ *cobra.Command, _ []string) { ran = true },
+			}
+
+			opts := NewOptions()
+			opts.AddFlags(cmd)
+			cmd.SetArgs(test.Args)
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+
+			err := opts.Parse()
+			if (err != nil) != test.ExpectsError {
+				t.Fatalf("Parse() error = %v, expectsError %v", err, test.ExpectsError)
+			}
+			if ran == test.ExpectsError {
+				t.Errorf("Run called = %v, expectsError %v", ran, test.ExpectsError)
+			}
+		})
+	}
+}
+
 func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
 	t.Run("deprecated key populates alias field", func(t *testing.T) {
 		opts := NewOptions()
@@ -93,4 +142,92 @@ func TestCustomResourceConfigFileDeprecatedAlias(t *testing.T) {
 			t.Fatalf("expected deprecated field to retain its value, got %q", opts.CustomResourceConfigFileDeprecated)
 		}
 	})
+}
+
+func TestValidate(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		mutate  func(*Options)
+		wantErr bool
+	}{
+		{
+			name:   "defaults are valid",
+			mutate: func(_ *Options) {},
+		},
+		{
+			name:    "gomemlimit ratio above 1 without node",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = 5.0 },
+			wantErr: true,
+		},
+		{
+			name:    "gomemlimit ratio of 0 without node",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = 0 },
+			wantErr: true,
+		},
+		{
+			name:    "gomemlimit ratio of NaN",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = math.NaN() },
+			wantErr: true,
+		},
+		{
+			name:    "negative object limit without node",
+			mutate:  func(o *Options) { o.ObjectLimit = -1 },
+			wantErr: true,
+		},
+		{
+			name:    "gomemlimit ratio above 1 with node",
+			mutate:  func(o *Options) { o.Node = "node-1"; o.AutoGoMemlimitRatio = 5.0 },
+			wantErr: true,
+		},
+		{
+			name:    "node scoped run with an unshardable resource",
+			mutate:  func(o *Options) { o.Node = "node-1"; o.Resources = ResourceSet{"deployments": struct{}{}} },
+			wantErr: true,
+		},
+		{
+			name:   "node scoped run with pods",
+			mutate: func(o *Options) { o.Node = "node-1"; o.Resources = ResourceSet{"pods": struct{}{}} },
+		},
+		{
+			// The resource restriction exists because --node filters by
+			// spec.nodeName, so it must stay scoped to node-mode runs.
+			name:   "non-node run with an unshardable resource",
+			mutate: func(o *Options) { o.Resources = ResourceSet{"deployments": struct{}{}} },
+		},
+		{
+			name:    "zero total shards",
+			mutate:  func(o *Options) { o.TotalShards = 0 },
+			wantErr: true,
+		},
+		{
+			name:    "negative total shards",
+			mutate:  func(o *Options) { o.TotalShards = -1 },
+			wantErr: true,
+		},
+		{
+			name:    "shard index beyond total shards",
+			mutate:  func(o *Options) { o.Shard = 3; o.TotalShards = 3 },
+			wantErr: true,
+		},
+		{
+			name:    "negative shard index",
+			mutate:  func(o *Options) { o.Shard = -1 },
+			wantErr: true,
+		},
+		{
+			name:   "last shard of a sharded set",
+			mutate: func(o *Options) { o.Shard = 2; o.TotalShards = 3 },
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := NewOptions()
+			// AddFlags applies the defaults; it panics if called twice on one command.
+			opts.AddFlags(&cobra.Command{})
+			tc.mutate(opts)
+
+			if err := opts.Validate(); (err != nil) != tc.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
 }

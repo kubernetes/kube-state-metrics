@@ -20,6 +20,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -245,6 +246,12 @@ func TestOptionsClone(t *testing.T) {
 	opts.Port = 8080
 
 	c := opts.Clone()
+	// The clone is the baseline of each config reload, so it has to carry
+	// every value over, not only be independent of the original.
+	if !reflect.DeepEqual(c, opts) {
+		t.Fatalf("clone differs from the original:\n got %+v\nwant %+v", c, opts)
+	}
+
 	c.AnnotationsAllowList["secrets"] = []string{"*"}
 	c.AnnotationsAllowList["pods"][0] = "changed"
 	c.LabelsAllowList["secrets"] = []string{"*"}

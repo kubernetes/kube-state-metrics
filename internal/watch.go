@@ -35,18 +35,19 @@ func readYAMLFile(path string) error {
 }
 
 // watchFile calls onChange whenever the file at path changes, until the file
-// is removed. It watches the parent directory rather than the file itself, so
-// it also sees atomic saves and Kubernetes ConfigMap updates, which swap the
-// ..data symlink instead of writing to the file.
-func watchFile(path string, onChange func(fsnotify.Event)) error {
+// is removed or the returned stop function is called. It watches the parent
+// directory rather than the file itself, so it also sees atomic saves and
+// Kubernetes ConfigMap updates, which swap the ..data symlink instead of
+// writing to the file.
+func watchFile(path string, onChange func(fsnotify.Event)) (stop func(), err error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	file := filepath.Clean(path)
 	if err := watcher.Add(filepath.Dir(file)); err != nil {
 		watcher.Close()
-		return err
+		return nil, err
 	}
 	realFile, _ := filepath.EvalSymlinks(file)
 
@@ -75,5 +76,5 @@ func watchFile(path string, onChange func(fsnotify.Event)) error {
 			}
 		}
 	}()
-	return nil
+	return func() { _ = watcher.Close() }, nil
 }

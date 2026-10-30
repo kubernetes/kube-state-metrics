@@ -54,9 +54,11 @@ func TestReadYAMLFile(t *testing.T) {
 func startWatch(t *testing.T, path string) <-chan fsnotify.Event {
 	t.Helper()
 	events := make(chan fsnotify.Event, 16)
-	if err := watchFile(path, func(e fsnotify.Event) { events <- e }); err != nil {
+	stop, err := watchFile(path, func(e fsnotify.Event) { events <- e })
+	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(stop)
 	return events
 }
 
@@ -129,4 +131,24 @@ func TestWatchFileConfigMapUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectEvent(t, events)
+}
+
+func TestWatchFileStop(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("a: 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	events := make(chan fsnotify.Event, 16)
+	stop, err := watchFile(path, func(e fsnotify.Event) { events <- e })
+	if err != nil {
+		t.Fatal(err)
+	}
+	stop()
+	// Calling stop again, as a later reload might, must be harmless.
+	stop()
+
+	if err := os.WriteFile(path, []byte("a: 2\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	expectNoEvent(t, events)
 }

@@ -51,6 +51,31 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// The custom resource config file can be set by the options config file,
+	// so the file in effect can change with each reload. watchedCRCFile is the
+	// file the watcher follows and stopCRCWatch stops that watcher.
+	var (
+		watchedCRCFile string
+		stopCRCWatch   func()
+	)
+	var restart func(fsnotify.Event)
+	watchCRCFile := func(file string) {
+		if stopCRCWatch != nil {
+			stopCRCWatch()
+			stopCRCWatch = nil
+		}
+		watchedCRCFile = file
+		if file == "" {
+			return
+		}
+		stop, err := watchFile(file, restart)
+		if err != nil {
+			klog.ErrorS(err, "Failed to watch Custom resource configuration file", "file", file)
+			return
+		}
+		stopCRCWatch = stop
+	}
+
 	// Every watched file gets its own watcher, and each watcher runs its
 	// callback on its own goroutine. They all restart KSM through the same ctx
 	// and cancel, and a ConfigMap holding more than one watched file updates
@@ -58,11 +83,17 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// is overwritten before it is used, the instance it belonged to is never
 	// stopped, and two of them contend for the listen ports.
 	var reloadMu sync.Mutex
-	restart := func(e fsnotify.Event) {
+	restart = func(e fsnotify.Event) {
 		reloadMu.Lock()
 		defer reloadMu.Unlock()
 
 		klog.InfoS("Changes detected", "name", e.Name)
+		// Follow the custom resource config file the restarted run will use.
+		// A config file that cannot be read keeps the current watcher; the run
+		// waits for it to be fixed and the fix triggers another restart.
+		if file, ok := customResourceConfigFile(baseOpts); ok && file != watchedCRCFile {
+			watchCRCFile(file)
+		}
 		cancel()
 		// Wait for the ports to be released.
 		<-time.After(3 * time.Second)
@@ -93,7 +124,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 				opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
 			}
 		}
-		if err := watchFile(file, restart); err != nil {
+		if _, err := watchFile(file, restart); err != nil {
 			klog.ErrorS(err, "Failed to watch options configuration file", "file", file)
 		}
 	}
@@ -108,9 +139,10 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
 		}
-		if err := watchFile(opts.CustomResourceConfigFile, restart); err != nil {
-			klog.ErrorS(err, "Failed to watch Custom resource configuration file", "file", opts.CustomResourceConfigFile)
-		}
+		// The options file watcher is already running and may restart first.
+		reloadMu.Lock()
+		watchCRCFile(opts.CustomResourceConfigFile)
+		reloadMu.Unlock()
 	}
 	if opts.Kubeconfig != "" {
 		if err := readYAMLFile(opts.Kubeconfig); err != nil {
@@ -121,11 +153,33 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			}
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
-		if err := watchFile(opts.Kubeconfig, restart); err != nil {
+		if _, err := watchFile(opts.Kubeconfig, restart); err != nil {
 			klog.ErrorS(err, "Failed to watch kubeconfig file", "file", opts.Kubeconfig)
 		}
 	}
 	klog.InfoS("Starting kube-state-metrics")
 	KSMRunOrDie(ctx)
 	select {}
+}
+
+// customResourceConfigFile returns the custom resource config file a run
+// starting from baseOpts uses: the one set in the options config file, if
+// any, otherwise the one from the command line. It returns false when the
+// options config file cannot be read or parsed.
+func customResourceConfigFile(baseOpts *options.Options) (string, bool) {
+	opts := baseOpts.Clone()
+	if file := options.GetConfigFile(*opts); file != "" {
+		configFile, err := os.ReadFile(filepath.Clean(file))
+		if err != nil {
+			return "", false
+		}
+		if err := yaml.Unmarshal(configFile, opts); err != nil {
+			return "", false
+		}
+	}
+	// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
+	if opts.CustomResourceConfigFile == "" {
+		return opts.CustomResourceConfigFileDeprecated, true
+	}
+	return opts.CustomResourceConfigFile, true
 }

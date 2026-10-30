@@ -83,12 +83,10 @@ func TestReloadedOptions(t *testing.T) {
 		t.Errorf("the base options must not change, got (%q, %q)", base.CustomResourceConfigFile, base.Kubeconfig)
 	}
 
-	t.Run("deprecated key", func(t *testing.T) {
-		noFlag := options.NewOptions()
-		noFlag.Config = configPath
-		writeConfig("custom_resource_config_file: /etc/ksm/deprecated.yaml\n")
-		if got, ok := reloadedOptions(noFlag); !ok || got.CustomResourceConfigFile != "/etc/ksm/deprecated.yaml" {
-			t.Errorf("expected the deprecated key's file, got %v", got)
+	t.Run("removed key", func(t *testing.T) {
+		writeConfig("custom_resource_config_file: /etc/ksm/removed.yaml\n")
+		if _, ok := reloadedOptions(base); ok {
+			t.Error("expected a config file with the removed key to be rejected")
 		}
 	})
 }

@@ -27,7 +27,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"k8s.io/klog/v2"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
@@ -69,6 +68,14 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		defer reloadMu.Unlock()
 
 		klog.InfoS("Changes detected", "name", e.Name)
+		// Stopping the running instance takes the metrics endpoints down until
+		// the new one has started, so keep it if the new options cannot be used.
+		if err := checkConfigFile(baseOpts); err != nil {
+			file := options.GetConfigFile(*baseOpts)
+			klog.ErrorS(err, "Invalid options configuration file, keeping the running configuration", "file", file)
+			app.ReportRejectedConfig(file)
+			return
+		}
 		// Follow the files the restarted run will use. An options config file
 		// that cannot be read keeps the current watchers; the run waits for it
 		// to be fixed and the fix triggers another restart.
@@ -94,16 +101,10 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			if !opts.ContinueWithoutConfig {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
-		} else if err := yaml.Unmarshal(configFile, opts); err != nil {
+		} else if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
 			klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
 			if !opts.ContinueWithoutConfig {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-			}
-			// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
-		} else if opts.CustomResourceConfigFileDeprecated != "" {
-			klog.Warning("The 'custom_resource_config_file' config key is deprecated and will be removed in a future release; use 'custom_resource_state_config_file' instead")
-			if opts.CustomResourceConfigFile == "" {
-				opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
 			}
 		}
 		if _, err := watchFile(file, restart); err != nil {
@@ -183,13 +184,24 @@ func reloadedOptions(baseOpts *options.Options) (*options.Options, bool) {
 		if err != nil {
 			return nil, false
 		}
-		if err := yaml.Unmarshal(configFile, opts); err != nil {
+		if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
 			return nil, false
 		}
 	}
-	// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
-	if opts.CustomResourceConfigFile == "" {
-		opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
-	}
 	return opts, true
+}
+
+// checkConfigFile reports whether the options config file of baseOpts can be
+// decoded. A file that cannot be read is left to the run, which handles a
+// missing config file according to --continue-without-config.
+func checkConfigFile(baseOpts *options.Options) error {
+	file := options.GetConfigFile(*baseOpts)
+	if file == "" {
+		return nil
+	}
+	configFile, err := os.ReadFile(filepath.Clean(file))
+	if err != nil {
+		return nil
+	}
+	return options.UnmarshalConfigFile(configFile, baseOpts.Clone())
 }

@@ -35,6 +35,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/exporter-toolkit/web"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1323,14 +1324,14 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
 	base.TotalShards = 1
 
-	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
+	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_state_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
 	first := base.Clone()
 	_ = RunKubeStateMetricsWrapper(context.Background(), first)
 	if len(first.AnnotationsAllowList["secrets"]) != 1 || !slices.Equal(first.Namespaces, []string{"team-a"}) {
 		t.Fatalf("expected config values to be applied, got annotations=%v namespaces=%v", first.AnnotationsAllowList, first.Namespaces)
 	}
 	if first.CustomResourceConfigFile != filepath.Join(dir, "crs.yaml") {
-		t.Fatalf("expected deprecated custom_resource_config_file to be honored, got %q", first.CustomResourceConfigFile)
+		t.Fatalf("expected custom_resource_state_config_file to be applied, got %q", first.CustomResourceConfigFile)
 	}
 
 	writeConfig("enable_gzip_encoding: true\n")
@@ -1341,5 +1342,18 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	}
 	if len(base.AnnotationsAllowList) != 0 || len(base.Namespaces) != 0 {
 		t.Fatalf("baseline options were modified: annotations=%v namespaces=%v", base.AnnotationsAllowList, base.Namespaces)
+	}
+}
+
+func TestReportRejectedConfig(t *testing.T) {
+	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "test_config_success"}, []string{"type", "filename"})
+	g.WithLabelValues("config", "/etc/ksm/config.yaml").Set(1)
+	activeConfigSuccess.Store(g)
+	t.Cleanup(func() { activeConfigSuccess.Store(nil) })
+
+	ReportRejectedConfig("/etc/ksm/config.yaml")
+
+	if got := testutil.ToFloat64(g.WithLabelValues("config", "/etc/ksm/config.yaml")); got != 0 {
+		t.Fatalf("expected the rejected config to be reported as failed, got %v", got)
 	}
 }

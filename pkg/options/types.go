@@ -242,63 +242,36 @@ type LabelsAllowList map[string][]string
 // resource=[k8s-label-name,another-k8s-label],another-resource[k8s-label]
 // Example: pods=[app.kubernetes.io/component,app],resource=[blah]
 func (l *LabelsAllowList) Set(value string) error {
-	// Taken from text/scanner EOF constant.
-	const EOF = -1
-	var (
-		m            = make(map[string][]string, len(*l))
-		previous     rune
-		next         rune
-		firstWordPos int
-		name         string
-	)
-	// Index by rune, not byte: ranging over the string yields byte offsets,
-	// which don't address runes once value holds a multi-byte character.
-	runes := []rune(value)
-	firstWordPos = 0
-
-	for i, v := range runes {
-		if i+1 == len(runes) {
-			next = EOF
-		} else {
-			next = runes[i+1]
+	m := make(map[string][]string, len(*l))
+	for rest := value; rest != ""; {
+		name, after, ok := strings.Cut(rest, "=[")
+		if !ok {
+			return errLabelsAllowListFormat
 		}
-		if i-1 >= 0 {
-			previous = runes[i-1]
-		} else {
-			previous = v
+		labels, after, ok := strings.Cut(after, "]")
+		if !ok {
+			return errLabelsAllowListFormat
 		}
-
-		switch v {
-		case '=':
-			if previous == ',' || next != '[' {
-				return errLabelsAllowListFormat
+		name = strings.TrimSpace(name)
+		if name == "" || strings.ContainsAny(name, "[],=") || strings.ContainsAny(labels, "[=") {
+			return errLabelsAllowListFormat
+		}
+		m[name] = []string{}
+		if strings.TrimSpace(labels) != "" {
+			for label := range strings.SplitSeq(labels, ",") {
+				label = strings.TrimSpace(label)
+				if label == "" {
+					return errLabelsAllowListFormat
+				}
+				m[name] = append(m[name], label)
 			}
-			name = strings.TrimSpace(string(runes[firstWordPos:i]))
-			m[name] = []string{}
-			firstWordPos = i + 1
-		case '[':
-			if previous != '=' {
-				return errLabelsAllowListFormat
-			}
-			firstWordPos = i + 1
-		case ']':
-			// if after metric group, has char not comma or end.
-			if next != EOF && next != ',' {
-				return errLabelsAllowListFormat
-			}
-			if previous != '[' {
-				m[name] = append(m[name], strings.TrimSpace(string(runes[firstWordPos:i])))
-			}
-			firstWordPos = i + 1
-		case ',':
-			// if starts or ends with comma
-			if previous == v || next == EOF || next == ']' {
-				return errLabelsAllowListFormat
-			}
-			if previous != ']' {
-				m[name] = append(m[name], strings.TrimSpace(string(runes[firstWordPos:i])))
-			}
-			firstWordPos = i + 1
+		}
+		if after == "" {
+			break
+		}
+		// Another resource has to follow a comma.
+		if rest, ok = strings.CutPrefix(after, ","); !ok || rest == "" {
+			return errLabelsAllowListFormat
 		}
 	}
 

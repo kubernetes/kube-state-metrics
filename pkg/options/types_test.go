@@ -314,6 +314,53 @@ func TestLabelsAllowListSet(t *testing.T) {
 			Wanted: LabelsAllowList(map[string][]string{}),
 			err:    errLabelsAllowListFormat,
 		},
+		{
+			Desc:   "[invalid] missing closing bracket",
+			Value:  "pods=[app",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "[invalid] unstructured value",
+			Value:  "pods",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "[invalid] nested resource",
+			Value:  "pods=[a=[b]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "[invalid] empty resource name",
+			Value:  "=[a]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "[invalid] empty label",
+			Value:  "pods=[,a]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "[invalid] double comma between resources",
+			Value:  "pods=[a],,nodes=[b]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "[invalid] extra closing bracket",
+			Value:  "pods=[a]]",
+			Wanted: LabelsAllowList(map[string][]string{}),
+			err:    errLabelsAllowListFormat,
+		},
+		{
+			Desc:   "whitespace-only labels",
+			Value:  "pods=[ ]",
+			Wanted: LabelsAllowList(map[string][]string{"pods": {}}),
+		},
 
 		{
 			Desc:   "[invalid] no comma between metrics",

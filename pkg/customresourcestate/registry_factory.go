@@ -480,11 +480,6 @@ func (c compiledGauge) value(it any) (*eachValue, error) {
 				Value:  0,
 			}, nil
 		}
-		// no it means no iterables were passed down, meaning that the path resolution never happened
-		if it == nil {
-			return nil, fmt.Errorf("got nil while resolving path")
-		}
-		// Don't error if there was not a type-casting issue (`toFloat64`).
 		return nil, nil
 	}
 	value, err := toFloat64(got, c.NilIsZero)

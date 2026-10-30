@@ -612,6 +612,11 @@ Produces the metric:
 kube_customresource_uptime{customresource_group="myteam.io", customresource_kind="Foo", customresource_version="v1"} 43.21
 ```
 
+If `path` (or `valueFrom`, if set) does not resolve, for example because the status field is not populated yet,
+no metric is produced for that value and no error is logged, unless `nilIsZero` is set, in which case the value is `0`.
+A value that cannot be converted to float64 is reported as an error. When `path` points to a map, entries that cannot
+be converted are skipped without an error, unless `valueFrom` names the entry's key.
+
 ##### Type conversion and special handling
 
 Gauges produce values of type float64 but custom resources can be of all kinds of types.
@@ -619,7 +624,7 @@ Kube-state-metrics performs implicit type conversions for a lot of type.
 Supported types are:
 
 * (u)int32/64, int, float32 and byte are cast to float64
-* `nil` is generally mapped to `0.0` if NilIsZero is `true`, otherwise it will throw an error
+* `nil` is mapped to `0.0` if NilIsZero is `true`, otherwise no metric is produced
 * for bool `true` is mapped to `1.0` and `false` is mapped to `0.0`
 * for string the following logic applies
   * `"true"` and `"yes"` are mapped to `1.0`, `"false"`, `"no"` and `"unknown"` are mapped to `0.0` (all case-insensitive)
@@ -781,8 +786,9 @@ uptime{customresource_group="myteam.io", customresource_kind="Foo", customresour
 
 ### Logging
 
-If a metric path is registered but not found on a custom resource, an error will be logged. For some resources,
-this may produce a lot of noise. The error log [verbosity][vlog] for a metric or resource can be set with `errorLogV` on
+If a metric path resolves to a value that cannot be used, for example a Gauge value that cannot be converted to float64
+or a StateSet value that is not a string, an error will be logged. A path that does not resolve produces no metrics and no error.
+For some resources, these errors may produce a lot of noise. The error log [verbosity][vlog] for a metric or resource can be set with `errorLogV` on
 the resource or metric:
 
 ```yaml

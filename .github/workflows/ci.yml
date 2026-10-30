@@ -16,12 +16,40 @@ on:
 permissions:
   contents: read
 
+# Superseded runs on a pull request are pointless work; the org runner pool is
+# shared, so cancel them. Every other run gets a group of its own (keyed on the
+# run id): a shared group would still let a newer push replace a pending one,
+# and pushes to main/release branches and tags must each get their own run, as
+# that is the record for that commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
   GOLANGCI_LINT_VERSION: "v2.15.0"
 
+# setup-go's own caching is off in every job below. It derives a single cache
+# key from OS + Go version + go.sum, so all jobs here collide on it: they start
+# together, all miss, all race to save, and one arbitrary winner takes the slot
+# - often a job that barely populates GOCACHE, which the rest then restore. The
+# steps below split the two caches:
+# - GOMODCACHE is keyed on go.sum, so its contents are fixed by the key.
+#   Only ci-validate-go-modules saves it: `go mod tidy` there walks the whole
+#   module graph, so the entry is complete. Every other job just restores it;
+#   were they all to save, the first job to finish would win the key with
+#   whatever subset of modules it happened to download.
+# - GOCACHE is saved per job, and per commit: actions/cache never re-saves on
+#   an exact key hit, so a key fixed by go.sum alone would freeze the build
+#   cache at the first commit to use it. restore-keys picks up the most recent
+#   entry for the job instead. Only pushes to main save it, and only once the
+#   job has succeeded: an entry per job for every PR push and tag would fill
+#   the repository's cache quota and evict the main entries everything else
+#   restores from.
+# Jobs that compile little enough not to earn a build cache entry take the
+# module cache only.
 jobs:
   ci-go-lint:
     name: ci-go-lint
@@ -34,7 +62,27 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
+
+    - name: Restore Go build output
+      id: gobuild
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/.cache/golangci-lint
+        key: gobuild-${{ runner.os }}-lint-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+        restore-keys: |
+          gobuild-${{ runner.os }}-lint-${{ hashFiles('go.sum', '.go-version') }}-
+          gobuild-${{ runner.os }}-lint-
 
     - name: Lint
       run: |
@@ -53,6 +101,15 @@ jobs:
         rm -rf "${tarball}" "golangci-lint-${version}-linux-amd64" checksums.txt
         make lint
 
+    - name: Save Go build output
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gobuild.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/.cache/golangci-lint
+        key: ${{ steps.gobuild.outputs.cache-primary-key }}
+
   ci-validate-manifests:
     name: ci-validate-manifests
     runs-on: ubuntu-latest
@@ -64,7 +121,15 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
 
     - name: Validate generated manifests
       run: |
@@ -81,7 +146,15 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Cache Go modules
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
 
     - name: Validate go modules
       run: |
@@ -98,11 +171,36 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
+
+    - name: Restore Go build output
+      id: gobuild
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: gobuild-${{ runner.os }}-docs-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+        restore-keys: |
+          gobuild-${{ runner.os }}-docs-${{ hashFiles('go.sum', '.go-version') }}-
+          gobuild-${{ runner.os }}-docs-
 
     - name: Check that all metrics are documented and templates have no delta
       run: |
         make doccheck
+
+    - name: Save Go build output
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gobuild.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.gobuild.outputs.cache-primary-key }}
 
   ci-unit-tests:
     name: ci-unit-tests
@@ -115,11 +213,36 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
+
+    - name: Restore Go build output
+      id: gobuild
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: gobuild-${{ runner.os }}-unit-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+        restore-keys: |
+          gobuild-${{ runner.os }}-unit-${{ hashFiles('go.sum', '.go-version') }}-
+          gobuild-${{ runner.os }}-unit-
 
     - name: Unit tests
       run: |
         make test-unit
+
+    - name: Save Go build output
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gobuild.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.gobuild.outputs.cache-primary-key }}
 
   ci-rule-tests:
     name: ci-rule-tests
@@ -147,7 +270,25 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
+
+    - name: Restore Go build output
+      id: gobuild
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: gobuild-${{ runner.os }}-benchmark-main-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+        restore-keys: |
+          gobuild-${{ runner.os }}-benchmark-main-${{ hashFiles('go.sum', '.go-version') }}-
+          gobuild-${{ runner.os }}-benchmark-main-
 
     - name: Benchmark tests
       run: |
@@ -164,6 +305,13 @@ jobs:
         Refer to <a href="https://pkg.go.dev/golang.org/x/perf/cmd/benchstat">benchstat's documentation</a> for more help.
         EOL
 
+    - name: Save Go build output
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gobuild.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.gobuild.outputs.cache-primary-key }}
+
   ci-benchmark-tests-release:
     name: ci-benchmark-tests-releasebranch
     runs-on: ubuntu-latest
@@ -178,7 +326,25 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
+
+    - name: Restore Go build output
+      id: gobuild
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: gobuild-${{ runner.os }}-benchmark-release-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+        restore-keys: |
+          gobuild-${{ runner.os }}-benchmark-release-${{ hashFiles('go.sum', '.go-version') }}-
+          gobuild-${{ runner.os }}-benchmark-release-
 
     - name: Benchmark tests
       run: |
@@ -195,6 +361,13 @@ jobs:
         Refer to <a href="https://pkg.go.dev/golang.org/x/perf/cmd/benchstat">benchstat's documentation</a> for more help.
         EOL
 
+    - name: Save Go build output
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gobuild.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.gobuild.outputs.cache-primary-key }}
+
   ci-build-kube-state-metrics:
     name: ci-build-kube-state-metrics
     runs-on: ubuntu-latest
@@ -206,11 +379,36 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
+
+    - name: Restore Go build output
+      id: gobuild
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: gobuild-${{ runner.os }}-build-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+        restore-keys: |
+          gobuild-${{ runner.os }}-build-${{ hashFiles('go.sum', '.go-version') }}-
+          gobuild-${{ runner.os }}-build-
 
     - name: Build
       run: |
         make build
+
+    - name: Save Go build output
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gobuild.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.gobuild.outputs.cache-primary-key }}
 
   ci-e2e-tests:
     name: ci-e2e-tests
@@ -223,8 +421,33 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
+
+    - name: Restore Go build output
+      id: gobuild
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: gobuild-${{ runner.os }}-e2e-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+        restore-keys: |
+          gobuild-${{ runner.os }}-e2e-${{ hashFiles('go.sum', '.go-version') }}-
+          gobuild-${{ runner.os }}-e2e-
 
     - name: End-to-end tests
       run: |
         make e2e
+
+    - name: Save Go build output
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gobuild.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.gobuild.outputs.cache-primary-key }}

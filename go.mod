@@ -10,7 +10,7 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/gobuffalo/flect v1.0.3
 	github.com/google/go-cmp v0.7.0
-	github.com/netresearch/go-cron v0.17.0
+	github.com/netresearch/go-cron v0.18.0
 	github.com/oklog/run v1.2.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3

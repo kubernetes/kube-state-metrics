@@ -224,6 +224,28 @@ func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
+			"kube_daemonset_spec_update_strategy",
+			"Update strategy of the DaemonSet.",
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDaemonSetFunc(func(d *v1.DaemonSet) *metric.Family {
+				ms := []*metric.Metric{}
+
+				if d.Spec.UpdateStrategy.Type != "" {
+					ms = append(ms, &metric.Metric{
+						LabelKeys:   []string{"strategy"},
+						LabelValues: []string{string(d.Spec.UpdateStrategy.Type)},
+						Value:       1,
+					})
+				}
+
+				return &metric.Family{
+					Metrics: ms,
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
 			"kube_daemonset_deletion_timestamp",
 			"Unix deletion timestamp",
 			metric.Gauge,

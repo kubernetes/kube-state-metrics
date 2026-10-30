@@ -245,64 +245,37 @@ type LabelsAllowList map[string][]string
 // resource=[k8s-label-name,another-k8s-label],another-resource[k8s-label]
 // Example: pods=[app.kubernetes.io/component,app],resource=[blah]
 func (l *LabelsAllowList) Set(value string) error {
-	// Taken from text/scanner EOF constant.
-	const EOF = -1
-	var (
-		m            = make(map[string][]string, len(*l))
-		previous     rune
-		next         rune
-		firstWordPos int
-		name         string
-	)
-	firstWordPos = 0
-
-	for i, v := range value {
-		if i+1 == len(value) {
-			next = EOF
-		} else {
-			next = []rune(value)[i+1]
+	m := make(map[string][]string, len(*l))
+	for rest := value; rest != ""; {
+		name, after, ok := strings.Cut(rest, "=[")
+		if !ok {
+			return errLabelsAllowListFormat
 		}
-		if i-1 >= 0 {
-			previous = []rune(value)[i-1]
-		} else {
-			previous = v
+		labels, after, ok := strings.Cut(after, "]")
+		if !ok {
+			return errLabelsAllowListFormat
 		}
-
-		switch v {
-		case '=':
-			if previous == ',' || next != '[' {
-				return errLabelsAllowListFormat
-			}
-			name = strings.TrimSpace(string(([]rune(value)[firstWordPos:i])))
-			m[name] = []string{}
-			firstWordPos = i + 1
-		case '[':
-			if previous != '=' {
-				return errLabelsAllowListFormat
-			}
-			firstWordPos = i + 1
-		case ']':
-			// if after metric group, has char not comma or end.
-			if next != EOF && next != ',' {
-				return errLabelsAllowListFormat
-			}
-			if previous != '[' {
-				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
-			}
-			firstWordPos = i + 1
-		case ',':
-			// if starts or ends with comma
-			if previous == v || next == EOF || next == ']' {
-				return errLabelsAllowListFormat
-			}
-			if previous != ']' {
-				m[name] = append(m[name], strings.TrimSpace(string(([]rune(value)[firstWordPos:i]))))
-			}
-			firstWordPos = i + 1
+		name = strings.TrimSpace(name)
+		if name == "" || strings.ContainsAny(name, "[],=") || strings.ContainsAny(labels, "[=") {
+			return errLabelsAllowListFormat
 		}
-	}
-	if value != "" && !strings.HasSuffix(value, "]") {
-		return errLabelsAllowListFormat
+		m[name] = []string{}
+		if strings.TrimSpace(labels) != "" {
+			for label := range strings.SplitSeq(labels, ",") {
+				label = strings.TrimSpace(label)
+				if label == "" {
+					return errLabelsAllowListFormat
+				}
+				m[name] = append(m[name], label)
+			}
+		}
+		if after == "" {
+			break
+		}
+		// Another resource has to follow a comma.
+		if rest, ok = strings.CutPrefix(after, ","); !ok || rest == "" {
+			return errLabelsAllowListFormat
+		}
 	}
 
 	// check amount of wildcards per label

@@ -270,12 +270,12 @@ func (c *compiledGauge) Values(v any) (result []eachValue, errs []error) {
 			// Fallback to the regular path resolution, if we didn't manage to resolve `valueFrom`'s value.
 			if !didResolveValueFrom {
 				ev, err = c.value(it)
-				if ev == nil {
-					continue
-				}
 			}
 			if err != nil {
 				onError(fmt.Errorf("[%s]: %w", key, err))
+				continue
+			}
+			if ev == nil {
 				continue
 			}
 			if _, ok := ev.Labels[c.labelFromKey]; ok {

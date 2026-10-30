@@ -17,8 +17,11 @@ limitations under the License.
 package options
 
 import (
+	"bytes"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"maps"
 	"math"
 	"os"
@@ -29,6 +32,7 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 var (
@@ -50,15 +54,10 @@ type Options struct {
 	MetricOptInList      MetricSet       `yaml:"metric_opt_in_list"`
 	Resources            ResourceSet     `yaml:"resources"`
 
-	cmd                      *cobra.Command
-	Apiserver                string `yaml:"apiserver"`
-	CustomResourceConfig     string `yaml:"custom_resource_config"`
-	CustomResourceConfigFile string `yaml:"custom_resource_state_config_file"`
-	// CustomResourceConfigFileDeprecated preserves backward compatibility with the
-	// pre-v2.17 config key `custom_resource_config_file`. Honored as an alias when
-	// the canonical `custom_resource_state_config_file` is not set; emits a
-	// deprecation warning at startup. Will be removed in a future release.
-	CustomResourceConfigFileDeprecated      string   `yaml:"custom_resource_config_file"`
+	cmd                                     *cobra.Command
+	Apiserver                               string   `yaml:"apiserver"`
+	CustomResourceConfig                    string   `yaml:"custom_resource_config"`
+	CustomResourceConfigFile                string   `yaml:"custom_resource_state_config_file"`
 	ContinueWithoutCustomResourceConfigFile bool     `yaml:"continue_without_custom_resource_state_config_file"`
 	Host                                    string   `yaml:"host"`
 	Kubeconfig                              string   `yaml:"kubeconfig"`
@@ -96,6 +95,18 @@ type Options struct {
 // GetConfigFile is the getter for --config value.
 func GetConfigFile(opt Options) string {
 	return opt.Config
+}
+
+// UnmarshalConfigFile decodes the options config file onto o. Keys that do not
+// match an option are rejected rather than ignored, so a typo or a removed key
+// fails loudly instead of silently leaving the option at its previous value.
+func UnmarshalConfigFile(configFile []byte, o *Options) error {
+	dec := yaml.NewDecoder(bytes.NewReader(configFile))
+	dec.KnownFields(true)
+	if err := dec.Decode(o); err != nil && !errors.Is(err, io.EOF) {
+		return err
+	}
+	return nil
 }
 
 // NewOptions returns a new instance of `Options`.
@@ -212,7 +223,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().StringVar(&o.Pod, "pod", "", "Name of the pod that contains the kube-state-metrics container. "+autoshardingNotice)
 	o.cmd.Flags().StringVar(&o.TLSConfig, "tls-config", "", "Path to the TLS configuration file")
 	o.cmd.Flags().StringVar(&o.TelemetryHost, "telemetry-host", "::", `Host to expose kube-state-metrics self metrics on.`)
-	o.cmd.Flags().StringVar(&o.Config, "config", "", "Path to the kube-state-metrics options config YAML file. If this flag is set, the flags defined in the file override the command line flags.")
+	o.cmd.Flags().StringVar(&o.Config, "config", "", "Path to the kube-state-metrics options config YAML file. If this flag is set, the flags defined in the file override the command line flags. Keys that do not match an option are rejected.")
 	o.cmd.Flags().BoolVar(&o.ContinueWithoutConfig, "continue-without-config", false, "If true, kube-state-metrics continues to run even if the config file specified by --config is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the config file is not found, instead watches and reloads when it is created.")
 	o.cmd.Flags().StringVar((*string)(&o.Node), "node", "", "Name of the node that contains the kube-state-metrics pod. Most likely it should be passed via the downward API. This is used for daemonset sharding. Only available for resources (pod metrics) that support spec.nodeName fieldSelector. This is experimental.")
 	o.cmd.Flags().Var(&o.AnnotationsAllowList, "metric-annotations-allowlist", "Comma-separated list of Kubernetes annotation keys that will be used in the resource' labels metric. By default the annotations metrics are not exposed. To include them, provide a list of resource names in their plural form and Kubernetes annotation keys you would like to allow for them (Example: '=namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...)'. A single '*' can be provided per resource instead to allow any annotations, but that has severe performance implications (Example: '=pods=[*]'). Note that the full wildcard '*' is only effective when it is the first entry in the list; a '*' appearing after any other entry is ignored. Additionally, an asterisk (*) can be provided for resources, which will resolve to all resources, i.e., assuming '--resources=deployments,pods', '=*=[*]' will resolve to '=deployments=[*],pods=[*]'. Wildcards can also be used to match multiple annotations, but only a single '*' is supported per key pattern, i.e., '=pods=[something.example.org/foo-*]' will match annotations such as 'something.example.org/foo-bar' and 'something.example.org/foo-baz'.")

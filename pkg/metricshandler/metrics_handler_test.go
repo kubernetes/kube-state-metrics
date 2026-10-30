@@ -187,10 +187,13 @@ func TestConfigureStoreWaitsForAutosharding(t *testing.T) {
 		t.Fatalf("before sharding: got status %d, want %d", w.Code, http.StatusServiceUnavailable)
 	}
 
-	handler.ConfigureSharding(context.Background(), 0, 2)
+	handler.ConfigureSharding(context.Background(), 1, 2)
 
 	if got := stub.buildCount.Load(); got != 1 {
 		t.Fatalf("expected one build once sharding is configured, got %d", got)
+	}
+	if stub.builtShard != 1 || stub.builtTotalShards != 2 {
+		t.Fatalf("expected the build to use shard 1 of 2, got shard %d of %d", stub.builtShard, stub.builtTotalShards)
 	}
 	w = httptest.NewRecorder()
 	handler.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))

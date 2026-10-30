@@ -418,6 +418,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"validatingadmissionpolicybindings": func(b *Builder) []cache.Store { return b.buildValidatingAdmissionPolicyBindingStores() },
 	"validatingwebhookconfigurations":   func(b *Builder) []cache.Store { return b.buildValidatingWebhookConfigurationStores() },
 	"volumeattachments":                 func(b *Builder) []cache.Store { return b.buildVolumeAttachmentStores() },
+	"volumeattributesclasses":           func(b *Builder) []cache.Store { return b.buildVolumeAttributesClassStores() },
 }
 
 // lookupStore returns the store constructor registered for name.
@@ -583,6 +584,11 @@ func (b *Builder) buildValidatingWebhookConfigurationStores() []cache.Store {
 
 func (b *Builder) buildVolumeAttachmentStores() []cache.Store {
 	return b.buildClusterScopedStores(volumeAttachmentMetricFamilies, &storagev1.VolumeAttachment{}, createVolumeAttachmentListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+// buildVolumeAttributesClassStores returns the cluster-scoped stores for VolumeAttributesClass metrics.
+func (b *Builder) buildVolumeAttributesClassStores() []cache.Store {
+	return b.buildClusterScopedStores(volumeAttributesClassMetricFamilies(b.allowAnnotationsList["volumeattributesclasses"], b.allowLabelsList["volumeattributesclasses"]), &storagev1.VolumeAttributesClass{}, createVolumeAttributesClassListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildLeasesStores() []cache.Store {

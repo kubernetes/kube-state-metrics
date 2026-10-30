@@ -20,7 +20,7 @@ jobs:
       - name: Extract versions
         id: versions
         run: |
-          # Extract Go version from Dockerfile
+          # Extract Go version from .go-version
           GO_VERSION=$(cat .go-version)
           echo "go-version=${GO_VERSION}" >> $GITHUB_OUTPUT
           
@@ -38,8 +38,9 @@ jobs:
       - name: Make pre-release
         uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
-          version: latest
-          args: release --clean
+          # Keep in sync with GORELEASER_VERSION in the Makefile.
+          version: v2.19.0
+          args: release --clean --skip=ko
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO_VERSION: ${{ steps.versions.outputs.go-version }}

@@ -192,8 +192,9 @@ func reloadedOptions(baseOpts *options.Options) (*options.Options, bool) {
 }
 
 // checkConfigFile reports whether the options config file of baseOpts can be
-// decoded. A file that cannot be read is left to the run, which handles a
-// missing config file according to --continue-without-config.
+// read and decoded. A missing file is left to the run, which starts without
+// it, but a file that exists and cannot be read is an error, as the run would
+// fail to read it and exit.
 func checkConfigFile(baseOpts *options.Options) error {
 	file := options.GetConfigFile(*baseOpts)
 	if file == "" {
@@ -201,7 +202,10 @@ func checkConfigFile(baseOpts *options.Options) error {
 	}
 	configFile, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
-		return nil
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return err
 	}
 	return options.UnmarshalConfigFile(configFile, baseOpts.Clone())
 }

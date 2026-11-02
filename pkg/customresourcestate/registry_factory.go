@@ -551,11 +551,12 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 	for _, star := range stars {
 		m := labels[star].Get(obj)
 		if kv, ok := m.(map[string]any); ok {
-			for k, v := range kv {
+			for _, k := range starPathKeys(kv, star) {
+				name := k
 				if strings.HasSuffix(star, "*") {
-					k = star[:len(star)-1] + k
+					name = star[:len(star)-1] + k
 				}
-				result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", v)
+				result[store.SanitizeLabelName(name)] = fmt.Sprintf("%v", kv[k])
 			}
 		}
 	}
@@ -570,6 +571,26 @@ func addPathLabels(obj any, labels map[string]valuePath, result map[string]strin
 		}
 		result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", value)
 	}
+}
+
+// maxStarPathLabels is the maximum number of keys a single "*" labelsFromPath
+// entry copies from an object into labels. The copied labels are added to
+// every metric of the family, so without a bound a single object with many
+// keys and many values produces output that grows quadratically with its size.
+const maxStarPathLabels = 100
+
+// starPathKeys returns the keys of kv to copy into labels for the given "*"
+// labelsFromPath entry. When kv has more than maxStarPathLabels keys, only the
+// first maxStarPathLabels in sorted order are returned, so that the same keys
+// are kept on every update of the object.
+func starPathKeys(kv map[string]any, star string) []string {
+	keys := slices.Collect(maps.Keys(kv))
+	if len(keys) <= maxStarPathLabels {
+		return keys
+	}
+	slices.Sort(keys)
+	klog.V(2).InfoS("Truncating labels copied from object", "labelsFromPath", star, "keys", len(keys), "limit", maxStarPathLabels)
+	return keys[:maxStarPathLabels]
 }
 
 type pathOp struct {

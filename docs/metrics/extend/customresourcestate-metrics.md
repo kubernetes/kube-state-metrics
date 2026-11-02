@@ -204,6 +204,7 @@ spec:
           labelsFromPath:
             # whole objects may be copied into labels by prefixing with "*"
             # *anything will be copied into labels, with the highest sorted * strings first
+            # each * entry copies at most 100 keys per object; if there are more, the first 100 in sorted order are used
             "*": [metadata, labels]
             # a prefix before the asterisk will be used as a label prefix
             "lorem_*": [metadata, annotations]

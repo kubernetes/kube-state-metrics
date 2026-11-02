@@ -60,6 +60,14 @@ func TestCheckConfigFile(t *testing.T) {
 	if err := checkConfigFile(options.NewOptions()); err != nil {
 		t.Errorf("no config file: expected no error, got %v", err)
 	}
+
+	// A directory exists but cannot be read as a file, like a file without
+	// read permission, and the run would exit on it.
+	unreadable := options.NewOptions()
+	unreadable.Config = dir
+	if err := checkConfigFile(unreadable); err == nil {
+		t.Error("unreadable file: expected an error")
+	}
 }
 
 func ptr(s string) *string { return &s }

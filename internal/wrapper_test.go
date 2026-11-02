@@ -26,7 +26,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
-func TestReloadedOptions(t *testing.T) {
+func TestLoadConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config.yaml")
 	writeConfig := func(content string) {
@@ -41,38 +41,59 @@ func TestReloadedOptions(t *testing.T) {
 	base.CustomResourceConfigFile = "/etc/ksm/from-flag.yaml"
 	base.Kubeconfig = "/etc/ksm/kubeconfig-from-flag"
 
+	t.Run("missing file is left to the run", func(t *testing.T) {
+		configFile, got, err := loadConfigFile(base)
+		if err != nil || configFile != nil {
+			t.Fatalf("got (%q, %v), want no contents and no error", configFile, err)
+		}
+		if got.CustomResourceConfigFile != "/etc/ksm/from-flag.yaml" {
+			t.Errorf("expected the flags, got %q", got.CustomResourceConfigFile)
+		}
+	})
+
 	tests := []struct {
 		name           string
 		config         string
 		wantCRC        string
 		wantKubeconfig string
-		wantOK         bool
+		wantErr        bool
 	}{
 		{
 			name:           "config file overrides the flags",
 			config:         "custom_resource_state_config_file: /etc/ksm/from-config.yaml\nkubeconfig: /etc/ksm/kubeconfig-from-config\n",
 			wantCRC:        "/etc/ksm/from-config.yaml",
 			wantKubeconfig: "/etc/ksm/kubeconfig-from-config",
-			wantOK:         true,
 		},
 		{
 			name:           "override removed falls back to the flags",
 			config:         "port: 8080\n",
 			wantCRC:        "/etc/ksm/from-flag.yaml",
 			wantKubeconfig: "/etc/ksm/kubeconfig-from-flag",
-			wantOK:         true,
 		},
-		{name: "unparsable config file", config: "port: [\n"},
+		{
+			name:           "empty file",
+			config:         "",
+			wantCRC:        "/etc/ksm/from-flag.yaml",
+			wantKubeconfig: "/etc/ksm/kubeconfig-from-flag",
+		},
+		{name: "unparsable config file", config: "port: [\n", wantErr: true},
+		{name: "unknown key", config: "prot: 9090\n", wantErr: true},
+		{name: "removed key", config: "custom_resource_config_file: /etc/ksm/removed.yaml\n", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			writeConfig(tt.config)
-			got, ok := reloadedOptions(base)
-			if ok != tt.wantOK {
-				t.Fatalf("got ok %v, want %v", ok, tt.wantOK)
+			configFile, got, err := loadConfigFile(base)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("got error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !ok {
+			if err != nil {
 				return
+			}
+			// The run is given these contents instead of reading the file
+			// again, and nil would tell it that there is no config file.
+			if configFile == nil || string(configFile) != tt.config {
+				t.Errorf("got contents %q, want %q", configFile, tt.config)
 			}
 			if got.CustomResourceConfigFile != tt.wantCRC || got.Kubeconfig != tt.wantKubeconfig {
 				t.Errorf("got (%q, %q), want (%q, %q)", got.CustomResourceConfigFile, got.Kubeconfig, tt.wantCRC, tt.wantKubeconfig)
@@ -83,10 +104,19 @@ func TestReloadedOptions(t *testing.T) {
 		t.Errorf("the base options must not change, got (%q, %q)", base.CustomResourceConfigFile, base.Kubeconfig)
 	}
 
-	t.Run("removed key", func(t *testing.T) {
-		writeConfig("custom_resource_config_file: /etc/ksm/removed.yaml\n")
-		if _, ok := reloadedOptions(base); ok {
-			t.Error("expected a config file with the removed key to be rejected")
+	t.Run("no config file", func(t *testing.T) {
+		if configFile, _, err := loadConfigFile(options.NewOptions()); err != nil || configFile != nil {
+			t.Errorf("got (%q, %v), want no contents and no error", configFile, err)
+		}
+	})
+
+	// A directory exists but cannot be read as a file, like a file without
+	// read permission, and the run would exit on it.
+	t.Run("unreadable file", func(t *testing.T) {
+		unreadable := options.NewOptions()
+		unreadable.Config = dir
+		if _, _, err := loadConfigFile(unreadable); err == nil {
+			t.Error("expected an error")
 		}
 	})
 }

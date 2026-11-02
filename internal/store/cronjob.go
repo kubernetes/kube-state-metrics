@@ -376,12 +376,17 @@ func createCronJobListWatch(kubeClient clientset.Interface, ns string, fieldSele
 	}
 }
 
+// cronParser parses schedules like the Kubernetes CronJob controller, which
+// uses robfig/cron/v3, so the reported next schedule time matches the
+// controller's.
+var cronParser = cron.MustNewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor | cron.RobfigCompat)
+
 func parseSchedule(schedule string, timeZone *string) (cron.Schedule, error) {
 	if timeZone != nil {
 		schedule = fmt.Sprintf("CRON_TZ=%s %s", *timeZone, schedule)
 	}
 
-	sched, err := cron.ParseStandard(schedule)
+	sched, err := cronParser.Parse(schedule)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse cron job schedule '%s': %w", schedule, err)
 	}

@@ -36,6 +36,13 @@ import (
 // if no custom metric name is defined
 const customResourceState string = "customresource"
 
+// The GVK labels added to every custom resource metric.
+const (
+	gvkGroupLabel   = customResourceState + "_group"
+	gvkVersionLabel = customResourceState + "_version"
+	gvkKindLabel    = customResourceState + "_kind"
+)
+
 // Metrics is the top level configuration object.
 type Metrics struct {
 	Spec MetricsSpec `yaml:"spec" json:"spec"`

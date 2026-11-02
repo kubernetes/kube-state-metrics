@@ -79,7 +79,18 @@ const (
 
 // RunKubeStateMetricsWrapper runs KSM with context cancellation.
 func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) error {
-	err := RunKubeStateMetrics(ctx, opts)
+	return restartOnCancel(ctx, RunKubeStateMetrics(ctx, opts))
+}
+
+// RunKubeStateMetricsWrapperWithConfigFile runs KSM with context cancellation
+// like RunKubeStateMetricsWrapper, but uses configFile as the contents of the
+// options config file instead of reading the file. A nil configFile means
+// that the options config file was not found.
+func RunKubeStateMetricsWrapperWithConfigFile(ctx context.Context, opts *options.Options, configFile []byte) error {
+	return restartOnCancel(ctx, runKubeStateMetrics(ctx, opts, configFile))
+}
+
+func restartOnCancel(ctx context.Context, err error) error {
 	if ctx.Err() == context.Canceled {
 		klog.Infoln("Restarting: kube-state-metrics, metrics will be reset")
 		return nil
@@ -91,6 +102,34 @@ func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) erro
 // Any out-of-tree custom resource metrics could be registered by newing a registry factory
 // which implements customresource.RegistryFactory and pass all factories into this function.
 func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
+	configFile, err := readOptionsConfigFile(opts)
+	if err != nil {
+		return err
+	}
+	return runKubeStateMetrics(ctx, opts, configFile)
+}
+
+// readOptionsConfigFile returns the contents of the options config file, or
+// nil if no options config file is set or it cannot be found.
+func readOptionsConfigFile(opts *options.Options) ([]byte, error) {
+	got := options.GetConfigFile(*opts)
+	if got == "" {
+		return nil, nil
+	}
+	if _, err := os.Stat(filepath.Clean(got)); err != nil {
+		klog.ErrorS(err, "encountered error while processing the file", "file", got)
+		return nil, nil
+	}
+	configFile, err := os.ReadFile(filepath.Clean(got))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read opts config file: %w", err)
+	}
+	return configFile, nil
+}
+
+// runKubeStateMetrics runs KSM with configFile as the contents of the options
+// config file, which is nil if there is none.
+func runKubeStateMetrics(ctx context.Context, opts *options.Options, configFile []byte) error {
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.MustRegister(versionCollector.NewCollector("kube_state_metrics", versionCollector.WithExtraConstLabels(
 		prometheus.Labels{"client_go_version": ClientGoVersion},
@@ -140,39 +179,30 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	})
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
-	got := options.GetConfigFile(*opts)
-	if got != "" {
-		if _, err := os.Stat(filepath.Clean(got)); err != nil {
-			klog.ErrorS(err, "encountered error while processing the file", "file", got)
-		} else {
-			configFile, err := os.ReadFile(filepath.Clean(got))
-			if err != nil {
-				return fmt.Errorf("failed to read opts config file: %w", err)
-			}
-			// NOTE: Config value will override default values of intersecting options.
-			err = options.UnmarshalConfigFile(configFile, opts)
+	if got := options.GetConfigFile(*opts); got != "" && configFile != nil {
+		// NOTE: Config value will override default values of intersecting options.
+		err := options.UnmarshalConfigFile(configFile, opts)
 
-			if err != nil {
-				// DO NOT end the process.
-				// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
-				klog.ErrorS(err, "failed to unmarshal opts config file")
-				// Wait for the next reload.
-				klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
-				klog.InfoS("waiting for config to be fixed")
-				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
-				<-ctx.Done()
-				// The watcher cancelled this run to start a fresh one.
-				return nil
-			}
-
-			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
-			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
-			hash := md5HashAsMetricValue(configFile)
-			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
-
-			opts = configureResourcesAndMetrics(opts, configFile)
-			klog.InfoS("Using config file", "file", got)
+		if err != nil {
+			// DO NOT end the process.
+			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
+			klog.ErrorS(err, "failed to unmarshal opts config file")
+			// Wait for the next reload.
+			klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
+			klog.InfoS("waiting for config to be fixed")
+			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
+			<-ctx.Done()
+			// The watcher cancelled this run to start a fresh one.
+			return nil
 		}
+
+		configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
+		configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
+		hash := md5HashAsMetricValue(configFile)
+		configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+
+		opts = configureResourcesAndMetrics(opts, configFile)
+		klog.InfoS("Using config file", "file", got)
 	}
 
 	if opts.AutoGoMemlimit {

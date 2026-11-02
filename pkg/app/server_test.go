@@ -1366,6 +1366,38 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	}
 }
 
+func TestRunWithConfigFileIgnoresTheFileOnDisk(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "config.yaml")
+	// The file changed to an invalid one after the reload checked it.
+	if err := os.WriteFile(cfg, []byte("port: [\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = cfg
+	// A missing kubeconfig makes the run return right after the config merge.
+	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
+	base.TotalShards = 1
+
+	// Reading the invalid file would make the run wait for a fix until the
+	// context ends.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := base.Clone()
+	_ = RunKubeStateMetricsWrapperWithConfigFile(ctx, opts, []byte("namespaces: [team-a]\n"))
+	if !slices.Equal(opts.Namespaces, []string{"team-a"}) {
+		t.Fatalf("expected the given config file contents to be applied, got namespaces=%v", opts.Namespaces)
+	}
+
+	opts = base.Clone()
+	_ = RunKubeStateMetricsWrapperWithConfigFile(ctx, opts, nil)
+	if ctx.Err() != nil || len(opts.Namespaces) != 0 {
+		t.Fatalf("expected a run without config file contents to start without the file, got namespaces=%v ctx=%v", opts.Namespaces, ctx.Err())
+	}
+}
+
 func TestReportRejectedConfig(t *testing.T) {
 	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "test_config_success"}, []string{"type", "filename"})
 	g.WithLabelValues("config", "/etc/ksm/config.yaml").Set(1)

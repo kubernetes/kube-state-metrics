@@ -243,6 +243,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	}
 	storeBuilder.WithNamespaces(namespaces)
 	storeBuilder.WithFieldSelectorFilter(merged)
+	if err := setUpLabelSelectors(opts, storeBuilder); err != nil {
+		return err
+	}
 
 	allowDenyList, err := allowdenylist.New(opts.MetricAllowlist, opts.MetricDenylist)
 	if err != nil {
@@ -410,6 +413,19 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	return nil
 }
 
+func setUpLabelSelectors(opts *options.Options, storeBuilder *store.Builder) error {
+	if err := opts.LabelSelectors.Validate(); err != nil {
+		return fmt.Errorf("failed to validate label selectors: %w", err)
+	}
+	if err := storeBuilder.WithLabelSelectorFilters(opts.LabelSelectors); err != nil {
+		return fmt.Errorf("failed to set up label selectors: %w", err)
+	}
+	if len(opts.LabelSelectors) > 0 {
+		klog.InfoS("Using label selectors", "labelSelectors", opts.LabelSelectors)
+	}
+	return nil
+}
+
 func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {
 	// If the config file is set, we will overwrite the opts with the config file.
 	// This is only needed for maps because the default behaviour of yaml.Unmarshal is to append keys (and overwrite any conflicting ones).
@@ -447,6 +463,11 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 		if len(config.LabelsAllowList) > 0 {
 			opts.LabelsAllowList = options.LabelsAllowList{}
 			maps.Copy(opts.LabelsAllowList, config.LabelsAllowList)
+		}
+
+		if len(config.LabelSelectors) > 0 {
+			opts.LabelSelectors = options.LabelSelectorSet{}
+			maps.Copy(opts.LabelSelectors, config.LabelSelectors)
 		}
 
 		if len(config.AnnotationsAllowList) > 0 {

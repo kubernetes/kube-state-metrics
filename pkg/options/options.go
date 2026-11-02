@@ -100,13 +100,38 @@ func GetConfigFile(opt Options) string {
 // UnmarshalConfigFile decodes the options config file onto o. Keys that do not
 // match an option are rejected rather than ignored, so a typo or a removed key
 // fails loudly instead of silently leaving the option at its previous value.
+// Any document after the first must be empty, as its keys would otherwise be
+// ignored without being checked.
 func UnmarshalConfigFile(configFile []byte, o *Options) error {
 	dec := yaml.NewDecoder(bytes.NewReader(configFile))
 	dec.KnownFields(true)
-	if err := dec.Decode(o); err != nil && !errors.Is(err, io.EOF) {
+	if err := dec.Decode(o); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
 		return err
 	}
-	return nil
+	for {
+		var extra yaml.Node
+		if err := dec.Decode(&extra); err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return err
+		}
+		if !isEmptyDocument(&extra) {
+			return errors.New("the options config file must contain a single YAML document")
+		}
+	}
+}
+
+// isEmptyDocument reports whether a decoded YAML document holds no value.
+func isEmptyDocument(doc *yaml.Node) bool {
+	if len(doc.Content) == 0 {
+		return true
+	}
+	value := doc.Content[0]
+	return len(doc.Content) == 1 && value.Kind == yaml.ScalarNode && value.Tag == "!!null"
 }
 
 // NewOptions returns a new instance of `Options`.

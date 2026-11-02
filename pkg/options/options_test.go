@@ -125,6 +125,10 @@ func TestUnmarshalConfigFile(t *testing.T) {
 		{name: "removed key", config: "custom_resource_config_file: /etc/ksm/crs.yaml\n", wantErr: true},
 		{name: "misspelled key", config: "prot: 9090\n", wantErr: true},
 		{name: "invalid yaml", config: "port: [\n", wantErr: true},
+		{name: "leading document marker", config: "---\nport: 9090\n"},
+		{name: "trailing empty document", config: "port: 9090\n---\n"},
+		{name: "removed key in a second document", config: "port: 9090\n---\ncustom_resource_config_file: /etc/ksm/crs.yaml\n", wantErr: true},
+		{name: "invalid yaml in a second document", config: "port: 9090\n---\nport: [\n", wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			opts := NewOptions()

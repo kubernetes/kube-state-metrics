@@ -40,8 +40,8 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// Otherwise keys removed from the config file keep their previous values.
 	baseOpts := opts.Clone()
 
-	KSMRunOrDie := func(ctx context.Context) {
-		if err := app.RunKubeStateMetricsWrapper(ctx, baseOpts.Clone()); err != nil {
+	runOrDie := func(run func() error) {
+		if err := run(); err != nil {
 			klog.ErrorS(err, "Failed to run kube-state-metrics")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
@@ -70,24 +70,26 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		klog.InfoS("Changes detected", "name", e.Name)
 		// Stopping the running instance takes the metrics endpoints down until
 		// the new one has started, so keep it if the new options cannot be used.
-		if err := checkConfigFile(baseOpts); err != nil {
+		// The new run gets the options config file as it was checked here, as
+		// the file can change again before the run starts.
+		configFile, next, err := loadConfigFile(baseOpts)
+		if err != nil {
 			file := options.GetConfigFile(*baseOpts)
 			klog.ErrorS(err, "Invalid options configuration file, keeping the running configuration", "file", file)
 			app.ReportRejectedConfig(file)
 			return
 		}
-		// Follow the files the restarted run will use. An options config file
-		// that cannot be read keeps the current watchers; the run waits for it
-		// to be fixed and the fix triggers another restart.
-		if next, ok := reloadedOptions(baseOpts); ok {
-			crcWatch.watch(next.CustomResourceConfigFile, restart)
-			kubeconfigWatch.watch(next.Kubeconfig, restart)
-		}
+		// Follow the files the restarted run will use.
+		crcWatch.watch(next.CustomResourceConfigFile, restart)
+		kubeconfigWatch.watch(next.Kubeconfig, restart)
 		cancel()
 		// Wait for the ports to be released.
 		<-time.After(3 * time.Second)
 		ctx, cancel = context.WithCancel(context.Background())
-		go KSMRunOrDie(ctx)
+		runCtx := ctx
+		go runOrDie(func() error {
+			return app.RunKubeStateMetricsWrapperWithConfigFile(runCtx, baseOpts.Clone(), configFile)
+		})
 	}
 
 	if file := options.GetConfigFile(*opts); file != "" {
@@ -141,7 +143,9 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		reloadMu.Unlock()
 	}
 	klog.InfoS("Starting kube-state-metrics")
-	KSMRunOrDie(ctx)
+	runOrDie(func() error {
+		return app.RunKubeStateMetricsWrapper(ctx, baseOpts.Clone())
+	})
 	select {}
 }
 
@@ -174,38 +178,26 @@ func (w *movableWatch) watch(file string, onChange func(fsnotify.Event)) {
 	w.stop = stop
 }
 
-// reloadedOptions returns the options a run starting from baseOpts uses, with
-// the options config file merged in. It returns false when the options config
-// file cannot be read or parsed.
-func reloadedOptions(baseOpts *options.Options) (*options.Options, bool) {
+// loadConfigFile reads the options config file of baseOpts and returns its
+// contents along with the options a run starting from baseOpts uses. The
+// contents are nil if no options config file is set or it does not exist; the
+// run then starts without it. A file that exists but cannot be read or decoded
+// is an error.
+func loadConfigFile(baseOpts *options.Options) ([]byte, *options.Options, error) {
 	opts := baseOpts.Clone()
-	if file := options.GetConfigFile(*opts); file != "" {
-		configFile, err := os.ReadFile(filepath.Clean(file))
-		if err != nil {
-			return nil, false
-		}
-		if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
-			return nil, false
-		}
-	}
-	return opts, true
-}
-
-// checkConfigFile reports whether the options config file of baseOpts can be
-// read and decoded. A missing file is left to the run, which starts without
-// it, but a file that exists and cannot be read is an error, as the run would
-// fail to read it and exit.
-func checkConfigFile(baseOpts *options.Options) error {
-	file := options.GetConfigFile(*baseOpts)
+	file := options.GetConfigFile(*opts)
 	if file == "" {
-		return nil
+		return nil, opts, nil
 	}
 	configFile, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil
+			return nil, opts, nil
 		}
-		return err
+		return nil, nil, err
 	}
-	return options.UnmarshalConfigFile(configFile, baseOpts.Clone())
+	if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
+		return nil, nil, err
+	}
+	return configFile, opts, nil
 }

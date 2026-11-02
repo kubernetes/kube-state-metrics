@@ -31,6 +31,26 @@ func TestSecretStore(t *testing.T) {
 	metav1StartTime := metav1.Unix(int64(startTime), 0)
 	cases := []generateMetricsTestCase{
 		{
+			// A full wildcard does not expose kubectl's last-applied-configuration.
+			AllowAnnotationsList: []string{"*"},
+			Obj: &v1.Secret{
+				Name:            "secret0",
+				Namespace:       "ns1",
+				ResourceVersion: "000000",
+				Type:            v1.SecretTypeOpaque,
+				Annotations: map[string]string{
+					"team": "a",
+					"kubectl.kubernetes.io/last-applied-configuration": `{"apiVersion":"v1","data":{"key":"dmFsdWU="},"kind":"Secret"}`,
+				},
+			},
+			Want: `
+				# HELP kube_secret_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_secret_annotations gauge
+				kube_secret_annotations{annotation_team="a",namespace="ns1",secret="secret0"} 1
+`,
+			MetricNames: []string{"kube_secret_annotations"},
+		},
+		{
 			Obj: &v1.Secret{
 				Name:            "secret1",
 				Namespace:       "ns1",
@@ -154,8 +174,8 @@ func TestSecretStore(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(secretMetricFamilies(nil, nil))
-		c.Headers = generator.ExtractMetricFamilyHeaders(secretMetricFamilies(nil, nil))
+		c.Func = generator.ComposeMetricGenFuncs(secretMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(secretMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

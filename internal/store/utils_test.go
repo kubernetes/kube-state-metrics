@@ -429,6 +429,56 @@ func TestCreatePrometheusLabelKeysValues(t *testing.T) {
 			expectValues: []string{"valueA"},
 		},
 		{
+			name: "fullWildcardSkipsLastAppliedConfiguration",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"kubectl.kubernetes.io/last-applied-configuration": `{"data":{"key":"dmFsdWU="}}`,
+			},
+			allowList:    []string{"*"},
+			expectKeys:   []string{"metric_key_a"},
+			expectValues: []string{"valueA"},
+		},
+		{
+			name: "partialWildcardSkipsLastAppliedConfiguration",
+			kubeData: map[string]string{
+				"kubectl.kubernetes.io/default-container":          "app",
+				"kubectl.kubernetes.io/last-applied-configuration": `{"data":{"key":"dmFsdWU="}}`,
+			},
+			allowList:    []string{"kubectl.kubernetes.io/*"},
+			expectKeys:   []string{"metric_kubectl_kubernetes_io_default_container"},
+			expectValues: []string{"app"},
+		},
+		{
+			name: "exactKeyMatchesLastAppliedConfiguration",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"kubectl.kubernetes.io/last-applied-configuration": `{"kind":"Pod"}`,
+			},
+			allowList:    []string{"kubectl.kubernetes.io/last-applied-configuration"},
+			expectKeys:   []string{"metric_kubectl_kubernetes_io_last_applied_configuration"},
+			expectValues: []string{`{"kind":"Pod"}`},
+		},
+		{
+			name: "fullWildcardWithExactLastAppliedConfiguration",
+			kubeData: map[string]string{
+				"keyA": "valueA",
+				"kubectl.kubernetes.io/last-applied-configuration": `{"kind":"Pod"}`,
+			},
+			allowList:    []string{"*", "kubectl.kubernetes.io/last-applied-configuration"},
+			expectKeys:   []string{"metric_key_a", "metric_kubectl_kubernetes_io_last_applied_configuration"},
+			expectValues: []string{"valueA", `{"kind":"Pod"}`},
+		},
+		{
+			name: "partialWildcardWithExactLastAppliedConfiguration",
+			kubeData: map[string]string{
+				"kubectl.kubernetes.io/default-container":          "app",
+				"kubectl.kubernetes.io/last-applied-configuration": `{"kind":"Pod"}`,
+			},
+			allowList:    []string{"kubectl.kubernetes.io/*", "kubectl.kubernetes.io/last-applied-configuration"},
+			expectKeys:   []string{"metric_kubectl_kubernetes_io_default_container", "metric_kubectl_kubernetes_io_last_applied_configuration"},
+			expectValues: []string{"app", `{"kind":"Pod"}`},
+		},
+		{
 			// "*key*" has two wildcards; without the over-wildcard guard it would be truncated
 			// to "^.*key$" and match keys ending in "key" — verify it matches nothing instead.
 			name: "multipleWildcards",

@@ -16,3 +16,17 @@
 | kube_cronjob_metadata_resource_version         | Gauge       |                                                                                                                           | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt;                                                                                       | STABLE       |
 | kube_cronjob_spec_successful_job_history_limit | Gauge       |                                                                                                                           | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt;                                                                                       | EXPERIMENTAL |
 | kube_cronjob_spec_failed_job_history_limit     | Gauge       |                                                                                                                           | `cronjob`=&lt;cronjob-name&gt; <br> `namespace`=&lt;cronjob-namespace&gt;                                                                                       | EXPERIMENTAL |
+
+## Time zone of the schedule
+
+`kube_cronjob_next_schedule_time` is computed in the CronJob's `spec.timeZone`. For a CronJob without `spec.timeZone`, the CronJob controller in kube-controller-manager uses the local time zone of the kube-controller-manager process, and kube-state-metrics uses its own local time zone. If the two processes run in different time zones, the reported next schedule time differs from when the controller runs the CronJob.
+
+kube-state-metrics cannot detect the time zone of kube-controller-manager. If it is not the same as the time zone of kube-state-metrics, set the `TZ` environment variable of the kube-state-metrics container to the time zone of kube-controller-manager, for example:
+
+```yaml
+env:
+  - name: TZ
+    value: Europe/Berlin
+```
+
+kube-state-metrics embeds the time zone database, so this works in the distroless container image. `TZ` sets the time zone of the whole kube-state-metrics process, not only of the CronJob metrics. Setting `spec.timeZone` on the CronJob avoids the issue altogether.

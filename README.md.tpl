@@ -192,6 +192,30 @@ kube_state_metrics_last_config_reload_successful{filename="crs.yml",type="custom
 kube_state_metrics_last_config_reload_successful{filename="config.yml",type="config"} 1
 ```
 
+kube-state-metrics also exposes a counter of errors encountered while processing its
+configuration. The `type` label distinguishes errors in the main config file (`config`)
+from errors in the Custom Resource State config file (`customresourceconfig`):
+
+```prometheus
+kube_state_metrics_config_errors_total{type="config"} 0
+kube_state_metrics_config_errors_total{type="customresourceconfig"} 0
+```
+
+This counter increments on configuration errors, which fall into three paths that
+recover differently:
+
+* The **main config file** (`type="config"`) fails to unmarshal: kube-state-metrics
+  keeps running and reloads automatically on the next write to the config file, so no
+  restart is needed.
+* The **Custom Resource State config** (`type="customresourceconfig"`) fails to refresh
+  after startup: kube-state-metrics retains the last known-good factories and retries
+  automatically on the next poll.
+* The **Custom Resource State config** (`type="customresourceconfig"`) fails to be
+  created at startup: kube-state-metrics returns the error and exits.
+
+Because the counter captures both recoverable and fatal misconfigurations, it can be
+used to alert on configuration problems.
+
 ### kube-state-metrics vs. metrics-server
 
 The [metrics-server](https://github.com/kubernetes-incubator/metrics-server)

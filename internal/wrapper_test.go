@@ -17,18 +17,63 @@ limitations under the License.
 package internal
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 
+	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
+
+func writeMinimalKubeconfig(t *testing.T, path string) {
+	t.Helper()
+	content := `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://127.0.0.1:6443
+  name: c
+contexts:
+- context:
+    cluster: c
+    user: u
+  name: ctx
+current-context: ctx
+users:
+- name: u
+  user:
+    token: test
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeMinimalCRSConfig(t *testing.T, path string) {
+	t.Helper()
+	content := `kind: CustomResourceStateMetrics
+apiVersion: k8s.io/kube-state-metrics/v2/customresourcestate/v1alpha1
+spec:
+  resources: []
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestReloadedOptions(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config.yaml")
+	flagKube := filepath.Join(dir, "flag-kube.yaml")
+	flagCRC := filepath.Join(dir, "flag-crc.yaml")
+	writeMinimalKubeconfig(t, flagKube)
+	writeMinimalCRSConfig(t, flagCRC)
+
 	writeConfig := func(content string) {
 		t.Helper()
 		if err := os.WriteFile(configPath, []byte(content), 0o600); err != nil {
@@ -38,8 +83,8 @@ func TestReloadedOptions(t *testing.T) {
 
 	base := options.NewOptions()
 	base.Config = configPath
-	base.CustomResourceConfigFile = "/etc/ksm/from-flag.yaml"
-	base.Kubeconfig = "/etc/ksm/kubeconfig-from-flag"
+	base.CustomResourceConfigFile = flagCRC
+	base.Kubeconfig = flagKube
 
 	tests := []struct {
 		name           string
@@ -50,26 +95,36 @@ func TestReloadedOptions(t *testing.T) {
 	}{
 		{
 			name:           "config file overrides the flags",
-			config:         "custom_resource_state_config_file: /etc/ksm/from-config.yaml\nkubeconfig: /etc/ksm/kubeconfig-from-config\n",
-			wantCRC:        "/etc/ksm/from-config.yaml",
-			wantKubeconfig: "/etc/ksm/kubeconfig-from-config",
+			config:         "custom_resource_state_config_file: " + filepath.Join(dir, "cfg-crc.yaml") + "\nkubeconfig: " + filepath.Join(dir, "cfg-kube.yaml") + "\n",
+			wantCRC:        filepath.Join(dir, "cfg-crc.yaml"),
+			wantKubeconfig: filepath.Join(dir, "cfg-kube.yaml"),
 			wantOK:         true,
 		},
 		{
 			name:           "override removed falls back to the flags",
 			config:         "port: 8080\n",
-			wantCRC:        "/etc/ksm/from-flag.yaml",
-			wantKubeconfig: "/etc/ksm/kubeconfig-from-flag",
+			wantCRC:        flagCRC,
+			wantKubeconfig: flagKube,
 			wantOK:         true,
 		},
 		{name: "unparsable config file", config: "port: [\n"},
+		{name: "negative store sync timeout", config: "store_sync_timeout: -1s\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantOK {
+				if tt.wantCRC != flagCRC {
+					writeMinimalCRSConfig(t, tt.wantCRC)
+				}
+				if tt.wantKubeconfig != flagKube {
+					writeMinimalKubeconfig(t, tt.wantKubeconfig)
+				}
+			}
 			writeConfig(tt.config)
-			got, ok := reloadedOptions(base)
+			got, err := app.PrepareRunOptionsForReload(base)
+			ok := err == nil
 			if ok != tt.wantOK {
-				t.Fatalf("got ok %v, want %v", ok, tt.wantOK)
+				t.Fatalf("got ok %v, want %v (err=%v)", ok, tt.wantOK, err)
 			}
 			if !ok {
 				return
@@ -79,18 +134,101 @@ func TestReloadedOptions(t *testing.T) {
 			}
 		})
 	}
-	if base.CustomResourceConfigFile != "/etc/ksm/from-flag.yaml" || base.Kubeconfig != "/etc/ksm/kubeconfig-from-flag" {
+	if base.CustomResourceConfigFile != flagCRC || base.Kubeconfig != flagKube {
 		t.Errorf("the base options must not change, got (%q, %q)", base.CustomResourceConfigFile, base.Kubeconfig)
 	}
 
 	t.Run("deprecated key", func(t *testing.T) {
 		noFlag := options.NewOptions()
 		noFlag.Config = configPath
-		writeConfig("custom_resource_config_file: /etc/ksm/deprecated.yaml\n")
-		if got, ok := reloadedOptions(noFlag); !ok || got.CustomResourceConfigFile != "/etc/ksm/deprecated.yaml" {
-			t.Errorf("expected the deprecated key's file, got %v", got)
+		deprecatedCRC := filepath.Join(dir, "deprecated.yaml")
+		writeMinimalCRSConfig(t, deprecatedCRC)
+		writeMinimalKubeconfig(t, filepath.Join(dir, "deprecated-kube.yaml"))
+		writeConfig("custom_resource_config_file: " + deprecatedCRC + "\nkubeconfig: " + filepath.Join(dir, "deprecated-kube.yaml") + "\n")
+		got, err := app.PrepareRunOptionsForReload(noFlag)
+		if err != nil || got.CustomResourceConfigFile != deprecatedCRC {
+			t.Errorf("expected the deprecated key's file, got %v err=%v", got, err)
 		}
 	})
+}
+
+func TestReloadPreflightRejectsInvalidCustomResourceConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	crcPath := filepath.Join(dir, "crc.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+	if err := os.WriteFile(configPath, []byte("custom_resource_state_config_file: "+crcPath+"\nkubeconfig: "+kubePath+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(crcPath, []byte("spec: not-an-object\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = configPath
+	if _, ok := reloadedOptions(base); ok {
+		t.Fatal("expected malformed custom resource config to fail reload preflight")
+	}
+}
+
+func TestWrapper_StartupReloadSingleRunLaunch(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	crcPath := filepath.Join(dir, "crc.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+	writeMinimalCRSConfig(t, crcPath)
+	config := "custom_resource_state_config_file: " + crcPath + "\n" +
+		"kubeconfig: " + kubePath + "\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = configPath
+
+	var launches atomic.Int32
+	var preLaunchViolation atomic.Bool
+	done := make(chan struct{})
+	t.Cleanup(func() { close(done) })
+
+	run := func(ctx context.Context, _ *options.Options) {
+		launches.Add(1)
+		<-ctx.Done()
+	}
+
+	go runWrapperLifecycle(base, run, &wrapperLifecycleHooks{
+		holdingReloadMuBeforeFirstLaunch: func(restart func(fsnotify.Event), proceedWithFirstLaunch func()) {
+			go restart(fsnotify.Event{Name: "during-startup"})
+			deadline := time.Now().Add(500 * time.Millisecond)
+			for time.Now().Before(deadline) {
+				if launches.Load() != 0 {
+					preLaunchViolation.Store(true)
+					break
+				}
+				time.Sleep(time.Millisecond)
+			}
+			proceedWithFirstLaunch()
+		},
+		restartPortReleaseDelay: time.Millisecond,
+		done:                    done,
+	})
+
+	deadline := time.After(3 * time.Second)
+	for launches.Load() < 1 {
+		select {
+		case <-deadline:
+			t.Fatal("timed out waiting for initial launch")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+	if preLaunchViolation.Load() {
+		t.Fatal("reload launched a run before initial go run while reloadMu was held")
+	}
+	if launches.Load() != 1 {
+		t.Fatalf("expected exactly one launch before reload proceeds, got %d", launches.Load())
+	}
 }
 
 func TestMovableWatch(t *testing.T) {

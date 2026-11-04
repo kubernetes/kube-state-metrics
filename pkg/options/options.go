@@ -29,6 +29,8 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+
+	"k8s.io/kube-state-metrics/v2/pkg/runconfig"
 )
 
 var (
@@ -40,6 +42,11 @@ var (
 	defaultServerIdleTimeout       = 5 * time.Minute
 	defaultServerReadHeaderTimeout = 5 * time.Second
 )
+
+// DefaultStoreSyncTimeout is the duration of each store-sync observation window after Build().
+// Writers install only after a successful sync; expiring a window retries until sync succeeds,
+// the generation is canceled, or store_sync_timeout is 0 (immediate install).
+const DefaultStoreSyncTimeout = 30 * time.Second
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
@@ -81,6 +88,10 @@ type Options struct {
 	ServerWriteTimeout      time.Duration `yaml:"server_write_timeout"`
 	ServerIdleTimeout       time.Duration `yaml:"server_idle_timeout"`
 	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
+	StoreSyncTimeout        time.Duration `yaml:"store_sync_timeout"`
+	// storeSyncTimeoutBaseline is the CLI or flag default, captured before the first YAML merge.
+	storeSyncTimeoutBaseline    time.Duration
+	storeSyncTimeoutBaselineSet bool
 
 	Shard                int32 `yaml:"shard"`
 	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
@@ -91,6 +102,30 @@ type Options struct {
 	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
 	ObjectLimit          int64 `yaml:"object_limit"`
 	AuthFilter           bool  `yaml:"auth_filter"`
+
+	// Prepared holds immutable inputs captured at prepare time (reload path). Not loaded from YAML.
+	Prepared *runconfig.Prepared `yaml:"-"`
+}
+
+// CaptureStoreSyncTimeoutBaseline records the CLI or flag default once.
+// Later YAML merges do not overwrite it.
+func (o *Options) CaptureStoreSyncTimeoutBaseline() {
+	if o.storeSyncTimeoutBaselineSet {
+		return
+	}
+	o.storeSyncTimeoutBaseline = o.StoreSyncTimeout
+	o.storeSyncTimeoutBaselineSet = true
+}
+
+// ResolveStoreSyncTimeout sets the effective timeout from the saved baseline.
+// fromFile is set only when the current file contains store_sync_timeout.
+func (o *Options) ResolveStoreSyncTimeout(fromFile *time.Duration) {
+	o.CaptureStoreSyncTimeoutBaseline()
+	if fromFile != nil {
+		o.StoreSyncTimeout = *fromFile
+		return
+	}
+	o.StoreSyncTimeout = o.storeSyncTimeoutBaseline
 }
 
 // GetConfigFile is the getter for --config value.
@@ -107,6 +142,9 @@ func NewOptions() *Options {
 		MetricOptInList:      MetricSet{},
 		AnnotationsAllowList: LabelsAllowList{},
 		LabelsAllowList:      LabelsAllowList{},
+		StoreSyncTimeout:     DefaultStoreSyncTimeout,
+		AutoGoMemlimitRatio:  0.9,
+		TotalShards:          1,
 	}
 }
 
@@ -122,6 +160,7 @@ func (o *Options) Clone() *Options {
 	c.Resources = maps.Clone(o.Resources)
 	c.Namespaces = slices.Clone(o.Namespaces)
 	c.NamespacesDenylist = slices.Clone(o.NamespacesDenylist)
+	c.Prepared = nil
 	return &c
 }
 
@@ -228,6 +267,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")
 	o.cmd.Flags().DurationVar(&o.ServerIdleTimeout, "server-idle-timeout", defaultServerIdleTimeout, "The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients.")
 	o.cmd.Flags().DurationVar(&o.ServerReadHeaderTimeout, "server-read-header-timeout", defaultServerReadHeaderTimeout, "The maximum duration for reading the header of requests.")
+	o.cmd.Flags().DurationVar(&o.StoreSyncTimeout, "store-sync-timeout", DefaultStoreSyncTimeout, "Duration of each store-sync observation window after Build(). Writers install only after all reflectors list successfully; when a window expires, sync is retried with a fresh window until it succeeds or the generation is canceled. Startup coalesces rebuilds under one shared deadline; each warm rebuild gets its own window. 0 skips the wait and installs immediately. Reflectors that never list (for example permanent RBAC denial) block install and keep the previous generation serving. Negative values are invalid.")
 }
 
 // Parse parses the flag definitions from the argument list.
@@ -243,6 +283,26 @@ func (o *Options) Usage() {
 
 // Validate validates arguments
 func (o *Options) Validate() error {
+	if err := o.validateStoreSyncTimeout(); err != nil {
+		return err
+	}
+	return o.validateExceptStoreSyncTimeout()
+}
+
+// ValidateExceptStoreSyncTimeout validates arguments other than store_sync_timeout.
+// Used when a negative file value waits for correction instead of failing startup.
+func (o *Options) ValidateExceptStoreSyncTimeout() error {
+	return o.validateExceptStoreSyncTimeout()
+}
+
+func (o *Options) validateStoreSyncTimeout() error {
+	if o.StoreSyncTimeout < 0 {
+		return fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", o.StoreSyncTimeout)
+	}
+	return nil
+}
+
+func (o *Options) validateExceptStoreSyncTimeout() error {
 	if o.Node != "" {
 		shardableResource := "pods"
 		for _, x := range o.Resources.AsSlice() {

@@ -343,7 +343,7 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		}
 		// Create clients for discovered factories. Keep this outside ConfigureStore:
 		// client construction is slow and must not hold the metrics handler lock.
-		discoveredCustomResourceClients, err := util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
+		discoveredCustomResourceClients, err := util.CreateCustomResourceClientsWithPrepared(opts.Prepared, opts.Apiserver, opts.Kubeconfig, customFactories...)
 		if err != nil {
 			// Preserve WasUpdated so a later tick retries.
 			return false, err

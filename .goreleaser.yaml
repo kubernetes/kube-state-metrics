@@ -71,8 +71,6 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 changelog:
-  # Cloud Build has no GITHUB_TOKEN, and `use: github` would call the GitHub API.
-  disable: '{{ envOrDefault "GORELEASER_SKIP_GITHUB_RELEASE" "false" }}'
   use: github
   sort: asc
   groups:

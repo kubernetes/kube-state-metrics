@@ -116,9 +116,8 @@ all: all-container
 # build did with golang:$(GO_VERSION), rather than whatever go.mod resolves to.
 build container push: export GOTOOLCHAIN = go$(GO_VERSION)
 build container push: export BUILD_USER = $(USER)@$(HOST)
-# ko loads the image matching GOARCH from the multi-arch index into the local
-# Docker daemon, and defaults to amd64 rather than the host architecture.
-container: export GOARCH = $(ARCH)
+# Snapshots only build the image for the host architecture (or ARCH).
+container: export KO_PLATFORM = linux/$(ARCH)$(if $(filter arm,$(ARCH)),/v7)
 
 all-container: container
 

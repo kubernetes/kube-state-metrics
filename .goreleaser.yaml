@@ -42,12 +42,14 @@ kos:
     user: "65534:65534"
     # In snapshot mode, ko publishes to the local Docker daemon using this domain.
     local_domain: "registry.k8s.io/kube-state-metrics/kube-state-metrics"
+    # Snapshots (make container) only build the platform in KO_PLATFORM, which
+    # ko then loads into the local Docker daemon. Empty entries are dropped.
     platforms:
-      - linux/amd64
-      - linux/arm/v7
-      - linux/arm64
-      - linux/ppc64le
-      - linux/s390x
+      - '{{ if .IsSnapshot }}{{ envOrDefault "KO_PLATFORM" "linux/amd64" }}{{ else }}linux/amd64{{ end }}'
+      - '{{ if not .IsSnapshot }}linux/arm/v7{{ end }}'
+      - '{{ if not .IsSnapshot }}linux/arm64{{ end }}'
+      - '{{ if not .IsSnapshot }}linux/ppc64le{{ end }}'
+      - '{{ if not .IsSnapshot }}linux/s390x{{ end }}'
     # Snapshots are tagged with snapshot.version_template, so local builds never
     # shadow a released tag. IMAGE_TAG is set by `make push` for branch pushes
     # (e.g. main), which have no release tag of their own. latest is only moved

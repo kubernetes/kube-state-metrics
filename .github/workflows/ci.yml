@@ -215,7 +215,7 @@ jobs:
       with:
         install-only: true
         # Keep in sync with GORELEASER_VERSION in the Makefile.
-        version: v2.19.0
+        version: v2.20.0
 
     - name: Build
       run: |
@@ -242,7 +242,7 @@ jobs:
       with:
         install-only: true
         # Keep in sync with GORELEASER_VERSION in the Makefile.
-        version: v2.19.0
+        version: v2.20.0
 
     - name: End-to-end tests
       run: |

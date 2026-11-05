@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -85,13 +84,14 @@ var (
 	}
 )
 
-func createMutatingAdmissionPolicyBindingListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createMutatingAdmissionPolicyBindingListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.AdmissionregistrationV1().MutatingAdmissionPolicyBindings().List(context.TODO(), opts)
+			return kubeClient.AdmissionregistrationV1().MutatingAdmissionPolicyBindings().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.AdmissionregistrationV1().MutatingAdmissionPolicyBindings().Watch(context.TODO(), opts)
+			return kubeClient.AdmissionregistrationV1().MutatingAdmissionPolicyBindings().Watch(listCtx, opts)
 		},
 	}
 }

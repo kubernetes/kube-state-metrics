@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -156,15 +155,16 @@ func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) f
 	}
 }
 
-func createNetworkPolicyListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createNetworkPolicyListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().NetworkPolicies(ns).List(context.TODO(), opts)
+			return kubeClient.NetworkingV1().NetworkPolicies(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().NetworkPolicies(ns).Watch(context.TODO(), opts)
+			return kubeClient.NetworkingV1().NetworkPolicies(ns).Watch(listCtx, opts)
 		},
 	}
 }

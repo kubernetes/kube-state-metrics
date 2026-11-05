@@ -316,3 +316,36 @@ func assertSucceedsPromptlyAfter(t *testing.T, b *Builder, closeStop func()) {
 		t.Fatal("sync did not finish promptly after stop")
 	}
 }
+
+func TestCRResourceListContextCancelsWithCapturedGeneration(t *testing.T) {
+	b := NewBuilder()
+	stopCh := make(chan struct{})
+	b.GetGVKStopChan = func(string) chan struct{} { return stopCh }
+
+	gen1, cancel1 := context.WithCancel(context.Background())
+	b.WithContext(gen1)
+	crCtx1 := b.crResourceListContext("example.com/v1, Kind=Foo")
+
+	gen2, cancel2 := context.WithCancel(context.Background())
+	b.WithContext(gen2)
+	_ = b.crResourceListContext("example.com/v1, Kind=Foo")
+
+	cancel1()
+	waitUntilContextDone(t, crCtx1, "first CR list context should follow its generation")
+
+	select {
+	case <-gen2.Done():
+		t.Fatal("second generation context must not be canceled when the first ends")
+	default:
+	}
+	cancel2()
+}
+
+func waitUntilContextDone(t *testing.T, ctx context.Context, message string) {
+	t.Helper()
+	select {
+	case <-ctx.Done():
+	case <-time.After(time.Second):
+		t.Fatal(message)
+	}
+}

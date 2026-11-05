@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -189,46 +190,55 @@ func TestWrapper_StartupReloadSingleRunLaunch(t *testing.T) {
 	base.Config = configPath
 
 	var launches atomic.Int32
-	var preLaunchViolation atomic.Bool
+	firstEntry := make(chan struct{})
+	checkpoint := make(chan struct{}, 1)
+	allowUnlock := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() { close(allowUnlock) })
+	}
+	t.Cleanup(release)
+
 	done := make(chan struct{})
 	t.Cleanup(func() { close(done) })
 
 	run := func(ctx context.Context, _ *options.Options) {
 		launches.Add(1)
+		close(firstEntry)
 		<-ctx.Done()
 	}
 
 	go runWrapperLifecycle(base, run, &wrapperLifecycleHooks{
 		holdingReloadMuBeforeFirstLaunch: func(restart func(fsnotify.Event), proceedWithFirstLaunch func()) {
 			go restart(fsnotify.Event{Name: "during-startup"})
-			deadline := time.Now().Add(500 * time.Millisecond)
-			for time.Now().Before(deadline) {
-				if launches.Load() != 0 {
-					preLaunchViolation.Store(true)
-					break
-				}
-				time.Sleep(time.Millisecond)
-			}
 			proceedWithFirstLaunch()
+		},
+		afterFirstLaunchScheduled: func() {
+			select {
+			case <-firstEntry:
+			case <-allowUnlock:
+				return
+			case <-time.After(2 * time.Second):
+				checkpoint <- struct{}{}
+				<-allowUnlock
+				return
+			}
+			checkpoint <- struct{}{}
+			<-allowUnlock
 		},
 		restartPortReleaseDelay: time.Millisecond,
 		done:                    done,
 	})
 
-	deadline := time.After(3 * time.Second)
-	for launches.Load() < 1 {
-		select {
-		case <-deadline:
-			t.Fatal("timed out waiting for initial launch")
-		case <-time.After(10 * time.Millisecond):
-		}
-	}
-	if preLaunchViolation.Load() {
-		t.Fatal("reload launched a run before initial go run while reloadMu was held")
+	select {
+	case <-checkpoint:
+	case <-time.After(3 * time.Second):
+		t.Fatal("timed out waiting for startup checkpoint")
 	}
 	if launches.Load() != 1 {
 		t.Fatalf("expected exactly one launch before reload proceeds, got %d", launches.Load())
 	}
+	release()
 }
 
 func TestMovableWatch(t *testing.T) {

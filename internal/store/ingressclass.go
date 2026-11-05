@@ -15,7 +15,6 @@ package store
 
 import (
 	"context"
-
 	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -134,13 +133,14 @@ func wrapIngressClassFunc(f func(*networkingv1.IngressClass) *metric.Family) fun
 	}
 }
 
-func createIngressClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createIngressClassListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.NetworkingV1().IngressClasses().List(context.TODO(), opts)
+			return kubeClient.NetworkingV1().IngressClasses().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.NetworkingV1().IngressClasses().Watch(context.TODO(), opts)
+			return kubeClient.NetworkingV1().IngressClasses().Watch(listCtx, opts)
 		},
 	}
 }

@@ -67,8 +67,7 @@ var ErrStoreSyncTimeout = errors.New("store sync timed out")
 // StoreSyncBuilder waits for reflector stores to sync after Build().
 type StoreSyncBuilder interface {
 	// WaitForStoresSync waits until each reflector has listed or stopped.
-	// nil means every reflector listed; ErrStoreSyncTimeout means the observation window expired.
-	// A canceled ctx returns ctx.Err().
+	// nil and ErrStoreSyncTimeout may be installed; a canceled ctx returns ctx.Err().
 	WaitForStoresSync(ctx context.Context, timeout time.Duration) error
 }
 
@@ -79,11 +78,33 @@ type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 
+// ContextListWatchFactory is like the listWatchFunc passed to BuildStoresFunc, but
+// receives the build context for cancellation-aware LIST/WATCH calls.
+type ContextListWatchFactory func(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher
+
+// BuildStoresFuncWithContext is the context-aware variant of BuildStoresFunc.
+type BuildStoresFuncWithContext func(metricFamilies []generator.FamilyGenerator,
+	expectedType any,
+	listWatchFunc ContextListWatchFactory,
+	useAPIServerCache bool, limit int64,
+) []cache.Store
+
 // BuildCustomResourceStoresFunc function signature that is used to return a list of custom resource cache.Store
 type BuildCustomResourceStoresFunc func(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
 	expectedType any,
 	listWatchFunc func(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher,
+	useAPIServerCache bool, limit int64,
+) []cache.Store
+
+// ContextCustomResourceListWatchFactory receives the build context for CR LIST/WATCH calls.
+type ContextCustomResourceListWatchFactory func(ctx context.Context, customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher
+
+// BuildCustomResourceStoresFuncWithContext is the context-aware CR store builder signature.
+type BuildCustomResourceStoresFuncWithContext func(resourceName string,
+	metricFamilies []generator.FamilyGenerator,
+	expectedType any,
+	listWatchFunc ContextCustomResourceListWatchFactory,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 

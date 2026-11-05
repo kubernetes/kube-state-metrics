@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	autoscaling "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -87,15 +86,16 @@ func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) fu
 	}
 }
 
-func createHPAListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createHPAListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).List(context.TODO(), opts)
+			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Watch(context.TODO(), opts)
+			return kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Watch(listCtx, opts)
 		},
 	}
 }

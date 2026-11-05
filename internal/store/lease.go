@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -116,15 +115,16 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(any) *metr
 	}
 }
 
-func createLeaseListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createLeaseListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoordinationV1().Leases(ns).List(context.TODO(), opts)
+			return kubeClient.CoordinationV1().Leases(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoordinationV1().Leases(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoordinationV1().Leases(ns).Watch(listCtx, opts)
 		},
 	}
 }

@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -222,15 +221,16 @@ func wrapPodDisruptionBudgetFunc(f func(*policyv1.PodDisruptionBudget) *metric.F
 	}
 }
 
-func createPodDisruptionBudgetListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createPodDisruptionBudgetListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.PolicyV1().PodDisruptionBudgets(ns).List(context.TODO(), opts)
+			return kubeClient.PolicyV1().PodDisruptionBudgets(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.PolicyV1().PodDisruptionBudgets(ns).Watch(context.TODO(), opts)
+			return kubeClient.PolicyV1().PodDisruptionBudgets(ns).Watch(listCtx, opts)
 		},
 	}
 }

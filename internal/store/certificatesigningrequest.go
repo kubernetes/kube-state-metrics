@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -153,13 +152,14 @@ func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(
 	}
 }
 
-func createCSRListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createCSRListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(), opts)
+			return kubeClient.CertificatesV1().CertificateSigningRequests().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CertificatesV1().CertificateSigningRequests().Watch(context.TODO(), opts)
+			return kubeClient.CertificatesV1().CertificateSigningRequests().Watch(listCtx, opts)
 		},
 	}
 }

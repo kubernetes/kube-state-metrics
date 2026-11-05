@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -134,15 +133,16 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 	}
 }
 
-func createConfigMapListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createConfigMapListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ConfigMaps(ns).List(context.TODO(), opts)
+			return kubeClient.CoreV1().ConfigMaps(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().ConfigMaps(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().ConfigMaps(ns).Watch(listCtx, opts)
 		},
 	}
 }

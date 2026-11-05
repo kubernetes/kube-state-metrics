@@ -15,7 +15,6 @@ package store
 
 import (
 	"context"
-
 	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -146,13 +145,14 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(a
 	}
 }
 
-func createStorageClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createStorageClassListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1().StorageClasses().List(context.TODO(), opts)
+			return kubeClient.StorageV1().StorageClasses().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1().StorageClasses().Watch(context.TODO(), opts)
+			return kubeClient.StorageV1().StorageClasses().Watch(listCtx, opts)
 		},
 	}
 }

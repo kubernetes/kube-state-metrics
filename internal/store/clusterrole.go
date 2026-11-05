@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -138,13 +137,14 @@ func clusterRoleMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 	}
 }
 
-func createClusterRoleListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createClusterRoleListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.RbacV1().ClusterRoles().List(context.TODO(), opts)
+			return kubeClient.RbacV1().ClusterRoles().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.RbacV1().ClusterRoles().Watch(context.TODO(), opts)
+			return kubeClient.RbacV1().ClusterRoles().Watch(listCtx, opts)
 		},
 	}
 }

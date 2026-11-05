@@ -39,6 +39,8 @@ type wrapperLifecycleHooks struct {
 	// holdingReloadMuBeforeFirstLaunch runs while reloadMu is held, before the initial
 	// goroutine launch. proceedWithFirstLaunch must be called to continue startup.
 	holdingReloadMuBeforeFirstLaunch func(restart func(fsnotify.Event), proceedWithFirstLaunch func())
+	// afterFirstLaunchScheduled runs after the initial go run(...) is scheduled and before reloadMu unlocks.
+	afterFirstLaunchScheduled func()
 	restartPortReleaseDelay          time.Duration
 	// done, when non-nil, causes runWrapperLifecycle to shut down once closed.
 	done chan struct{}
@@ -166,6 +168,9 @@ func runWrapperLifecycle(opts *options.Options, run ksmRunner, hooks *wrapperLif
 		<-proceed
 	}
 	go run(runCtx, startup)
+	if hooks != nil && hooks.afterFirstLaunchScheduled != nil {
+		hooks.afterFirstLaunchScheduled()
+	}
 	reloadMu.Unlock()
 	if hooks != nil && hooks.done != nil {
 		<-hooks.done

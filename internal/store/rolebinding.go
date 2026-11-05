@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -140,15 +139,16 @@ func roleBindingMetricFamilies(allowAnnotationsList, allowLabelsList []string) [
 	}
 }
 
-func createRoleBindingListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createRoleBindingListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().RoleBindings(ns).List(context.TODO(), opts)
+			return kubeClient.RbacV1().RoleBindings(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().RoleBindings(ns).Watch(context.TODO(), opts)
+			return kubeClient.RbacV1().RoleBindings(ns).Watch(listCtx, opts)
 		},
 	}
 }

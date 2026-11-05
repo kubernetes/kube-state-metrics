@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -176,13 +175,14 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(any) *metric.F
 	}
 }
 
-func createNamespaceListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createNamespaceListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.CoreV1().Namespaces().List(context.TODO(), opts)
+			return kubeClient.CoreV1().Namespaces().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.CoreV1().Namespaces().Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().Namespaces().Watch(listCtx, opts)
 		},
 	}
 }

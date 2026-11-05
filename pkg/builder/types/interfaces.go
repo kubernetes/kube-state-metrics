@@ -67,7 +67,7 @@ var ErrStoreSyncTimeout = errors.New("store sync timed out")
 // StoreSyncBuilder waits for reflector stores to sync after Build().
 type StoreSyncBuilder interface {
 	// WaitForStoresSync waits until each reflector has listed or stopped.
-	// nil and ErrStoreSyncTimeout may be installed; a canceled ctx returns ctx.Err().
+	// nil means every reflector listed; ErrStoreSyncTimeout means the observation window expired; a canceled ctx returns ctx.Err().
 	WaitForStoresSync(ctx context.Context, timeout time.Duration) error
 }
 

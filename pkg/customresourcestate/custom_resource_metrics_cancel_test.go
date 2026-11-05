@@ -18,17 +18,27 @@ package customresourcestate
 
 import (
 	"context"
-	"errors"
+	_ "embed"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
+
+	"k8s.io/kube-state-metrics/v2/internal/store"
+	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
+
+//go:embed example_config.yaml
+var exampleConfigYAML string
 
 type crsBlockingTransport struct {
 	onStart chan struct{}
@@ -46,13 +56,23 @@ func (t *crsBlockingTransport) RoundTrip(req *http.Request) (*http.Response, err
 	return nil, req.Context().Err()
 }
 
-func TestCustomResourceMetricsListWatchInFlightListObservesContextCancel(t *testing.T) {
+func TestCustomResourceMetrics_BuilderPathInFlightListObservesGenerationCancel(t *testing.T) {
+	var metrics Metrics
+	if err := yaml.NewDecoder(strings.NewReader(exampleConfigYAML)).Decode(&metrics); err != nil {
+		t.Fatal(err)
+	}
+	configOverrides(&metrics)
+	factory, err := NewCustomResourceMetrics(metrics.Spec.Resources[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	started := make(chan struct{}, 1)
 	done := make(chan struct{}, 1)
 	cfg := &rest.Config{
 		Host: "https://test.invalid",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion:         &schema.GroupVersion{Group: "example.com", Version: "v1"},
+			GroupVersion:         &schema.GroupVersion{Group: "myteam.io", Version: "v1"},
 			NegotiatedSerializer: scheme.Codecs,
 		},
 		Transport: &crsBlockingTransport{onStart: started, onDone: done},
@@ -61,40 +81,39 @@ func TestCustomResourceMetricsListWatchInFlightListObservesContextCancel(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
+	gvr := schema.GroupVersionResource{Group: "myteam.io", Version: "v1", Resource: "foos"}
 
-	metrics := customResourceMetrics{
-		GroupVersionKind: schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"},
-		ResourceName:     "foos",
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal(err)
 	}
-	gvr := schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "foos"}
-	crClient := dynClient.Resource(gvr)
-
 	genCtx, cancel := context.WithCancel(context.Background())
-	lw := metrics.ListWatchWithContext(genCtx, crClient, metav1.NamespaceDefault, "")
+	defer cancel()
 
-	listDone := make(chan error, 1)
-	go func() {
-		_, err := lw.List(metav1.ListOptions{})
-		listDone <- err
-	}()
+	b := store.NewBuilder()
+	b.WithMetrics(prometheus.NewRegistry())
+	b.WithKubeClient(fake.NewSimpleClientset())
+	b.WithContext(genCtx)
+	b.WithNamespaces(options.DefaultNamespaces)
+	b.WithFamilyGeneratorFilter(l)
+	b.WithGenerateStoresFunc(b.DefaultGenerateStoresFunc())
+	b.WithGenerateCustomResourceStoresFunc(b.DefaultGenerateCustomResourceStoresFunc())
+	b.WithCustomResourceStoreFactories(factory)
+	b.WithCustomResourceClients(map[string]any{
+		gvr.String(): dynClient.Resource(gvr),
+	})
+	b.GetGVKStopChan = func(string) chan struct{} { return make(chan struct{}) }
+	if err := b.WithEnabledResources([]string{gvr.String()}); err != nil {
+		t.Fatal(err)
+	}
+	b.Build()
 
 	select {
 	case <-started:
 	case <-time.After(2 * time.Second):
 		t.Fatal("CRS list request did not start")
 	}
-
 	cancel()
-
-	select {
-	case err := <-listDone:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected CRS list canceled, got %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("CRS list did not return after generation cancel")
-	}
-
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):

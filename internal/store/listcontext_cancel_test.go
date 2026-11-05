@@ -18,17 +18,25 @@ package store
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"testing"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
+
+	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/customresource"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 // contextAwareBlockingTransport blocks until the request context is canceled.
@@ -82,7 +90,39 @@ func newDynamicClientWithTransport(t *testing.T, rt http.RoundTripper) dynamic.I
 	return client
 }
 
-func TestConfigMapListWatchInFlightListObservesContextCancel(t *testing.T) {
+func newIntegrationBuilder(t *testing.T, client kubernetes.Interface, genCtx context.Context) *Builder {
+	t.Helper()
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := NewBuilder()
+	b.WithMetrics(prometheus.NewRegistry())
+	b.WithKubeClient(client)
+	b.WithContext(genCtx)
+	b.WithNamespaces(options.DefaultNamespaces)
+	b.WithFamilyGeneratorFilter(l)
+	b.WithGenerateStoresFunc(b.DefaultGenerateStoresFunc())
+	b.WithGenerateCustomResourceStoresFunc(b.DefaultGenerateCustomResourceStoresFunc())
+	return b
+}
+
+func waitInFlightCancel(t *testing.T, started, done <-chan struct{}, cancel func()) {
+	t.Helper()
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("list request did not start")
+	}
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("RoundTripper did not observe request context cancellation")
+	}
+}
+
+func TestBuilderBuildConfigMapsInFlightListObservesGenerationCancel(t *testing.T) {
 	started := make(chan struct{}, 1)
 	done := make(chan struct{}, 1)
 	client := newCoreClientWithTransport(t, &contextAwareBlockingTransport{onStart: started, onDone: done})
@@ -90,161 +130,115 @@ func TestConfigMapListWatchInFlightListObservesContextCancel(t *testing.T) {
 	genCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	lw := createConfigMapListWatch(genCtx, client, metav1.NamespaceAll, "")
-
-	listDone := make(chan error, 1)
-	go func() {
-		_, err := lw.List(metav1.ListOptions{})
-		listDone <- err
-	}()
-
-	select {
-	case <-started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("list request did not start")
+	b := newIntegrationBuilder(t, client, genCtx)
+	if err := b.WithEnabledResources([]string{"configmaps"}); err != nil {
+		t.Fatal(err)
 	}
+	b.Build()
 
-	cancel()
-
-	select {
-	case err := <-listDone:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected list to fail with context canceled, got %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("list did not return after generation cancel")
-	}
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("RoundTripper did not observe request context cancellation")
-	}
+	waitInFlightCancel(t, started, done, cancel)
 }
 
-func TestBuilderListWatchInFlightListObservesGenerationCancel(t *testing.T) {
-	started := make(chan struct{}, 1)
-	done := make(chan struct{}, 1)
-	client := newCoreClientWithTransport(t, &contextAwareBlockingTransport{onStart: started, onDone: done})
+const integrationCRResource = "example.com/v1, Resource=foos"
 
-	b := NewBuilder()
-	genCtx, cancel := context.WithCancel(context.Background())
-	b.WithContext(genCtx)
+var (
+	integrationCRGVK = schema.GroupVersionKind{Group: "example.com", Version: "v1", Kind: "Foo"}
+	integrationCRGVR = schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "foos"}
+)
 
-	lw := listWatchFromBuildContext(b, createConfigMapListWatch)(client, metav1.NamespaceAll, "")
-
-	listDone := make(chan error, 1)
-	go func() {
-		_, err := lw.List(metav1.ListOptions{})
-		listDone <- err
-	}()
-
-	select {
-	case <-started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("list request did not start")
-	}
-
-	cancel()
-
-	select {
-	case err := <-listDone:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected list to fail with context canceled, got %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("list did not return after generation cancel")
-	}
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("RoundTripper did not observe request context cancellation")
-	}
+type integrationCRFactory struct {
+	client dynamic.NamespaceableResourceInterface
 }
 
-func TestCRListContextInFlightListObservesGVKStop(t *testing.T) {
+var (
+	_ customresource.RegistryFactory         = integrationCRFactory{}
+	_ customresource.ContextListWatchFactory = integrationCRFactory{}
+)
+
+func (integrationCRFactory) Name() string { return "foos" }
+
+func (f integrationCRFactory) CreateClient(*rest.Config) (any, error) {
+	return f.client, nil
+}
+
+func (integrationCRFactory) MetricFamilyGenerators() []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{{
+		Name: "kube_cr_integration_test",
+		Type: metric.Gauge,
+		Help: "integration test",
+		GenerateFunc: func(any) *metric.Family {
+			return &metric.Family{}
+		},
+	}}
+}
+
+func (integrationCRFactory) ExpectedType() any {
+	u := unstructured.Unstructured{}
+	u.SetGroupVersionKind(integrationCRGVK)
+	return &u
+}
+
+func (f integrationCRFactory) ListWatchWithContext(ctx context.Context, customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher {
+	return DynamicNamespacedListWatch(ctx, customResourceClient.(dynamic.NamespaceableResourceInterface), ns, fieldSelector)
+}
+
+func (f integrationCRFactory) ListWatch(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher {
+	return f.ListWatchWithContext(context.Background(), customResourceClient, ns, fieldSelector)
+}
+
+func TestBuilderBuildCustomResourceInFlightListObservesGenerationCancel(t *testing.T) {
 	started := make(chan struct{}, 1)
 	done := make(chan struct{}, 1)
 	dynClient := newDynamicClientWithTransport(t, &contextAwareBlockingTransport{onStart: started, onDone: done})
 
-	b := NewBuilder()
-	gvkStop := make(chan struct{})
-	b.GetGVKStopChan = func(string) chan struct{} { return gvkStop }
+	genCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
+	b := newIntegrationBuilder(t, fake.NewSimpleClientset(), genCtx)
+	factory := integrationCRFactory{client: dynClient.Resource(integrationCRGVR)}
+	b.WithCustomResourceStoreFactories(factory)
+	b.WithCustomResourceClients(map[string]any{
+		integrationCRGVR.String(): dynClient.Resource(integrationCRGVR),
+	})
+	b.GetGVKStopChan = func(string) chan struct{} { return make(chan struct{}) }
+	if err := b.WithEnabledResources([]string{integrationCRResource}); err != nil {
+		t.Fatal(err)
+	}
+	b.Build()
+
+	waitInFlightCancel(t, started, done, cancel)
+}
+
+func TestBuilderBuildCustomResourceInFlightListObservesGVKStop(t *testing.T) {
+	started := make(chan struct{}, 1)
+	done := make(chan struct{}, 1)
+	dynClient := newDynamicClientWithTransport(t, &contextAwareBlockingTransport{onStart: started, onDone: done})
+
+	gvkStop := make(chan struct{})
 	genCtx, genCancel := context.WithCancel(context.Background())
 	defer genCancel()
-	b.WithContext(genCtx)
-	listCtx := b.crResourceListContext("example.com/v1, Kind=Foo")
 
-	gvr := schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "foos"}
-	lw := DynamicNamespacedListWatch(listCtx, dynClient.Resource(gvr), metav1.NamespaceDefault, "")
-
-	listDone := make(chan error, 1)
-	go func() {
-		_, err := lw.List(metav1.ListOptions{})
-		listDone <- err
-	}()
+	b := newIntegrationBuilder(t, fake.NewSimpleClientset(), genCtx)
+	factory := integrationCRFactory{client: dynClient.Resource(integrationCRGVR)}
+	b.WithCustomResourceStoreFactories(factory)
+	b.WithCustomResourceClients(map[string]any{
+		integrationCRGVR.String(): dynClient.Resource(integrationCRGVR),
+	})
+	b.GetGVKStopChan = func(string) chan struct{} { return gvkStop }
+	if err := b.WithEnabledResources([]string{integrationCRResource}); err != nil {
+		t.Fatal(err)
+	}
+	b.Build()
 
 	select {
 	case <-started:
 	case <-time.After(2 * time.Second):
 		t.Fatal("CRS list request did not start")
 	}
-
 	close(gvkStop)
-
-	select {
-	case err := <-listDone:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected list to fail after GVK stop, got %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("list did not return after GVK teardown")
-	}
-
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("RoundTripper did not observe request context cancellation")
-	}
-}
-
-func TestDynamicNamespacedListWatchUsesRequestContext(t *testing.T) {
-	started := make(chan struct{}, 1)
-	done := make(chan struct{}, 1)
-	dynClient := newDynamicClientWithTransport(t, &contextAwareBlockingTransport{onStart: started, onDone: done})
-
-	genCtx, cancel := context.WithCancel(context.Background())
-	gvr := schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "foos"}
-	lw := DynamicNamespacedListWatch(genCtx, dynClient.Resource(gvr), metav1.NamespaceDefault, "")
-
-	listDone := make(chan error, 1)
-	go func() {
-		_, err := lw.List(metav1.ListOptions{})
-		listDone <- err
-	}()
-
-	select {
-	case <-started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("dynamic list did not start")
-	}
-
-	cancel()
-
-	select {
-	case err := <-listDone:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected dynamic list canceled, got %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("dynamic list did not return")
-	}
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("transport did not observe cancellation")
+		t.Fatal("RoundTripper did not observe request context cancellation after GVK stop")
 	}
 }

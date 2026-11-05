@@ -1341,6 +1341,23 @@ func TestPodStore(t *testing.T) {
 		},
 		{
 			Obj: &v1.Pod{
+				Name:      "pod4",
+				Namespace: "ns4",
+				UID:       "uid4",
+				Status: v1.PodStatus{
+					Phase:  v1.PodFailed,
+					Reason: "TopologyAffinityError",
+				},
+			},
+			Want: `
+				# HELP kube_pod_status_reason The pod status reasons
+				# TYPE kube_pod_status_reason gauge
+				kube_pod_status_reason{namespace="ns4",pod="pod4",reason="TopologyAffinityError",uid="uid4"} 1
+`,
+			MetricNames: []string{"kube_pod_status_reason"},
+		},
+		{
+			Obj: &v1.Pod{
 				Name:      "pod1",
 				Namespace: "ns1",
 				UID:       "uid1",

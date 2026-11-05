@@ -464,7 +464,7 @@ func TestReplaceObjectLimitAfterChurn(t *testing.T) {
 	if !maps.Equal(got, want) {
 		t.Fatalf("expected store keys %v, got %v", want, got)
 	}
-	if n := ms.objectCount.Load(); n != 2 {
+	if n := ms.objectCount; n != 2 {
 		t.Fatalf("expected an object count of 2, got %d", n)
 	}
 	if dropped != 1 {

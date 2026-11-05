@@ -18,7 +18,6 @@ package metricsstore
 
 import (
 	"sync"
-	"sync/atomic"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
@@ -58,9 +57,11 @@ type MetricsStore struct {
 
 	// objectLimit is the maximum number of objects kept in the store, 0 means
 	// no limit. objectCount tracks the number of objects currently stored and
-	// is only maintained when a limit is set.
+	// is only maintained when a limit is set. It is only accessed by Add,
+	// Delete and Replace, which the reflector calls from a single goroutine,
+	// so it needs no synchronization.
 	objectLimit int64
-	objectCount atomic.Int64
+	objectCount int64
 	// onObjectDropped is called for every add or update of an object that is
 	// not stored because objectLimit was reached.
 	onObjectDropped func()
@@ -145,13 +146,13 @@ func (s *MetricsStore) Add(obj any) error {
 	// arrive through the watch.
 	if s.objectLimit > 0 {
 		if _, exists := s.metrics.Load(o.GetUID()); !exists {
-			if s.objectCount.Load() >= s.objectLimit {
+			if s.objectCount >= s.objectLimit {
 				if s.onObjectDropped != nil {
 					s.onObjectDropped()
 				}
 				return nil
 			}
-			s.objectCount.Add(1)
+			s.objectCount++
 		}
 	}
 
@@ -243,7 +244,7 @@ func (s *MetricsStore) Delete(obj any) error {
 	s.setLastResourceVersion(o.GetResourceVersion())
 
 	if _, loaded := s.metrics.LoadAndDelete(o.GetUID()); loaded && s.objectLimit > 0 {
-		s.objectCount.Add(-1)
+		s.objectCount--
 	}
 
 	return nil
@@ -299,7 +300,7 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 	// The objects kept are the ones counted against the limit; the upsert
 	// below admits new ones while there is room.
 	if s.objectLimit > 0 {
-		s.objectCount.Store(kept)
+		s.objectCount = kept
 	}
 
 	for _, o := range list {

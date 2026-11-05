@@ -113,16 +113,16 @@ func (m *MetricsHandler) buildWritersLocked(ctx context.Context) {
 // writers with the applied configuration once the shard is known.
 func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error {
 	m.mtx.Lock()
-	var err error
+	defer m.mtx.Unlock()
 	if configure != nil {
-		err = configure(m.storeBuilder)
+		if err := configure(m.storeBuilder); err != nil {
+			return err
+		}
 	}
-	skipBuild := m.autoSharding() && !m.shardingConfigured
-	m.mtx.Unlock()
-	if err != nil || skipBuild {
-		return err
+	if m.autoSharding() && !m.shardingConfigured {
+		return nil
 	}
-	m.BuildWriters(ctx)
+	m.buildWritersLocked(ctx)
 	return nil
 }
 

@@ -38,6 +38,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	resourcev1 "k8s.io/api/resource/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clientset "k8s.io/client-go/kubernetes"
@@ -386,6 +387,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"cronjobs":                          func(b *Builder) []cache.Store { return b.buildCronJobStores() },
 	"daemonsets":                        func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
 	"deployments":                       func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
+	"deviceclasses":                     func(b *Builder) []cache.Store { return b.buildDeviceClassStores() },
 	"endpoints":                         func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
 	"endpointslices":                    func(b *Builder) []cache.Store { return b.buildEndpointSlicesStores() },
 	"horizontalpodautoscalers":          func(b *Builder) []cache.Store { return b.buildHPAStores() },
@@ -406,7 +408,10 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"pods":                              func(b *Builder) []cache.Store { return b.buildPodStores() },
 	"replicasets":                       func(b *Builder) []cache.Store { return b.buildReplicaSetStores() },
 	"replicationcontrollers":            func(b *Builder) []cache.Store { return b.buildReplicationControllerStores() },
+	"resourceclaims":                    func(b *Builder) []cache.Store { return b.buildResourceClaimStores() },
+	"resourceclaimtemplates":            func(b *Builder) []cache.Store { return b.buildResourceClaimTemplateStores() },
 	"resourcequotas":                    func(b *Builder) []cache.Store { return b.buildResourceQuotaStores() },
+	"resourceslices":                    func(b *Builder) []cache.Store { return b.buildResourceSliceStores() },
 	"roles":                             func(b *Builder) []cache.Store { return b.buildRoleStores() },
 	"rolebindings":                      func(b *Builder) []cache.Store { return b.buildRoleBindingStores() },
 	"secrets":                           func(b *Builder) []cache.Store { return b.buildSecretStores() },
@@ -765,6 +770,22 @@ func (b *Builder) startReflector(
 	} else {
 		go reflector.Run(b.ctx.Done())
 	}
+}
+
+func (b *Builder) buildDeviceClassStores() []cache.Store {
+	return b.buildClusterScopedStores(deviceClassMetricFamilies, &resourcev1.DeviceClass{}, createDeviceClassListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceClaimStores() []cache.Store {
+	return b.buildStoresFunc(resourceClaimMetricFamilies, &resourcev1.ResourceClaim{}, createResourceClaimListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceClaimTemplateStores() []cache.Store {
+	return b.buildStoresFunc(resourceClaimTemplateMetricFamilies, &resourcev1.ResourceClaimTemplate{}, createResourceClaimTemplateListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceSliceStores() []cache.Store {
+	return b.buildClusterScopedStores(resourceSliceMetricFamilies, &resourcev1.ResourceSlice{}, createResourceSliceListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

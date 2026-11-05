@@ -70,8 +70,12 @@ See each file for specific documentation about the exposed metrics:
 
 * [ClusterRole Metrics](metrics/cluster/clusterrole-metrics.md)
 * [ClusterRoleBinding Metrics](metrics/cluster/clusterrolebinding-metrics.md)
+* [DeviceClass Metrics](metrics/extend/deviceclass-metrics.md)
 * [EndpointSlice Metrics](metrics/service/endpointslice-metrics.md)
 * [IngressClass Metrics](metrics/service/ingressclass-metrics.md)
+* [ResourceClaim Metrics](metrics/extend/resourceclaim-metrics.md)
+* [ResourceClaimTemplate Metrics](metrics/extend/resourceclaimtemplate-metrics.md)
+* [ResourceSlice Metrics](metrics/extend/resourceslice-metrics.md)
 * [Role Metrics](metrics/auth/role-metrics.md)
 * [RoleBinding Metrics](metrics/auth/rolebinding-metrics.md)
 * [ServiceAccount Metrics](metrics/auth/serviceaccount-metrics.md)

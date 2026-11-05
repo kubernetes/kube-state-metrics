@@ -103,10 +103,17 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			if !opts.ContinueWithoutConfig {
 				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 			}
-		} else if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
-			klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
-			if !opts.ContinueWithoutConfig {
-				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		} else {
+			// Decode onto a copy, as a file that is rejected can still have set
+			// some options, such as continue_without_config.
+			merged := opts.Clone()
+			if err := options.UnmarshalConfigFile(configFile, merged); err != nil {
+				klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
+				if !opts.ContinueWithoutConfig {
+					klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+				}
+			} else {
+				opts = merged
 			}
 		}
 		if _, err := watchFile(file, restart); err != nil {

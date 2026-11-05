@@ -599,6 +599,11 @@ func TestParseScheduleRobfigCompat(t *testing.T) {
 			t.Errorf("%q: expected %v, actual %v", tc.schedule, tc.expected, actual)
 		}
 	}
+
+	// A day of month that occurs in none of the selected months never fires.
+	if _, err := parseSchedule("0 0 30 2 *", &timeZone); err == nil {
+		t.Errorf("expected an error for a schedule that never fires")
+	}
 }
 
 func TestCronJobStoreScheduleParsing(t *testing.T) {
@@ -671,7 +676,7 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
 		},
 		{
-			// Schedule that parses but never fires (Feb 30): next_schedule_time omitted
+			// Schedule that never fires (Feb 30): next_schedule_time omitted
 			// rather than exported as year 1, schedule_invalid emitted.
 			Obj: newCronJob("NeverFiringScheduleCronJob", "0 0 30 2 *"),
 			Want: `

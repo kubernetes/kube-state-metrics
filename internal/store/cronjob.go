@@ -277,9 +277,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 			wrapCronJobFunc(func(j *batchv1.CronJob) *metric.Family {
 				ms := []*metric.Metric{}
 
-				// A schedule can parse and still never fire, e.g. "0 0 30 2 *" (Feb 30),
-				// in which case Next returns the zero time.
-				if sched, err := parseSchedule(j.Spec.Schedule, j.Spec.TimeZone); err != nil || sched.Next(time.Now()).IsZero() {
+				if _, err := parseSchedule(j.Spec.Schedule, j.Spec.TimeZone); err != nil {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
 						LabelValues: []string{},
@@ -380,8 +378,10 @@ func createCronJobListWatch(kubeClient clientset.Interface, ns string, fieldSele
 
 // cronParser parses schedules like the Kubernetes CronJob controller, which
 // uses robfig/cron/v3, so the reported next schedule time matches the
-// controller's.
-var cronParser = cron.MustNewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor | cron.RobfigCompat)
+// controller's. StrictDays additionally rejects a schedule that never fires,
+// e.g. "0 0 30 2 *" (Feb 30), which robfig/cron accepts but for which Next
+// returns the zero time.
+var cronParser = cron.MustNewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor | cron.RobfigCompat | cron.StrictDays)
 
 func parseSchedule(schedule string, timeZone *string) (cron.Schedule, error) {
 	if timeZone != nil {

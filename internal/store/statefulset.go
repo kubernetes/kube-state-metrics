@@ -358,15 +358,16 @@ func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(any) *metr
 	}
 }
 
-func createStatefulSetListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createStatefulSetListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AppsV1().StatefulSets(ns).List(context.TODO(), opts)
+			return kubeClient.AppsV1().StatefulSets(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AppsV1().StatefulSets(ns).Watch(context.TODO(), opts)
+			return kubeClient.AppsV1().StatefulSets(ns).Watch(listCtx, opts)
 		},
 	}
 }

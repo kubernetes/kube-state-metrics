@@ -82,6 +82,7 @@ Flags:
       --skip_headers                                         If true, avoid header prefixes in the log messages
       --skip_log_headers                                     If true, avoid headers when opening log files (no effect when -logtostderr=true)
       --stderrthreshold severity                             logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true unless -legacy_stderr_threshold_behavior=false) (default 2)
+      --store-sync-timeout duration                          Duration of each store-sync observation window after Build(). Writers install only after all reflectors list successfully; when a window expires, sync is retried with a fresh window until it succeeds or the generation is canceled. Startup coalesces rebuilds under one shared deadline; each warm rebuild gets its own window. 0 skips the wait and installs immediately. Reflectors that never list (for example permanent RBAC denial) block install and keep the previous generation serving. Negative values are invalid. (default 30s)
       --telemetry-host string                                Host to expose kube-state-metrics self metrics on. (default "::")
       --telemetry-port int                                   Port to expose kube-state-metrics self metrics on. (default 8081)
       --tls-config string                                    Path to the TLS configuration file

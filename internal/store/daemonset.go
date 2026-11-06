@@ -304,15 +304,16 @@ func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(any) *metric.F
 	}
 }
 
-func createDaemonSetListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createDaemonSetListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AppsV1().DaemonSets(ns).List(context.TODO(), opts)
+			return kubeClient.AppsV1().DaemonSets(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.AppsV1().DaemonSets(ns).Watch(context.TODO(), opts)
+			return kubeClient.AppsV1().DaemonSets(ns).Watch(listCtx, opts)
 		},
 	}
 }

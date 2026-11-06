@@ -29,6 +29,8 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+
+	"k8s.io/kube-state-metrics/v2/pkg/runconfig"
 )
 
 var (
@@ -40,6 +42,11 @@ var (
 	defaultServerIdleTimeout       = 5 * time.Minute
 	defaultServerReadHeaderTimeout = 5 * time.Second
 )
+
+// DefaultStoreSyncTimeout is the duration of each store-sync observation window after Build().
+// Writers install only after a successful sync; expiring a window retries until sync succeeds,
+// the generation is canceled, or store_sync_timeout is 0 (immediate install).
+const DefaultStoreSyncTimeout = 30 * time.Second
 
 // Options are the configurable parameters for kube-state-metrics.
 type Options struct {
@@ -81,6 +88,7 @@ type Options struct {
 	ServerWriteTimeout      time.Duration `yaml:"server_write_timeout"`
 	ServerIdleTimeout       time.Duration `yaml:"server_idle_timeout"`
 	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
+	StoreSyncTimeout        time.Duration `yaml:"store_sync_timeout"`
 
 	Shard                int32 `yaml:"shard"`
 	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
@@ -91,6 +99,9 @@ type Options struct {
 	UseAPIServerCache    bool  `yaml:"use_api_server_cache"`
 	ObjectLimit          int64 `yaml:"object_limit"`
 	AuthFilter           bool  `yaml:"auth_filter"`
+
+	// Prepared holds immutable inputs captured at prepare time (reload path). Not loaded from YAML.
+	Prepared *runconfig.Prepared `yaml:"-"`
 }
 
 // GetConfigFile is the getter for --config value.
@@ -107,11 +118,14 @@ func NewOptions() *Options {
 		MetricOptInList:      MetricSet{},
 		AnnotationsAllowList: LabelsAllowList{},
 		LabelsAllowList:      LabelsAllowList{},
+		StoreSyncTimeout:     DefaultStoreSyncTimeout,
+		AutoGoMemlimitRatio:  0.9,
+		TotalShards:          1,
 	}
 }
 
-// Clone returns a deep copy of the Options, so that a config reload can start
-// again from the command line values instead of the previously merged config.
+// Clone returns a deep copy so each prepare/reload starts from CLI values, not prior YAML merge.
+// Pass a new clone each run when you need removed YAML keys to fall back to CLI again.
 func (o *Options) Clone() *Options {
 	c := *o
 	c.AnnotationsAllowList = cloneLabelsAllowList(o.AnnotationsAllowList)
@@ -122,6 +136,7 @@ func (o *Options) Clone() *Options {
 	c.Resources = maps.Clone(o.Resources)
 	c.Namespaces = slices.Clone(o.Namespaces)
 	c.NamespacesDenylist = slices.Clone(o.NamespacesDenylist)
+	c.Prepared = nil
 	return &c
 }
 
@@ -228,6 +243,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().DurationVar(&o.ServerWriteTimeout, "server-write-timeout", defaultServerWriteTimeout, "The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients..")
 	o.cmd.Flags().DurationVar(&o.ServerIdleTimeout, "server-idle-timeout", defaultServerIdleTimeout, "The maximum amount of time to wait for the next request when keep-alives are enabled. Align with the idletimeout of your scrape clients.")
 	o.cmd.Flags().DurationVar(&o.ServerReadHeaderTimeout, "server-read-header-timeout", defaultServerReadHeaderTimeout, "The maximum duration for reading the header of requests.")
+	o.cmd.Flags().DurationVar(&o.StoreSyncTimeout, "store-sync-timeout", DefaultStoreSyncTimeout, "Duration of each store-sync observation window after Build(). Writers install only after all reflectors list successfully in that window. When a window expires, the candidate is canceled and the handler waits one timeout before automatically retrying with a fresh candidate (no candidate runs during the cooldown). BuildWriters/ConfigureStore/ConfigureSharding wait for one attempt; ConfigureStoreAsync/ConfigureShardingAsync do not block. 0 skips the wait and installs immediately. Negative values are invalid.")
 }
 
 // Parse parses the flag definitions from the argument list.
@@ -243,6 +259,20 @@ func (o *Options) Usage() {
 
 // Validate validates arguments
 func (o *Options) Validate() error {
+	if err := o.validateStoreSyncTimeout(); err != nil {
+		return err
+	}
+	return o.validateExceptStoreSyncTimeout()
+}
+
+func (o *Options) validateStoreSyncTimeout() error {
+	if o.StoreSyncTimeout < 0 {
+		return fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", o.StoreSyncTimeout)
+	}
+	return nil
+}
+
+func (o *Options) validateExceptStoreSyncTimeout() error {
 	if o.Node != "" {
 		shardableResource := "pods"
 		for _, x := range o.Resources.AsSlice() {

@@ -1,0 +1,66 @@
+name: Release binaries
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag, e.g. v2.20.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-binaries-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  binaries:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Build
+        run: |
+          for target in \
+            linux/amd64/Linux_x86_64 \
+            linux/arm64/Linux_arm64 \
+            linux/386/Linux_i386 \
+            darwin/amd64/Darwin_x86_64 \
+            darwin/arm64/Darwin_arm64 \
+            windows/amd64/Windows_x86_64 \
+            windows/arm64/Windows_arm64 \
+            windows/386/Windows_i386; do
+            IFS=/ read -r os arch name <<<"${target}"
+            make build-local OS="${os}" ARCH="${arch}" TAG="${TAG}" BRANCH="${TAG}"
+            bin=kube-state-metrics
+            if [ "${os}" = "windows" ]; then
+              mv "${bin}" "${bin}.exe"
+              bin="${bin}.exe"
+            fi
+            tar -czf "kube-state-metrics_${name}.tar.gz" "${bin}" LICENSE README.md
+            rm -f "${bin}"
+          done
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          checksums="kube-state-metrics_${TAG#v}_checksums.txt"
+          sha256sum kube-state-metrics_*.tar.gz > "${checksums}"
+          gh release upload "${TAG}" kube-state-metrics_*.tar.gz "${checksums}" --repo "${GITHUB_REPOSITORY}"
